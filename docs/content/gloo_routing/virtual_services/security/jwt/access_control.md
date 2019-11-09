@@ -4,84 +4,94 @@ weight: 2
 description: JWT verification and Access Control (without an external auth server)
 ---
 
-## Prerequisites
+{{% notice note %}}
+The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
-We will use the following utilities
+In this guide, we will show how to use Gloo to verify kubernetes service account JWTs and how to define RBAC policies to 
+control the resources service accounts are allowed to access.
 
-- minikube
-- `jq` (optional)
-- `tr`, python (for text transformations)
-- `glooctl` enterprise version v0.13.16 or later.
+## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-## Initial setup
+It is also assumed that you are using a local `minikube` cluster.
 
-Start minikube:
+### Deploy sample application
+Let's deploy a sample application that we will route requests to during this guide:
+
 ```shell script
-minikube start
-```
-Make sure your kubectl context is configured to use the `default` namespace:
-```shell script
-kubectl config set-context --current --namespace default
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
-Install gloo-enterprise and create a virtual service and an example app:
+### Create a Virtual Service
+Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petstore` service.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
+```
+
+To verify that the Virtual Service works, let's send a request to `/api/pets`:
+
 ```shell
-glooctl install gateway enterprise --license-key <YOUR KEY>
+curl $GATEWAY_URL/api/pets
 ```
 
-Wait for the deployments to finish:
-```shell
-kubectl -n gloo-system rollout status deployment/discovery
-kubectl -n gloo-system rollout status deployment/gateway-v2
-kubectl -n gloo-system rollout status deployment/gloo
-kubectl -n gloo-system rollout status deployment/gateway-proxy-v2
-```
+You should see the following output:
 
-Install the petstore demo app, add a route, and test that everything so far works (you may need to wait a few moments for all the Gloo containers to be initialized):
-```shell
-kubectl apply -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
-glooctl add route --name default --namespace gloo-system --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
-GATEWAY_URL=$(glooctl proxy url)
-```
-
-Test that everything so far works:
-```shell script
-curl "$GATEWAY_URL/api/pets/"
-```
-returns
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
 ## Setting up JWT authorization
-
-Let's create a test pod, with a different service account. We will use this pod in the guide to test
-access with the new service account credentials.
+Let's create a test pod, with a different service account. We will use this pod to test access 
+with the new service account credentials.
 
 ```shell
 kubectl create serviceaccount svc-a
 kubectl run --generator=run-pod/v1 test-pod --image=fedora:30 --serviceaccount=svc-a --command sleep 10h
 ```
 
-### Anatomy of kuberentes service account
+### Anatomy of kubernetes service account
+A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically 
+generates a JWT contains information about the pod's service account and attaches it to the pod. 
+Inside the JWT are *claims* that provide identity information, and a signature for verification. 
+To verify these JWTs, the Kubernetes API server is provided with a public key. Gloo can use this public key to perform 
+JWT verification for kubernetes service accounts.
 
-When kuberentes starts a pod, it automatically attaches to it a JWT (JSON Web Token), that allows 
-for authentication with the credentials of the pod's service account.
-Inside the JWT are *claims* that provide identity information, and a signature for verification.
-
-To verify these JWT, the kubernetes api server is provided with a public key. We can use this public 
-key to perform JWT verification for kubernetes service accounts in Gloo.
-
-Let's see the claims for `svc-a` - the service account we just created:
+Let's see the claims for `svc-a`, the service account we just created:
 
 ```shell
+# Execute a command inside the pod to copy the payload of the JWT to the CLAIMS shell variable.
+# The three parts of a JWT are separated by dots: header.payload.signature
 CLAIMS=$(kubectl exec test-pod cat /var/run/secrets/kubernetes.io/serviceaccount/token | cut -d. -f2)
+
+# Pad the CLAIMS string to ensure that we can display valid JSON
 PADDING_LEN=$(( 4 - ( ${#CLAIMS} % 4 ) ))
 PADDING=$(head -c $PADDING_LEN /dev/zero | tr '\0' =)
 PADDED_CLAIMS="${CLAIMS}${PADDING}"
-# Note: jq makes the output easier to read. It can be omitted if you do not have it installed
-echo $PADDED_CLAIMS | base64 --decode | jq .
+
+# Note: the `jq` utility makes the output easier to read. It can be omitted if you do not have it installed
+echo $PADDED_CLAIMS | base64 --decode | jq
 ```
+
 The output should look like so:
 ```json
 {
@@ -98,16 +108,19 @@ The output should look like so:
 In your output the `kubernetes.io/serviceaccount/service-account.uid` claim will be different than displayed here.
 {{% /notice %}}
 
-The most important claims for this guide are the *iss* claim and the *sub* claim. We will use these
+The most important claims for this guide are the **iss** claim and the **sub** claim. We will use these
 claims later to verify the identity of the JWT.
 
-### Configuring Gloo to verify service account JWT
+### Retrieve the Kubernetes API server public key
+Let's get the public key that the Kubernetes API server uses to  verify service accounts:
 
-To get the public key to verify service accounts, use this command:
 ```shell
 minikube ssh sudo cat /var/lib/minikube/certs/sa.pub | tee public-key.pem
 ```
-This command will output the public key, and will save it to a file called `public-key.pem`.
+
+This command will output the public key, and will save it to a file called `public-key.pem`. The content of the 
+`public-key.pem` file key should look similar to the following:
+
 ```text
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4XbzUpqbgKbDLngsLp4b
@@ -120,28 +133,20 @@ FYkg7AesknSyCIVMObSaf6ZO3T2jVGrWc0iKfrR3Oo7WpiMH84SdBYXPaS1VdLC1
 -----END PUBLIC KEY-----
 ```
 
-
 {{% notice note %}}
-If the above command doesn't produce the expected output, it could be that the
-`/var/lib/minikube/certs/sa.pub` is different on your minikube.
-The public key is given to the kube api-server in the command line arg `--service-account-key-file`.
-You can see it like so: `minikube ssh ps ax ww | grep kube-apiserver`
+If the above command doesn't produce the expected output, it could be that the `/var/lib/minikube/certs/sa.pub` is 
+different on your minikube. The public key is given to the Kubernetes API server in the `--service-account-key-file` 
+command line flag. You can check which value was passed via this flag by running `minikube ssh ps ax ww | grep kube-apiserver`.
 {{% /notice %}}
 
-Configure JWT verification in Gloo's default virtual service:
+### Secure the Virtual Service
+Now let's configure our Virtual Service to verify JWTs in incoming request using this public key:
 
-```shell
-# escape the spaces in the public key file:
-PUBKEY=$(cat public-key.pem | python -c 'import json,sys; print(json.dumps(sys.stdin.read()).replace(" ", "\\u0020"))')
-# patch the default virtual service
-kubectl patch virtualservice --namespace gloo-system default --type=merge -p '{"spec":{"virtualHost":{"virtualHostPlugins":{"extensions":{"configs":{"jwt":{"providers":{"kube":{"jwks":{"local":{"key":'$PUBKEY'}},"issuer":"kubernetes/serviceaccount"}}}}}}}}}' -o yaml
-```
-The output should look like so:
-```yaml
+{{< highlight shell "hl_lines=20-36" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: default
+  name: petstore
   namespace: gloo-system
 spec:
   virtualHost:
@@ -152,53 +157,49 @@ spec:
         prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
     virtualHostPlugins:
-      extensions:
-        configs:
-          jwt:
-            providers:
-              kube:
-                issuer: kubernetes/serviceaccount
-                jwks:
-                  local:
-                    key: "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4XbzUpqbgKbDLngsLp4b\r\npjf04WkMzXx8QsZAorkuGprIc2BYVwAmWD2tZvez4769QfXsohu85NRviYsrqbyC\r\nw/NTs3fMlcgld+ayfb/1X3+6u4f1Q8JsDm4fkSWoBUlTkWO7Mcts2hF8OJ8LlGSw\r\nzUDj3TJLQXwtfM0Ty1VzGJQMJELeBuOYHl/jaTdGogI8zbhDZ986CaIfO+q/UM5u\r\nkDA3NJ7oBQEH78N6BTsFpjDUKeTae883CCsRDbsytWgfKT8oA7C4BFkvRqVMSek7\r\nFYkg7AesknSyCIVMObSaf6ZO3T2jVGrWc0iKfrR3Oo7WpiMH84SdBYXPaS1VdLC1\r\n7QIDAQAB\r\n-----END
-                      PUBLIC KEY-----\r\n"
-```
+      jwt:
+        providers:
+          kube:
+            issuer: kubernetes/serviceaccount
+            jwks:
+              local:
+                key: |
+                  -----BEGIN PUBLIC KEY-----
+                  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApj2ac/hNZLm/66yoDQJ2
+                  mNtQPX+3RXcTMhLnChtFEsvpDhoMlS0Gakqkmg78OGWs7U4f6m1nD/Jc7UThxxks
+                  o9x676sxxLKxo8TC1w6t47HQHucJE0O5wFNtC8+4jwl4zOBVwnkAEeN+X9jJq2E7
+                  AZ+K6hUycOkWo8ZtZx4rm1bnlDykOa9VCuG3MCKXNexujLIixHOeEOylp7wNedSZ
+                  4Wfc5rM9Cich2F6pIoCwslHYcED+3FZ1ZmQ07h1GG7Aaak4N4XVeJLsDuO88eVkv
+                  FHlGdkW6zSj9HCz10XkSPK7LENbgHxyP6Foqw10MANFBMDQpZfNUHVPSo8IaI+Ot
+                  xQIDAQAB
+                  -----END PUBLIC KEY-----
+{{< /highlight >}}
 
-The updated virtual service now contains JWT configuration with the public key, and the issuer for the JWT.
-JWTs will be authorized if they can be verified with this public key, and have 'kubernetes/serviceaccount' in their 'iss' claim.
+With the above configuration, the Virtual Service will look for a JWT on incoming requests and allow the request only if:
+ 
+- a JWT is present,
+- it can be verified with the given public key, and 
+- it has  an `iss` claim with value `kubernetes/serviceaccount`.
 
-## Configuring Gloo to perform access control for the service account
+{{% notice note %}}
+To see all the attributes supported by the JWT API, be sure to check out the correspondent 
+<b>{{< protobuf display="API docs" name="jwt.plugins.gloo.solo.io.VhostExtension">}}</b>.
+{{% /notice %}}
 
-To make this interesting, we can add an access control policy for JWT. Let's add a policy to the virtual service:
-```shell
-POLICIES='{
-"policies": {
-    "viewer": {
-        "principals":[{
-            "jwtPrincipal":{"claims":{"sub":"system:serviceaccount:default:svc-a"}}
-        }],
-        "permissions":{
-            "pathPrefix":"/api/pets",
-            "methods":["GET"]
-        }
-    }
-}
-}'
-# remove spaces, we can use `tr` as there are no spaces in the values.
-POLICIES=$(echo $POLICIES | tr -d '[:space:]')
-kubectl patch virtualservice --namespace gloo-system default --type=merge -p '{"spec":{"virtualHost":{"virtualHostPlugins":{"extensions":{"configs":{"rbac":{"config":'$POLICIES'}}}}}}}' -o yaml
-```
+To make things more interesting, we can further configure Gloo to enforce an access control policy on incoming JWTs. 
+Let's add a policy to our Virtual Service:
 
-The output should look like so:
-```yaml
+{{< highlight shell "hl_lines=37-48" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: default
+  name: petstore
   namespace: gloo-system
 spec:
   virtualHost:
@@ -209,79 +210,150 @@ spec:
         prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
     virtualHostPlugins:
-      extensions:
-        configs:
-          jwt:
-            providers:
-              kube:
-                issuer: kubernetes/serviceaccount
-                jwks:
-                  local:
-                    key: "-----BEGIN PUBLIC KEY-----\r\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4XbzUpqbgKbDLngsLp4b\r\npjf04WkMzXx8QsZAorkuGprIc2BYVwAmWD2tZvez4769QfXsohu85NRviYsrqbyC\r\nw/NTs3fMlcgld+ayfb/1X3+6u4f1Q8JsDm4fkSWoBUlTkWO7Mcts2hF8OJ8LlGSw\r\nzUDj3TJLQXwtfM0Ty1VzGJQMJELeBuOYHl/jaTdGogI8zbhDZ986CaIfO+q/UM5u\r\nkDA3NJ7oBQEH78N6BTsFpjDUKeTae883CCsRDbsytWgfKT8oA7C4BFkvRqVMSek7\r\nFYkg7AesknSyCIVMObSaf6ZO3T2jVGrWc0iKfrR3Oo7WpiMH84SdBYXPaS1VdLC1\r\n7QIDAQAB\r\n-----END
-                      PUBLIC KEY-----\r\n"
-          rbac:
-            config:
-              policies:
-                viewer:
-                  permissions:
-                    methods:
-                    - GET
-                    pathPrefix: /api/pets
-                  principals:
-                  - jwtPrincipal:
-                      claims:
-                        sub: system:serviceaccount:default:svc-a
-```
+      jwt:
+        providers:
+          kube:
+            issuer: kubernetes/serviceaccount
+            jwks:
+              local:
+                key: |
+                  -----BEGIN PUBLIC KEY-----
+                  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApj2ac/hNZLm/66yoDQJ2
+                  mNtQPX+3RXcTMhLnChtFEsvpDhoMlS0Gakqkmg78OGWs7U4f6m1nD/Jc7UThxxks
+                  o9x676sxxLKxo8TC1w6t47HQHucJE0O5wFNtC8+4jwl4zOBVwnkAEeN+X9jJq2E7
+                  AZ+K6hUycOkWo8ZtZx4rm1bnlDykOa9VCuG3MCKXNexujLIixHOeEOylp7wNedSZ
+                  4Wfc5rM9Cich2F6pIoCwslHYcED+3FZ1ZmQ07h1GG7Aaak4N4XVeJLsDuO88eVkv
+                  FHlGdkW6zSj9HCz10XkSPK7LENbgHxyP6Foqw10MANFBMDQpZfNUHVPSo8IaI+Ot
+                  xQIDAQAB
+                  -----END PUBLIC KEY-----
+      rbac:
+        policies:
+          viewer:
+            permissions:
+              methods:
+              - GET
+              pathPrefix: /api/pets
+            principals:
+            - jwtPrincipal:
+                claims:
+                  sub: system:serviceaccount:default:svc-a
+{{< /highlight >}}
 
-### Test
+The above configuration defines an RBAC policy named `viewer` which only allows requests upstream if:
 
-Let's verify that everything is working properly:
+- the request method is `GET`
+- the request URI starts with `/api/pets`
+- the request contains a verifiable JWT
+- the JWT has a `sub` claim with value `system:serviceaccount:default:svc-a`
 
-An un-authenticated request should fail (will output *Jwt is missing*):
+{{% notice note %}}
+To see all the attributes supported by the RBAC API, be sure to check out the correspondent 
+<b>{{< protobuf display="API docs" name="rbac.plugins.gloo.solo.io.ExtensionSettings">}}</b>.
+{{% /notice %}}
+
+### Testing our configuration
+Now we are ready to test our configuration. We will be sending requests from inside the `test-pod` pod that we deployed 
+at the beginning of this guide. Remember that the encrypted JWT is stored inside the pod under `/var/run/secrets/kubernetes.io/serviceaccount/token`.
+
+An unauthenticated request should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -s http://gateway-proxy-v2.gloo-system/api/pets/1'
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/api/pets/1'
 ```
+{{< highlight shell "hl_lines=6 12" >}}
+> GET /api/pets/1 HTTP/1.1
+> Host: gateway-proxy-v2.gloo-system
+> User-Agent: curl/7.65.3
+> Accept: */*
+>
+< HTTP/1.1 401 Unauthorized
+< content-length: 14
+< content-type: text/plain
+< date: Sat, 09 Nov 2019 23:05:56 GMT
+< server: envoy
+<
+Jwt is missing%
+{{< /highlight >}}
 
 An authenticated GET request to a path that starts with `/api/pets` should succeed:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -s http://gateway-proxy-v2.gloo-system/api/pets/1 -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/api/pets/1 \
+    -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
+{{< highlight shell "hl_lines=7" >}}
+> GET /api/pets/1 HTTP/1.1
+> Host: gateway-proxy-v2.gloo-system
+> User-Agent: curl/7.65.3
+> Accept: */*
+> Authorization: Bearer <this is the JWT>
+>
+< HTTP/1.1 200 OK
+< content-type: text/xml
+< date: Sat, 09 Nov 2019 23:09:43 GMT
+< content-length: 43
+< x-envoy-upstream-service-time: 2
+< server: envoy
+<
+{{< /highlight >}}
 
-An authenticated POST request to a path that starts with `/api/pets` should fail (will output *RBAC: access denied*):
+An authenticated POST request to a path that starts with `/api/pets` should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -s -X POST http://gateway-proxy-v2.gloo-system/api/pets/1 -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
+kubectl exec test-pod -- bash -c 'curl -sv -X POST http://gateway-proxy-v2.gloo-system/api/pets/1 \
+    -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
+{{< highlight shell "hl_lines=7 13" >}}
+> POST /api/pets/1 HTTP/1.1
+> Host: gateway-proxy-v2.gloo-system
+> User-Agent: curl/7.65.3
+> Accept: */*
+> Authorization: Bearer <this is the JWT>
+>
+< HTTP/1.1 403 Forbidden
+< content-length: 19
+< content-type: text/plain
+< date: Sat, 09 Nov 2019 23:13:06 GMT
+< server: envoy
+<
+RBAC: access denied%
+{{< /highlight >}}
 
-An authenticated GET request to a path that doesn't start with `/api/pets` should fail (will output *RBAC: access denied*):
+An authenticated GET request to a path that doesn't start with `/api/pets` should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -s http://gateway-proxy-v2.gloo-system/foo/ -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/foo/ \
+    -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
-
-## Conclusion
-
-We have used Gloo to verify service account identity, and provide access control. In this guide we demonstrated using gloo as an internal API gateway, and performing access control using kubernetes service accounts.
+{{< highlight shell "hl_lines=7 13" >}}
+> GET /foo/ HTTP/1.1
+> Host: gateway-proxy-v2.gloo-system
+> User-Agent: curl/7.65.3
+> Accept: */*
+> Authorization: Bearer <this is the JWT>
+>
+< HTTP/1.1 403 Forbidden
+< content-length: 19
+< content-type: text/plain
+< date: Sat, 09 Nov 2019 23:15:32 GMT
+< server: envoy
+<
+RBAC: access denied%
+{{< /highlight >}}
 
 ## Cleanup
+You can clean up the resources created in this guide by running:
 
-To clean up individual resources created:
 ```shell
 kubectl delete pod test-pod
-kubectl delete -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
-glooctl uninstall
+kubectl delete virtualservice -n gloo-system petstore
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 rm public-key.pem
 ```
 
-Alternatively, you can just tear down minikube:
-```
-minikube delete
-```
-
 ## Appendix - Use a Remote Json Web Key Set (JWKS) Server
-
 In the previous part of the guide we saw how to configure Gloo with a public key to verify JWTs.
 In this appendix we will demonstrate how to use an external Json Web Key Set (JWKS) server with Gloo. 
 
