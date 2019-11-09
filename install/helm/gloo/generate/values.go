@@ -101,6 +101,7 @@ type Settings struct {
 	Extensions          interface{}          `json:"extensions,omitempty"`
 	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+	Linkerd             bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 }
 
 type InvalidConfigPolicy struct {
