@@ -4,78 +4,77 @@ weight: 3
 description: Perform routing decisions using information in a JWT's claims
 ---
 
-In this guide we will be using JWT claims to perform canary routing. Solo.io employee's will be routed to the canary instance. All other authenticated parties will be routed to the
-primary version.
+{{% notice note %}}
+The features used here were introduced with **Gloo Enterprise**, release 0.14.0. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
-## Prerequisites
-You will need:
-
-- gloo-e 0.14.0 or higher installed.
-- `openssl`
+In this guide, we will show how to configure Gloo to route requests to different services based on the claims contained 
+in a Json Web Token (JWT). In our example scenario, Solo.io employees will be routed to the canary instance instance of 
+a service, while all other authenticated parties will be routed to the primary version of the same service.
 
 ## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
+
+### Deploy sample application
+Let's deploy a sample application which will simulate a canary deployment. We will use Hashicorp's 
+[http-echo](https://github.com/hashicorp/http-echo) application, which listens for HTTP requests 
+and echoes back a configurable string. We will deploy:
+ 
+1. a pod that responds with the string "primary" to simulate the primary deployment, 
+```shell
+kubectl run --generator=run-pod/v1 --labels stage=primary,app=echoapp primary-pod \
+    --image=hashicorp/http-echo -- -text=primary -listen=:8080
+```
+1. a pod that responds with the string "canary" to simulate the canary deployment, and 
+```shell
+kubectl run --generator=run-pod/v1 --labels stage=canary,app=echoapp canary-pod \
+    --image=hashicorp/http-echo -- -text=canary -listen=:8080
+```
+1. a service to route to them.
+```shell
+kubectl create service clusterip echoapp --tcp=80:8080
+```
+
+{{% notice note %}}
+The pods have a label named **stage** that indicates whether they are canary or primary pods.
+{{% /notice %}}
+
+Next let's create a Gloo upstream for the kube service. We will use Gloo's subset routing feature and set it to use 
+the 'stage' key to create subsets for the service:
+
+```yaml
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: echoapp
+  namespace: gloo-system
+spec:
+  upstreamSpec:
+    kube:
+      serviceName: echoapp
+      serviceNamespace: default
+      servicePort: 80
+      subsetSpec:
+        selectors:
+        - keys:
+          - stage
+```
+
+The `subsetSpec` configuration instructs Gloo to partition the endpoints of the `echoapp` service into subsets based on 
+the values of the `stage` label. In our case, this will result in two subsets, `primary` and `canary`.
 
 ### Generate JWTs
-If you would like to generate your own JWTs, create a private/public key pair.
+Let's create a private/public key pair that we will use to sign our JWTs:
+
 ```shell
 openssl genrsa 2048 > private-key.pem
 openssl rsa -in private-key.pem -pubout > public-key.pem
 ```
-If not, you can use the keys used in this guide to follow along.
-The JWTs in following parts of the doc will match these keys (click to expand):
-<details><summary>Private Key</summary>
-```text
------BEGIN RSA PRIVATE KEY-----
-MIIEogIBAAKCAQEAqqFBFrh4Sc0aMBrywjoaZQhFMkV7f1uhRKKyQfDG+1efhJaD
-lqwi2e1zi9xJTdBrpPtcbuIg4+cAF2aF3kHsy+nE1hsxAEeQvq/Bi/ZKSHHs3MuG
-XIhZpU+aISItaVRdGBNFu/mjoyvZiFMIDnUoaHAtFKAd4B6VX1JZ1Eh4Pa09wgrx
-bocJVQlbdCDGFiOR8WcfPyJ6IiL2M4uxQlRNpuw881qmEhONcdl6TNitBlMAvPQ4
-Dsi4Cb6DOtVyUC9ToqL3Wi86DpCnHKNb5RbPXl053VyBpv06cDz7HGeAfba7kQKj
-QinmIikZCxy6VGVBJzQUNRKwljFp8Uf8Bk8eEwIDAQABAoIBAEGkH2IaPUxG9xgi
-hdlqeNT9RYF9cXEhUv0QifsMIcB3iQp8zMqeFho4WwcnC5w/3eluObT+kSCbsVFP
-Q5ipS+t2Vx72/vbYkTqKaq7pZNJR4YlfUqUuXy5VXTn55/ZpWhb08xLJisYvDFSB
-fMvzDkR/Qxh4MIYTvesZxyz/ZCJ1biuA5GpvuTYWyv0t4ql25Ok7wSBPViJmuyFM
-y8pEk1m0UlvNVsh+KFSbuFSwHdXfOR+QPjq2UCW+8cYi8xsoPhIiGagBl6BPMyc5
-xJkfnrSs3kB0S5VdHO4shZXmOuSENtv2OvONjvwoNCzh0sxOtABUMqeFvNEMhopm
-5gs1H4ECgYEA2TnYxNZ98BXEUoc/xyXwHCeTNbZHNdDII6jyDOPMOlWbjGyX1OPo
-3WGU5Nehvn5JUC3QDivm8oMXklVBMD76Jllx/4C6X72u8yorp4Q/Hj0qDAKWP8Pp
-jn2cJX4SYXjXYvBJN+LuUIdkbVnEE3qZi85qRqJTPh5mcYjsOZeQXxECgYEAyRYy
-lMeYUA9NeNJOszzJRFE7vgjfQ1NLqEKhTq4NmmHEkK661IhnrxnvFBfVtor99kSO
-o7P3JZ8xcevoZqP1W3t4vO96TIxa0vPrn43C25xPYJHswrPqQteF3j65rWOto5o2
-+SSUJCXYH0YPbNSAHqHajAXEZheuyYxUSB4hsuMCgYBST3IM+/2SeJ0AbJFFI+H8
-uR41zxDimm8L3BuDuNmNDR04s3lAyO9W23/wyqhWJ0IeaI2aoRYMtJG8+CMQZfyh
-hWkF2MBGQPjG2SbbfefwzFpfXKeUF+cq//un1UKfvotWyRflXk7RIsxyBv6eJumB
-qUBp7V4/foNw5+Ii3IRvEQKBgETyln9K/J+ez5p4ycFNO1lwXQKouhy0h8F2ryZy
-KXngwew17RuIdbylMMN79Kw1diSllx7sSvacYfDEyZe/6hXm/RwTJKTwjwe72POJ
-QOHZ86GSB1MvK0il62GrsjCQd+4bp3O/pgfK7hKzDADtz8wxBOVz6MZ0olq7Af8E
-TduvAoGALciccA3OE4gsUc5clZDaT8iZUx12J0MNV87IhK5mLnF9mdT5GVohPvrA
-lLwvQs17ZdSgwMmnDZV4CHCnEog0R9jBAWRpdmSF7nXRYiUavmaqwINjUIWWZmvg
-xTS0qnY2ReWxStgeIgcFRovI3BJJWAolcX+qIESOSBbFr++SdfI=
------END RSA PRIVATE KEY-----
-```
-</details>
-<details><summary>Public Key</summary>
-```text
------BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqqFBFrh4Sc0aMBrywjoa
-ZQhFMkV7f1uhRKKyQfDG+1efhJaDlqwi2e1zi9xJTdBrpPtcbuIg4+cAF2aF3kHs
-y+nE1hsxAEeQvq/Bi/ZKSHHs3MuGXIhZpU+aISItaVRdGBNFu/mjoyvZiFMIDnUo
-aHAtFKAd4B6VX1JZ1Eh4Pa09wgrxbocJVQlbdCDGFiOR8WcfPyJ6IiL2M4uxQlRN
-puw881qmEhONcdl6TNitBlMAvPQ4Dsi4Cb6DOtVyUC9ToqL3Wi86DpCnHKNb5RbP
-Xl053VyBpv06cDz7HGeAfba7kQKjQinmIikZCxy6VGVBJzQUNRKwljFp8Uf8Bk8e
-EwIDAQAB
------END PUBLIC KEY-----
-```
-</details>
 
-{{% notice warning %}}
-Only use above keys for testing purposes! They are publicly available and therefore not secure!
-{{% /notice %}}
+Please refer to the [JWT and Access Control guide](../access_control/#create-the-json-web-token-jwt) to see how to use 
+the using [jwt.io](http://jwt.io) website to two RS256 JWTs:
 
-
-Similar to the [JWT and Access Control guide](../access_control/#create-the-json-web-token-jwt), using `jwt.io` we can generate two RS256 JWTs:
-
-One for solo.io employees with the following payload:
+- one for `solo.io` employees with the following payload:
 ```json
 {
   "iss": "solo.io",
@@ -84,12 +83,7 @@ One for solo.io employees with the following payload:
 }
 ```
 
-Save the resulting token to an variable:
-```shell
-SOLO_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsIm9yZyI6InNvbG8uaW8ifQ.WeYtM17EBdQc5Ka9PHPseKhX96krnQSARN8dLA806FyKY2MKWzdlAQL0UYfFi1c2C8_4pW0taK2vwhmKU2zgCvLb-_5tkOXFbPzILucAUumqT079139Q34wR64xFr6jQp1hES97IYumWnHfZOaNR_fZ3q5EZkke3YrdGhHHfo1ze41w77QCV234eDi72RmSawEaKyEGevZev16iw3M7Gfk_cet05DHfn9CPFlbuc9DkU8-r2vE9nz8NP0JC77iQtZ0YFmmb3FGxrlPDmcqDte0F45rfz8TR7hve-zqCP5PJU_euBVsZ3ShlRANbCS02x8N_ocO9S8_aypkCQqKNIlw
-```
-
-And another one for othercompany.com employees with the following payload:
+- one for `othercompany.com` employees with the following payload:
 
 ```json
 {
@@ -99,54 +93,21 @@ And another one for othercompany.com employees with the following payload:
 }
 ```
 
-Save the resulting token to an variable:
+Save the resulting tokens to two shell variables:
 ```shell
-OTHER_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMDk4NzY1NDMyMSIsIm9yZyI6Im90aGVyY29tcGFueS5jb20ifQ.ULWH8i4LINvrHull2LKSiBhlGOJmNf9OkXdjPCyHmiZGC9GEWuLzBBiBkXUalNgJ_fLpHtwml9eN3ALoU8Ni9aAq_IRW9GE_fbqpdIztgd4IYxwbMBH-O5IwN7xBy2D2ZeHR1KMePtwxLyv1env3nQ8i4ZPPrm2fhjg90CdZmqWGhJZHlmZCXZIy-gQKIptzkDMI1t0eNtLKwoOa9BwihAdchcjbCYTxqgB0sYZvfxeNbtVxDhGdYQ4kIfYUEnr-IsfpNhT2d1LlBlEn4bpw4jABqZgoVRoPrfdKWlrixWbxdEpXsIsBxaajAiQCuDpgRfoHb3JNJNgYaa_jKuT0GA
+SOLO_TOKEN=<encoded token with solo.io payload from jwt.io>
+OTHER_TOKEN=<encoded token with othercompany.com payload from jwt.io>
 ```
 
-### Example app
-We will now create an example app. This app will simulate a primary/canary deployment mode. 
-We will use Hashicorp's http-echo utility to send us a predefined response for demo purposes.
-To create the demo app, we will deploy a pod to simulate the primary deployment, a pod to simulate the canary deployment and a service to route to them:
-```
-kubectl create ns echoapp
-kubectl run -n echoapp --generator=run-pod/v1 --labels stage=primary,app=echoapp primary-pod --image=hashicorp/http-echo -- -text=primary -listen=:8080
+## Create a Virtual Service
+Now let's configure our Virtual Service to route requests to one of the two subset based on the JWTs in the incoming 
+requests themselves. 
 
-kubectl run -n echoapp --generator=run-pod/v1 --labels stage=canary,app=echoapp canary-pod --image=hashicorp/http-echo -- -text=canary -listen=:8080
-
-kubectl create -n echoapp service clusterip echoapp --tcp=80:8080
-```
-
-{{% notice note %}}
-The pods have a label named 'stage' that indicates whether they are canary or primary pods.
-{{% /notice %}}
-
-Next let's create a Gloo upstream for the kube service. We will use Gloo's subset routing and set it to use the 'stage' key to create subsets for the service:
-```shell
-glooctl create upstream kube --kube-service echoapp --kube-service-namespace echoapp --kube-service-port 80 -n echoapp echoapp
-
-# add subsets:
-kubectl patch upstream --namespace echoapp echoapp --type=merge -p '{"spec":{"upstreamSpec":{"kube":{"subsetSpec":{"selectors":[{"keys":["stage"]}]}}}}}' -o yaml
-```
-
-## Gloo route
-
-We are now ready setup routes. we will setup JWTs for solo.io employees to go to the canary subset,
-and JWTs from other orgs to go to the primary subset.
-
-To do that, we will use the `claimsToHeaders` field in the JWT extension, and copy the `org` claim
-to a header name `x-company`. Then we can use normal header matching to do the routing. 
-
-Our first route matches if the `x-company` header contains the value solo.io and routes to the canary subset. If it doesn't, the second route (that routes to the primary subset) will be selected.
-
-Let's apply the following virtual host:
-
-```bash
-kubectl apply -f - <<EOF
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: default
+  name: echo
   namespace: gloo-system
 spec:
   virtualHost:
@@ -162,7 +123,7 @@ spec:
         single:
           upstream:
             name: echoapp
-            namespace: echoapp
+            namespace: gloo-system
           subset:
             values:
               stage: canary
@@ -172,65 +133,67 @@ spec:
         single:
           upstream:
             name: echoapp
-            namespace: echoapp
+            namespace: gloo-system
           subset:
             values:
               stage: primary
     virtualHostPlugins:
-      extensions:
-        configs:
-          jwt:
-            providers:
-              solo:
-                tokenSource:
-                  headers:
-                  - header: x-token
-                  queryParams:
-                  - token
-                claimsToHeaders:
-                - claim: org
-                  header: x-company
-                issuer: solo.io
-                jwks:
-                  local:
-                    key: |
-                         -----BEGIN PUBLIC KEY-----
-                         MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqqFBFrh4Sc0aMBrywjoa
-                         ZQhFMkV7f1uhRKKyQfDG+1efhJaDlqwi2e1zi9xJTdBrpPtcbuIg4+cAF2aF3kHs
-                         y+nE1hsxAEeQvq/Bi/ZKSHHs3MuGXIhZpU+aISItaVRdGBNFu/mjoyvZiFMIDnUo
-                         aHAtFKAd4B6VX1JZ1Eh4Pa09wgrxbocJVQlbdCDGFiOR8WcfPyJ6IiL2M4uxQlRN
-                         puw881qmEhONcdl6TNitBlMAvPQ4Dsi4Cb6DOtVyUC9ToqL3Wi86DpCnHKNb5RbP
-                         Xl053VyBpv06cDz7HGeAfba7kQKjQinmIikZCxy6VGVBJzQUNRKwljFp8Uf8Bk8e
-                         EwIDAQAB
-                         -----END PUBLIC KEY-----
-EOF
+      jwt:
+        providers:
+          solo:
+            tokenSource:
+              headers:
+              - header: x-token
+              queryParams:
+              - token
+            claimsToHeaders:
+            - claim: org
+              header: x-company
+            issuer: solo.io
+            jwks:
+              local:
+                key: |
+                  -----BEGIN PUBLIC KEY-----
+                  MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtnkwSRAoyViwIuoDUiMv
+                  ylnMjXgCYAAGH43IwzuCAtSyJG5Ufp5PnJ4jJJlINMwN3Wv887AYCSndoC8P83L3
+                  1JPPqDgJY+MYuLmaP9vnjNN5GiDt15bG4Gby6XYFnKmjgvy2ugOP1QnTkedeVFAw
+                  Y7dmSeBU1E55Xq+PxrDTKdDKHB9oiO77bfn4lWjzDECtcX+YPRbTufLJPWCNAhpF
+                  41N6SdozbRenhOqgOWoHSPBsQtKir6+5NOKZjJt6amDSFYc08M7ESXZVymtCFUJ9
+                  X7DtYS5ppyaW+Cyt8v5vgjrs5Cu4by//77mHWuxd918O047GhKP17l14O/DySeOF
+                  7QIDAQAB
+                  -----END PUBLIC KEY-----
 ```
 
-{{% notice note %}}
-if you generated your own private/public key pair, replace this public key with yours.
-You can use the JWTs provided in this guide with the public key above.
-{{% /notice %}}
+The `jwt` configuration defined on the Virtual Host instructs Gloo to verify whether a JWT is present on incoming 
+requests and whether the JWT is valid using the provided public key. If the JWT is valid, the `claimsToHeaders` field 
+will cause Gloo to copy the `org` claim to a header name `x-company`. 
+
+At this point we can use normal header matching to do the routing:
+
+- Our first route matches if the `x-company` header contains the value `solo.io` and routes to the canary subset. 
+- If the first route does not match, we fall back to the second one, which that routes to the primary subset.
 
 For convenience, we added the `tokenSource` settings so we can pass the token as a query parameter named `token`.
 
-## Time to test!
-
-get the url for the proxy
-```
-GATEWAY_URL=$(glooctl proxy url)
-```
-curl as a solo.io team member:
+### Testing our configuration
+Send a request as a solo.io team member:
 ```
 curl "$GATEWAY_URL?token=$SOLO_TOKEN"
 ```
 The output should be `canary`.
 
-curl as a othercompany.com team member:
+Send a request as a othercompany.com team member:
 ```
 curl "$GATEWAY_URL?token=$OTHER_TOKEN"
 ```
 The output should be `primary`.
 
-## Conclusion
+## Cleanup
+You can clean up the resources created in this guide by running:
 
-In this guide we performed routing based on JWT claims. We used this to send solo.io employees to a canary version of our app, and send others to the primary version of our app.
+```shell
+rm private-key.pem public-key.pem
+kubectl delete virtualservice -n gloo-system echo
+kubectl delete upstream -n gloo-system echoapp
+kubectl delete pod primary-pod canary-pod
+```
