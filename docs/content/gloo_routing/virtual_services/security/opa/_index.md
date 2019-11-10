@@ -458,7 +458,7 @@ spec:
 The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
 your cluster and is not publicly reachable, we need some additional configuration to make our example work:
 
-1. Port-forward the Dex deployment so that it is reachable from you machine at `localhost:32000`:
+1. Port-forward the Dex service so that it is reachable from you machine at `localhost:32000`:
 ```shell
 kubectl -n gloo-system port-forward svc/dex 32000:32000 & 
 portForwardPid1=$! # Store the port-forward pid so we can kill the process later
@@ -470,7 +470,7 @@ portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-1. Port-forward the Gloo Gateway Proxy deployment so that it is reachable from you machine at `localhost:8080`:
+1. Port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
 portForwardPid2=$!
