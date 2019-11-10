@@ -19,7 +19,7 @@ It is also assumed that you are using a local `minikube` cluster.
 ### Deploy sample application
 Let's deploy a sample application that we will route requests to during this guide:
 
-```shell script
+```shell
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
@@ -343,34 +343,35 @@ kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/f
 RBAC: access denied%
 {{< /highlight >}}
 
-## Cleanup
+### Cleanup
 You can clean up the resources created in this guide by running:
 
 ```shell
+rm public-key.pem
 kubectl delete pod test-pod
 kubectl delete virtualservice -n gloo-system petstore
+# Don't remove the sample application if you want to run through the appendix to this guide
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
-rm public-key.pem
 ```
 
-## Appendix - Use a Remote Json Web Key Set (JWKS) Server
-In the previous part of the guide we saw how to configure Gloo with a public key to verify JWTs.
-In this appendix we will demonstrate how to use an external Json Web Key Set (JWKS) server with Gloo. 
+## Appendix - Use a remote Json Web Key Set (JWKS) Server
+In the previous part of the guide we saw how to configure Gloo with a public key to verify JWTs. The way we provided 
+Gloo with the key was to include the key itself into the Virtual Service definition. While the simplicity of this 
+approach make it a good candidate for test setups and quick prototyping, it can quickly become unwieldy. 
+A more flexible and scalable approach is to use a **Json Web Key Set (JWKS) Server**. 
+A JWKS server allows us to manage the verification keys independently and centrally, making routine tasks 
+such as key rotation much easier.
 
-Using a Json Web Key Set (JWKS) server allows us to manage the verification keys independently and 
-centrally. This, for example, can allow for easy key rotation.
+In this appendix we will demonstrate how to use an external Json Web Key Set (JWKS) server with Gloo. We will:
 
-Here's the plan:
-
-1. Use `openssl` to create the private key we will use to sign and verify the custom JWT we will create.
-1. We will use `npm` to install a conversion utility to convert the key from PEM to Json Web Key format.
-1. Deploy a JWKS server to serve the key.
-1. Configure Gloo to verify JWTs using the key stored in the server.
-1. Create and sign a custom JWT and use it to authenticate with Gloo.
+1. create a private key that will be used to sign and verify custom JWTs that we will create;
+1. convert the key from PEM to Json Web Key format;
+1. deploy a JWKS server to serve the key;
+1. configure Gloo to verify JWTs using the key stored in the server;
+1. create and sign a custom JWT and use it to authenticate with Gloo.
 
 ### Create the Private Key
-
-Let's create a private key that we will used to sign our JWT:
+Let's start by creating a private key that we will use to sign our JWTs:
 ```shell
 openssl genrsa 2048 > private-key.pem
 ```
@@ -381,17 +382,18 @@ for production workloads. Use appropriate secret management tools to store sensi
 {{% /notice %}}
 
 ### Create the Json Web Key Set (JWKS)
+We can use the `openssl` command to extract a PEM encoded public key from the private key. 
+We can then use the `pem-jwk` utility to convert our public key to a Json Web Key format.
 
-We can use the openssl command to extract a PEM encoded public key from the private key. We can 
-then use the `pem-jwk` utility to convert our public key to a Json Web Key format.
 ```shell
 # install pem-jwk utility.
 npm install -g pem-jwk
+
 # extract public key and convert it to JWK.
 openssl rsa -in private-key.pem -pubout | pem-jwk | jq . > jwks.json
 ```
 
-Output should look similar to:
+The resulting `jwks.json` file should have the following format:
 ```json
 {
   "kty": "RSA",
@@ -400,11 +402,10 @@ Output should look similar to:
 }
 ```
 
-To that, we'll add the signing algorithm and usage:
-```shell script
+To that we'll add the signing algorithm and usage:
+```shell
 jq '.+{alg:"RS256"}|.+{use:"sig"}' jwks.json | tee tmp.json && mv tmp.json jwks.json
 ```
-returns
 {{< highlight json "hl_lines=5-6" >}}
 {
     "kty": "RSA",
@@ -415,11 +416,14 @@ returns
 }
 {{< /highlight >}}
 
-One last modification, is to turn the single key into a key set:
-```shell script
+{{% notice note %}}
+For details about the above JWT fields, see <b>[this section](https://tools.ietf.org/html/rfc7517#section-4)</b> of the JWT specification. 
+{{% /notice %}}
+
+Finally, let's turn the single key into a key set:
+```shell
 jq '{"keys":[.]}' jwks.json | tee tmp.json && mv tmp.json jwks.json
 ```
-returns
 {{< highlight json "hl_lines=1-2 10-11" >}}
 {
     "keys": [
@@ -434,39 +438,127 @@ returns
 }
 {{< /highlight >}}
 
-We now have a valid Json Web Key Set (JWKS), saved into a file called `jwks.json`.
+Our `jwks.json` file now contains a valid Json Web Key Set (JWKS).
 
 ### Create JWKS Server
-
 Let's create our JWKS server. All that the server needs to do is to serve a Json Web Key Set file. 
-We will configure Gloo later to grab the the Json Web Key Set from that server.
+Later we will configure Gloo to grab the Json Web Key Set from the server.
 
-To deploy the server, we will copy our jwks file to a ConfigMap and mount it to an nginx 
-container that will serve as our JWKS server:
+We will start by copying the `jwks.json` to a ConfigMap:
 
 ```shell
-# create a config map
 kubectl -n gloo-system create configmap jwks --from-file=jwks.json=jwks.json
-# deploy nginx
-kubectl -n gloo-system create deployment jwks-server --image=nginx 
-# mount the config map to nginx
-kubectl -n gloo-system patch deployment jwks-server --type=merge -p '{"spec":{"template":{"spec":{"volumes":[{"name":"jwks-vol","configMap":{"name":"jwks"}}],"containers":[{"name":"nginx","image":"nginx","volumeMounts":[{"name":"jwks-vol","mountPath":"/usr/share/nginx/html"}]}]}}}}' -o yaml
-# create a service for the nginx deployment
-kubectl -n gloo-system expose deployment jwks-server --port 80
-# create an upstream for gloo
-glooctl create upstream kube --kube-service jwks-server --kube-service-namespace gloo-system --kube-service-port 80 -n gloo-system jwks-server
 ```
 
-Configure gloo to use the JWKS server:
-```shell
-# remove the settings from the previous part of the guide
-kubectl patch virtualservice --namespace gloo-system default --type=json -p '[{"op":"remove","path":"/spec/virtualHost/virtualHostPlugins/extensions"}]' -o yaml
-# add the remote jwks
-kubectl patch virtualservice --namespace gloo-system default --type=merge -p '{"spec":{"virtualHost":{"virtualHostPlugins":{"extensions":{"configs":{"jwt":{"providers":{"solo-provider":{"jwks":{"remote":{"url":"http://jwks-server/jwks.json","upstream_ref":{"name":"jwks-server","namespace":"gloo-system"}}},"issuer":"solo.io"}}}}}}}}}' -o yaml
+Now let's mount the ConfigMap to an `nginx` container that will serve as our JWKS server and expose the deployment as a service:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: jwks-server
+  name: jwks-server
+  namespace: gloo-system
+spec:
+  selector:
+    matchLabels:
+      app: jwks-server
+  template:
+    metadata:
+      labels:
+        app: jwks-server
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html
+          name: jwks-vol
+      volumes:
+      - configMap:
+          name: jwks
+        name: jwks-vol
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: jwks-server
+  name: jwks-server
+  namespace: gloo-system
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app: jwks-server
 ```
+
+Gloo should have discovered the service and created an upstream named `gloo-system-jwks-server-80`; you can verify this 
+by running `kubectl get upstreams -n gloo-system`. Should this not be the case (for example because you have disabled 
+the discovery feature), you have to create the upstream yourself:
+
+{{< tabs >}}
+{{< tab name="glooctl" codelang="shell">}}
+glooctl create upstream kube --kube-service jwks-server --kube-service-namespace gloo-system --kube-service-port 80 -n gloo-system gloo-system-jwks-server-80
+{{< /tab >}}
+{{< tab name="kubectl" codelang="yaml">}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  labels:
+    app: jwks-server
+  name: gloo-system-jwks-server-80
+  namespace: gloo-system
+spec:
+  upstreamSpec:
+    kube:
+      selector:
+        app: jwks-server
+      serviceName: jwks-server
+      serviceNamespace: gloo-system
+      servicePort: 80
+{{< /tab >}}
+{{< /tabs >}} 
+
+Now we can configure Gloo to use the JWKS server:
+
+{{< highlight yaml "hl_lines=20-30" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
+    virtualHostPlugins:
+      jwt:
+        providers:
+          solo-provider:
+            issuer: solo.io
+            jwks:
+              remote:
+                upstream_ref:
+                  name: gloo-system-jwks-server-80
+                  namespace: gloo-system
+                url: http://jwks-server/jwks.json
+{{< /highlight >}}
 
 ### Create the Json Web Token (JWT)
-
 We have everything we need to sign and verify a custom JWT with our custom claims.
 We will use the [jwt.io](https://jwt.io) debugger to do so easily.
 
@@ -485,41 +577,78 @@ Payload:
 }
 ```
 
-You should now have an encoded JWT token in the "Encoded" box. Copy it and save to to a file called 
-`token.jwt`
+You should now have an encoded JWT token in the "Encoded" box. Copy it and save to to a file called `token.jwt`
 
 {{% notice note %}}
- You may have noticed **jwt.io** complaining about an invalid signature in the bottom left corner. This is fine
- because we don't need the public key to create an encoded JWT.
- If you'd like to resolve the invalid signature, under the "VERIFY SIGNATURE" section, paste the output of
- `openssl rsa -pubout -in private-key.pem` to the bottom box (labeled "Public Key")
+You may have noticed **jwt.io** complaining about an invalid signature in the bottom left corner. 
+This is fine because we don't need the public key to create an encoded JWT. 
+If you'd like to resolve the invalid signature, under the "VERIFY SIGNATURE" section, paste the output of 
+`openssl rsa -pubout -in private-key.pem` to the bottom box (labeled "Public Key")
 {{% /notice %}}
 
-This is how it should look like (click to enlarge):
+Here is an image of how the page should look like (click to enlarge):
 
-<img src="../jwt.io.png" alt="jwt.io debugger" style="border: dashed 2px;" width="500px"/>
+<img src="../jwt-io.png" alt="jwt.io debugger" style="border: solid 1px; color: lightgrey" width="500px"/>
 
-That's it! time to test...
+### Testing our configuration
+Now we are ready to test our configuration. Let's port-forward the Gloo Gateway Proxy service so that it is reachable 
+from you machine at `localhost:8080`:
 
-### Test
-
-Start a proxy to the kubernetes API server.
-```shell
-kubectl proxy &
 ```
-
-We will use kubernetes api server service proxy capabilities to reach Gloo's gateway-proxy service.
-The kubernetes api server will proxy traffic going to `/api/v1/namespaces/gloo-system/services/gateway-proxy-v2:80/proxy/` to port 80 on the `gateway-proxy-v2` service, in the `gloo-system` namespace.
+kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+portForwardPid=$!
+```
 
 A request without a token should be rejected (will output *Jwt is missing*):
+
 ```shell
-curl -s "localhost:8001/api/v1/namespaces/gloo-system/services/gateway-proxy-v2:80/proxy/api/pets"
+curl -sv "localhost:8080/api/pets"
 ```
+{{< highlight shell "hl_lines=6 12" >}}
+> GET /api/pets HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
+< HTTP/1.1 401 Unauthorized
+< content-length: 14
+< content-type: text/plain
+< date: Sun, 10 Nov 2019 01:35:02 GMT
+< server: envoy
+<
+Jwt is missing%
+{{< /highlight >}}
 
 A request with a token should be accepted:
+
 ```shell
-curl -s "localhost:8001/api/v1/namespaces/gloo-system/services/gateway-proxy-v2:80/proxy/api/pets?access_token=$(cat token.jwt)"
+curl -sv "localhost:8080/api/pets?access_token=$(cat token.jwt)"
 ```
-### Conclusion
-We have created a JWKS server, signed a custom JWT and used Gloo to verify that JWT
-and authorize our request.
+{{< highlight shell "hl_lines=6 13" >}}
+> GET /api/pets?access_token= <JWT here> HTTP/1.1
+> Host: localhost:8080
+> User-Agent: curl/7.54.0
+> Accept: */*
+>
+< HTTP/1.1 200 OK
+< content-type: application/xml
+< date: Sun, 10 Nov 2019 01:35:09 GMT
+< content-length: 86
+< x-envoy-upstream-service-time: 1
+< server: envoy
+<
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+{{< /highlight >}}
+
+### Cleanup
+You can clean up the resources created in this guide by running:
+
+```shell
+kill $portForwardPid
+rm private-key.pem jwks.json token.jwt
+kubectl -n gloo-system delete svc jwks-server
+kubectl -n gloo-system delete deployment jwks-server
+kubectl -n gloo-system delete configmap jwks
+kubectl delete virtualservice -n gloo-system petstore
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+```
