@@ -10,7 +10,7 @@ metadata:
     app: gloo
     gloo: gateway
     installationId: {{ include "gloo.installationId" . }}
-  name: gateway-v2
+  name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}

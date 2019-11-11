@@ -5,9 +5,9 @@ kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: gateway-proxy-v2-access-logger
+    gloo: gateway-proxy-access-logger
     installationId: {{ include "gloo.installationId" . }}
-  name: gateway-proxy-v2-access-logger
+  name: gateway-proxy-access-logger
   namespace: {{ $.Release.Namespace }}
 spec:
   ports:
@@ -17,5 +17,5 @@ spec:
     name: http
   selector:
     app: gloo
-    gloo: gateway-proxy-v2-access-logger
+    gloo: gateway-proxy-access-logger
 {{- end }}

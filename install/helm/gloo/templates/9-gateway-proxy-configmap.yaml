@@ -155,7 +155,7 @@ data:
               - endpoint:
                     address:
                         socket_address:
-                            address: gateway-proxy-v2-access-logger.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
+                            address: gateway-proxy-access-logger.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                             port_value: {{$.Values.accessLogger.port}}
         http2_protocol_options: {}
         type: STRICT_DNS

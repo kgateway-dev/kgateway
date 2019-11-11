@@ -57,7 +57,7 @@ gateway:
   proxyServiceAccount: {}
 
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     gatewaySettings: {}
     stats: true
     kind:
