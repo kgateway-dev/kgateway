@@ -253,12 +253,15 @@ As a result, if you try to upgrade through `helm install` or `helm upgrade`, you
 stating that a CRD already exists.
 
 ```bash
-(⎈ |minikube:gloo-system)~ > helm install gloo/gloo
+~ > helm install gloo/gloo
 Error: customresourcedefinitions.apiextensions.k8s.io "authconfigs.enterprise.gloo.solo.io" already exists
 ```
 
-You could delete the CRDs yourself, or you could simply render chart yourself and then
-`kubectl apply` it. The rest of this section will assume the latter.
+There are two options for resolving this problem. If there have not been changes to the CRDs (such a change
+would be mentioned in our changelogs), then you can simply set the Helm value `global.glooRbac.create` to `false`
+and skip CRD creation altogether. If there have been changes to the CRDs, then you could either delete the 
+CRDs yourself, or you could render the chart yourself and then directly `kubectl apply` it. 
+The rest of this section will assume the latter.
 
 ```bash
 namespace=gloo-system # customize to your namespace
@@ -289,12 +292,15 @@ Get a trial Enterprise license at https://www.solo.io/gloo-trial.
 {{% /notice %}}
 
 ```bash
-(⎈ |minikube:gloo-system)~ > glooctl version
+~ > glooctl version
 Client: {"version":"0.20.12"}
 Server: {"type":"Gateway","kubernetes":{"containers":[{"Tag":"0.20.12","Name":"discovery","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo-envoy-wrapper","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gateway","Registry":"quay.io/solo-io"},{"Tag":"0.20.12","Name":"gloo","Registry":"quay.io/solo-io"}],"namespace":"gloo-system"}}
 (⎈ |minikube:gloo-system)~ > kubectl delete job gateway-certgen # if the job has not already been removed by its TTL expiration
 job.batch "gateway-certgen" deleted
-(⎈ |minikube:gloo-system)~ > helm template <(curl https://storage.googleapis.com/solo-public-helm/charts/gloo-0.20.13.tgz) --namespace gloo-system | kubectl apply -f -
+```
+
+```bash
+~ > helm template ./gloo-0.20.13.tgz --namespace gloo-system | kubectl apply -f -
 configmap/gloo-usage configured
 configmap/gateway-proxy-v2-envoy-config unchanged
 serviceaccount/gloo unchanged
@@ -302,6 +308,9 @@ serviceaccount/gloo unchanged
 gateway.gateway.solo.io.v2/gateway-proxy-v2-ssl unchanged
 settings.gloo.solo.io/default unchanged
 validatingwebhookconfiguration.admissionregistration.k8s.io/gloo-gateway-validation-webhook-gloo-system configured
-(⎈ |minikube:gloo-system)~ > kubectl get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
+```
+
+```bash
+~ > kubectl get pod -l gloo=gloo -ojsonpath='{.items[0].spec.containers[0].image}'
 quay.io/solo-io/gloo:0.20.13
 ```
