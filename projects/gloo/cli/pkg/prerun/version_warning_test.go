@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	glooctlversion "github.com/solo-io/gloo/pkg/version"
+	linkedversion "github.com/solo-io/gloo/pkg/version"
 	version2 "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/versionutils"
@@ -76,6 +76,10 @@ var _ = Describe("version command", func() {
 		versionGetter = &testVersionGetter{}
 		logger = &testLogger{}
 		expectedOutputLines = []string{}
+
+		// this may not be set in some contexts (like running through goland)
+		// so explicitly set it to get predictable test behavior
+		linkedversion.Version = v_20_12
 	})
 
 	AfterEach(func() {
@@ -83,13 +87,11 @@ var _ = Describe("version command", func() {
 
 		output := strings.Join(logger.printedLines, "\n")
 		for _, line := range expectedOutputLines {
-			Expect(output).To(ContainSubstring(line))
+			Expect(output).To(ContainSubstring(line), "Output did not contain expected substring")
 		}
 	})
 
 	It("should not warn when the versions match exactly", func() {
-		glooctlversion.Version = v_20_12
-
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_12,
 			Name:     "test-name",
@@ -97,12 +99,10 @@ var _ = Describe("version command", func() {
 		}})
 
 		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
-		Expect(logger.printedLines).To(BeEmpty())
+		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions match exactly")
 	})
 
 	It("should not warn when the versions differ only by patch version", func() {
-		glooctlversion.Version = v_20_12
-
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_13,
 			Name:     "test-name",
@@ -110,19 +110,17 @@ var _ = Describe("version command", func() {
 		}})
 
 		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
-		Expect(logger.printedLines).To(BeEmpty())
+		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions differ only by patch version")
 	})
 
 	It("should warn when the versions differ by minor version", func() {
-		glooctlversion.Version = v_20_12
-
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_21_0,
 			Name:     "test-name",
 			Registry: "test-registry",
 		}})
 
-		mismatches := []*prerun.ContainerMetadata{{
+		mismatches := []*prerun.ContainerVersion{{
 			ContainerName: "test-name",
 			Version: &versionutils.Version{
 				Major: 0,
@@ -132,7 +130,7 @@ var _ = Describe("version command", func() {
 		}}
 
 		expectedOutputLines = []string{
-			prerun.BuildVersionMismatchMessage(mismatches, "v"+glooctlversion.Version, "minor"),
+			prerun.BuildVersionMismatchMessage(mismatches, "v"+linkedversion.Version, "minor"),
 			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
 		}
 
@@ -140,15 +138,13 @@ var _ = Describe("version command", func() {
 	})
 
 	It("should warn when the versions differ by major version", func() {
-		glooctlversion.Version = v_20_12
-
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_1_0_0,
 			Name:     "test-name",
 			Registry: "test-registry",
 		}})
 
-		mismatches := []*prerun.ContainerMetadata{{
+		mismatches := []*prerun.ContainerVersion{{
 			ContainerName: "test-name",
 			Version: &versionutils.Version{
 				Major: 1,
@@ -158,7 +154,7 @@ var _ = Describe("version command", func() {
 		}}
 
 		expectedOutputLines = []string{
-			prerun.BuildVersionMismatchMessage(mismatches, "v"+glooctlversion.Version, "major"),
+			prerun.BuildVersionMismatchMessage(mismatches, "v"+linkedversion.Version, "major"),
 			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
 		}
 

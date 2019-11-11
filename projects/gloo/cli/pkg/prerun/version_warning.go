@@ -12,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/sets"
 
-	//"runtime/debug"
 	"strings"
 )
 
@@ -54,7 +53,6 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 
 	glooctlVersion, err := versionutils.ParseVersion(glooctlVersionStr)
 	if err != nil {
-		logger.Println("Error in glooctl version")
 		warnOnError(err, logger)
 		return nil
 	}
@@ -65,8 +63,8 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 		return nil
 	}
 
-	var minorVersionMismatches []*ContainerMetadata
-	var majorVersionMismatches []*ContainerMetadata
+	var minorVersionMismatches []*ContainerVersion
+	var majorVersionMismatches []*ContainerVersion
 	for _, containerMetadata := range containerMetadatas {
 		if containerMetadata.Version.Major == glooctlVersion.Major && containerMetadata.Version.Minor != glooctlVersion.Minor {
 			minorVersionMismatches = append(minorVersionMismatches, containerMetadata)
@@ -93,7 +91,7 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 }
 
 // visible for testing
-func BuildVersionMismatchMessage(mismatches []*ContainerMetadata, glooctlVersion, mismatchKind string) string {
+func BuildVersionMismatchMessage(mismatches []*ContainerVersion, glooctlVersion, mismatchKind string) string {
 	var containersToReport []string
 	for _, mismatch := range mismatches {
 		containersToReport = append(containersToReport, fmt.Sprintf("%s@%s", mismatch.ContainerName, mismatch.Version.String()))
@@ -102,7 +100,7 @@ func BuildVersionMismatchMessage(mismatches []*ContainerMetadata, glooctlVersion
 }
 
 // visible for testing
-func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*ContainerMetadata) string {
+func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*ContainerVersion) string {
 	versions := sets.NewString()
 	for _, mismatch := range mismatches {
 		versions.Insert(mismatch.Version.String())
@@ -130,13 +128,13 @@ func warnOnError(err error, logger Logger) {
 	logger.Println("Warning: Could not determine gloo client/server versions (is Gloo running outside of kubernetes?): " + err.Error())
 }
 
-type ContainerMetadata struct {
+type ContainerVersion struct {
 	ContainerName string
 	Version       *versionutils.Version
 }
 
-func buildContainerMetadata(podVersions []*version2.ServerVersion) ([]*ContainerMetadata, error) {
-	var versions []*ContainerMetadata
+func buildContainerMetadata(podVersions []*version2.ServerVersion) ([]*ContainerVersion, error) {
+	var versions []*ContainerVersion
 	for _, podVersion := range podVersions {
 		switch podVersion.VersionType.(type) {
 		case *version2.ServerVersion_Kubernetes:
@@ -149,7 +147,7 @@ func buildContainerMetadata(podVersions []*version2.ServerVersion) ([]*Container
 					continue
 				}
 
-				versions = append(versions, &ContainerMetadata{
+				versions = append(versions, &ContainerVersion{
 					ContainerName: container.Name,
 					Version:       containerVersion,
 				})
