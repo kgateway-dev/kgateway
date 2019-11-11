@@ -51,10 +51,6 @@ gateway:
     replicas: 1
     stats: true
     runAsUser: 10101
-  conversionJob:
-    image:
-      repository: gateway-conversion
-    restartPolicy: Never
   certGenJob:
     image:
       repository: certgen
