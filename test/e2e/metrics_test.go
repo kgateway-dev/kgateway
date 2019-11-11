@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
@@ -34,7 +34,7 @@ func (t *testMetricsHandler) HandleMetrics(context.Context, *v2.StreamMetricsMes
 var _ = Describe("Gateway", func() {
 
 	var (
-		gw             *gatewayv2.Gateway
+		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
@@ -65,7 +65,7 @@ var _ = Describe("Gateway", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv2.GatewayList, error) {
+			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})

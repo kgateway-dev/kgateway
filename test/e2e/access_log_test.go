@@ -18,7 +18,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -33,7 +33,7 @@ import (
 var _ = Describe("Gateway", func() {
 
 	var (
-		gw             *gatewayv2.Gateway
+		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
@@ -64,7 +64,7 @@ var _ = Describe("Gateway", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv2.GatewayList, error) {
+			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
