@@ -11,7 +11,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -315,7 +315,7 @@ var _ = Describe("Helm Test", func() {
 				It("renders with http/https gateways by default", func() {
 					prepareMakefile("--namespace " + namespace)
 					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
-					var gateway1 v2.Gateway
+					var gateway1 gwv1.Gateway
 					ConvertKubeResource(gatewayUns, &gateway1)
 					Expect(gateway1.Ssl).To(BeFalse())
 					Expect(gateway1.BindPort).To(Equal(uint32(8080)))
@@ -349,7 +349,7 @@ var _ = Describe("Helm Test", func() {
 					for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
 						name := name
 						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
-						var gateway1 v2.Gateway
+						var gateway1 gwv1.Gateway
 						ConvertKubeResource(gatewayUns, &gateway1)
 						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
 							Value: true,
