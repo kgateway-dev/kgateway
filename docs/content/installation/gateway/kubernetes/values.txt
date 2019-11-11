@@ -1,5 +1,6 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
+|installConfig.installationId|string||If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling|
 |namespace.create|bool|false|create the installation namespace|
 |crds.create|bool|true|create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)|
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
@@ -61,7 +62,6 @@
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
-|gateway.upgrade|bool|false|Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers.|
 |gateway.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.deployment.image.repository|string|gateway|image name (repository) for the container.|
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -75,12 +75,6 @@
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
 |gateway.deployment.resources.requests.cpu|string||amount of CPUs|
-|gateway.conversionJob.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
-|gateway.conversionJob.image.repository|string|gateway-conversion|image name (repository) for the container.|
-|gateway.conversionJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
-|gateway.conversionJob.image.pullPolicy|string||image pull policy for the container|
-|gateway.conversionJob.image.pullSecret|string||image pull policy for the container |
-|gateway.conversionJob.restartPolicy|string|Never|restart policy to use when the pod exits|
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.certGenJob.image.repository|string|certgen|image name (repository) for the container.|
 |gateway.certGenJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -239,3 +233,4 @@
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
+|global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
