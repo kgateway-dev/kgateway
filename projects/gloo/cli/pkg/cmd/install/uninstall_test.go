@@ -20,7 +20,7 @@ var _ = Describe("Uninstall", func() {
 		testInstallId = "test-install-id"
 
 		// expects to be formatted with the namespace
-		findInstallIdCmd = "-n %s get pod -l gloo=gloo -ojsonpath='{.items[0].metadata.labels.installationId}'"
+		findInstallIdCmd = "-n %s get deployment -l gloo=gloo -ojsonpath='{.items[0].metadata.labels.installationId}'"
 	)
 
 	var flagSet *pflag.FlagSet

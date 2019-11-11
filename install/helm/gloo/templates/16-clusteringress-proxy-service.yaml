@@ -19,7 +19,6 @@ spec:
     name: https
   selector:
     gloo: clusteringress-proxy
-    installationId: {{ include "gloo.installationId" . }}
   type: LoadBalancer
 {{- end }}
 {{- end }}

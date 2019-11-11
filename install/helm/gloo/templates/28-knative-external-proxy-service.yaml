@@ -19,7 +19,6 @@ spec:
     name: https
   selector:
     gloo: knative-external-proxy
-    installationId: {{ include "gloo.installationId" . }}
   type: LoadBalancer
 {{- end }}
 {{- end }}

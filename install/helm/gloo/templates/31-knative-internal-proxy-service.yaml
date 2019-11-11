@@ -19,7 +19,6 @@ spec:
     name: https
   selector:
     gloo: knative-internal-proxy
-    installationId: {{ include "gloo.installationId" . }}
   type: ClusterIP
 {{- end }}
 {{- end }}

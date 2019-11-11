@@ -17,12 +17,10 @@ spec:
   selector:
     matchLabels:
       gloo: ingress-proxy
-      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: ingress-proxy
-        installationId: {{ include "gloo.installationId" . }}
 {{- if .Values.ingressProxy.deployment.extraAnnotations }}
       annotations:
       {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
