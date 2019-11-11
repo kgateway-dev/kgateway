@@ -92,6 +92,7 @@ func GlooCli(version string) *cobra.Command {
 
 	preRunFuncs := []PreRunFunc{
 		prerun.SetKubeConfigEnv,
+		prerun.VersionMismatchWarning,
 	}
 
 	return App(version, opts, preRunFuncs, optionsFunc)
