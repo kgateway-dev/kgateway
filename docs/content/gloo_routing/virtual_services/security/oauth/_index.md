@@ -16,7 +16,7 @@ structure of the Access Token, which greatly reduces the portability of OAuth 2.
 The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined 
 **ID Token**. OIDC ID tokens follow the [JSON Web Token (JWT)]({{< ref "gloo_routing/virtual_services/security/jwt" >}}) 
 standard and contain specific fields that your applications can expect and handle. This standardization allows you to
-switch between Identity Providers - or support multiple ones at the same time - without requiring any changes to your 
+switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your 
 downstream services; it also allows you to consistently apply additional security measures like 
 [Role-based Access Control (RBAC)]({{< ref "gloo_routing/virtual_services/security/jwt/access_control" >}}) based on the 
 identity of your users (i.e. the contents of their ID token).
@@ -48,6 +48,8 @@ spec:
       client_secret_ref:
         name: my-oauth-secret
         namespace: gloo-system
+      scopes:
+      - email
 {{< /highlight >}}
 
 The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through each of its attributes:
@@ -62,7 +64,7 @@ will redirect them to this URL. Gloo will intercept requests with this path and 
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
-expected format is to use `glooctl`, but you can also provide it by `kubectl apply`ing YAML to your cluster:<br>
+expected format is to use `glooctl`, but you can also provide it by `kubectl apply`ing YAML to your cluster:
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
 glooctl create secret oauth --namespace gloo-system --name oidc --client-secret secretvalue
@@ -84,10 +86,10 @@ data:
   extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
 {{< /tab >}}
 {{< /tabs >}} 
-<br>
+- `scopes`: scopes to request in addition to the `openid` scope.
 
 ## Examples
-We have seen how a sample OIDC `AuthConfigs` is structured. For complete examples of how to set up an OIDC flow with 
+We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
 Gloo, check out the following guides guides:
 
 {{% children description="true" %}}
