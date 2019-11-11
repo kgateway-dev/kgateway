@@ -17,12 +17,10 @@ spec:
   selector:
     matchLabels:
       gloo: discovery
-      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: discovery
-        installationId: {{ include "gloo.installationId" . }}
       {{- if .Values.discovery.deployment.stats }}
       annotations:
         prometheus.io/path: /metrics

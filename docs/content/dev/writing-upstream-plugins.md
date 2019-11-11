@@ -39,9 +39,9 @@ Let's begin.
 
 ## Adding the new Upstream Type to Gloo's API
 
-The first step we'll take will be to add a new [**UpstreamType**]({{% protobuf name="gloo.solo.io.Upstream" %}}) to Gloo. 
+The first step we'll take will be to add a new {{% protobuf name="gloo.solo.io.Upstream" display="UpstreamType" %}} to Gloo. 
 
-All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the [plugins.proto]({{% protobuf name="gloo.solo.io.UpstreamSpec" %}}) file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
+All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
 
 We'll write a simple `UpstreamSpec` proto for the new `gce` upstream type:
 
@@ -109,7 +109,7 @@ You can view the complete `gce.proto` here: [gce.proto](../gce.proto).
 
 
 Now we need to add the new GCE `UpstreamSpec` to Gloo's list of Upstream Types. This can be found in 
-the [plugins.proto]({{% protobuf name="gloo.solo.io.UpstreamSpec" %}}) file at the API root (projects/gloo/api/v1)/
+the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/
 
 First, we'll add an import to the top of the file
 

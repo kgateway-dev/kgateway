@@ -27,7 +27,7 @@ not be updated until the errors are resolved.
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the [`Gateway` resource]({{< protobuf name="gateway.solo.io.v2.Gateway">}}).
+  the {{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateway resource">}}.
 
 {{% notice note %}}
 
@@ -53,15 +53,15 @@ API Server before it is written to persistent storage.
 
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
-[Gateways]({{< protobuf name="gateway.solo.io.v2.Gateway">}}), 
-[Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).),
-and [Route Tables]({{< protobuf name="gateway.solo.io.RouteTable">}}).
+{{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateways">}}, 
+{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
+and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
 
 The webhook can be configured to perform strict or permissive validation, depending on the `gateay.validation.alwaysAccept` setting in the 
-[Settings]({{< protobuf name="gloo.solo.io.Settings">}}) resource.
+{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
 When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo fails to 
 deserialize them (due to invalid JSON/YAML).
@@ -78,7 +78,7 @@ By default, the Validation Webhook only logs the validation result, but always a
 configuration options are inconsistent/invalid).
 
 The webhook can be configured to reject invalid resources via the 
-[Settings]({{< protobuf name="gloo.solo.io.Settings">}}) resource.
+{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
 If using Helm to manage settings, set the following value:
 

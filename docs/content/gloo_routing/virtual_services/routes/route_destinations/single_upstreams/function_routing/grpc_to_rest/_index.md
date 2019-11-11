@@ -176,10 +176,10 @@ EOF
 
 An explanation for the VirtalService above:
 We have defined four routes. Each route uses
-a [gRPC destinationSpec]({{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec">}}) to define REST routes to a gRPC service.
+a {{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec" >}} to define REST routes to a gRPC service.
 When translating a REST API to a gRPC API the JSON body is automatically used to fill in the proto
 message fields. If you have some parameters in the path or in headers, your can specify them using 
-the [parameters]({{< protobuf name="transformation.plugins.gloo.solo.io.Parameters">}})  block in the [gRPC destinationSpec]({{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec">}}) (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
+the {{< protobuf name="transformation.plugins.gloo.solo.io.Parameters" display="parameters">}}  block in the {{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec">}} (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
 
 ## Test
 

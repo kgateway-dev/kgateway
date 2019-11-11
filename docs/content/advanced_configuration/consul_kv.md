@@ -16,7 +16,7 @@ This document describes how to write configuration YAML to Consul's Key-Value st
 ## Configuring Gloo using custom Settings
 
 When Gloo boots, it attempts to read a 
-[`v1.Settings`]({{< protobuf name="gloo.solo.io.Settings">}}) resource from a 
+[{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
 preconfigured location. By default, Gloo will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings`
 Custom Resource in namespace `gloo-system`, named `default`. 
 
@@ -45,7 +45,7 @@ The default namespace for Gloo is `gloo-system`. This can be overridden with the
 ## Customizing the Gloo Settings file
 
 The full list of options for Gloo Settings, including the ability to set auth/TLS parameters for Consul can be found
-[`in the v1.Settings API reference`]({{< protobuf name="gloo.solo.io.Settings" >}}).
+{{< protobuf name="gloo.solo.io.Settings" display="in the v1.Settings API reference">}}.
 
 Here is provided an example Settings so Gloo will read config from Consul Key-Value store:
 
@@ -155,10 +155,10 @@ The paths for Gloo's API objects are as follows:
 
 | Resource | Key |
 | ----- | ---- | 
-| [Upstreams]({{< protobuf name="gloo.solo.io.Upstream">}}) | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
-| [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).) | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
-| [Gateways]({{< protobuf name="gateway.solo.io.v2.Gateway">}}) | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
-| [Proxies]({{< protobuf name="gloo.solo.io.Proxy">}}) | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
+| {{< protobuf name="gloo.solo.io.Upstream">}} | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
+| {{< protobuf name="gateway.solo.io.VirtualService">}} | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
+| {{< protobuf name="gateway.solo.io.v2.Gateway">}} | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
+| {{< protobuf name="gloo.solo.io.Proxy">}} | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
 
 To store a Gloo resource in Consul, one can use `curl` or the `consul` CLI:
 

@@ -306,9 +306,9 @@ graph LR;
 
 Explore Gloo's Routing API in the API documentation:
 
-- [Virtual Services]({{< protobuf name="gateway.solo.io.VirtualService">}}).)
+- {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}
 
-- [Route Tables]({{< protobuf name="gateway.solo.io.RouteTable">}})
+- {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}
 
 Please submit questions and feedback to [the solo.io slack channel](https://slack.solo.io/), or [open an issue on GitHub](https://github.com/solo-io/gloo).
 

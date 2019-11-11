@@ -79,7 +79,7 @@ glooctl get upstream default-petstore-8080 --output yaml
 We can see there are functions on our `default-petstore-8080` upstream. These functions were populated automatically by
 the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery`.
 
-The [function spec]({{< protobuf name="gloo.solo.io.Upstream" >}}) you see on the functions
+The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions
 listed above belongs to the transformation plugin. <!--(TODO)-->
 
 This powerful plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation)

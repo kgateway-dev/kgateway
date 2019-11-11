@@ -37,9 +37,9 @@ providing advanced configuration for Envoy (including Gloo's custom Envoy filter
 ![Component Architecture](../component_architecture.png "Component Architecture")
 
 * The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](../concepts#upstreams) and [Virtual Services](../concepts#virtual-services)).
-* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the [AWS Lambda Plugin]({{% protobuf name="aws.plugins.gloo.solo.io.DestinationSpec" %}}).
+* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the {{% protobuf name="aws.plugins.gloo.solo.io.DestinationSpec" display="AWS Lambda Plugin"%}}.
 * **Endpoint Discovery** watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services.
-Endpoint Discovery is plugin-specific. For example, the [Kubernetes Plugin]({{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec">}}) runs its own Endpoint Discovery goroutine.
+Endpoint Discovery is plugin-specific. For example, the {{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec" display="Kubernetes Plugin">}} runs its own Endpoint Discovery goroutine.
 * The **Translator** receives snapshots of the entire state, composed of user configuration, secrets, and discovery information
 and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
   1. The translation cycle starts by creating **[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)** from all configured upstreams. Each upstream has a **type**, indicating which upstream plugin is responsible for
@@ -49,7 +49,7 @@ and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
   the functions on upstream, setting function-specifc cluster metadata, which will be later processed by
   function-specific Envoy filters.
   1. The next step generates all of the **[Envoy routes](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto.html?highlight=route)**
-  via the route plugins . Routes are generated for each route rule defined on the [virtual service objects]({{< protobuf name="gateway.solo.io.VirtualService">}}). When all of the routes are created, the translator aggregates them into
+  via the route plugins . Routes are generated for each route rule defined on the {{< protobuf name="gateway.solo.io.VirtualService" display="virtual service objects">}}. When all of the routes are created, the translator aggregates them into
   [Envoy virtual hosts](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-virtualhost)
   and adds them to a new [Envoy HTTP Connection Manager](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/http/http_connection_management.html#http-connection-management)
   configuration.

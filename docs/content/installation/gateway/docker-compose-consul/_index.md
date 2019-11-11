@@ -88,7 +88,7 @@ virtualHost:
 {{% notice note %}}
 All `glooctl add` and `glooctl create` commands can be run with a `--yaml` flag
 which will output Gloo YAML to stdout. These outputs can be stored as Consul Values
-and `.yaml` files for configuring Gloo. See the [API reference]({{< protobuf name="gateway.solo.io.VirtualService">}}).)
+and `.yaml` files for configuring Gloo. See the {{< protobuf name="gateway.solo.io.VirtualService" display="API reference" >}}.)
 for details on writing Gloo configuration YAML.
 {{% /notice %}}
 

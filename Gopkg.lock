@@ -2843,7 +2843,6 @@
     "github.com/solo-io/go-utils/hashutils",
     "github.com/solo-io/go-utils/healthchecker",
     "github.com/solo-io/go-utils/installutils/helmchart",
-    "github.com/solo-io/go-utils/installutils/kuberesource",
     "github.com/solo-io/go-utils/kubeutils",
     "github.com/solo-io/go-utils/log",
     "github.com/solo-io/go-utils/manifesttestutils",

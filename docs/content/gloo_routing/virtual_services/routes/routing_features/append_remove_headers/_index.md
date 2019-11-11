@@ -8,9 +8,9 @@ description: Append and Remove Headers from Requests and Responses using Route c
 Gloo can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
 
 Header Manipulation is configured via the 
-[`headerManipulation`]({{< protobuf name="headers.plugins.gloo.solo.io.HeaderManipulation">}}) struct.
+{{< protobuf name="headers.plugins.gloo.solo.io.HeaderManipulation" display="headerManipulation">}} struct.
 
-This struct can be added to [Route Plugins]({{< protobuf name="gloo.solo.io.RoutePlugins">}}), [Virtual Host Plugins]({{< protobuf name="gloo.solo.io.VirtualHostPlugins">}}), and [Weighted Destination Plugins]({{< protobuf name="gloo.solo.io.WeightedDestinationPlugins">}}).
+This struct can be added to {{< protobuf name="gloo.solo.io.RoutePlugins" display="Route Plugins">}}, {{< protobuf name="gloo.solo.io.VirtualHostPlugins" display="Virtual Host Plugins">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationPlugins" display="Weighted Destination Plugins" >}}.
 
 The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove` :
 

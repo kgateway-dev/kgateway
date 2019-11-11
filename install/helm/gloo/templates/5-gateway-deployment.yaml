@@ -17,12 +17,10 @@ spec:
   selector:
     matchLabels:
       gloo: gateway
-      installationId: {{ include "gloo.installationId" . }}
   template:
     metadata:
       labels:
         gloo: gateway
-        installationId: {{ include "gloo.installationId" . }}
       {{- if .Values.gateway.deployment.stats }}
       annotations:
         prometheus.io/path: /metrics
