@@ -1,0 +1,9 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: |
+      Remove some deprecated APIs:
+
+      1. ...
+      2. ...
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
