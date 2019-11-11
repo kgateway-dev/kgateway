@@ -1,0 +1,9 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/1650
+  description: >
+    Adds the glooctl command "glooctl debug yaml". This command dumps a YAML manifest representing the current
+    state of the Gloo installation running in the specified namespace. This is mainly used as a debug tool,
+    and is not yet suitable for use as a Gloo backup tool; the dumped manifest contains resourceVersions,
+    so you may be unable to do, for example, "glooctl debug yaml | kubectl apply -f -" if a resource has changed
+    between the dump and the "kubectl apply".
