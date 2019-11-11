@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 
+	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	. "github.com/onsi/ginkgo"
@@ -54,21 +56,7 @@ var _ = Describe("Debug", func() {
 		var (
 			kubeCli        *install.MockKubectl
 			expectedOutput []string
-			importantKinds = []string{
-				"Deployment",
-				"Service",
-				"ServiceAccount",
-				"ConfigMap",
-				"Job",
-				"gateways.gateway.solo.io.v2",
-				"proxies.gloo.solo.io",
-				"settings.gloo.solo.io",
-				"upstreams.gloo.solo.io",
-				"upstreamgroups.gloo.solo.io",
-				"virtualservices.gateway.solo.io",
-				"routetables.gateway.solo.io",
-				"authconfigs.enterprise.gloo.solo.io",
-			}
+			importantKinds = append(installcmd.GlooSystemKinds, installcmd.GlooCrdNames...)
 		)
 
 		BeforeEach(func() {
@@ -101,6 +89,9 @@ var _ = Describe("Debug", func() {
 
 			Expect(err).NotTo(HaveOccurred(), "Should be able to read the temp yaml file")
 			Expect(writtenBytes).NotTo(BeEmpty(), "Should have written a nonzero number of bytes")
+
+			manifests := strings.Split(string(writtenBytes), "---")
+			Expect(manifests).To(HaveLen(len(cmds)), "Should have written the same number of manifests as commands")
 		})
 	})
 })
