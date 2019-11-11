@@ -87,12 +87,15 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 }
 
 func DebugYaml(opts *options.Options, w io.Writer) error {
-	kubeCli := &install.CmdKubectl{}
+	return DumpYaml(opts.Top.File, opts.Metadata.Namespace, &install.CmdKubectl{})
+}
+
+// visible for testing
+func DumpYaml(fileToWrite, namespace string, kubeCli install.KubeCli) error {
 
 	var manifests []string
-	ns := opts.Metadata.Namespace
 	for _, kind := range installcmd.GlooSystemKinds {
-		output, err := kubeCli.KubectlOut(nil, "get", kind, "-oyaml", "-n", ns)
+		output, err := kubeCli.KubectlOut(nil, "get", kind, "-oyaml", "-n", namespace)
 		if err != nil {
 			return err
 		}
@@ -100,7 +103,7 @@ func DebugYaml(opts *options.Options, w io.Writer) error {
 	}
 
 	for _, crd := range installcmd.GlooCrdNames {
-		output, err := kubeCli.KubectlOut(nil, "get", crd, "-oyaml", "-n", ns)
+		output, err := kubeCli.KubectlOut(nil, "get", crd, "-oyaml", "-n", namespace)
 		if err != nil {
 			return err
 		}
@@ -108,11 +111,11 @@ func DebugYaml(opts *options.Options, w io.Writer) error {
 	}
 
 	allOutput := strings.Join(manifests, "\n---\n")
-	if opts.Top.File == "" {
+	if fileToWrite == "" {
 		_, err := fmt.Fprint(os.Stdout, allOutput)
 		return err
 	} else {
-		return ioutil.WriteFile(opts.Top.File, []byte(allOutput), filePermissions)
+		return ioutil.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
 	}
 }
 
