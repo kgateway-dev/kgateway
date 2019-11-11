@@ -356,9 +356,6 @@ apis:
   gloo.solo.io.ConsulServiceDestination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#ConsulServiceDestination
     package: gloo.solo.io
-  gloo.solo.io.CorsPolicy:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#CorsPolicy
-    package: gloo.solo.io
   gloo.solo.io.Destination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Destination
     package: gloo.solo.io
