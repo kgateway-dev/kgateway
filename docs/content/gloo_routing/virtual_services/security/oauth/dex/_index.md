@@ -1,6 +1,6 @@
 ---
 title: Dex and Gloo
-weight: 2
+weight: 20
 description: Integrating Gloo and Dex Identity Provider
 ---
 
