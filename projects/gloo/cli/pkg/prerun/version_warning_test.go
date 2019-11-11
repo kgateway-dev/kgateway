@@ -93,7 +93,7 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_12,
 			Name:     "test-name",
-			Registry: "test-registery",
+			Registry: "test-registry",
 		}})
 
 		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
@@ -106,7 +106,7 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_13,
 			Name:     "test-name",
-			Registry: "test-registery",
+			Registry: "test-registry",
 		}})
 
 		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
@@ -119,7 +119,7 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_21_0,
 			Name:     "test-name",
-			Registry: "test-registery",
+			Registry: "test-registry",
 		}})
 
 		mismatches := []*prerun.ContainerMetadata{{
@@ -145,7 +145,7 @@ var _ = Describe("version command", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_1_0_0,
 			Name:     "test-name",
-			Registry: "test-registery",
+			Registry: "test-registry",
 		}})
 
 		mismatches := []*prerun.ContainerMetadata{{
