@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/gogo/protobuf/types"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -36,7 +38,7 @@ func GetYaml(pb proto.Message) []byte {
 }
 
 func main() {
-	role := flag.String("r", "gloo-system~gateway-proxy-v2", "role to register with")
+	role := flag.String("r", "gloo-system~"+defaults.GatewayProxyName, "role to register with")
 	port := flag.String("p", "9977", "gloo port")
 	//out := flag.String("o", "gostructs", "output fmt gostructs|yaml")
 	flag.Parse()

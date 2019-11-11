@@ -14,7 +14,7 @@ var _ = Describe("Metrics merger", func() {
 		testCurrentTimeProvider = func() time.Time {
 			return currentTime
 		}
-		envoyInstanceId   = "gateway-proxy-v2-84585498d7-lfw6g.gloo-system"
+		envoyInstanceId   = "gateway-proxy-84585498d7-lfw6g.gloo-system"
 		uptime            = time.Hour
 		firstRecordedTime = currentTime.Add(time.Duration(-1) * uptime)
 		exampleMetrics    = &EnvoyMetrics{

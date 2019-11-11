@@ -224,7 +224,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// udpates every 30 seconds.
 		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return 0, err
 			}
@@ -250,7 +250,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		// Wait for the proxy to be accepted.
 		Eventually(func() (core.Status_State, error) {
-			proxy, err := proxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			proxy, err := proxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return 0, err
 			}

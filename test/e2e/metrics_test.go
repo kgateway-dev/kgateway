@@ -116,7 +116,7 @@ var _ = Describe("Gateway", func() {
 					contextutils.SetFallbackLogger(logger.Sugar())
 
 					envoyInstance.MetricsPort = metricsPort
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient

@@ -195,7 +195,7 @@ var _ = Describe("Gateway", func() {
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				err = envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+				err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 			})
 

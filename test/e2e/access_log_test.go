@@ -8,6 +8,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/fgrosse/zaptest"
@@ -116,11 +118,11 @@ var _ = Describe("Gateway", func() {
 					contextutils.SetFallbackLogger(logger.Sugar())
 
 					envoyInstance.AccessLogPort = accessLogPort
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
 					settings = runner.Settings{
@@ -161,7 +163,7 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Plugins = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
@@ -243,11 +245,11 @@ var _ = Describe("Gateway", func() {
 				}
 
 				BeforeEach(func() {
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					path = "/dev/stdout"
 					if !envoyInstance.UseDocker {
@@ -260,7 +262,7 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					gw.Plugins = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})

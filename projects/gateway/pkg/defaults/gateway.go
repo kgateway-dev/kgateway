@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	GatewayProxyName   = "gateway-proxy-v2"
+	GatewayProxyName   = "gateway-proxy"
 	GatewayBindAddress = "::"
 )
 
