@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -81,15 +80,12 @@ func GetTestSettings() *v1.Settings {
 			Name:      "default",
 			Namespace: defaults.GlooSystem,
 		},
-		BindAddr:        "test:80",
+		Gloo: &v1.GlooOptions{
+			XdsBindAddr: "test:80",
+		},
 		ConfigSource:    &v1.Settings_DirectoryConfigSource{},
 		DevMode:         true,
 		SecretSource:    &v1.Settings_KubernetesSecretSource{},
 		WatchNamespaces: []string{"default"},
-		Extensions: &v1.Extensions{
-			Configs: map[string]*types.Struct{
-				"someotherextension": {},
-			},
-		},
 	}
 }
