@@ -133,56 +133,56 @@
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.stats|bool||enable prometheus stats|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
-|gatewayProxies.gatewayProxyV2.kind.deployment.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
-|gatewayProxies.gatewayProxyV2.kind.deployment.replicas|int|1|number of instances to deploy|
-|gatewayProxies.gatewayProxyV2.kind.deployment.resources.limits.memory|string||amount of memory|
-|gatewayProxies.gatewayProxyV2.kind.deployment.resources.limits.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxyV2.kind.deployment.resources.requests.memory|string||amount of memory|
-|gatewayProxies.gatewayProxyV2.kind.deployment.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxyV2.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
-|gatewayProxies.gatewayProxyV2.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
-|gatewayProxies.gatewayProxyV2.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
-|gatewayProxies.gatewayProxyV2.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
-|gatewayProxies.gatewayProxyV2.podTemplate.image.pullPolicy|string||image pull policy for the container|
-|gatewayProxies.gatewayProxyV2.podTemplate.image.pullSecret|string||image pull policy for the container |
-|gatewayProxies.gatewayProxyV2.podTemplate.httpPort|int|8080|HTTP port for the gateway service|
-|gatewayProxies.gatewayProxyV2.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service|
-|gatewayProxies.gatewayProxyV2.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
-|gatewayProxies.gatewayProxyV2.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
-|gatewayProxies.gatewayProxyV2.podTemplate.nodeName|string||name of node to run on|
-|gatewayProxies.gatewayProxyV2.podTemplate.nodeSelector.NAME|string||label selector for nodes|
-|gatewayProxies.gatewayProxyV2.podTemplate.tolerations[].key|string|||
-|gatewayProxies.gatewayProxyV2.podTemplate.tolerations[].operator|string|||
-|gatewayProxies.gatewayProxyV2.podTemplate.tolerations[].value|string|||
-|gatewayProxies.gatewayProxyV2.podTemplate.tolerations[].effect|string|||
-|gatewayProxies.gatewayProxyV2.podTemplate.tolerations[].tolerationSeconds|int64|||
-|gatewayProxies.gatewayProxyV2.podTemplate.probes|bool|false|enable liveness and readiness probes|
-|gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.memory|string||amount of memory|
-|gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.memory|string||amount of memory|
-|gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.cpu|string||amount of CPUs|
-|gatewayProxies.gatewayProxyV2.podTemplate.disableNetBind|bool|false|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
-|gatewayProxies.gatewayProxyV2.podTemplate.runUnprivileged|bool|false|run envoy as an unprivileged user|
-|gatewayProxies.gatewayProxyV2.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
-|gatewayProxies.gatewayProxyV2.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
-|gatewayProxies.gatewayProxyV2.configMap.data.NAME|string|||
-|gatewayProxies.gatewayProxyV2.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
-|gatewayProxies.gatewayProxyV2.service.httpPort|int|80|HTTP port for the gateway service|
-|gatewayProxies.gatewayProxyV2.service.httpsPort|int|443|HTTPS port for the gateway service|
-|gatewayProxies.gatewayProxyV2.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
-|gatewayProxies.gatewayProxyV2.service.extraAnnotations.NAME|string|||
-|gatewayProxies.gatewayProxyV2.service.externalTrafficPolicy|string|||
-|gatewayProxies.gatewayProxyV2.tracing.provider|string|||
-|gatewayProxies.gatewayProxyV2.tracing.cluster|string|||
-|gatewayProxies.gatewayProxyV2.gatewaySettings.disableGeneratedGateways|bool|false|set to true to disable the gateway generation for a gateway proxy|
-|gatewayProxies.gatewayProxyV2.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
-|gatewayProxies.gatewayProxyV2.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
-|gatewayProxies.gatewayProxyV2.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.gatewayProxyV2.extraContainersHelper|string|||
-|gatewayProxies.gatewayProxyV2.extraInitContainersHelper|string|||
-|gatewayProxies.gatewayProxyV2.extraVolumeHelper|string|||
-|gatewayProxies.gatewayProxyV2.stats|bool|true|enable prometheus stats|
-|gatewayProxies.gatewayProxyV2.readConfig|bool|false|expose a read-only subset of the envoy admin api|
+|gatewayProxies.gatewayProxy.kind.deployment.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
+|gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
+|gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
+|gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
+|gatewayProxies.gatewayProxy.kind.deployment.resources.requests.memory|string||amount of memory|
+|gatewayProxies.gatewayProxy.kind.deployment.resources.requests.cpu|string||amount of CPUs|
+|gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
+|gatewayProxies.gatewayProxy.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||image pull policy for the container|
+|gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||image pull policy for the container |
+|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service|
+|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service|
+|gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
+|gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
+|gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on|
+|gatewayProxies.gatewayProxy.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|gatewayProxies.gatewayProxy.podTemplate.tolerations[].key|string|||
+|gatewayProxies.gatewayProxy.podTemplate.tolerations[].operator|string|||
+|gatewayProxies.gatewayProxy.podTemplate.tolerations[].value|string|||
+|gatewayProxies.gatewayProxy.podTemplate.tolerations[].effect|string|||
+|gatewayProxies.gatewayProxy.podTemplate.tolerations[].tolerationSeconds|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.probes|bool|false|enable liveness and readiness probes|
+|gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory|string||amount of memory|
+|gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu|string||amount of CPUs|
+|gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory|string||amount of memory|
+|gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu|string||amount of CPUs|
+|gatewayProxies.gatewayProxy.podTemplate.disableNetBind|bool|false|don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
+|gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|false|run envoy as an unprivileged user|
+|gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
+|gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
+|gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
+|gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|
+|gatewayProxies.gatewayProxy.service.httpsPort|int|443|HTTPS port for the gateway service|
+|gatewayProxies.gatewayProxy.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
+|gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
+|gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||
+|gatewayProxies.gatewayProxy.tracing.provider|string|||
+|gatewayProxies.gatewayProxy.tracing.cluster|string|||
+|gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool|false|set to true to disable the gateway generation for a gateway proxy|
+|gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
+|gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
+|gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|gatewayProxies.gatewayProxy.extraContainersHelper|string|||
+|gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
+|gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
+|gatewayProxies.gatewayProxy.stats|bool|true|enable prometheus stats|
+|gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string||tag for the container|
 |ingress.deployment.image.repository|string||image name (repository) for the container.|
