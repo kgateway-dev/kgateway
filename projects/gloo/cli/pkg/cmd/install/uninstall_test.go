@@ -53,7 +53,7 @@ func (k *MockKubectl) KubectlOut(stdin io.Reader, args ...string) ([]byte, error
 var _ = Describe("Uninstall", func() {
 
 	const (
-		deleteCrds    = `delete crd gateways.gateway.solo.io.v2 proxies.gloo.solo.io settings.gloo.solo.io upstreams.gloo.solo.io upstreamgroups.gloo.solo.io virtualservices.gateway.solo.io routetables.gateway.solo.io authconfigs.enterprise.gloo.solo.io`
+		deleteCrds    = `delete crd gateways.gateway.solo.io proxies.gloo.solo.io settings.gloo.solo.io upstreams.gloo.solo.io upstreamgroups.gloo.solo.io virtualservices.gateway.solo.io routetables.gateway.solo.io authconfigs.enterprise.gloo.solo.io`
 		testInstallId = "test-install-id"
 
 		// expects to be formatted with the namespace
