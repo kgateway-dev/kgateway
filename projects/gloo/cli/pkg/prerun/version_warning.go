@@ -78,13 +78,11 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 
 	if len(minorVersionMismatches) > 0 || len(majorVersionMismatches) > 0 {
 		logger.Println("----------")
-		minorMessage := BuildVersionMismatchMessage(minorVersionMismatches, glooctlVersionStr, "minor")
-		if minorMessage != "" {
-			logger.Println(minorMessage)
+		if len(minorVersionMismatches) > 0 {
+			logger.Println(BuildVersionMismatchMessage(minorVersionMismatches, glooctlVersionStr, "minor"))
 		}
-		majorMessage := BuildVersionMismatchMessage(majorVersionMismatches, glooctlVersionStr, "major")
-		if majorMessage != "" {
-			logger.Println(majorMessage)
+		if len(majorVersionMismatches) > 0 {
+			logger.Println(BuildVersionMismatchMessage(majorVersionMismatches, glooctlVersionStr, "major"))
 		}
 		logger.Println("")
 		logger.Println(BuildSuggestedUpgradeCommand(binaryName, append(minorVersionMismatches, majorVersionMismatches...)))
@@ -96,15 +94,11 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 
 // visible for testing
 func BuildVersionMismatchMessage(mismatches []*ContainerMetadata, glooctlVersion, mismatchKind string) string {
-	if len(mismatches) > 0 {
-		var containersToReport []string
-		for _, mismatch := range mismatches {
-			containersToReport = append(containersToReport, fmt.Sprintf("%s@%s", mismatch.ContainerName, mismatch.Version.String()))
-		}
-		return fmt.Sprintf("WARNING: glooctl@%s has a different %s version than the following server containers: %s", glooctlVersion, mismatchKind, strings.Join(containersToReport, ", "))
+	var containersToReport []string
+	for _, mismatch := range mismatches {
+		containersToReport = append(containersToReport, fmt.Sprintf("%s@%s", mismatch.ContainerName, mismatch.Version.String()))
 	}
-
-	return ""
+	return fmt.Sprintf("WARNING: glooctl@%s has a different %s version than the following server containers: %s", glooctlVersion, mismatchKind, strings.Join(containersToReport, ", "))
 }
 
 // visible for testing
