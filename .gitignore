@@ -1,6 +1,7 @@
 vendor
 _output
 _test
+_artifacts
 .idea
 site
 .firebase
@@ -12,7 +13,9 @@ cloudbuild-local*.yaml
 
 # OSX files
 .DS_Store
+
 docs/helm-values.md
+docs/content
 
 # ignore intermediate files that gomock sometimes generates
 **/gomock_reflect*
