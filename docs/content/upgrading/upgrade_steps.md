@@ -284,7 +284,7 @@ namespace=gloo-system # customize to your namespace
 helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 helm fetch glooe/gloo-ee --version "0.20.8"
 helm template ./gloo-ee-0.20.8.tgz \
-    --license-key "$license" \
+    --set license_key="$license" \
     --namespace "$namespace" \
     -f path/to/your/values.yaml
 ```

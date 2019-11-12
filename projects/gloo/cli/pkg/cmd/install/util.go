@@ -60,7 +60,7 @@ func init() {
 	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
 
 	GlooCrdNames = []string{
-		"gateways.gateway.solo.io.v2",
+		"gateways.gateway.solo.io",
 		"proxies.gloo.solo.io",
 		"settings.gloo.solo.io",
 		"upstreams.gloo.solo.io",

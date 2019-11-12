@@ -8,7 +8,6 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -25,13 +24,13 @@ type translatorSyncer struct {
 	reporter        reporter.Reporter
 	propagator      *propagator.Propagator
 	proxyClient     gloov1.ProxyClient
-	gwClient        v2.GatewayClient
+	gwClient        v1.GatewayClient
 	vsClient        v1.VirtualServiceClient
 	proxyReconciler reconciler.ProxyReconciler
 	translator      translator.Translator
 }
 
-func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v2.ApiSyncer {
+func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v1.ApiSyncer {
 	return &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -45,7 +44,7 @@ func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, 
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
-func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
+func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
@@ -56,7 +55,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v2.ApiSnapshot) error
 	logger.Debugf("%v", snap)
 
 	labels := map[string]string{
-		"created_by": "gateway-v2",
+		"created_by": "gateway",
 	}
 
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)

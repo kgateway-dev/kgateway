@@ -20,8 +20,8 @@ webhooks:
       caBundle: "" # update manually or use certgen job
     rules:
       - operations: [ "CREATE", "UPDATE", "DELETE" ]
-        apiGroups: ["gateway.solo.io", "gateway.solo.io.v2"]
-        apiVersions: ["v1", "v2"]
+        apiGroups: ["gateway.solo.io"]
+        apiVersions: ["v1"]
         resources: ["*"]
 {{- if .Values.gateway.validation.failurePolicy }}
     failurePolicy: {{ .Values.gateway.validation.failurePolicy }}

@@ -272,7 +272,7 @@ node:
   id: gateway~{{ env "NOMAD_ALLOC_ID" }}
   metadata:
     # this line must match !
-    role: "[[.config.namespace]]~gateway-proxy-v2"
+    role: "[[.config.namespace]]~gateway-proxy"
 
 static_resources:
   clusters:

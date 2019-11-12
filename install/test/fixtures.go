@@ -22,7 +22,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -136,7 +136,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -254,7 +254,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -388,7 +388,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -544,7 +544,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -587,7 +587,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: gateway-proxy-v2-access-logger.gloo-system.svc.cluster.local
+                address: gateway-proxy-access-logger.gloo-system.svc.cluster.local
                 port_value: 8083
     name: access_log_cluster
     type: STRICT_DNS

@@ -44,17 +44,12 @@ gateway:
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
-  upgrade: false
   deployment:
     image:
       repository: gateway
     replicas: 1
     stats: true
     runAsUser: 10101
-  conversionJob:
-    image:
-      repository: gateway-conversion
-    restartPolicy: Never
   certGenJob:
     image:
       repository: certgen
@@ -64,7 +59,7 @@ gateway:
   proxyServiceAccount: {}
 
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     gatewaySettings: {}
     stats: true
     kind:
