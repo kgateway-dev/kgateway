@@ -13,7 +13,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 /*
 A Gateway describes a single Listener (bind address:port)
