@@ -290,7 +290,7 @@ metadata:
 spec:
   virtualHost:
     routes:
-    - routePlugins:
+    - options:
         lbHash:
           hashPolicies:
           - header: x-test-affinity
