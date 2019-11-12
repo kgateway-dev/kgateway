@@ -798,7 +798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 			tcpGateway := defaultGateway.GetTcpGateway()
 			Expect(tcpGateway).NotTo(BeNil())
-			tcpGateway.Destinations = append(tcpGateway.Destinations, &gloov1.TcpHost{
+			tcpGateway.TcpHosts = append(tcpGateway.TcpHosts, &gloov1.TcpHost{
 				Name: "one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{

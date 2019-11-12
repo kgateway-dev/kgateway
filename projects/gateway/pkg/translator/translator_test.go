@@ -901,7 +901,7 @@ var _ = Describe("Translator", func() {
 			factory     *TcpTranslator
 			idleTimeout time.Duration
 			plugins     *gloov1.TcpListenerOptions
-			destination *gloov1.TcpHost
+			tcpHost     *gloov1.TcpHost
 		)
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
@@ -914,7 +914,7 @@ var _ = Describe("Translator", func() {
 					IdleTimeout:        &idleTimeout,
 				},
 			}
-			destination = &gloov1.TcpHost{
+			tcpHost = &gloov1.TcpHost{
 				Name: "host-one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_UpstreamGroup{
@@ -932,8 +932,8 @@ var _ = Describe("Translator", func() {
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_TcpGateway{
 							TcpGateway: &v1.TcpGateway{
-								Destinations: []*gloov1.TcpHost{destination},
-								Options:      plugins,
+								Options:  plugins,
+								TcpHosts: []*gloov1.TcpHost{tcpHost},
 							},
 						},
 						BindPort: 2,
@@ -949,7 +949,7 @@ var _ = Describe("Translator", func() {
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener
 			Expect(listener.Options).To(Equal(plugins))
 			Expect(listener.TcpHosts).To(HaveLen(1))
-			Expect(listener.TcpHosts[0]).To(Equal(destination))
+			Expect(listener.TcpHosts[0]).To(Equal(tcpHost))
 		})
 
 	})
