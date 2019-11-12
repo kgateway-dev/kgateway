@@ -1,7 +1,7 @@
 changelog:
   - type: BREAKING_CHANGE
     description: |
-      Rename all instances of plugins to options in Gloo's API. This prevents confusion as Gloo "plugins" is really an implementation detail for devs, and Gloo does not currently support dynamically-loaded plugins (aside from ExtAuth plugins).
+      Rename all instances of `plugins` to `options` in Gloo's API. This prevents confusion as Gloo "plugins" is really an implementation detail for devs, and Gloo does not currently support dynamically-loaded plugins (aside from ExtAuth plugins).
 
       Proto messages have been updated as such:
 
