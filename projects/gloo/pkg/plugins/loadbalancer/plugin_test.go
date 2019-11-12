@@ -225,7 +225,7 @@ status: {}
 
 		// positive cases
 		It("configures routes - basic config", func() {
-			route.Options = &v1.Options{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -247,7 +247,7 @@ status: {}
 		})
 		It("configures routes - all types", func() {
 			ttlDur := time.Second
-			route.Options = &v1.Options{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{
 						{
@@ -348,7 +348,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Redirect{}
 			route.Action = &v1.Route_RedirectAction{}
 			// the following represents a misconfigured route
-			route.Options = &v1.Options{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -365,7 +365,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{},
 			}
-			route.Options = &v1.Options{}
+			route.Options = &v1.RouteOptions{}
 			err := plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())

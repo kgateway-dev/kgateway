@@ -141,7 +141,7 @@ func routeWithoutCors() *v1.Route {
 
 func routeWithCors(cSpec *cors.CorsPolicy) *v1.Route {
 	route := routeWithoutCors()
-	route.Options = &v1.Options{
+	route.Options = &v1.RouteOptions{
 		Cors: cSpec,
 	}
 	return route

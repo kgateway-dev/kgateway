@@ -23,7 +23,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -45,7 +45,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -82,7 +82,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -118,7 +118,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 200,
@@ -131,7 +131,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(Equal(InvalidNumeratorError(200)))
 
 		in = &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Percentage: 100,
 				},

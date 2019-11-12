@@ -74,7 +74,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 				},
@@ -97,7 +97,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			Options: &v1.Options{
+			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 					TracePercentages: &tracing.TracePercentages{

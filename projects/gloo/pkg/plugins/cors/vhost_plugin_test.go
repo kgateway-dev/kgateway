@@ -45,7 +45,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			AllowCredentials: allowCredentials1,
 		}
 		gloo1 = &v1.VirtualHost{
-			Options: &v1.Options{
+			Options: &v1.VirtualHostOptions{
 				Cors: in1,
 			},
 		}
@@ -77,7 +77,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - minimal specification", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				Options: &v1.Options{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
 						AllowOrigin: allowOrigin1,
 					},
@@ -95,7 +95,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - empty specification", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				Options: &v1.Options{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{},
 				},
 			}
@@ -109,7 +109,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - ignore route filter disabled spec", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				Options: &v1.Options{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
 						DisableForRoute: true,
 					},

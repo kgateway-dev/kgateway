@@ -21,7 +21,7 @@ var _ = Describe("Virtual Clusters", func() {
 		inputVh      = v1.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
-			Options: &v1.Options{
+			Options: &v1.VirtualHostOptions{
 				Stats: &statsapi.Stats{
 					VirtualClusters: nil,
 				},
