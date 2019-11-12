@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Add `UpstreamDestination` proto to parent the `DestinationSpec` and `Subset` messages, which only apply to
+      `Destination`s of type `upstream`.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
