@@ -38,7 +38,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	logger.Infof("begin sync %v (%v ingresses)", snap.Hash(),
 		len(snap.Ingresses))
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 
 	proxy, err := translateProxy(s.writeNamespace, snap, s.requireIngressClass)
 	if err != nil {

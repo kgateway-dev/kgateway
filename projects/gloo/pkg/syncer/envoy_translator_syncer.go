@@ -56,7 +56,6 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs))
 	defer logger.Infof("end sync %v", snap.Hash())
 
-	logger.Debugf("%v", snap)
 	allReports := make(reporter.ResourceReports)
 	allReports.Accept(snap.Upstreams.AsInputResources()...)
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
