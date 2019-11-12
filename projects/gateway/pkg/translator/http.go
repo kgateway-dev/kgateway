@@ -92,7 +92,7 @@ func validateAndMergeVirtualServices(gateway *v1.Gateway, virtualServices v1.Vir
 		// take the first one as they are all the same
 		var routes []*v1.Route
 		var sslConfig *gloov1.SslConfig
-		var vhostPlugins *gloov1.VirtualHostPlugins
+		var vhostPlugins *gloov1.Options
 		for _, vs := range vslist {
 			routes = append(routes, vs.VirtualHost.Routes...)
 			if sslConfig == nil {
@@ -102,11 +102,11 @@ func validateAndMergeVirtualServices(gateway *v1.Gateway, virtualServices v1.Vir
 			}
 
 			havePlugins := vs.VirtualHost != nil &&
-				vs.VirtualHost.VirtualHostPlugins != nil
+				vs.VirtualHost.Options != nil
 
 			if vhostPlugins == nil {
 				if havePlugins {
-					vhostPlugins = vs.VirtualHost.VirtualHostPlugins
+					vhostPlugins = vs.VirtualHost.Options
 				}
 			} else if havePlugins {
 				reports.AddError(gateway, fmt.Errorf("more than one vhost plugin is present in virtual service of these domains: %s", k))
@@ -251,7 +251,7 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 		Name:               VirtualHostName(vs),
 		Domains:            vs.VirtualHost.Domains,
 		Routes:             routes,
-		VirtualHostPlugins: vs.VirtualHost.VirtualHostPlugins,
+		VirtualHostPlugins: vs.VirtualHost.Options,
 	}
 
 	if err := appendSource(vh, vs); err != nil {
@@ -300,7 +300,7 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 
 	route := &gloov1.Route{
 		Matchers:     matchers,
-		RoutePlugins: ours.RoutePlugins,
+		RoutePlugins: ours.Options,
 	}
 	switch action := ours.Action.(type) {
 	case *v1.Route_RedirectAction:
@@ -370,19 +370,19 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		subRv.visited = append(subRv.visited, vis)
 	}
 
-	plugins := route.GetRoutePlugins()
+	plugins := route.GetOptions()
 
 	var delegatedRoutes []*gloov1.Route
 	for _, routeTableRoute := range routeTable.Routes {
 		// clone route since we mutate
 		routeTableRoute := proto.Clone(routeTableRoute).(*v1.Route)
 
-		merged, err := mergeRoutePlugins(routeTableRoute.GetRoutePlugins(), plugins)
+		merged, err := mergeRoutePlugins(routeTableRoute.GetOptions(), plugins)
 		if err != nil {
 			// should never happen
 			return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
 		}
-		routeTableRoute.RoutePlugins = merged
+		routeTableRoute.Options = merged
 
 		err = isRouteTableValidForDelegatePrefix(delegatePrefix, routeTableRoute)
 		if err != nil {

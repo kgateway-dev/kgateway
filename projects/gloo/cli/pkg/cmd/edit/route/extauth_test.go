@@ -10,7 +10,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -48,7 +48,7 @@ var _ = Describe("Extauth", func() {
 	extAuthExtension := func(index int, metadata core.Metadata) *extauthpb.ExtAuthExtension {
 		vsv, err := helpers.MustVirtualServiceClient().Read(metadata.Namespace, metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-		return vsv.VirtualHost.Routes[index].GetRoutePlugins().GetExtauth()
+		return vsv.VirtualHost.Routes[index].GetOptions().GetExtauth()
 	}
 	Context("Non-interactive tests", func() {
 

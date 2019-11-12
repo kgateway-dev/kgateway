@@ -154,7 +154,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: action,
 					},
-					RoutePlugins: &gloov1.RoutePlugins{
+					RoutePlugins: &gloov1.Options{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
 						Timeout:            timeout,
 						Retries:            retryPolicy,

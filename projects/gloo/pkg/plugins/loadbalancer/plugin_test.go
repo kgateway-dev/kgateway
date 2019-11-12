@@ -6,7 +6,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -225,7 +225,7 @@ status: {}
 
 		// positive cases
 		It("configures routes - basic config", func() {
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.Options{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -247,7 +247,7 @@ status: {}
 		})
 		It("configures routes - all types", func() {
 			ttlDur := time.Second
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.Options{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{
 						{
@@ -276,7 +276,7 @@ status: {}
 			}
 			sampleVirtualService := &gatewayv1.VirtualService{
 				VirtualHost: &gatewayv1.VirtualHost{
-					Routes: []*gatewayv1.Route{{RoutePlugins: route.RoutePlugins}},
+					Routes: []*gatewayv1.Route{{RoutePlugins: route.Options}},
 				},
 			}
 			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]
@@ -348,7 +348,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Redirect{}
 			route.Action = &v1.Route_RedirectAction{}
 			// the following represents a misconfigured route
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.Options{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -365,7 +365,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{},
 			}
-			route.RoutePlugins = &v1.RoutePlugins{}
+			route.Options = &v1.Options{}
 			err := plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())

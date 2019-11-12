@@ -389,7 +389,7 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should not error with one contains plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.Options)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -397,8 +397,8 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should error with both having plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
-					snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.Options)
+					snap.VirtualServices[1].VirtualHost.Options = new(gloov1.Options)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -469,12 +469,12 @@ var _ = Describe("Translator", func() {
 			Context("valid configuration", func() {
 				dur := time.Minute
 
-				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
-				midLevelRoutePlugins := &gloov1.RoutePlugins{Timeout: &dur}
-				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
+				rootLevelRoutePlugins := &gloov1.Options{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
+				midLevelRoutePlugins := &gloov1.Options{Timeout: &dur}
+				leafLevelRoutePlugins := &gloov1.Options{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
 
-				mergedMidLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
-				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
+				mergedMidLevelRoutePlugins := &gloov1.Options{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
+				mergedLeafLevelRoutePlugins := &gloov1.Options{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})

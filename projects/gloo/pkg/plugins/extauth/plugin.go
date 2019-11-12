@@ -53,11 +53,11 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	}
 
 	// If extauth is explicitly disabled on this virtual host, disable it
-	if in.GetVirtualHostPlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markVirtualHostNoAuth(out)
 	}
 
-	customAuthConfig := in.GetVirtualHostPlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No extauth config on this virtual host, disable it
 	if customAuthConfig == nil {
@@ -87,11 +87,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *rou
 	}
 
 	// Extauth is explicitly disabled, disable it on route
-	if in.GetRoutePlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markRouteNoAuth(out)
 	}
 
-	customAuthConfig := in.GetRoutePlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {

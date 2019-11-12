@@ -213,7 +213,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											RoutePlugins: &gloov1.Options{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -274,7 +274,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											RoutePlugins: &gloov1.Options{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -344,7 +344,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											RoutePlugins: &gloov1.Options{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,

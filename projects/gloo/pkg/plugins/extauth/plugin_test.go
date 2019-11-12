@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -176,7 +176,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 				},
 			},
 		},
-		RoutePlugins: &gloov1.RoutePlugins{}, // will be set below
+		RoutePlugins: &gloov1.Options{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 		Name:               "virt1",
 		Domains:            []string{"*"},
 		Routes:             []*gloov1.Route{route},
-		VirtualHostPlugins: &gloov1.VirtualHostPlugins{}, // will be set below
+		VirtualHostPlugins: &gloov1.Options{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -202,16 +202,16 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 
 	switch authOnRoute {
 	case Enabled:
-		route.RoutePlugins.Extauth = enableCustomAuth
+		route.Options.Extauth = enableCustomAuth
 	case Disabled:
-		route.RoutePlugins.Extauth = disableAuth
+		route.Options.Extauth = disableAuth
 	}
 
 	switch authOnVirtualHost {
 	case Enabled:
-		virtualHost.VirtualHostPlugins.Extauth = enableCustomAuth
+		virtualHost.Options.Extauth = enableCustomAuth
 	case Disabled:
-		virtualHost.VirtualHostPlugins.Extauth = disableAuth
+		virtualHost.Options.Extauth = disableAuth
 	}
 
 	// ----------------------------------------------------------------------------

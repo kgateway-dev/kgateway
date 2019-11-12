@@ -5,7 +5,7 @@ import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	"github.com/gogo/protobuf/proto"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -39,10 +39,10 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	markFilterConfigFunc := func(spec *v1.Destination) (proto.Message, error) {
-		if in.RoutePlugins == nil {
+		if in.Options == nil {
 			return nil, nil
 		}
-		routeFaults := in.GetRoutePlugins().GetFaults()
+		routeFaults := in.GetOptions().GetFaults()
 		if routeFaults == nil {
 			return nil, nil
 		}

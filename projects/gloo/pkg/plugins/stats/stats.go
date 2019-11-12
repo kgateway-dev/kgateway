@@ -10,7 +10,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/go-utils/errors"
 )
@@ -40,11 +40,11 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if in.GetVirtualHostPlugins() == nil || in.GetVirtualHostPlugins().GetStats() == nil {
+	if in.GetOptions() == nil || in.GetOptions().GetStats() == nil {
 		return nil
 	}
 
-	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(in.GetVirtualHostPlugins().GetStats())
+	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(in.GetOptions().GetStats())
 	if err != nil {
 		return err
 	}

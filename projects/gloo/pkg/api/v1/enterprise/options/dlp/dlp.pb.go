@@ -6,11 +6,12 @@ package dlp
 import (
 	bytes "bytes"
 	fmt "fmt"
+	math "math"
+
 	_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

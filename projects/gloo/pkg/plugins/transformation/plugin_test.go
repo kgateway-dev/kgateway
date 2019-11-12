@@ -44,7 +44,7 @@ var _ = Describe("Plugin", func() {
 	It("sets transformation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			VirtualHostPlugins: &v1.VirtualHostPlugins{
+			VirtualHostPlugins: &v1.Options{
 				Transformations: t,
 			},
 		}, out)
@@ -55,7 +55,7 @@ var _ = Describe("Plugin", func() {
 
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			RoutePlugins: &v1.Options{
 				Transformations: t,
 			},
 		}, out)
