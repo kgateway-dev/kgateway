@@ -210,7 +210,9 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: &gloov1.UpstreamDestination{
+															Ref: utils.ResourceRefPtr(upstream),
+														},
 													},
 												},
 											},
@@ -240,7 +242,9 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: &gloov1.UpstreamDestination{
+															Ref: utils.ResourceRefPtr(upstream),
+														},
 													},
 												},
 											},
@@ -266,7 +270,9 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Destination: &gloov1.RouteAction_Single{
 												Single: &gloov1.Destination{
 													DestinationType: &gloov1.Destination_Upstream{
-														Upstream: utils.ResourceRefPtr(upstream),
+														Upstream: &gloov1.UpstreamDestination{
+															Ref: utils.ResourceRefPtr(upstream),
+														},
 													},
 												},
 											},

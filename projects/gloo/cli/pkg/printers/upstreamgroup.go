@@ -74,8 +74,8 @@ func upstreamGroupDetails(ug *v1.UpstreamGroup) []string {
 		switch dest := us.Destination.DestinationType.(type) {
 		case *v1.Destination_Upstream:
 			add(fmt.Sprintf("destination type: %v", "Upstream"))
-			add(fmt.Sprintf("namespace: %v", dest.Upstream.GetUpstream().GetNamespace()))
-			add(fmt.Sprintf("name: %v", dest.Upstream.GetUpstream().GetName()))
+			add(fmt.Sprintf("namespace: %v", dest.Upstream.GetRef().GetNamespace()))
+			add(fmt.Sprintf("name: %v", dest.Upstream.GetRef().GetName()))
 		case *v1.Destination_Kube:
 			add(fmt.Sprintf("destination type: %v", "Kube"))
 			add(fmt.Sprintf("namespace: %v", dest.Kube.Ref.Namespace))

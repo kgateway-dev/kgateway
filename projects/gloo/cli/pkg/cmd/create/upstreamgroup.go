@@ -139,7 +139,7 @@ func upstreamGroupDestinationsFromOpts(input options.InputUpstreamGroup) ([]*v1.
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
 					Upstream: &v1.UpstreamDestination{
-						Upstream: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
+						Ref: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
 					},
 				},
 			},

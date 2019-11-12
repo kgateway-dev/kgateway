@@ -213,7 +213,9 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+													Upstream: &gloov1.UpstreamDestination{
+														Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+													},
 												},
 											},
 										},

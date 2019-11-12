@@ -461,7 +461,7 @@ func getTrivialProxyForUpstream(ns string, bindPort uint32, upstream core.Resour
 	proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 		VirtualHosts[0].Routes[0].Action.(*gloov1.Route_RouteAction).RouteAction.
 		Destination.(*gloov1.RouteAction_Single).Single.DestinationType =
-		&gloov1.Destination_Upstream{Upstream: &upstream}
+		&gloov1.Destination_Upstream{Upstream: &gloov1.UpstreamDestination{Ref: &upstream}}
 	return proxy
 }
 

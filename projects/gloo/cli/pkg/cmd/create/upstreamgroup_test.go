@@ -49,9 +49,11 @@ var _ = Describe("UpstreamGroup", func() {
 			{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "us1",
+						Upstream: &v1.UpstreamDestination{
+							Ref: &core.ResourceRef{
+								Namespace: "gloo-system",
+								Name:      "us1",
+							},
 						},
 					},
 				},
@@ -60,9 +62,11 @@ var _ = Describe("UpstreamGroup", func() {
 			{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "us2",
+						Upstream: &v1.UpstreamDestination{
+							Ref: &core.ResourceRef{
+								Namespace: "gloo-system",
+								Name:      "us2",
+							},
 						},
 					},
 				},
@@ -129,8 +133,9 @@ spec:
   destinations:
   - destination:
       upstream:
-        name: us1
-        namespace: gloo-system
+        ref:
+          name: us1
+          namespace: gloo-system
     weight: 2
 status: {}
 `))

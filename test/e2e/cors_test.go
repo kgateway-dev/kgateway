@@ -156,7 +156,9 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(ptd.up.Metadata.Ref()),
+												Upstream: &gloov1.UpstreamDestination{
+													Ref: utils.ResourceRefPtr(ptd.up.Metadata.Ref()),
+												},
 											},
 										},
 									},

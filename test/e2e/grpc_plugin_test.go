@@ -160,7 +160,7 @@ func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.Virtual
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
 										Upstream: &gloov1.UpstreamDestination{
-											Upstream: utils.ResourceRefPtr(usRef),
+											Ref: utils.ResourceRefPtr(usRef),
 											DestinationSpec: &gloov1.DestinationSpec{
 												DestinationType: &gloov1.DestinationSpec_Grpc{
 													Grpc: &grpc.DestinationSpec{

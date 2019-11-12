@@ -151,7 +151,9 @@ var _ = Describe("Transformations", func() {
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									Upstream: &gloov1.UpstreamDestination{
+										Ref: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									},
 								},
 							},
 						},
@@ -176,7 +178,9 @@ var _ = Describe("Transformations", func() {
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									Upstream: &gloov1.UpstreamDestination{
+										Ref: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+									},
 								},
 							},
 						},
@@ -206,7 +210,9 @@ var _ = Describe("Transformations", func() {
 										Destination: &gloov1.Destination{
 
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+												Upstream: &gloov1.UpstreamDestination{
+													Ref: utils.ResourceRefPtr(tu.Upstream.Metadata.Ref()),
+												},
 											},
 										},
 									},

@@ -281,7 +281,9 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(b.upstream),
+										Upstream: &gloov1.UpstreamDestination{
+											Ref: utils.ResourceRefPtr(b.upstream),
+										},
 									},
 								},
 							},

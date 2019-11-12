@@ -90,9 +90,11 @@ var _ = Describe("Routes", func() {
 					Destination: &gloov1.RouteAction_Single{
 						Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Name:      "default-petstore-8080",
-									Namespace: "gloo-system",
+								Upstream: &gloov1.UpstreamDestination{
+									Ref: &core.ResourceRef{
+										Name:      "default-petstore-8080",
+										Namespace: "gloo-system",
+									},
 								},
 							},
 						},

@@ -68,7 +68,7 @@ var _ = Describe("Plugin", func() {
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &v1.UpstreamDestination{
-									Upstream: &core.ResourceRef{
+									Ref: &core.ResourceRef{
 										Namespace: "ns",
 										Name:      upstreamName,
 									},

@@ -177,7 +177,9 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										Upstream: &gloov1.UpstreamDestination{
+											Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										},
 									},
 								},
 							},

@@ -175,9 +175,11 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("correctly routes requests to an upstream", func() {
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					Upstream: &gloov1.UpstreamDestination{
+						Ref: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
 					},
 				},
 			}
@@ -298,9 +300,11 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						Upstream: &gloov1.UpstreamDestination{
+							Ref: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							},
 						},
 					},
 				}
@@ -425,7 +429,9 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				dest := &gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &ref,
+						Upstream: &gloov1.UpstreamDestination{
+							Ref: &ref,
+						},
 					},
 				}
 
@@ -457,9 +463,11 @@ var _ = Describe("Kube2e: gateway", func() {
 				valid := withName(validVsName, withDomains([]string{"valid.com"},
 					getVirtualService(&gloov1.Destination{
 						DestinationType: &gloov1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Namespace: testHelper.InstallNamespace,
-								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							Upstream: &gloov1.UpstreamDestination{
+								Ref: &core.ResourceRef{
+									Namespace: testHelper.InstallNamespace,
+									Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+								},
 							},
 						},
 					}, nil)))
@@ -584,18 +592,22 @@ var _ = Describe("Kube2e: gateway", func() {
 					Action: &gatewayv1.Route_RouteAction{RouteAction: &gloov1.RouteAction{
 						Destination: &gloov1.RouteAction_Single{Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Namespace: testHelper.InstallNamespace,
-									Name:      "does-not-exist",
+								Upstream: &gloov1.UpstreamDestination{
+									Ref: &core.ResourceRef{
+										Namespace: testHelper.InstallNamespace,
+										Name:      "does-not-exist",
+									},
 								},
 							},
 						}},
 					}},
 				}, getVirtualService(&gloov1.Destination{
 					DestinationType: &gloov1.Destination_Upstream{
-						Upstream: &core.ResourceRef{
-							Namespace: testHelper.InstallNamespace,
-							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						Upstream: &gloov1.UpstreamDestination{
+							Ref: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+							},
 						},
 					},
 				}, nil))
@@ -656,9 +668,11 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("correctly routes requests to an upstream", func() {
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Upstream{
-					Upstream: &core.ResourceRef{
-						Namespace: testHelper.InstallNamespace,
-						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					Upstream: &gloov1.UpstreamDestination{
+						Ref: &core.ResourceRef{
+							Namespace: testHelper.InstallNamespace,
+							Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+						},
 					},
 				},
 			}
@@ -1036,21 +1050,12 @@ var _ = Describe("Kube2e: gateway", func() {
 						Weight: 1,
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
-							},
-							Subset: &gloov1.Subset{
-								Values: map[string]string{"text": "red"},
-							},
-						},
-					},
-					{
-						Weight: 1,
-						Destination: &gloov1.Destination{
-							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
-							},
-							Subset: &gloov1.Subset{
-								Values: map[string]string{"text": "blue"},
+								Upstream: &gloov1.UpstreamDestination{
+									Ref: &upstreamRef,
+									Subset: &gloov1.Subset{
+										Values: map[string]string{"text": "red"},
+									},
+								},
 							},
 						},
 					},
@@ -1058,10 +1063,25 @@ var _ = Describe("Kube2e: gateway", func() {
 						Weight: 1,
 						Destination: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Upstream{
-								Upstream: &upstreamRef,
+								Upstream: &gloov1.UpstreamDestination{
+									Ref: &upstreamRef,
+									Subset: &gloov1.Subset{
+										Values: map[string]string{"text": "blue"},
+									},
+								},
 							},
-							Subset: &gloov1.Subset{
-								Values: map[string]string{"text": ""},
+						},
+					},
+					{
+						Weight: 1,
+						Destination: &gloov1.Destination{
+							DestinationType: &gloov1.Destination_Upstream{
+								Upstream: &gloov1.UpstreamDestination{
+									Ref: &upstreamRef,
+									Subset: &gloov1.Subset{
+										Values: map[string]string{"text": ""},
+									},
+								},
 							},
 						},
 					},
@@ -1095,10 +1115,12 @@ var _ = Describe("Kube2e: gateway", func() {
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &upstreamRef,
-											},
-											Subset: &gloov1.Subset{
-												Values: map[string]string{"text": "red"},
+												Upstream: &gloov1.UpstreamDestination{
+													Ref: &upstreamRef,
+													Subset: &gloov1.Subset{
+														Values: map[string]string{"text": "red"},
+													},
+												},
 											},
 										},
 									},

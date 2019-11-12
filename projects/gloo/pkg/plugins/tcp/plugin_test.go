@@ -34,9 +34,11 @@ var _ = Describe("Plugin", func() {
 					Weight: 5,
 					Destination: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Name:      "one",
-								Namespace: ns,
+							Upstream: &v1.UpstreamDestination{
+								Ref: &core.ResourceRef{
+									Name:      "one",
+									Namespace: ns,
+								},
 							},
 						},
 					},
@@ -45,9 +47,11 @@ var _ = Describe("Plugin", func() {
 					Weight: 1,
 					Destination: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Name:      "two",
-								Namespace: ns,
+							Upstream: &v1.UpstreamDestination{
+								Ref: &core.ResourceRef{
+									Name:      "two",
+									Namespace: ns,
+								},
 							},
 						},
 					},
@@ -105,9 +109,11 @@ var _ = Describe("Plugin", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Name:      "one",
-									Namespace: ns,
+								Upstream: &v1.UpstreamDestination{
+									Ref: &core.ResourceRef{
+										Name:      "one",
+										Namespace: ns,
+									},
 								},
 							},
 						},
@@ -136,9 +142,11 @@ var _ = Describe("Plugin", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Name:      "one",
-									Namespace: ns,
+								Upstream: &v1.UpstreamDestination{
+									Ref: &core.ResourceRef{
+										Name:      "one",
+										Namespace: ns,
+									},
 								},
 							},
 						},

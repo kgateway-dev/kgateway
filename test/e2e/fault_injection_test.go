@@ -189,7 +189,9 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 									Destination: &gloov1.RouteAction_Single{
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(up.Metadata.Ref()),
+												Upstream: &gloov1.UpstreamDestination{
+													Ref: utils.ResourceRefPtr(up.Metadata.Ref()),
+												},
 											},
 										},
 									},

@@ -140,7 +140,9 @@ var _ = Describe("Translator", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(upName.Ref()),
+								Upstream: &v1.UpstreamDestination{
+									Ref: utils.ResourceRefPtr(upName.Ref()),
+								},
 							},
 						},
 					},
@@ -180,9 +182,11 @@ var _ = Describe("Translator", func() {
 								Destination: &v1.RouteAction_Single{
 									Single: &v1.Destination{
 										DestinationType: &v1.Destination_Upstream{
-											Upstream: &core.ResourceRef{
-												Name:      "test",
-												Namespace: "gloo-system",
+											Upstream: &v1.UpstreamDestination{
+												Ref: &core.ResourceRef{
+													Name:      "test",
+													Namespace: "gloo-system",
+												},
 											},
 										},
 									},
@@ -307,7 +311,7 @@ var _ = Describe("Translator", func() {
 		})
 		It("should error when path math is missing even if we have grpc spec", func() {
 			dest := routes[0].GetRouteAction().GetSingle()
-			dest.DestinationSpec = &v1.DestinationSpec{
+			dest.GetUpstream().DestinationSpec = &v1.DestinationSpec{
 				DestinationType: &v1.DestinationSpec_Grpc{
 					Grpc: &v1grpc.DestinationSpec{
 						Package:  "glootest",
@@ -686,7 +690,9 @@ var _ = Describe("Translator", func() {
 						Weight: 1,
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+								Upstream: &v1.UpstreamDestination{
+									Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+								},
 							},
 						},
 					},
@@ -694,7 +700,9 @@ var _ = Describe("Translator", func() {
 						Weight: 1,
 						Destination: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(upstream2.Metadata.Ref()),
+								Upstream: &v1.UpstreamDestination{
+									Ref: utils.ResourceRefPtr(upstream2.Metadata.Ref()),
+								},
 							},
 						},
 					},
@@ -731,7 +739,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error on invalid ref in upstream groups", func() {
-			upstreamGroup.Destinations[0].Destination.GetUpstream().Name = "notexist"
+			upstreamGroup.Destinations[0].Destination.GetUpstream().GetRef().Name = "notexist"
 
 			_, errs, report, err := translator.Translate(params, proxy)
 			Expect(err).NotTo(HaveOccurred())
@@ -840,11 +848,13 @@ var _ = Describe("Translator", func() {
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-								},
-								Subset: &v1.Subset{
-									Values: map[string]string{
-										"testkey": "testvalue",
+									Upstream: &v1.UpstreamDestination{
+										Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										Subset: &v1.Subset{
+											Values: map[string]string{
+												"testkey": "testvalue",
+											},
+										},
 									},
 								},
 							},
@@ -918,11 +928,13 @@ var _ = Describe("Translator", func() {
 							Destination: &v1.RouteAction_Single{
 								Single: &v1.Destination{
 									DestinationType: &v1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-									},
-									Subset: &v1.Subset{
-										Values: map[string]string{
-											"nottestkey": "value",
+										Upstream: &v1.UpstreamDestination{
+											Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+											Subset: &v1.Subset{
+												Values: map[string]string{
+													"nottestkey": "value",
+												},
+											},
 										},
 									},
 								},
@@ -958,7 +970,9 @@ var _ = Describe("Translator", func() {
 							Destination: &v1.RouteAction_Single{
 								Single: &v1.Destination{
 									DestinationType: &v1.Destination_Upstream{
-										Upstream: &core.ResourceRef{"do", "notexist"},
+										Upstream: &v1.UpstreamDestination{
+											Ref: &core.ResourceRef{"do", "notexist"},
+										},
 									},
 								},
 							},

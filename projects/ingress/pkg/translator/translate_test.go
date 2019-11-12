@@ -215,9 +215,11 @@ var _ = Describe("Translate", func() {
 														Destination: &gloov1.RouteAction_Single{
 															Single: &gloov1.Destination{
 																DestinationType: &gloov1.Destination_Upstream{
-																	Upstream: &core.ResourceRef{
-																		Name:      "wow-upstream",
-																		Namespace: "example",
+																	Upstream: &gloov1.UpstreamDestination{
+																		Ref: &core.ResourceRef{
+																			Name:      "wow-upstream",
+																			Namespace: "example",
+																		},
 																	},
 																},
 															},
@@ -255,9 +257,11 @@ var _ = Describe("Translate", func() {
 														Destination: &gloov1.RouteAction_Single{
 															Single: &gloov1.Destination{
 																DestinationType: &gloov1.Destination_Upstream{
-																	Upstream: &core.ResourceRef{
-																		Name:      "wow-upstream",
-																		Namespace: "example",
+																	Upstream: &gloov1.UpstreamDestination{
+																		Ref: &core.ResourceRef{
+																			Name:      "wow-upstream",
+																			Namespace: "example",
+																		},
 																	},
 																},
 															},
@@ -276,9 +280,11 @@ var _ = Describe("Translate", func() {
 														Destination: &gloov1.RouteAction_Single{
 															Single: &gloov1.Destination{
 																DestinationType: &gloov1.Destination_Upstream{
-																	Upstream: &core.ResourceRef{
-																		Name:      "wow-upstream",
-																		Namespace: "example",
+																	Upstream: &gloov1.UpstreamDestination{
+																		Ref: &core.ResourceRef{
+																			Name:      "wow-upstream",
+																			Namespace: "example",
+																		},
 																	},
 																},
 															},

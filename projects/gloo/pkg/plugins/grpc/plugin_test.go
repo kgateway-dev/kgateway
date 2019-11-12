@@ -91,7 +91,7 @@ var _ = Describe("Plugin", func() {
 							Single: &v1.Destination{
 								DestinationType: &v1.Destination_Upstream{
 									Upstream: &v1.UpstreamDestination{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
 										DestinationSpec: &v1.DestinationSpec{
 											DestinationType: &v1.DestinationSpec_Grpc{
 												Grpc: &v1grpc.DestinationSpec{},

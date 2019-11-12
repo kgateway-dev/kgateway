@@ -227,7 +227,7 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 		Single: &v1.Destination{
 			DestinationType: &v1.Destination_Upstream{
 				Upstream: &v1.UpstreamDestination{
-					Upstream:        &dest.Upstream,
+					Ref:             &dest.Upstream,
 					DestinationSpec: spec,
 				},
 			},

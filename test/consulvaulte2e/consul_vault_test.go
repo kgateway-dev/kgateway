@@ -313,12 +313,14 @@ func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName strin
 						Destination: &gloov1.RouteAction_Single{
 							Single: &gloov1.Destination{
 								DestinationType: &gloov1.Destination_Upstream{
-									Upstream: &upstream,
-								},
-								DestinationSpec: &gloov1.DestinationSpec{
-									DestinationType: &gloov1.DestinationSpec_Rest{
-										Rest: &rest.DestinationSpec{
-											FunctionName: funcName,
+									Upstream: &gloov1.UpstreamDestination{
+										Ref: &upstream,
+										DestinationSpec: &gloov1.DestinationSpec{
+											DestinationType: &gloov1.DestinationSpec_Rest{
+												Rest: &rest.DestinationSpec{
+													FunctionName: funcName,
+												},
+											},
 										},
 									},
 								},

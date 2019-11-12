@@ -127,9 +127,11 @@ func routeWithoutCors() *v1.Route {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Name:      "test",
-								Namespace: "default",
+							Upstream: &v1.UpstreamDestination{
+								Ref: &core.ResourceRef{
+									Name:      "test",
+									Namespace: "default",
+								},
 							},
 						},
 					},

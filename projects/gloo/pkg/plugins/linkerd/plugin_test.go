@@ -88,7 +88,7 @@ var _ = Describe("linkerd plugin", func() {
 			destinations[i] = &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &usRef,
+						Upstream: &v1.UpstreamDestination{Ref: &usRef},
 					},
 				},
 			}
@@ -138,7 +138,7 @@ var _ = Describe("linkerd plugin", func() {
 			destinations := &v1.WeightedDestination{
 				Destination: &v1.Destination{
 					DestinationType: &v1.Destination_Upstream{
-						Upstream: &usRf,
+						Upstream: &v1.UpstreamDestination{Ref: &usRf},
 					},
 				},
 			}
@@ -266,7 +266,9 @@ var _ = Describe("linkerd plugin", func() {
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: &upstreamRefs[0],
+									Upstream: &v1.UpstreamDestination{
+										Ref: &upstreamRefs[0],
+									},
 								},
 							},
 						},

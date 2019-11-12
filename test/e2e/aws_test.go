@@ -179,12 +179,14 @@ var _ = Describe("AWS Lambda", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-												},
-												DestinationSpec: &gloov1.DestinationSpec{
-													DestinationType: &gloov1.DestinationSpec_Aws{
-														Aws: &aws_plugin.DestinationSpec{
-															LogicalName: "uppercase",
+													Upstream: &gloov1.UpstreamDestination{
+														Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+														DestinationSpec: &gloov1.DestinationSpec{
+															DestinationType: &gloov1.DestinationSpec_Aws{
+																Aws: &aws_plugin.DestinationSpec{
+																	LogicalName: "uppercase",
+																},
+															},
 														},
 													},
 												},
@@ -230,13 +232,15 @@ var _ = Describe("AWS Lambda", func() {
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-												},
-												DestinationSpec: &gloov1.DestinationSpec{
-													DestinationType: &gloov1.DestinationSpec_Aws{
-														Aws: &aws_plugin.DestinationSpec{
-															LogicalName:            "contact-form",
-															ResponseTransformation: true,
+													Upstream: &gloov1.UpstreamDestination{
+														Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+														DestinationSpec: &gloov1.DestinationSpec{
+															DestinationType: &gloov1.DestinationSpec_Aws{
+																Aws: &aws_plugin.DestinationSpec{
+																	LogicalName:            "contact-form",
+																	ResponseTransformation: true,
+																},
+															},
 														},
 													},
 												},
@@ -275,12 +279,14 @@ var _ = Describe("AWS Lambda", func() {
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
-									},
-									DestinationSpec: &gloov1.DestinationSpec{
-										DestinationType: &gloov1.DestinationSpec_Aws{
-											Aws: &aws_plugin.DestinationSpec{
-												LogicalName: "uppercase",
+										Upstream: &gloov1.UpstreamDestination{
+											Ref: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+											DestinationSpec: &gloov1.DestinationSpec{
+												DestinationType: &gloov1.DestinationSpec_Aws{
+													Aws: &aws_plugin.DestinationSpec{
+														LogicalName: "uppercase",
+													},
+												},
 											},
 										},
 									},

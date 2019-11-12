@@ -297,7 +297,9 @@ var _ = Describe("Gateway", func() {
 func getTrivialVirtualServiceForUpstream(ns string, upstream core.ResourceRef) *gatewayv1.VirtualService {
 	vs := getTrivialVirtualService(ns)
 	vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().DestinationType = &gloov1.Destination_Upstream{
-		Upstream: utils.ResourceRefPtr(upstream),
+		Upstream: &gloov1.UpstreamDestination{
+			Ref: utils.ResourceRefPtr(upstream),
+		},
 	}
 	return vs
 }

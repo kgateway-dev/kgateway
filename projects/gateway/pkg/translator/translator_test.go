@@ -552,7 +552,7 @@ var _ = Describe("Translator", func() {
 													Single: &gloov1.Destination{
 														DestinationType: &gloov1.Destination_Upstream{
 															Upstream: &gloov1.UpstreamDestination{
-																Upstream: &core.ResourceRef{
+																Ref: &core.ResourceRef{
 																	Name:      "my-upstream",
 																	Namespace: ns,
 																},
@@ -597,7 +597,7 @@ var _ = Describe("Translator", func() {
 													Single: &gloov1.Destination{
 														DestinationType: &gloov1.Destination_Upstream{
 															Upstream: &gloov1.UpstreamDestination{
-																Upstream: &core.ResourceRef{
+																Ref: &core.ResourceRef{
 																	Name:      "my-upstream",
 																	Namespace: ns,
 																},
@@ -620,7 +620,7 @@ var _ = Describe("Translator", func() {
 													Single: &gloov1.Destination{
 														DestinationType: &gloov1.Destination_Upstream{
 															Upstream: &gloov1.UpstreamDestination{
-																Upstream: &core.ResourceRef{
+																Ref: &core.ResourceRef{
 																	Name:      "my-upstream",
 																	Namespace: ns,
 																},
@@ -652,7 +652,7 @@ var _ = Describe("Translator", func() {
 													Single: &gloov1.Destination{
 														DestinationType: &gloov1.Destination_Upstream{
 															Upstream: &gloov1.UpstreamDestination{
-																Upstream: &core.ResourceRef{
+																Ref: &core.ResourceRef{
 																	Name:      "my-upstream",
 																	Namespace: ns,
 																},
@@ -675,7 +675,7 @@ var _ = Describe("Translator", func() {
 													Single: &gloov1.Destination{
 														DestinationType: &gloov1.Destination_Upstream{
 															Upstream: &gloov1.UpstreamDestination{
-																Upstream: &core.ResourceRef{
+																Ref: &core.ResourceRef{
 																	Name:      "my-upstream",
 																	Namespace: ns,
 																},
@@ -724,7 +724,7 @@ var _ = Describe("Translator", func() {
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
 												Upstream: &gloov1.UpstreamDestination{
-													Upstream: &core.ResourceRef{
+													Ref: &core.ResourceRef{
 														Name:      "my-upstream",
 														Namespace: "gloo-system",
 													},
@@ -748,7 +748,7 @@ var _ = Describe("Translator", func() {
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
 												Upstream: &gloov1.UpstreamDestination{
-													Upstream: &core.ResourceRef{
+													Ref: &core.ResourceRef{
 														Name:      "my-upstream",
 														Namespace: "gloo-system",
 													},
@@ -772,7 +772,7 @@ var _ = Describe("Translator", func() {
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
 												Upstream: &gloov1.UpstreamDestination{
-													Upstream: &core.ResourceRef{
+													Ref: &core.ResourceRef{
 														Name:      "my-upstream",
 														Namespace: "gloo-system",
 													},
@@ -798,7 +798,7 @@ var _ = Describe("Translator", func() {
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
 												Upstream: &gloov1.UpstreamDestination{
-													Upstream: &core.ResourceRef{
+													Ref: &core.ResourceRef{
 														Name:      "my-upstream",
 														Namespace: "gloo-system",
 													},
@@ -821,7 +821,7 @@ var _ = Describe("Translator", func() {
 										Single: &gloov1.Destination{
 											DestinationType: &gloov1.Destination_Upstream{
 												Upstream: &gloov1.UpstreamDestination{
-													Upstream: &core.ResourceRef{
+													Ref: &core.ResourceRef{
 														Name:      "my-upstream",
 														Namespace: "gloo-system",
 													},

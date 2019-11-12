@@ -151,7 +151,9 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	weightedDestination := &gloov1.WeightedDestination{
 		Destination: &gloov1.Destination{
 			DestinationType: &gloov1.Destination_Upstream{
-				Upstream: utils.ResourceRefPtr(extAuthServerUpstream.Metadata.Ref()),
+				Upstream: &gloov1.UpstreamDestination{
+					Ref: utils.ResourceRefPtr(extAuthServerUpstream.Metadata.Ref()),
+				},
 			},
 		},
 		Weight:  1,
