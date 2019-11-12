@@ -30,8 +30,6 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snap.Hash())
 
-	logger.Debugf("%v", snap)
-
 	opts := clients.WatchOpts{
 		Ctx:         ctx,
 		RefreshRate: s.refreshRate,

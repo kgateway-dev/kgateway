@@ -29,8 +29,6 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snap.Hash())
 
-	logger.Debugf("%v", snap)
-
 	// kick the uds, ensure that desired upstreams are in sync
 	return s.uds.Resync(ctx)
 }

@@ -55,7 +55,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		len(snap.Secrets),
 	)
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 
 	// split ingresses by their visibility, create a proxy for each
 	var externalIngresses, internalIngresses v1alpha1.IngressList
