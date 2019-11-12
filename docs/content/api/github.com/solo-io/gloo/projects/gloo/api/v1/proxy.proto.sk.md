@@ -122,7 +122,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | ----- | ---- | ----------- |----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk/#tcphost) | List of filter chains to match on for this listener. |  |
 | `options` | [.gloo.solo.io.TcpListenerOptions](../options.proto.sk/#tcplisteneroptions) | Options contains top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Options configuration or Route Options configuration. |  |
-| `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |  |
+| `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |  |
 
 
 

@@ -59,6 +59,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Optional, feature-specific configuration that lives on gateways.
 // Each ListenerOption object contains configuration for a specific feature.
+// Note to developers: new Listener Options must be added to this struct
+// to be usable by Gloo.
 type ListenerOptions struct {
 	AccessLoggingService *als.AccessLoggingService `protobuf:"bytes,1,opt,name=access_logging_service,json=accessLoggingService,proto3" json:"access_logging_service,omitempty"`
 	// Deprecated: Opaque config for Gloo plugins
@@ -233,7 +235,7 @@ func (m *TcpListenerOptions) GetTcpProxySettings() *tcp.TcpProxySettings {
 
 // Optional, feature-specific configuration that lives on virtual hosts.
 // Each VirtualHostPlugin object contains configuration for a specific feature.
-// Note to developers: new Virtual Host Plugins must be added to this struct
+// Note to developers: new Virtual Host Options must be added to this struct
 // to be usable by Gloo.
 type VirtualHostOptions struct {
 	// Deprecated: Opaque config for Gloo plugins
@@ -390,7 +392,7 @@ func (m *VirtualHostOptions) GetDlp() *dlp.Config {
 
 // Optional, feature-specific configuration that lives on routes.
 // Each RouteOption object contains configuration for a specific feature.
-// Note to developers: new Route Plugins must be added to this struct
+// Note to developers: new Route Options must be added to this struct
 // to be usable by Gloo.
 type RouteOptions struct {
 	// Transformations to apply

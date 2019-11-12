@@ -297,7 +297,7 @@ type TcpListener struct {
 	// Some configuration here can be overridden in
 	// Virtual Host Options configuration or Route Options configuration
 	Options *TcpListenerOptions `protobuf:"bytes,8,opt,name=options,proto3" json:"options,omitempty"`
-	// prefix for addressing envoy stats for the tcp proxy
+	// prefix for addressing envoy stats for the http connection manager
 	StatPrefix           string   `protobuf:"bytes,3,opt,name=stat_prefix,json=statPrefix,proto3" json:"stat_prefix,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
