@@ -206,7 +206,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											Options: &gloov1.Options{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -267,7 +267,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											Options: &gloov1.Options{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -337,7 +337,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											Options: &gloov1.Options{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,

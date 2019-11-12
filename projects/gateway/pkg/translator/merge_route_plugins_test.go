@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("MergeRoutePlugins", func() {
 	It("merges top-level route plugins fields", func() {
-		dst := &v1.Options{
+		dst := &v1.RouteOptions{
 			PrefixRewrite: &types.StringValue{Value: "preserve-me"},
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
@@ -22,7 +22,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 			},
 		}
 		d := time.Minute
-		src := &v1.Options{
+		src := &v1.RouteOptions{
 			Timeout: &d,
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
@@ -35,7 +35,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				},
 			},
 		}
-		expected := &v1.Options{
+		expected := &v1.RouteOptions{
 			PrefixRewrite: &types.StringValue{Value: "preserve-me"},
 			Timeout:       &d,
 			Retries: &retries.RetryPolicy{
