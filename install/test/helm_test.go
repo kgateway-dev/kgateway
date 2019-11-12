@@ -735,6 +735,7 @@ metadata:
   namespace: ` + namespace + `
 spec:
   gateway:
+    readGatewaysFromAllNamespaces: false
     validation:
       alwaysAccept: true
       proxyValidationServerAddr: gloo:9988
