@@ -114,7 +114,7 @@ var _ = Describe("Plugins", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			route := v1.Route{
-				RoutePlugins: &v1.Options{
+				Options: &v1.Options{
 					Extensions: &v1.Extensions{
 						Configs: map[string]*types.Struct{
 							"test": pluginstruct,

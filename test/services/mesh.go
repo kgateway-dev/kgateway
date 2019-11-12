@@ -82,7 +82,7 @@ func (m *QuoteUnquoteMesh) AddFault(svcIndex int, percent float32) {
 	l := m.getSelfListener(svcIndex)
 
 	route := l.ListenerType.(*gloov1.Listener_HttpListener).HttpListener.VirtualHosts[0].Routes[0]
-	route.RoutePlugins = &gloov1.RoutePlugins{
+	route.Options = &gloov1.RouteOptions{
 		Faults: &faultinjection.RouteFaults{
 			Abort: &faultinjection.RouteAbort{
 				HttpStatus: http.StatusServiceUnavailable,

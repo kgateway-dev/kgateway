@@ -506,7 +506,7 @@ var _ = Describe("Translator", func() {
 													Namespace: ns,
 												},
 											},
-											RoutePlugins: rootLevelRoutePlugins,
+											Options: rootLevelRoutePlugins,
 										},
 									},
 								},
@@ -573,7 +573,7 @@ var _ = Describe("Translator", func() {
 												Namespace: ns,
 											},
 										},
-										RoutePlugins: midLevelRoutePlugins,
+										Options: midLevelRoutePlugins,
 									},
 								},
 							},
@@ -624,7 +624,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -675,7 +675,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -722,7 +722,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: rootLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -744,7 +744,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedMidLevelRoutePlugins,
+							Options: mergedMidLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -766,7 +766,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedLeafLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
@@ -811,7 +811,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: leafLevelRoutePlugins,
+							Options: leafLevelRoutePlugins,
 						},
 					}))
 				})

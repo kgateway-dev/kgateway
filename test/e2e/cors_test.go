@@ -163,7 +163,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 								},
 							},
 						}},
-						VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+						Options: &gloov1.VirtualHostOptions{
 							Cors: cors,
 						},
 					}},

@@ -154,7 +154,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 				Upstream: utils.ResourceRefPtr(extAuthServerUpstream.Metadata.Ref()),
 			},
 		},
-		Weight:                     1,
+		Weight:  1,
 		Options: &gloov1.WeightedDestinationOptions{}, // will be set below
 	}
 
@@ -183,9 +183,9 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	// Virtual Host
 	// ----------------------------------------------------------------------------
 	virtualHost := &gloov1.VirtualHost{
-		Name:               "virt1",
-		Domains:            []string{"*"},
-		Routes:             []*gloov1.Route{route},
+		Name:    "virt1",
+		Domains: []string{"*"},
+		Routes:  []*gloov1.Route{route},
 		Options: &gloov1.VirtualHostOptions{}, // will be set below
 	}
 

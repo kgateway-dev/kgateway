@@ -292,7 +292,7 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 		}
 
 		if enableRateLimits {
-			vhost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+			vhost.Options = &gloov1.VirtualHostOptions{
 				Ratelimit: b.customRateLimit,
 			}
 		}

@@ -195,14 +195,14 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 									},
 								},
 							},
-							RoutePlugins: &gloov1.RoutePlugins{
+							Options: &gloov1.RouteOptions{
 								Faults: &fault.RouteFaults{
 									Abort: abort,
 									Delay: delay,
 								},
 							},
 						}},
-						VirtualHostPlugins: &gloov1.VirtualHostPlugins{},
+						Options: &gloov1.VirtualHostOptions{},
 					}},
 				},
 			},

@@ -276,7 +276,7 @@ status: {}
 			}
 			sampleVirtualService := &gatewayv1.VirtualService{
 				VirtualHost: &gatewayv1.VirtualHost{
-					Routes: []*gatewayv1.Route{{RoutePlugins: route.Options}},
+					Routes: []*gatewayv1.Route{{Options: route.Options}},
 				},
 			}
 			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]

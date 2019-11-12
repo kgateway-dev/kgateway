@@ -26,7 +26,7 @@ var _ = Describe("prefix rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				PrefixRewrite: &types.StringValue{Value: "/foo"},
 			},
 		}, out)
@@ -47,14 +47,14 @@ var _ = Describe("prefix rewrite", func() {
 
 		// should be no-op
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{},
+			Options: &v1.Options{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.PrefixRewrite).To(Equal("/"))
 
 		// should rewrite prefix rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				PrefixRewrite: &types.StringValue{Value: ""},
 			},
 		}, out)
@@ -74,7 +74,7 @@ var _ = Describe("timeout", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				Timeout: &t,
 			},
 		}, out)
@@ -117,7 +117,7 @@ var _ = Describe("retries", func() {
 			},
 		}
 		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				Retries: retryPolicy,
 			},
 		}, out)
@@ -149,7 +149,7 @@ var _ = Describe("host rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				HostRewriteType: &v1.Options_HostRewrite{HostRewrite: "/foo"},
 			},
 		}, out)
@@ -170,14 +170,14 @@ var _ = Describe("host rewrite", func() {
 
 		// should be no-op
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{},
+			Options: &v1.Options{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetHostRewrite()).To(Equal("/"))
 
 		// should rewrite host rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				HostRewriteType: &v1.Options_HostRewrite{HostRewrite: ""},
 			},
 		}, out)
@@ -201,7 +201,7 @@ var _ = Describe("host rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.Options{
+			Options: &v1.Options{
 				HostRewriteType: &v1.Options_AutoHostRewrite{
 					AutoHostRewrite: &types.BoolValue{
 						Value: true,

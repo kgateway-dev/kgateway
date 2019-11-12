@@ -466,7 +466,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*matchers.Matcher{{}},
-						RoutePlugins: &gloov1.RoutePlugins{
+						Options: &gloov1.RouteOptions{
 							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
@@ -1382,6 +1382,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: rewrite}}
+	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
 }

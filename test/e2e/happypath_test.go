@@ -112,7 +112,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// Set a virtual cluster matching everything
-			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].Options = &gloov1.VirtualHostOptions{
 				Stats: &stats.Stats{
 					VirtualClusters: []*stats.VirtualCluster{{
 						Name:    "test-vc",

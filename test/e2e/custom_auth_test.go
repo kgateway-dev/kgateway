@@ -184,7 +184,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 						{
 							Name:    "gloo-system.virt1",
 							Domains: []string{"*"},
-							VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+							Options: &gloov1.VirtualHostOptions{
 								Extauth: &v1.ExtAuthExtension{
 									Spec: &v1.ExtAuthExtension_CustomAuth{
 										CustomAuth: &v1.CustomAuth{
@@ -202,7 +202,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Prefix: "/user",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 									},
 									Action: &gloov1.Route_RouteAction{
@@ -223,7 +223,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Prefix: "/admin",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_CustomAuth{
@@ -253,7 +253,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 											Prefix: "/public",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_Disable{
