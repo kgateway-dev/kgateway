@@ -67,7 +67,7 @@ update-deps:
 	mkdir -p $$GOPATH/src/github.com/envoyproxy
 	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
 	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
-	go get -u github.com/paulvollmer/2gobytes
+	go get -u github.com/cratonica/2goarray
 	go get -v -u github.com/golang/mock/gomock
 	go install github.com/golang/mock/mockgen
 
@@ -204,28 +204,6 @@ gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gatew
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
 		-t quay.io/solo-io/gateway:$(VERSION) \
 		$(call get_test_tag,gateway)
-
-#----------------------------------------------------------------------------------
-# Gateway Conversion
-#----------------------------------------------------------------------------------
-
-GATEWAY_CONVERSION_DIR=projects/gateway/pkg/conversion
-GATEWAY_CONVERSION_SOURCES=$(call get_sources,$(GATEWAY_CONVERSION_DIR))
-
-$(OUTPUT_DIR)/gateway-conversion-linux-amd64: $(GATEWAY_CONVERSION_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_CONVERSION_DIR)/cmd/main.go
-
-
-.PHONY: gateway-conversion
-gateway-conversion: $(OUTPUT_DIR)/gateway-conversion-linux-amd64
-
-$(OUTPUT_DIR)/Dockerfile.gateway-conversion: $(GATEWAY_CONVERSION_DIR)/cmd/Dockerfile
-	cp $< $@
-
-gateway-conversion-docker: $(OUTPUT_DIR)/gateway-conversion-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway-conversion
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway-conversion \
-		-t quay.io/solo-io/gateway-conversion:$(VERSION) \
-		$(call get_test_tag,gateway-conversion)
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -368,7 +346,7 @@ certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certg
 # Build All
 #----------------------------------------------------------------------------------
 .PHONY: build
-build: gloo glooctl gateway gateway-conversion discovery envoyinit certgen ingress
+build: gloo glooctl gateway discovery envoyinit certgen ingress
 
 #----------------------------------------------------------------------------------
 # Deployment Manifests / Helm
@@ -490,7 +468,7 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gloo-envoy-wrapper-docker certgen-docker ingress-docker access-logger-docker
+docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker certgen-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -499,7 +477,6 @@ docker: discovery-docker gateway-docker gateway-conversion-docker gloo-docker gl
 docker-push: $(DOCKER_IMAGES)
 ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/gateway:$(VERSION) && \
-	docker push quay.io/solo-io/gateway-conversion:$(VERSION) && \
 	docker push quay.io/solo-io/ingress:$(VERSION) && \
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
@@ -510,7 +487,6 @@ endif
 
 push-kind-images: docker
 	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/gateway-conversion:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/ingress:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/gloo:$(VERSION) --name $(CLUSTER_NAME)
@@ -538,16 +514,13 @@ build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux
 .PHONY: build-kind-assets
 build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
 
-TEST_DOCKER_TARGETS := gateway-docker-test gateway-conversion-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
+TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
 
 .PHONY: push-test-images $(TEST_DOCKER_TARGETS)
 push-test-images: $(TEST_DOCKER_TARGETS)
 
 gateway-docker-test: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
 	docker push $(GCR_REPO_PREFIX)/gateway:$(TEST_IMAGE_TAG)
-
-gateway-conversion-docker-test: $(OUTPUT_DIR)/gateway-conversion-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway-conversion
-	docker push $(GCR_REPO_PREFIX)/gateway-conversion:$(TEST_IMAGE_TAG)
 
 ingress-docker-test: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
 	docker push $(GCR_REPO_PREFIX)/ingress:$(TEST_IMAGE_TAG)

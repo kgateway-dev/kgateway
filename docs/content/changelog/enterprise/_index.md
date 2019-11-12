@@ -1,6 +1,7 @@
 ---
 title: Gloo Enterprise
 weight: 8
+description: Changelogs for Gloo Enterprise
 ---
 
 <br>

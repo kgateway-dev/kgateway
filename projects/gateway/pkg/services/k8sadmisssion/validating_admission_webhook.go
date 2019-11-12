@@ -23,7 +23,6 @@ import (
 
 	"github.com/pkg/errors"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -341,7 +340,7 @@ func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.Pro
 func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, object runtime.RawExtension, isDelete bool) (validation.ProxyReports, error) {
 
 	switch gvk {
-	case v2.GatewayGVK:
+	case gwv1.GatewayGVK:
 		if isDelete {
 			// we don't validate gateway deletion
 			break
@@ -365,7 +364,7 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 }
 
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
-	var gw v2.Gateway
+	var gw gwv1.Gateway
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
 		return nil, errors.Wrapf(err, "could not unmarshal raw object")
 	}
