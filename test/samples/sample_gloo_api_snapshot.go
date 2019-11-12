@@ -140,7 +140,7 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 				ProxyNames: []string{defaults.GatewayProxyName},
 				GatewayType: &gwv1.Gateway_TcpGateway{
 					TcpGateway: &gwv1.TcpGateway{
-						Destinations: []*v1.TcpHost{
+						TcpHosts: []*v1.TcpHost{
 							{
 								Name: "tcp-dest",
 								Destination: &v1.RouteAction{

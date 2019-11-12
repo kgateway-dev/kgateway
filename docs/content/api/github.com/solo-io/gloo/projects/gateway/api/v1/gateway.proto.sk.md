@@ -88,14 +88,14 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 
 ```yaml
-"destinations": []gloo.solo.io.TcpHost
+"tcpHosts": []gloo.solo.io.TcpHost
 "plugins": .gloo.solo.io.TcpListenerPlugins
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destinations` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | Name of the destinations the gateway can route to. |  |
+| `tcpHosts` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | TCP hosts that the gateway can route to. |  |
 | `plugins` | [.gloo.solo.io.TcpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk/#tcplistenerplugins) | tcp gateway configuration. |  |
 
 

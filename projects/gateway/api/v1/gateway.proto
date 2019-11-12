@@ -93,8 +93,8 @@ message HttpGateway {
 }
 
 message TcpGateway {
-    // Name of the destinations the gateway can route to
-    repeated gloo.solo.io.TcpHost destinations = 1;
+    // TCP hosts that the gateway can route to
+    repeated gloo.solo.io.TcpHost tcp_hosts = 1;
     // tcp gateway configuration
     gloo.solo.io.TcpListenerPlugins plugins = 8;
 }
