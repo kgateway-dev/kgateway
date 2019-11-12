@@ -1,0 +1,15 @@
+syntax = "proto3";
+package grpc_web.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
+
+// GrpcWeb support is enabled be default. Use this extension to disable it.
+message GrpcWeb {
+  // Disable grpc web support.
+  bool disable = 1;
+}
