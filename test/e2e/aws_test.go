@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )

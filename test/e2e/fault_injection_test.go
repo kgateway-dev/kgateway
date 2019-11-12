@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"

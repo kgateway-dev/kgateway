@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

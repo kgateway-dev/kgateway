@@ -18,7 +18,7 @@ var _ = Describe("Grpcweb", func() {
 
 	It("should not add filter if disabled", func() {
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{
+			ListenerPlugins: &v1.HttpListenerOptions{
 				GrpcWeb: &grpc_web.GrpcWeb{
 					Disable: true,
 				},
@@ -33,7 +33,7 @@ var _ = Describe("Grpcweb", func() {
 
 	It("should add filter if disabled", func() {
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{},
+			ListenerPlugins: &v1.HttpListenerOptions{},
 		}
 
 		p := NewPlugin()

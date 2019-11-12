@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"

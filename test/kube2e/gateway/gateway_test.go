@@ -36,7 +36,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -44,7 +44,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
