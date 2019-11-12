@@ -174,10 +174,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
-		xdsAddr = settings.GetBindAddr()
-		if xdsAddr == "" {
-			xdsAddr = DefaultXdsBindAddr
-		}
+		xdsAddr = DefaultXdsBindAddr
 	}
 	xdsTcpAddress, err := getAddr(xdsAddr)
 	if err != nil {

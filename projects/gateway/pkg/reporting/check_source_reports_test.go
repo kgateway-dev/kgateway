@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/samples"
@@ -19,7 +19,7 @@ import (
 var _ = Describe("CheckSourceReports", func() {
 
 	var (
-		snap    *v2.ApiSnapshot
+		snap    *v1.ApiSnapshot
 		proxy   *gloov1.Proxy
 		reports reporter.ResourceReports
 		ignored = "ignored"

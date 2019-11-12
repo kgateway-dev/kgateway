@@ -9,7 +9,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -20,11 +19,11 @@ import (
 const GatewayProxyName = defaults.GatewayProxyName
 
 type ListenerFactory interface {
-	GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, reports reporter.ResourceReports) []*gloov1.Listener
+	GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener
 }
 
 type Translator interface {
-	Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, filteredGateways v2.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
+	Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, filteredGateways v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports)
 }
 
 type translator struct {
@@ -39,7 +38,7 @@ func NewDefaultTranslator() *translator {
 	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
 }
 
-func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v2.ApiSnapshot, gatewaysByProxy v2.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
+func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
 	filteredGateways := filterGatewaysForNamespace(gatewaysByProxy, namespace)
@@ -69,7 +68,7 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	}, reports
 }
 
-func makeListener(gateway *v2.Gateway) *gloov1.Listener {
+func makeListener(gateway *v1.Gateway) *gloov1.Listener {
 	return &gloov1.Listener{
 		Name:          ListenerName(gateway),
 		BindAddress:   gateway.BindAddress,
@@ -79,12 +78,12 @@ func makeListener(gateway *v2.Gateway) *gloov1.Listener {
 	}
 }
 
-func ListenerName(gateway *v2.Gateway) string {
+func ListenerName(gateway *v1.Gateway) string {
 	return fmt.Sprintf("listener-%s-%d", gateway.BindAddress, gateway.BindPort)
 }
 
-func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
-	bindAddresses := map[string]v2.GatewayList{}
+func validateGateways(gateways v1.GatewayList, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
+	bindAddresses := map[string]v1.GatewayList{}
 	// if two gateway (=listener) that belong to the same proxy share the same bind address,
 	// they are invalid.
 	for _, gw := range gateways {
@@ -109,7 +108,7 @@ func validateGateways(gateways v2.GatewayList, virtualServices v1.VirtualService
 	}
 }
 
-func gatewaysRefsToString(gateways v2.GatewayList) []string {
+func gatewaysRefsToString(gateways v1.GatewayList) []string {
 	var ret []string
 	for _, gw := range gateways {
 		ret = append(ret, gw.Metadata.Ref().Key())
@@ -120,8 +119,8 @@ func gatewaysRefsToString(gateways v2.GatewayList) []string {
 // https://github.com/solo-io/gloo/issues/538
 // Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
 // handling multiple gloo installations
-func filterGatewaysForNamespace(gateways v2.GatewayList, namespace string) v2.GatewayList {
-	var filteredGateways v2.GatewayList
+func filterGatewaysForNamespace(gateways v1.GatewayList, namespace string) v1.GatewayList {
+	var filteredGateways v1.GatewayList
 	for _, gateway := range gateways {
 		if gateway.Metadata.Namespace == namespace {
 			filteredGateways = append(filteredGateways, gateway)

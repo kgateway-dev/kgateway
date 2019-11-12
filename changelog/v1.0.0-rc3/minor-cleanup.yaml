@@ -1,0 +1,8 @@
+changelog:
+- type: FIX
+  description: Downgrade the log level from Error to Warn when gloo fails to report statistics
+  issueLink: https://github.com/solo-io/gloo/issues/1633
+- type: NON_USER_FACING
+  description: DRY out the logic that determines what stage the rate limit plugin runs in
+  issueLink: https://github.com/solo-io/gloo/issues/1521
+  resolvesIssue: false

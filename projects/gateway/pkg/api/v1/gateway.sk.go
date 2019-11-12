@@ -40,11 +40,12 @@ func (r *Gateway) Hash() uint64 {
 	return hashutils.HashAll(
 		metaCopy,
 		r.Ssl,
-		r.VirtualServices,
 		r.BindAddress,
 		r.BindPort,
 		r.Plugins,
 		r.UseProxyProto,
+		r.ProxyNames,
+		r.GatewayType,
 	)
 }
 

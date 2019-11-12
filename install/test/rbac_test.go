@@ -416,10 +416,6 @@ var _ = Describe("RBAC Test", func() {
 						APIGroups: []string{"gateway.solo.io"},
 						Resources: []string{"gateways"},
 						Verbs:     []string{"get", "list", "watch", "create", "update"},
-					}, {
-						APIGroups: []string{"gateway.solo.io.v2"},
-						Resources: []string{"gateways"},
-						Verbs:     []string{"get", "list", "watch", "create", "update"},
 					},
 				},
 				RoleRef: rbacv1.RoleRef{

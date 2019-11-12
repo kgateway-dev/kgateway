@@ -57,10 +57,6 @@ message Settings {
         ConsulKv consul_kv_artifact_source = 23;
     };
 
-    // Where the Gloo xDS server should bind (should not need configuration by user)
-    // Deprecated: use gloo.xdsBindAddr
-    string bind_addr = 11 [deprecated=true];
-
     // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
 
@@ -133,10 +129,6 @@ message Settings {
     message Directory {
         string directory = 1;
     } // watch a directory
-
-    // Default circuit breakers when not set in a specific upstream.
-    // Deprecated: use gloo.circuitBreakers
-    CircuitBreakerConfig circuit_breakers = 3 [deprecated=true];
 
     message KnativeOptions {
         // Address of the clusteringress proxy.

@@ -11,7 +11,7 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -24,7 +24,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
-	batchv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,7 +101,7 @@ var _ = Describe("Helm Test", func() {
 		prepareMakefileFromValuesFile := func(valuesFile string) {
 			helmFlags := "--namespace " + namespace +
 				" --set namespace.create=true" +
-				" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test" +
+				" --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test" +
 				" --values " + valuesFile
 			prepareMakefile(helmFlags)
 		}
@@ -172,17 +171,17 @@ var _ = Describe("Helm Test", func() {
 				labels = map[string]string{
 					"app":              "gloo",
 					"gloo":             "gateway-proxy",
-					"gateway-proxy-id": "gateway-proxy-v2",
+					"gateway-proxy-id": "gateway-proxy",
 				}
 				setGlobalLabels(labels)
 				selector = map[string]string{
 					"gateway-proxy":    "live",
-					"gateway-proxy-id": "gateway-proxy-v2",
+					"gateway-proxy-id": "gateway-proxy",
 				}
 			})
 
 			It("has a namespace", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
+				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
 				prepareMakefile(helmFlags)
 				rb := ResourceBuilder{
 					Namespace: namespace,
@@ -212,13 +211,13 @@ var _ = Describe("Helm Test", func() {
 
 			Context("access logging service", func() {
 				var (
-					accessLoggerName          = "gateway-proxy-v2-access-logger"
-					gatewayProxyConfigMapName = "gateway-proxy-v2-envoy-config"
+					accessLoggerName          = "gateway-proxy-access-logger"
+					gatewayProxyConfigMapName = "gateway-proxy-envoy-config"
 				)
 				BeforeEach(func() {
 					labels = map[string]string{
 						"app":  "gloo",
-						"gloo": "gateway-proxy-v2-access-logger",
+						"gloo": "gateway-proxy-access-logger",
 					}
 				})
 
@@ -252,7 +251,7 @@ var _ = Describe("Helm Test", func() {
 					svc := svcBuilder.GetService()
 					svc.Spec.Selector = map[string]string{
 						"app":  "gloo",
-						"gloo": "gateway-proxy-v2-access-logger",
+						"gloo": "gateway-proxy-access-logger",
 					}
 					svc.Spec.Type = ""
 					svc.Spec.Ports[0].TargetPort = intstr.FromInt(8083)
@@ -291,7 +290,7 @@ var _ = Describe("Helm Test", func() {
 					labels = map[string]string{
 						"gloo":             "gateway-proxy",
 						"app":              "gloo",
-						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy-id": "gateway-proxy",
 					}
 					setGlobalLabels(labels)
 					proxySpec["envoy.yaml"] = confWithAccessLogger
@@ -315,7 +314,7 @@ var _ = Describe("Helm Test", func() {
 				It("renders with http/https gateways by default", func() {
 					prepareMakefile("--namespace " + namespace)
 					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
-					var gateway1 v2.Gateway
+					var gateway1 gwv1.Gateway
 					ConvertKubeResource(gatewayUns, &gateway1)
 					Expect(gateway1.Ssl).To(BeFalse())
 					Expect(gateway1.BindPort).To(Equal(uint32(8080)))
@@ -332,7 +331,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can disable rendering http/https gateways", func() {
-					prepareMakefile("--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.gatewaySettings.disableGeneratedGateways=true")
+					prepareMakefile("--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true")
 					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
 					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
 				})
@@ -349,7 +348,7 @@ var _ = Describe("Helm Test", func() {
 					for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
 						name := name
 						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
-						var gateway1 v2.Gateway
+						var gateway1 gwv1.Gateway
 						ConvertKubeResource(gatewayUns, &gateway1)
 						Expect(gateway1.UseProxyProto).To(Equal(&types.BoolValue{
 							Value: true,
@@ -368,63 +367,6 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
-			Context("gateway conversion job", func() {
-				var (
-					job *batchv1.Job
-				)
-				BeforeEach(func() {
-					jobLabels := map[string]string{
-						"app":  "gloo",
-						"gloo": "gateway",
-					}
-					setGlobalLabels(jobLabels)
-					job = &batchv1.Job{
-						TypeMeta: metav1.TypeMeta{
-							Kind:       "Job",
-							APIVersion: "batch/v1",
-						},
-						ObjectMeta: metav1.ObjectMeta{
-							Labels:    jobLabels,
-							Name:      "gateway-conversion",
-							Namespace: namespace,
-						},
-						Spec: batchv1.JobSpec{
-							Template: v1.PodTemplateSpec{
-								ObjectMeta: metav1.ObjectMeta{
-									Labels: map[string]string{
-										"gloo": "gateway",
-									},
-								},
-								Spec: v1.PodSpec{
-									RestartPolicy:      v1.RestartPolicyNever,
-									ServiceAccountName: "gateway",
-									Containers: []v1.Container{
-										{
-											Name:            "gateway-conversion",
-											Image:           "quay.io/solo-io/gateway-conversion:" + version,
-											ImagePullPolicy: v1.PullAlways,
-											Env: []v1.EnvVar{
-												GetPodNamespaceEnvVar(),
-											},
-										},
-									},
-								},
-							},
-						},
-					}
-				})
-
-				It("doesn't creates a deployment", func() {
-					prepareMakefile("--namespace " + namespace + " --set gateway.upgrade=false")
-					testManifest.Expect(job.Kind, job.Namespace, job.Name).To(BeNil())
-				})
-
-				It("creates a deployment", func() {
-					prepareMakefile("--namespace " + namespace + " --set gateway.upgrade=true")
-					testManifest.Expect(job.Kind, job.Namespace, job.Name).To(BeEquivalentTo(job))
-				})
-			})
-
 			Context("gateway-proxy service", func() {
 				var gatewayProxyService *v1.Service
 
@@ -432,18 +374,18 @@ var _ = Describe("Helm Test", func() {
 					serviceLabels := map[string]string{
 						"app":              "gloo",
 						"gloo":             "gateway-proxy",
-						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy-id": "gateway-proxy",
 					}
 					setGlobalLabels(serviceLabels)
 					rb := ResourceBuilder{
 						Namespace: namespace,
-						Name:      "gateway-proxy-v2",
+						Name:      "gateway-proxy",
 						Args:      nil,
 						Labels:    serviceLabels,
 					}
 					gatewayProxyService = rb.GetService()
 					selectorLabels := map[string]string{
-						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy-id": "gateway-proxy",
 						"gateway-proxy":    "live",
 					}
 					gatewayProxyService.Spec.Selector = selectorLabels
@@ -467,15 +409,15 @@ var _ = Describe("Helm Test", func() {
 				It("sets extra annotations", func() {
 					gatewayProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
 					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.foo=bar" +
-						" --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.bar=baz")
+						" --set gatewayProxies.gatewayProxy.service.extraAnnotations.foo=bar" +
+						" --set gatewayProxies.gatewayProxy.service.extraAnnotations.bar=baz")
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
 				It("sets external traffic policy", func() {
 					gatewayProxyService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
 					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxyV2.service.externalTrafficPolicy=Local")
+						" --set gatewayProxies.gatewayProxy.service.externalTrafficPolicy=Local")
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
@@ -483,8 +425,8 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyService.Spec.Type = v1.ServiceTypeClusterIP
 					gatewayProxyService.Spec.ClusterIP = "test-ip"
 					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxyV2.service.type=ClusterIP" +
-						" --set gatewayProxies.gatewayProxyV2.service.clusterIP=test-ip")
+						" --set gatewayProxies.gatewayProxy.service.type=ClusterIP" +
+						" --set gatewayProxies.gatewayProxy.service.clusterIP=test-ip")
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
@@ -492,8 +434,8 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
 					gatewayProxyService.Spec.LoadBalancerIP = "test-lb-ip"
 					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxyV2.service.type=LoadBalancer" +
-						" --set gatewayProxies.gatewayProxyV2.service.loadBalancerIP=test-lb-ip")
+						" --set gatewayProxies.gatewayProxy.service.type=LoadBalancer" +
+						" --set gatewayProxies.gatewayProxy.service.loadBalancerIP=test-lb-ip")
 					testManifest.ExpectService(gatewayProxyService)
 				})
 			})
@@ -506,12 +448,12 @@ var _ = Describe("Helm Test", func() {
 				BeforeEach(func() {
 					selector = map[string]string{
 						"gloo":             "gateway-proxy",
-						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy-id": "gateway-proxy",
 					}
 					podLabels := map[string]string{
 						"gloo":             "gateway-proxy",
 						"gateway-proxy":    "live",
-						"gateway-proxy-id": "gateway-proxy-v2",
+						"gateway-proxy-id": "gateway-proxy",
 					}
 					podname := v1.EnvVar{
 						Name: "POD_NAME",
@@ -522,12 +464,12 @@ var _ = Describe("Helm Test", func() {
 						},
 					}
 					container := GetQuayContainerSpec("gloo-envoy-wrapper", version, GetPodNamespaceEnvVar(), podname)
-					container.Name = "gateway-proxy-v2"
+					container.Name = "gateway-proxy"
 					container.Args = []string{"--disable-hot-restart"}
 
 					rb := ResourceBuilder{
 						Namespace:  namespace,
-						Name:       "gateway-proxy-v2",
+						Name:       "gateway-proxy",
 						Labels:     labels,
 						Containers: []ContainerSpec{container},
 					}
@@ -546,7 +488,7 @@ var _ = Describe("Helm Test", func() {
 						VolumeSource: v1.VolumeSource{
 							ConfigMap: &v1.ConfigMapVolumeSource{
 								LocalObjectReference: v1.LocalObjectReference{
-									Name: "gateway-proxy-v2-envoy-config",
+									Name: "gateway-proxy-envoy-config",
 								},
 							},
 						},
@@ -602,7 +544,7 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("creates a daemonset", func() {
-						helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.kind.deployment=null --set gatewayProxies.gatewayProxyV2.kind.daemonSet.hostPort=true"
+						helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.kind.deployment=null --set gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true"
 						prepareMakefile(helmFlags)
 						testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
 					})
@@ -615,14 +557,14 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("disables net bind", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.podTemplate.disableNetBind=true"
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.podTemplate.disableNetBind=true"
 					prepareMakefile(helmFlags)
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Capabilities.Add = nil
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
 				It("unprivelged user", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.podTemplate.runUnprivileged=true"
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.podTemplate.runUnprivileged=true"
 					prepareMakefile(helmFlags)
 					truez := true
 					uid := int64(10101)
@@ -632,7 +574,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("enables anti affinity ", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.kind.deployment.antiAffinity=true"
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.kind.deployment.antiAffinity=true"
 					prepareMakefile(helmFlags)
 					gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
 						PodAntiAffinity: &v1.PodAntiAffinity{
@@ -651,7 +593,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("enables probes", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.probes=true"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.probes=true"
 
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 						Handler: v1.Handler{
@@ -682,7 +624,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("has limits", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxyV2.podTemplate.resources.requests.cpu=5"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5"
 					prepareMakefile(helmFlags)
 
 					// Add the limits we are testing:
@@ -702,7 +644,7 @@ var _ = Describe("Helm Test", func() {
 				It("can overwrite the container image information", func() {
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("gcr.io/solo-public/gloo-envoy-wrapper:%s", version)
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = "Always"
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxyV2.podTemplate.image.registry=gcr.io/solo-public"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxy.podTemplate.image.registry=gcr.io/solo-public"
 					prepareMakefile(helmFlags)
 
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
@@ -714,7 +656,7 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-config_dump"] = "/config_dump"
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-port"] = "8082"
 
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.readConfig=true"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.readConfig=true"
 					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
@@ -744,7 +686,7 @@ var _ = Describe("Helm Test", func() {
 							},
 						})
 
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxyV2.extraContainersHelper=gloo.testcontainer"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.extraContainersHelper=gloo.testcontainer"
 					prepareMakefile(helmFlags)
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
@@ -838,8 +780,8 @@ webhooks:
       caBundle: "" # update manually or use certgen job
     rules:
       - operations: [ "CREATE", "UPDATE", "DELETE" ]
-        apiGroups: ["gateway.solo.io", "gateway.solo.io.v2"]
-        apiVersions: ["v1", "v2"]
+        apiGroups: ["gateway.solo.io"]
+        apiVersions: ["v1"]
         resources: ["*"]
     failurePolicy: Ignore
 
@@ -860,7 +802,7 @@ metadata:
     app: gloo
     gloo: gateway
     installationId: ` + helmTestInstallId + `
-  name: gateway-v2
+  name: gateway
   namespace: ` + namespace + `
 spec:
   replicas: 1
@@ -923,6 +865,7 @@ spec:
 				})
 
 				It("creates the certgen job, rbac, and service account", func() {
+					prepareMakefile("--namespace " + namespace)
 					job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -937,6 +880,7 @@ metadata:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "10"
 spec:
+  ttlSecondsAfterFinished: 60
   template:
     metadata:
       labels:
@@ -1195,7 +1139,7 @@ metadata:
 
 					rb := ResourceBuilder{
 						Namespace:   namespace,
-						Name:        "gateway-v2",
+						Name:        "gateway",
 						Labels:      labels,
 						Annotations: statsAnnotations,
 						Containers:  []ContainerSpec{container},
@@ -1371,13 +1315,13 @@ metadata:
 
 		Describe("configmaps", func() {
 			var (
-				gatewayProxyConfigMapName = "gateway-proxy-v2-envoy-config"
+				gatewayProxyConfigMapName = "gateway-proxy-envoy-config"
 			)
 
 			labels := map[string]string{
 				"gloo":             "gateway-proxy",
 				"app":              "gloo",
-				"gateway-proxy-id": "gateway-proxy-v2",
+				"gateway-proxy-id": "gateway-proxy",
 			}
 
 			BeforeEach(func() {
@@ -1386,7 +1330,7 @@ metadata:
 
 			Describe("gateway proxy - tracing config", func() {
 				It("has a proxy without tracing", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxyV2.service.extraAnnotations.test=test"
+					helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
 					prepareMakefile(helmFlags)
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithoutTracing
@@ -1431,7 +1375,7 @@ metadata:
 
 			Describe("gateway proxy -- readConfig config", func() {
 				It("has a listener for reading a subset of the admin api", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxyV2.readConfig=true"
+					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.readConfig=true"
 					prepareMakefile(helmFlags)
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithReadConfig

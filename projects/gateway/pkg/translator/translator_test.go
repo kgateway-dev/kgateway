@@ -11,7 +11,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
 
@@ -27,7 +26,7 @@ const (
 
 var _ = Describe("Translator", func() {
 	var (
-		snap       *v2.ApiSnapshot
+		snap       *v1.ApiSnapshot
 		labelSet   = map[string]string{"a": "b"}
 		translator Translator
 	)
@@ -35,19 +34,19 @@ var _ = Describe("Translator", func() {
 	Context("translator", func() {
 		BeforeEach(func() {
 			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
-			snap = &v2.ApiSnapshot{
-				Gateways: v2.GatewayList{
+			snap = &v1.ApiSnapshot{
+				Gateways: v1.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2.Gateway_HttpGateway{
-							HttpGateway: &v2.HttpGateway{},
+						GatewayType: &v1.Gateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{},
 						},
 						BindPort: 2,
 					},
 					{
 						Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-						GatewayType: &v2.Gateway_HttpGateway{
-							HttpGateway: &v2.HttpGateway{},
+						GatewayType: &v1.Gateway_HttpGateway{
+							HttpGateway: &v1.HttpGateway{},
 						},
 						BindPort: 2,
 					},
@@ -131,10 +130,10 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2.Gateway{
+				&v1.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2.Gateway_TcpGateway{
-						TcpGateway: &v2.TcpGateway{},
+					GatewayType: &v1.Gateway_TcpGateway{
+						TcpGateway: &v1.TcpGateway{},
 					},
 				},
 			)
@@ -150,10 +149,10 @@ var _ = Describe("Translator", func() {
 		It("should translate two gateways with same name (and types) to one proxy with the same name", func() {
 			snap.Gateways = append(
 				snap.Gateways,
-				&v2.Gateway{
+				&v1.Gateway{
 					Metadata: core.Metadata{Namespace: ns, Name: "name2"},
-					GatewayType: &v2.Gateway_HttpGateway{
-						HttpGateway: &v2.HttpGateway{},
+					GatewayType: &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{},
 					},
 				},
 			)
@@ -167,7 +166,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should error on two gateways with the same port in the same namespace", func() {
-			dupeGateway := v2.Gateway{
+			dupeGateway := v1.Gateway{
 				Metadata: core.Metadata{Namespace: ns, Name: "name2"},
 				BindPort: 2,
 			}
@@ -212,19 +211,19 @@ var _ = Describe("Translator", func() {
 			BeforeEach(func() {
 				factory = &HttpTranslator{}
 				translator = NewTranslator([]ListenerFactory{factory})
-				snap = &v2.ApiSnapshot{
-					Gateways: v2.GatewayList{
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
 						{
 							Metadata: core.Metadata{Namespace: ns, Name: "name"},
-							GatewayType: &v2.Gateway_HttpGateway{
-								HttpGateway: &v2.HttpGateway{},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
 							},
 							BindPort: 2,
 						},
 						{
 							Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
-							GatewayType: &v2.Gateway_HttpGateway{
-								HttpGateway: &v2.HttpGateway{},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
 							},
 							BindPort: 2,
 						},
@@ -297,8 +296,8 @@ var _ = Describe("Translator", func() {
 
 			Context("with VirtualServices (refs)", func() {
 				It("should translate a gateway to only have its virtual services", func() {
-					snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
-						HttpGateway: &v2.HttpGateway{
+					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{
 							VirtualServices: []core.ResourceRef{snap.VirtualServices[0].Metadata.Ref()},
 						},
 					}
@@ -315,8 +314,8 @@ var _ = Describe("Translator", func() {
 
 			Context("with VirtualServiceSelector", func() {
 				It("should translate a gateway to only have its virtual services", func() {
-					snap.Gateways[0].GatewayType = &v2.Gateway_HttpGateway{
-						HttpGateway: &v2.HttpGateway{
+					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{
 							VirtualServiceSelector: labelSet,
 						},
 					}
@@ -479,12 +478,12 @@ var _ = Describe("Translator", func() {
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
-					snap = &v2.ApiSnapshot{
-						Gateways: v2.GatewayList{
+					snap = &v1.ApiSnapshot{
+						Gateways: v1.GatewayList{
 							{
 								Metadata: core.Metadata{Namespace: ns, Name: "name"},
-								GatewayType: &v2.Gateway_HttpGateway{
-									HttpGateway: &v2.HttpGateway{},
+								GatewayType: &v1.Gateway_HttpGateway{
+									HttpGateway: &v1.HttpGateway{},
 								},
 								BindPort: 2,
 							},
@@ -822,12 +821,12 @@ var _ = Describe("Translator", func() {
 			Context("delegation cycle", func() {
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
-					snap = &v2.ApiSnapshot{
-						Gateways: v2.GatewayList{
+					snap = &v1.ApiSnapshot{
+						Gateways: v1.GatewayList{
 							{
 								Metadata: core.Metadata{Namespace: ns, Name: "name"},
-								GatewayType: &v2.Gateway_HttpGateway{
-									HttpGateway: &v2.HttpGateway{},
+								GatewayType: &v1.Gateway_HttpGateway{
+									HttpGateway: &v1.HttpGateway{},
 								},
 								BindPort: 2,
 							},
@@ -927,12 +926,12 @@ var _ = Describe("Translator", func() {
 				},
 			}
 
-			snap = &v2.ApiSnapshot{
-				Gateways: v2.GatewayList{
+			snap = &v1.ApiSnapshot{
+				Gateways: v1.GatewayList{
 					{
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
-						GatewayType: &v2.Gateway_TcpGateway{
-							TcpGateway: &v2.TcpGateway{
+						GatewayType: &v1.Gateway_TcpGateway{
+							TcpGateway: &v1.TcpGateway{
 								Destinations: []*gloov1.TcpHost{destination},
 								Plugins:      plugins,
 							},

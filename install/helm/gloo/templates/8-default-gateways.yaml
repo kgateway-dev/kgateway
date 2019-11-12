@@ -4,7 +4,7 @@
 {{- if not $gatewaySettings.disableGeneratedGateways}}
 
 ---
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
@@ -31,7 +31,7 @@ spec:
 
 ---
 
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl

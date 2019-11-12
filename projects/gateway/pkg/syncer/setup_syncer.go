@@ -18,7 +18,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -74,7 +73,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v2.GatewayCrd)
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.GatewayCrd)
 	if err != nil {
 		return err
 	}
@@ -153,7 +152,7 @@ func RunGateway(opts Opts) error {
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
 
-	gatewayClient, err := v2.NewGatewayClient(opts.Gateways)
+	gatewayClient, err := v1.NewGatewayClient(opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -189,7 +188,7 @@ func RunGateway(opts Opts) error {
 	// installing through helm lets these be configurable.
 	// Added new setting to disable these gateways from ever being generated
 	if !opts.DisableAutoGenGateways {
-		for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
+		for _, gw := range []*v1.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 			if _, err := gatewayClient.Write(gw, clients.WriteOpts{
 				Ctx: ctx,
 			}); err != nil && !errors.IsExist(err) {
@@ -198,7 +197,7 @@ func RunGateway(opts Opts) error {
 		}
 	}
 
-	emitter := v2.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
+	emitter := v1.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 	writeErrs := make(chan error)
@@ -245,12 +244,12 @@ func RunGateway(opts Opts) error {
 		prop,
 		txlator)
 
-	gatewaySyncers := v2.ApiSyncers{
+	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,
 		validationSyncer,
 	}
 
-	eventLoop := v2.NewApiEventLoop(emitter, gatewaySyncers)
+	eventLoop := v1.NewApiEventLoop(emitter, gatewaySyncers)
 	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 	if err != nil {
 		return err
