@@ -34,8 +34,8 @@ message Gateway {
     // bind ports must not conflict across gateways for a single proxy
     uint32 bind_port = 4;
 
-    // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.ListenerPlugins plugins = 5;
+    // top level optional configuration for all routes on the gateway
+    gloo.solo.io.ListenerOptions options = 5;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
@@ -88,7 +88,7 @@ message HttpGateway {
     map<string, string> virtual_service_selector = 2 ;
 
     // http gateway configuration
-    gloo.solo.io.HttpListenerPlugins plugins = 8;
+    gloo.solo.io.HttpListenerOptions options = 8;
 
 }
 
@@ -96,5 +96,5 @@ message TcpGateway {
     // Name of the destinations the gateway can route to
     repeated gloo.solo.io.TcpHost destinations = 1;
     // tcp gateway configuration
-    gloo.solo.io.TcpListenerPlugins plugins = 8;
+    gloo.solo.io.TcpListenerOptions options = 8;
 }

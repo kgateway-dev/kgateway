@@ -51,18 +51,16 @@ import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/hea
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
-// Plugin-specific configuration that lives on gateways
-// Each ListenerPlugin object contains configuration for a specific plugin
-// Note to developers: new Listener Plugins must be added to this struct
-// to be usable by Gloo.
-message ListenerPlugins {
+// Optional, feature-specific configuration that lives on gateways.
+// Each ListenerOption object contains configuration for a specific feature.
+message ListenerOptions {
     als.plugins.gloo.solo.io.AccessLoggingService access_logging_service = 1;
     // Deprecated: Opaque config for Gloo plugins
     Extensions extensions = 2 [deprecated=true];
 }
 
-// Plugin-specific configuration that lives on http listeners
-message HttpListenerPlugins {
+// Optional, feature-specific configuration that lives on http listeners
+message HttpListenerOptions {
     grpc_web.plugins.gloo.solo.io.GrpcWeb grpc_web = 1;
     hcm.plugins.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
     // enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
@@ -76,16 +74,16 @@ message HttpListenerPlugins {
     dlp.plugins.gloo.solo.io.FilterConfig dlp = 6;
 }
 
-// Plugin-specific configuration that lives on tcp listeners
-message TcpListenerPlugins {
+// Optional, feature-specific configuration that lives on tcp listeners
+message TcpListenerOptions {
     tcp.plugins.gloo.solo.io.TcpProxySettings tcp_proxy_settings = 3;
 }
 
-// Plugin-specific configuration that lives on virtual hosts
-// Each VirtualHostPlugin object contains configuration for a specific plugin
+// Optional, feature-specific configuration that lives on virtual hosts.
+// Each VirtualHostPlugin object contains configuration for a specific feature.
 // Note to developers: new Virtual Host Plugins must be added to this struct
 // to be usable by Gloo.
-message VirtualHostPlugins {
+message VirtualHostOptions {
     // Deprecated: Opaque config for Gloo plugins
     Extensions extensions = 1 [deprecated=true];
     retries.plugins.gloo.solo.io.RetryPolicy retries = 5;
@@ -119,11 +117,11 @@ message VirtualHostPlugins {
     dlp.plugins.gloo.solo.io.Config dlp = 13;
 }
 
-// Plugin-specific configuration that lives on routes
-// Each RoutePlugin object contains configuration for a specific plugin
+// Optional, feature-specific configuration that lives on routes.
+// Each RouteOption object contains configuration for a specific feature.
 // Note to developers: new Route Plugins must be added to this struct
 // to be usable by Gloo.
-message RoutePlugins {
+message RouteOptions {
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
     fault.plugins.gloo.solo.io.RouteFaults faults = 2;
@@ -193,9 +191,9 @@ message DestinationSpec {
     }
 }
 
-// Plugin-specific configuration that is applied when a specific weighted destination
+// Optional, feature-specific configuration that is applied when a specific weighted destination
 // is selected for routing.
-message WeightedDestinationPlugins {
+message WeightedDestinationOptions {
     // Append/Remove headers on Requests or Responses to/from this Weighted Destination
     headers.plugins.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply
