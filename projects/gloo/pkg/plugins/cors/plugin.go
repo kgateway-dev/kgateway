@@ -42,20 +42,6 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
 	corsPlugin := in.VirtualHostPlugins.GetCors()
-
-	// remove this block when deprecated v1.CorsPolicy API is removed
-	if in.CorsPolicy != nil {
-		if corsPlugin == nil {
-			out.Cors = &envoyroute.CorsPolicy{}
-			return p.translateCommonUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
-		} else {
-			contextutils.LoggerFrom(params.Ctx).Warnw("multiple CorsPolicies specified. Ignoring deprecated"+
-				" CorsPolicy field and using VirtualHostPlugins.Cors spec",
-				zap.Any("virtual host", in.Name))
-			// fallthrough and use the virtual host plugin spec instead of the deprecated field
-		}
-	}
-
 	if corsPlugin == nil {
 		return nil
 	}
@@ -130,21 +116,4 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return []plugins.StagedHttpFilter{
 		plugins.NewStagedFilter(envoyutil.CORS, pluginStage),
 	}, nil
-}
-
-func convertDeprecatedCorsPolicy(in *v1.CorsPolicy) *cors.CorsPolicy {
-	out := &cors.CorsPolicy{}
-	if in == nil {
-		return out
-	}
-	out.AllowCredentials = in.AllowCredentials
-	out.AllowHeaders = in.AllowHeaders
-	out.AllowOrigin = in.AllowOrigin
-	out.AllowOriginRegex = in.AllowOriginRegex
-	out.AllowMethods = in.AllowMethods
-	out.AllowHeaders = in.AllowHeaders
-	out.ExposeHeaders = in.ExposeHeaders
-	out.MaxAge = in.MaxAge
-	out.AllowCredentials = in.AllowCredentials
-	return out
 }

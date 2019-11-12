@@ -15,7 +15,6 @@ import (
 
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -44,8 +43,8 @@ const (
 )
 
 type Validator interface {
-	v2.ApiSyncer
-	ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyReports, error)
+	v1.ApiSyncer
+	ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyReports, error)
 	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef) error
 	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error)
@@ -54,7 +53,7 @@ type Validator interface {
 
 type validator struct {
 	lock                         sync.RWMutex
-	latestSnapshot               *v2.ApiSnapshot
+	latestSnapshot               *v1.ApiSnapshot
 	latestSnapshotErr            error
 	translator                   translator.Translator
 	validationClient             validation.ProxyValidationServiceClient
@@ -95,7 +94,7 @@ func (v *validator) ready() bool {
 	return v.latestSnapshot != nil
 }
 
-func (v *validator) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
+func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	snapCopy := snap.Clone()
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 	var errs error
@@ -119,7 +118,7 @@ func (v *validator) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
 	return nil
 }
 
-type applyResource func(snap *v2.ApiSnapshot) (proxyNames []string, resource resources.Resource, ref core.ResourceRef)
+type applyResource func(snap *v1.ApiSnapshot) (proxyNames []string, resource resources.Resource, ref core.ResourceRef)
 
 // update internal snapshot to handle race where a lot of resources may be deleted at once, before syncer updates
 // should be called within a lock
@@ -239,7 +238,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 }
 
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error) {
-	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		vsRef := vs.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -283,8 +282,8 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 	}
 
 	var parentGateways []core.ResourceRef
-	snap.Gateways.Each(func(element *v2.Gateway) {
-		http, ok := element.GatewayType.(*v2.Gateway_HttpGateway)
+	snap.Gateways.Each(func(element *v1.Gateway) {
+		http, ok := element.GatewayType.(*v1.Gateway_HttpGateway)
 		if !ok {
 			return
 		}
@@ -315,7 +314,7 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 }
 
 func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error) {
-	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		rtRef := rt.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -392,8 +391,8 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.Res
 	return nil
 }
 
-func (v *validator) ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyReports, error) {
-	apply := func(snap *v2.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
+func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyReports, error) {
+	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		gwRef := gw.GetMetadata().Ref()
 
 		// TODO: move this to a function when generics become a thing
@@ -424,7 +423,7 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v2.Gateway) (ProxyR
 	return v.validateSnapshot(ctx, apply)
 }
 
-func proxiesForVirtualService(gwList v2.GatewayList, vs *v1.VirtualService) []string {
+func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {
 
 	gatewaysByProxy := utils.GatewaysByProxyName(gwList)
 
@@ -442,7 +441,7 @@ func proxiesForVirtualService(gwList v2.GatewayList, vs *v1.VirtualService) []st
 	return proxiesToConsider
 }
 
-func proxiesForRouteTable(gwList v2.GatewayList, vsList v1.VirtualServiceList, rtList v1.RouteTableList, rt *v1.RouteTable) []string {
+func proxiesForRouteTable(gwList v1.GatewayList, vsList v1.VirtualServiceList, rtList v1.RouteTableList, rt *v1.RouteTable) []string {
 	affectedVirtualServices := virtualServicesForRouteTable(rt, vsList, rtList)
 
 	affectedProxies := make(map[string]struct{})
@@ -501,7 +500,7 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 	return false
 }
 
-func gatewayListContainsVirtualService(gwList v2.GatewayList, vs *v1.VirtualService) bool {
+func gatewayListContainsVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) bool {
 	for _, gw := range gwList {
 		if translator.GatewayContainsVirtualService(gw, vs) {
 			return true

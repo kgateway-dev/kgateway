@@ -159,11 +159,6 @@ message VirtualHost {
     // Some configuration here can be overridden by Route Plugins.
     VirtualHostPlugins virtual_host_plugins = 4;
 
-    // Defines a CORS policy for the virtual host
-    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
-    // DEPRECATED set cors policy through the Virtual Host Plugin
-    CorsPolicy cors_policy = 5 [deprecated=true];
-
     // Metadata for the individual virtual host
     // This data is opaque to Gloo, used
     // by controllers to track ownership of virtual hosts within a proxy
@@ -370,40 +365,4 @@ message DirectResponseAction {
     //   Note: Headers can be specified using the Header Modification plugin in the enclosing
     //   Route, Virtual Host, or Listener.
     string body = 2;
-}
-
-// CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
-// DEPRECATED set cors policy through the Virtual Host Plugin
-message CorsPolicy {
-    option deprecated = true;
-    // Specifies the origins that will be allowed to make CORS requests.
-    //
-    // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin = 1;
-
-    // Specifies regex patterns that match origins that will be allowed to make
-    // CORS requests.
-    //
-    // An origin is allowed if either allow_origin or allow_origin_regex match.
-    repeated string allow_origin_regex = 2;
-
-    // Specifies the content for the *access-control-allow-methods* header.
-    repeated string allow_methods = 3;
-
-    // Specifies the content for the *access-control-allow-headers* header.
-    repeated string allow_headers = 4;
-
-    // Specifies the content for the *access-control-expose-headers* header.
-    repeated string expose_headers = 5;
-
-    // Specifies the content for the *access-control-max-age* header.
-    string max_age = 6;
-
-    // Specifies whether the resource allows credentials.
-    bool allow_credentials = 7;
-
-    // Envoy supports toggling CORS during runtime. Implement as need arises.
-    // Allows a preview of CORS settings. If set, evaluates and reports CORS but
-    // does not enforce it.
-    // bool preview = 8;
 }

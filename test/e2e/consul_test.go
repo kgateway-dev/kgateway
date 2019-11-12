@@ -128,7 +128,7 @@ var _ = Describe("Consul e2e", func() {
 		// Wait for proxy to be accepted
 		var proxy *gloov1.Proxy
 		Eventually(func() bool {
-			proxy, err = testClients.ProxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return false
 			}
@@ -177,7 +177,7 @@ var _ = Describe("Consul e2e", func() {
 func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy-v2",
+			Name:      gatewaydefaults.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

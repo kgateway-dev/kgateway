@@ -58,11 +58,9 @@ Represents global settings for all the Gloo components.
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
 "consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
-"bindAddr": string
 "refreshRate": .google.protobuf.Duration
 "devMode": bool
 "linkerd": bool
-"circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "knative": .gloo.solo.io.Settings.KnativeOptions
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
 "gloo": .gloo.solo.io.GlooOptions
@@ -92,11 +90,9 @@ Represents global settings for all the Gloo components.
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |  |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |  |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, or `directoryArtifactSource` can be set. |  |
-| `bindAddr` | `string` | Where the Gloo xDS server should bind (should not need configuration by user) Deprecated: use gloo.xdsBindAddr. |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |  |
 | `devMode` | `bool` | Enable serving debug data on port 9090. |  |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. Deprecated: use gloo.circuitBreakers. |  |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |  |
 | `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk/#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |  |

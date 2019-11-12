@@ -1,0 +1,6 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Remove deprecated v1 `Gateway` in favor of v2 `Gateway`; rename v2 gateway resources to v1.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false
