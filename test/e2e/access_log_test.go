@@ -172,7 +172,7 @@ var _ = Describe("Gateway", func() {
 
 				It("can stream access logs", func() {
 					logName := "test-log"
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Plugins = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -269,7 +269,7 @@ var _ = Describe("Gateway", func() {
 					Expect(err).NotTo(HaveOccurred())
 				})
 				It("can create string access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Plugins = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -303,7 +303,7 @@ var _ = Describe("Gateway", func() {
 					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Plugins = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{

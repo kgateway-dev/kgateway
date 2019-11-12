@@ -75,7 +75,7 @@ var _ = Describe("Gateway", func() {
 			for _, g := range gw {
 				httpGateway := g.GetHttpGateway()
 				if httpGateway != nil {
-					httpGateway.Plugins = &gloov1.HttpListenerOptions{
+					httpGateway.Options = &gloov1.HttpListenerOptions{
 						GrpcWeb: &grpc_web.GrpcWeb{
 							Disable: true,
 						},
