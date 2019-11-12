@@ -12,7 +12,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
@@ -25,7 +25,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.prot
 * - a set of domains
 * - the root set of routes for those domains
 * - an optional SSL configuration for server TLS Termination
-* - VirtualHostPlugins that will apply configuration to all routes that live on the VirtualService.
+* - VirtualHostOptions that will apply configuration to all routes that live on the VirtualService.
 *
 * Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 *
@@ -105,7 +105,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.prot
 *
 * - delegate routes must use `prefix` path matchers
 * - delegated routes cannot specify header, query, or methods portion of the normal route matcher.
-* - `routePlugin` configuration will be inherited from parent routes, but can be overridden by the child
+* - `routeOptions` configuration will be inherited from parent routes, but can be overridden by the child
 *
 */
 message VirtualService {
@@ -162,9 +162,9 @@ message VirtualHost {
     // If the list of routes is empty, the virtual host will be ignored by Gloo.
     repeated Route routes = 3;
 
-    // Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
-    // Some configuration here can be overridden by Route Plugins.
-    gloo.solo.io.VirtualHostPlugins virtual_host_plugins = 4;
+    // Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
+    // Some configuration here can be overridden by Route Options.
+    gloo.solo.io.VirtualHostOptions options = 4;
 }
 
 /*
@@ -204,8 +204,8 @@ message Route {
         core.solo.io.ResourceRef delegate_action = 5;
     }
 
-    // Route Plugins extend the behavior of routes.
-    // Route plugins include configuration such as retries, rate limiting, and request/response transformation.
-    // RoutePlugin behavior will be inherited by delegated routes which do not specify their own `routePlugins`
-    gloo.solo.io.RoutePlugins route_plugins = 6;
+    // Route Options extend the behavior of routes.
+    // Route options include configuration such as retries, rate limiting, and request/response transformation.
+    // RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
+    gloo.solo.io.RouteOptions options = 6;
 }

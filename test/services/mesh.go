@@ -8,7 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -17,7 +17,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 )
 
 // for each service we will create an envoy config and run it with
@@ -82,7 +82,7 @@ func (m *QuoteUnquoteMesh) AddFault(svcIndex int, percent float32) {
 	l := m.getSelfListener(svcIndex)
 
 	route := l.ListenerType.(*gloov1.Listener_HttpListener).HttpListener.VirtualHosts[0].Routes[0]
-	route.RoutePlugins = &gloov1.RoutePlugins{
+	route.Options = &gloov1.RouteOptions{
 		Faults: &faultinjection.RouteFaults{
 			Abort: &faultinjection.RouteAbort{
 				HttpStatus: http.StatusServiceUnavailable,

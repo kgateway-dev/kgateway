@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	"github.com/solo-io/gloo/projects/knative/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -213,7 +213,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -274,7 +274,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -344,7 +344,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,

@@ -18,7 +18,7 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 
 ### API Resources:
 - [Artifact](../github.com/solo-io/gloo/projects/gloo/api/v1/artifact.proto.sk#artifact)
-- [AuthConfig](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#authconfig)
+- [AuthConfig](../github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk#authconfig)
 - [Endpoint](../github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk#endpoint)
 - [Gateway](../github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk#gateway)
 - [Ingress](../github.com/solo-io/gloo/projects/ingress/api/v1/ingress.proto.sk#ingress)

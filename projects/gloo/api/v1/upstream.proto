@@ -10,13 +10,13 @@ import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 /*
  * Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
  * [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
  * Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
- * Each upstream type is handled by a corresponding Gloo plugin.
+ * Each upstream type is handled by a corresponding Gloo option (i.e., feature).
  */
 message Upstream {
 

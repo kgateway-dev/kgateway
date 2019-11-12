@@ -19,7 +19,7 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
@@ -75,7 +75,7 @@ var _ = Describe("Gateway", func() {
 			for _, g := range gw {
 				httpGateway := g.GetHttpGateway()
 				if httpGateway != nil {
-					httpGateway.Plugins = &gloov1.HttpListenerPlugins{
+					httpGateway.Options = &gloov1.HttpListenerOptions{
 						GrpcWeb: &grpc_web.GrpcWeb{
 							Disable: true,
 						},
@@ -101,7 +101,7 @@ var _ = Describe("Gateway", func() {
 					}
 					for _, l := range proxy.Listeners {
 						if h := l.GetHttpListener(); h != nil {
-							if p := h.GetListenerPlugins(); p != nil {
+							if p := h.GetOptions(); p != nil {
 								if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
 									if grpcweb.Disable {
 										numdisable++

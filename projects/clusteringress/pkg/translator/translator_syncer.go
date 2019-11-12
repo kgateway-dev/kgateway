@@ -46,7 +46,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		len(snap.Secrets),
 	)
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 
 	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {

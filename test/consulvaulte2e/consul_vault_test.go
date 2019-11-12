@@ -13,7 +13,7 @@ import (
 
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 
 	"github.com/gogo/protobuf/types"
 	consulapi "github.com/hashicorp/consul/api"

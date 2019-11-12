@@ -17,8 +17,8 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
-	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	tracingv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -58,7 +58,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{
+			Options: &v1.HttpListenerOptions{
 				HttpConnectionManagerSettings: hcms,
 			},
 		}

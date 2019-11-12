@@ -35,7 +35,6 @@ func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error 
 	logger.Infof("begin sync %v (%v ingresses, %v services)", snap.Hash(),
 		len(snap.Ingresses), len(snap.Services))
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 	services := snap.Services
 
 	lbStatus, err := getLbStatus(services)

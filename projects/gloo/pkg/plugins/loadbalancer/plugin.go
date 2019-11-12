@@ -6,7 +6,7 @@ import (
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/errors"
@@ -32,7 +32,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	lbPlugin := in.RoutePlugins.GetLbHash()
+	lbPlugin := in.Options.GetLbHash()
 	if lbPlugin == nil {
 		return nil
 	}

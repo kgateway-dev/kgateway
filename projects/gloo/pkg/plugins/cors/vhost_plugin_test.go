@@ -3,7 +3,7 @@ package cors
 import (
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
@@ -45,7 +45,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			AllowCredentials: allowCredentials1,
 		}
 		gloo1 = &v1.VirtualHost{
-			VirtualHostPlugins: &v1.VirtualHostPlugins{
+			Options: &v1.VirtualHostOptions{
 				Cors: in1,
 			},
 		}
@@ -77,7 +77,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - minimal specification", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				VirtualHostPlugins: &v1.VirtualHostPlugins{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
 						AllowOrigin: allowOrigin1,
 					},
@@ -95,7 +95,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - empty specification", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				VirtualHostPlugins: &v1.VirtualHostPlugins{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{},
 				},
 			}
@@ -109,7 +109,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 		It("should process virtual hosts - ignore route filter disabled spec", func() {
 			out := &envoyroute.VirtualHost{}
 			inRoute := &v1.VirtualHost{
-				VirtualHostPlugins: &v1.VirtualHostPlugins{
+				Options: &v1.VirtualHostOptions{
 					Cors: &cors.CorsPolicy{
 						DisableForRoute: true,
 					},

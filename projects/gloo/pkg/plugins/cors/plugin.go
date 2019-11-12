@@ -15,7 +15,7 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -41,7 +41,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	corsPlugin := in.VirtualHostPlugins.GetCors()
+	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
@@ -54,7 +54,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	corsPlugin := in.RoutePlugins.GetCors()
+	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
@@ -72,10 +72,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 	outRa.Cors = &envoyroute.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors); err != nil {
+	if err := p.translateCommonUserCorsConfig(in.Options.Cors, outRa.Cors); err != nil {
 		return err
 	}
-	p.translateRouteSpecificCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
+	p.translateRouteSpecificCorsConfig(in.Options.Cors, outRa.Cors)
 	return nil
 }
 
