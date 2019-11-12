@@ -47,8 +47,8 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	var hcmSettings *hcm.HttpConnectionManagerSettings
-	if hl.HttpListener.GetListenerPlugins() != nil {
-		hcmSettings = hl.HttpListener.GetListenerPlugins().HttpConnectionManagerSettings
+	if hl.HttpListener.GetOptions() != nil {
+		hcmSettings = hl.HttpListener.GetOptions().HttpConnectionManagerSettings
 	}
 	if hcmSettings == nil && len(p.hcmPlugins) == 0 {
 		// special case where we have nothing to do

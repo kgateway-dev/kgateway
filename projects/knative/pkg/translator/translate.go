@@ -154,7 +154,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: action,
 					},
-					RoutePlugins: &gloov1.Options{
+					Options: &gloov1.RouteOptions{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
 						Timeout:            timeout,
 						Retries:            retryPolicy,
@@ -206,9 +206,9 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 
 	var destinations []*gloov1.WeightedDestination
 	for _, split := range splits {
-		var weightedDestinationPlugins *gloov1.WeightedDestinationPlugins
+		var weightedDestinationPlugins *gloov1.WeightedDestinationOptions
 		if headerManipulaion := getHeaderManipulation(split.AppendHeaders); headerManipulaion != nil {
-			weightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{
+			weightedDestinationPlugins = &gloov1.WeightedDestinationOptions{
 				HeaderManipulation: headerManipulaion,
 			}
 		}
@@ -221,7 +221,7 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 				DestinationType: serviceForSplit(split),
 			},
 			Weight:                     weight,
-			WeightedDestinationPlugins: weightedDestinationPlugins,
+			Options: weightedDestinationPlugins,
 		})
 	}
 	return &gloov1.RouteAction{

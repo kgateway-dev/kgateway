@@ -92,7 +92,7 @@ func validateAndMergeVirtualServices(gateway *v1.Gateway, virtualServices v1.Vir
 		// take the first one as they are all the same
 		var routes []*v1.Route
 		var sslConfig *gloov1.SslConfig
-		var vhostPlugins *gloov1.Options
+		var vhostPlugins *gloov1.VirtualHostOptions
 		for _, vs := range vslist {
 			routes = append(routes, vs.VirtualHost.Routes...)
 			if sslConfig == nil {
@@ -124,7 +124,7 @@ func validateAndMergeVirtualServices(gateway *v1.Gateway, virtualServices v1.Vir
 			VirtualHost: &v1.VirtualHost{
 				Domains:            vslist[0].VirtualHost.Domains,
 				Routes:             routes,
-				VirtualHostPlugins: vhostPlugins,
+				Options: vhostPlugins,
 			},
 			SslConfig: sslConfig,
 			Metadata:  ref,
@@ -220,15 +220,15 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 		}
 	}
 
-	var httpPlugins *gloov1.HttpListenerPlugins
+	var httpPlugins *gloov1.HttpListenerOptions
 	if httpGateway := gateway.GetHttpGateway(); httpGateway != nil {
-		httpPlugins = httpGateway.Plugins
+		httpPlugins = httpGateway.Options
 	}
 	listener := makeListener(gateway)
 	listener.ListenerType = &gloov1.Listener_HttpListener{
 		HttpListener: &gloov1.HttpListener{
 			VirtualHosts:    virtualHosts,
-			ListenerPlugins: httpPlugins,
+			Options: httpPlugins,
 		},
 	}
 	listener.SslConfigurations = sslConfigs
@@ -251,7 +251,7 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 		Name:               VirtualHostName(vs),
 		Domains:            vs.VirtualHost.Domains,
 		Routes:             routes,
-		VirtualHostPlugins: vs.VirtualHost.Options,
+		Options: vs.VirtualHost.Options,
 	}
 
 	if err := appendSource(vh, vs); err != nil {
@@ -300,7 +300,7 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 
 	route := &gloov1.Route{
 		Matchers:     matchers,
-		RoutePlugins: ours.Options,
+		Options: ours.Options,
 	}
 	switch action := ours.Action.(type) {
 	case *v1.Route_RedirectAction:

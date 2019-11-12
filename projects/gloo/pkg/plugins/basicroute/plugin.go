@@ -117,9 +117,9 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 	switch rewriteType := hostRewriteType.(type) {
 	default:
 		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
-	case *v1.Options_HostRewrite:
+	case *v1.RouteOptions_HostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
-	case *v1.Options_AutoHostRewrite:
+	case *v1.RouteOptions_AutoHostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{AutoHostRewrite: rewriteType.AutoHostRewrite}
 	}
 

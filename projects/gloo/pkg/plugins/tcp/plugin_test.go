@@ -87,7 +87,7 @@ var _ = Describe("Plugin", func() {
 			}
 			tcpListener = &v1.TcpListener{
 				TcpHosts: []*v1.TcpHost{},
-				Plugins: &v1.TcpListenerPlugins{
+				Options: &v1.TcpListenerOptions{
 					TcpProxySettings: tcps,
 				},
 			}

@@ -121,11 +121,11 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 	}
 
 	// Extauth is explicitly disabled, disable it on weighted destination
-	if in.GetWeightedDestinationPlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markWeightedClusterNoAuth(out)
 	}
 
-	customAuthConfig := in.GetWeightedDestinationPlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {

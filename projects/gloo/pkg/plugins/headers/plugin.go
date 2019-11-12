@@ -30,7 +30,7 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
-	headerManipulation := in.GetWeightedDestinationPlugins().GetHeaderManipulation()
+	headerManipulation := in.GetOptions().GetHeaderManipulation()
 	if headerManipulation == nil {
 		return nil
 	}

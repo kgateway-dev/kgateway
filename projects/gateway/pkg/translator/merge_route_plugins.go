@@ -7,7 +7,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-func mergeRoutePlugins(dst, src *v1.Options) (*v1.Options, error) {
+func mergeRoutePlugins(dst, src *v1.RouteOptions) (*v1.RouteOptions, error) {
 	if src == nil {
 		return dst, nil
 	}
@@ -21,7 +21,7 @@ func mergeRoutePlugins(dst, src *v1.Options) (*v1.Options, error) {
 
 		return dst, nil
 	}
-	return proto.Clone(src).(*v1.Options), nil
+	return proto.Clone(src).(*v1.RouteOptions), nil
 }
 
 // sets src to dst, if src is non-zero and dest is zero-valued or overwrite=true.

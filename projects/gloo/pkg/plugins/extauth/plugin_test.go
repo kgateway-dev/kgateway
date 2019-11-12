@@ -155,7 +155,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 			},
 		},
 		Weight:                     1,
-		WeightedDestinationPlugins: &gloov1.WeightedDestinationPlugins{}, // will be set below
+		Options: &gloov1.WeightedDestinationOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -176,7 +176,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 				},
 			},
 		},
-		RoutePlugins: &gloov1.Options{}, // will be set below
+		Options: &gloov1.RouteOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -186,7 +186,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 		Name:               "virt1",
 		Domains:            []string{"*"},
 		Routes:             []*gloov1.Route{route},
-		VirtualHostPlugins: &gloov1.Options{}, // will be set below
+		Options: &gloov1.VirtualHostOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -195,9 +195,9 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 
 	switch authOnWeightedDest {
 	case Enabled:
-		weightedDestination.WeightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{Extauth: enableCustomAuth}
+		weightedDestination.Options = &gloov1.WeightedDestinationOptions{Extauth: enableCustomAuth}
 	case Disabled:
-		weightedDestination.WeightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{Extauth: disableAuth}
+		weightedDestination.Options = &gloov1.WeightedDestinationOptions{Extauth: disableAuth}
 	}
 
 	switch authOnRoute {

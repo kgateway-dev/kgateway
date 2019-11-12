@@ -93,7 +93,7 @@ var _ = Describe("Plugins", func() {
 			vhost := v1.VirtualHost{
 				Name:    "test",
 				Domains: []string{"domain"},
-				VirtualHostPlugins: &v1.Options{
+				Options: &v1.Options{
 					Extensions: &v1.Extensions{
 						Configs: map[string]*types.Struct{
 							"test": pluginstruct,

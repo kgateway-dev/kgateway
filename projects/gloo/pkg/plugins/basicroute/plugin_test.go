@@ -127,7 +127,7 @@ var _ = Describe("retries", func() {
 	It("works on vhost", func() {
 		out := &envoyroute.VirtualHost{}
 		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			VirtualHostPlugins: &v1.Options{
+			Options: &v1.Options{
 				Retries: retryPolicy,
 			},
 		}, out)
