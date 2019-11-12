@@ -5,12 +5,11 @@ package transformation_ee
 
 import (
 	fmt "fmt"
-	math "math"
-
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/gogo/protobuf/proto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

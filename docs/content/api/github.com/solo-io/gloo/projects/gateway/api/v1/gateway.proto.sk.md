@@ -35,7 +35,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 "ssl": bool
 "bindAddress": string
 "bindPort": int
-"plugins": .gloo.solo.io.ListenerPlugins
+"options": .gloo.solo.io.ListenerOptions
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "useProxyProto": .google.protobuf.BoolValue
@@ -50,7 +50,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | `ssl` | `bool` | if set to false, only use virtual services without ssl configured. if set to true, only use virtual services with ssl configured. |  |
 | `bindAddress` | `string` | the bind address the gateway should serve traffic on. |  |
 | `bindPort` | `int` | bind ports must not conflict across gateways for a single proxy. |  |
-| `plugins` | [.gloo.solo.io.ListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk/#listenerplugins) | top level plugin configuration for all routes on the gateway. |  |
+| `options` | [.gloo.solo.io.ListenerOptions](../../../../gloo/api/v1/options.proto.sk/#listeneroptions) | top level optional configuration for all routes on the gateway. |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. |  |
@@ -69,7 +69,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 ```yaml
 "virtualServices": []core.solo.io.ResourceRef
 "virtualServiceSelector": map<string, string>
-"plugins": .gloo.solo.io.HttpListenerPlugins
+"options": .gloo.solo.io.HttpListenerOptions
 
 ```
 
@@ -77,7 +77,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 | ----- | ---- | ----------- |----------- | 
 | `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | names of the the virtual services, which contain the actual routes for the gateway if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above). |  |
 | `virtualServiceSelector` | `map<string, string>` | Select virtual services by their label. This will apply only to virtual services in the same namespace as the gateway resource. only one of `virtualServices` or `virtualServiceSelector` should be provided. |  |
-| `plugins` | [.gloo.solo.io.HttpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk/#httplistenerplugins) | http gateway configuration. |  |
+| `options` | [.gloo.solo.io.HttpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#httplisteneroptions) | http gateway configuration. |  |
 
 
 
@@ -89,14 +89,14 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 ```yaml
 "destinations": []gloo.solo.io.TcpHost
-"plugins": .gloo.solo.io.TcpListenerPlugins
+"options": .gloo.solo.io.TcpListenerOptions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `destinations` | [[]gloo.solo.io.TcpHost](../../../../gloo/api/v1/proxy.proto.sk/#tcphost) | Name of the destinations the gateway can route to. |  |
-| `plugins` | [.gloo.solo.io.TcpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk/#tcplistenerplugins) | tcp gateway configuration. |  |
+| `options` | [.gloo.solo.io.TcpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#tcplisteneroptions) | tcp gateway configuration. |  |
 
 
 

@@ -6,11 +6,10 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -30,7 +29,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //
 //Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 //
-//Certain plugins such as the gRPC plugin read and write artifacts to one of Gloo's configured
+//Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
 //storage layer.
 //
 //Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.

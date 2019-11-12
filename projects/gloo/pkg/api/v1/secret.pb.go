@@ -6,11 +6,10 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -25,14 +24,14 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
-//Certain plugins such as the AWS Lambda Plugin require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
+//Certain features such as the AWS Lambda option require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
 //
 //Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
 //
 //- Kubernetes Secrets
 //- Hashicorp Vault
 //- Plaintext files (recommended only for testing)
-//- Secrets must adhere to a structure, specified by the plugin that requires them.
+//- Secrets must adhere to a structure, specified by the option that requires them.
 //
 //Gloo's secret backend can be configured in Gloo's bootstrap options
 type Secret struct {
