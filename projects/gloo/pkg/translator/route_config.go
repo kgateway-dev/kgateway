@@ -378,8 +378,8 @@ func getSubsetMatch(destination *v1.Destination) *envoycore.Metadata {
 
 	// TODO(yuval-k): should we add validation that the route subset indeed exists in the upstream?
 	// First convert the subset information on the base destination, if present
-	if destination.Subset != nil {
-		routeMetadata = getLbMetadata(nil, destination.Subset.Values, "")
+	if destination.GetUpstream().GetSubset() != nil {
+		routeMetadata = getLbMetadata(nil, destination.GetUpstream().GetSubset().Values, "")
 	}
 	return routeMetadata
 }
@@ -387,13 +387,13 @@ func getSubsetMatch(destination *v1.Destination) *envoycore.Metadata {
 func checkThatSubsetMatchesUpstream(params plugins.Params, dest *v1.Destination) error {
 
 	// make sure we have a subset config on the route
-	if dest.Subset == nil {
+	if dest.GetUpstream().GetSubset() == nil {
 		return nil
 	}
-	if len(dest.Subset.Values) == 0 {
+	if len(dest.GetUpstream().GetSubset().Values) == 0 {
 		return nil
 	}
-	routeSubset := dest.Subset.Values
+	routeSubset := dest.GetUpstream().GetSubset().Values
 
 	ref, err := usconversion.DestinationToUpstreamRef(dest)
 	if err != nil {

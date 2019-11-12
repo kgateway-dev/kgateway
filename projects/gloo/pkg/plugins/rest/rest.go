@@ -73,10 +73,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envo
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's rest destination
-		if spec.DestinationSpec == nil {
+		if spec.GetUpstream().GetDestinationSpec() == nil {
 			return nil, nil
 		}
-		restDestinationSpec, ok := spec.DestinationSpec.DestinationType.(*v1.DestinationSpec_Rest)
+		restDestinationSpec, ok := spec.GetUpstream().GetDestinationSpec().DestinationType.(*v1.DestinationSpec_Rest)
 		if !ok {
 			return nil, nil
 		}

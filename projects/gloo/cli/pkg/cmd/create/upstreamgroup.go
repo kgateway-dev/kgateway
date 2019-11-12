@@ -138,7 +138,9 @@ func upstreamGroupDestinationsFromOpts(input options.InputUpstreamGroup) ([]*v1.
 		wd := v1.WeightedDestination{
 			Destination: &v1.Destination{
 				DestinationType: &v1.Destination_Upstream{
-					Upstream: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
+					Upstream: &v1.UpstreamDestination{
+						Upstream: utils.ResourceRefPtr(ussByKey[namespacedUpstream].Metadata.Ref()),
+					},
 				},
 			},
 			Weight: weight,

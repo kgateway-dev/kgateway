@@ -74,8 +74,8 @@ func upstreamGroupDetails(ug *v1.UpstreamGroup) []string {
 		switch dest := us.Destination.DestinationType.(type) {
 		case *v1.Destination_Upstream:
 			add(fmt.Sprintf("destination type: %v", "Upstream"))
-			add(fmt.Sprintf("namespace: %v", dest.Upstream.Namespace))
-			add(fmt.Sprintf("name: %v", dest.Upstream.Name))
+			add(fmt.Sprintf("namespace: %v", dest.Upstream.GetUpstream().GetNamespace()))
+			add(fmt.Sprintf("name: %v", dest.Upstream.GetUpstream().GetName()))
 		case *v1.Destination_Kube:
 			add(fmt.Sprintf("destination type: %v", "Kube"))
 			add(fmt.Sprintf("namespace: %v", dest.Kube.Ref.Namespace))
@@ -89,8 +89,8 @@ func upstreamGroupDetails(ug *v1.UpstreamGroup) []string {
 			add(fmt.Sprintf("destination type: %v", "Unknown"))
 		}
 
-		if us.Destination.Subset != nil {
-			add(fmt.Sprintf("subset: %v", us.Destination.Subset.Values))
+		if us.Destination.GetUpstream().GetSubset() != nil {
+			add(fmt.Sprintf("subset: %v", us.Destination.GetUpstream().GetSubset().Values))
 		}
 
 		add(fmt.Sprintf("weight: %v   %% total: %.2f", us.Weight, float32(us.Weight)/float32(totalWeight)))

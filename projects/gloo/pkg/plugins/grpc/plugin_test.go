@@ -89,13 +89,15 @@ var _ = Describe("Plugin", func() {
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
-								DestinationSpec: &v1.DestinationSpec{
-									DestinationType: &v1.DestinationSpec_Grpc{
-										Grpc: &v1grpc.DestinationSpec{},
-									},
-								},
 								DestinationType: &v1.Destination_Upstream{
-									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+									Upstream: &v1.UpstreamDestination{
+										Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+										DestinationSpec: &v1.DestinationSpec{
+											DestinationType: &v1.DestinationSpec_Grpc{
+												Grpc: &v1grpc.DestinationSpec{},
+											},
+										},
+									},
 								},
 							},
 						},

@@ -308,10 +308,10 @@ func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
 					if route.GetRouteAction().GetSingle() != nil {
 						us := route.GetRouteAction().GetSingle()
 						if us.GetUpstream() != nil {
-							if !cliutils.Contains(knownUpstreams, renderRef(us.GetUpstream())) {
+							if !cliutils.Contains(knownUpstreams, renderRef(us.GetUpstream().GetRef())) {
 								fmt.Printf("Virtual service references unknown upstream:\n")
 								fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
-								fmt.Printf("  Upstream: %s\n", renderRef(us.GetUpstream()))
+								fmt.Printf("  Upstream: %s\n", renderRef(us.GetUpstream().GetRef()))
 								return false, nil
 							}
 						}

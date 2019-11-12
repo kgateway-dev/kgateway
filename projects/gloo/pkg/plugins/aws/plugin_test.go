@@ -67,15 +67,17 @@ var _ = Describe("Plugin", func() {
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: &core.ResourceRef{
-									Namespace: "ns",
-									Name:      upstreamName,
-								},
-							},
-							DestinationSpec: &v1.DestinationSpec{
-								DestinationType: &v1.DestinationSpec_Aws{
-									Aws: &awsapi.DestinationSpec{
-										LogicalName: funcName,
+								Upstream: &v1.UpstreamDestination{
+									Upstream: &core.ResourceRef{
+										Namespace: "ns",
+										Name:      upstreamName,
+									},
+									DestinationSpec: &v1.DestinationSpec{
+										DestinationType: &v1.DestinationSpec_Aws{
+											Aws: &awsapi.DestinationSpec{
+												LogicalName: funcName,
+											},
+										},
 									},
 								},
 							},
@@ -200,7 +202,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should not process with no spec", func() {
-			destination.DestinationSpec = nil
+			destination.GetUpstream().DestinationSpec = nil
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
@@ -208,7 +210,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should not process with a function mismatch", func() {
-			destination.DestinationSpec.DestinationType.(*v1.DestinationSpec_Aws).Aws.LogicalName = "somethingelse"
+			destination.GetUpstream().DestinationSpec.DestinationType.(*v1.DestinationSpec_Aws).Aws.LogicalName = "somethingelse"
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).To(HaveOccurred())
@@ -225,7 +227,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should process route with response transform", func() {
-			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
+			route.GetRouteAction().GetSingle().GetUpstream().GetDestinationSpec().GetAws().ResponseTransformation = true
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outroute.PerFilterConfig).To(HaveKey(filterName))

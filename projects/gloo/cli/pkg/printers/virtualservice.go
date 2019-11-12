@@ -224,7 +224,7 @@ func destinationString(route *v1.Route) string {
 		case *gloov1.RouteAction_Single:
 			switch destType := dest.Single.DestinationType.(type) {
 			case *gloov1.Destination_Upstream:
-				return fmt.Sprintf("%s (upstream)", destType.Upstream.Key())
+				return fmt.Sprintf("%s (upstream)", destType.Upstream.GetUpstream().Key())
 			case *gloov1.Destination_Kube:
 				return fmt.Sprintf("%s (service)", destType.Kube.Ref.Key())
 			}

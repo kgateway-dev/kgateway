@@ -64,7 +64,9 @@ func (m *QuoteUnquoteMesh) getSelfListener(svcIndex int) *gloov1.Listener {
 								Destination: &gloov1.RouteAction_Single{
 									Single: &gloov1.Destination{
 										DestinationType: &gloov1.Destination_Upstream{
-											Upstream: utils.ResourceRefPtr(m.upstreams[svcIndex].Metadata.Ref()),
+											Upstream: &gloov1.UpstreamDestination{
+												Upstream: utils.ResourceRefPtr(m.upstreams[svcIndex].Metadata.Ref()),
+											},
 										},
 									},
 								},
@@ -203,7 +205,9 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 										Destination: &gloov1.RouteAction_Single{
 											Single: &gloov1.Destination{
 												DestinationType: &gloov1.Destination_Upstream{
-													Upstream: utils.ResourceRefPtr(m.meshupstreams[j].Metadata.Ref()),
+													Upstream: &gloov1.UpstreamDestination{
+														Upstream: utils.ResourceRefPtr(m.meshupstreams[j].Metadata.Ref()),
+													},
 												},
 											},
 										},

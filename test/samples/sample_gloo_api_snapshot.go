@@ -40,7 +40,9 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: utils.ResourceRefPtr(us.Metadata.Ref()),
+							Upstream: &v1.UpstreamDestination{
+								Ref: utils.ResourceRefPtr(us.Metadata.Ref()),
+							},
 						},
 					},
 				},
@@ -74,9 +76,11 @@ func SimpleGlooSnapshot() *v1.ApiSnapshot {
 							Destination: &v1.RouteAction_Single{
 								Single: &v1.Destination{
 									DestinationType: &v1.Destination_Upstream{
-										Upstream: &core.ResourceRef{
-											Name:      "test",
-											Namespace: "gloo-system",
+										Upstream: &v1.UpstreamDestination{
+											Ref: &core.ResourceRef{
+												Name:      "test",
+												Namespace: "gloo-system",
+											},
 										},
 									},
 								},
@@ -117,7 +121,9 @@ func SimpleRoute(us core.ResourceRef) []*gwv1.Route {
 				Destination: &v1.RouteAction_Single{
 					Single: &v1.Destination{
 						DestinationType: &v1.Destination_Upstream{
-							Upstream: utils.ResourceRefPtr(us),
+							Upstream: &v1.UpstreamDestination{
+								Ref: utils.ResourceRefPtr(us),
+							},
 						},
 					},
 				},
@@ -147,7 +153,9 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 									Destination: &v1.RouteAction_Single{
 										Single: &v1.Destination{
 											DestinationType: &v1.Destination_Upstream{
-												Upstream: utils.ResourceRefPtr(us),
+												Upstream: &v1.UpstreamDestination{
+													Ref: utils.ResourceRefPtr(us),
+												},
 											},
 										},
 									},
@@ -192,7 +200,9 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(us),
+								Upstream: &v1.UpstreamDestination{
+									Ref: utils.ResourceRefPtr(us),
+								},
 							},
 						},
 					},
@@ -229,7 +239,9 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 					Destination: &v1.RouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
-								Upstream: utils.ResourceRefPtr(us),
+								Upstream: &v1.UpstreamDestination{
+									Ref: utils.ResourceRefPtr(us),
+								},
 							},
 						},
 					},

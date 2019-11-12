@@ -115,7 +115,7 @@ var _ = Describe("GRPC Plugin", func() {
 	It("Routes to GRPC Functions with parameters", func() {
 
 		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
-		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
+		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetUpstream().GetDestinationSpec().GetGrpc()
 		grpc.Parameters = &transformation.Parameters{
 			Path: &types.StringValue{Value: "/test/{str}"},
 		}
@@ -159,14 +159,16 @@ func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.Virtual
 							Destination: &gloov1.RouteAction_Single{
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
-										Upstream: utils.ResourceRefPtr(usRef),
-									},
-									DestinationSpec: &gloov1.DestinationSpec{
-										DestinationType: &gloov1.DestinationSpec_Grpc{
-											Grpc: &grpc.DestinationSpec{
-												Package:  "glootest",
-												Function: "TestMethod",
-												Service:  "TestService",
+										Upstream: &gloov1.UpstreamDestination{
+											Upstream: utils.ResourceRefPtr(usRef),
+											DestinationSpec: &gloov1.DestinationSpec{
+												DestinationType: &gloov1.DestinationSpec_Grpc{
+													Grpc: &grpc.DestinationSpec{
+														Package:  "glootest",
+														Function: "TestMethod",
+														Service:  "TestService",
+													},
+												},
 											},
 										},
 									},

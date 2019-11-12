@@ -18,7 +18,7 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	var ref *core.ResourceRef
 	switch d := dest.DestinationType.(type) {
 	case *v1.Destination_Upstream:
-		ref = d.Upstream
+		ref = d.Upstream.GetRef()
 	case *v1.Destination_Kube:
 		ref = kubernetes.DestinationToUpstreamRef(d.Kube)
 	case *v1.Destination_Consul:

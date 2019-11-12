@@ -482,6 +482,9 @@ apis:
   gloo.solo.io.Upstream:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk/#Upstream
     package: gloo.solo.io
+  gloo.solo.io.UpstreamDestination:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#UpstreamDestination
+    package: gloo.solo.io
   gloo.solo.io.UpstreamGroup:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#UpstreamGroup
     package: gloo.solo.io

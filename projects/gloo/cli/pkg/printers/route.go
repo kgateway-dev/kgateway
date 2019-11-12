@@ -137,7 +137,10 @@ func Matcher(m *matchers.Matcher) (string, string, string, string) {
 
 // helper function to parse destinations
 func Destinations(d *gloov1.Destination) string {
-	switch d.DestinationSpec.DestinationType.(type) {
+	if d.GetUpstream().GetDestinationSpec().GetDestinationType() == nil {
+		return "unknown"
+	}
+	switch d.GetUpstream().GetDestinationSpec().DestinationType.(type) {
 	case *gloov1.DestinationSpec_Aws:
 		return "aws"
 	case *gloov1.DestinationSpec_Azure:
