@@ -1,6 +1,5 @@
 namespace:
   create: false
-installConfig: {}
 crds:
   create: true
 k8s:
