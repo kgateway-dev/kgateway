@@ -75,7 +75,7 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | names of the the virtual services, which contain the actual routes for the gateway if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above). |  |
+| `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | names of the the virtual services, which contain the actual routes for the gateway if the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above). |  |
 | `virtualServiceSelector` | `map<string, string>` | Select virtual services by their label. This will apply only to virtual services in the same namespace as the gateway resource. only one of `virtualServices` or `virtualServiceSelector` should be provided. |  |
 | `plugins` | [.gloo.solo.io.HttpListenerPlugins](../../../../gloo/api/v1/plugins.proto.sk/#httplistenerplugins) | http gateway configuration. |  |
 

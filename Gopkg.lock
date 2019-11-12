@@ -1387,7 +1387,7 @@
   revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
 
 [[projects]]
-  digest = "1:ff3271ba73e7b0f9834fa78e22e76f99b094bc2143fcada18188bee3efb76a03"
+  digest = "1:95bcd838634e7ba682b328fabef757d4e0f83c0b345ee82e1d87db69f8e751b0"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1397,7 +1397,6 @@
     "cliutils",
     "contextutils",
     "debugutils",
-    "envutils",
     "errors",
     "errutils",
     "githubutils",
@@ -2836,7 +2835,6 @@
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/debugutils",
-    "github.com/solo-io/go-utils/envutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
@@ -2926,7 +2924,6 @@
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
-    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/api/rbac/v1",
