@@ -147,7 +147,7 @@ type Gateway struct {
 	Enabled             *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
 	Validation          *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
 	Deployment          *GatewayDeployment `json:"deployment,omitempty"`
-	CertGenJob          *Job               `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	CertGenJob          *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
 	UpdateValues        bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount ServiceAccount     `json:"proxyServiceAccount" `
 }
@@ -173,6 +173,12 @@ type GatewayDeployment struct {
 type Job struct {
 	Image *Image `json:"image,omitempty"`
 	*JobSpec
+}
+
+type CertGenJob struct {
+	Job
+	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
 
 type GatewayProxy struct {

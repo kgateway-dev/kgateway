@@ -54,6 +54,8 @@ gateway:
     image:
       repository: certgen
     restartPolicy: OnFailure
+    setTtlAfterFinished: true
+    ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
 
 gatewayProxies:
