@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -179,14 +181,14 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 	}
 }
 
-func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatewaysyncer.Opts {
+func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) translator.Opts {
 	ctx = contextutils.WithLogger(ctx, "gateway")
 	ctx = contextutils.SilenceLogger(ctx)
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
 
-	return gatewaysyncer.Opts{
+	return translator.Opts{
 		WriteNamespace:  runOptions.NsToWrite,
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,

@@ -383,4 +383,8 @@ message GatewayOptions {
     // if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
     // of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
     ValidationOptions validation = 3;
+
+    // when true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather
+    // than just the Gateway CRDs in its own namespace
+    bool read_gateways_from_all_namespaces = 4;
 }

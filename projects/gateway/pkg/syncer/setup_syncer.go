@@ -89,7 +89,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
 
-	var validation *ValidationOpts
+	var validation *translator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
 	if validationCfg != nil {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
@@ -100,7 +100,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 		allowMissingLinks := AllowMissingLinks
 
-		validation = &ValidationOpts{
+		validation = &translator.ValidationOpts{
 			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
 			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
@@ -128,7 +128,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 	}
 
-	opts := Opts{
+	opts := translator.Opts{
 		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
 		Gateways:        gatewayFactory,
@@ -139,15 +139,16 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
-		DevMode:                true,
-		DisableAutoGenGateways: settings.GetGateway().GetDisableAutoGenGateways(),
-		Validation:             validation,
+		DevMode:                       true,
+		DisableAutoGenGateways:        settings.GetGateway().GetDisableAutoGenGateways(),
+		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
+		Validation:                    validation,
 	}
 
 	return RunGateway(opts)
 }
 
-func RunGateway(opts Opts) error {
+func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
@@ -204,7 +205,7 @@ func RunGateway(opts Opts) error {
 
 	prop := propagator.NewPropagator("gateway", gatewayClient, virtualServiceClient, proxyClient, writeErrs)
 
-	txlator := translator.NewDefaultTranslator()
+	txlator := translator.NewDefaultTranslator(opts)
 
 	var (
 		// this constructor should be called within a lock
