@@ -1,5 +1,5 @@
 ---
-title: "Building custom auth plugins"
+title: "Building external auth plugins"
 weight: 7
 description: Guidelines and best practices for developing and configuring Go plugins to extend Gloo's ext auth server
 ---
@@ -17,7 +17,7 @@ publish your external auth plugins.
 This guide will make frequent references to the code contained in our 
 [Ext Auth Plugin examples](https://github.com/solo-io/ext-auth-plugin-examples) GitHub repository. In addition to the sample 
 plugin implementation, the repository contains useful tools to verify whether your plugin is compatible with a certain 
-version of GlooE. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will make your life 
+version of Gloo Enterprise. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will make your life 
 significantly easier.
 
 {{% notice note %}}
@@ -31,7 +31,7 @@ we gave a high-level description of the steps required to extend Gloo with your 
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file to a 
 predefined directory.
 2. Configure Gloo to load the plugin by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by rendering the Gloo Helm chart with some value overrides or by modifying the Gloo installation manifest manually.
+done by installing Gloo with some value overrides or by modifying the Gloo installation manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
 
@@ -63,31 +63,24 @@ object to deserialize the plugin configuration into.
 The object returned by the `NewConfigInstance` function **MUST** be a pointer type.
 {{% /notice %}}
 
-Let's see an example to understand this better. If your plugin configuration looks like this:
+Let's see an example to understand this better. If the `AuthConfig` for your plugin looks like this:
 
-{{< highlight yaml "hl_lines=17-22" >}}
-apiVersion: gateway.solo.io/v1
-kind: VirtualService
+{{< highlight shell "hl_lines=8-16" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
 metadata:
-  name: test-auth
+  name: plugin-auth
   namespace: gloo-system
 spec:
-  virtualHost:
-    domains: {} # omitted for brevity
-    routes: {} # omitted for brevity
-    virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            plugin_auth:
-              plugins:
-              - name: my-plugin
-                plugin_file_name: MyPlugin.so
-                exported_symbol_name: Plugin
-                config:
-                  some_key: value-1
-                  some_struct:
-                    another_key: value-2
+  configs:
+  - pluginAuth:
+      name: my-plugin
+      plugin_file_name: MyPlugin.so
+      exported_symbol_name: Plugin
+      config:
+        some_key: value-1
+        some_struct:
+          another_key: value-2
 {{< /highlight >}}
 
 then `NewConfigInstance` function of your `ExtAuthPlugin` implementation should return a pointer to the following Go struct:
@@ -106,8 +99,9 @@ type NestedConfig struct {
 Gloo will populate the struct fields with the values found on the correspondent YAML attributes.
 
 {{% notice note %}}
-You might have noticed that the `plugins` attribute in the configuration example above is an array. It is in fact 
-possible to define multiple plugins on a virtual host. We'll see how [plugin chains](#plugin-chains-and-header-propagation) work later on.
+You might have noticed that the `configs` attribute in the configuration example above is an array. It is in fact 
+possible to define multiple configuration in the same `AuthConfig`. We'll see how this works 
+[later](#plugin-chains-and-header-propagation).
 {{% /notice %}}
 
 The `GetAuthService` function will be invoked by Gloo right after this step. As its `configInstance` argument, Gloo will 
@@ -145,27 +139,26 @@ Whenever the auth configuration changes, Gloo will start new `AuthService` insta
 previous ones by cancelling the context it provided them with.
 
 Following is the sequence of actions that Gloo performs when it detects a change in the overall auth configuration. 
-Let's assume we start with a blank sheet, i.e. no plugins are configured on any of your Virtual Services.
+Let's assume we start with a blank sheet, i.e. no `AuthConfigs` are referenced on any of your Virtual Services.
 
 1. Start a new cancellable `context.Context`
-2. Loop over all detected plugin configurations and for each one:
+1. Loop over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
     1. Load the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
     2. Invoke `NewConfigInstance` **passing in the context**
     3. Deserialize detected plugin config into the provided object
     4. Invoke `GetAuthService` **passing in the context** and the configuration object
-    5. (if more than one plugin) Add it to the [plugin chain](#plugin-chains-and-header-propagation)
-3. If an error occurred, return it and do not update the `extauth` server configuration, else continue
-4. Cancel the previous `context.Context`
-5. Invoke the `Start` functions on all plugins **passing in the context**
-6. Apply the plugin configurations to the `extauth` server
+1. If an error occurred, return it and do not update the `extauth` server configuration, else continue
+1. Cancel the previous `context.Context`
+1. Invoke the `Start` functions on all plugins **passing in the context**
+1. Apply the plugin configurations to the `extauth` server
 
 We recommend that you tie all the goroutines that you may spawn to the provided context by watching its `Done` channel. 
 This will prevent your plugin from leaking memory. You can find a great overview of `Context` and how to best use it 
-in [this Go Blog post](https://blog.golang.org/context).\
+in [this Go Blog post](https://blog.golang.org/context).
 
 #### How to make your plugin implement `ExtAuthPlugin`
 Earlier in this guide we mentioned that Gloo expects auth plugins to implement the 
-[ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L41) interface. To understand 
+[ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L62) interface. To understand 
 what we mean by that, let's take a closer look at how Go plugins work.
 
 The [official Go docs](https://golang.org/pkg/plugin/) describe a plugin as:
@@ -173,7 +166,7 @@ The [official Go docs](https://golang.org/pkg/plugin/) describe a plugin as:
 >> "*a Go main package with exported functions and variables that has been built with: `go build -buildmode=plugin`*"
 
 In order for Gloo to be able to load your plugin, the `main` package of your plugin must export a variable that 
-implements the [ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go) interface. 
+implements the [ExtAuthPlugin](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L62) interface. 
 This is usually a struct or a pointer to a struct (Gloo is smart enough to handle both cases). 
 Gloo will use the [Lookup function](https://golang.org/pkg/plugin/#Plugin.Lookup) to find the exported variable and 
 assert that it in fact implements the expected interface.
@@ -213,12 +206,12 @@ meant make your plugin development experience as smooth as possible. You can fin
 
 {{% notice note %}}
 Gloo publishes information about the environment it was built with to a Google Storage bucket. The tools in this section 
-will make use of those information. You can find the information for a specific Gloo version in the following files located 
+will make use of this information. You can find the information for a specific Gloo version in the following files located 
 under `http://storage.googleapis.com/gloo-ee-dependencies/[GLOOE_VERSION]`:
 
-- `Gopkg.lock`: contains the versions of all dependencies used by GlooE.
-- `build_env`: values that can be used to replicate the environment the given GlooE version was built in.
-- `verify-plugins-linux-amd64`: a script to verify that the plugin can be loaded by the given GlooE version.
+- `Gopkg.lock`: contains the versions of all dependencies used by Gloo.
+- `build_env`: values that can be used to replicate the environment the given Gloo version was built in.
+- `verify-plugins-linux-amd64`: a script to verify that the plugin can be loaded by the given Gloo version.
 
 You can get all these files by running `GLOOE_VERSION=desired_version make get-glooe-info` in our example repository.
 {{% /notice %}}
@@ -226,7 +219,7 @@ You can get all these files by running `GLOOE_VERSION=desired_version make get-g
 #### Compare dependencies
 We manage Gloo dependencies using [dep](https://github.com/golang/dep). `Dep` outputs the version of all dependencies 
 for a Go package in a file named `Gopkg.lock`. If you manage the dependencies for your plugin using `dep`, we provide a 
-script for comparing them with the ones for GlooE. It located at `scripts/compare_dependencies.go` and can be invoked 
+script for comparing them with the ones for Gloo. It located at `scripts/compare_dependencies.go` and can be invoked 
 via the following `make` command:
 
 ```bash
@@ -271,11 +264,11 @@ or, even better since the revision hash is the ultimate source of truth:
 ```
 
 If you are using a different dependency management tool (e.g. Go modules), you should still be able to use the 
-information in the GlooE `Gopkg.lock` file to verify that the dependencies match.
+information in the Gloo `Gopkg.lock` file to verify that the dependencies match.
   
 #### Verify compatibility script
-As part of each GlooE release, we ship a script to verify whether your plugin can be loaded by that version of GlooE. 
-You can find it in the aforementioned Google Cloud bucket at 
+As part of each Gloo Enterprise release, we ship a script to verify whether your plugin can be loaded by that version of 
+Gloo Enterprise. You can find it in the aforementioned Google Cloud bucket at 
 `http://storage.googleapis.com/gloo-ee-dependencies/[GLOOE_VERSION]/verify-plugins-linux-amd64`. The script accepts 
 three arguments:
 
@@ -285,8 +278,8 @@ three arguments:
 | manifest | A .yaml file containing information required to load the plugins | No |
 | debug | Set debug log level | Yes |
 
-The `manifest` file is needed to instruct the script on how to load the plugins. It intentionally has the same format as 
-the plugin configuration that you define on your Virtual Services:
+The `manifest` file is needed to instruct the script on how to load the plugins. It intentionally has a very similar 
+format as the configuration defined on the `AuthConfig` resource:
 
 ```yaml
 plugins:
@@ -321,7 +314,7 @@ you use [multi-stage builds](https://docs.docker.com/develop/develop-images/mult
 your final image to a minimum. See the comments for an explanation of each build layer:
 
 {{< highlight yaml >}}
-# This stage is parametrized to replicate the same environment GlooE was built in.
+# This stage is parametrized to replicate the same environment Gloo Enterprise was built in.
 # All ARGs need to be set via the docker `--build-arg` flags.
 ARG GO_BUILD_IMAGE
 FROM $GO_BUILD_IMAGE AS build-env
@@ -405,8 +398,8 @@ with a `copy` entry point) is by running the plugin container(s) as `initContain
 the `extauth` deployment.
 
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth" %}}) we saw how to do 
-this [using the GlooE Helm chart]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#installation" %}}). 
-Here we will see how to accomplish the same result by editing the raw GlooE YAML manifest.
+this [using glooctl]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#installation" %}}). 
+Here we will see how to accomplish the same result by editing the raw Gloo Enterprise YAML manifest.
 
 Let's start with a basic version of the `extauth` deployment. Note that we are omitting many attributes for brevity.
 
@@ -429,7 +422,7 @@ spec:
         gloo: extauth
     spec:
       containers:
-      - image: quay.io/solo-io/extauth-ee:0.18.23
+      - image: quay.io/solo-io/extauth-ee:0.20.6
         imagePullPolicy: IfNotPresent
         name: extauth
 ```
@@ -455,14 +448,14 @@ spec:
         gloo: extauth
     spec:
       containers:
-      - image: quay.io/solo-io/extauth-ee:0.18.23
+      - image: quay.io/solo-io/extauth-ee:0.20.6
         imagePullPolicy: IfNotPresent
         name: extauth
         volumeMounts:
         - mountPath: /auth-plugins
           name: auth-plugins
       initContainers:
-      - image: quay.io/solo-io/ext-auth-plugins:0.18.23
+      - image: quay.io/solo-io/ext-auth-plugins:0.20.6
         imagePullPolicy: IfNotPresent
         name: plugin-my-plugin
         volumeMounts:
@@ -483,48 +476,52 @@ Currently, Gloo expects to find the plugin files in the `/auth-plugins` director
 
 ## Configuring Virtual Services to use your plugins
 The [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#secure-the-virtual-service" %}}) 
-contains a thorough explanation of how to update Virtual Service specs to use your plugins to authenticate requests. 
-What it does not cover are some specific properties of *plugin chains*.
+contains a thorough explanation of how to update Virtual Service to use your plugins to authenticate requests. 
+What it does not cover are some specific properties of the `configs` attribute inside an `AuthConfig` resource.
 
-### Plugin chains and header propagation
-As we saw earlier, the `plugins` element in the `plugin_auth` configuration is an array:
+### Multi-step AuthConfigs and header propagation
+As we saw earlier, the `configs` element in the `AuthConfig` CRD is an array:
 
-```yaml
-virtualHostPlugins:
-  extensions:
-    configs:
-      extauth:
-        plugin_auth:
-          plugins:
-          - name: my-plugin
-            plugin_file_name: MyPlugin.so
-            exported_symbol_name: Plugin
-            config:
-              some_key: value-1
-              some_struct:
-                another_key: value-2
-```
+{{< highlight yaml "hl_lines=7-15" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: plugin-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - pluginAuth:
+      name: my-plugin
+      plugin_file_name: MyPlugin.so
+      exported_symbol_name: Plugin
+      config:
+        some_key: value-1
+        some_struct:
+          another_key: value-2
+{{< /highlight >}}
 
-We call this sequence of plugins a **plugin chain**. Plugins in a plugin chain will be executed in the order they are 
-defined. The first plugin to deny the request will cause the chain execution to be interrupted and Gloo to return the 
-response from the plugin that denied it. 
+Auth configuration in the `configs` array will be executed in the order they are defined. The first one to deny the 
+request will cause execution to be interrupted and Gloo to return the response from the configuration that denied it. 
 
-Each external auth plugin can append, add or override headers from the request it received before dispatching it to the 
-upstream or the next plugin in the chain. It is important to understand how header modifications are handled when more 
-than one plugin gets executed.
+Each configuration can append, add or override headers from the request it received before forwarding it to the 
+upstream or the next configuration in the array. It is important to understand how header modifications are handled when 
+more than one element is defined in `configs`.
 
-Let's look at the [response object](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L15) 
+Let's look at the [response object](https://github.com/solo-io/ext-auth-plugins/blob/master/api/interface.go#L16) 
 returned by our `AuthService` instance:
 
-{{< highlight go "hl_lines=7-10" >}}
+{{< highlight go "hl_lines=12" >}}
 package api
 
 import (
 	envoyauthv2 "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 )
 
+// Response returned by authorization services to the Gloo ext-auth server
 type AuthorizationResponse struct {
+	// Additional user information
 	UserInfo UserInfo
+	// The result of the authorization process that will be sent back to Envoy
 	CheckResponse envoyauthv2.CheckResponse
 }
 {{< /highlight >}}
@@ -543,15 +540,16 @@ Headers:
   - one: foo
 ```
 
-and that the request matches a virtual host that is configured with the following plugin chain:
+and that the request matches a Virtual Service that references an `AuthConfig` configured with the following sequence of
+auth configurations:
 
 ```     
-Plugin_1:
+config_1:
   HeadersValueOptions:
   - Header:
       one: bar
     Append: false
-Plugin_2:
+config_2:
   HeadersValueOptions:
   - Header:
       one: baz
@@ -560,8 +558,8 @@ Plugin_2:
       two: asd
 ```
 
-If the request is authenticated by both plugins, then the headers on the final request that will be sent to the upstream 
-will be:
+If the request is authenticated by both configurations, then the headers on the final request that will be sent 
+to the upstream will be:
 
 ```text
 Headers:
