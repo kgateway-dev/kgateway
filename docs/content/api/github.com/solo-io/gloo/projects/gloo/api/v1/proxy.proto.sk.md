@@ -122,7 +122,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | ----- | ---- | ----------- |----------- | 
 | `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk/#tcphost) | List of filter chains to match on for this listener. |  |
 | `options` | [.gloo.solo.io.TcpListenerOptions](../options.proto.sk/#tcplisteneroptions) | Options contains top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Options configuration or Route Options configuration. |  |
-| `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |  |
+| `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |  |
 
 
 
@@ -167,7 +167,7 @@ Some traffic policies can be configured to work both on the listener and virtual
 | ----- | ---- | ----------- |----------- | 
 | `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk/#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid. |  |
 | `options` | [.gloo.solo.io.HttpListenerOptions](../options.proto.sk/#httplisteneroptions) | HttpListenerOptions contains optional top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in VirtualHostOptions configuration, RouteOptions configuration, or WeightedDestinationOptions configuration. |  |
-| `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |  |
+| `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |  |
 
 
 

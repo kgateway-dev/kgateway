@@ -101,7 +101,7 @@ message TcpListener {
     // Some configuration here can be overridden in
     // Virtual Host Options configuration or Route Options configuration
     TcpListenerOptions options = 8;
-    // prefix for addressing envoy stats for the http connection manager
+    // prefix for addressing envoy stats for the tcp proxy
     string stat_prefix = 3;
 }
 
@@ -128,7 +128,7 @@ message HttpListener {
     // Some configuration here can be overridden in VirtualHostOptions configuration, RouteOptions configuration,
     // or WeightedDestinationOptions configuration.
     HttpListenerOptions options = 2;
-    // prefix for addressing envoy stats for the tcp proxy
+    // prefix for addressing envoy stats for the http connection manager
     string stat_prefix = 3;
 }
 
