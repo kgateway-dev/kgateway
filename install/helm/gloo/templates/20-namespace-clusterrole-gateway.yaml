@@ -131,7 +131,7 @@ rules:
   verbs: ["get", "list", "watch", "create", "update"]
 
 
-{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
+{{- if and .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 ---
 # this role requires access to cluster-scoped resources
 kind: ClusterRole

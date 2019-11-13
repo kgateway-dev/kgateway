@@ -1,4 +1,4 @@
-{{- if and .Values.gateway.enabled .Values.gateway.validation }}
+{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
 apiVersion: v1
 kind: Service
 metadata:

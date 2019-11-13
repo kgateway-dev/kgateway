@@ -1,4 +1,4 @@
-{{- if and .Values.gateway.enabled .Values.gateway.validation }}
+{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
