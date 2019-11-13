@@ -148,7 +148,7 @@ var _ = Describe("Gateway", func() {
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})

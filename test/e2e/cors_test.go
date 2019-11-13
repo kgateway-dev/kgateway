@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -163,7 +163,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 								},
 							},
 						}},
-						VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+						Options: &gloov1.VirtualHostOptions{
 							Cors: cors,
 						},
 					}},

@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -165,14 +165,14 @@ var _ = Describe("Gateway", func() {
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("can stream access logs", func() {
 					logName := "test-log"
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -264,12 +264,12 @@ var _ = Describe("Gateway", func() {
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 				It("can create string access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -303,7 +303,7 @@ var _ = Describe("Gateway", func() {
 					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{

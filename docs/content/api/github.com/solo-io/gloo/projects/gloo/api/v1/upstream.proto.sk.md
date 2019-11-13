@@ -30,7 +30,7 @@ weight: 5
 Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
 [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
 Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-Each upstream type is handled by a corresponding Gloo plugin.
+Each upstream type is handled by a corresponding Gloo option (i.e., feature).
 
 ```yaml
 "upstreamSpec": .gloo.solo.io.UpstreamSpec
@@ -42,7 +42,7 @@ Each upstream type is handled by a corresponding Gloo plugin.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstreamSpec` | [.gloo.solo.io.UpstreamSpec](../plugins.proto.sk/#upstreamspec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
+| `upstreamSpec` | [.gloo.solo.io.UpstreamSpec](../options.proto.sk/#upstreamspec) | Type-specific configuration. Examples include static, kubernetes, and aws. The type-specific config for the upstream is called a spec. |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of the resource. Status is read-only by clients, and set by gloo during validation. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 | `discoveryMetadata` | [.gloo.solo.io.DiscoveryMetadata](../upstream.proto.sk/#discoverymetadata) | Upstreams and their configuration can be automatically by Gloo Discovery if this upstream is created or modified by Discovery, metadata about the operation will be placed here. |  |

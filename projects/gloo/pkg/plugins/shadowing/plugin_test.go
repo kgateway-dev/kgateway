@@ -3,7 +3,7 @@ package shadowing
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/shadowing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -23,7 +23,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -45,7 +45,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -82,7 +82,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 100,
@@ -118,7 +118,7 @@ var _ = Describe("Plugin", func() {
 			Namespace: "default",
 		}
 		in := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Upstream:   upRef,
 					Percentage: 200,
@@ -131,7 +131,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(Equal(InvalidNumeratorError(200)))
 
 		in = &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Shadowing: &shadowing.RouteShadowing{
 					Percentage: 100,
 				},

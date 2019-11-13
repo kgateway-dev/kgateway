@@ -93,7 +93,7 @@ var _ = Describe("Plugins", func() {
 			vhost := v1.VirtualHost{
 				Name:    "test",
 				Domains: []string{"domain"},
-				VirtualHostPlugins: &v1.VirtualHostPlugins{
+				Options: &v1.VirtualHostOptions{
 					Extensions: &v1.Extensions{
 						Configs: map[string]*types.Struct{
 							"test": pluginstruct,
@@ -103,7 +103,7 @@ var _ = Describe("Plugins", func() {
 			}
 			outm := new(types.Api)
 
-			err = UnmarshalExtension(vhost.GetVirtualHostPlugins(), "test", outm)
+			err = UnmarshalExtension(vhost.GetOptions(), "test", outm)
 			Expect(outm).To(Equal(orginalMessage))
 		})
 
@@ -114,7 +114,7 @@ var _ = Describe("Plugins", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			route := v1.Route{
-				RoutePlugins: &v1.RoutePlugins{
+				Options: &v1.RouteOptions{
 					Extensions: &v1.Extensions{
 						Configs: map[string]*types.Struct{
 							"test": pluginstruct,
@@ -124,7 +124,7 @@ var _ = Describe("Plugins", func() {
 			}
 			outm := new(types.Api)
 
-			err = UnmarshalExtension(route.GetRoutePlugins(), "test", outm)
+			err = UnmarshalExtension(route.GetOptions(), "test", outm)
 			Expect(outm).To(Equal(orginalMessage))
 		})
 

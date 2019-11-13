@@ -32,4 +32,5 @@ glooctl debug [flags]
 
 * [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl debug logs](../glooctl_debug_logs)	 - Debug Gloo logs (requires Gloo running on Kubernetes)
+* [glooctl debug yaml](../glooctl_debug_yaml)	 - Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
 

@@ -7,8 +7,8 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"

@@ -189,7 +189,7 @@ func routeList(routeList []*v1.Route) []string {
 
 func vhPlugins(v *v1.VirtualService) string {
 	var pluginStr string
-	if v.VirtualHost.VirtualHostPlugins != nil {
+	if v.VirtualHost.Options != nil {
 		// TODO: fill this when there are vhost plugins
 	}
 	return pluginStr

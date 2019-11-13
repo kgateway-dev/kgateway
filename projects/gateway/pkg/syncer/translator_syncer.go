@@ -52,7 +52,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snap.Hash(),
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 
 	labels := map[string]string{
 		"created_by": "gateway",

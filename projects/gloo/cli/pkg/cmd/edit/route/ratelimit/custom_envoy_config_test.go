@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -44,7 +44,7 @@ var _ = Describe("CustomEnvoyConfig", func() {
 		vsvc, err = vsClient.Read(vsvc.Metadata.Namespace, vsvc.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		return vsvc.VirtualHost.Routes[index].RoutePlugins.Ratelimit
+		return vsvc.VirtualHost.Routes[index].Options.Ratelimit
 	}
 
 	It("should edit route", func() {

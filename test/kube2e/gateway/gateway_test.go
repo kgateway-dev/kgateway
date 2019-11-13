@@ -36,7 +36,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -44,7 +44,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -466,7 +466,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*matchers.Matcher{{}},
-						RoutePlugins: &gloov1.RoutePlugins{
+						Options: &gloov1.RouteOptions{
 							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
@@ -798,7 +798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 			tcpGateway := defaultGateway.GetTcpGateway()
 			Expect(tcpGateway).NotTo(BeNil())
-			tcpGateway.Destinations = append(tcpGateway.Destinations, &gloov1.TcpHost{
+			tcpGateway.TcpHosts = append(tcpGateway.TcpHosts, &gloov1.TcpHost{
 				Name: "one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
@@ -1382,6 +1382,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: rewrite}}
+	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
 }

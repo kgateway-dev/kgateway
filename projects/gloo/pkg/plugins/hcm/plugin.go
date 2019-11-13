@@ -7,7 +7,7 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -47,8 +47,8 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	var hcmSettings *hcm.HttpConnectionManagerSettings
-	if hl.HttpListener.GetListenerPlugins() != nil {
-		hcmSettings = hl.HttpListener.GetListenerPlugins().HttpConnectionManagerSettings
+	if hl.HttpListener.GetOptions() != nil {
+		hcmSettings = hl.HttpListener.GetOptions().HttpConnectionManagerSettings
 	}
 	if hcmSettings == nil && len(p.hcmPlugins) == 0 {
 		// special case where we have nothing to do

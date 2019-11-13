@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -20,14 +20,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )

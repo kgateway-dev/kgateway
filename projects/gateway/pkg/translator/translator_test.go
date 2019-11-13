@@ -12,7 +12,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -100,7 +100,7 @@ var _ = Describe("Translator", func() {
 				"plugin": {},
 			}
 
-			snap.Gateways[0].Plugins = &gloov1.ListenerPlugins{
+			snap.Gateways[0].Options = &gloov1.ListenerOptions{
 				Extensions: &gloov1.Extensions{
 					Configs: extensions,
 				},
@@ -108,7 +108,7 @@ var _ = Describe("Translator", func() {
 
 			httpGateway := snap.Gateways[0].GetHttpGateway()
 			Expect(httpGateway).NotTo(BeNil())
-			httpGateway.Plugins = &gloov1.HttpListenerPlugins{Extensions: &gloov1.Extensions{
+			httpGateway.Options = &gloov1.HttpListenerOptions{Extensions: &gloov1.Extensions{
 				Configs: extensions,
 			}}
 
@@ -119,12 +119,12 @@ var _ = Describe("Translator", func() {
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(1))
-			Expect(proxy.Listeners[0].Plugins.Extensions.Configs).To(HaveKey("plugin"))
-			Expect(proxy.Listeners[0].Plugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
+			Expect(proxy.Listeners[0].Options.Extensions.Configs).To(HaveKey("plugin"))
+			Expect(proxy.Listeners[0].Options.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
 			httpListener := proxy.Listeners[0].GetHttpListener()
 			Expect(httpListener).NotTo(BeNil())
-			Expect(httpListener.ListenerPlugins.Extensions.Configs).To(HaveKey("plugin"))
-			Expect(httpListener.ListenerPlugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
+			Expect(httpListener.Options.Extensions.Configs).To(HaveKey("plugin"))
+			Expect(httpListener.Options.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
 		})
 
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
@@ -446,7 +446,7 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should not error with one contains plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -454,8 +454,8 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should error with both having plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
-					snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
+					snap.VirtualServices[1].VirtualHost.Options = new(gloov1.VirtualHostOptions)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -526,12 +526,12 @@ var _ = Describe("Translator", func() {
 			Context("valid configuration", func() {
 				dur := time.Minute
 
-				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
-				midLevelRoutePlugins := &gloov1.RoutePlugins{Timeout: &dur}
-				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
+				rootLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
+				midLevelRoutePlugins := &gloov1.RouteOptions{Timeout: &dur}
+				leafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
 
-				mergedMidLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
-				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
+				mergedMidLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
+				mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
 					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
@@ -563,7 +563,7 @@ var _ = Describe("Translator", func() {
 													Namespace: ns,
 												},
 											},
-											RoutePlugins: rootLevelRoutePlugins,
+											Options: rootLevelRoutePlugins,
 										},
 									},
 								},
@@ -630,7 +630,7 @@ var _ = Describe("Translator", func() {
 												Namespace: ns,
 											},
 										},
-										RoutePlugins: midLevelRoutePlugins,
+										Options: midLevelRoutePlugins,
 									},
 								},
 							},
@@ -681,7 +681,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -732,7 +732,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -779,7 +779,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: rootLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -801,7 +801,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedMidLevelRoutePlugins,
+							Options: mergedMidLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -823,7 +823,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedLeafLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
@@ -868,7 +868,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: leafLevelRoutePlugins,
+							Options: leafLevelRoutePlugins,
 						},
 					}))
 				})
@@ -957,21 +957,21 @@ var _ = Describe("Translator", func() {
 		var (
 			factory     *TcpTranslator
 			idleTimeout time.Duration
-			plugins     *gloov1.TcpListenerPlugins
-			destination *gloov1.TcpHost
+			plugins     *gloov1.TcpListenerOptions
+			tcpHost     *gloov1.TcpHost
 		)
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
 			translator = NewTranslator([]ListenerFactory{factory})
 
 			idleTimeout = 5 * time.Second
-			plugins = &gloov1.TcpListenerPlugins{
+			plugins = &gloov1.TcpListenerOptions{
 				TcpProxySettings: &tcp.TcpProxySettings{
 					MaxConnectAttempts: &types.UInt32Value{Value: 10},
 					IdleTimeout:        &idleTimeout,
 				},
 			}
-			destination = &gloov1.TcpHost{
+			tcpHost = &gloov1.TcpHost{
 				Name: "host-one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_UpstreamGroup{
@@ -989,8 +989,8 @@ var _ = Describe("Translator", func() {
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_TcpGateway{
 							TcpGateway: &v1.TcpGateway{
-								Destinations: []*gloov1.TcpHost{destination},
-								Plugins:      plugins,
+								Options:  plugins,
+								TcpHosts: []*gloov1.TcpHost{tcpHost},
 							},
 						},
 						BindPort: 2,
@@ -1004,9 +1004,9 @@ var _ = Describe("Translator", func() {
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener
-			Expect(listener.Plugins).To(Equal(plugins))
+			Expect(listener.Options).To(Equal(plugins))
 			Expect(listener.TcpHosts).To(HaveLen(1))
-			Expect(listener.TcpHosts[0]).To(Equal(destination))
+			Expect(listener.TcpHosts[0]).To(Equal(tcpHost))
 		})
 
 	})

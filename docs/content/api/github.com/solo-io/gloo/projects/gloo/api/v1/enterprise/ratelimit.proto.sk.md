@@ -30,14 +30,14 @@ weight: 5
 
 ```yaml
 "domain": string
-"descriptors": []ratelimit.plugins.gloo.solo.io.Descriptor
+"descriptors": []ratelimit.options.gloo.solo.io.Descriptor
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `domain` | `string` |  |  |
-| `descriptors` | [[]ratelimit.plugins.gloo.solo.io.Descriptor](../plugins/ratelimit/ratelimit.proto.sk/#descriptor) |  |  |
+| `descriptors` | [[]ratelimit.options.gloo.solo.io.Descriptor](../options/ratelimit/ratelimit.proto.sk/#descriptor) |  |  |
 
 
 

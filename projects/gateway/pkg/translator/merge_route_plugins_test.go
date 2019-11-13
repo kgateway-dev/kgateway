@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 )
 
 var _ = Describe("MergeRoutePlugins", func() {
 	It("merges top-level route plugins fields", func() {
-		dst := &v1.RoutePlugins{
+		dst := &v1.RouteOptions{
 			PrefixRewrite: &types.StringValue{Value: "preserve-me"},
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
@@ -22,7 +22,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 			},
 		}
 		d := time.Minute
-		src := &v1.RoutePlugins{
+		src := &v1.RouteOptions{
 			Timeout: &d,
 			Retries: &retries.RetryPolicy{
 				RetryOn:    "5XX",
@@ -35,7 +35,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				},
 			},
 		}
-		expected := &v1.RoutePlugins{
+		expected := &v1.RouteOptions{
 			PrefixRewrite: &types.StringValue{Value: "preserve-me"},
 			Timeout:       &d,
 			Retries: &retries.RetryPolicy{
