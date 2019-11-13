@@ -87,8 +87,8 @@ message DestinationSpec {
     }
 }
 
-// Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo plugin.
+// Each upstream in Gloo has a type. Supported types include `static`, `kube`, `aws`, `consul`, and more.
+// Each upstream type is handled by a corresponding Gloo option (i.e., feature).
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
