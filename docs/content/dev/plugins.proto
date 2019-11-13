@@ -87,8 +87,8 @@ message DestinationSpec {
     }
 }
 
-// Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo plugin.
+// Each upstream in Gloo has a type. Supported types include `static`, `kube`, `aws`, `consul`, and more.
+// Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
@@ -105,7 +105,7 @@ message UpstreamSpec {
     // with a grpc service spec
     bool use_http2 = 10;
 
-    // Note to developers: new Upstream Plugins must be added to this oneof field
+    // Note to developers: new Upstream plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
         kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;

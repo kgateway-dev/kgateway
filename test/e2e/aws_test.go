@@ -265,7 +265,7 @@ var _ = Describe("AWS Lambda", func() {
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "app",
-				Namespace: "default",
+				Namespace: "gloo-system",
 			},
 			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},

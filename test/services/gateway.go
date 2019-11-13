@@ -85,17 +85,16 @@ type What struct {
 }
 
 type RunOptions struct {
-	NsToWrite        string
-	NsToWatch        []string
-	WhatToRun        What
-	GlooPort         int32
-	ValidationPort   int32
-	Settings         *gloov1.Settings
-	ExtensionConfigs *gloov1.Extensions
-	Extensions       syncer.Extensions
-	Cache            memory.InMemoryResourceCache
-	KubeClient       kubernetes.Interface
-	ConsulClient     consul.ConsulWatcher
+	NsToWrite      string
+	NsToWatch      []string
+	WhatToRun      What
+	GlooPort       int32
+	ValidationPort int32
+	Settings       *gloov1.Settings
+	Extensions     syncer.Extensions
+	Cache          memory.InMemoryResourceCache
+	KubeClient     kubernetes.Interface
+	ConsulClient   consul.ConsulWatcher
 }
 
 //noinspection GoUnhandledErrorResult
@@ -130,7 +129,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
 	}
-	glooOpts.Settings.Extensions = runOptions.ExtensionConfigs
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true

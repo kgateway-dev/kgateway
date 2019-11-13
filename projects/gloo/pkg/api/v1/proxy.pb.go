@@ -577,7 +577,7 @@ type Route struct {
 	//	*Route_DirectResponseAction
 	Action isRoute_Action `protobuf_oneof:"action"`
 	// Route Options extend the behavior of routes.
-	// Route options include configuration such as retries,rate limiting, and request/response transformation.
+	// Route options include configuration such as retries, rate limiting, and request/response transformation.
 	Options *RouteOptions `protobuf:"bytes,5,opt,name=options,proto3" json:"options,omitempty"`
 	// Metadata for the individual route
 	// This data is opaque to Gloo, used

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/hashicorp/go-uuid"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -123,17 +122,10 @@ func createApiKeySecret(ctx context.Context, meta core.Metadata, input extauth.A
 	labels.Entries = input.Labels
 	meta.Labels = labels.MustMap()
 
-	secretStruct, err := envoyutil.MessageToStruct(&input)
-	if err != nil {
-		return UnableToMarshalApiKeySecret(err)
-	}
-
 	secret := &gloov1.Secret{
 		Metadata: meta,
-		Kind: &gloov1.Secret_Extension{
-			Extension: &gloov1.Extension{
-				Config: secretStruct,
-			},
+		Kind: &gloov1.Secret_ApiKey{
+			ApiKey: &input,
 		},
 	}
 

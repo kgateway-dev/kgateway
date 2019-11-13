@@ -30,8 +30,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // of upstreams, including Kubernetes, Consul, and Static.
 // ServiceSpec configuration is opaque to Gloo and handled by Service Options.
 type ServiceSpec struct {
-	// Note to developers: new Service Options must be added to this oneof field
-	// to be usable by Gloo.
+	// Note to developers: new Service plugins must be added to this oneof field
+	// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 	//
 	// Types that are valid to be assigned to PluginType:
 	//	*ServiceSpec_Rest

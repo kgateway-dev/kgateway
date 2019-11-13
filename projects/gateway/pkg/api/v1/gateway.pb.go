@@ -204,7 +204,7 @@ func (*Gateway) XXX_OneofWrappers() []interface{} {
 
 type HttpGateway struct {
 	// names of the the virtual services, which contain the actual routes for the gateway
-	// if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
+	// if the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above).
 	VirtualServices []core.ResourceRef `protobuf:"bytes,1,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services"`
 	// Select virtual services by their label. This will apply only to virtual services
 	// in the same namespace as the gateway resource.

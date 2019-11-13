@@ -264,8 +264,14 @@ message Settings {
     // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
     KubernetesConfiguration kubernetes = 22;
 
-    // Deprecated: Opaque settings config for Gloo extensions
-    Extensions extensions = 16 [deprecated = true];
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    //
+    // Some sample use cases:
+    // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    Extensions extensions = 16;
 
     // Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)

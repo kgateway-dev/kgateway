@@ -26,7 +26,6 @@ type Translator interface {
 func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.Settings, getPlugins func() []plugins.Plugin) Translator {
 	return &translatorFactory{
 		getPlugins:          getPlugins,
-		extensionsSettings:  settings.Extensions,
 		settings:            settings,
 		sslConfigTranslator: sslConfigTranslator,
 	}
@@ -34,7 +33,6 @@ func NewTranslator(sslConfigTranslator utils.SslConfigTranslator, settings *v1.S
 
 type translatorFactory struct {
 	getPlugins          func() []plugins.Plugin
-	extensionsSettings  *v1.Extensions
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 }
@@ -42,7 +40,6 @@ type translatorFactory struct {
 func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (envoycache.Snapshot, reporter.ResourceReports, *validationapi.ProxyReport, error) {
 	instance := &translatorInstance{
 		plugins:             t.getPlugins(),
-		extensionsSettings:  t.extensionsSettings,
 		settings:            t.settings,
 		sslConfigTranslator: t.sslConfigTranslator,
 	}
@@ -52,7 +49,6 @@ func (t *translatorFactory) Translate(params plugins.Params, proxy *v1.Proxy) (e
 // a translator instance performs one
 type translatorInstance struct {
 	plugins             []plugins.Plugin
-	extensionsSettings  *v1.Extensions
 	settings            *v1.Settings
 	sslConfigTranslator utils.SslConfigTranslator
 }
@@ -66,9 +62,8 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 	params.Ctx = contextutils.WithLogger(params.Ctx, "translator")
 	for _, p := range t.plugins {
 		if err := p.Init(plugins.InitParams{
-			Ctx:                params.Ctx,
-			ExtensionsSettings: t.extensionsSettings,
-			Settings:           t.settings,
+			Ctx:      params.Ctx,
+			Settings: t.settings,
 		}); err != nil {
 			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
 		}
