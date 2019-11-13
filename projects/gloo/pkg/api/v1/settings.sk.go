@@ -50,7 +50,6 @@ func (r *Settings) Hash() uint64 {
 		r.Gateway,
 		r.Consul,
 		r.Kubernetes,
-		r.Extensions,
 		r.Ratelimit,
 		r.RatelimitServer,
 		r.Rbac,

@@ -265,7 +265,7 @@ message Settings {
     KubernetesConfiguration kubernetes = 22;
 
     // Deprecated: Opaque settings config for Gloo extensions
-    Extensions extensions = 16 [deprecated = true];
+    //Extensions extensions = 16 [deprecated = true];
 
     // Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)

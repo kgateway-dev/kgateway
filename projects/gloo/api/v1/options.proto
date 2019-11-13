@@ -58,7 +58,7 @@ import "google/protobuf/wrappers.proto";
 message ListenerOptions {
     als.options.gloo.solo.io.AccessLoggingService access_logging_service = 1;
     // Deprecated: Opaque config for Gloo plugins
-    Extensions extensions = 2 [deprecated=true];
+    //Extensions extensions = 2 [deprecated=true];
 }
 
 // Optional, feature-specific configuration that lives on http listeners
@@ -68,7 +68,7 @@ message HttpListenerOptions {
     // enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
     healthcheck.options.gloo.solo.io.HealthCheck health_check = 4;
     // Deprecated: Opaque config for Gloo plugins
-    Extensions extensions = 3 [deprecated=true];
+    //Extensions extensions = 3 [deprecated=true];
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
     waf.options.gloo.solo.io.Settings waf = 5;
@@ -87,7 +87,7 @@ message TcpListenerOptions {
 // to be usable by Gloo.
 message VirtualHostOptions {
     // Deprecated: Opaque config for Gloo plugins
-    Extensions extensions = 1 [deprecated=true];
+    //Extensions extensions = 1 [deprecated=true];
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     stats.options.gloo.solo.io.Stats stats = 10;
     // Append/Remove headers on Requests or Responses on all routes contained in this Virtual Host
@@ -132,7 +132,7 @@ message RouteOptions {
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     // Deprecated: Opaque config for Gloo plugins
-    Extensions extensions = 6 [deprecated=true];
+    //Extensions extensions = 6 [deprecated=true];
     // Defines route-specific tracing configuration.
     // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
     // See here for additional information about configuring tracing with Gloo: https://gloo.solo.io/observability/tracing/
@@ -201,7 +201,7 @@ message WeightedDestinationOptions {
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 2;
     // Deprecated: Opaque config for Gloo plugins
-    Extensions extensions = 3 [deprecated=true];
+    //Extensions extensions = 3 [deprecated=true];
     // Enterprise-only: Authentication configuration
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 4;
 }
