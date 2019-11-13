@@ -44,6 +44,8 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 "aws": .gloo.solo.io.AwsSecret
 "azure": .gloo.solo.io.AzureSecret
 "tls": .gloo.solo.io.TlsSecret
+"oauth": .enterprise.gloo.solo.io.OauthSecret
+"apiKey": .enterprise.gloo.solo.io.ApiKeySecret
 "extension": .gloo.solo.io.Extension
 "metadata": .core.solo.io.Metadata
 
@@ -51,10 +53,12 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, or `extension` can be set. |  |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, or `extension` can be set. |  |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, or `extension` can be set. |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk/#extension) | TODO(kdorosh) temporarily remove, will put back. Only one of `extension`, `aws`, or `tls` can be set. |  |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, `tls`, `oauth`, or `extension` can be set. |  |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, `tls`, `oauth`, or `extension` can be set. |  |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, `azure`, `oauth`, or `extension` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.OauthSecret](../enterprise/options/extauth/v1/extauth.proto.sk/#oauthsecret) | Enterprise only: OAuth secret configuration. Only one of `oauth`, `aws`, `azure`, `tls`, or `extension` can be set. |  |
+| `apiKey` | [.enterprise.gloo.solo.io.ApiKeySecret](../enterprise/options/extauth/v1/extauth.proto.sk/#apikeysecret) | Enterprise only: ApiKey secret configuration. Only one of `apiKey`, `aws`, `azure`, `tls`, or `extension` can be set. |  |
+| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk/#extension) | TODO(kdorosh) temporarily remove, will put back. Only one of `extension`, `aws`, `azure`, `tls`, or `apiKey` can be set. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
