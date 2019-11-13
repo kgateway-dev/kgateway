@@ -264,7 +264,7 @@ var _ = Describe("Translator", func() {
 				}
 			})
 
-			It("should translate proxy with default name", func() {
+			It("should have the same number of listeners as gateways in the cluster", func() {
 				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(errs).To(HaveLen(4))

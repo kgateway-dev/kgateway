@@ -45,7 +45,7 @@ func NewDefaultTranslator(opts Opts) *translator {
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	filteredGateways := t.filterGatewaysForNamespace(gatewaysByProxy, namespace)
+	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
 
 	reports := make(reporter.ResourceReports)
 	reports.Accept(snap.Gateways.AsInputResources()...)
@@ -120,14 +120,13 @@ func gatewaysRefsToString(gateways v1.GatewayList) []string {
 	return ret
 }
 
-// https://github.com/solo-io/gloo/issues/538
-// Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
-// handling multiple gloo installations
-func (t *translator) filterGatewaysForNamespace(gateways v1.GatewayList, namespace string) v1.GatewayList {
+// Get the gateways that should be processed in this sync execution
+func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
 	var filteredGateways v1.GatewayList
 	for _, gateway := range gateways {
-		// https://github.com/solo-io/gloo/issues/1489
-		// we may want to configure the controller to read all the Gateway CRDs it can find
+		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write
+		// namespace, to support handling multiple gloo installations. However, we may want to
+		// configure the controller to read all the Gateway CRDs it can find.
 		if t.opts.ReadGatewaysFromAllNamespaces || gateway.Metadata.Namespace == namespace {
 			filteredGateways = append(filteredGateways, gateway)
 		}
