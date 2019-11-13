@@ -82,7 +82,8 @@ func createOauthSecret(ctx context.Context, meta core.Metadata, input extauth.Oa
 
 	if !dryRun {
 		secretClient := helpers.MustSecretClient()
-		if _, err := secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
+		var err error
+		if secret, err = secretClient.Write(secret, clients.WriteOpts{Ctx: ctx}); err != nil {
 			return err
 		}
 	}
