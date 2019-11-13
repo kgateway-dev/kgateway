@@ -2,6 +2,7 @@ package secret_test
 
 import (
 	"fmt"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
