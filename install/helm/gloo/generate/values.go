@@ -174,7 +174,7 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 bool `json:"enabled" desc:"enable Gloo API certgen job (default true)"`
+	Enabled                 bool `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
 	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
 	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }
