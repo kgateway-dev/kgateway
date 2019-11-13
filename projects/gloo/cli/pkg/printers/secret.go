@@ -42,8 +42,10 @@ func SecretTable(list v1.SecretList, w io.Writer) {
 			secretType = "Azure"
 		case *v1.Secret_Tls:
 			secretType = "TLS"
-		case *v1.Secret_Extension:
-			secretType = "Extension"
+		case *v1.Secret_Oauth:
+			secretType = "OAuth"
+		case *v1.Secret_ApiKey:
+			secretType = "ApiKey"
 		default:
 			secretType = "unknown"
 		}
