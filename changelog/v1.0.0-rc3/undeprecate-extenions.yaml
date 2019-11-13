@@ -1,7 +1,7 @@
 changelog:
   - type: BREAKING_CHANGE
     description: >
-      Update ExtAuth secret API to use strongly-typed configuration. ExtAuth and ApiKey secrets are no longer
+      Update ExtAuth secret API to use strongly-typed configuration. OAuth and ApiKey secrets are no longer
       configured in the opaque `extensions` block, the same configuration lives at the top level in the `api_key` and
       `oauth` blocks.
     issueLink: https://github.com/solo-io/gloo/issues/1171
