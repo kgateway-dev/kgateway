@@ -162,13 +162,12 @@ metadata:
 status:
   reportedBy: gloo
   state: Accepted
-upstreamSpec:
-  kube:
-    selector:
-      gloo: redis
-    serviceName: redis
-    serviceNamespace: gloo-system
-    servicePort: 6379
+kube:
+  selector:
+    gloo: redis
+  serviceName: redis
+  serviceNamespace: gloo-system
+  servicePort: 6379
 ```
 
 - `name` tells Gloo what the identifier for this upstream will be (for routes that point to it).

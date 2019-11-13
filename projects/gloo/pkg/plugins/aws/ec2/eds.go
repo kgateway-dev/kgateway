@@ -22,7 +22,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, unfilteredUpstreams v1.Up
 	contextutils.LoggerFrom(opts.Ctx).Debugw("calling WatchEndpoints on EC2")
 	var ec2Upstreams v1.UpstreamList
 	for _, upstream := range unfilteredUpstreams {
-		if _, ok := upstream.GetUpstreamSpec().GetUpstreamType().(*v1.UpstreamSpec_AwsEc2); ok {
+		if _, ok := upstream.GetUpstreamType().(*v1.Upstream_AwsEc2); ok {
 			ec2Upstreams = append(ec2Upstreams, upstream)
 		}
 	}
@@ -49,7 +49,7 @@ func newEndpointsWatcher(watchCtx context.Context, writeNamespace string, upstre
 	} else {
 		nsSet := map[string]bool{}
 		for _, upstream := range upstreams {
-			if secretRef := upstream.GetUpstreamSpec().GetAwsEc2().GetSecretRef(); secretRef != nil {
+			if secretRef := upstream.GetAwsEc2().GetSecretRef(); secretRef != nil {
 				// TODO(yuval-k): consider removing support for cross namespace secret refs. we can use code below
 				// instead:
 				// nsSet[upstream.GetMetadata().Namespace] = true

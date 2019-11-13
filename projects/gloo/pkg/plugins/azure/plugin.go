@@ -43,7 +43,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	upstreamSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Azure)
+	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Azure)
 	if !ok {
 		// not ours
 		return nil

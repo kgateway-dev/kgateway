@@ -79,7 +79,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteActio
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 
-	cfg := in.GetUpstreamSpec().GetLoadBalancerConfig()
+	cfg := in.GetLoadBalancerConfig()
 	if cfg == nil {
 		return nil
 	}

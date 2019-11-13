@@ -53,16 +53,14 @@ var _ = Describe("CustomAuth", func() {
 				Name:      "custom-auth",
 				Namespace: "default",
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UseHttp2: true,
-				UpstreamType: &gloov1.UpstreamSpec_Static{
-					Static: &static.UpstreamSpec{
-						Hosts: []*static.Host{{
-							// this is a safe way of referring to localhost
-							Addr: envoyInstance.GlooAddr,
-							Port: 8095,
-						}},
-					},
+			UseHttp2: true,
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						// this is a safe way of referring to localhost
+						Addr: envoyInstance.GlooAddr,
+						Port: 8095,
+					}},
 				},
 			},
 		}

@@ -23,14 +23,12 @@ var _ = Describe("UpstreamGroup", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		us := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						Region: "test-region",
-						SecretRef: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "test-aws-us",
-						},
+			UpstreamType: &v1.Upstream_Aws{
+				Aws: &aws.UpstreamSpec{
+					Region: "test-region",
+					SecretRef: &core.ResourceRef{
+						Namespace: "gloo-system",
+						Name:      "test-aws-us",
 					},
 				},
 			},

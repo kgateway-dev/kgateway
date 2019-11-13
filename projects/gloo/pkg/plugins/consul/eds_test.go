@@ -330,13 +330,11 @@ func createTestUpstream(svcName string, tags, dataCenters []string) *v1.Upstream
 			Name:      "consul-svc:" + svcName,
 			Namespace: "",
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Consul{
-				Consul: &consulplugin.UpstreamSpec{
-					ServiceName: svcName,
-					ServiceTags: tags,
-					DataCenters: dataCenters,
-				},
+		UpstreamType: &v1.Upstream_Consul{
+			Consul: &consulplugin.UpstreamSpec{
+				ServiceName: svcName,
+				ServiceTags: tags,
+				DataCenters: dataCenters,
 			},
 		},
 	}

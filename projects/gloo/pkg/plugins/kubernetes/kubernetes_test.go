@@ -176,13 +176,11 @@ var _ = Describe("Kubernetes", func() {
 			makeUpstream := func(name string) *v1.Upstream {
 				return &v1.Upstream{
 					Metadata: core.Metadata{Name: name},
-					UpstreamSpec: &v1.UpstreamSpec{
-						UpstreamType: &v1.UpstreamSpec_Kube{
-							Kube: &kubepluginapi.UpstreamSpec{
-								ServiceNamespace: svcNamespace,
-								ServiceName:      svcName,
-								ServicePort:      8080,
-							},
+					UpstreamType: &v1.Upstream_Kube{
+						Kube: &kubepluginapi.UpstreamSpec{
+							ServiceNamespace: svcNamespace,
+							ServiceName:      svcName,
+							ServicePort:      8080,
 						},
 					},
 				}

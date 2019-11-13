@@ -23,15 +23,15 @@ type SubsetSpecMutator interface {
 	SubsetSpecSetter
 }
 
-func (us *UpstreamSpec_Kube) GetSubsetSpec() *plugins.SubsetSpec {
+func (us *Upstream_Kube) GetSubsetSpec() *plugins.SubsetSpec {
 	return us.Kube.SubsetSpec
 }
 
-func (us *UpstreamSpec_Kube) SetSubsetSpec(spec *plugins.SubsetSpec) {
+func (us *Upstream_Kube) SetSubsetSpec(spec *plugins.SubsetSpec) {
 	us.Kube.SubsetSpec = spec
 }
 
-func (us *UpstreamSpec_Consul) GetSubsetSpec() *plugins.SubsetSpec {
+func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 	subsets := &plugins.SubsetSpec{}
 
 	// Add a subset selector for data centers

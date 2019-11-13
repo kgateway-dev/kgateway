@@ -118,10 +118,8 @@ var _ = Describe("Updater", func() {
 				Namespace: "ns",
 				Name:      "up",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Kube{
-					Kube: &kubernetes_plugins_gloo_solo_io.UpstreamSpec{},
-				},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes_plugins_gloo_solo_io.UpstreamSpec{},
 			},
 		}
 	})

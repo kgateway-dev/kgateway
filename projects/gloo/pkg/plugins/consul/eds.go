@@ -35,7 +35,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	// Filter out non-consul upstreams
 	trackedServices := make(map[string][]*v1.Upstream)
 	for _, us := range upstreamsToTrack {
-		if consulUsSpec := us.UpstreamSpec.GetConsul(); consulUsSpec != nil {
+		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
 			trackedServices[consulUsSpec.ServiceName] = append(trackedServices[consulUsSpec.ServiceName], us)
 		}
@@ -245,7 +245,7 @@ func toResourceRefs(upstreams []*v1.Upstream) (out []*core.ResourceRef) {
 func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
-		for _, tag := range us.UpstreamSpec.GetConsul().ServiceTags {
+		for _, tag := range us.GetConsul().ServiceTags {
 			tagMap[tag] = true
 		}
 	}
@@ -258,7 +258,7 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 func getUniqueUpstreamDataCenters(upstreams []*v1.Upstream) (dataCenters []string) {
 	dcMap := make(map[string]bool)
 	for _, us := range upstreams {
-		for _, dc := range us.UpstreamSpec.GetConsul().DataCenters {
+		for _, dc := range us.GetConsul().DataCenters {
 			dcMap[dc] = true
 		}
 	}

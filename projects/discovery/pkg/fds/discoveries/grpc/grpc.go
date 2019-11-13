@@ -24,7 +24,7 @@ import (
 )
 
 func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
-	upstreamType, ok := u.UpstreamSpec.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := u.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}

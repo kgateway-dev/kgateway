@@ -125,7 +125,7 @@ func filterUpstreamsWhitelist(upstreams v1.UpstreamList, namespaces kubernetes.K
 }
 
 func getUpstreamNamespace(us *v1.Upstream) string {
-	if kubeSpec := us.GetUpstreamSpec().GetKube(); kubeSpec != nil {
+	if kubeSpec := us.GetKube(); kubeSpec != nil {
 		return kubeSpec.ServiceNamespace
 	}
 	return "" // only applies to kube namespaces currently

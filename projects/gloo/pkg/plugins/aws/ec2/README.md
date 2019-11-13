@@ -14,17 +14,16 @@ metadata:
   name: my-ec2-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    awsEc2:
-      filters:
-      - key: some-key
-      - kvPair:
-          key: some-other-key
-          value: some-value
-      region: us-east-1
-      secretRef:
-        name: my-aws-secret
-        namespace: default
+  awsEc2:
+    filters:
+    - key: some-key
+    - kvPair:
+        key: some-other-key
+        value: some-value
+    region: us-east-1
+    secretRef:
+      name: my-aws-secret
+      namespace: default
 ```
   
 

@@ -49,18 +49,17 @@ metadata:
   name: default-session-affinity-app-80
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      selector:
-        name: session-affinity-app
-      serviceName: session-affinity-app
-      serviceNamespace: default
-      servicePort: 80
-    loadBalancerConfig:
-      ringHash:
-        ringHashConfig:
-          maximumRingSize: "200"
-          minimumRingSize: "10"
+  kube:
+    selector:
+      name: session-affinity-app
+    serviceName: session-affinity-app
+    serviceNamespace: default
+    servicePort: 80
+  loadBalancerConfig:
+    ringHash:
+      ringHashConfig:
+        maximumRingSize: "200"
+        minimumRingSize: "10"
 {{< /highlight >}}
 
 - Optional fields omitted:
@@ -75,15 +74,14 @@ metadata:
   name: default-session-affinity-app-80
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      selector:
-        name: session-affinity-app
-      serviceName: session-affinity-app
-      serviceNamespace: default
-      servicePort: 80
-    loadBalancerConfig:
-      ringHash: {}
+  kube:
+    selector:
+      name: session-affinity-app
+    serviceName: session-affinity-app
+    serviceNamespace: default
+    servicePort: 80
+  loadBalancerConfig:
+    ringHash: {}
 {{< /highlight >}}
 
 #### Configure a Maglev Load Balancer on an Upstream
@@ -307,18 +305,17 @@ metadata:
   name: default-session-affinity-app-80
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      selector:
-        name: session-affinity-app
-      serviceName: session-affinity-app
-      serviceNamespace: default
-      servicePort: 80
-    loadBalancerConfig:
-      ringHash:
-        ringHashConfig:
-          maximumRingSize: "200"
-          minimumRingSize: "10"
+  kube:
+    selector:
+      name: session-affinity-app
+    serviceName: session-affinity-app
+    serviceNamespace: default
+    servicePort: 80
+  loadBalancerConfig:
+    ringHash:
+      ringHashConfig:
+        maximumRingSize: "200"
+        minimumRingSize: "10"
 {{< /highlight >}}
 
 ##### Configure the route

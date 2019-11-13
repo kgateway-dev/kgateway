@@ -57,10 +57,8 @@ var _ = Describe("Plugin", func() {
 				Name:      "test",
 				Namespace: "default",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Static{
-					Static: upstreamSpec,
-				},
+			UpstreamType: &v1.Upstream_Static{
+				Static: upstreamSpec,
 			},
 		}
 

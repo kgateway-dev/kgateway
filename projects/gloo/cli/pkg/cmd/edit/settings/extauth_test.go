@@ -85,14 +85,12 @@ var _ = Describe("Extauth", func() {
 					Name:      "extauth",
 					Namespace: "gloo-system",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &static_plugin_gloo.UpstreamSpec{
-							Hosts: []*static_plugin_gloo.Host{{
-								Addr: "test",
-								Port: 1234,
-							}},
-						},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &static_plugin_gloo.UpstreamSpec{
+						Hosts: []*static_plugin_gloo.Host{{
+							Addr: "test",
+							Port: 1234,
+						}},
 					},
 				},
 			}

@@ -142,8 +142,8 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		return errors.Errorf("internal error: upstream map not populated")
 	}
 	dest.Upstream = us.Metadata.Ref()
-	switch ut := us.UpstreamSpec.UpstreamType.(type) {
-	case *v1.UpstreamSpec_Aws:
+	switch ut := us.UpstreamType.(type) {
+	case *v1.Upstream_Aws:
 		if err := getAwsDestinationSpecInteractive(&dest.DestinationSpec.Aws, ut.Aws); err != nil {
 			return err
 		}

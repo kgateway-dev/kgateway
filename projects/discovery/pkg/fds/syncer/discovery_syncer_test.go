@@ -113,9 +113,9 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 
 func makeUpstream(name, namespace string, labels map[string]string) *gloov1.Upstream {
 	us := gloov1.NewUpstream("gloo-system", name)
-	us.UpstreamSpec = &gloov1.UpstreamSpec{UpstreamType: &gloov1.UpstreamSpec_Kube{
+	us.UpstreamType = &gloov1.Upstream_Kube{
 		Kube: &kubeplugin.UpstreamSpec{ServiceNamespace: namespace},
-	}}
+	}
 	us.Metadata.Labels = labels
 	return us
 }

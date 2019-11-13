@@ -37,12 +37,10 @@ var _ = Describe("Eds", func() {
 
 	It("should ignore upstreams in non watched namesapces", func() {
 		up := v1.NewUpstream("foo", "name")
-		up.UpstreamSpec = &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Kube{
-				Kube: &kubev1.UpstreamSpec{
-					ServiceName:      "name",
-					ServiceNamespace: "bar",
-				},
+		up.UpstreamType = &v1.Upstream_Kube{
+			Kube: &kubev1.UpstreamSpec{
+				ServiceName:      "name",
+				ServiceNamespace: "bar",
 			},
 		}
 		upstreamsToTrack := v1.UpstreamList{up}

@@ -79,15 +79,13 @@ var _ = Describe("Rate Limit", func() {
 					Name:      "rl-server",
 					Namespace: "default",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UseHttp2: true,
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &gloov1static.UpstreamSpec{
-							Hosts: []*gloov1static.Host{{
-								Addr: envoyInstance.GlooAddr,
-								Port: rlPort,
-							}},
-						},
+				UseHttp2: true,
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &gloov1static.UpstreamSpec{
+						Hosts: []*gloov1static.Host{{
+							Addr: envoyInstance.GlooAddr,
+							Port: rlPort,
+						}},
 					},
 				},
 			}

@@ -21,19 +21,18 @@ metadata:
   name: my-ec2-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    awsEc2:
-      filters:
-      - key: some-key
-      - kvPair:
-          key: some-other-key
-          value: some-value
-      region: us-east-1
-      publicIp: true
-      secretRef:
-        name: my-aws-secret
-        namespace: default
-      roleArn: arn:aws:iam::123456789012:role/describe-ec2-demo
+  awsEc2:
+    filters:
+    - key: some-key
+    - kvPair:
+        key: some-other-key
+        value: some-value
+    region: us-east-1
+    publicIp: true
+    secretRef:
+      name: my-aws-secret
+      namespace: default
+    roleArn: arn:aws:iam::123456789012:role/describe-ec2-demo
 ```
 
 ## Key points

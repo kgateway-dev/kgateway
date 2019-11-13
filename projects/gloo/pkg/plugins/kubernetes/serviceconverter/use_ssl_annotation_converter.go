@@ -35,12 +35,12 @@ const GlooSslRootCaAnnotation = "gloo.solo.io/sslService.rootCa"
 // sets UseSsl on the upstream if the service has the relevant port name
 type UseSslConverter struct{}
 
-func (u *UseSslConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, spec *v1.UpstreamSpec) error {
+func (u *UseSslConverter) ConvertService(svc *kubev1.Service, port kubev1.ServicePort, us *v1.Upstream) error {
 
 	upstreamSslConfig := upstreamSslConfigFromService(svc, port)
 
 	if upstreamSslConfig != nil {
-		spec.SslConfig = upstreamSslConfig
+		us.SslConfig = upstreamSslConfig
 	}
 
 	return nil

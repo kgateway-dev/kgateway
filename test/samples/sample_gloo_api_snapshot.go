@@ -17,14 +17,12 @@ func SimpleUpstream() *v1.Upstream {
 			Name:      "test",
 			Namespace: "gloo-system",
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Static{
-				Static: &static.UpstreamSpec{
-					Hosts: []*static.Host{
-						{
-							Addr: "Test",
-							Port: 124,
-						},
+		UpstreamType: &v1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{
+					{
+						Addr: "Test",
+						Port: 124,
 					},
 				},
 			},

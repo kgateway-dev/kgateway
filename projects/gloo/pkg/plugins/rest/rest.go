@@ -48,7 +48,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoyapi.Cluster) error {
-	if withServiceSpec, ok := in.UpstreamSpec.UpstreamType.(UpstreamWithServiceSpec); ok {
+	if withServiceSpec, ok := in.UpstreamType.(UpstreamWithServiceSpec); ok {
 		serviceSpec := withServiceSpec.GetServiceSpec()
 		if serviceSpec == nil {
 			return nil

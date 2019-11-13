@@ -40,11 +40,9 @@ var _ = Describe("Plugin", func() {
 		ref := params.Snapshot.Secrets[0].Metadata.Ref()
 
 		upstream = &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				SslConfig: &v1.UpstreamSslConfig{
-					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-						SecretRef: &ref,
-					},
+			SslConfig: &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &ref,
 				},
 			},
 		}

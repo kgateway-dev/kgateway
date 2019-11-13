@@ -36,10 +36,8 @@ var _ = Describe("Plugin", func() {
 				Name:      "extauth-server",
 				Namespace: "default",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Pipe{
-					Pipe: upstreamSpec,
-				},
+			UpstreamType: &v1.Upstream_Pipe{
+				Pipe: upstreamSpec,
 			},
 		}
 	})

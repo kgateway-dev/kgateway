@@ -208,22 +208,20 @@ var _ = Describe("Happy path", func() {
 				// create ssl proxy
 				copyUp := *tu.Upstream
 				copyUp.Metadata.Name = copyUp.Metadata.Name + "-ssl"
-				port := tu.Upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Static).Static.Hosts[0].Port
-				addr := tu.Upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Static).Static.Hosts[0].Addr
+				port := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
+				addr := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Addr
 				sslport := v1helpers.StartSslProxy(ctx, port)
 				ref := sslSecret.Metadata.Ref()
 
-				copyUp.UpstreamSpec = &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &static_plugin_gloo.UpstreamSpec{
-							Hosts: []*static_plugin_gloo.Host{{
-								Addr: addr,
-								Port: sslport,
-							}},
-						},
+				copyUp.UpstreamType = &gloov1.Upstream_Static{
+					Static: &static_plugin_gloo.UpstreamSpec{
+						Hosts: []*static_plugin_gloo.Host{{
+							Addr: addr,
+							Port: sslport,
+						}},
 					},
 				}
-				copyUp.UpstreamSpec.SslConfig = &gloov1.UpstreamSslConfig{
+				copyUp.SslConfig = &gloov1.UpstreamSslConfig{
 					SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
 						SecretRef: &ref,
 					},

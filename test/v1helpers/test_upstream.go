@@ -95,11 +95,9 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 			Name:      fmt.Sprintf("local-%d", id),
 			Namespace: "default",
 		},
-		UpstreamSpec: &gloov1.UpstreamSpec{
-			UpstreamType: &gloov1.UpstreamSpec_Static{
-				Static: &static_plugin_gloo.UpstreamSpec{
-					Hosts: hosts,
-				},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static_plugin_gloo.UpstreamSpec{
+				Hosts: hosts,
 			},
 		},
 	}

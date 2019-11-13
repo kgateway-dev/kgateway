@@ -139,14 +139,12 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 				Name:      fmt.Sprintf("local-%d", i),
 				Namespace: "default",
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Static{
-					Static: &static_plugin_gloo.UpstreamSpec{
-						Hosts: []*static_plugin_gloo.Host{{
-							Addr: "localhost",
-							Port: s.Port,
-						}},
-					},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static_plugin_gloo.UpstreamSpec{
+					Hosts: []*static_plugin_gloo.Host{{
+						Addr: "localhost",
+						Port: s.Port,
+					}},
 				},
 			},
 		}
@@ -160,14 +158,12 @@ func (m *QuoteUnquoteMesh) Start(ef *EnvoyFactory, testClients TestClients, serv
 				Name:      fmt.Sprintf("mesh-local-%d", i),
 				Namespace: "default",
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Static{
-					Static: &static_plugin_gloo.UpstreamSpec{
-						Hosts: []*static_plugin_gloo.Host{{
-							Addr: "localhost",
-							Port: m.portfor(i, i),
-						}},
-					},
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static_plugin_gloo.UpstreamSpec{
+					Hosts: []*static_plugin_gloo.Host{{
+						Addr: "localhost",
+						Port: m.portfor(i, i),
+					}},
 				},
 			},
 		}

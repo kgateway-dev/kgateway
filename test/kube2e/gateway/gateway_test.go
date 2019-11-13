@@ -740,7 +740,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil {
 						return err
 					}
-					upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
+					upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
 						PluginType: &gloov1plugins.ServiceSpec_Grpc{
 							Grpc: &grpcv1.ServiceSpec{},
 						},
@@ -757,7 +757,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, svc := range createdServices {
 				// now set subset config on an upstream:
 				up, _ := getUpstream(svc)
-				spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+				spec := up.GetKube().GetServiceSpec()
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
@@ -1015,7 +1015,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// I use eventually so it will wait a bit between retries.
 			Eventually(func() error {
 				upstream, _ := getUpstream()
-				upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
+				upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
 					Selectors: []*gloov1plugins.Selector{{
 						Keys: []string{"text"},
 					}},

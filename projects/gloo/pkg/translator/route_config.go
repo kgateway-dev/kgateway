@@ -438,7 +438,7 @@ Outerloop:
 
 func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
-	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}

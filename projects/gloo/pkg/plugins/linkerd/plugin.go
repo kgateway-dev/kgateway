@@ -62,7 +62,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return nil
 		}
-		kubeUs := us.GetUpstreamSpec().GetKube()
+		kubeUs := us.GetKube()
 		if kubeUs == nil {
 			return nil
 		}
@@ -117,7 +117,7 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 		if err != nil {
 			continue
 		}
-		kubeUs := us.GetUpstreamSpec().GetKube()
+		kubeUs := us.GetKube()
 		if kubeUs == nil {
 			continue
 		}

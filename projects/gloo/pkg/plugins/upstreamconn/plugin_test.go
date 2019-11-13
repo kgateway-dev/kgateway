@@ -17,25 +17,21 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		params       plugins.Params
-		plugin       *Plugin
-		upstream     *v1.Upstream
-		upstreamSpec *v1.UpstreamSpec
-		out          *envoyapi.Cluster
+		params   plugins.Params
+		plugin   *Plugin
+		upstream *v1.Upstream
+		out      *envoyapi.Cluster
 	)
 	BeforeEach(func() {
 		out = new(envoyapi.Cluster)
 
 		params = plugins.Params{}
-		upstreamSpec = &v1.UpstreamSpec{}
-		upstream = &v1.Upstream{
-			UpstreamSpec: upstreamSpec,
-		}
+		upstream = &v1.Upstream{}
 		plugin = NewPlugin()
 	})
 
 	It("should set max requests when provided", func() {
-		upstreamSpec.ConnectionConfig = &v1.ConnectionConfig{
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			MaxRequestsPerConnection: 5,
 		}
 
@@ -46,7 +42,7 @@ var _ = Describe("Plugin", func() {
 
 	It("should set connection timeout", func() {
 		second := time.Second
-		upstreamSpec.ConnectionConfig = &v1.ConnectionConfig{
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			ConnectTimeout: &second,
 		}
 
@@ -58,7 +54,7 @@ var _ = Describe("Plugin", func() {
 	It("should set TcpKeepalive", func() {
 		minute := time.Minute
 		hour := time.Hour
-		upstreamSpec.ConnectionConfig = &v1.ConnectionConfig{
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
 			TcpKeepalive: &v1.ConnectionConfig_TcpKeepAlive{
 				KeepaliveInterval: &minute,
 				KeepaliveTime:     &hour,

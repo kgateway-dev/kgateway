@@ -48,13 +48,11 @@ func ToUpstream(service *ServiceMeta) *v1.Upstream {
 			Name:      fakeUpstreamName(service.Name),
 			Namespace: defaults.GlooSystem,
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Consul{
-				Consul: &consulplugin.UpstreamSpec{
-					ServiceName: service.Name,
-					DataCenters: service.DataCenters,
-					ServiceTags: service.Tags,
-				},
+		UpstreamType: &v1.Upstream_Consul{
+			Consul: &consulplugin.UpstreamSpec{
+				ServiceName: service.Name,
+				DataCenters: service.DataCenters,
+				ServiceTags: service.Tags,
 			},
 		},
 	}

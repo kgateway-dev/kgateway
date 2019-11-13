@@ -40,13 +40,12 @@ var getUpstream = func(name, namespace, svcName, svcNs string, port uint32) *v1.
 			Name:      name,
 			Namespace: namespace,
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Kube{
-				Kube: &kubernetes.UpstreamSpec{
-					ServiceName:      svcName,
-					ServiceNamespace: svcNs,
-					ServicePort:      port,
-				}},
+		UpstreamType: &v1.Upstream_Kube{
+			Kube: &kubernetes.UpstreamSpec{
+				ServiceName:      svcName,
+				ServiceNamespace: svcNs,
+				ServicePort:      port,
+			},
 		},
 	}
 }

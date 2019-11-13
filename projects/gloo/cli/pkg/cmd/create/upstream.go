@@ -167,22 +167,17 @@ func createUpstream(opts *options.Options) error {
 }
 
 func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
-	spec, err := upstreamSpecFromOpts(opts.Create.InputUpstream)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid upstream spec")
-	}
-	return &v1.Upstream{
-		Metadata:     opts.Metadata,
-		UpstreamSpec: spec,
-	}, nil
-}
+	input := opts.Create.InputUpstream
 
-func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error) {
 	svcSpec, err := serviceSpecFromOpts(input.ServiceSpec)
 	if err != nil {
 		return nil, err
 	}
-	spec := &v1.UpstreamSpec{}
+
+	upstream := &v1.Upstream{
+		Metadata: opts.Metadata,
+	}
+
 	switch input.UpstreamType {
 	case options.UpstreamType_Aws:
 		if svcSpec != nil {
@@ -194,7 +189,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Aws.Secret.Name == "" {
 			return nil, errors.Errorf("aws secret name must not be empty")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Aws{
+		upstream.UpstreamType = &v1.Upstream_Aws{
 			Aws: &aws.UpstreamSpec{
 				Region:    input.Aws.Region,
 				SecretRef: &input.Aws.Secret,
@@ -241,7 +236,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			})
 		}
 		ec2Spec.Filters = filters
-		spec.UpstreamType = &v1.UpstreamSpec_AwsEc2{
+		upstream.UpstreamType = &v1.Upstream_AwsEc2{
 			AwsEc2: ec2Spec,
 		}
 	case options.UpstreamType_Azure:
@@ -254,7 +249,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Azure.Secret.Name == "" {
 			return nil, errors.Errorf("azure secret name must not be empty")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Azure{
+		upstream.UpstreamType = &v1.Upstream_Azure{
 			Azure: &azure.UpstreamSpec{
 				FunctionAppName: input.Azure.FunctionAppName,
 				SecretRef:       input.Azure.Secret,
@@ -264,7 +259,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Consul.ServiceName == "" {
 			return nil, errors.Errorf("must provide consul service name")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Consul{
+		upstream.UpstreamType = &v1.Upstream_Consul{
 			Consul: &consul.UpstreamSpec{
 				ServiceName: input.Consul.ServiceName,
 				ServiceTags: input.Consul.ServiceTags,
@@ -276,7 +271,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			return nil, errors.Errorf("Must provide kube service name")
 		}
 
-		spec.UpstreamType = &v1.UpstreamSpec_Kube{
+		upstream.UpstreamType = &v1.Upstream_Kube{
 			Kube: &kubernetes.UpstreamSpec{
 				ServiceName:      input.Kube.ServiceName,
 				ServiceNamespace: input.Kube.ServiceNamespace,
@@ -316,7 +311,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 				Port: port,
 			})
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Static{
+		upstream.UpstreamType = &v1.Upstream_Static{
 			Static: &static.UpstreamSpec{
 				Hosts:       hosts,
 				UseTls:      input.Static.UseTls,
@@ -324,7 +319,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			},
 		}
 	}
-	return spec, nil
+	return upstream, nil
 }
 
 func serviceSpecFromOpts(input options.InputServiceSpec) (*plugins.ServiceSpec, error) {

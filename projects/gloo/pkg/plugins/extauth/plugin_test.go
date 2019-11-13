@@ -113,14 +113,12 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 			Name:      "extauth",
 			Namespace: "default",
 		},
-		UpstreamSpec: &gloov1.UpstreamSpec{
-			UpstreamType: &gloov1.UpstreamSpec_Static{
-				Static: &static.UpstreamSpec{
-					Hosts: []*static.Host{{
-						Addr: "test",
-						Port: 1234,
-					}},
-				},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{{
+					Addr: "test",
+					Port: 1234,
+				}},
 			},
 		},
 	}
