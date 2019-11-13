@@ -12,8 +12,8 @@ import (
 )
 
 type InitParams struct {
-	Ctx                context.Context
-	Settings           *v1.Settings
+	Ctx      context.Context
+	Settings *v1.Settings
 }
 
 type Plugin interface {

@@ -54,7 +54,7 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 | `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, or `extension` can be set. |  |
 | `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, or `extension` can be set. |  |
 | `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, or `extension` can be set. |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk/#extension) | Arbitrary secret specification. Only one of `extension`, `aws`, or `tls` can be set. |  |
+| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk/#extension) | TODO(kdorosh) temporarily remove, will put back. Only one of `extension`, `aws`, or `tls` can be set. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 

@@ -62,8 +62,8 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 	params.Ctx = contextutils.WithLogger(params.Ctx, "translator")
 	for _, p := range t.plugins {
 		if err := p.Init(plugins.InitParams{
-			Ctx:                params.Ctx,
-			Settings:           t.settings,
+			Ctx:      params.Ctx,
+			Settings: t.settings,
 		}); err != nil {
 			return nil, nil, nil, errors.Wrapf(err, "plugin init failed")
 		}
