@@ -14,8 +14,8 @@ option (gogoproto.equal_all) = true;
 // of upstreams, including Kubernetes, Consul, and Static.
 // ServiceSpec configuration is opaque to Gloo and handled by Service Options.
 message ServiceSpec {
-    // Note to developers: new Service Options must be added to this oneof field
-    // to be usable by Gloo.
+    // Note to developers: new Service plugins must be added to this oneof field
+    // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
     oneof plugin_type {
         rest.options.gloo.solo.io.ServiceSpec rest = 1;
         grpc.options.gloo.solo.io.ServiceSpec grpc = 2;

@@ -188,7 +188,7 @@ message Route {
     }
 
     // Route Options extend the behavior of routes.
-    // Route options include configuration such as retries,rate limiting, and request/response transformation.
+    // Route options include configuration such as retries, rate limiting, and request/response transformation.
     RouteOptions options = 5;
 
     // Metadata for the individual route

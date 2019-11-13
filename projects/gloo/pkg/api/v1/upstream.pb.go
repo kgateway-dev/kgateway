@@ -28,7 +28,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // Upstreams represent destination for routing HTTP requests. Upstreams can be compared to
 // [clusters](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) in Envoy terminology.
 // Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo option (i.e., feature).
+// Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 type Upstream struct {
 	// Type-specific configuration. Examples include static, kubernetes, and aws.
 	// The type-specific config for the upstream is called a spec.

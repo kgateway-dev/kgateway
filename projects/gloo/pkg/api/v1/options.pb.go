@@ -59,17 +59,17 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 // Optional, feature-specific configuration that lives on gateways.
 // Each ListenerOption object contains configuration for a specific feature.
-// Note to developers: new Listener Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Listener plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 type ListenerOptions struct {
 	AccessLoggingService *als.AccessLoggingService `protobuf:"bytes,1,opt,name=access_logging_service,json=accessLoggingService,proto3" json:"access_logging_service,omitempty"`
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions           *Extensions `protobuf:"bytes,2,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
@@ -120,13 +120,13 @@ type HttpListenerOptions struct {
 	HttpConnectionManagerSettings *hcm.HttpConnectionManagerSettings `protobuf:"bytes,2,opt,name=http_connection_manager_settings,json=httpConnectionManagerSettings,proto3" json:"http_connection_manager_settings,omitempty"`
 	// enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
 	HealthCheck *healthcheck.HealthCheck `protobuf:"bytes,4,opt,name=health_check,json=healthCheck,proto3" json:"health_check,omitempty"`
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions `protobuf:"bytes,3,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Enterprise-only: Config for Web Application Firewall (WAF), supporting
 	// the popular ModSecurity 3.0 ruleset
@@ -245,16 +245,16 @@ func (m *TcpListenerOptions) GetTcpProxySettings() *tcp.TcpProxySettings {
 
 // Optional, feature-specific configuration that lives on virtual hosts.
 // Each VirtualHostPlugin object contains configuration for a specific feature.
-// Note to developers: new Virtual Host Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Virtual Host plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 type VirtualHostOptions struct {
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions          `protobuf:"bytes,1,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	Retries    *retries.RetryPolicy `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
 	Stats      *stats.Stats         `protobuf:"bytes,10,opt,name=stats,proto3" json:"stats,omitempty"`
@@ -407,8 +407,8 @@ func (m *VirtualHostOptions) GetDlp() *dlp.Config {
 
 // Optional, feature-specific configuration that lives on routes.
 // Each RouteOption object contains configuration for a specific feature.
-// Note to developers: new Route Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Route plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 type RouteOptions struct {
 	// Transformations to apply
 	Transformations *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
@@ -417,13 +417,13 @@ type RouteOptions struct {
 	PrefixRewrite *types.StringValue   `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
 	Timeout       *time.Duration       `protobuf:"bytes,4,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
 	Retries       *retries.RetryPolicy `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions `protobuf:"bytes,6,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Defines route-specific tracing configuration.
 	// See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
@@ -781,13 +781,13 @@ type WeightedDestinationOptions struct {
 	HeaderManipulation *headers.HeaderManipulation `protobuf:"bytes,1,opt,name=header_manipulation,json=headerManipulation,proto3" json:"header_manipulation,omitempty"`
 	// Transformations to apply
 	Transformations *transformation.RouteTransformations `protobuf:"bytes,2,opt,name=transformations,proto3" json:"transformations,omitempty"`
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions `protobuf:"bytes,3,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Enterprise-only: Authentication configuration
 	Extauth              *v1.ExtAuthExtension `protobuf:"bytes,4,opt,name=extauth,proto3" json:"extauth,omitempty"`
@@ -849,7 +849,7 @@ func (m *WeightedDestinationOptions) GetExtauth() *v1.ExtAuthExtension {
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kube`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo Option (i.e,, feature).
+// Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 type UpstreamSpec struct {
 	SslConfig *UpstreamSslConfig `protobuf:"bytes,1,opt,name=ssl_config,json=sslConfig,proto3" json:"ssl_config,omitempty"`
 	// Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
@@ -864,8 +864,8 @@ type UpstreamSpec struct {
 	// this field is evaluated `true` for upstreams
 	// with a grpc service spec. otherwise defaults to `false`
 	UseHttp2 bool `protobuf:"varint,7,opt,name=use_http2,json=useHttp2,proto3" json:"use_http2,omitempty"`
-	// Note to developers: new Upstream /options" must be added to this oneof field
-	// to be usable by Gloo.
+	// Note to developers: new Upstream plugins must be added to this oneof field
+	// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 	//
 	// Types that are valid to be assigned to UpstreamType:
 	//	*UpstreamSpec_Kube

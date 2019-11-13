@@ -120,13 +120,13 @@ type Settings struct {
 	Consul *Settings_ConsulConfiguration `protobuf:"bytes,20,opt,name=consul,proto3" json:"consul,omitempty"`
 	// Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
 	Kubernetes *Settings_KubernetesConfiguration `protobuf:"bytes,22,opt,name=kubernetes,proto3" json:"kubernetes,omitempty"`
-	// Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-	// Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//
 	// Some sample use cases:
 	// * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-	// * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-	// enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+	// * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions `protobuf:"bytes,16,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
 	// supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)

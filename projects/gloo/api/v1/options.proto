@@ -53,18 +53,18 @@ import "google/protobuf/wrappers.proto";
 
 // Optional, feature-specific configuration that lives on gateways.
 // Each ListenerOption object contains configuration for a specific feature.
-// Note to developers: new Listener Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Listener plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message ListenerOptions {
     als.options.gloo.solo.io.AccessLoggingService access_logging_service = 1;
 
-    // Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-    // Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
     // Some sample use cases:
     // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-    // * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-    // enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 2;
 }
 
@@ -74,13 +74,13 @@ message HttpListenerOptions {
     hcm.options.gloo.solo.io.HttpConnectionManagerSettings http_connection_manager_settings = 2;
     // enable [Envoy health checks](https://www.envoyproxy.io/docs/envoy/v1.7.0/api-v2/config/filter/http/health_check/v2/health_check.proto) on this listener
     healthcheck.options.gloo.solo.io.HealthCheck health_check = 4;
-    // Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-    // Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
     // Some sample use cases:
     // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-    // * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-    // enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 3;
     // Enterprise-only: Config for Web Application Firewall (WAF), supporting
     // the popular ModSecurity 3.0 ruleset
@@ -96,16 +96,16 @@ message TcpListenerOptions {
 
 // Optional, feature-specific configuration that lives on virtual hosts.
 // Each VirtualHostPlugin object contains configuration for a specific feature.
-// Note to developers: new Virtual Host Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Virtual Host plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message VirtualHostOptions {
-    // Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-    // Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
     // Some sample use cases:
     // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-    // * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-    // enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 1;
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     stats.options.gloo.solo.io.Stats stats = 10;
@@ -140,8 +140,8 @@ message VirtualHostOptions {
 
 // Optional, feature-specific configuration that lives on routes.
 // Each RouteOption object contains configuration for a specific feature.
-// Note to developers: new Route Options must be added to this struct
-// to be usable by Gloo.
+// Note to developers: new Route plugins must be added to this struct
+// to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 message RouteOptions {
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 1;
@@ -150,13 +150,13 @@ message RouteOptions {
     google.protobuf.StringValue prefix_rewrite = 3;
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
-    // Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-    // Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
     // Some sample use cases:
     // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-    // * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-    // enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 6;
     // Defines route-specific tracing configuration.
     // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html
@@ -225,20 +225,20 @@ message WeightedDestinationOptions {
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply
     envoy.api.v2.filter.http.RouteTransformations transformations = 2;
-    // Extensions will be passed along from Listeners, Gateways, VirtualServices, and Route tables to the underlying
-    // Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //
     // Some sample use cases:
     // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
-    // * gRPC-based plugins which communicate with the Gloo translator out-of-process. Having extensions available
-    // enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 3;
     // Enterprise-only: Authentication configuration
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 4;
 }
 
 // Each upstream in Gloo has a type. Supported types include `static`, `kube`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo Option (i.e,, feature).
+// Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 1;
@@ -257,8 +257,8 @@ message UpstreamSpec {
     // with a grpc service spec. otherwise defaults to `false`
     bool use_http2 = 7;
 
-    // Note to developers: new Upstream /options" must be added to this oneof field
-    // to be usable by Gloo.
+    // Note to developers: new Upstream plugins must be added to this oneof field
+    // to be usable by Gloo. (plugins currently need to be compiled into Gloo)
     oneof upstream_type {
         kubernetes.options.gloo.solo.io.UpstreamSpec kube = 8;
         static.options.gloo.solo.io.UpstreamSpec static = 9;
