@@ -87,7 +87,7 @@ var _ = Describe("Gateway", func() {
 			}
 
 			// write a virtual service so we have a proxy
-			vs := getTrivialVirtualServiceForUpstream("default", core.ResourceRef{Name: "test", Namespace: "test"})
+			vs := getTrivialVirtualServiceForUpstream("gloo-system", core.ResourceRef{Name: "test", Namespace: "test"})
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -139,7 +139,7 @@ var _ = Describe("Gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Create a virtual service with a route pointing to the above service
-			vs := getTrivialVirtualServiceForService("default", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+			vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -207,7 +207,7 @@ var _ = Describe("Gateway", func() {
 
 			It("should work with no ssl", func() {
 				up := tu.Upstream
-				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -216,7 +216,7 @@ var _ = Describe("Gateway", func() {
 
 			It("should not match requests that contain a header that is excluded from match", func() {
 				up := tu.Upstream
-				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -274,7 +274,7 @@ var _ = Describe("Gateway", func() {
 
 					up := tu.Upstream
 					vscli := testClients.VirtualServiceClient
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					vs.SslConfig = &gloov1.SslConfig{
 						SslSecrets: &gloov1.SslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{
