@@ -26,7 +26,6 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	SettingExtensions        *v1.Extensions
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 
