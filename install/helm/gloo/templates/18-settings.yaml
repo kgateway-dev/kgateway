@@ -38,7 +38,7 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
   gateway:
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}

@@ -40,6 +40,7 @@ discovery:
 gateway:
   enabled: true
   validation:
+    enabled: true
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
@@ -50,6 +51,7 @@ gateway:
     stats: true
     runAsUser: 10101
   certGenJob:
+    enabled: true
     image:
       repository: certgen
     restartPolicy: OnFailure
