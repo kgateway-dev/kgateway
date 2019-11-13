@@ -193,7 +193,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 
-					vs := getTrivialVirtualServiceForUpstream("default", tu.Upstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
@@ -290,7 +290,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					TestUpstreamReachable()
@@ -336,7 +336,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
