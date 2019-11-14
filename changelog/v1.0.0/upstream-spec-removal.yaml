@@ -4,3 +4,4 @@ changelog:
       Refactor the Upstream API to remove the `upstreamSpec` field, bringing all the fields
       contained in `upstreamSpec` up one level to the top-level Upstream.
     issueLink: https://github.com/solo-io/gloo/issues/1171
+    releaseStableApi: true
