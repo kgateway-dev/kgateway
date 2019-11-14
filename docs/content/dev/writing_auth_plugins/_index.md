@@ -1,10 +1,9 @@
 ---
-title: "Building external auth plugins"
+title: "Building External Auth Plugins"
 weight: 7
 description: Guidelines and best practices for developing and configuring Go plugins to extend Gloo's ext auth server
 ---
 
-## Intro
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth" %}}) we showed how 
 easy it is to extend Gloo with custom authentication logic using Go plugins. That guide uses a 
 [plugin](https://github.com/solo-io/ext-auth-plugin-examples/tree/master/plugins/required_header) that has already been 
@@ -13,25 +12,44 @@ built and published, and primarily focuses on giving an overview of the plugin d
 In this guide, we will get our hands dirty and dig into the nitty-gritty details of how to write, test, build, and 
 publish your external auth plugins.
 
-#### Before you start
+## Table of Contents
+- [Before you start](#before-you-start)
+- [Building and publishing and auth plugin](#building-and-publishing-and-auth-plugin)
+    - [API Overview](#api-overview)
+        - [`ExtAuthPlugin`](#extauthplugin)
+        - [`AuthService`](#authservice)
+    - [`AuthService` lifecycle](#about-the-authservice-lifecycle)
+    - [How to make your plugin implement `ExtAuthPlugin`](#about-the-authservice-lifecycle)
+    - [Build helper tools](#build-helper-tools)
+        - [Compare dependencies](#compare-dependencies)
+        - [Verify compatibility script](#verify-compatibility-script)
+        - [Dockerfile](#dockerfile)
+- [Configuring Gloo to load your plugins](#configuring-gloo-to-load-your-plugins)
+    - [Configuring Virtual Services to use your plugins](#configuring-virtual-services-to-use-your-plugins)
+- [Multi-step AuthConfigs](#multi-step-authconfigs)
+    - [Header propagation](#header-propagation)
+    - [Sharing state between steps](#sharing-state-between-steps)
+
+## Before you start
 This guide will make frequent references to the code contained in our 
 [Ext Auth Plugin examples](https://github.com/solo-io/ext-auth-plugin-examples) GitHub repository. In addition to the sample 
 plugin implementation, the repository contains useful tools to verify whether your plugin is compatible with a certain 
-version of Gloo Enterprise. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will make your life 
-significantly easier.
+version of Gloo Enterprise. Given the [constraints imposed by Go plugins](#build-helper-tools), these utilities will 
+significantly improve the experience of developing external auth plugins.
 
 {{% notice note %}}
 We recommend that you fork the example repository and use it as a starting point to develop your plugins.
 {{% /notice %}}
 
-#### Development workflow overview
+### Development workflow overview
 In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#development-workflow-overview" %}}) 
 we gave a high-level description of the steps required to extend Gloo with your own plugins:
 
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file to a 
 predefined directory.
 2. Configure Gloo to load the plugin by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by installing Gloo with some value overrides or by modifying the Gloo installation manifest manually.
+done by installing Gloo with [dedicated value overrides]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#installation" %}}) 
+or by modifying the Gloo installation manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
 
@@ -63,7 +81,9 @@ object to deserialize the plugin configuration into.
 The object returned by the `NewConfigInstance` function **MUST** be a pointer type.
 {{% /notice %}}
 
-Let's see an example to understand this better. If the `AuthConfig` for your plugin looks like this:
+Let's see an example to understand this better. If the `AuthConfig` for your plugin looks like this 
+(see [this section]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#create-an-authconfig-resource" %}}) 
+of the documentation for an explanation of the fields below):
 
 {{< highlight shell "hl_lines=8-16" >}}
 apiVersion: enterprise.gloo.solo.io/v1
@@ -75,11 +95,11 @@ spec:
   configs:
   - pluginAuth:
       name: my-plugin
-      plugin_file_name: MyPlugin.so
-      exported_symbol_name: Plugin
+      pluginFileName: MyPlugin.so
+      exportedSymbolName: Plugin
       config:
-        some_key: value-1
-        some_struct:
+        someKey: value-1
+        someStruct:
           another_key: value-2
 {{< /highlight >}}
 
@@ -96,7 +116,7 @@ type NestedConfig struct {
  }
 ```
 
-Gloo will populate the struct fields with the values found on the correspondent YAML attributes.
+Gloo will populate the struct fields with the values found on the correspondent YAML attributes. 
 
 {{% notice note %}}
 You might have noticed that the `configs` attribute in the configuration example above is an array. It is in fact 
@@ -138,19 +158,20 @@ the functions we just saw. The context will live as long as the plugin configura
 Whenever the auth configuration changes, Gloo will start new `AuthService` instances and signal the termination of the 
 previous ones by cancelling the context it provided them with.
 
-Following is the sequence of actions that Gloo performs when it detects a change in the overall auth configuration. 
-Let's assume we start with a blank sheet, i.e. no `AuthConfigs` are referenced on any of your Virtual Services.
+Assuming we start with a blank sheet, i.e. no `AuthConfig` resources are referenced on any of your Virtual Services, 
+following is the sequence of actions that the Gloo external auth service performs when it detects a change in an 
+auth configuration: 
 
-1. Start a new cancellable `context.Context`
-1. Loop over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
-    1. Load the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
-    2. Invoke `NewConfigInstance` **passing in the context**
-    3. Deserialize detected plugin config into the provided object
-    4. Invoke `GetAuthService` **passing in the context** and the configuration object
-1. If an error occurred, return it and do not update the `extauth` server configuration, else continue
-1. Cancel the previous `context.Context`
-1. Invoke the `Start` functions on all plugins **passing in the context**
-1. Apply the plugin configurations to the `extauth` server
+1. It starts a new cancellable `context.Context`
+1. It loops over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
+    1. It loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
+    2. It invokes `NewConfigInstance` **passing in the context**
+    3. It deserializes the detected plugin config into the provided object
+    4. It invokes `GetAuthService` **passing in the context** and the configuration object
+1. If an error occurred, it returns and does not update the `extauth` server configuration, else it continues
+1. It cancels the previous `context.Context`
+1. It invokes the `Start` functions on all plugins **passing in the context**
+1. It applies the plugin configurations to the `extauth` server state
 
 We recommend that you tie all the goroutines that you may spawn to the provided context by watching its `Done` channel. 
 This will prevent your plugin from leaking memory. You can find a great overview of `Context` and how to best use it 
@@ -303,7 +324,7 @@ Here is the sample output of a successful run of the script:
 The script is compiled to run on `linux` with `amd64` architectures. We will explain how it is supposed to be used in the next section.
 {{% /notice %}}
  
-#### Docker file
+#### Dockerfile
 We mentioned that the plugin must be compiled with the same `GOPATH` as Gloo. We also cannot easily cross-compile with 
 `go build` because we need to run with CGO enabled. The best way to get around these constraints is to compile inside a 
 container.
@@ -474,7 +495,7 @@ plugin container is configured to copy the plugin files to when it is run.
 Currently, Gloo expects to find the plugin files in the `/auth-plugins` directory. We plan to make this location configurable soon.
 {{% /notice %}}
 
-###Configuring Virtual Services to use your plugins
+### Configuring Virtual Services to use your plugins
 The [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#secure-the-virtual-service" %}}) 
 contains a thorough explanation of how to update Virtual Service to use your plugins to authenticate requests. 
 
@@ -603,4 +624,5 @@ passed to the next step.
 ## Conclusion
 If you got to this point, we hope that you have a good understanding of how the Gloo Ext Auth plugin framework works and 
 that you are ready to start hacking away! If you have any questions or ideas about how to improve this guide, please 
-contact us on our [**Slack**](https://slack.solo.io) or open an issue in our [docs repository](https://github.com/solo-io/solo-docs).
+contact us on our [**Slack**](https://slack.solo.io) or open an issue in the [Gloo repository](https://github.com/solo-io/gloo), 
+adding the "**Area: Docs**" label.

@@ -36,7 +36,7 @@ see each one of them in greater detail.
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file(s) to a 
 predefined directory.
 2. Configure Gloo to load the plugins by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by installing manifest with dedicated value overrides or by modifying the Gloo YAML manifest manually.
+done by installing Gloo with [dedicated value overrides](#installation) or by modifying the Gloo YAML manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
 
@@ -132,7 +132,7 @@ developer guide for more information.
 Let's start by installing Gloo Enterprise. We need to customize the standard installation to configure Gloo to use our 
 plugin; we can do that by defining the following `plugin-values.yaml` value file:
 
-{{< highlight bash "hl_lines=7-12" >}}
+{{< highlight bash "hl_lines=6-11" >}}
 cat << EOF > plugin-values.yaml
 global:
   extensions:
