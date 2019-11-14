@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Fix potential validation flakes and DRY test code. Update all virtualservice writes/deletes to use the helper
-      functions so future copy-pastes aren't flake-ridden.
