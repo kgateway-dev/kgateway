@@ -94,7 +94,12 @@ spec:
 {{% notice info %}}
 {{% extauth_version_info_note %}}
 {{% /notice %}}
-Authentication configuration is defined in {{< protobuf display="AuthConfig" name="enterprise.gloo.solo.io.AuthConfig" >}} resources. 
+
+Authentication configuration is defined in 
+{{< protobuf
+name="enterprise.gloo.solo.io.AuthConfig"
+>}}
+resources. 
 `AuthConfig`s are top-level resources, which means that if you are running in Kubernetes, they will be stored in a dedicated CRD.
 Here is an example of a simple `AuthConfig` CRD:
 

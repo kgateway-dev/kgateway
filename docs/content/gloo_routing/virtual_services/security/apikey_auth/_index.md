@@ -138,7 +138,8 @@ Now let's take the value of `data.extension`, which is base64-encoded, and decod
 echo Y29uZmlnOgogIGFwaV9rZXk6IE4yWXdNREl4WlRFdE5HVXpOUzFqTnpnekxUUmtZakF0WWpFMll6UmtaR1ZtTmpjeQogIGxhYmVsczoKICAtIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
 ```
 
-You should get the following {{< protobuf display="API key secret configuration" name="enterprise.gloo.solo.io.ApiKeySecret" >}}:
+You should get the following 
+{{< protobuf display="API key secret configuration" name="enterprise.gloo.solo.io.ApiKeySecret" >}}:
 
 ```yaml
 config:
