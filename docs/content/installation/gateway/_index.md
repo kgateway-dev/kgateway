@@ -6,7 +6,7 @@ weight: 2
 
 # Install the Gloo Gateway
 
-<dic markdown=1>
+<div markdown=1>
 <table>
   <tr height="100">
     <td width="10%">

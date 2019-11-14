@@ -7,7 +7,7 @@ weight: 20
 
 Gloo Open-Source runs in 3 different modes to enable different use cases:
 
-<dic markdown=1>
+<div markdown=1>
 <table>
   <tr height="100">
     <td width="10%">
@@ -44,7 +44,7 @@ Note: The installation modes are not mutually exclusive, e.g. if you wish to run
 
 Gloo Enterprise has a single installation workflow:
 
-<dic markdown=1>
+<div markdown=1>
 <table>
   <tr height="100">
     <td width="10%">
