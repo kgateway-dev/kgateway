@@ -18,7 +18,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -74,7 +73,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		return err
 	}
 
-	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v2.GatewayCrd)
+	gatewayFactory, err := bootstrap.ConfigFactoryForSettings(params, v1.GatewayCrd)
 	if err != nil {
 		return err
 	}
@@ -90,7 +89,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
 
-	var validation *ValidationOpts
+	var validation *translator.ValidationOpts
 	validationCfg := settings.GetGateway().GetValidation()
 	if validationCfg != nil {
 		alwaysAcceptResources := AcceptAllResourcesByDefault
@@ -101,7 +100,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 		allowMissingLinks := AllowMissingLinks
 
-		validation = &ValidationOpts{
+		validation = &translator.ValidationOpts{
 			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
 			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
 			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
@@ -129,7 +128,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		}
 	}
 
-	opts := Opts{
+	opts := translator.Opts{
 		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
 		Gateways:        gatewayFactory,
@@ -140,20 +139,21 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			Ctx:         ctx,
 			RefreshRate: refreshRate,
 		},
-		DevMode:                true,
-		DisableAutoGenGateways: settings.GetGateway().GetDisableAutoGenGateways(),
-		Validation:             validation,
+		DevMode:                       true,
+		DisableAutoGenGateways:        settings.GetGateway().GetDisableAutoGenGateways(),
+		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
+		Validation:                    validation,
 	}
 
 	return RunGateway(opts)
 }
 
-func RunGateway(opts Opts) error {
+func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
 
-	gatewayClient, err := v2.NewGatewayClient(opts.Gateways)
+	gatewayClient, err := v1.NewGatewayClient(opts.Gateways)
 	if err != nil {
 		return err
 	}
@@ -189,7 +189,7 @@ func RunGateway(opts Opts) error {
 	// installing through helm lets these be configurable.
 	// Added new setting to disable these gateways from ever being generated
 	if !opts.DisableAutoGenGateways {
-		for _, gw := range []*v2.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
+		for _, gw := range []*v1.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
 			if _, err := gatewayClient.Write(gw, clients.WriteOpts{
 				Ctx: ctx,
 			}); err != nil && !errors.IsExist(err) {
@@ -198,14 +198,14 @@ func RunGateway(opts Opts) error {
 		}
 	}
 
-	emitter := v2.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
+	emitter := v1.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 	writeErrs := make(chan error)
 
 	prop := propagator.NewPropagator("gateway", gatewayClient, virtualServiceClient, proxyClient, writeErrs)
 
-	txlator := translator.NewDefaultTranslator()
+	txlator := translator.NewDefaultTranslator(opts)
 
 	var (
 		// this constructor should be called within a lock
@@ -245,12 +245,12 @@ func RunGateway(opts Opts) error {
 		prop,
 		txlator)
 
-	gatewaySyncers := v2.ApiSyncers{
+	gatewaySyncers := v1.ApiSyncers{
 		translatorSyncer,
 		validationSyncer,
 	}
 
-	eventLoop := v2.NewApiEventLoop(emitter, gatewaySyncers)
+	eventLoop := v1.NewApiEventLoop(emitter, gatewaySyncers)
 	eventLoopErrs, err := eventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 	if err != nil {
 		return err

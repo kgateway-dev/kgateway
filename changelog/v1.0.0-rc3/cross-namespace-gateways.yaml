@@ -1,0 +1,17 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1489
+    description: >
+      The Gateway controller can now optionally process Gateway CRDs from anywhere in the watch
+      namespaces, not just the namespace where the controller is running. The new setting
+      controlling that can be found in the Gloo Settings object, at
+      `gateway.readGatewaysFromAllNamespaces`. The value of this field can be configured at install
+      time by setting the new Helm field `gateway.readGatewaysFromAllNamespaces` to your desired
+      value; it defaults to false to preserve the old behavior.
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/1489
+    description: >
+      Add a Helm values field `gateway.readGatewaysFromAllNamespaces`. This new field defaults to false
+      to preserve the old Gateway controller behavior, which is to read Gateway CRDs only from the
+      namespace in which the controller is running. When the field is set to `true`, it will read Gateway
+      CRDs from any of the watch namespaces.

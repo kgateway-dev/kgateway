@@ -58,11 +58,9 @@ Represents global settings for all the Gloo components.
 "kubernetesArtifactSource": .gloo.solo.io.Settings.KubernetesConfigmaps
 "directoryArtifactSource": .gloo.solo.io.Settings.Directory
 "consulKvArtifactSource": .gloo.solo.io.Settings.ConsulKv
-"bindAddr": string
 "refreshRate": .google.protobuf.Duration
 "devMode": bool
 "linkerd": bool
-"circuitBreakers": .gloo.solo.io.CircuitBreakerConfig
 "knative": .gloo.solo.io.Settings.KnativeOptions
 "discovery": .gloo.solo.io.Settings.DiscoveryOptions
 "gloo": .gloo.solo.io.GlooOptions
@@ -70,9 +68,9 @@ Represents global settings for all the Gloo components.
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
 "kubernetes": .gloo.solo.io.Settings.KubernetesConfiguration
 "extensions": .gloo.solo.io.Extensions
-"ratelimit": .ratelimit.plugins.gloo.solo.io.ServiceSettings
-"ratelimitServer": .ratelimit.plugins.gloo.solo.io.Settings
-"rbac": .rbac.plugins.gloo.solo.io.Settings
+"ratelimit": .ratelimit.options.gloo.solo.io.ServiceSettings
+"ratelimitServer": .ratelimit.options.gloo.solo.io.Settings
+"rbac": .rbac.options.gloo.solo.io.Settings
 "extauth": .enterprise.gloo.solo.io.Settings
 "metadata": .core.solo.io.Metadata
 "status": .core.solo.io.Status
@@ -92,22 +90,20 @@ Represents global settings for all the Gloo components.
 | `kubernetesArtifactSource` | [.gloo.solo.io.Settings.KubernetesConfigmaps](../settings.proto.sk/#kubernetesconfigmaps) |  Only one of `kubernetesArtifactSource`, or `consulKvArtifactSource` can be set. |  |
 | `directoryArtifactSource` | [.gloo.solo.io.Settings.Directory](../settings.proto.sk/#directory) |  Only one of `directoryArtifactSource`, or `consulKvArtifactSource` can be set. |  |
 | `consulKvArtifactSource` | [.gloo.solo.io.Settings.ConsulKv](../settings.proto.sk/#consulkv) |  Only one of `consulKvArtifactSource`, or `directoryArtifactSource` can be set. |  |
-| `bindAddr` | `string` | Where the Gloo xDS server should bind (should not need configuration by user) Deprecated: use gloo.xdsBindAddr. |  |
 | `refreshRate` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | How frequently to resync watches, etc. |  |
 | `devMode` | `bool` | Enable serving debug data on port 9090. |  |
 | `linkerd` | `bool` | Enable automatic linkerd upstream header addition for easier routing to linkerd services. |  |
-| `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Default circuit breakers when not set in a specific upstream. Deprecated: use gloo.circuitBreakers. |  |
 | `knative` | [.gloo.solo.io.Settings.KnativeOptions](../settings.proto.sk/#knativeoptions) | Configuration options for the Clusteringress Controller (for Knative). |  |
 | `discovery` | [.gloo.solo.io.Settings.DiscoveryOptions](../settings.proto.sk/#discoveryoptions) | Options for configuring Gloo's Discovery service. |  |
 | `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk/#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |  |
 | `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk/#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo. |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk/#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk/#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
-| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Deprecated: Opaque settings config for Gloo extensions. |  |
-| `ratelimit` | [.ratelimit.plugins.gloo.solo.io.ServiceSettings](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of *actions*, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes. |  |
-| `ratelimitServer` | [.ratelimit.plugins.gloo.solo.io.Settings](../enterprise/plugins/ratelimit/ratelimit.proto.sk/#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
-| `rbac` | [.rbac.plugins.gloo.solo.io.Settings](../enterprise/plugins/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |  |
-| `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/plugins/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |  |
+| `ratelimit` | [.ratelimit.options.gloo.solo.io.ServiceSettings](../enterprise/options/ratelimit/ratelimit.proto.sk/#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of *actions*, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes. |  |
+| `ratelimitServer` | [.ratelimit.options.gloo.solo.io.Settings](../enterprise/options/ratelimit/ratelimit.proto.sk/#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
+| `rbac` | [.rbac.options.gloo.solo.io.Settings](../enterprise/options/rbac/rbac.proto.sk/#settings) | Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.). |  |
+| `extauth` | [.enterprise.gloo.solo.io.Settings](../enterprise/options/extauth/v1/extauth.proto.sk/#settings) | Enterprise-only: External auth related settings. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 | `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 
@@ -468,6 +464,7 @@ Settings specific to the Gateway controller
 "validationServerAddr": string
 "disableAutoGenGateways": bool
 "validation": .gloo.solo.io.GatewayOptions.ValidationOptions
+"readGatewaysFromAllNamespaces": bool
 
 ```
 
@@ -475,7 +472,8 @@ Settings specific to the Gateway controller
 | ----- | ---- | ----------- |----------- | 
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
 | `disableAutoGenGateways` | `bool` | Disable auto generation of default gateways from gateway pod. |  |
-| `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk/#validationoptions) | if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
+| `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk/#validationoptions) | If provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
+| `readGatewaysFromAllNamespaces` | `bool` | When true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather than just the Gateway CRDs in its own namespace. |  |
 
 
 

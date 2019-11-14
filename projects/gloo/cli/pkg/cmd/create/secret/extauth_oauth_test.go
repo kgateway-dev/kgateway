@@ -3,7 +3,7 @@ package secret_test
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
 
@@ -12,9 +12,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	pluginutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 )
 
 var _ = Describe("ExtauthOauth", func() {
@@ -30,11 +28,7 @@ var _ = Describe("ExtauthOauth", func() {
 		secret, err := helpers.MustSecretClient().Read("gloo-system", "oauth", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		var extension extauthpb.OauthSecret
-		err = pluginutils.ExtensionToProto(secret.GetExtension(), constants.ExtAuthExtensionName, &extension)
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(extension).To(Equal(extauthpb.OauthSecret{ClientSecret: "123"}))
+		Expect(secret.GetOauth()).To(Equal(&extauthpb.OauthSecret{ClientSecret: "123"}))
 	})
 
 	It("should error when no client secret provided", func() {
@@ -54,7 +48,7 @@ var _ = Describe("ExtauthOauth", func() {
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Print(out)
 		Expect(out).To(Equal(`data:
-  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6ICIxMjMiCg==
+  oauth: Y2xpZW50U2VjcmV0OiAiMTIzIgo=
 metadata:
   annotations:
     resource_kind: '*v1.Secret'

@@ -125,13 +125,8 @@ rules:
   resources: ["gateways"]
   # update is needed for status updates, create for creating the default ones.
   verbs: ["get", "list", "watch", "create", "update"]
-- apiGroups: ["gateway.solo.io.v2"]
-  resources: ["gateways"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "create", "update"]
 
-
-{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
+{{- if and .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 ---
 # this role requires access to cluster-scoped resources
 kind: ClusterRole

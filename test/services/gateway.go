@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -25,7 +27,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
@@ -49,7 +50,7 @@ import (
 )
 
 type TestClients struct {
-	GatewayClient        gatewayv2.GatewayClient
+	GatewayClient        gatewayv1.GatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -84,17 +85,16 @@ type What struct {
 }
 
 type RunOptions struct {
-	NsToWrite        string
-	NsToWatch        []string
-	WhatToRun        What
-	GlooPort         int32
-	ValidationPort   int32
-	Settings         *gloov1.Settings
-	ExtensionConfigs *gloov1.Extensions
-	Extensions       syncer.Extensions
-	Cache            memory.InMemoryResourceCache
-	KubeClient       kubernetes.Interface
-	ConsulClient     consul.ConsulWatcher
+	NsToWrite      string
+	NsToWatch      []string
+	WhatToRun      What
+	GlooPort       int32
+	ValidationPort int32
+	Settings       *gloov1.Settings
+	Extensions     syncer.Extensions
+	Cache          memory.InMemoryResourceCache
+	KubeClient     kubernetes.Interface
+	ConsulClient   consul.ConsulWatcher
 }
 
 //noinspection GoUnhandledErrorResult
@@ -129,7 +129,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
 	}
-	glooOpts.Settings.Extensions = runOptions.ExtensionConfigs
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
@@ -159,7 +158,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv2.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
@@ -180,14 +179,14 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 	}
 }
 
-func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatewaysyncer.Opts {
+func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) translator.Opts {
 	ctx = contextutils.WithLogger(ctx, "gateway")
 	ctx = contextutils.SilenceLogger(ctx)
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
 
-	return gatewaysyncer.Opts{
+	return translator.Opts{
 		WriteNamespace:  runOptions.NsToWrite,
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,

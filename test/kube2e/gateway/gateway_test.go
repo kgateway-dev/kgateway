@@ -34,10 +34,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -45,7 +44,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -68,7 +67,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		cache      kube.SharedCache
 		kubeClient kubernetes.Interface
 
-		gatewayClient        gatewayv2.GatewayClient
+		gatewayClient        gatewayv1.GatewayClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
 		routeTableClient     gatewayv1.RouteTableClient
 		upstreamGroupClient  gloov1.UpstreamGroupClient
@@ -89,7 +88,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		cache = kube.NewKubeCache(ctx)
 		gatewayClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gatewayv2.GatewayCrd,
+			Crd:         gatewayv1.GatewayCrd,
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
@@ -119,7 +118,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			SharedCache: cache,
 		}
 
-		gatewayClient, err = gatewayv2.NewGatewayClient(gatewayClientFactory)
+		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = gatewayClient.Register()
 		Expect(err).NotTo(HaveOccurred())
@@ -190,7 +189,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv2.Gateway, error) {
+			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -230,7 +229,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 
 				// wait for default gateway to be created
-				Eventually(func() *gatewayv2.Gateway {
+				Eventually(func() *gatewayv1.Gateway {
 					gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 					return gw
 				}, "15s", "0.5s").Should(Not(BeNil()))
@@ -326,7 +325,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 				// wait for default gateway to be created
-				Eventually(func() (*gatewayv2.Gateway, error) {
+				Eventually(func() (*gatewayv1.Gateway, error) {
 					return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 				}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -467,7 +466,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*matchers.Matcher{{}},
-						RoutePlugins: &gloov1.RoutePlugins{
+						Options: &gloov1.RouteOptions{
 							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
@@ -678,7 +677,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv2.Gateway, error) {
+			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -768,7 +767,7 @@ var _ = Describe("Kube2e: gateway", func() {
 	Context("tcp", func() {
 
 		var (
-			defaultGateway *gatewayv2.Gateway
+			defaultGateway *gatewayv1.Gateway
 			tcpEcho        helper.TestRunner
 
 			tcpPort = corev1.ServicePort{
@@ -799,7 +798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 			tcpGateway := defaultGateway.GetTcpGateway()
 			Expect(tcpGateway).NotTo(BeNil())
-			tcpGateway.Destinations = append(tcpGateway.Destinations, &gloov1.TcpHost{
+			tcpGateway.TcpHosts = append(tcpGateway.TcpHosts, &gloov1.TcpHost{
 				Name: "one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
@@ -844,7 +843,7 @@ var _ = Describe("Kube2e: gateway", func() {
 		It("correctly routes to the service (tcp)", func() {
 
 			// wait for default gateway to be created
-			Eventually(func() *gatewayv2.Gateway {
+			Eventually(func() *gatewayv1.Gateway {
 				gw, _ := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 				return gw
 			}, "15s", "0.5s").Should(Not(BeNil()))
@@ -1122,7 +1121,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv2.Gateway, error) {
+			Eventually(func() (*gatewayv1.Gateway, error) {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
@@ -1383,6 +1382,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: rewrite}}
+	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
 }

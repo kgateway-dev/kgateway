@@ -1,0 +1,11 @@
+changelog:
+- type: HELM
+  description: >
+    Move the Helm values field "installConfig.installationId" to "global.glooInstallationId" in order to better
+    facilitate usage of the Gloo sub-chart in Gloo Enterprise
+  issueLink: https://github.com/solo-io/gloo/issues/1635
+- type: BREAKING_CHANGE
+  description: >
+    Move the Helm values field "installConfig.installationId" to "global.glooInstallationId" in order to better
+    facilitate usage of the Gloo sub-chart in Gloo Enterprise
+  issueLink: https://github.com/solo-io/gloo/issues/1635

@@ -18,7 +18,7 @@ var _ = Describe("RBAC Test", func() {
 	)
 
 	prepareMakefile := func(helmFlags string) {
-		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
+		testManifest = renderManifest(helmFlags + " --set global.glooInstallationId=" + installationId)
 	}
 
 	Context("implementation-agnostic permissions", func() {
@@ -414,10 +414,6 @@ var _ = Describe("RBAC Test", func() {
 						Verbs:     []string{"get", "list", "watch", "update"},
 					}, {
 						APIGroups: []string{"gateway.solo.io"},
-						Resources: []string{"gateways"},
-						Verbs:     []string{"get", "list", "watch", "create", "update"},
-					}, {
-						APIGroups: []string{"gateway.solo.io.v2"},
 						Resources: []string{"gateways"},
 						Verbs:     []string{"get", "list", "watch", "create", "update"},
 					},

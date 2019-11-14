@@ -5,6 +5,9 @@ import (
 	"net"
 	"sort"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
@@ -35,8 +38,13 @@ func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error 
 	logger.Infof("begin sync %v (%v ingresses, %v services)", snap.Hash(),
 		len(snap.Ingresses), len(snap.Services))
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
 	services := snap.Services
+
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	lbStatus, err := getLbStatus(services)
 	if err != nil {

@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
@@ -257,13 +259,13 @@ var _ = Describe("AWS Lambda", func() {
 	})
 
 	It("be able to call lambda via gateway", func() {
-		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy-v2", testClients.GlooPort)
+		err := envoyInstance.RunWithRole("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "app",
-				Namespace: "default",
+				Namespace: "gloo-system",
 			},
 			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},

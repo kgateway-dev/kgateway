@@ -17,9 +17,8 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/log"
@@ -277,7 +276,7 @@ func ProxyClient() (v1.ProxyClient, error) {
 	return proxyClient, nil
 }
 
-func MustGatewayV2Client() gatewayv2.GatewayClient {
+func MustGatewayV2Client() gatewayv1.GatewayClient {
 	client, err := GatewayV2Client()
 	if err != nil {
 		log.Fatalf("failed to create gateway v2 client: %v", err)
@@ -285,10 +284,10 @@ func MustGatewayV2Client() gatewayv2.GatewayClient {
 	return client
 }
 
-func GatewayV2Client() (gatewayv2.GatewayClient, error) {
+func GatewayV2Client() (gatewayv1.GatewayClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
-		return gatewayv2.NewGatewayClient(customFactory)
+		return gatewayv1.NewGatewayClient(customFactory)
 	}
 
 	cfg, err := kubeutils.GetConfig("", "")
@@ -296,8 +295,8 @@ func GatewayV2Client() (gatewayv2.GatewayClient, error) {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
 	cache := kube.NewKubeCache(context.TODO())
-	gatewayClient, err := gatewayv2.NewGatewayClient(&factory.KubeResourceClientFactory{
-		Crd:             gatewayv2.GatewayCrd,
+	gatewayClient, err := gatewayv1.NewGatewayClient(&factory.KubeResourceClientFactory{
+		Crd:             gatewayv1.GatewayCrd,
 		Cfg:             cfg,
 		SharedCache:     cache,
 		SkipCrdCreation: true,

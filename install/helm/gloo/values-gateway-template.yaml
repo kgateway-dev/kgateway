@@ -1,6 +1,5 @@
 namespace:
   create: false
-installConfig: {}
 crds:
   create: true
 k8s:
@@ -40,29 +39,29 @@ discovery:
 
 gateway:
   enabled: true
+  readGatewaysFromAllNamespaces: false
   validation:
+    enabled: true
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
-  upgrade: false
   deployment:
     image:
       repository: gateway
     replicas: 1
     stats: true
     runAsUser: 10101
-  conversionJob:
-    image:
-      repository: gateway-conversion
-    restartPolicy: Never
   certGenJob:
+    enabled: true
     image:
       repository: certgen
     restartPolicy: OnFailure
+    setTtlAfterFinished: true
+    ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
 
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     gatewaySettings: {}
     stats: true
     kind:

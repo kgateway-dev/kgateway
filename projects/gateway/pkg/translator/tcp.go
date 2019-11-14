@@ -3,14 +3,14 @@ package translator
 import (
 	"context"
 
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 type TcpTranslator struct{}
 
-func (t *TcpTranslator) GenerateListeners(ctx context.Context, snap *v2.ApiSnapshot, filteredGateways []*v2.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
+func (t *TcpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	var result []*gloov1.Listener
 	for _, gateway := range filteredGateways {
 		tcpGateway := gateway.GetTcpGateway()
@@ -26,8 +26,8 @@ func (t *TcpTranslator) GenerateListeners(ctx context.Context, snap *v2.ApiSnaps
 
 		listener.ListenerType = &gloov1.Listener_TcpListener{
 			TcpListener: &gloov1.TcpListener{
-				Plugins:  tcpGateway.Plugins,
-				TcpHosts: tcpGateway.Destinations,
+				Options:  tcpGateway.Options,
+				TcpHosts: tcpGateway.TcpHosts,
 			},
 		}
 		result = append(result, listener)

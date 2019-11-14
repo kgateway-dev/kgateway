@@ -1,0 +1,10 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: |
+      Remove some deprecated APIs:
+
+      1. Remove `CorsPolicy` from Gateway and Gloo `VirtualHost`, prefer setting `CorsPolicy` on `VirtualHostPlugins`.
+      2. Remove `name` from gateway `VirtualHost`, was previously ignored.
+      3. Remove `bind_addr` and `circuit_breakers` from `Settings`, prefer `gloo.xdsBindAddr` and `gloo.circuitBreakers` on same message.
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

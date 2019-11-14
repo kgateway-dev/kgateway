@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
@@ -28,7 +27,7 @@ var _ = Describe("Validator", func() {
 		v  *validator
 	)
 	BeforeEach(func() {
-		t = translator.NewDefaultTranslator()
+		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
 		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
@@ -36,7 +35,7 @@ var _ = Describe("Validator", func() {
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil)
 		Expect(err).To(MatchError(NotReadyErr))
-		err = v.Sync(nil, &v2.ApiSnapshot{})
+		err = v.Sync(nil, &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -109,7 +108,7 @@ var _ = Describe("Validator", func() {
 				})
 				It("accepts a vs with missing route table ref", func() {
 					vc.validateProxy = communicationErr
-					err := v.Sync(context.TODO(), &v2.ApiSnapshot{})
+					err := v.Sync(context.TODO(), &gatewayv1.ApiSnapshot{})
 					Expect(err).NotTo(HaveOccurred())
 					vs, _ := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
 					proxyReports, err := v.ValidateVirtualService(context.TODO(), vs)
@@ -118,7 +117,7 @@ var _ = Describe("Validator", func() {
 				})
 				It("accepts a rt with missing route table ref", func() {
 					vc.validateProxy = communicationErr
-					err := v.Sync(context.TODO(), &v2.ApiSnapshot{})
+					err := v.Sync(context.TODO(), &gatewayv1.ApiSnapshot{})
 					Expect(err).NotTo(HaveOccurred())
 					_, rts := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
 					proxyReports, err := v.ValidateRouteTable(context.TODO(), rts[1])
@@ -235,8 +234,8 @@ var _ = Describe("Validator", func() {
 				vc.validateProxy = failProxy
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
-				snap.Gateways.Each(func(element *v2.Gateway) {
-					http, ok := element.GatewayType.(*v2.Gateway_HttpGateway)
+				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
 					if !ok {
 						return
 					}
@@ -282,8 +281,8 @@ var _ = Describe("Validator", func() {
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				ref := snap.VirtualServices[0].Metadata.Ref()
-				snap.Gateways.Each(func(element *v2.Gateway) {
-					http, ok := element.GatewayType.(*v2.Gateway_HttpGateway)
+				snap.Gateways.Each(func(element *gatewayv1.Gateway) {
+					http, ok := element.GatewayType.(*gatewayv1.Gateway_HttpGateway)
 					if !ok {
 						return
 					}
@@ -355,9 +354,9 @@ var _ = Describe("Validator", func() {
 				vc.validateProxy = nil
 				us := samples.SimpleUpstream()
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
-				gw := snap.Gateways[0].DeepCopyObject().(*v2.Gateway)
+				gw := snap.Gateways[0].DeepCopyObject().(*gatewayv1.Gateway)
 
-				gw.GatewayType.(*v2.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*v2.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
+				gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				proxyReports, err := v.ValidateGateway(context.TODO(), gw)

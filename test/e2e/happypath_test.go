@@ -13,9 +13,9 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -92,7 +92,7 @@ var _ = Describe("Happy path", func() {
 				},
 			}
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-			err := envoyInstance.RunWithRole(ns+"~gateway-proxy-v2", testClients.GlooPort)
+			err := envoyInstance.RunWithRole(ns+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
 
 			up = tu.Upstream
@@ -112,7 +112,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// Set a virtual cluster matching everything
-			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].Options = &gloov1.VirtualHostOptions{
 				Stats: &stats.Stats{
 					VirtualClusters: []*stats.VirtualCluster{{
 						Name:    "test-vc",
@@ -145,7 +145,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// Set a virtual cluster matching everything
-			proxy.Listeners[0].GetHttpListener().ListenerPlugins = &gloov1.HttpListenerPlugins{
+			proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
 				HealthCheck: &healthcheck.HealthCheck{
 					Path: "/healthy",
 				},
@@ -384,7 +384,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy-v2"
+				role := namespace + "~" + gatewaydefaults.GatewayProxyName
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -432,7 +432,7 @@ var _ = Describe("Happy path", func() {
 				}
 
 				testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-				role := namespace + "~gateway-proxy-v2"
+				role := namespace + "~" + gatewaydefaults.GatewayProxyName
 				err := envoyInstance.RunWithRole(role, testClients.GlooPort)
 				Expect(err).NotTo(HaveOccurred())
 

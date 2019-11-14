@@ -3,7 +3,7 @@ package syncer
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
 	"github.com/hashicorp/go-multierror"
@@ -26,7 +26,6 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
-	SettingExtensions        *v1.Extensions
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 

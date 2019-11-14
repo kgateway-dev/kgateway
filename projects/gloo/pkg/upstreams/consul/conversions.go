@@ -9,7 +9,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 )
 
 const UpstreamNamePrefix = "consul-svc:"

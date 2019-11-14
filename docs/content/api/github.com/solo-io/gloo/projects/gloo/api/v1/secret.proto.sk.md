@@ -29,14 +29,14 @@ weight: 5
 ### Secret
 
  
-Certain plugins such as the AWS Lambda Plugin require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
+Certain features such as the AWS Lambda option require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be stored in plaintext configuration.
 
 Gloo runs an independent (goroutine) controller to monitor secrets. Secrets are stored in their own secret storage layer. Gloo can monitor secrets stored in the following secret storage services:
 
 - Kubernetes Secrets
 - Hashicorp Vault
 - Plaintext files (recommended only for testing)
-- Secrets must adhere to a structure, specified by the plugin that requires them.
+- Secrets must adhere to a structure, specified by the option that requires them.
 
 Gloo's secret backend can be configured in Gloo's bootstrap options
 
@@ -44,17 +44,21 @@ Gloo's secret backend can be configured in Gloo's bootstrap options
 "aws": .gloo.solo.io.AwsSecret
 "azure": .gloo.solo.io.AzureSecret
 "tls": .gloo.solo.io.TlsSecret
-"extension": .gloo.solo.io.Extension
+"oauth": .enterprise.gloo.solo.io.OauthSecret
+"apiKey": .enterprise.gloo.solo.io.ApiKeySecret
+"extensions": .gloo.solo.io.Extensions
 "metadata": .core.solo.io.Metadata
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, or `extension` can be set. |  |
-| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, or `extension` can be set. |  |
-| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, or `extension` can be set. |  |
-| `extension` | [.gloo.solo.io.Extension](../extensions.proto.sk/#extension) | Arbitrary secret specification. Only one of `extension`, `aws`, or `tls` can be set. |  |
+| `aws` | [.gloo.solo.io.AwsSecret](../secret.proto.sk/#awssecret) | AWS credentials. Only one of `aws`, `azure`, `tls`, `oauth`, or `extensions` can be set. |  |
+| `azure` | [.gloo.solo.io.AzureSecret](../secret.proto.sk/#azuresecret) | Azure credentials. Only one of `azure`, `aws`, `tls`, `oauth`, or `extensions` can be set. |  |
+| `tls` | [.gloo.solo.io.TlsSecret](../secret.proto.sk/#tlssecret) | TLS secret specification. Only one of `tls`, `aws`, `azure`, `oauth`, or `extensions` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.OauthSecret](../enterprise/options/extauth/v1/extauth.proto.sk/#oauthsecret) | Enterprise-only: OAuth secret configuration. Only one of `oauth`, `aws`, `azure`, `tls`, or `extensions` can be set. |  |
+| `apiKey` | [.enterprise.gloo.solo.io.ApiKeySecret](../enterprise/options/extauth/v1/extauth.proto.sk/#apikeysecret) | Enterprise-only: ApiKey secret configuration. Only one of `apiKey`, `aws`, `azure`, `tls`, or `extensions` can be set. |  |
+| `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. Only one of `extensions`, `aws`, `azure`, `tls`, or `apiKey` can be set. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 

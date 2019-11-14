@@ -7,8 +7,7 @@ import (
 	flagutilsExt "github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	surveyutilsExt "github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
-	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -53,12 +52,9 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 		return errors.Wrapf(err, "Error reading settings")
 	}
 
-	var extAuthSettings extauthpb.Settings
-	err = utils.UnmarshalExtension(settings, constants.ExtAuthExtensionName, &extAuthSettings)
-	if err != nil {
-		if err != utils.NotFoundError {
-			return err
-		}
+	extAuthSettings := settings.Extauth
+	if extAuthSettings == nil {
+		extAuthSettings = new(extauthpb.Settings)
 	}
 	if extAuthSettings.ExtauthzServerRef == nil {
 		extAuthSettings.ExtauthzServerRef = new(core.ResourceRef)
@@ -71,7 +67,7 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 	}
 
 	if settings.Extauth == nil {
-		settings.Extauth = &extAuthSettings
+		settings.Extauth = extAuthSettings
 	}
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})

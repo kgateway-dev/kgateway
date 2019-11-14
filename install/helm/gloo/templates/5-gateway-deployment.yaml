@@ -10,7 +10,7 @@ metadata:
     app: gloo
     gloo: gateway
     installationId: {{ include "gloo.installationId" . }}
-  name: gateway-v2
+  name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}
@@ -38,7 +38,7 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
         ports:
           - containerPort: 8443
             name: https
@@ -64,12 +64,12 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-        {{- if .Values.gateway.validation }}
+        {{- if .Values.gateway.validation.enabled }}
           - name: VALIDATION_MUST_START
             value: "true"
         {{- end}}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
         volumeMounts:
           - mountPath: /etc/gateway/validation-certs
             name: validation-certs
