@@ -7,7 +7,7 @@ weight: 20
 
 Gloo Open-Source runs in 3 different modes to enable different use cases:
 
-<div markdown=1>
+<dic markdown=1>
 <table>
   <tr height="100">
     <td width="10%">
@@ -34,7 +34,7 @@ Gloo Open-Source runs in 3 different modes to enable different use cases:
     </td>
   </tr>
 </table>
-</div>
+</dic>
 
 {{% notice note %}}
 Note: The installation modes are not mutually exclusive, e.g. if you wish to run `gateway` in conjunction with `ingress`, it can be done by installing both options to the same (or different) namespaces.
@@ -44,7 +44,7 @@ Note: The installation modes are not mutually exclusive, e.g. if you wish to run
 
 Gloo Enterprise has a single installation workflow:
 
-<div markdown=1>
+<dic markdown=1>
 <table>
   <tr height="100">
     <td width="10%">
@@ -55,4 +55,4 @@ Gloo Enterprise has a single installation workflow:
     </td>
   </tr>
 </table>
-</div>
+</dic>

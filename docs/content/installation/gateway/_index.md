@@ -6,7 +6,7 @@ weight: 2
 
 # Install the Gloo Gateway
 
-<div markdown=1>
+<dic markdown=1>
 <table>
   <tr height="100">
     <td width="10%">
@@ -41,4 +41,4 @@ weight: 2
     </td>
   </tr>
 </table>
-</div>
+</dic>
