@@ -164,7 +164,10 @@ spec:
 {{< /highlight >}}
 
 More details about the `httpService` object are available 
-{{< protobuf display="here" name="https://docs.solo.io/gloo/latest/installation/cluster_setup/" >}}.
+{{<
+protobuf display="here"
+name="enterprise.gloo.solo.io.HttpService"
+>}}.
 For example, if you want to copy some of the original request headers to the request that gets sent to the custom auth 
 server, you would need to configure the `extauth` attribute in the following way:
 
