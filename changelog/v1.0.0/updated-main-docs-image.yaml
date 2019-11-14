@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Updated docs main page image
+    issueLink: https://github.com/solo-io/gloo/pull/1702

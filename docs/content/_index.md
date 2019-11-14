@@ -30,7 +30,6 @@ When we say Gloo is a "next-generation" gateway, we mean it was purpose-built fo
 * [Announcement Blog](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600)
 * [Building hybrid app demo](https://www.youtube.com/watch?time_continue=1&v=ISR3G0CAZM0)
 
-
 ## Community
 
 * Join us on our Slack channel: [https://slack.solo.io/](https://slack.solo.io/)
