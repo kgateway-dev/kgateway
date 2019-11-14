@@ -41,7 +41,7 @@ If it does not, you can switch to the `minikube` context by running the followin
 kubectl config use-context minikube
 ```
 
-Now you're all set to install Gloo, simply follow the Gloo installation guide [here](../).
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -82,7 +82,7 @@ oc adm policy add-scc-to-user anyuid  -z default -n gloo-system
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
 
-Now you're all set to install Gloo, simply follow the Gloo installation guide [here](../).
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -90,7 +90,7 @@ Now you're all set to install Gloo, simply follow the Gloo installation guide [h
 
 Google Kubernetes Engine is Google Cloud's managed Kubernetes service. GKE can run both development and production workloads depending on its size and configuration. You can find more details on GKE [here](https://cloud.google.com/kubernetes-engine/docs/quickstart).
 
-You will need to deploy a GKE cluster. The default settings in the `clusters create` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing](../../gloo_routing/) examples. The commands below can be run as-is, although you may want to change the zone (*us-central1-a*) and cluster name (*myGKECluster*).
+You will need to deploy a GKE cluster. The default settings in the `clusters create` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}) examples. The commands below can be run as-is, although you may want to change the zone (*us-central1-a*) and cluster name (*myGKECluster*).
 
 These commands can be run locally if you have the [Google Cloud SDK](https://cloud.google.com/sdk/) installed or using the Cloud Shell from the [GCP Console](https://console.cloud.google.com). The Cloud Shell already has `kubectl` installed along with the Google Cloud SDK.
 
@@ -135,7 +135,7 @@ kubectl create clusterrolebinding cluster-admin-binding \
     --user $(gcloud config get-value account)
 ```
 
-Now you're all set to install Gloo, simply follow the Gloo installation guide [here](../).
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -143,7 +143,7 @@ Now you're all set to install Gloo, simply follow the Gloo installation guide [h
 
 Azure Kubernetes Service is Microsoft Azure's managed Kubernetes service. AKS can run both development and production workloads depending on its size and configuration. You can find more details on AKS [here](https://docs.microsoft.com/en-us/azure/aks/).
 
-You will need to deploy an AKS cluster. The default settings in the `aks create` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing](../../gloo_routing/) examples. The commands below can be run as-is, although you may want to change the resource group location (*eastus*), resource group name (*myResourceGroup*), and cluster name (*myAKSCluster*).
+You will need to deploy an AKS cluster. The default settings in the `aks create` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}) examples. The commands below can be run as-is, although you may want to change the resource group location (*eastus*), resource group name (*myResourceGroup*), and cluster name (*myAKSCluster*).
 
 These commands can be run locally if you have the [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest) installed or by using the [Azure Cloud Shell](https://shell.azure.com). The Azure Cloud Shell already has `kubectl` installed along with the Azure CLI.
 
@@ -195,7 +195,7 @@ kubectl config current-context
 
 The command should return `myAKSCluster-admin` as the context.
 
-Now you're all set to install Gloo, simply follow the Gloo installation guide [here](../).
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -205,7 +205,7 @@ Amazon Elastic Kubernetes Service is Amazon's managed Kubernetes service. EKS ca
 
 You will need to deploy an EKS cluster. We suggest using the `eksctl` tool from <https://eksctl.io/> as it complements the `aws` command line tool, and makes it super simple to create and manage an EKS cluster from the command line. To run the following commands, you will need both the AWS CLI and the `eksctl` tool installed on your local machine.
 
-The default settings in the `eks create cluster` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing](../../gloo_routing/) examples. The commands below can be run as-is, although you may want to change the region (*us-east-1*) and cluster name (*myEKSCluster*).
+The default settings in the `eks create cluster` command should be sufficient for installing Gloo Gateway and going through the [Gloo Routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}) examples. The commands below can be run as-is, although you may want to change the region (*us-east-1*) and cluster name (*myEKSCluster*).
 
 Example AKS cluster creation:
 
@@ -238,7 +238,7 @@ kubectl config current-context
 
 The command should `arn:aws:eks:us-east-1:ACCOUNT-ID:cluster/myEKSCluster` as the context.
 
-Now you're all set to install Gloo, simply follow the Gloo installation guide [here](../).
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 
@@ -256,4 +256,4 @@ Gloo has the ability to provide TLS off-load for services running inside the Kub
 
 ## Next Steps
 
-Woo-hoo! You've made it through the gauntlet of getting your Kubernetes cluster ready. Now let's get to the fun stuff, [installing Gloo](../)!
+Woo-hoo! You've made it through the gauntlet of getting your Kubernetes cluster ready. Now let's get to the fun stuff, [installing Gloo]({{< versioned_link_path fromRoot="/installation" >}})!
