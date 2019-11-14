@@ -252,7 +252,10 @@ earlier .
 
 #### LDAP auth flow
 Before updating our Virtual Service, it is important to understand how Gloo interacts with the LDAP server. Let's first 
-look at the [LDAP auth configuration]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#ldap" >}}):
+look at the {{< protobuf
+display="LDAP auth configuration"
+name="enterprise.gloo.solo.io.Ldap"
+>}}:
 
 - `address`: this is the address of the LDAP server that Gloo will query when a request matches the Virtual Service.
 - `userDnTemplate`: this is a template string that Gloo uses to build the DNs of the user entry that 

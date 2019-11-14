@@ -149,7 +149,7 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
 
 
-{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
+{{- if and .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
 ---
 # this role requires access to cluster-scoped resources
 kind: ClusterRoleBinding

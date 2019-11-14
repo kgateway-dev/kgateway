@@ -84,13 +84,13 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, ingressNamespace string, 
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream
 	for _, us := range upstreams {
-		switch spec := us.UpstreamSpec.UpstreamType.(type) {
-		case *gloov1.UpstreamSpec_Kube:
+		switch spec := us.UpstreamType.(type) {
+		case *gloov1.Upstream_Kube:
 			if spec.Kube.ServiceNamespace == ingressNamespace &&
 				spec.Kube.ServiceName == backend.ServiceName &&
 				spec.Kube.ServicePort == uint32(backend.ServicePort.IntVal) {
 				if matchingUpstream != nil {
-					originalSelectorLength := len(matchingUpstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.Selector)
+					originalSelectorLength := len(matchingUpstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.Selector)
 					newSelectorLength := len(spec.Kube.Selector)
 					if newSelectorLength > originalSelectorLength {
 						continue

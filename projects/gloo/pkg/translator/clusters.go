@@ -71,13 +71,13 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 	out := &envoyapi.Cluster{
 		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
 		Metadata:         new(envoycore.Metadata),
-		CircuitBreakers:  getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, circuitBreakers),
+		CircuitBreakers:  getCircuitBreakers(upstream.CircuitBreakers, circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
 		ConnectTimeout:       ClusterConnectionTimeout,
-		Http2ProtocolOptions: getHttp2ptions(upstream.UpstreamSpec),
+		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
@@ -99,12 +99,11 @@ var (
 )
 
 func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, error) {
-
-	if upstream.GetUpstreamSpec() == nil {
+	if upstream == nil {
 		return nil, nil
 	}
-	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetUpstreamSpec().GetHealthChecks()))
-	for i, hc := range upstream.GetUpstreamSpec().GetHealthChecks() {
+	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetHealthChecks()))
+	for i, hc := range upstream.GetHealthChecks() {
 		// These values are required by envoy, but not explicitly
 		if hc.HealthyThreshold == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthyThreshold", i))
@@ -123,20 +122,19 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 }
 
 func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierDetection, error) {
-	spec := upstream.GetUpstreamSpec()
-	if spec == nil {
+	if upstream == nil {
 		return nil, nil
 	}
 	// This should be enough validation as nothing implicitly needs to be set
-	if err := spec.GetOutlierDetection().Validate(); err != nil {
+	if err := upstream.GetOutlierDetection().Validate(); err != nil {
 		return nil, err
 	}
 
-	return spec.GetOutlierDetection(), nil
+	return upstream.GetOutlierDetection(), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
-	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -189,8 +187,8 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 	return nil
 }
 
-func getHttp2ptions(spec *v1.UpstreamSpec) *envoycore.Http2ProtocolOptions {
-	if spec.GetUseHttp2() {
+func getHttp2ptions(us *v1.Upstream) *envoycore.Http2ProtocolOptions {
+	if us.GetUseHttp2() {
 		return &envoycore.Http2ProtocolOptions{}
 	}
 	return nil

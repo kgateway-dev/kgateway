@@ -1,0 +1,17 @@
+syntax = "proto3";
+package tcp.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp";
+
+import "gogoproto/gogo.proto";
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/duration.proto";
+
+option (gogoproto.equal_all) = true;
+
+// Contains various settings for Envoy's tcp proxy filter.
+// See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-v2/config/filter/network/tcp_proxy/v2/tcp_proxy.proto#envoy-api-msg-config-filter-network-tcp-proxy-v2-tcpproxy
+message TcpProxySettings {
+    google.protobuf.UInt32Value max_connect_attempts = 1;
+    google.protobuf.Duration idle_timeout = 2 [ (gogoproto.stdduration) = true ];
+}

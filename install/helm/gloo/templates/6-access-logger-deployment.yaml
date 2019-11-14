@@ -1,4 +1,4 @@
-{{- if and  .Values.gateway.enabled .Values.accessLogger.enabled }}
+{{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.accessLogger.image .Values.global.image }}

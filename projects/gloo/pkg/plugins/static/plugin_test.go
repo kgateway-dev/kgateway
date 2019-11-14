@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -38,10 +38,8 @@ var _ = Describe("Plugin", func() {
 				Name:      "extauth-server",
 				Namespace: "default",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Static{
-					Static: upstreamSpec,
-				},
+			UpstreamType: &v1.Upstream_Static{
+				Static: upstreamSpec,
 			},
 		}
 

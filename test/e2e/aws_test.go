@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
@@ -76,23 +76,21 @@ var _ = Describe("AWS Lambda", func() {
 				Namespace: "default",
 				Name:      region,
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Aws{
-					Aws: &aws_plugin.UpstreamSpec{
-						LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{{
-							LambdaFunctionName: "uppercase",
-							Qualifier:          "",
-							LogicalName:        "uppercase",
-						},
-							{
-								LambdaFunctionName: "contact-form",
-								Qualifier:          "",
-								LogicalName:        "contact-form",
-							},
-						},
-						Region:    region,
-						SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
+			UpstreamType: &gloov1.Upstream_Aws{
+				Aws: &aws_plugin.UpstreamSpec{
+					LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{{
+						LambdaFunctionName: "uppercase",
+						Qualifier:          "",
+						LogicalName:        "uppercase",
 					},
+						{
+							LambdaFunctionName: "contact-form",
+							Qualifier:          "",
+							LogicalName:        "contact-form",
+						},
+					},
+					Region:    region,
+					SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
 				},
 			},
 		}
@@ -265,7 +263,7 @@ var _ = Describe("AWS Lambda", func() {
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "app",
-				Namespace: "default",
+				Namespace: "gloo-system",
 			},
 			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},

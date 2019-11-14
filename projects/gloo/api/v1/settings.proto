@@ -10,9 +10,9 @@ import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
@@ -264,21 +264,27 @@ message Settings {
     // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
     KubernetesConfiguration kubernetes = 22;
 
-    // Deprecated: Opaque settings config for Gloo extensions
-    Extensions extensions = 16 [deprecated = true];
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    //
+    // Some sample use cases:
+    // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    Extensions extensions = 16;
 
     // Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
     // Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors.
     // Configure rate-limits (composed of *actions*, which define how request characteristics get translated into
     // descriptors) on the VirtualHost or its routes
-    ratelimit.plugins.gloo.solo.io.ServiceSettings ratelimit = 26;
+    ratelimit.options.gloo.solo.io.ServiceSettings ratelimit = 26;
 
     // Enterprise-only: Settings for the rate limiting server itself
-    ratelimit.plugins.gloo.solo.io.Settings ratelimit_server = 27;
+    ratelimit.options.gloo.solo.io.Settings ratelimit_server = 27;
 
     // Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.)
-    rbac.plugins.gloo.solo.io.Settings rbac = 28;
+    rbac.options.gloo.solo.io.Settings rbac = 28;
 
     // Enterprise-only: External auth related settings
     enterprise.gloo.solo.io.Settings extauth = 29;
@@ -380,7 +386,11 @@ message GatewayOptions {
         google.protobuf.BoolValue always_accept = 6;
     }
 
-    // if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+    // If provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
     // of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
     ValidationOptions validation = 3;
+
+    // When true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather
+    // than just the Gateway CRDs in its own namespace
+    bool read_gateways_from_all_namespaces = 4;
 }

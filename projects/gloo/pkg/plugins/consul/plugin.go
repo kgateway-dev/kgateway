@@ -24,7 +24,7 @@ type plugin struct {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	consulSpec, ok := u.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	consulSpec, ok := u.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return nil, nil
 	}
@@ -43,7 +43,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	scheme := "http"
-	if u.UpstreamSpec.SslConfig != nil {
+	if u.SslConfig != nil {
 		scheme = "https"
 	}
 
@@ -65,7 +65,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	_, ok := in.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return nil
 	}

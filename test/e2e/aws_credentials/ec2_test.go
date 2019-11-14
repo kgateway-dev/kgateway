@@ -13,7 +13,7 @@ import (
 
 	ec2api "github.com/aws/aws-sdk-go/service/ec2"
 
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -80,57 +80,51 @@ var _ = Describe("", func() {
 		secretRef := secret.Metadata.Ref()
 		var filters []*glooec2.TagFilter
 		withRole := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:    region,
-						SecretRef: &secretRef,
-						RoleArn:   roleArn,
-						Filters:   filters,
-						PublicIp:  false,
-						Port:      80,
-					},
+			UpstreamType: &v1.Upstream_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:    region,
+					SecretRef: &secretRef,
+					RoleArn:   roleArn,
+					Filters:   filters,
+					PublicIp:  false,
+					Port:      80,
 				},
 			},
 			Metadata: core.Metadata{Name: "with-role", Namespace: "default"},
 		}
 		withRoleWithoutSecret := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:   region,
-						RoleArn:  roleArn,
-						Filters:  filters,
-						PublicIp: false,
-						Port:     80,
-					},
+			UpstreamType: &v1.Upstream_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:   region,
+					RoleArn:  roleArn,
+					Filters:  filters,
+					PublicIp: false,
+					Port:     80,
 				},
 			},
 			Metadata: core.Metadata{Name: "with-role", Namespace: "default"},
 		}
 		withOutRole := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:    region,
-						SecretRef: &secretRef,
-						Filters:   filters,
-						PublicIp:  false,
-						Port:      80,
-					},
+			UpstreamType: &v1.Upstream_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:    region,
+					SecretRef: &secretRef,
+					Filters:   filters,
+					PublicIp:  false,
+					Port:      80,
 				},
 			},
 			Metadata: core.Metadata{Name: "without-role", Namespace: "default"},
 		}
 
 		By("should error when no role provided")
-		svcWithout, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withOutRole.UpstreamSpec.GetAwsEc2()), v1.SecretList{secret})
+		svcWithout, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withOutRole.GetAwsEc2()), v1.SecretList{secret})
 		Expect(err).NotTo(HaveOccurred())
 		_, err = svcWithout.DescribeInstances(&ec2api.DescribeInstancesInput{})
 		Expect(err).To(HaveOccurred())
 
 		By("should succeed when role provided, secret passed with upstream")
-		svc, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRole.UpstreamSpec.GetAwsEc2()), v1.SecretList{secret})
+		svc, err := ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRole.GetAwsEc2()), v1.SecretList{secret})
 		Expect(err).NotTo(HaveOccurred())
 		result, err := svc.DescribeInstances(&ec2api.DescribeInstancesInput{})
 		Expect(err).NotTo(HaveOccurred())
@@ -138,7 +132,7 @@ var _ = Describe("", func() {
 		Expect(len(instances)).To(BeNumerically(">", 0))
 
 		By("should succeed when role provided, secret derived from env")
-		svc, err = ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRoleWithoutSecret.UpstreamSpec.GetAwsEc2()), v1.SecretList{secret})
+		svc, err = ec2.GetEc2Client(ec2.NewCredentialSpecFromEc2UpstreamSpec(withRoleWithoutSecret.GetAwsEc2()), v1.SecretList{secret})
 		Expect(err).NotTo(HaveOccurred())
 		result, err = svc.DescribeInstances(&ec2api.DescribeInstancesInput{})
 		Expect(err).NotTo(HaveOccurred())

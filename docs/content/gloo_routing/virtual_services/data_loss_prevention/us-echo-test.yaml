@@ -4,8 +4,7 @@ metadata:
   name: json-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-        - addr: echo.jsontest.com
-          port: 80
+  static:
+    hosts:
+      - addr: echo.jsontest.com
+        port: 80

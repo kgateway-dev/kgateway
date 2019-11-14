@@ -30,7 +30,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	healthCheck := listener.GetListenerPlugins().GetHealthCheck()
+	healthCheck := listener.GetOptions().GetHealthCheck()
 
 	if healthCheck == nil {
 		return nil, nil

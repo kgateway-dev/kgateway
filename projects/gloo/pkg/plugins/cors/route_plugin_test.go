@@ -10,7 +10,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
@@ -141,7 +141,7 @@ func routeWithoutCors() *v1.Route {
 
 func routeWithCors(cSpec *cors.CorsPolicy) *v1.Route {
 	route := routeWithoutCors()
-	route.RoutePlugins = &v1.RoutePlugins{
+	route.Options = &v1.RouteOptions{
 		Cors: cSpec,
 	}
 	return route

@@ -94,7 +94,7 @@ var _ = Describe("Helm Test", func() {
 
 		// adds the install ID into the provided helm flags- no need to provide it yourself
 		prepareMakefile := func(helmFlags string) {
-			testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + helmTestInstallId)
+			testManifest = renderManifest(helmFlags + " --set global.glooInstallationId=" + helmTestInstallId)
 		}
 
 		// helper for passing a values file
@@ -145,7 +145,7 @@ var _ = Describe("Helm Test", func() {
 
 			It("can assign a custom installation ID", func() {
 				installId := "custom-install-id"
-				testManifest = renderManifest("--namespace " + namespace + " --set installConfig.installationId=" + installId)
+				testManifest = renderManifest("--namespace " + namespace + " --set global.glooInstallationId=" + installId)
 
 				Expect(testManifest.NumResources()).NotTo(BeZero())
 				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
@@ -735,6 +735,7 @@ metadata:
   namespace: ` + namespace + `
 spec:
   gateway:
+    readGatewaysFromAllNamespaces: false
     validation:
       alwaysAccept: true
       proxyValidationServerAddr: gloo:9988

@@ -30,8 +30,8 @@ Expand the name of a container image
 {{/* This value makes its way into k8s labels, so if the implementation changes,
      make sure it's compatible with label values */}}
 {{- define "gloo.installationId" -}}
-{{- if not .Values.installConfig.installationId -}}
-{{- $_ := set .Values.installConfig "installationId" (randAlphaNum 20) -}}
+{{- if not .Values.global.glooInstallationId -}}
+{{- $_ := set .Values.global "glooInstallationId" (randAlphaNum 20) -}}
 {{- end -}}
-{{ .Values.installConfig.installationId }}
+{{ .Values.global.glooInstallationId }}
 {{- end -}}

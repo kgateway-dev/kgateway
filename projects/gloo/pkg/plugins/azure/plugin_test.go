@@ -5,7 +5,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	azureplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -42,11 +42,9 @@ var _ = Describe("Plugin", func() {
 					// TODO(yuval-k): namespace
 					Namespace: "",
 				},
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_Azure{
-						Azure: &azure.UpstreamSpec{
-							FunctionAppName: "my-appwhos",
-						},
+				UpstreamType: &v1.Upstream_Azure{
+					Azure: &azure.UpstreamSpec{
+						FunctionAppName: "my-appwhos",
 					},
 				},
 			}
@@ -54,7 +52,7 @@ var _ = Describe("Plugin", func() {
 		Context("with secrets", func() {
 
 			BeforeEach(func() {
-				upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Azure).Azure.SecretRef = core.ResourceRef{
+				upstream.UpstreamType.(*v1.Upstream_Azure).Azure.SecretRef = core.ResourceRef{
 					Namespace: "",
 					Name:      "azure-secret1",
 				}

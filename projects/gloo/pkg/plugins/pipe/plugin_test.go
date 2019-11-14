@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1pipe "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/pipe"
+	v1pipe "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/pipe"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -36,10 +36,8 @@ var _ = Describe("Plugin", func() {
 				Name:      "extauth-server",
 				Namespace: "default",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Pipe{
-					Pipe: upstreamSpec,
-				},
+			UpstreamType: &v1.Upstream_Pipe{
+				Pipe: upstreamSpec,
 			},
 		}
 	})

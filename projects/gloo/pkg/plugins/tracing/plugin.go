@@ -6,7 +6,7 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
@@ -77,10 +77,10 @@ func envoySimplePercentWithDefault(numerator *types.FloatValue, defaultValue flo
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	if in.RoutePlugins == nil || in.RoutePlugins.Tracing == nil {
+	if in.Options == nil || in.Options.Tracing == nil {
 		return nil
 	}
-	if percentages := in.GetRoutePlugins().GetTracing().TracePercentages; percentages != nil {
+	if percentages := in.GetOptions().GetTracing().TracePercentages; percentages != nil {
 		out.Tracing = &envoyroute.Tracing{
 			ClientSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetClientSamplePercentage(), oneHundredPercent),
 			RandomSampling:  common.ToEnvoyPercentageWithDefault(percentages.GetRandomSamplePercentage(), oneHundredPercent),
@@ -93,7 +93,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
 		}
 	}
-	descriptor := in.RoutePlugins.Tracing.RouteDescriptor
+	descriptor := in.Options.Tracing.RouteDescriptor
 	if descriptor != "" {
 		out.Decorator = &envoyroute.Decorator{
 			Operation: descriptor,

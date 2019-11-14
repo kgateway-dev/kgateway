@@ -140,7 +140,7 @@ var _ = Describe("Transformations", func() {
 
 	It("should should transform json to html response on vhost", func() {
 		WriteVhost(&gloov1.VirtualHost{
-			VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+			Options: &gloov1.VirtualHostOptions{
 				Transformations: transform,
 			},
 			Name:    "virt1",
@@ -168,7 +168,7 @@ var _ = Describe("Transformations", func() {
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
-				RoutePlugins: &gloov1.RoutePlugins{
+				Options: &gloov1.RouteOptions{
 					Transformations: transform,
 				},
 				Action: &gloov1.Route_RouteAction{
@@ -200,7 +200,7 @@ var _ = Describe("Transformations", func() {
 								Destinations: []*gloov1.WeightedDestination{
 									{
 										Weight: 1,
-										WeightedDestinationPlugins: &gloov1.WeightedDestinationPlugins{
+										Options: &gloov1.WeightedDestinationOptions{
 											Transformations: transform,
 										},
 										Destination: &gloov1.Destination{

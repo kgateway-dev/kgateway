@@ -18,7 +18,7 @@ var _ = Describe("SVC Accnt Test", func() {
 		resourceBuilder.Labels["gloo"] = name
 		resourceBuilder.Labels["installationId"] = installationId
 
-		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
+		testManifest = renderManifest(helmFlags + " --set global.glooInstallationId=" + installationId)
 	}
 
 	BeforeEach(func() {

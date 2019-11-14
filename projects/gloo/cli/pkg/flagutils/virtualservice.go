@@ -2,7 +2,7 @@ package flagutils
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/spf13/pflag"
 )
 
@@ -22,7 +22,7 @@ func addDomainsFlag(set *pflag.FlagSet, ptr *[]string) {
 
 func addVirtualServiceFlagsRateLimit(set *pflag.FlagSet, rl *options.RateLimit) {
 	// TODO: add support for authorization when it is supported for ratelimit
-	//set.StringVar(&virtualHostPlugins.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
+	//set.StringVar(&Options.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
 	set.BoolVar(&rl.Enable, "enable-rate-limiting", false, "enable rate limiting features for this virtual service")
 	set.StringVar(&rl.TimeUnit, "rate-limit-time-unit", ratelimit.RateLimit_MINUTE.String(), "unit of time over which to apply the rate limit")
 	set.Uint32Var(&rl.RequestsPerTimeUnit, "rate-limit-requests", 100, "requests per unit of time")

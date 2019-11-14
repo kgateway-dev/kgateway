@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/basicroute"
 )
@@ -26,7 +26,7 @@ var _ = Describe("prefix rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				PrefixRewrite: &types.StringValue{Value: "/foo"},
 			},
 		}, out)
@@ -47,14 +47,14 @@ var _ = Describe("prefix rewrite", func() {
 
 		// should be no-op
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{},
+			Options: &v1.RouteOptions{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.PrefixRewrite).To(Equal("/"))
 
 		// should rewrite prefix rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				PrefixRewrite: &types.StringValue{Value: ""},
 			},
 		}, out)
@@ -74,7 +74,7 @@ var _ = Describe("timeout", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Timeout: &t,
 			},
 		}, out)
@@ -117,7 +117,7 @@ var _ = Describe("retries", func() {
 			},
 		}
 		err := plugin.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Retries: retryPolicy,
 			},
 		}, out)
@@ -127,7 +127,7 @@ var _ = Describe("retries", func() {
 	It("works on vhost", func() {
 		out := &envoyroute.VirtualHost{}
 		err := plugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			VirtualHostPlugins: &v1.VirtualHostPlugins{
+			Options: &v1.VirtualHostOptions{
 				Retries: retryPolicy,
 			},
 		}, out)
@@ -149,8 +149,8 @@ var _ = Describe("host rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
-				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite: "/foo"},
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_HostRewrite{HostRewrite: "/foo"},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -170,15 +170,15 @@ var _ = Describe("host rewrite", func() {
 
 		// should be no-op
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{},
+			Options: &v1.RouteOptions{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetHostRewrite()).To(Equal("/"))
 
 		// should rewrite host rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
-				HostRewriteType: &v1.RoutePlugins_HostRewrite{HostRewrite: ""},
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_HostRewrite{HostRewrite: ""},
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
@@ -201,8 +201,8 @@ var _ = Describe("host rewrite", func() {
 			},
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
-				HostRewriteType: &v1.RoutePlugins_AutoHostRewrite{
+			Options: &v1.RouteOptions{
+				HostRewriteType: &v1.RouteOptions_AutoHostRewrite{
 					AutoHostRewrite: &types.BoolValue{
 						Value: true,
 					},

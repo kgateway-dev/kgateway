@@ -69,24 +69,23 @@ metadata:
   namespace: gloo-system
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: grpcstore-demo
-      serviceName: grpcstore-demo
-      serviceNamespace: default
-      servicePort: 80
-      serviceSpec:
-        grpc:
-          descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE…bTkwYnpNPQ==
-          grpcServices:
-          - functionNames:
-            - CreateItem
-            - ListItems
-            - DeleteItem
-            - GetItem
-            packageName: solo.examples.v1
-            serviceName: StoreService
+  kube:
+    selector:
+      app: grpcstore-demo
+    serviceName: grpcstore-demo
+    serviceNamespace: default
+    servicePort: 80
+    serviceSpec:
+      grpc:
+        descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE…bTkwYnpNPQ==
+        grpcServices:
+        - functionNames:
+          - CreateItem
+          - ListItems
+          - DeleteItem
+          - GetItem
+          packageName: solo.examples.v1
+          serviceName: StoreService
 status:
   reported_by: gloo
   state: 1

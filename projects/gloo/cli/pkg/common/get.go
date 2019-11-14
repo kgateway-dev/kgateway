@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 

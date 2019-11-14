@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	ingresstype "github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -151,15 +151,13 @@ var _ = Describe("Translate", func() {
 					Namespace: namespace,
 					Name:      "wow-upstream",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceNamespace: namespace,
-							ServiceName:      serviceName,
-							ServicePort:      uint32(servicePort),
-							Selector: map[string]string{
-								"a": "b",
-							},
+				UpstreamType: &gloov1.Upstream_Kube{
+					Kube: &kubernetes.UpstreamSpec{
+						ServiceNamespace: namespace,
+						ServiceName:      serviceName,
+						ServicePort:      uint32(servicePort),
+						Selector: map[string]string{
+							"a": "b",
 						},
 					},
 				},
@@ -169,15 +167,13 @@ var _ = Describe("Translate", func() {
 					Namespace: namespace,
 					Name:      "wow-upstream-subset",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Kube{
-						Kube: &kubernetes.UpstreamSpec{
-							ServiceName: serviceName,
-							ServicePort: uint32(servicePort),
-							Selector: map[string]string{
-								"a": "b",
-								"c": "d",
-							},
+				UpstreamType: &gloov1.Upstream_Kube{
+					Kube: &kubernetes.UpstreamSpec{
+						ServiceName: serviceName,
+						ServicePort: uint32(servicePort),
+						Selector: map[string]string{
+							"a": "b",
+							"c": "d",
 						},
 					},
 				},
@@ -330,26 +326,22 @@ var _ = Describe("Translate", func() {
 
 		us1 := &gloov1.Upstream{
 			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-80"},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceNamespace: "amoeba-dev",
-						ServiceName:      "api-gateway-amoeba-dev",
-						ServicePort:      uint32(80),
-					},
+			UpstreamType: &gloov1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceNamespace: "amoeba-dev",
+					ServiceName:      "api-gateway-amoeba-dev",
+					ServicePort:      uint32(80),
 				},
 			},
 		}
 
 		us2 := &gloov1.Upstream{
 			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-80"},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceNamespace: "amoeba-dev",
-						ServiceName:      "amoeba-ui",
-						ServicePort:      uint32(80),
-					},
+			UpstreamType: &gloov1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceNamespace: "amoeba-dev",
+					ServiceName:      "amoeba-ui",
+					ServicePort:      uint32(80),
 				},
 			},
 		}

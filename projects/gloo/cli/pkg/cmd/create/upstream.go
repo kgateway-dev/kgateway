@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -20,14 +20,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/consul"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/spf13/cobra"
 )
@@ -167,22 +167,17 @@ func createUpstream(opts *options.Options) error {
 }
 
 func upstreamFromOpts(opts *options.Options) (*v1.Upstream, error) {
-	spec, err := upstreamSpecFromOpts(opts.Create.InputUpstream)
-	if err != nil {
-		return nil, errors.Wrapf(err, "invalid upstream spec")
-	}
-	return &v1.Upstream{
-		Metadata:     opts.Metadata,
-		UpstreamSpec: spec,
-	}, nil
-}
+	input := opts.Create.InputUpstream
 
-func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error) {
 	svcSpec, err := serviceSpecFromOpts(input.ServiceSpec)
 	if err != nil {
 		return nil, err
 	}
-	spec := &v1.UpstreamSpec{}
+
+	upstream := &v1.Upstream{
+		Metadata: opts.Metadata,
+	}
+
 	switch input.UpstreamType {
 	case options.UpstreamType_Aws:
 		if svcSpec != nil {
@@ -194,7 +189,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Aws.Secret.Name == "" {
 			return nil, errors.Errorf("aws secret name must not be empty")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Aws{
+		upstream.UpstreamType = &v1.Upstream_Aws{
 			Aws: &aws.UpstreamSpec{
 				Region:    input.Aws.Region,
 				SecretRef: &input.Aws.Secret,
@@ -241,7 +236,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			})
 		}
 		ec2Spec.Filters = filters
-		spec.UpstreamType = &v1.UpstreamSpec_AwsEc2{
+		upstream.UpstreamType = &v1.Upstream_AwsEc2{
 			AwsEc2: ec2Spec,
 		}
 	case options.UpstreamType_Azure:
@@ -254,7 +249,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Azure.Secret.Name == "" {
 			return nil, errors.Errorf("azure secret name must not be empty")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Azure{
+		upstream.UpstreamType = &v1.Upstream_Azure{
 			Azure: &azure.UpstreamSpec{
 				FunctionAppName: input.Azure.FunctionAppName,
 				SecretRef:       input.Azure.Secret,
@@ -264,7 +259,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 		if input.Consul.ServiceName == "" {
 			return nil, errors.Errorf("must provide consul service name")
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Consul{
+		upstream.UpstreamType = &v1.Upstream_Consul{
 			Consul: &consul.UpstreamSpec{
 				ServiceName: input.Consul.ServiceName,
 				ServiceTags: input.Consul.ServiceTags,
@@ -276,7 +271,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			return nil, errors.Errorf("Must provide kube service name")
 		}
 
-		spec.UpstreamType = &v1.UpstreamSpec_Kube{
+		upstream.UpstreamType = &v1.Upstream_Kube{
 			Kube: &kubernetes.UpstreamSpec{
 				ServiceName:      input.Kube.ServiceName,
 				ServiceNamespace: input.Kube.ServiceNamespace,
@@ -316,7 +311,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 				Port: port,
 			})
 		}
-		spec.UpstreamType = &v1.UpstreamSpec_Static{
+		upstream.UpstreamType = &v1.Upstream_Static{
 			Static: &static.UpstreamSpec{
 				Hosts:       hosts,
 				UseTls:      input.Static.UseTls,
@@ -324,7 +319,7 @@ func upstreamSpecFromOpts(input options.InputUpstream) (*v1.UpstreamSpec, error)
 			},
 		}
 	}
-	return spec, nil
+	return upstream, nil
 }
 
 func serviceSpecFromOpts(input options.InputServiceSpec) (*plugins.ServiceSpec, error) {

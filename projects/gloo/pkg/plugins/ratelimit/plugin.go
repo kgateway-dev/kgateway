@@ -7,7 +7,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -56,7 +56,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if rl := in.GetVirtualHostPlugins().GetRatelimit(); rl != nil {
+	if rl := in.GetOptions().GetRatelimit(); rl != nil {
 		out.RateLimits = generateCustomEnvoyConfigForVhost(rl.RateLimits)
 	}
 	return nil
@@ -64,7 +64,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	var rateLimit *ratelimit.RateLimitRouteExtension
-	if rl := in.GetRoutePlugins().GetRatelimit(); rl != nil {
+	if rl := in.GetOptions().GetRatelimit(); rl != nil {
 		rateLimit = rl
 	} else {
 		// no rate limit route config found, nothing to do here

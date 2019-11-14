@@ -22,7 +22,7 @@ func NewPlugin() plugins.Plugin {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	staticSpec, ok := u.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static)
+	staticSpec, ok := u.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
 		return nil, nil
 	}
@@ -38,7 +38,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	staticSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static)
+	staticSpec, ok := in.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
 		// not ours
 		return nil

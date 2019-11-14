@@ -21,19 +21,18 @@ metadata:
   name: my-ec2-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    awsEc2:
-      filters:
-      - key: some-key
-      - kvPair:
-          key: some-other-key
-          value: some-value
-      region: us-east-1
-      publicIp: true
-      secretRef:
-        name: my-aws-secret
-        namespace: default
-      roleArn: arn:aws:iam::123456789012:role/describe-ec2-demo
+  awsEc2:
+    filters:
+    - key: some-key
+    - kvPair:
+        key: some-other-key
+        value: some-value
+    region: us-east-1
+    publicIp: true
+    secretRef:
+      name: my-aws-secret
+      namespace: default
+    roleArn: arn:aws:iam::123456789012:role/describe-ec2-demo
 ```
 
 ## Key points
@@ -174,22 +173,21 @@ metadata:
   name: ec2-demo-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    awsEc2:
-      filters:
-      - key: gloo-id
-      - kvPair:
-          key: gloo-tag
-          value: group1
-      - kvPair:
-          key: version
-          value: v1.2.3
-      region: us-east-1
-      publicIp: true
-      secretRef:
-        name: gloo-tag-group1
-        namespace: default
-      roleArn: "<arn-for-the-role-you-created>"
+  awsEc2:
+    filters:
+    - key: gloo-id
+    - kvPair:
+        key: gloo-tag
+        value: group1
+    - kvPair:
+        key: version
+        value: v1.2.3
+    region: us-east-1
+    publicIp: true
+    secretRef:
+      name: gloo-tag-group1
+      namespace: default
+    roleArn: "<arn-for-the-role-you-created>"
 ```
 
 - Take note of a few of the options we have set for this sample upstream:

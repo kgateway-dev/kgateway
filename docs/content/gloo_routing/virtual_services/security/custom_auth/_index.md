@@ -73,7 +73,7 @@ When a request matches a route that defines an `extauth` configuration, Gloo wil
 auth service. If the HTTP service returns a `200 OK` response, the request will be considered authorized and sent to 
 its original destination. Otherwise the request will be denied.
 You can fine tune which headers are sent to the the auth service, and whether or not the body is forwarded as well, 
-by editing the [extauth settings]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#settings" >}}) 
+by editing the {{< protobuf name="enterprise.gloo.solo.io.Settings" display="extauth settings" >}} 
 in the Gloo settings (see the example [below](#configure-gloo-settings)).
 
 For reference, here's the code for the authorization server used in this tutorial:
@@ -164,7 +164,10 @@ spec:
 {{< /highlight >}}
 
 More details about the `httpService` object are available 
-[here]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#httpservice" >}}).
+{{<
+protobuf display="here"
+name="enterprise.gloo.solo.io.HttpService"
+>}}.
 For example, if you want to copy some of the original request headers to the request that gets sent to the custom auth 
 server, you would need to configure the `extauth` attribute in the following way:
 

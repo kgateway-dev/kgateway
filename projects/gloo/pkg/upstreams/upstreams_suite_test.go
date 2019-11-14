@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -40,13 +40,12 @@ var getUpstream = func(name, namespace, svcName, svcNs string, port uint32) *v1.
 			Name:      name,
 			Namespace: namespace,
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Kube{
-				Kube: &kubernetes.UpstreamSpec{
-					ServiceName:      svcName,
-					ServiceNamespace: svcNs,
-					ServicePort:      port,
-				}},
+		UpstreamType: &v1.Upstream_Kube{
+			Kube: &kubernetes.UpstreamSpec{
+				ServiceName:      svcName,
+				ServiceNamespace: svcNs,
+				ServicePort:      port,
+			},
 		},
 	}
 }

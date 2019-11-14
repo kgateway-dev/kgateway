@@ -29,7 +29,7 @@ weight: 5
 
 Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 
-Certain plugins such as the gRPC plugin read and write artifacts to one of Gloo's configured
+Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
 storage layer.
 
 Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.

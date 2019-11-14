@@ -11,7 +11,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/faultinjection"
+	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
 
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -195,14 +195,14 @@ func getGlooProxyWithVersion(abort *fault.RouteAbort, delay *fault.RouteDelay, e
 									},
 								},
 							},
-							RoutePlugins: &gloov1.RoutePlugins{
+							Options: &gloov1.RouteOptions{
 								Faults: &fault.RouteFaults{
 									Abort: abort,
 									Delay: delay,
 								},
 							},
 						}},
-						VirtualHostPlugins: &gloov1.VirtualHostPlugins{},
+						Options: &gloov1.VirtualHostOptions{},
 					}},
 				},
 			},

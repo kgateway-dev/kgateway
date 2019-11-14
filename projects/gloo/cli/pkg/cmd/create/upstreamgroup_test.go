@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -23,14 +23,12 @@ var _ = Describe("UpstreamGroup", func() {
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
 		us := &v1.Upstream{
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						Region: "test-region",
-						SecretRef: &core.ResourceRef{
-							Namespace: "gloo-system",
-							Name:      "test-aws-us",
-						},
+			UpstreamType: &v1.Upstream_Aws{
+				Aws: &aws.UpstreamSpec{
+					Region: "test-region",
+					SecretRef: &core.ResourceRef{
+						Namespace: "gloo-system",
+						Name:      "test-aws-us",
 					},
 				},
 			},

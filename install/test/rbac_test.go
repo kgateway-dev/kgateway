@@ -18,7 +18,7 @@ var _ = Describe("RBAC Test", func() {
 	)
 
 	prepareMakefile := func(helmFlags string) {
-		testManifest = renderManifest(helmFlags + " --set installConfig.installationId=" + installationId)
+		testManifest = renderManifest(helmFlags + " --set global.glooInstallationId=" + installationId)
 	}
 
 	Context("implementation-agnostic permissions", func() {

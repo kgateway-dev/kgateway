@@ -143,7 +143,7 @@ var _ = Describe("Health Checks", func() {
 				v.Check.Interval = &translator.DefaultHealthCheckInterval
 				v.Check.HealthyThreshold = translator.DefaultThreshold
 				v.Check.UnhealthyThreshold = translator.DefaultThreshold
-				us.GetUpstreamSpec().HealthChecks = []*envoycore.HealthCheck{v.Check}
+				us.HealthChecks = []*envoycore.HealthCheck{v.Check}
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{
 					OverwriteExisting: true,
@@ -169,7 +169,7 @@ var _ = Describe("Health Checks", func() {
 		It("outlier detection", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
-			us.GetUpstreamSpec().OutlierDetection = &envoycluster.OutlierDetection{
+			us.OutlierDetection = &envoycluster.OutlierDetection{
 				Interval: &types.Duration{Seconds: 1},
 			}
 
@@ -210,7 +210,7 @@ var _ = Describe("Health Checks", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			us.GetUpstreamSpec().HealthChecks = []*envoycore.HealthCheck{
+			us.HealthChecks = []*envoycore.HealthCheck{
 				{
 					Timeout:            &translator.DefaultHealthCheckTimeout,
 					Interval:           &translator.DefaultHealthCheckInterval,

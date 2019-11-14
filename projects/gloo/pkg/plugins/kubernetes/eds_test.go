@@ -6,7 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubev1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	mock_kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/mocks"
 	mock_cache "github.com/solo-io/gloo/test/mocks/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -37,12 +37,10 @@ var _ = Describe("Eds", func() {
 
 	It("should ignore upstreams in non watched namesapces", func() {
 		up := v1.NewUpstream("foo", "name")
-		up.UpstreamSpec = &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Kube{
-				Kube: &kubev1.UpstreamSpec{
-					ServiceName:      "name",
-					ServiceNamespace: "bar",
-				},
+		up.UpstreamType = &v1.Upstream_Kube{
+			Kube: &kubev1.UpstreamSpec{
+				ServiceName:      "name",
+				ServiceNamespace: "bar",
 			},
 		}
 		upstreamsToTrack := v1.UpstreamList{up}

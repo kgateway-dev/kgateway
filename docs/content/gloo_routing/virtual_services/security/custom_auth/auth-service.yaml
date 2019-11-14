@@ -41,8 +41,7 @@ metadata:
   name: auth-server
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-      - addr: auth-service.gloo-system.svc.cluster.local
-        port: 80
+  static:
+    hosts:
+    - addr: auth-service.gloo-system.svc.cluster.local
+      port: 80

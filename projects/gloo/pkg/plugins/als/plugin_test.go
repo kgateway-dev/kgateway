@@ -5,7 +5,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -94,7 +94,7 @@ var _ = Describe("Plugin", func() {
 				ListenerType: &v1.Listener_HttpListener{
 					HttpListener: hl,
 				},
-				Plugins: &v1.ListenerPlugins{
+				Options: &v1.ListenerOptions{
 					AccessLoggingService: alsConfig,
 				},
 			}
@@ -127,7 +127,7 @@ var _ = Describe("Plugin", func() {
 				ListenerType: &v1.Listener_TcpListener{
 					TcpListener: tl,
 				},
-				Plugins: &v1.ListenerPlugins{
+				Options: &v1.ListenerOptions{
 					AccessLoggingService: alsConfig,
 				},
 			}
@@ -210,7 +210,7 @@ var _ = Describe("Plugin", func() {
 					ListenerType: &v1.Listener_HttpListener{
 						HttpListener: hl,
 					},
-					Plugins: &v1.ListenerPlugins{
+					Options: &v1.ListenerOptions{
 						AccessLoggingService: alsConfig,
 					},
 				}
@@ -243,7 +243,7 @@ var _ = Describe("Plugin", func() {
 					ListenerType: &v1.Listener_TcpListener{
 						TcpListener: tl,
 					},
-					Plugins: &v1.ListenerPlugins{
+					Options: &v1.ListenerOptions{
 						AccessLoggingService: alsConfig,
 					},
 				}
@@ -305,7 +305,7 @@ var _ = Describe("Plugin", func() {
 					ListenerType: &v1.Listener_HttpListener{
 						HttpListener: hl,
 					},
-					Plugins: &v1.ListenerPlugins{
+					Options: &v1.ListenerOptions{
 						AccessLoggingService: alsConfig,
 					},
 				}
@@ -338,7 +338,7 @@ var _ = Describe("Plugin", func() {
 					ListenerType: &v1.Listener_TcpListener{
 						TcpListener: tl,
 					},
-					Plugins: &v1.ListenerPlugins{
+					Options: &v1.ListenerOptions{
 						AccessLoggingService: alsConfig,
 					},
 				}

@@ -15,7 +15,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/subset.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
@@ -82,8 +82,8 @@ message Listener {
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 7;
 
-    // top level plugins
-    ListenerPlugins plugins = 8;
+    // top level options
+    ListenerOptions options = 8;
 
     // Metadata for the individual listener
     // This data is opaque to Gloo, used
@@ -96,11 +96,11 @@ message Listener {
 message TcpListener {
     // List of filter chains to match on for this listener
     repeated TcpHost tcp_hosts = 1;
-    // Plugins contains top-level plugin configuration to be applied to a listener
+    // Options contains top-level configuration to be applied to a listener.
     // Listener config is applied to traffic for the given listener.
     // Some configuration here can be overridden in
-    // Virtual Host Plugin configuration or Route Plugin configuration
-    TcpListenerPlugins plugins = 8;
+    // Virtual Host Options configuration or Route Options configuration
+    TcpListenerOptions options = 8;
     // prefix for addressing envoy stats for the tcp proxy
     string stat_prefix = 3;
 }
@@ -116,18 +116,18 @@ message TcpHost {
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
-// HttpListeners also contain plugin configuration that applies globally across all virtual hosts on the listener.
-// Some plugins can be configured to work both on the listener and virtual host level (such as the rate limit plugin)
+// HttpListeners also contain optional configuration that applies globally across all virtual hosts on the listener.
+// Some traffic policies can be configured to work both on the listener and virtual host level (e.g., the rate limit feature)
 message HttpListener {
     // the set of virtual hosts that will be accessible by clients connecting to this listener.
     // at least one virtual host must be specified for this listener to be active (else connections will be refused)
     // the set of domains for each virtual host must be unique, or the config will be considered invalid
     repeated VirtualHost virtual_hosts = 1;
-    // Listener Plugins contains top-level plugin configuration to be applied to a listener
+    // HttpListenerOptions contains optional top-level configuration to be applied to a listener.
     // Listener config is applied to traffic for the given listener.
-    // Some configuration here can be overridden in
-    // Virtual Host Plugin configuration or Route Plugin configuration
-    HttpListenerPlugins listener_plugins = 2;
+    // Some configuration here can be overridden in VirtualHostOptions configuration, RouteOptions configuration,
+    // or WeightedDestinationOptions configuration.
+    HttpListenerOptions options = 2;
     // prefix for addressing envoy stats for the http connection manager
     string stat_prefix = 3;
 }
@@ -155,9 +155,9 @@ message VirtualHost {
     // If the list of routes is empty, the virtual host will be ignored by Gloo.
     repeated Route routes = 3;
 
-    // Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
-    // Some configuration here can be overridden by Route Plugins.
-    VirtualHostPlugins virtual_host_plugins = 4;
+    // Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
+    // Some configuration here can be overridden by Route Options.
+    VirtualHostOptions options = 4;
 
     // Metadata for the individual virtual host
     // This data is opaque to Gloo, used
@@ -187,9 +187,9 @@ message Route {
         DirectResponseAction direct_response_action = 4;
     }
 
-    // Route Plugins extend the behavior of routes.
-    // Route plugins include configuration such as retries,rate limiting, and request/response transformation.
-    RoutePlugins route_plugins = 5;
+    // Route Options extend the behavior of routes.
+    // Route options include configuration such as retries, rate limiting, and request/response transformation.
+    RouteOptions options = 5;
 
     // Metadata for the individual route
     // This data is opaque to Gloo, used
@@ -232,7 +232,7 @@ message Destination {
 
     // Note: When in the context of a TCP gateway the below 2 fields will be ignored
 
-    // Some upstreams utilize plugins which require or permit additional configuration on routes targeting them.
+    // Some upstreams utilize options which require or permit additional configuration on routes targeting them.
     // gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the
     // destination config. If the destination config is required for the upstream and not provided by the user,
     // Gloo will invalidate the destination and its parent resources.
@@ -304,7 +304,7 @@ message WeightedDestination {
     uint32 weight = 2;
 
     // Apply configuration to traffic that is sent to this weighted destination
-    WeightedDestinationPlugins weighted_destination_plugins = 3;
+    WeightedDestinationOptions options = 3;
 }
 
 // Notice: RedirectAction is copied directly from https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto
@@ -362,7 +362,7 @@ message DirectResponseAction {
     // Specifies the content of the response body. If this setting is omitted,
     // no body is included in the generated response.
     //
-    //   Note: Headers can be specified using the Header Modification plugin in the enclosing
-    //   Route, Virtual Host, or Listener.
+    //   Note: Headers can be specified using the Header Modification feature in the enclosing
+    //   Route, Virtual Host, or Listener options.
     string body = 2;
 }

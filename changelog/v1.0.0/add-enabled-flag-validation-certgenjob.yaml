@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: Add `enabled` to `.Values.gateway.validation` and `.Values.gateway.certGenJob` so users can disable
+      the features without setting the root resource to nil.
+    issueLink: https://github.com/solo-io/gloo/issues/1561

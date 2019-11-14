@@ -10,8 +10,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -44,19 +44,17 @@ var _ = Describe("Plugin", func() {
 				Name:      upstreamName,
 				Namespace: "ns",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						LambdaFunctions: []*aws.LambdaFunctionSpec{{
-							LogicalName:        funcName,
-							LambdaFunctionName: "foo",
-							Qualifier:          "v1",
-						}},
-						Region: "us-east1",
-						SecretRef: &core.ResourceRef{
-							Namespace: "ns",
-							Name:      "secretref",
-						},
+			UpstreamType: &v1.Upstream_Aws{
+				Aws: &aws.UpstreamSpec{
+					LambdaFunctions: []*aws.LambdaFunctionSpec{{
+						LogicalName:        funcName,
+						LambdaFunctionName: "foo",
+						Qualifier:          "v1",
+					}},
+					Region: "us-east1",
+					SecretRef: &core.ResourceRef{
+						Namespace: "ns",
+						Name:      "secretref",
 					},
 				},
 			},
@@ -147,7 +145,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should error upstream with no secret ref", func() {
-			upstream.GetUpstreamSpec().GetAws().SecretRef = nil
+			upstream.GetAws().SecretRef = nil
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(MatchError("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment"))
 		})
@@ -174,7 +172,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should not process and not error with non aws upstream", func() {
-			upstream.UpstreamSpec.UpstreamType = nil
+			upstream.UpstreamType = nil
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.ExtensionProtocolOptions).To(BeEmpty())
@@ -273,7 +271,7 @@ var _ = Describe("Plugin", func() {
 				},
 			})
 			// remove secrets from upstream
-			upstream.GetUpstreamSpec().GetAws().SecretRef = nil
+			upstream.GetAws().SecretRef = nil
 		})
 
 		process := func() {
@@ -295,7 +293,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should enable default but still use secret ref if it is there", func() {
-			upstream.GetUpstreamSpec().GetAws().SecretRef = &core.ResourceRef{
+			upstream.GetAws().SecretRef = &core.ResourceRef{
 				Namespace: "ns",
 				Name:      "secretref",
 			}

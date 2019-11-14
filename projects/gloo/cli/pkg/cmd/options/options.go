@@ -4,8 +4,8 @@ import (
 	"context"
 	"sort"
 
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"

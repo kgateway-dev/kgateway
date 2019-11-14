@@ -1,6 +1,5 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
-|installConfig.installationId|string||If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling|
 |namespace.create|bool|false|create the installation namespace|
 |crds.create|bool|true|create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)|
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
@@ -59,6 +58,7 @@
 |discovery.fdsMode|string||mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
+|gateway.validation.enabled|bool|true|enable Gloo API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
@@ -81,8 +81,12 @@
 |gateway.certGenJob.image.pullPolicy|string||image pull policy for the container|
 |gateway.certGenJob.image.pullSecret|string||image pull policy for the container |
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
+|gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
+|gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
+|gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller|
 |gatewayProxies.NAME.kind.deployment.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.resources.limits.memory|string||amount of memory|
@@ -234,3 +238,4 @@
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
+|global.glooInstallationId|string||If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling|

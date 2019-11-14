@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Rename the Gateway field tcpGateway.destinations to tcpGateway.tcpHosts in order to eliminate
+      the duplicated field names (i.e., tcpGateway.destinations[].destination)
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

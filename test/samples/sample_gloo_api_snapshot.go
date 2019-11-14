@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -17,14 +17,12 @@ func SimpleUpstream() *v1.Upstream {
 			Name:      "test",
 			Namespace: "gloo-system",
 		},
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Static{
-				Static: &static.UpstreamSpec{
-					Hosts: []*static.Host{
-						{
-							Addr: "Test",
-							Port: 124,
-						},
+		UpstreamType: &v1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{
+					{
+						Addr: "Test",
+						Port: 124,
 					},
 				},
 			},
@@ -140,7 +138,7 @@ func SimpleGatewaySnapshot(us core.ResourceRef, namespace string) *gwv1.ApiSnaps
 				ProxyNames: []string{defaults.GatewayProxyName},
 				GatewayType: &gwv1.Gateway_TcpGateway{
 					TcpGateway: &gwv1.TcpGateway{
-						Destinations: []*v1.TcpHost{
+						TcpHosts: []*v1.TcpHost{
 							{
 								Name: "tcp-dest",
 								Destination: &v1.RouteAction{

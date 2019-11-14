@@ -15,9 +15,8 @@ metadata:
   name: postman-echo
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-      - addr: postman-echo.com
-        port: 80
+  static:
+    hosts:
+    - addr: postman-echo.com
+      port: 80
 ```

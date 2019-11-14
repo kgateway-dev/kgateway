@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -112,25 +112,23 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 				Namespace: "default",
 				Name:      region,
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_AwsEc2{
-					AwsEc2: &glooec2.UpstreamSpec{
-						Region:    region,
-						SecretRef: &secretRef,
-						RoleArn:   roleArn,
-						Filters: []*glooec2.TagFilter{
-							{
-								Spec: &glooec2.TagFilter_KvPair_{
-									KvPair: &glooec2.TagFilter_KvPair{
-										Key:   "svc",
-										Value: "worldwide-hello",
-									},
+			UpstreamType: &gloov1.Upstream_AwsEc2{
+				AwsEc2: &glooec2.UpstreamSpec{
+					Region:    region,
+					SecretRef: &secretRef,
+					RoleArn:   roleArn,
+					Filters: []*glooec2.TagFilter{
+						{
+							Spec: &glooec2.TagFilter_KvPair_{
+								KvPair: &glooec2.TagFilter_KvPair{
+									Key:   "svc",
+									Value: "worldwide-hello",
 								},
 							},
 						},
-						PublicIp: true,
-						Port:     80,
 					},
+					PublicIp: true,
+					Port:     80,
 				},
 			},
 		}

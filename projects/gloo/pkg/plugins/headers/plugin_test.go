@@ -6,7 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -17,7 +17,7 @@ var _ = Describe("Plugin", func() {
 	It("errors if the header is nil", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				HeaderManipulation: testBrokenConfig,
 			},
 		}, out)
@@ -27,7 +27,7 @@ var _ = Describe("Plugin", func() {
 	It("converts the header manipulation config for weighted destinations", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
-			WeightedDestinationPlugins: &v1.WeightedDestinationPlugins{
+			Options: &v1.WeightedDestinationOptions{
 				HeaderManipulation: testHeaderManip,
 			},
 		}, out)
@@ -40,7 +40,7 @@ var _ = Describe("Plugin", func() {
 	It("converts the header manipulation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			VirtualHostPlugins: &v1.VirtualHostPlugins{
+			Options: &v1.VirtualHostOptions{
 				HeaderManipulation: testHeaderManip,
 			},
 		}, out)
@@ -53,7 +53,7 @@ var _ = Describe("Plugin", func() {
 	It("converts the header manipulation config for routes", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				HeaderManipulation: testHeaderManip,
 			},
 		}, out)

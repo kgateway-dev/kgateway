@@ -149,7 +149,7 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 }
 
 func allKeys(upstream *v1.Upstream) []string {
-	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}

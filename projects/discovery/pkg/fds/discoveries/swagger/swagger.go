@@ -20,8 +20,8 @@ import (
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	transformation_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	rest_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 )
 
 var commonSwaggerURIs = []string{
@@ -58,7 +58,7 @@ type SwaggerFunctionDiscovery struct {
 }
 
 func getswagspec(u *v1.Upstream) *rest_plugins.ServiceSpec_SwaggerInfo {
-	spec, ok := u.UpstreamSpec.UpstreamType.(v1.ServiceSpecGetter)
+	spec, ok := u.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -242,7 +242,7 @@ func (f *SwaggerFunctionDiscovery) detectFunctionsFromSpec(ctx context.Context, 
 	}
 
 	return updatecb(func(u *v1.Upstream) error {
-		upstreamSpec, ok := u.UpstreamSpec.UpstreamType.(v1.ServiceSpecMutator)
+		upstreamSpec, ok := u.UpstreamType.(v1.ServiceSpecMutator)
 		if !ok {
 			return errors.New("not a valid upstream")
 		}

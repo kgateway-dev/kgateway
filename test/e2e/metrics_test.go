@@ -131,11 +131,6 @@ var _ = Describe("Gateway", func() {
 						Ctx: ctx,
 					}
 
-					//usageMerger := metricsservice.NewUsageMerger(time.Now)
-					//storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
-					//
-					//defaulthandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
-
 					channel = make(chan *struct{}, 1000)
 					testHandler = &testMetricsHandler{channel: channel}
 					service := metricsservice.NewServer(opts, testHandler)
@@ -153,13 +148,13 @@ var _ = Describe("Gateway", func() {
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("can stream metrics", func() {
-					vs := getTrivialVirtualServiceForUpstream("default", tu.Upstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
 					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 

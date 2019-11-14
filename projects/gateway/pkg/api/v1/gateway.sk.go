@@ -42,7 +42,7 @@ func (r *Gateway) Hash() uint64 {
 		r.Ssl,
 		r.BindAddress,
 		r.BindPort,
-		r.Plugins,
+		r.Options,
 		r.UseProxyProto,
 		r.ProxyNames,
 		r.GatewayType,

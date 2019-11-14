@@ -13,7 +13,7 @@ import (
 
 	fdssetup "github.com/solo-io/gloo/projects/discovery/pkg/fds/setup"
 	udssetup "github.com/solo-io/gloo/projects/discovery/pkg/uds/setup"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 
 	"github.com/gogo/protobuf/types"
 	consulapi "github.com/hashicorp/consul/api"
@@ -207,7 +207,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		proxyClient, err := gloov1.NewProxyClient(consulResources)
 		Expect(err).NotTo(HaveOccurred())
 
-		vs := makeSslVirtualService(secret.Metadata.Ref())
+		vs := makeSslVirtualService(writeNamespace, secret.Metadata.Ref())
 
 		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
@@ -243,7 +243,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		us := core.ResourceRef{Namespace: "gloo-system", Name: "petstore"}
 
-		vs := makeFunctionRoutingVirtualService(us, "findPetById")
+		vs := makeFunctionRoutingVirtualService(writeNamespace, us, "findPetById")
 
 		vs, err = vsClient.Write(vs, clients.WriteOpts{Ctx: ctx})
 		Expect(err).NotTo(HaveOccurred())
@@ -263,11 +263,11 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 	})
 })
 
-func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
+func makeSslVirtualService(vsNamespace string, secret core.ResourceRef) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: core.Metadata{
 			Name:      "vs-ssl",
-			Namespace: "default",
+			Namespace: vsNamespace,
 		},
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
@@ -299,11 +299,11 @@ func makeSslVirtualService(secret core.ResourceRef) *v1.VirtualService {
 	}
 }
 
-func makeFunctionRoutingVirtualService(upstream core.ResourceRef, funcName string) *v1.VirtualService {
+func makeFunctionRoutingVirtualService(vsNamespace string, upstream core.ResourceRef, funcName string) *v1.VirtualService {
 	return &v1.VirtualService{
 		Metadata: core.Metadata{
 			Name:      "vs-functions",
-			Namespace: "default",
+			Namespace: vsNamespace,
 		},
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},

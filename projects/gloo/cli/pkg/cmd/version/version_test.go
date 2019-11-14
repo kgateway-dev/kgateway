@@ -26,18 +26,16 @@ var _ = Describe("version command", func() {
 
 	Context("getVersion", func() {
 		It("will error if an error occurs while getting the version", func() {
-			opts := &options.Options{}
 			fakeErr := errors.New("test")
-			client.EXPECT().Get(opts).Return(nil, fakeErr).Times(1)
-			_, err := getVersion(client, opts)
+			client.EXPECT().Get().Return(nil, fakeErr).Times(1)
+			_, err := GetClientServerVersions(client)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(fakeErr))
 		})
 		It("can get the version", func() {
-			opts := &options.Options{}
 			v := make([]*version.ServerVersion, 1)
-			client.EXPECT().Get(opts).Return(v, nil).Times(1)
-			vrs, err := getVersion(client, opts)
+			client.EXPECT().Get().Return(v, nil).Times(1)
+			vrs, err := GetClientServerVersions(client)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(v).To(Equal(vrs.Server))
 		})
@@ -187,7 +185,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 						},
 					}
 					sv.Enterprise = test.enterprise
-					client.EXPECT().Get(opts).Times(1).Return([]*version.ServerVersion{sv}, nil)
+					client.EXPECT().Get().Times(1).Return([]*version.ServerVersion{sv}, nil)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(Equal(test.result))
@@ -199,7 +197,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 							Output: test.outputType,
 						},
 					}
-					client.EXPECT().Get(opts).Times(1).Return(nil, nil)
+					client.EXPECT().Get().Times(1).Return(nil, nil)
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(ContainSubstring(undefinedServer))

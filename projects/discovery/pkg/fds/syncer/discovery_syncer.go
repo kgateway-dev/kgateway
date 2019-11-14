@@ -3,6 +3,9 @@ package syncer
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -28,7 +31,11 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snap.Hash())
 
-	logger.Debugf("%v", snap)
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	upstreamsToDetect := filterUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
 
@@ -118,7 +125,7 @@ func filterUpstreamsWhitelist(upstreams v1.UpstreamList, namespaces kubernetes.K
 }
 
 func getUpstreamNamespace(us *v1.Upstream) string {
-	if kubeSpec := us.GetUpstreamSpec().GetKube(); kubeSpec != nil {
+	if kubeSpec := us.GetKube(); kubeSpec != nil {
 		return kubeSpec.ServiceNamespace
 	}
 	return "" // only applies to kube namespaces currently

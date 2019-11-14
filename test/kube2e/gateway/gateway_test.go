@@ -36,7 +36,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	grpcv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/kubeutils"
@@ -44,7 +44,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 
-	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	gloov1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -466,7 +466,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
 					getVirtualServiceWithRoute(&gatewayv1.Route{
 						Matchers: []*matchers.Matcher{{}},
-						RoutePlugins: &gloov1.RoutePlugins{
+						Options: &gloov1.RouteOptions{
 							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
 						},
 					}, nil)))
@@ -740,7 +740,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil {
 						return err
 					}
-					upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
+					upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.ServiceSpec = &gloov1plugins.ServiceSpec{
 						PluginType: &gloov1plugins.ServiceSpec_Grpc{
 							Grpc: &grpcv1.ServiceSpec{},
 						},
@@ -757,7 +757,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, svc := range createdServices {
 				// now set subset config on an upstream:
 				up, _ := getUpstream(svc)
-				spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+				spec := up.GetKube().GetServiceSpec()
 				Expect(spec).ToNot(BeNil())
 				Expect(spec.GetGrpc()).ToNot(BeNil())
 			}
@@ -798,7 +798,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}
 			tcpGateway := defaultGateway.GetTcpGateway()
 			Expect(tcpGateway).NotTo(BeNil())
-			tcpGateway.Destinations = append(tcpGateway.Destinations, &gloov1.TcpHost{
+			tcpGateway.TcpHosts = append(tcpGateway.TcpHosts, &gloov1.TcpHost{
 				Name: "one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_Single{
@@ -1015,7 +1015,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			// I use eventually so it will wait a bit between retries.
 			Eventually(func() error {
 				upstream, _ := getUpstream()
-				upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
+				upstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.SubsetSpec = &gloov1plugins.SubsetSpec{
 					Selectors: []*gloov1plugins.Selector{{
 						Keys: []string{"text"},
 					}},
@@ -1382,6 +1382,6 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 }
 
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
-	route.RoutePlugins = &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: rewrite}}
+	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
 }

@@ -105,7 +105,7 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 			}
 			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
-			spec := up.GetUpstreamSpec().GetKube().GetServiceSpec()
+			spec := up.GetKube().GetServiceSpec()
 			Expect(spec.GetGrpc()).To(BeNil())
 		})
 
@@ -122,7 +122,7 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 			}
 			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
-			Expect(up.GetUpstreamSpec().GetUseHttp2()).To(BeTrue())
+			Expect(up.GetUseHttp2()).To(BeTrue())
 		})
 
 		DescribeTable("should create upstream with use_http2=true when port name starts with known prefix", func(portname string) {
@@ -137,7 +137,7 @@ var _ = Describe("UdsConvert", func() {
 				Name: portname,
 			}
 			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
-			Expect(up.GetUpstreamSpec().GetUseHttp2()).To(BeTrue())
+			Expect(up.GetUseHttp2()).To(BeTrue())
 		},
 			Entry("exactly grpc", "grpc"),
 			Entry("prefix grpc", "grpc-test"),
@@ -161,7 +161,7 @@ var _ = Describe("UdsConvert", func() {
 			}
 
 			up := createUpstream(context.TODO(), svc, port, nil)
-			Expect(up.GetUpstreamSpec().GetSslConfig()).To(Equal(expectedCfg))
+			Expect(up.GetSslConfig()).To(Equal(expectedCfg))
 		},
 			Entry("using ssl secret", map[string]string{
 				serviceconverter.GlooSslSecretAnnotation: "mysecret",

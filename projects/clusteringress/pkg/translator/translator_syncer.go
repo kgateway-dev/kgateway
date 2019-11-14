@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"go.uber.org/zap/zapcore"
+
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
@@ -46,7 +49,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		len(snap.Secrets),
 	)
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
+
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {

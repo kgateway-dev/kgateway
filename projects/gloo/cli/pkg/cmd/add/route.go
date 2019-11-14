@@ -13,9 +13,9 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -71,8 +71,8 @@ func addRoute(opts *options.Options) error {
 	}
 
 	v1Route := &gatewayv1.Route{
-		Matchers:     []*matchers.Matcher{match}, // currently we only support adding a single matcher via glooctl
-		RoutePlugins: plugins,
+		Matchers: []*matchers.Matcher{match}, // currently we only support adding a single matcher via glooctl
+		Options:  plugins,
 	}
 
 	if opts.Add.Route.Destination.Delegate.Name != "" {
@@ -235,11 +235,11 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	return a, nil
 }
 
-func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
+func pluginsFromInput(input options.RoutePlugins) (*v1.RouteOptions, error) {
 	if input.PrefixRewrite.Value == nil {
 		return nil, nil
 	}
-	return &v1.RoutePlugins{
+	return &v1.RouteOptions{
 		PrefixRewrite: &types.StringValue{Value: *input.PrefixRewrite.Value},
 	}, nil
 }

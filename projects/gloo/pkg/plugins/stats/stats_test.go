@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	statsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+	statsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -21,7 +21,7 @@ var _ = Describe("Virtual Clusters", func() {
 		inputVh      = v1.VirtualHost{
 			Name:    "my-vh",
 			Domains: []string{"a.com", "b.com"},
-			VirtualHostPlugins: &v1.VirtualHostPlugins{
+			Options: &v1.VirtualHostOptions{
 				Stats: &statsapi.Stats{
 					VirtualClusters: nil,
 				},
@@ -49,7 +49,7 @@ var _ = Describe("Virtual Clusters", func() {
 	})
 
 	It("correctly processes virtual clusters", func() {
-		inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{
+		inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{
 			{Name: "get", Pattern: "/test/.*", Method: "GET"},
 			{Name: "post", Pattern: "/test/.*", Method: "POST"},
 		}
@@ -72,7 +72,7 @@ var _ = Describe("Virtual Clusters", func() {
 	})
 
 	It("sanitizes illegal virtual cluster name", func() {
-		inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "not.valid", Pattern: "/test/.*"}}
+		inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "not.valid", Pattern: "/test/.*"}}
 		err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -82,7 +82,7 @@ var _ = Describe("Virtual Clusters", func() {
 	})
 
 	It("correctly defaults missing method name", func() {
-		inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "test", Pattern: "/test/.*"}}
+		inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "test", Pattern: "/test/.*"}}
 		err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -95,14 +95,14 @@ var _ = Describe("Virtual Clusters", func() {
 	Describe("expected failures", func() {
 
 		It("fails if a virtual cluster name is missing", func() {
-			inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Pattern: "/test/.*"}}
+			inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Pattern: "/test/.*"}}
 			err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(invalidVirtualClusterErr(missingNameErr, "").Error()))
 		})
 
 		It("fails if a virtual cluster pattern is missing", func() {
-			inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "test-vc"}}
+			inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{{Name: "test-vc"}}
 			err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(invalidVirtualClusterErr(missingPatternErr, "test-vc").Error()))
@@ -110,7 +110,7 @@ var _ = Describe("Virtual Clusters", func() {
 
 		It("fails if an invalid HTTP method is provided", func() {
 			misspelledMethod := "DELET"
-			inputVh.VirtualHostPlugins.Stats.VirtualClusters = []*statsapi.VirtualCluster{{
+			inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{{
 				Name: "test-vc", Pattern: "/test/.*", Method: misspelledMethod}}
 			err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
 			Expect(err).To(HaveOccurred())

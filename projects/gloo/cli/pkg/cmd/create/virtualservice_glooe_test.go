@@ -5,7 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -67,7 +67,7 @@ var _ = Describe("VirtualService", func() {
 				Expect(err).NotTo(HaveOccurred())
 				vs, err := helpers.MustVirtualServiceClient().Read("gloo-system", "vs1", clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
-				acRef := vs.VirtualHost.VirtualHostPlugins.Extauth.Spec.(*v1.ExtAuthExtension_ConfigRef).ConfigRef
+				acRef := vs.VirtualHost.Options.Extauth.Spec.(*v1.ExtAuthExtension_ConfigRef).ConfigRef
 				Expect(acRef.Name).To(Equal("ac1"))
 				Expect(acRef.Namespace).To(Equal("ns1"))
 			})
