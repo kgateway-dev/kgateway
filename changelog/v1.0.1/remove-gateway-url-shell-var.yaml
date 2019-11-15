@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Remove the `GATEWAY_URL` shell variable from the docs and just use `$(glooctl proxy url)` when needed.
+  issueLink: https://github.com/solo-io/gloo/issues/1655
+  resolvesIssue: false

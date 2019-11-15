@@ -41,7 +41,7 @@ glooctl add route --name test-static --path-prefix / --dest-name json-upstream
 Now we can verify that the proxy was updated to support routing to this upstream using curl:
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/posts
+curl -H "Host: foo" $(glooctl proxy url)/posts
 ```
 
 ```json

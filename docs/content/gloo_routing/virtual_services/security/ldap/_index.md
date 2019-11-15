@@ -82,7 +82,7 @@ Now we can create a Virtual Service that routes any requests with the `/echo` pr
 To verify that the Virtual Service works, let's send a request to `/echo`:
 
 ```bash
-curl $GATEWAY_URL/echo
+curl $(glooctl proxy url)/echo
 'Hello World!'
 ```
 
@@ -333,7 +333,7 @@ so here are the `base64`-encoded credentials for some test users:
 To start with, let's send a request without any header:
 
 {{< highlight bash "hl_lines=11" >}}
-curl -v "$GATEWAY_URL"/echo 
+curl -v "$(glooctl proxy url)"/echo 
 
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
@@ -357,7 +357,7 @@ We can see that Gloo returned a `401` response.
 Now let's try the unknown user, which will produce the same result:
 
 {{< highlight bash "hl_lines=12" >}}
-curl -v -H "Authorization: Basic am9objpkb2U=" "$GATEWAY_URL"/echo
+curl -v -H "Authorization: Basic am9objpkb2U=" "$(glooctl proxy url)"/echo
 
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
@@ -381,7 +381,7 @@ If we try to authenticate as a user that belongs to the "developers" group, Gloo
 indicating that the user was successfully authenticated, but lacks the permissions to access the resource.
 
 {{< highlight bash "hl_lines=12" >}}
-curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$GATEWAY_URL"/echo
+curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$(glooctl proxy url)"/echo
 
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
@@ -404,7 +404,7 @@ curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$GATEWAY_URL"/echo
 Finally, if we provide a user that belongs to the "managers" group, we will be able to access the upstream.
 
 {{< highlight bash "hl_lines=12 21" >}}
-curl -v -H "Authorization: Basic cmljazpyaWNrcHdk" "$GATEWAY_URL"/echo
+curl -v -H "Authorization: Basic cmljazpyaWNrcHdk" "$(glooctl proxy url)"/echo
 
 *   Trying 192.168.99.100...
 * TCP_NODELAY set

@@ -58,7 +58,7 @@ glooctl add route --name default --namespace gloo-system --path-prefix / --dest-
 Let's verify that everything so far works by querying the virtual service.
 
 ```shell script
-curl $GATEWAY_URL/api/pets/
+curl $(glooctl proxy url)/api/pets/
 ```
 
 You should see the following output:
@@ -250,7 +250,7 @@ both the `Settings` and the `Virtual Service`.
 Let's verify that our configuration has been accepted by Gloo. Requests to `/api/pets/1` should be allowed:
 
 ```shell
-curl --write-out "%{http_code}\n" $GATEWAY_URL/api/pets/1
+curl --write-out "%{http_code}\n" $(glooctl proxy url)/api/pets/1
 ```
 
 ```noop
@@ -261,7 +261,7 @@ curl --write-out "%{http_code}\n" $GATEWAY_URL/api/pets/1
 Any request with a path that is not `/api/pets/1` should be denied.
 
 ```shell
-curl --write-out "%{http_code}\n" $GATEWAY_URL/api/pets/2
+curl --write-out "%{http_code}\n" $(glooctl proxy url)/api/pets/2
 ```
 
 ```noop

@@ -70,7 +70,7 @@ spec:
 To verify that the Virtual Service works, let's send a request to `/api/pets`:
 
 ```shell
-curl $GATEWAY_URL/api/pets
+curl $(glooctl proxy url)/api/pets
 ```
 
 You should see the following output:

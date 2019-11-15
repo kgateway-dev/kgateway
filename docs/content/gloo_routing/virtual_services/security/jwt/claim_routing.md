@@ -176,13 +176,13 @@ For convenience, we added the `tokenSource` settings so we can pass the token as
 ### Testing our configuration
 Send a request as a solo.io team member:
 ```
-curl "$GATEWAY_URL?token=$SOLO_TOKEN"
+curl "$(glooctl proxy url)?token=$SOLO_TOKEN"
 ```
 The output should be `canary`.
 
 Send a request as a othercompany.com team member:
 ```
-curl "$GATEWAY_URL?token=$OTHER_TOKEN"
+curl "$(glooctl proxy url)?token=$OTHER_TOKEN"
 ```
 The output should be `primary`.
 

@@ -69,7 +69,7 @@ glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
 Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/posts/1
+curl -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
 
 The above command should return:
@@ -204,7 +204,7 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_
 Let's try and resend the same request we sent earlier:
 
 ```shell
-curl -v -H "Host: foo" $GATEWAY_URL/posts/1
+curl -v -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
 
 You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo denied the request.
@@ -227,7 +227,7 @@ For a request to be allowed, it must include a header named `api-key` with the v
 stored in our secret. Now let's add the authorization headers:
 
 ```shell
-curl -H "api-key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy" -H "Host: foo" $GATEWAY_URL/posts/1
+curl -H "api-key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy" -H "Host: foo" $(glooctl proxy url)/posts/1
 ```
 
 We are now able to reach the upstream again!

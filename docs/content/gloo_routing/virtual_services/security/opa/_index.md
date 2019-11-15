@@ -78,7 +78,7 @@ spec:
 To verify that the Virtual Service works, let's send a request to `/api/pets`:
 
 ```shell
-curl $GATEWAY_URL/api/pets
+curl $(glooctl proxy url)/api/pets
 ```
 
 You should see the following output:
@@ -194,21 +194,21 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routi
 ### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):
 ```
-curl -s -w "%{http_code}\n" $GATEWAY_URL/api/
+curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/
 
 403
 ```
 
 Not allowed to delete `pets/1` (should return 403):
 ```
-curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/1 -X DELETE
+curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/pets/1 -X DELETE
 
 403
 ```
 
 Allowed to delete `pets/2` (should return 204):
 ```
-curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/2 -X DELETE
+curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/pets/2 -X DELETE
 
 204
 ```

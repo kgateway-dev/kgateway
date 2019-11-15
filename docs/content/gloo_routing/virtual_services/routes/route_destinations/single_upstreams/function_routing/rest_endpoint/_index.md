@@ -107,8 +107,7 @@ Let's see how this plugin works by creating some routes to these functions in th
     Let's go ahead and test the route using `curl`:
 
     ```shell
-    export GATEWAY_URL=$(glooctl proxy url)
-    curl ${GATEWAY_URL}/petstore/findPet
+    curl $(glooctl proxy url)/petstore/findPet
     ```
 
     ```json
@@ -129,7 +128,7 @@ Let's see how this plugin works by creating some routes to these functions in th
 1. Try the request again, but now add a JSON body which includes the `id` parameter:
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findPet -d '{"id": 1}'
+    curl $(glooctl proxy url)/petstore/findPet -d '{"id": 1}'
     ```
 
     ```json
@@ -137,7 +136,7 @@ Let's see how this plugin works by creating some routes to these functions in th
     ```
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findPet -d '{"id": 2}'
+    curl $(glooctl proxy url)/petstore/findPet -d '{"id": 2}'
     ```
 
     ```json
@@ -197,7 +196,7 @@ virtualHost:
     Try `curl` again, this time with the new header:
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findWithId/1
+    curl $(glooctl proxy url)/petstore/findWithId/1
     ```
 
     ```json
