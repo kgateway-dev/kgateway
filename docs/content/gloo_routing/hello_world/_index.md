@@ -4,10 +4,16 @@ weight: 10
 description: Follow this guide for hands on, step-by-step tutorial for creating your first virtual service and routing rules in Kubernetes.
 ---
 
-In this guide, we will introduce Gloo's `Upstream` and `Virtual Service` concepts. 
-We will deploy a REST service to Kubernetes, and we will see that Gloo's Discovery system found that service
-and created an `Upstream` CRD for it, to be used as a destination for routing. We will then 
-create a route on a `Virtual Service` to an endpoint on that `Upstream` and verify Gloo 
+In this guide, we will introduce Gloo's *Upstream* and *Virtual Service* concepts. 
+
+We will deploy a REST service to Kubernetes using the Pet Store sample application, and we will see that Gloo's Discovery system finds that service
+and creates an *Upstream* Custom Resource Definition (CRD) for it, to be used as a destination for routing. 
+
+Next we will create a *Virtual Service* and add routes sending traffic to specific paths on the Pet Store *Upstream* based on incoming web requests, and verify Gloo correctly configures Envoy to route to that endpoint.
+
+Finally, you will test the routes by submitting web requests using `curl`.
+
+We will then create a route on a *Virtual Service* to an endpoint on that *Upstream* and verify Gloo 
 correctly configures Envoy to route to that endpoint. 
 
 {{% notice note %}}
