@@ -1,4 +1,4 @@
 package version
 
 // The version of GlooE installed by the CLI
-const EnterpriseTag = "0.20.8"
+const EnterpriseTag = "0.21.0"
