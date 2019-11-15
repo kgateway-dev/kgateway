@@ -16,9 +16,33 @@ Compared to an RBAC authorization system, OPA allows you to create more fine-gra
 Be sure to check the external auth [configuration overview]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
+## Table of Contents
+- [Setup](#setup)
+- [Validate requests attributes with Open Policy Agent](#validate-requests-attributes-with-open-policy-agent)
+    - [Deploy sample application](#deploy-a-sample-application)
+    - [Creating a Virtual Service](#creating-a-virtual-service)
+    - [Secure the Virtual Service](#securing-the-virtual-service)
+        - [Define an OPA policy](#define-an-opa-policy)
+        - [Create an OPA AuthConfig CRD](#create-an-opa-authconfig-crd)
+        - [Update the Virtual Service](#updating-the-virtual-service)
+    - [Testing our configuration](#testing-the-configuration)
+- [Validate JWTs with Open Policy Agent](#validate-jwts-with-open-policy-agent)
+    - [Deploy sample application](#deploy-sample-application)
+    - [Create a Virtual Service](#create-a-virtual-service)
+    - [Secure the Virtual Service](#secure-the-virtual-service)
+        - [Install Dex](#install-dex)
+        - [Make the client secret accessible to Gloo](#make-the-client-secret-accessible-to-gloo)
+        - [Create a Policy](#create-a-policy)
+        - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
+        - [Update the Virtual Service](#update-the-virtual-service)
+    - [Testing our configuration](#testing-our-configuration)
+
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
+## Validate requests attributes with Open Policy Agent
+
+### Deploy a sample application
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell script
@@ -63,7 +87,7 @@ You should see the following output:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## Secure the Virtual Service
+### Securing the Virtual Service
 {{% notice warning %}}
 {{% extauth_version_info_note %}}
 {{% /notice %}}
@@ -72,7 +96,7 @@ As we just saw, we were able to reach the upstream without having to provide any
 Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
 We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
 
-### Define an OPA policy 
+#### Define an OPA policy 
 Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). 
 The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work 
 with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
@@ -102,7 +126,7 @@ This policy:
   - the path starts with `/api/pets` AND the http method is `GET` **OR**
   - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
 
-### Create an OPA AuthConfig CRD
+#### Create an OPA AuthConfig CRD
 Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
 contents of the above policy file:
 
@@ -132,7 +156,7 @@ EOF
 The above `AuthConfig` references the ConfigMap  (`modules`) we created earlier and adds a query that allows access only 
 if the `allow` variable is `true`. 
 
-### Update the Virtual Service
+#### Updating the Virtual Service
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
 {{< highlight shell "hl_lines=21-25" >}}
@@ -167,7 +191,7 @@ EOF
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
 inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
-### Testing our configuration
+### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):
 ```
 curl -s -w "%{http_code}\n" $GATEWAY_URL/api/
@@ -224,7 +248,7 @@ Let's deploy a sample web application that we will use to demonstrate these feat
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
 ```
 
-### Creating a Virtual Service
+### Create a Virtual Service
 Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petclinic` service.
 
 ```yaml
@@ -456,7 +480,8 @@ spec:
 
 ### Testing our configuration
 The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
-your cluster and is not publicly reachable, we need some additional configuration to make our example work:
+your cluster and is not publicly reachable, we need some additional configuration to make our example work. Please note 
+that this is just a workaround to reduce the amount of configuration necessary for this example to work.
 
 1. Port-forward the Dex service so that it is reachable from you machine at `localhost:32000`:
 ```shell
@@ -493,6 +518,7 @@ has access to all pages, while the regular user can't access the `"Find Owners"`
 You can clean up the resources created in this guide by running:
 
 ```
+sudo sed '/127.0.0.1 dex.gloo-system.svc.cluster.local/d' /etc/hosts # remove line from hosts file
 kill $portForwardPid1
 kill $portForwardPid2
 helm delete --purge dex
