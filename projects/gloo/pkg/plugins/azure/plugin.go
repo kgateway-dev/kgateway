@@ -13,7 +13,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/azure"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -43,7 +43,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	upstreamSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Azure)
+	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Azure)
 	if !ok {
 		// not ours
 		return nil

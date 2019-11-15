@@ -12,9 +12,9 @@ import (
 
 	. "github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
 
-	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	kubernetes_plugins_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	core_solo_io "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -118,10 +118,8 @@ var _ = Describe("Updater", func() {
 				Namespace: "ns",
 				Name:      "up",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Kube{
-					Kube: &kubernetes_plugins_gloo_solo_io.UpstreamSpec{},
-				},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes_plugins_gloo_solo_io.UpstreamSpec{},
 			},
 		}
 	})

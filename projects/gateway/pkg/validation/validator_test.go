@@ -27,7 +27,7 @@ var _ = Describe("Validator", func() {
 		v  *validator
 	)
 	BeforeEach(func() {
-		t = translator.NewDefaultTranslator()
+		t = translator.NewDefaultTranslator(translator.Opts{})
 		vc = &mockValidationClient{}
 		ns = "my-namespace"
 		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))

@@ -4,7 +4,10 @@ weight: 4
 ---
 
 Gloo includes an HTTP health checking plugin that can be enabled in a 
-[Gateway]({{% ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk" %}}) 
+{{< protobuf
+display="Gateway"
+name="gateway.solo.io.Gateway"
+>}}
 (which becomes an [Envoy Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners)). 
 This plugin will respond to health check requests directly with either a 200 OK or 503 Service Unavailable 
 depending on the current draining state of Envoy.

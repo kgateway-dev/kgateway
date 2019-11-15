@@ -26,7 +26,7 @@ var _ = Describe("AddProxyValidationResult", func() {
 	)
 	BeforeEach(func() {
 		snap = samples.SimpleGatewaySnapshot(core.ResourceRef{ignored, ignored}, ignored)
-		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}})
+		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})
 	It("it adds proxy validation errors to the resource reports", func() {

@@ -217,17 +217,16 @@ metadata:
   namespace: gloo-system
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: example-tls-server
-      serviceName: example-tls-server
-      serviceNamespace: default
-      servicePort: 8080
-    sslConfig:
-      secretRef:
-        name: upstream-tls
-        namespace: default
+  kube:
+    selector:
+      app: example-tls-server
+    serviceName: example-tls-server
+    serviceNamespace: default
+    servicePort: 8080
+  sslConfig:
+    secretRef:
+      name: upstream-tls
+      namespace: default
 status:
   reported_by: gloo
   state: 1

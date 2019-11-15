@@ -13,9 +13,9 @@ import (
 )
 
 var (
-	InvalidSpecTypeError = func(spec *v1.UpstreamSpec, name string) error {
+	InvalidSpecTypeError = func(us *v1.Upstream, name string) error {
 		return errors.Errorf("internal error: invalid %s spec, "+
-			"expected *v1.UpstreamSpec_Consul, got  %T", name, spec.UpstreamType)
+			"expected *v1.Upstream_Consul, got  %T", name, us)
 	}
 )
 
@@ -67,19 +67,19 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 }
 
 func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
-		return false, InvalidSpecTypeError(original.UpstreamSpec, "original")
+		return false, InvalidSpecTypeError(original, "original")
 	}
-	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
-		return false, InvalidSpecTypeError(desired.UpstreamSpec, "desired")
+		return false, InvalidSpecTypeError(desired, "desired")
 	}
 
 	// copy service spec, we don't want to overwrite that
 	desiredSpec.Consul.ServiceSpec = originalSpec.Consul.ServiceSpec
 
-	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
+	utils.UpdateUpstream(original, desired)
 
 	if originalSpec.Equal(desiredSpec) {
 		return false, nil

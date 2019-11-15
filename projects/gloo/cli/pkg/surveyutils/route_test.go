@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -48,13 +48,11 @@ var _ = Describe("Route", func() {
 				Name:      "gloo-system.some-ns-test-svc-1234",
 				Namespace: "gloo-system",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Kube{
-					Kube: &kubernetes.UpstreamSpec{
-						ServiceName:      "test-svc",
-						ServiceNamespace: "some-ns",
-						ServicePort:      1234,
-					},
+			UpstreamType: &v1.Upstream_Kube{
+				Kube: &kubernetes.UpstreamSpec{
+					ServiceName:      "test-svc",
+					ServiceNamespace: "some-ns",
+					ServicePort:      1234,
 				},
 			},
 		}
@@ -71,16 +69,14 @@ var _ = Describe("Route", func() {
 				Name:      "gloo-system.some-ns-test-svc-5678",
 				Namespace: "gloo-system",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						Region: "some-region",
-						SecretRef: &core.ResourceRef{
-							Name:      "some-name",
-							Namespace: "some-ns",
-						},
-						LambdaFunctions: mockLambdaFunctions,
+			UpstreamType: &v1.Upstream_Aws{
+				Aws: &aws.UpstreamSpec{
+					Region: "some-region",
+					SecretRef: &core.ResourceRef{
+						Name:      "some-name",
+						Namespace: "some-ns",
 					},
+					LambdaFunctions: mockLambdaFunctions,
 				},
 			},
 		}

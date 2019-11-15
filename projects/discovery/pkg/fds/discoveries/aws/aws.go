@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	awsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -35,7 +35,7 @@ type AWSLambdaFunctionDiscovery struct {
 }
 
 func (f *AWSLambdaFunctionDiscovery) IsFunctional() bool {
-	_, ok := f.upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws)
+	_, ok := f.upstream.UpstreamType.(*v1.Upstream_Aws)
 	return ok
 }
 
@@ -68,15 +68,12 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *u
 				if out == nil {
 					return errors.New("nil upstream")
 				}
-				if out.UpstreamSpec == nil {
-					return errors.New("nil upstream spec")
-				}
 
-				if out.UpstreamSpec.UpstreamType == nil {
+				if out.UpstreamType == nil {
 					return errors.New("nil upstream type")
 				}
 
-				awsspec, ok := out.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws)
+				awsspec, ok := out.UpstreamType.(*v1.Upstream_Aws)
 				if !ok {
 					return errors.New("not aws upstream")
 				}
@@ -106,7 +103,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctions(ctx context.Context, url *u
 
 func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, secrets v1.SecretList) ([]*glooaws.LambdaFunctionSpec, error) {
 	in := f.upstream
-	awsspec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws)
+	awsspec, ok := in.UpstreamType.(*v1.Upstream_Aws)
 
 	if !ok {
 		return nil, errors.New("not a lambda upstream spec")

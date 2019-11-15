@@ -4,7 +4,6 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/stringutils"
@@ -16,10 +15,12 @@ import (
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source clients.go
 
 type ServerVersion interface {
-	Get(opts *options.Options) ([]*version.ServerVersion, error)
+	Get() ([]*version.ServerVersion, error)
 }
 
-type kube struct{}
+type kube struct {
+	namespace string
+}
 
 var (
 	KnativeUniqueContainers = []string{"knative-external-proxy", "knative-internal-proxy"}
@@ -27,11 +28,13 @@ var (
 	GlooEUniqueContainers   = []string{"gloo-ee"}
 )
 
-func NewKube() *kube {
-	return &kube{}
+func NewKube(namespace string) *kube {
+	return &kube{
+		namespace: namespace,
+	}
 }
 
-func (k *kube) Get(opts *options.Options) ([]*version.ServerVersion, error) {
+func (k *kube) Get() ([]*version.ServerVersion, error) {
 	cfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
 		// kubecfg is missing, therefore no cluster is present, only print client version
@@ -42,7 +45,7 @@ func (k *kube) Get(opts *options.Options) ([]*version.ServerVersion, error) {
 		return nil, err
 	}
 
-	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{
+	deployments, err := client.AppsV1().Deployments(k.namespace).List(metav1.ListOptions{
 		// search only for gloo deployments based on labels
 		LabelSelector: "app=gloo",
 	})
@@ -90,7 +93,7 @@ func (k *kube) Get(opts *options.Options) ([]*version.ServerVersion, error) {
 		VersionType: &version.ServerVersion_Kubernetes{
 			Kubernetes: &version.Kubernetes{
 				Containers: kubeContainerList,
-				Namespace:  opts.Metadata.Namespace,
+				Namespace:  k.namespace,
 			},
 		},
 	}

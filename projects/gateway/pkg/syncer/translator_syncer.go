@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	"go.uber.org/zap/zapcore"
+
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -52,7 +55,12 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snap.Hash(),
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
 	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
+
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	labels := map[string]string{
 		"created_by": "gateway",

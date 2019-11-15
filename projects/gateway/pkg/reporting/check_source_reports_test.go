@@ -26,7 +26,7 @@ var _ = Describe("CheckSourceReports", func() {
 	)
 	BeforeEach(func() {
 		snap = samples.SimpleGatewaySnapshot(core.ResourceRef{ignored, ignored}, ignored)
-		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}})
+		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})
 	It("returns true when all the sources for the config object are error-free", func() {

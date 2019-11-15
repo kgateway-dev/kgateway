@@ -39,10 +39,10 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -95,14 +95,12 @@ var _ = Describe("Translator", func() {
 		}
 		upstream = &v1.Upstream{
 			Metadata: upName,
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Static{
-					Static: &v1static.UpstreamSpec{
-						Hosts: []*v1static.Host{
-							{
-								Addr: "Test",
-								Port: 124,
-							},
+			UpstreamType: &v1.Upstream_Static{
+				Static: &v1static.UpstreamSpec{
+					Hosts: []*v1static.Host{
+						{
+							Addr: "Test",
+							Port: 124,
 						},
 					},
 				},
@@ -275,7 +273,7 @@ var _ = Describe("Translator", func() {
 					Grpc: &v1grpc.ServiceSpec{},
 				},
 			}
-			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcSpec)
+			upstream.UpstreamType.(*v1.Upstream_Static).SetServiceSpec(svcSpec)
 			translate()
 			newVersion := snapshot.GetResources(xds.ClusterType).Version
 			Expect(oldVersion).ToNot(Equal(newVersion))
@@ -445,7 +443,7 @@ var _ = Describe("Translator", func() {
 
 	Context("Health check config", func() {
 		It("will error if required field is nil", func() {
-			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*envoycore.HealthCheck{
 				{
 					Interval: &DefaultHealthCheckInterval,
 				},
@@ -456,7 +454,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("will error if no health checker is supplied", func() {
-			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*envoycore.HealthCheck{
 				{
 					Timeout:            &DefaultHealthCheckTimeout,
 					Interval:           &DefaultHealthCheckInterval,
@@ -485,7 +483,7 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.UpstreamSpec.HealthChecks = expectedResult
+			upstream.HealthChecks = expectedResult
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
@@ -505,7 +503,7 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.UpstreamSpec.HealthChecks = expectedResult
+			upstream.HealthChecks = expectedResult
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
@@ -529,7 +527,7 @@ var _ = Describe("Translator", func() {
 				EnforcingConsecutiveLocalOriginFailure: nil,
 				EnforcingLocalOriginSuccessRate:        nil,
 			}
-			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			upstream.OutlierDetection = expectedResult
 			translate()
 			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
 		})
@@ -539,7 +537,7 @@ var _ = Describe("Translator", func() {
 			expectedResult := &envoycluster.OutlierDetection{
 				Interval: dur,
 			}
-			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			upstream.OutlierDetection = expectedResult
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
@@ -555,7 +553,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate circuit breakers on upstream", func() {
 
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 1},
 				MaxPendingRequests: &types.UInt32Value{Value: 2},
 				MaxRequests:        &types.UInt32Value{Value: 3},
@@ -612,7 +610,7 @@ var _ = Describe("Translator", func() {
 				MaxRetries:         &types.UInt32Value{Value: 14},
 			}
 
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 1},
 				MaxPendingRequests: &types.UInt32Value{Value: 2},
 				MaxRequests:        &types.UInt32Value{Value: 3},
@@ -641,7 +639,7 @@ var _ = Describe("Translator", func() {
 			translate()
 			version1 := endpoints.Version
 			// change the cluster
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxRetries: &types.UInt32Value{Value: 5},
 			}
 			translate()
@@ -663,14 +661,12 @@ var _ = Describe("Translator", func() {
 					Name:      "test2",
 					Namespace: "gloo-system",
 				},
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_Static{
-						Static: &v1static.UpstreamSpec{
-							Hosts: []*v1static.Host{
-								{
-									Addr: "Test2",
-									Port: 124,
-								},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "Test2",
+								Port: 124,
 							},
 						},
 					},
@@ -758,7 +754,7 @@ var _ = Describe("Translator", func() {
 			claConfiguration = nil
 			annotations = map[string]string{"testkey": "testvalue"}
 
-			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+			upstream.UpstreamType = &v1.Upstream_Kube{
 				Kube: &v1kubernetes.UpstreamSpec{},
 			}
 			ref := upstream.Metadata.Ref()
@@ -806,7 +802,7 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			claConfiguration = nil
 
-			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+			upstream.UpstreamType = &v1.Upstream_Kube{
 				Kube: &v1kubernetes.UpstreamSpec{
 					SubsetSpec: &v1plugins.SubsetSpec{
 						Selectors: []*v1plugins.Selector{{

@@ -66,9 +66,9 @@ func Hashi(us *v1.Upstream) uint64 {
 	pairs := []pair{
 		{k: "us.Metadata.Namespace", v: us.Metadata.Namespace},
 		{k: "us.Metadata.Name", v: us.Metadata.Name},
-		{k: "us.UpstreamSpec.GetKube().ServiceNamespace", v: us.UpstreamSpec.GetKube().ServiceNamespace},
-		{k: "us.UpstreamSpec.GetKube().ServiceName", v: us.UpstreamSpec.GetKube().ServiceName},
-		{k: "strconv.Itoa(int(us.UpstreamSpec.GetKube().ServicePort))", v: strconv.Itoa(int(us.UpstreamSpec.GetKube().ServicePort))},
+		{k: "us.GetKube().ServiceNamespace", v: us.GetKube().ServiceNamespace},
+		{k: "us.GetKube().ServiceName", v: us.GetKube().ServiceName},
+		{k: "strconv.Itoa(int(us.GetKube().ServicePort))", v: strconv.Itoa(int(us.GetKube().ServicePort))},
 	}
 
 	for k, v := range us.Metadata.Annotations {

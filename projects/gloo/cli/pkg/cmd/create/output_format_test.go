@@ -21,11 +21,10 @@ metadata:
   name: jsonplaceholder-80
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-      - addr: jsonplaceholder.typicode.com
-        port: 80
+  static:
+    hosts:
+    - addr: jsonplaceholder.typicode.com
+      port: 80
 status: {}
 `
 
@@ -33,12 +32,11 @@ status: {}
 metadata:
   name: jsonplaceholder-80
   namespace: gloo-system
+static:
+  hosts:
+  - addr: jsonplaceholder.typicode.com
+    port: 80
 status: {}
-upstreamSpec:
-  static:
-    hosts:
-    - addr: jsonplaceholder.typicode.com
-      port: 80
 `
 
 		tableOutput := `+--------------------+--------+---------+---------------------------------+

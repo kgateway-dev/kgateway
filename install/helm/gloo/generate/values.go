@@ -10,7 +10,6 @@ type HelmConfig struct {
 }
 
 type Config struct {
-	InstallConfig  *InstallConfig          `json:"installConfig,omitempty"`
 	Namespace      *Namespace              `json:"namespace,omitempty"`
 	Crds           *Crds                   `json:"crds,omitempty"`
 	Settings       *Settings               `json:"settings,omitempty"`
@@ -24,14 +23,11 @@ type Config struct {
 	AccessLogger   *AccessLogger           `json:"accessLogger,omitempty"`
 }
 
-type InstallConfig struct {
-	InstallationId string `json:"installationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
-}
-
 type Global struct {
-	Image      *Image      `json:"image,omitempty"`
-	Extensions interface{} `json:"extensions,omitempty"`
-	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
+	Image              *Image      `json:"image,omitempty"`
+	Extensions         interface{} `json:"extensions,omitempty"`
+	GlooRbac           *Rbac       `json:"glooRbac,omitempty"`
+	GlooInstallationId string      `json:"glooInstallationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
 }
 
 type Namespace struct {
@@ -105,6 +101,7 @@ type Settings struct {
 	Extensions          interface{}          `json:"extensions,omitempty"`
 	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
 	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+	Linkerd             bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 }
 
 type InvalidConfigPolicy struct {
@@ -144,12 +141,13 @@ type DiscoveryDeployment struct {
 }
 
 type Gateway struct {
-	Enabled             *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
-	Validation          *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
-	Deployment          *GatewayDeployment `json:"deployment,omitempty"`
-	CertGenJob          *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	UpdateValues        bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
-	ProxyServiceAccount ServiceAccount     `json:"proxyServiceAccount" `
+	Enabled                       *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
+	Validation                    *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
+	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
+	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	UpdateValues                  bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount" `
+	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller"`
 }
 
 type ServiceAccount struct {
@@ -157,6 +155,7 @@ type ServiceAccount struct {
 }
 
 type GatewayValidation struct {
+	Enabled               bool   `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
 	AlwaysAcceptResources *bool  `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
 	SecretName            string `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy         string `json:"failurePolicy" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
@@ -177,6 +176,7 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
+	Enabled                 bool `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
 	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
 	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
 }

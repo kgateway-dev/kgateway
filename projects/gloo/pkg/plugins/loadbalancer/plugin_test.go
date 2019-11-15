@@ -6,7 +6,7 @@ import (
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -22,26 +22,22 @@ import (
 var _ = Describe("Plugin", func() {
 
 	var (
-		params       plugins.Params
-		plugin       *Plugin
-		upstream     *v1.Upstream
-		upstreamSpec *v1.UpstreamSpec
-		out          *envoyapi.Cluster
+		params   plugins.Params
+		plugin   *Plugin
+		upstream *v1.Upstream
+		out      *envoyapi.Cluster
 	)
 	BeforeEach(func() {
 		out = new(envoyapi.Cluster)
 
 		params = plugins.Params{}
-		upstreamSpec = &v1.UpstreamSpec{}
-		upstream = &v1.Upstream{
-			UpstreamSpec: upstreamSpec,
-		}
+		upstream = &v1.Upstream{}
 		plugin = NewPlugin()
 	})
 
 	It("should set HealthyPanicThreshold", func() {
 
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			HealthyPanicThreshold: &types.DoubleValue{
 				Value: 50,
 			},
@@ -54,7 +50,7 @@ var _ = Describe("Plugin", func() {
 
 	It("should set UpdateMergeWindow", func() {
 		t := time.Second
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			UpdateMergeWindow: &t,
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
@@ -64,7 +60,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should set lb policy random", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_Random_{
 				Random: &v1.LoadBalancerConfig_Random{},
 			},
@@ -75,7 +71,7 @@ var _ = Describe("Plugin", func() {
 	})
 	Context("p2c", func() {
 		BeforeEach(func() {
-			upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 				Type: &v1.LoadBalancerConfig_LeastRequest_{
 					LeastRequest: &v1.LoadBalancerConfig_LeastRequest{ChoiceCount: 5},
 				},
@@ -89,7 +85,7 @@ var _ = Describe("Plugin", func() {
 		})
 		It("should set lb policy p2c with default config", func() {
 
-			upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+			upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 				Type: &v1.LoadBalancerConfig_LeastRequest_{
 					LeastRequest: &v1.LoadBalancerConfig_LeastRequest{},
 				},
@@ -103,7 +99,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should set lb policy round robin", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_RoundRobin_{
 				RoundRobin: &v1.LoadBalancerConfig_RoundRobin{},
 			},
@@ -114,7 +110,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should set lb policy ring hash - basic config", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_RingHash_{
 				RingHash: &v1.LoadBalancerConfig_RingHash{},
 			},
@@ -125,7 +121,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	It("should set lb policy ring hash - full config", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_RingHash_{
 				RingHash: &v1.LoadBalancerConfig_RingHash{
 					RingHashConfig: &v1.LoadBalancerConfig_RingHashConfig{
@@ -135,10 +131,8 @@ var _ = Describe("Plugin", func() {
 				},
 			},
 		}
-		sampleUpstream := &v1.Upstream{
-			UpstreamSpec: upstreamSpec,
-		}
-		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		sampleUpstream := *upstream
+		sampleInputResource := v1.UpstreamList{&sampleUpstream}.AsInputResources()[0]
 		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
 		Expect(err).NotTo(HaveOccurred())
 		// sample user config
@@ -147,12 +141,11 @@ kind: Upstream
 metadata:
   creationTimestamp: null
 spec:
-  upstreamSpec:
-    loadBalancerConfig:
-      ringHash:
-        ringHashConfig:
-          maximumRingSize: "200"
-          minimumRingSize: "100"
+  loadBalancerConfig:
+    ringHash:
+      ringHashConfig:
+        maximumRingSize: "200"
+        minimumRingSize: "100"
 status: {}
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
@@ -169,7 +162,7 @@ status: {}
 	})
 
 	It("should set lb policy maglev - basic config", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_Maglev_{
 				Maglev: &v1.LoadBalancerConfig_Maglev{},
 			},
@@ -180,15 +173,13 @@ status: {}
 	})
 
 	It("should set lb policy maglev - full config", func() {
-		upstreamSpec.LoadBalancerConfig = &v1.LoadBalancerConfig{
+		upstream.LoadBalancerConfig = &v1.LoadBalancerConfig{
 			Type: &v1.LoadBalancerConfig_Maglev_{
 				Maglev: &v1.LoadBalancerConfig_Maglev{},
 			},
 		}
-		sampleUpstream := &v1.Upstream{
-			UpstreamSpec: upstreamSpec,
-		}
-		sampleInputResource := v1.UpstreamList{sampleUpstream}.AsInputResources()[0]
+		sampleUpstream := *upstream
+		sampleInputResource := v1.UpstreamList{&sampleUpstream}.AsInputResources()[0]
 		yamlForm, err := printers.GenerateKubeCrdString(sampleInputResource, v1.UpstreamCrd)
 		Expect(err).NotTo(HaveOccurred())
 		// sample user config
@@ -197,9 +188,8 @@ kind: Upstream
 metadata:
   creationTimestamp: null
 spec:
-  upstreamSpec:
-    loadBalancerConfig:
-      maglev: {}
+  loadBalancerConfig:
+    maglev: {}
 status: {}
 `
 		Expect(yamlForm).To(Equal(sampleInputYaml))
@@ -225,7 +215,7 @@ status: {}
 
 		// positive cases
 		It("configures routes - basic config", func() {
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -247,7 +237,7 @@ status: {}
 		})
 		It("configures routes - all types", func() {
 			ttlDur := time.Second
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{
 						{
@@ -276,7 +266,7 @@ status: {}
 			}
 			sampleVirtualService := &gatewayv1.VirtualService{
 				VirtualHost: &gatewayv1.VirtualHost{
-					Routes: []*gatewayv1.Route{{RoutePlugins: route.RoutePlugins}},
+					Routes: []*gatewayv1.Route{{Options: route.Options}},
 				},
 			}
 			sampleInputResource := gatewayv1.VirtualServiceList{sampleVirtualService}.AsInputResources()[0]
@@ -290,7 +280,7 @@ metadata:
 spec:
   virtualHost:
     routes:
-    - routePlugins:
+    - options:
         lbHash:
           hashPolicies:
           - header: x-test-affinity
@@ -348,7 +338,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Redirect{}
 			route.Action = &v1.Route_RedirectAction{}
 			// the following represents a misconfigured route
-			route.RoutePlugins = &v1.RoutePlugins{
+			route.Options = &v1.RouteOptions{
 				LbHash: &lbhash.RouteActionHashConfig{
 					HashPolicies: []*lbhash.HashPolicy{{
 						KeyType:  &lbhash.HashPolicy_Header{Header: "origin"},
@@ -365,7 +355,7 @@ status: {}
 			outRoute.Action = &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{},
 			}
-			route.RoutePlugins = &v1.RoutePlugins{}
+			route.Options = &v1.RouteOptions{}
 			err := plugin.ProcessRoute(routeParams, route, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(outRoute.GetRoute().HashPolicy).To(BeNil())

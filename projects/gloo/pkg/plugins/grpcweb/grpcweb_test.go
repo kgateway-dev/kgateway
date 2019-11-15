@@ -10,7 +10,7 @@ import (
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -18,7 +18,7 @@ var _ = Describe("Grpcweb", func() {
 
 	It("should not add filter if disabled", func() {
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{
+			Options: &v1.HttpListenerOptions{
 				GrpcWeb: &grpc_web.GrpcWeb{
 					Disable: true,
 				},
@@ -33,7 +33,7 @@ var _ = Describe("Grpcweb", func() {
 
 	It("should add filter if disabled", func() {
 		hl := &v1.HttpListener{
-			ListenerPlugins: &v1.HttpListenerPlugins{},
+			Options: &v1.HttpListenerOptions{},
 		}
 
 		p := NewPlugin()

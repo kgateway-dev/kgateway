@@ -94,7 +94,7 @@ Running the above command returns a string like `user:$apr1$TYiryv0/$8BvzLUO9IfG
 - `TYiryv0/` is the salt and
 - `8BvzLUO9IfGPGGsPnAgSu1` is the hashed password.
 
-Now that we have a password in the required format, let's go ahead and create and `AuthConfig` CRD with our 
+Now that we have a password in the required format, let's go ahead and create an `AuthConfig` CRD with our 
 Basic Authentication configuration:
 
 {{< highlight shell "hl_lines=13-14" >}}

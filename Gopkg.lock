@@ -542,12 +542,9 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
@@ -1387,7 +1384,7 @@
   revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
 
 [[projects]]
-  digest = "1:ff3271ba73e7b0f9834fa78e22e76f99b094bc2143fcada18188bee3efb76a03"
+  digest = "1:95bcd838634e7ba682b328fabef757d4e0f83c0b345ee82e1d87db69f8e751b0"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1397,7 +1394,6 @@
     "cliutils",
     "contextutils",
     "debugutils",
-    "envutils",
     "errors",
     "errutils",
     "githubutils",
@@ -2792,7 +2788,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
     "github.com/golang/protobuf/ptypes/any",
@@ -2836,7 +2831,6 @@
     "github.com/solo-io/go-utils/cliutils",
     "github.com/solo-io/go-utils/contextutils",
     "github.com/solo-io/go-utils/debugutils",
-    "github.com/solo-io/go-utils/envutils",
     "github.com/solo-io/go-utils/errors",
     "github.com/solo-io/go-utils/errutils",
     "github.com/solo-io/go-utils/githubutils",
@@ -2906,6 +2900,7 @@
     "go.opencensus.io/trace",
     "go.uber.org/multierr",
     "go.uber.org/zap",
+    "go.uber.org/zap/zapcore",
     "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
     "google.golang.org/api/compute/v1",
@@ -2926,7 +2921,6 @@
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
-    "k8s.io/api/batch/v1",
     "k8s.io/api/core/v1",
     "k8s.io/api/extensions/v1beta1",
     "k8s.io/api/rbac/v1",
@@ -2942,6 +2936,7 @@
     "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
+    "k8s.io/apimachinery/pkg/util/sets",
     "k8s.io/apimachinery/pkg/watch",
     "k8s.io/client-go/discovery",
     "k8s.io/client-go/discovery/fake",

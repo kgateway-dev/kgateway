@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"go.uber.org/zap/zapcore"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -30,7 +33,11 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snap.Hash())
 
-	logger.Debugf("%v", snap)
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	opts := clients.WatchOpts{
 		Ctx:         ctx,

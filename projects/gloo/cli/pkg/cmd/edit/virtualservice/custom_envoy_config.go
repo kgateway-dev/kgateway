@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/go-utils/cliutils"
@@ -49,7 +49,7 @@ func editVhost(opts *editOptions.EditOptions) error {
 	}
 
 	ratelimitExtension := new(ratelimitpb.RateLimitVhostExtension)
-	if rlExt := vs.VirtualHost.GetVirtualHostPlugins().GetRatelimit(); rlExt != nil {
+	if rlExt := vs.VirtualHost.GetOptions().GetRatelimit(); rlExt != nil {
 		ratelimitExtension = rlExt
 	}
 
@@ -59,11 +59,11 @@ func editVhost(opts *editOptions.EditOptions) error {
 		return err
 	}
 	ratelimitExtension = ratelimitExtensionProto.(*ratelimitpb.RateLimitVhostExtension)
-	if vs.VirtualHost.VirtualHostPlugins == nil {
-		vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
+	if vs.VirtualHost.Options == nil {
+		vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
 	}
 
-	vs.VirtualHost.VirtualHostPlugins.Ratelimit = ratelimitExtension
+	vs.VirtualHost.Options.Ratelimit = ratelimitExtension
 	_, err = vsClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 	return err
 }

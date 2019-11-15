@@ -1,53 +1,97 @@
 ---
-title: Dex and Gloo
-weight: 2
+title: Authenticate with Dex
+weight: 20
 description: Integrating Gloo and Dex Identity Provider
 ---
 
-## Motivation
+[Dex](https://github.com/dexidp/dex) is an **OpenID Connect identity hub**. Dex can be used to expose a consistent 
+OpenID Connect interface to your applications while allowing your users to authenticate using their existing credentials 
+from various back-ends, including LDAP, SAML, and other OIDC providers. Using an identity hub like Dex has the advantage 
+of allowing you to change your authentication back-ends without affecting the rest of the system. 
+You can also use Dex for authentication to the Kubernetes API server itself; for example, to allow LDAP logins to work 
+with `kubectl`. This is outside the scope of this document, but you can read more about it 
+[here](https://github.com/dexidp/dex/blob/master/Documentation/kubernetes.md).
 
-[Dex Identify Provider](https://github.com/dexidp/dex) is an OpenID Connect identity hub. Dex can be used to expose a consistent OpenID Connect interface to your applications while allowing your users to use their existing identity provider from various back-ends, including LDAP, SAML, and other OIDC providers.
+In this guide we will see how to authenticate users with your application via an OIDC flow that uses Dex as an identity 
+provider. This guide is just an example to get you started and does not cover all aspects of a complete setup, 
+like setting up a domain and SSL certificates.
 
-Using an Identity Hub like Dex has a few advantages:
+## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-- JWT based authentication lends itself well for distributed systems. With an identity hub you can re-use your existing investment
-- Allows you to change your authentication back-end without affecting the rest of the system.
+### Deploy sample application
+{{% notice warning %}}
+The sample `petclinic` application deploys a MySql server. If you are using `minikube` v1.5 to run this guide, this 
+service is likely to crash due a `minikube` [issue](https://github.com/kubernetes/minikube/issues/5751). 
+To get around this, you can start `minikube` with the following flag:
 
-You can also use Dex for Kubernetes itself; for example, to allow LDAP logins to work with `kubectl`.  
-This is outside the scope of this document, but you can read more about it [here](https://github.com/dexidp/dex/blob/master/Documentation/kubernetes.md).
-
-In this document we will demonstrate how to integrate Gloo and Dex using Gloo's support for OpenID Connect.
-This will allow using Dex to authenticate end users of Gloo's VirtualServices.
-
-For simplicity, this document will focus on deployment with a local cluster (like [minikube](https://github.com/kubernetes/minikube), or [kind](https://github.com/kubernetes-sigs/kind)) . With small changes these can be applied to a real cluster. We will use Dex with self-signed certificates, as they are auto-generated. The same flow
-will work with user-provided certificates.
-
-##  Prerequisites
-
-- A Kubernetes cluster. [minikube](https://github.com/kubernetes/minikube) is a good way to get started
-- `glooctl` - To install and interact with Gloo (optional).
-- `helm` - To install Dex Identity Provider.
-
-## Install Gloo
-
-That's easy!
-
+```shell
+minikube start --docker-opt="default-ulimit=nofile=102400:102400" 
 ```
-glooctl install gateway enterprise --license-key=$GLOO_KEY
+{{% /notice %}}
+
+Let's deploy a sample web application that we will use to demonstrate these features:
+```shell
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
 ```
 
-See more info [here](/installation/enterprise).
+### Creating a Virtual Service
+Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petclinic` service.
 
-## Install Dex
-We will install Dex into the `gloo-system` namespace, and setup the alt-name in the Dex certificate to the 
-correct service DNS name (so that later Gloo will trust the Dex service).
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petclinic
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petclinic
+              namespace: default
+            port: 80
 ```
-cat > /tmp/dex-values.yaml <<EOF
 
-https: true
+To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
+reachable from your machine at `localhost:8080`:
+```
+kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
+```
+
+If you open your browser and navigate to `localhost:8080` you should see the following page (you might need to wait a 
+minute for the containers to start):
+
+![Pet Clinic app homepage](./../petclinic-home.png)
+
+## Securing the Virtual Service
+As we just saw, we were able to reach our application without having to provide any credentials. This is because by 
+default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that each request to the sample application is authenticated using an 
+**OpenID Connect** flow.
+
+### Install Dex
+To implement the authentication flow, we need an OpenID Connect provider to be running in your cluster. To this end, we 
+will deploy the [Dex](https://github.com/dexidp/dex) identity service, as it easy to install and configure.
+
+Let's start by defining a `dex-values.yaml` Helm values file with some bootstrap configuration for Dex:
+
+```yaml
+cat > dex-values.yaml <<EOF
 config:
-  issuer: https://dex.gloo-system.svc.cluster.local:32000
+  # The base path of dex and the external name of the OpenID Connect service.
+  # This is the canonical URL that all clients MUST use to refer to dex. If a
+  # path is provided, dex's HTTP service will listen at a non-root URL.
+  issuer: http://dex.gloo-system.svc.cluster.local:32000
 
+  # Instead of reading from an external storage, use this list of clients.
   staticClients:
   - id: gloo
     redirectURIs:
@@ -55,242 +99,162 @@ config:
     name: 'GlooApp'
     secret: secretvalue
   
+  # A static list of passwords to login the end user. By identifying here, dex
+  # won't look in its underlying storage for passwords.
   staticPasswords:
   - email: "admin@example.com"
     # bcrypt hash of the string "password"
     hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
     username: "admin"
     userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
-
-certs:
-  web:
-    altNames:
-    - https://dex.gloo-system.svc.cluster.local:32000
-    - dex.gloo-system.svc.cluster.local
-
 EOF
-
-helm install --name dex --namespace gloo-system stable/dex -f /tmp/dex-values.yaml
 ```
 
-## Setup Dex CA in Gloo
-Let's setup Gloo's external auth container to trust the Dex Certificate Authority.
-We will add an init container that adds the Dex CA cert to the trusted CA certificates.
+This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` 
+for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
 
-{{% notice note %}}
-You may need to modify the command below to match your version of Gloo.
-You can edit your deployment and copy the highlighted parts. Alternatively, you can
-use the `kubectl patch` method.
-{{% /notice %}}
-
-
-{{< tabs >}}
-{{< tab name="kubectl">}}
-{{< highlight shell "hl_lines=24-45 48-50" >}}
-kubectl apply -f - <<EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gloo: extauth
-  name: extauth
-  namespace: gloo-system
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      gloo: extauth
-  template:
-    metadata:
-      labels:
-        gloo: extauth
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "9091"
-        prometheus.io/scrape: "true"
-    spec:
-      volumes:
-      - name: certs
-        emptyDir: {}
-      - name: ca-certs
-        secret:
-          secretName: dex-web-server-ca
-          items:
-          - key: tls.crt
-            path: ca.crt
-      initContainers:
-      - name: add-ca-cert
-        image: quay.io/solo-io/extauth-ee:0.18.13
-        command:
-          - sh
-        args:
-          - "-c"
-          - "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
-        volumeMounts:
-          - name: certs
-            mountPath: /certs
-          - name: ca-certs
-            mountPath: /ca-certs
-      containers:
-      - image: quay.io/solo-io/extauth-ee:0.18.13
-        volumeMounts:
-          - name: certs
-            mountPath: /etc/ssl/certs/
-        imagePullPolicy: Always
-        name: extauth
-        env:
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: GLOO_ADDRESS
-            value: gloo:9977
-          - name: SIGNING_KEY
-            valueFrom:
-              secretKeyRef:
-                name: extauth-signing-key
-                key: signing-key
-          - name: SERVER_PORT
-            value: "8083"
-          - name: USER_ID_HEADER
-            value: "x-user-id"
-          - name: START_STATS_SERVER
-            value: "true"
-      imagePullSecrets:
-        - name: solo-io-readerbot-pull-secret
-      affinity:
-        podAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-            - weight: 100
-              podAffinityTerm:
-                labelSelector:
-                  matchLabels:
-                    gloo: gateway-proxy
-                topologyKey: kubernetes.io/hostname
-EOF
-{{< /highlight >}}
-{{< /tab >}}
-{{< tab name="kubectl patch" codelang="shell">}}
-cat  <<EOF | xargs -0 kubectl patch deployment -n gloo-system extauth --type='json' -p
-[
-    {
-        "op": "add",
-        "path": "/spec/template/spec/containers/0/volumeMounts",
-        "value": [
-            {
-                "name": "certs",
-                "mountPath": "/etc/ssl/certs/"
-            }
-        ]
-    },
-    {
-        "op": "add",
-        "path": "/spec/template/spec/volumes",
-        "value": [
-            {
-                "name": "certs",
-                "emptyDir": {}
-            },
-            {
-                "name": "ca-certs",
-                "secret": {
-                    "secretName": "dex-web-server-ca",
-                    "items": [
-                        {
-                            "key": "tls.crt",
-                            "path": "ca.crt"
-                        }
-                    ]
-                }
-            }
-        ]
-    },
-    {
-        "op": "add",
-        "path": "/spec/template/spec/initContainers",
-        "value": [
-            {
-                "name": "add-ca-cert",
-                "image": "quay.io/solo-io/extauth-ee:0.18.13",
-                "command": [
-                    "sh"
-                ],
-                "args": [
-                    "-c",
-                    "cp -r /etc/ssl/certs/* /certs; cat /etc/ssl/certs/ca-certificates.crt /ca-certs/ca.crt > /certs/ca-certificates.crt"
-                ],
-                "volumeMounts": [
-                    {
-                        "name": "certs",
-                        "mountPath": "/certs"
-                    },
-                    {
-                        "name": "ca-certs",
-                        "mountPath": "/ca-certs"
-                    }
-                ]
-            }
-        ]
-    }
-]
-EOF
-{{< /tab >}}
-{{< /tabs >}} 
-
-
-
-## Test!
-
-### Deploy Demo App
-Deploy the pet clinic demo app
+Using this configuration, we can deploy Dex to our cluster using Helm:
 
 ```shell
-kubectl --namespace default apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
-### Create a Virtual Service
-Create Gloo VirtualService with OIDC authentication enabled. Please note that the OIDC configuration below matches the one defined in Dex's staticClients config stanza:
-  the `oidc-auth-callback-path` matches the `redirectURIs`, the `oidc-auth-client-id` matches the `id` and the `oidc-auth-client-secret` matches the `secret`.
-```
-glooctl create  secret oauth --client-secret secretvalue oauth
-glooctl create virtualservice --oidc-auth-app-url http://localhost:8080/ --oidc-auth-callback-path /callback --oidc-auth-client-id gloo --oidc-auth-client-secret-name oauth --oidc-auth-client-secret-namespace gloo-system --oidc-auth-issuer-url https://dex.gloo-system.svc.cluster.local:32000/ oidc-test --namespace gloo-system --enable-oidc-auth
+#### Make the client secret accessible to Gloo
+To be able to act as our OIDC client, Gloo needs to have access to the **client secret** we defined in the Dex configuration, 
+so that it can use it to identify itself with the Dex authorization server. Gloo expects the client secret to be stored 
+in a specific format inside of a Kubernetes `Secret`. 
+
+Let's create the secret and name it `oauth`:
+
+{{< tabs >}}
+{{< tab name="glooctl" codelang="shell">}}
+glooctl create secret oauth --client-secret secretvalue oauth
+{{< /tab >}}
+{{< tab name="kubectl" codelang="yaml">}}
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  name: oauth
+  namespace: gloo-system
+data:
+  # The value is a base64 encoding of the following YAML:
+  # config:
+  #   client_secret: secretvalue
+  # Gloo expects OAuth client secrets in this format.
+  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
+{{< /tab >}}
+{{< /tabs >}} 
+<br>
+
+#### Create an AuthConfig
+{{% notice warning %}}
+{{% extauth_version_info_note %}}
+{{% /notice %}}
+
+Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our 
+Virtual Service.
+
+{{< highlight shell "hl_lines=8-22" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth:
+      app_url: http://localhost:8080/
+      callback_path: /callback
+      client_id: gloo
+      client_secret_ref:
+        name: oauth
+        namespace: gloo-system
+      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+      scopes:
+      - email
+{{< /highlight >}}
+
+The above configuration instructs Gloo to use its extauth OIDC module to authenticate the incoming request. 
+Notice how the configuration references the client secret we created earlier and compare the configuration values 
+with the ones we used to bootstrap Dex.
+
+#### Update the Virtual Service
+Once the AuthConfig has been created, we can use it to secure our Virtual Service:
+
+{{< highlight yaml "hl_lines=20-24" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petclinic
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petclinic
+              namespace: default
+            port: 80
+    virtualHostPlugins:
+      extauth:
+        config_ref:
+          name: oidc-dex
+          namespace: gloo-system
+{{< /highlight >}}
+
+### Testing our configuration
+The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
+your cluster and is not publicly reachable, we need some additional configuration to make our example work. Please note 
+that this is just a workaround to reduce the amount of configuration necessary for this example to work.
+
+1. Port-forward the Dex service so that it is reachable from your machine at `localhost:32000`:
+```shell
+kubectl -n gloo-system port-forward svc/dex 32000:32000 & 
+portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 ```
 
-Add a route to the pet clinic demo app.
-```
-glooctl add route --name default --namespace gloo-system --path-prefix / --dest-name default-petclinic-80 --dest-namespace gloo-system
-```
-
-### Local Cluster Adjustments
-As we are testing in a local cluster, add `127.0.0.1 dex.gloo-system.svc.cluster.local` to your `/etc/hosts` file:
-```
+1. Add an entry to the `/etc/hosts` file on your machine, mapping the `dex.gloo-system.svc.cluster.local` hostname to your 
+`localhost` (the loopback IP address `127.0.0.1`).
+```shell
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-The OIDC flow redirects the browser to a login page hosted by dex. This line in the hosts file will allow this flow to work, with 
-Dex hosted inside our cluster (using `kubectl port-forward`).
-
-{{% notice note %}}
-The browser will display a warning when redirecting to the login page, as the Dex CA cert is not trusted
-by the browser. We can ignore the warning in this setup. This should be properly address in your 
-production setup.
-{{% /notice %}}
-
-Port forward to Gloo and Dex:
+1. Port-forward the Gloo Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/dex 32000:32000 &
 kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+portForwardPid2=$! # Store the port-forward pid so we can kill the process later
 ```
-### Login!
-And finally, open http://localhost:8080 in your browser.
-You should see a login page. You can use the user `admin@example.com` and the password `password` to
-login successfully to the pet clinic demo app.
 
-## Cleanup
+Now we are ready to test our complete setup! Open you browser and navigate to `localhost:8080`. You should see the 
+following login page:
+
+![Dex login page](./dex-login.png)
+
+If you login as the `admin@example.com` user with the password `password`, Gloo should redirect you to the main page 
+of our sample application!
+
+![Pet Clinic app homepage](./../petclinic-home.png)
+
+### Cleanup
+You can clean up the resources created in this guide by running:
+
 ```
+sudo sed '/127.0.0.1 dex.gloo-system.svc.cluster.local/d' /etc/hosts # remove line from hosts file
+kill $portForwardPid1
+kill $portForwardPid2
+rm dex-values.yaml
 helm delete --purge dex
-
-kubectl delete -n gloo-system secret  dex-grpc-ca  dex-grpc-client-tls  dex-grpc-server-tls  dex-web-server-ca  dex-web-server-tls
-kubectl delete -n gloo-system vs oidc-test
+kubectl delete -n gloo-system secret oauth dex-grpc-ca  dex-grpc-client-tls  dex-grpc-server-tls  dex-web-server-ca  dex-web-server-tls
+kubectl delete virtualservice -n gloo-system petclinic
+kubectl delete authconfig -n gloo-system oidc-dex
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
 ```

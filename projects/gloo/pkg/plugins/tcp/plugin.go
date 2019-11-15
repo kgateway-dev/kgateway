@@ -62,7 +62,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 		if statPrefix == "" {
 			statPrefix = DefaultTcpStatPrefix
 		}
-		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetPlugins(), statPrefix)
+		tcpFilter, err := tcpProxyFilter(params, tcpHost, tcpListener.GetOptions(), statPrefix)
 		if err != nil {
 			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
 			continue
@@ -80,7 +80,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 	return filterChains, nil
 }
 
-func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerPlugins, statPrefix string) (*listener.Filter, error) {
+func tcpProxyFilter(params plugins.Params, host *v1.TcpHost, plugins *v1.TcpListenerOptions, statPrefix string) (*listener.Filter, error) {
 
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: statPrefix,

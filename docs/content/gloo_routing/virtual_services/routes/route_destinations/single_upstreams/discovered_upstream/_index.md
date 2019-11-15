@@ -81,60 +81,59 @@ metadata:
   uid: 344a9166-b305-11e9-bbf8-42010a800130
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: petstore
-      serviceName: petstore
-      serviceNamespace: default
-      servicePort: 8080
-      serviceSpec:
-        rest:
-          swaggerInfo:
-            url: http://petstore.default.svc.cluster.local:8080/swagger.json
-          transformations:
-            addPet:
-              body:
-                text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
-                  "{{ default(tag, "")}}"}'
-              headers:
-                :method:
-                  text: POST
-                :path:
-                  text: /api/pets
-                content-type:
-                  text: application/json
-            deletePet:
-              headers:
-                :method:
-                  text: DELETE
-                :path:
-                  text: /api/pets/{{ default(id, "") }}
-                content-type:
-                  text: application/json
-            findPetById:
-              body: {}
-              headers:
-                :method:
-                  text: GET
-                :path:
-                  text: /api/pets/{{ default(id, "") }}
-                content-length:
-                  text: "0"
-                content-type: {}
-                transfer-encoding: {}
-            findPets:
-              body: {}
-              headers:
-                :method:
-                  text: GET
-                :path:
-                  text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
-                    "")}}
-                content-length:
-                  text: "0"
-                content-type: {}
-                transfer-encoding: {}
+  kube:
+    selector:
+      app: petstore
+    serviceName: petstore
+    serviceNamespace: default
+    servicePort: 8080
+    serviceSpec:
+      rest:
+        swaggerInfo:
+          url: http://petstore.default.svc.cluster.local:8080/swagger.json
+        transformations:
+          addPet:
+            body:
+              text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
+                "{{ default(tag, "")}}"}'
+            headers:
+              :method:
+                text: POST
+              :path:
+                text: /api/pets
+              content-type:
+                text: application/json
+          deletePet:
+            headers:
+              :method:
+                text: DELETE
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-type:
+                text: application/json
+          findPetById:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
+          findPets:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
+                  "")}}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
 status:
   reported_by: gloo
   state: 1

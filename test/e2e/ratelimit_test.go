@@ -13,8 +13,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
-	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	gloov1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -79,15 +79,13 @@ var _ = Describe("Rate Limit", func() {
 					Name:      "rl-server",
 					Namespace: "default",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UseHttp2: true,
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &gloov1static.UpstreamSpec{
-							Hosts: []*gloov1static.Host{{
-								Addr: envoyInstance.GlooAddr,
-								Port: rlPort,
-							}},
-						},
+				UseHttp2: true,
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &gloov1static.UpstreamSpec{
+						Hosts: []*gloov1static.Host{{
+							Addr: envoyInstance.GlooAddr,
+							Port: rlPort,
+						}},
 					},
 				},
 			}
@@ -292,7 +290,7 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 		}
 
 		if enableRateLimits {
-			vhost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+			vhost.Options = &gloov1.VirtualHostOptions{
 				Ratelimit: b.customRateLimit,
 			}
 		}

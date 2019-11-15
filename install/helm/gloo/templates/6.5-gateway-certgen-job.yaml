@@ -1,6 +1,6 @@
 {{- if .Values.gateway.enabled }}
-{{- if .Values.gateway.validation }}
-{{- if .Values.gateway.certGenJob }}
+{{- if .Values.gateway.validation.enabled }}
+{{- if .Values.gateway.certGenJob.enabled }}
 {{- $image := .Values.gateway.certGenJob.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}

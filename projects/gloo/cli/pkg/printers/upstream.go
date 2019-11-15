@@ -7,8 +7,8 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/xdsinspection"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/go-utils/cliutils"
 
 	"github.com/olekukonko/tablewriter"
@@ -56,22 +56,22 @@ func UpstreamTable(xdsDump *xdsinspection.XdsDump, upstreams []*v1.Upstream, w i
 }
 
 func upstreamType(up *v1.Upstream) string {
-	if up.UpstreamSpec == nil {
+	if up == nil {
 		return "Invalid"
 	}
 
-	switch up.UpstreamSpec.UpstreamType.(type) {
-	case *v1.UpstreamSpec_Aws:
+	switch up.UpstreamType.(type) {
+	case *v1.Upstream_Aws:
 		return "AWS Lambda"
-	case *v1.UpstreamSpec_Azure:
+	case *v1.Upstream_Azure:
 		return "Azure"
-	case *v1.UpstreamSpec_Consul:
+	case *v1.Upstream_Consul:
 		return "Consul"
-	case *v1.UpstreamSpec_AwsEc2:
+	case *v1.Upstream_AwsEc2:
 		return "AWS EC2"
-	case *v1.UpstreamSpec_Kube:
+	case *v1.Upstream_Kube:
 		return "Kubernetes"
-	case *v1.UpstreamSpec_Static:
+	case *v1.Upstream_Static:
 		return "Static"
 	default:
 		return "Unknown"
@@ -79,16 +79,16 @@ func upstreamType(up *v1.Upstream) string {
 }
 
 func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
-	if up.UpstreamSpec == nil {
-		return []string{"invalid: spec was nil"}
+	if up == nil {
+		return []string{"invalid: upstream was nil"}
 	}
 
 	var details []string
 	add := func(s ...string) {
 		details = append(details, s...)
 	}
-	switch usType := up.UpstreamSpec.UpstreamType.(type) {
-	case *v1.UpstreamSpec_Aws:
+	switch usType := up.UpstreamType.(type) {
+	case *v1.Upstream_Aws:
 		var functions []string
 		for _, fn := range usType.Aws.LambdaFunctions {
 			functions = append(functions, fn.LambdaFunctionName)
@@ -103,7 +103,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			}
 			add(fmt.Sprintf("- %v", functions[i]))
 		}
-	case *v1.UpstreamSpec_AwsEc2:
+	case *v1.Upstream_AwsEc2:
 		add(
 			fmt.Sprintf("role:           %v", usType.AwsEc2.RoleArn),
 			fmt.Sprintf("uses public ip: %v", usType.AwsEc2.PublicIp),
@@ -117,7 +117,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		add(
 			instances...,
 		)
-	case *v1.UpstreamSpec_Azure:
+	case *v1.Upstream_Azure:
 		var functions []string
 		for _, fn := range usType.Azure.Functions {
 			functions = append(functions, fn.FunctionName)
@@ -133,7 +133,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 			}
 			add(fmt.Sprintf("- %v", functions[i]))
 		}
-	case *v1.UpstreamSpec_Consul:
+	case *v1.Upstream_Consul:
 		add(
 			fmt.Sprintf("svc name: %v", usType.Consul.ServiceName),
 			fmt.Sprintf("svc tags: %v", usType.Consul.ServiceTags),
@@ -141,7 +141,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		if usType.Consul.ServiceSpec != nil {
 			add(linesForServiceSpec(usType.Consul.ServiceSpec)...)
 		}
-	case *v1.UpstreamSpec_Kube:
+	case *v1.Upstream_Kube:
 		add(
 			fmt.Sprintf("svc name:      %v", usType.Kube.ServiceName),
 			fmt.Sprintf("svc namespace: %v", usType.Kube.ServiceNamespace),
@@ -150,7 +150,7 @@ func upstreamDetails(up *v1.Upstream, xdsDump *xdsinspection.XdsDump) []string {
 		if usType.Kube.ServiceSpec != nil {
 			add(linesForServiceSpec(usType.Kube.ServiceSpec)...)
 		}
-	case *v1.UpstreamSpec_Static:
+	case *v1.Upstream_Static:
 		for i := range usType.Static.Hosts {
 			if i == 0 {
 				add("hosts:")

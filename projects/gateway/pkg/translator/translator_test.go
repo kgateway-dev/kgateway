@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/samples"
@@ -12,7 +15,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/translator"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tcp"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -33,7 +36,7 @@ var _ = Describe("Translator", func() {
 
 	Context("translator", func() {
 		BeforeEach(func() {
-			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
+			translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{})
 			snap = &v1.ApiSnapshot{
 				Gateways: v1.GatewayList{
 					{
@@ -93,24 +96,31 @@ var _ = Describe("Translator", func() {
 			Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
+			Expect(proxy.Listeners).To(HaveLen(1))
 		})
 
 		It("should properly translate listener plugins to proxy listener", func() {
-			extensions := map[string]*types.Struct{
-				"plugin": {},
-			}
 
-			snap.Gateways[0].Plugins = &gloov1.ListenerPlugins{
-				Extensions: &gloov1.Extensions{
-					Configs: extensions,
-				},
+			als := &als.AccessLoggingService{
+				AccessLog: []*als.AccessLog{{
+					OutputDestination: &als.AccessLog_FileSink{
+						FileSink: &als.FileSink{
+							Path: "/test",
+						}},
+				}},
+			}
+			snap.Gateways[0].Options = &gloov1.ListenerOptions{
+				AccessLoggingService: als,
 			}
 
 			httpGateway := snap.Gateways[0].GetHttpGateway()
 			Expect(httpGateway).NotTo(BeNil())
-			httpGateway.Plugins = &gloov1.HttpListenerPlugins{Extensions: &gloov1.Extensions{
-				Configs: extensions,
-			}}
+			waf := &waf.Settings{
+				CustomInterventionMessage: "custom",
+			}
+			httpGateway.Options = &gloov1.HttpListenerOptions{
+				Waf: waf,
+			}
 
 			proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -119,12 +129,10 @@ var _ = Describe("Translator", func() {
 			Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
 			Expect(proxy.Metadata.Namespace).To(Equal(ns))
 			Expect(proxy.Listeners).To(HaveLen(1))
-			Expect(proxy.Listeners[0].Plugins.Extensions.Configs).To(HaveKey("plugin"))
-			Expect(proxy.Listeners[0].Plugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
+			Expect(proxy.Listeners[0].Options.AccessLoggingService).To(Equal(als))
 			httpListener := proxy.Listeners[0].GetHttpListener()
 			Expect(httpListener).NotTo(BeNil())
-			Expect(httpListener.ListenerPlugins.Extensions.Configs).To(HaveKey("plugin"))
-			Expect(httpListener.ListenerPlugins.Extensions.Configs["plugin"]).To(Equal(extensions["plugin"]))
+			Expect(httpListener.Options.Waf).To(Equal(waf))
 		})
 
 		It("should translate two gateways with same name (different types) to one proxy with the same name", func() {
@@ -199,6 +207,73 @@ var _ = Describe("Translator", func() {
 			Expect(err.Error()).To(ContainSubstring("route table exist.don't missing"))
 		})
 
+		Context("when the gateway CRDs don't clash", func() {
+			BeforeEach(func() {
+				translator = NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, Opts{
+					ReadGatewaysFromAllNamespaces: true,
+				})
+				snap = &v1.ApiSnapshot{
+					Gateways: v1.GatewayList{
+						{
+							Metadata: core.Metadata{Namespace: ns, Name: "name"},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+							BindPort: 2,
+						},
+						{
+							Metadata: core.Metadata{Namespace: ns2, Name: "name2"},
+							GatewayType: &v1.Gateway_HttpGateway{
+								HttpGateway: &v1.HttpGateway{},
+							},
+							BindPort: 3,
+						},
+					},
+					VirtualServices: v1.VirtualServiceList{
+						{
+							Metadata: core.Metadata{Namespace: ns, Name: "name1"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"d1.com"},
+								Routes: []*v1.Route{
+									{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/1",
+											},
+										}},
+									},
+								},
+							},
+						},
+						{
+							Metadata: core.Metadata{Namespace: ns, Name: "name2"},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"d2.com"},
+								Routes: []*v1.Route{
+									{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/2",
+											},
+										}},
+									},
+								},
+							},
+						},
+					},
+				}
+			})
+
+			It("should have the same number of listeners as gateways in the cluster", func() {
+				proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+				Expect(errs).To(HaveLen(4))
+				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+				Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
+				Expect(proxy.Metadata.Namespace).To(Equal(ns))
+				Expect(proxy.Listeners).To(HaveLen(2))
+			})
+		})
 	})
 
 	Context("http", func() {
@@ -210,7 +285,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				factory = &HttpTranslator{}
-				translator = NewTranslator([]ListenerFactory{factory})
+				translator = NewTranslator([]ListenerFactory{factory}, Opts{})
 				snap = &v1.ApiSnapshot{
 					Gateways: v1.GatewayList{
 						{
@@ -259,17 +334,46 @@ var _ = Describe("Translator", func() {
 								},
 							},
 						},
+						{
+							Metadata: core.Metadata{Namespace: ns + "-other-namespace", Name: "name3", Labels: labelSet},
+							VirtualHost: &v1.VirtualHost{
+								Domains: []string{"d3.com"},
+								Routes: []*v1.Route{
+									{
+										Matchers: []*matchers.Matcher{{
+											PathSpecifier: &matchers.Matcher_Prefix{
+												Prefix: "/3",
+											},
+										}},
+									},
+								},
+							},
+						},
 					},
 				}
 			})
 
-			It("should translate an empty gateway to have all virtual services", func() {
+			var findVsInNamespace = func(ns string, snap *v1.ApiSnapshot) v1.VirtualServiceList {
+				var result v1.VirtualServiceList
+				for _, vs := range snap.VirtualServices {
+					if vs.Metadata.Namespace == ns {
+						result = append(result, vs)
+					}
+				}
+
+				return result
+			}
+
+			It("should translate an empty gateway to have all virtual services in the same namespace", func() {
 
 				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(2))
+
+				vsInSameNamespace := findVsInNamespace(ns, snap)
+				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have as many virtual hosts as virtual services in the same namespace")
 			})
 
 			It("omitting matchers should default to '/' prefix matcher", func() {
@@ -280,7 +384,10 @@ var _ = Describe("Translator", func() {
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(2))
+
+				vsInSameNamespace := findVsInNamespace(ns, snap)
+				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have virtual services in the same namespace")
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[1].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -310,6 +417,23 @@ var _ = Describe("Translator", func() {
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 					Expect(listener.VirtualHosts).To(HaveLen(1))
 				})
+
+				It("can include a virtual service from some other namespace", func() {
+					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{
+							VirtualServices: []core.ResourceRef{snap.VirtualServices[2].Metadata.Ref()},
+						},
+					}
+
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy).NotTo(BeNil())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					Expect(listener.VirtualHosts).To(HaveLen(1))
+					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
+				})
 			})
 
 			Context("with VirtualServiceSelector", func() {
@@ -337,7 +461,15 @@ var _ = Describe("Translator", func() {
 
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 
-				Expect(proxy.Listeners).To(HaveLen(1))
+				vsInSameNamespace := findVsInNamespace(ns, snap)
+				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
+				var vsWithoutSsl v1.VirtualServiceList
+				for _, vs := range vsInSameNamespace {
+					if vs.SslConfig == nil {
+						vsWithoutSsl = append(vsWithoutSsl, vs)
+					}
+				}
+				Expect(proxy.Listeners).To(HaveLen(len(vsWithoutSsl)))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 				Expect(listener.VirtualHosts).To(HaveLen(1))
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name2"))
@@ -389,7 +521,7 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should not error with one contains plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -397,8 +529,8 @@ var _ = Describe("Translator", func() {
 				})
 
 				It("should error with both having plugins", func() {
-					snap.VirtualServices[0].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
-					snap.VirtualServices[1].VirtualHost.VirtualHostPlugins = new(gloov1.VirtualHostPlugins)
+					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
+					snap.VirtualServices[1].VirtualHost.Options = new(gloov1.VirtualHostOptions)
 
 					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
@@ -469,15 +601,15 @@ var _ = Describe("Translator", func() {
 			Context("valid configuration", func() {
 				dur := time.Minute
 
-				rootLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
-				midLevelRoutePlugins := &gloov1.RoutePlugins{Timeout: &dur}
-				leafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
+				rootLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "root route plugin"}}
+				midLevelRoutePlugins := &gloov1.RouteOptions{Timeout: &dur}
+				leafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}}
 
-				mergedMidLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
-				mergedLeafLevelRoutePlugins := &gloov1.RoutePlugins{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
+				mergedMidLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: rootLevelRoutePlugins.PrefixRewrite, Timeout: &dur}
+				mergedLeafLevelRoutePlugins := &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: "leaf level plugin"}, Timeout: midLevelRoutePlugins.Timeout}
 
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
+					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
@@ -506,7 +638,7 @@ var _ = Describe("Translator", func() {
 													Namespace: ns,
 												},
 											},
-											RoutePlugins: rootLevelRoutePlugins,
+											Options: rootLevelRoutePlugins,
 										},
 									},
 								},
@@ -573,7 +705,7 @@ var _ = Describe("Translator", func() {
 												Namespace: ns,
 											},
 										},
-										RoutePlugins: midLevelRoutePlugins,
+										Options: midLevelRoutePlugins,
 									},
 								},
 							},
@@ -624,7 +756,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -675,7 +807,7 @@ var _ = Describe("Translator", func() {
 												},
 											},
 										},
-										RoutePlugins: leafLevelRoutePlugins,
+										Options: leafLevelRoutePlugins,
 									},
 								},
 							},
@@ -722,7 +854,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: rootLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -744,7 +876,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedMidLevelRoutePlugins,
+							Options: mergedMidLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -766,7 +898,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: mergedLeafLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
@@ -811,7 +943,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							RoutePlugins: leafLevelRoutePlugins,
+							Options: leafLevelRoutePlugins,
 						},
 					}))
 				})
@@ -820,7 +952,7 @@ var _ = Describe("Translator", func() {
 
 			Context("delegation cycle", func() {
 				BeforeEach(func() {
-					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}})
+					translator = NewTranslator([]ListenerFactory{&HttpTranslator{}}, Opts{})
 					snap = &v1.ApiSnapshot{
 						Gateways: v1.GatewayList{
 							{
@@ -900,21 +1032,21 @@ var _ = Describe("Translator", func() {
 		var (
 			factory     *TcpTranslator
 			idleTimeout time.Duration
-			plugins     *gloov1.TcpListenerPlugins
-			destination *gloov1.TcpHost
+			plugins     *gloov1.TcpListenerOptions
+			tcpHost     *gloov1.TcpHost
 		)
 		BeforeEach(func() {
 			factory = &TcpTranslator{}
-			translator = NewTranslator([]ListenerFactory{factory})
+			translator = NewTranslator([]ListenerFactory{factory}, Opts{})
 
 			idleTimeout = 5 * time.Second
-			plugins = &gloov1.TcpListenerPlugins{
+			plugins = &gloov1.TcpListenerOptions{
 				TcpProxySettings: &tcp.TcpProxySettings{
 					MaxConnectAttempts: &types.UInt32Value{Value: 10},
 					IdleTimeout:        &idleTimeout,
 				},
 			}
-			destination = &gloov1.TcpHost{
+			tcpHost = &gloov1.TcpHost{
 				Name: "host-one",
 				Destination: &gloov1.RouteAction{
 					Destination: &gloov1.RouteAction_UpstreamGroup{
@@ -932,8 +1064,8 @@ var _ = Describe("Translator", func() {
 						Metadata: core.Metadata{Namespace: ns, Name: "name"},
 						GatewayType: &v1.Gateway_TcpGateway{
 							TcpGateway: &v1.TcpGateway{
-								Destinations: []*gloov1.TcpHost{destination},
-								Plugins:      plugins,
+								Options:  plugins,
+								TcpHosts: []*gloov1.TcpHost{tcpHost},
 							},
 						},
 						BindPort: 2,
@@ -947,9 +1079,9 @@ var _ = Describe("Translator", func() {
 
 			Expect(proxy.Listeners).To(HaveLen(1))
 			listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_TcpListener).TcpListener
-			Expect(listener.Plugins).To(Equal(plugins))
+			Expect(listener.Options).To(Equal(plugins))
 			Expect(listener.TcpHosts).To(HaveLen(1))
-			Expect(listener.TcpHosts[0]).To(Equal(destination))
+			Expect(listener.TcpHosts[0]).To(Equal(tcpHost))
 		})
 
 	})

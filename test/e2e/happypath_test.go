@@ -13,9 +13,9 @@ import (
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/healthcheck"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,7 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -112,7 +112,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// Set a virtual cluster matching everything
-			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].VirtualHostPlugins = &gloov1.VirtualHostPlugins{
+			proxy.Listeners[0].GetHttpListener().VirtualHosts[0].Options = &gloov1.VirtualHostOptions{
 				Stats: &stats.Stats{
 					VirtualClusters: []*stats.VirtualCluster{{
 						Name:    "test-vc",
@@ -145,7 +145,7 @@ var _ = Describe("Happy path", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
 
 			// Set a virtual cluster matching everything
-			proxy.Listeners[0].GetHttpListener().ListenerPlugins = &gloov1.HttpListenerPlugins{
+			proxy.Listeners[0].GetHttpListener().Options = &gloov1.HttpListenerOptions{
 				HealthCheck: &healthcheck.HealthCheck{
 					Path: "/healthy",
 				},
@@ -208,22 +208,20 @@ var _ = Describe("Happy path", func() {
 				// create ssl proxy
 				copyUp := *tu.Upstream
 				copyUp.Metadata.Name = copyUp.Metadata.Name + "-ssl"
-				port := tu.Upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Static).Static.Hosts[0].Port
-				addr := tu.Upstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Static).Static.Hosts[0].Addr
+				port := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
+				addr := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Addr
 				sslport := v1helpers.StartSslProxy(ctx, port)
 				ref := sslSecret.Metadata.Ref()
 
-				copyUp.UpstreamSpec = &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &static_plugin_gloo.UpstreamSpec{
-							Hosts: []*static_plugin_gloo.Host{{
-								Addr: addr,
-								Port: sslport,
-							}},
-						},
+				copyUp.UpstreamType = &gloov1.Upstream_Static{
+					Static: &static_plugin_gloo.UpstreamSpec{
+						Hosts: []*static_plugin_gloo.Host{{
+							Addr: addr,
+							Port: sslport,
+						}},
 					},
 				}
-				copyUp.UpstreamSpec.SslConfig = &gloov1.UpstreamSslConfig{
+				copyUp.SslConfig = &gloov1.UpstreamSslConfig{
 					SslSecrets: &gloov1.UpstreamSslConfig_SecretRef{
 						SecretRef: &ref,
 					},

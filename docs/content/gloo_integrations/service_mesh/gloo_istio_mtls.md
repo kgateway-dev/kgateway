@@ -127,18 +127,17 @@ metadata:
   uid: dfd33b6c-3a3b-11e9-98c6-02425fecee06
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    sslConfig:
-      sslFiles:
-        tlsCert: /etc/certs/cert-chain.pem
-        tlsKey: /etc/certs/key.pem
-        rootCa: /etc/certs/root-cert.pem
-    kube:
-      selector:
-        app: productpage
-      serviceName: productpage
-      serviceNamespace: default
-      servicePort: 9080
+  sslConfig:
+    sslFiles:
+      tlsCert: /etc/certs/cert-chain.pem
+      tlsKey: /etc/certs/key.pem
+      rootCa: /etc/certs/root-cert.pem
+  kube:
+    selector:
+      app: productpage
+    serviceName: productpage
+    serviceNamespace: default
+    servicePort: 9080
 status:
   reported_by: gloo
   state: 1

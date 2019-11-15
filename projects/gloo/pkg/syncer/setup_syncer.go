@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
@@ -19,7 +19,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -398,7 +398,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
-		SettingExtensions: opts.Settings.Extensions,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
 		},

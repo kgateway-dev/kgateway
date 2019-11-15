@@ -32,7 +32,7 @@ func NewPlugin() *plugin {
 
 func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.Cluster) error {
 	// check that the upstream is our type (GCE)
-	if _, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Gce); !ok {
+	if _, ok := in.UpstreamType.(*v1.UpstreamSpec_Gce); !ok {
 		// not gce, return early
 		return nil
 	}
@@ -131,7 +131,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 	// for each upstream, retrieve its endpoints
 	for _, us := range upstreams {
 		// check that the upstream uses the GCE Spec
-		gceSpec := us.UpstreamSpec.GetGce()
+		gceSpec := us.GetGce()
 		if gceSpec == nil {
 			// skip non-GCE upstreams
 			continue

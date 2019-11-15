@@ -28,20 +28,24 @@ type Translator interface {
 
 type translator struct {
 	listenerTypes []ListenerFactory
+	opts          Opts
 }
 
-func NewTranslator(factories []ListenerFactory) *translator {
-	return &translator{listenerTypes: factories}
+func NewTranslator(factories []ListenerFactory, opts Opts) *translator {
+	return &translator{
+		listenerTypes: factories,
+		opts:          opts,
+	}
 }
 
-func NewDefaultTranslator() *translator {
-	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}})
+func NewDefaultTranslator(opts Opts) *translator {
+	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, opts)
 }
 
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {
 	logger := contextutils.LoggerFrom(ctx)
 
-	filteredGateways := filterGatewaysForNamespace(gatewaysByProxy, namespace)
+	filteredGateways := t.filterGateways(gatewaysByProxy, namespace)
 
 	reports := make(reporter.ResourceReports)
 	reports.Accept(snap.Gateways.AsInputResources()...)
@@ -73,7 +77,7 @@ func makeListener(gateway *v1.Gateway) *gloov1.Listener {
 		Name:          ListenerName(gateway),
 		BindAddress:   gateway.BindAddress,
 		BindPort:      gateway.BindPort,
-		Plugins:       gateway.Plugins,
+		Options:       gateway.Options,
 		UseProxyProto: gateway.UseProxyProto,
 	}
 }
@@ -116,13 +120,14 @@ func gatewaysRefsToString(gateways v1.GatewayList) []string {
 	return ret
 }
 
-// https://github.com/solo-io/gloo/issues/538
-// Gloo should only pay attention to gateways it creates, i.e. in it's write namespace, to support
-// handling multiple gloo installations
-func filterGatewaysForNamespace(gateways v1.GatewayList, namespace string) v1.GatewayList {
+// Get the gateways that should be processed in this sync execution
+func (t *translator) filterGateways(gateways v1.GatewayList, namespace string) v1.GatewayList {
 	var filteredGateways v1.GatewayList
 	for _, gateway := range gateways {
-		if gateway.Metadata.Namespace == namespace {
+		// Normally, Gloo should only pay attention to Gateways it creates, i.e. in its write
+		// namespace, to support handling multiple gloo installations. However, we may want to
+		// configure the controller to read all the Gateway CRDs it can find.
+		if t.opts.ReadGatewaysFromAllNamespaces || gateway.Metadata.Namespace == namespace {
 			filteredGateways = append(filteredGateways, gateway)
 		}
 	}

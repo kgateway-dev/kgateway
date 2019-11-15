@@ -4,6 +4,11 @@ weight: 90
 description: Extend Gloo's built-in auth server with custom Go plugins
 ---
 
+{{% notice note %}}
+This feature was introduced with **Gloo Enterprise**, release 0.18.11. If you are using an earlier 
+version, this tutorial will not work.
+{{% /notice %}}
+
 We have seen that one way of implementing custom authentication logic is by 
 [providing your own auth server]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/custom_auth" >}}). 
 While this approach gives you great freedom, it also comes at a cost: 
@@ -31,14 +36,13 @@ see each one of them in greater detail.
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file(s) to a 
 predefined directory.
 2. Configure Gloo to load the plugins by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by rendering the Gloo Helm chart with dedicated value overrides or by modifying the Gloo YAML manifest manually.
+done by installing Gloo with [dedicated value overrides](#installation) or by modifying the Gloo YAML manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
 
 {{% notice note %}}
 For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated
 [**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
-
 {{% /notice %}}
 
 ## Building an Ext Auth plugin
@@ -104,38 +108,32 @@ plugins and copy these files to the `/auth-plugins` when they are run.
 
 In this guide we will use the image for the `RequiredHeaderPlugin` introduced above. It has been built using 
 [this Dockerfile](https://github.com/solo-io/ext-auth-plugin-examples/blob/master/Dockerfile) and can be found in 
-the `quay.io/solo-io/ext-auth-plugins` docker repository. Let's inspect the image:
+the `quay.io/solo-io/ext-auth-plugins` docker repository. We publish a new version of this plugin with each Gloo 
+Enterprise release to ensure compatibility with that release. Let's inspect the plugin image for version `0.20.6`:
 
 {{< highlight shell_script "hl_lines=3" >}}
-docker run -it --entrypoint ls quay.io/solo-io/ext-auth-plugins:0.18.23 -l compiled-auth-plugins
-total 28352
--rw-r--r--    1 root     root      29029288 Sep  3 21:06 RequiredHeader.so
+docker run -it --entrypoint ls quay.io/solo-io/ext-auth-plugins:0.20.6 -l compiled-auth-plugins
+total 28356
+-rw-r--r--    1 root     root      29033320 Oct 25 21:41 RequiredHeader.so
 {{< /highlight >}}
 
 You can see that it contains the compiled plugin file `RequiredHeader.so`.
 
 {{% notice warning %}}
-Make sure the plugin image tag matches the version of GlooE you are using. Plugins with mismatching versions will most 
-likely fail to be loaded due to the compatibility constraints imposed by the Go plugin model. See 
-[this section]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin developer guide for more information.
+Make sure the plugin image tag matches the version of GlooE you are using. Plugins with mismatching versions will fail 
+to be loaded due to the compatibility constraints imposed by the Go plugin model. See 
+[this section]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin 
+developer guide for more information.
 {{% /notice %}}
 
 ## Configuring Gloo
 
 #### Installation
-Let's start by installing Gloo Enterprise (make sure the version is >= **0.18.11**). We will use the 
-[Helm install option]({{< ref "installation/enterprise#installing-on-kubernetes-with-helm" >}}), as it is the easiest 
-way of configuring Gloo to load your plugin. First we need to fetch the Helm chart:
+Let's start by installing Gloo Enterprise. We need to customize the standard installation to configure Gloo to use our 
+plugin; we can do that by defining the following `plugin-values.yaml` value file:
 
-```bash
-helm fetch glooe/gloo-ee --version "0.18.23 --untar"
-```
-
-Then we have to create the following `plugin-values.yaml` value overrides file:
-
-{{< highlight bash "hl_lines=7-12" >}}
+{{< highlight bash "hl_lines=6-11" >}}
 cat << EOF > plugin-values.yaml
-license_key: YOUR_LICENSE_KEY
 global:
   extensions:
     extAuth:
@@ -149,19 +147,23 @@ global:
 EOF
 {{< /highlight >}}
 
-`global.extensions.extAuth.plugins` is a map where:
+In the above file, `global.extensions.extAuth.plugins` is a map where:
 
-* each key is a plugin container display name (in this case `my-plugin`)
-* the correspondent value is an image spec
+* each key is an arbitrary string that will be used to identify the plugin container (in this case `my-plugin`)
+* the correspondent value is a reference to a container image that contains the plugin file
 
-Now we can render the helm chart and `apply` it:
+{{% notice note %}}
+We will install using `glooctl`, but you can use this same value file to install the 
+[Gloo Helm chart]({{% versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" %}}).
+{{% /notice %}}
+
+Now we can use this file to install Gloo:
 
 ```bash
-kubectl create namespace gloo-system
-helm template gloo-ee --name glooe --namespace gloo-system -f plugin-values.yaml | kubectl apply -n gloo-system -f -
+glooctl install gateway enterprise --license-key $GLOO_LICENSE_KEY --values plugin-values.yaml
 ```
 
-If we inspect the `extauth` deployment by running
+If we now inspect the `extauth` deployment by running
 
 ```bash
 kubectl get deployment -n gloo-system extauth -o yaml
@@ -188,16 +190,16 @@ spec:
         gloo: extauth
     spec:
       containers:
-      - image: quay.io/solo-io/extauth-ee:0.18.23
-        imagePullPolicy: Always
+      - image: quay.io/solo-io/extauth-ee:0.20.6
+        imagePullPolicy: IfNotPresent
         name: extauth
         resources: {}
         volumeMounts:
         - mountPath: /auth-plugins
           name: auth-plugins
       initContainers:
-      - image: quay.io/solo-io/ext-auth-plugins:0.18.23
-        imagePullPolicy: Always
+      - image: quay.io/solo-io/ext-auth-plugins:0.20.6
+        imagePullPolicy: IfNotPresent
         name: plugin-my-plugin
         volumeMounts:
         - mountPath: /auth-plugins
@@ -218,195 +220,190 @@ Let's verify that the `extauth` server did successfully start by checking its lo
 
 ```bash
 kc logs -n gloo-system deployment/extauth
-{"level":"info","ts":1567688585.001545,"logger":"extauth","caller":"runner/run.go:84","msg":"Starting ext-auth server"}
-{"level":"info","ts":1567688585.0016475,"logger":"extauth","caller":"runner/run.go:103","msg":"extauth server running in [gRPC] mode, listening at [:8083]"}
+
+{"level":"info","ts":1573567317.1261566,"logger":"extauth","caller":"runner/run.go:86","msg":"Starting ext-auth server"}
+{"level":"info","ts":1573567317.1262844,"logger":"extauth","caller":"runner/run.go:105","msg":"extauth server running in [gRPC] mode, listening at [:8083]"}
 ```
 
 #### Create a simple Virtual Service
-To test our auth plugin, we first need to create an upstream. Let's start by creating a simple service that will return 
-"Hello World" when receiving HTTP requests:
+Let's deploy a sample application that we will route requests to when testing our auth plugin:
 
-```bash
-kubectl apply -f - <<EOF
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: http-echo
-  name: http-echo
-spec:
-  selector:
-    matchLabels:
-      app: http-echo
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: http-echo
-    spec:
-      containers:
-      - image: hashicorp/http-echo:latest
-        name: http-echo
-        args: ["-text='Hello World!'"]
-        ports:
-        - containerPort: 5678
-          name: http
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: http-echo
-  labels:
-    service: http-echo
-spec:
-  ports:
-  - port: 5678
-    protocol: TCP
-  selector:
-    app: http-echo
-EOF
+```shell
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
-Now we can create a Virtual Service that will route any requests with the `/echo` prefix to the `echo` service.
+### Create a Virtual Service
+Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petstore` service.
 
-{{< tabs >}}
-{{< tab name="yaml" codelang="yaml">}}
-{{< readfile file="gloo_routing/virtual_services/security/plugin_auth/vs-echo-no-auth.yaml">}}
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name http-echo --namespace gloo-system
-glooctl add route --path-prefix /echo --dest-name default-http-echo-5678
-{{< /tab >}}
-{{< /tabs >}} 
-
-To verify that the Virtual Service works, let's get the URL of the Gloo Gateway and send a request to `/echo`:
-
-```bash
-export GATEWAY_URL=$(glooctl proxy url --name gateway-proxy-v2)
-```
-
-```bash
-curl $GATEWAY_URL/echo
-'Hello World!'
-```
-
-#### Secure the Virtual Service
-Gloo does not yet perform any authentication for the route we just defined. To configure it to authenticate the requests 
-served by the virtual host that the route belongs to, we need to add the following to the Virtual Service definition:
-
-{{< highlight yaml "hl_lines=20-34" >}}
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: echo
+  name: petstore
   namespace: gloo-system
 spec:
-  displayName: echo
   virtualHost:
     domains:
     - '*'
     routes:
     - matcher:
-        prefix: /echo
+        prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-http-echo-5678
-            namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            plugin_auth:
-              plugins:
-              - config:
-                  RequiredHeader: my-header
-                  AllowedValues:
-                  - foo
-                  - bar
-                  - baz
-                name: RequiredHeader
-                plugin_file_name: RequiredHeader.so
-                exported_symbol_name: Plugin
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
+```
+
+To verify that the Virtual Service works, let's send a request to `/api/pets`:
+
+```shell
+curl $(glooctl proxy url)/api/pets
+```
+
+You should see the following output:
+
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+#### Secure the Virtual Service
+{{% notice warning %}}
+{{% extauth_version_info_note %}}
+{{% /notice %}}
+
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that only requests containing a header named `my-header` whose value is either 
+`foo` or `bar` are allowed.
+
+##### Create an AuthConfig resource
+Let's start by creating and `AuthConfig` CRD with that will use our plugin:
+
+{{< highlight shell "hl_lines=8-16" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: plugin-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - pluginAuth:
+      name: RequiredHeader
+      pluginFileName: RequiredHeader.so
+      exportedSymbolName: Plugin
+      config:
+        RequiredHeader: my-header
+        AllowedValues:
+        - foo
+        - bar
 {{< /highlight >}}
 
-This configures the virtual host to authenticate requests using the `plugin_auth` mode. `plugins` is an array of plugins 
-(in Gloo terms a **plugin chain**), where each element has the following structure:
+When referenced on a Virtual Service, this configuration will instruct Gloo to authenticate requests using our plugin.
+Let's examine the structure of the `pluginAuth` object:
 
 - `name`: the name of the plugin. This serves mainly for display purposes, but is also used to build the default values 
 for the next two fields.
-- `plugin_file_name`: the name of the compiled plugin that was copied to the `/auth-plugins` directory. Defaults to `<name>.so`.
-- `exported_symbol_name`: the name of the exported symbol Gloo will look for when loading the plugin. Defaults to `<name>`.
+- `pluginFileName`: the name of the compiled plugin that was copied to the `/auth-plugins` directory. Defaults to `<name>.so`.
+- `exportedSymbolName`: the name of the exported symbol Gloo will look for when loading the plugin. Defaults to `<name>`.
 - `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this 
 attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case 
 this will be an instance of `*Config`, as seen in the 
 *Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#building-an-ext-auth-plugin" >}}).
 
 {{% notice note %}}
-Plugins in a **plugin chain** will be executed in the order they are defined. The first plugin to deny the request will 
-cause the chain execution to be interrupted. The headers on each plugin response will be merged into the request to the 
-next one. Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#plugin-chains-and-header-propagation" >}}) 
+You may have noticed that the `configs` attribute in the above `AuthConfig` is an array. It is possible to define multiple 
+steps in an `AuthConfig`. Steps will be executed in the order they are defined. The first config to deny a request will 
+cause the execution to be interrupted and a response to be returned to the downstream client. The headers produced by each 
+step will be merged into the request to the next one. 
+Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#plugin-chains-and-header-propagation" >}}) 
 for more information about how the headers are merged.
 {{% /notice %}}
 
-After `apply`-ing this Virtual Service, let's check the `extauth` logs again:
+##### Update the Virtual Service
+Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
-{{< highlight yaml "hl_lines=4-6" >}}
-kc logs -n gloo-system deployment/extauth
-{"level":"info","ts":1566316248.9934704,"logger":"extauth","caller":"runner/run.go:78","msg":"Starting ext-auth server"}
-{"level":"info","ts":1566316248.9935324,"logger":"extauth","caller":"runner/run.go:93","msg":"extauth server running in grpc mode, listening at :8083"}
-{"level":"info","ts":1566316249.0016804,"logger":"extauth","caller":"runner/run.go:150","msg":"got new config","config":[{"vhost":"gloo-system.gateway-proxy-v2-listener-::-8080-gloo-system_echo","AuthConfig":{"PluginAuth":{"plugins":[{"name":"RequiredHeader","plugin_file_name":"RequiredHeader.so","exported_symbol_name":"Plugin","config":{"fields":{"AllowedValues":{"Kind":{"ListValue":{"values":[{"Kind":{"StringValue":"foo"}},{"Kind":{"StringValue":"bar"}},{"Kind":{"StringValue":"baz"}}]}}},"RequiredHeader":{"Kind":{"StringValue":"my-header"}}}}}]}}}]}
-{"level":"info","ts":1566316249.0287502,"logger":"extauth.header_value_plugin","caller":"pkg/impl.go:38","msg":"Parsed RequiredHeaderAuthService config","requiredHeader":"my-header","allowedHeaderValues":["foo","bar","baz"]}
-{"level":"info","ts":1566316249.0289364,"logger":"extauth","caller":"plugins/loader.go:85","msg":"Successfully loaded plugin. Adding it to the plugin chain.","pluginName":"RequiredHeader"}
+{{< highlight yaml "hl_lines=20-34" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
+    virtualHostPlugins:
+      extauth:
+        configRef:
+          name: plugin-auth
+          namespace: gloo-system
 {{< /highlight >}}
 
-From the last three lines we can see that the Ext Auth server received the new configuration for our Virtual Service. 
+After `apply`-ing this Virtual Service, let's check the `extauth` logs again:
+
+{{< highlight yaml "hl_lines=5-6" >}}
+kc logs -n gloo-system deployment/extauth
+
+{"level":"info","ts":1573567317.1261566,"logger":"extauth","caller":"runner/run.go:86","msg":"Starting ext-auth server"}
+{"level":"info","ts":1573567317.1262844,"logger":"extauth","caller":"runner/run.go:105","msg":"extauth server running in [gRPC] mode, listening at [:8083]"}
+{"level":"info","ts":1573574476.3094413,"logger":"extauth","caller":"runner/run.go:160","msg":"got new config","config":[{"auth_config_ref_name":"gloo-system.plugin-auth","AuthConfig":null,"configs":[{"AuthConfig":{"plugin_auth":{"name":"RequiredHeader","plugin_file_name":"RequiredHeader.so","exported_symbol_name":"Plugin","config":{"fields":{"AllowedValues":{"Kind":{"ListValue":{"values":[{"Kind":{"StringValue":"foo"}},{"Kind":{"StringValue":"bar"}}]}}},"RequiredHeader":{"Kind":{"StringValue":"my-header"}}}}}}}]}]}
+{"level":"info","ts":1573574476.3579354,"logger":"extauth.header_value_plugin","caller":"pkg/impl.go:39","msg":"Parsed RequiredHeaderAuthService config","requiredHeader":"my-header","allowedHeaderValues":["foo","bar"]}
+{{< /highlight >}}
+
+From the last two lines we can see that the Ext Auth server received the new configuration for our Virtual Service. 
+
+## Test our configuration
 If we try to hit our route again, we should see a `403` response:
 
-```bash
-curl -v $GATEWAY_URL/echo
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 30519 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:30519
+{{< highlight shell "hl_lines=8" >}}
+curl -v $(glooctl proxy url)/api/pets
+
+> GET /api/pets HTTP/1.1
+> Host: 192.168.99.100:30834
 > User-Agent: curl/7.54.0
 > Accept: */*
 >
 < HTTP/1.1 403 Forbidden
-< date: Tue, 20 Aug 2019 15:01:57 GMT
+< date: Tue, 12 Nov 2019 16:03:42 GMT
 < server: envoy
 < content-length: 0
 <
-* Connection #0 to host 192.168.99.100 left intact
-```
+{{< /highlight >}}
 
 If you recall the structure of our plugin, it will only allow request with a given header (in this case `my-header`) and 
-where that header has an expected value (in this case one of `foo`, `bar` or `baz`). If we include a header with these 
-properties in our request, we will be able to hit our `echo` service:
+where that header has an expected value (in this case one of `foo` or `bar`). If we include a header with these 
+properties in our request, we will be able to hit our sample service:
 
-{{< highlight bash "hl_lines=20" >}}
-curl -v -H "my-header: foo" $GATEWAY_URL/echo
-*   Trying 192.168.99.100...
-* TCP_NODELAY set
-* Connected to 192.168.99.100 (192.168.99.100) port 30519 (#0)
-> GET /echo HTTP/1.1
-> Host: 192.168.99.100:30519
+{{< highlight shell "hl_lines=9 16" >}}
+curl -v -H "my-header: foo" $(glooctl proxy url)/api/pets
+
+> GET /api/pets HTTP/1.1
+> Host: 192.168.99.100:30834
 > User-Agent: curl/7.54.0
 > Accept: */*
 > my-header: foo
 >
 < HTTP/1.1 200 OK
-< x-app-name: http-echo
-< x-app-version: 0.2.3
-< date: Tue, 20 Aug 2019 16:02:12 GMT
-< content-length: 15
-< content-type: text/plain; charset=utf-8
-< x-envoy-upstream-service-time: 0
+< content-type: application/xml
+< date: Tue, 12 Nov 2019 16:05:05 GMT
+< content-length: 86
+< x-envoy-upstream-service-time: 3
 < server: envoy
 <
-'Hello World!'
-* Connection #0 to host 192.168.99.100 left intact
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 {{< /highlight >}}
 
 ## Summary
@@ -417,7 +414,8 @@ plugin.
 
 You can cleanup the resources created while following this guide by running:
 ```bash
-glooctl uninstall -n gloo-system
+glooctl uninstall --all
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
 ## Next steps

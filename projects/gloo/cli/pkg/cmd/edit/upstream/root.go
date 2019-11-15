@@ -82,29 +82,26 @@ func editUpstream(opts *options.EditOptions, optsExt *EditUpstream, args []strin
 			return fmt.Errorf("conflict - resource version does not match")
 		}
 	}
-	if up.UpstreamSpec == nil {
-		up.UpstreamSpec = &gloov1.UpstreamSpec{}
-	}
 
 	if optsExt.Remove {
-		up.UpstreamSpec.SslConfig = nil
+		up.SslConfig = nil
 	} else {
-		if up.UpstreamSpec.SslConfig == nil {
-			up.UpstreamSpec.SslConfig = &gloov1.UpstreamSslConfig{}
+		if up.SslConfig == nil {
+			up.SslConfig = &gloov1.UpstreamSslConfig{}
 		}
 
 		hasBoth := (optsExt.SslSecretRef.Name != "") && (optsExt.SslSecretRef.Namespace != "")
 		hasNone := (optsExt.SslSecretRef.Name == "") && (optsExt.SslSecretRef.Namespace == "")
 
 		if hasBoth {
-			up.UpstreamSpec.SslConfig.SslSecrets = &gloov1.UpstreamSslConfig_SecretRef{
+			up.SslConfig.SslSecrets = &gloov1.UpstreamSslConfig_SecretRef{
 				SecretRef: &optsExt.SslSecretRef,
 			}
 		} else if !hasNone {
 			return fmt.Errorf("both --ssl-secret-name and --ssl-secret-namespace must be provided")
 		}
 		if optsExt.Sni != "" {
-			up.UpstreamSpec.SslConfig.Sni = optsExt.Sni
+			up.SslConfig.Sni = optsExt.Sni
 		}
 	}
 	_, err = upClient.Write(up, clients.WriteOpts{OverwriteExisting: true})

@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes/fake"
@@ -176,13 +176,11 @@ var _ = Describe("Kubernetes", func() {
 			makeUpstream := func(name string) *v1.Upstream {
 				return &v1.Upstream{
 					Metadata: core.Metadata{Name: name},
-					UpstreamSpec: &v1.UpstreamSpec{
-						UpstreamType: &v1.UpstreamSpec_Kube{
-							Kube: &kubepluginapi.UpstreamSpec{
-								ServiceNamespace: svcNamespace,
-								ServiceName:      svcName,
-								ServicePort:      8080,
-							},
+					UpstreamType: &v1.Upstream_Kube{
+						Kube: &kubepluginapi.UpstreamSpec{
+							ServiceNamespace: svcNamespace,
+							ServiceName:      svcName,
+							ServicePort:      8080,
 						},
 					},
 				}

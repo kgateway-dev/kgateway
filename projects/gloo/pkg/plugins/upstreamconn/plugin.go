@@ -24,7 +24,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 
-	cfg := in.GetUpstreamSpec().GetConnectionConfig()
+	cfg := in.GetConnectionConfig()
 	if cfg == nil {
 		return nil
 	}

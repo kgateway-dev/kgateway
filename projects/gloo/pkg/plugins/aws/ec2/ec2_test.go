@@ -11,7 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -90,16 +90,14 @@ var _ = Describe("Plugin", func() {
 			testutils.ExpectEqualProtoMessages(out, expected)
 		},
 			Entry("should use proper default port and ip when not specified", &v1.Upstream{
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_AwsEc2{
-						AwsEc2: &glooec2.UpstreamSpec{
-							Region:    "us-east-1",
-							SecretRef: nil,
-							RoleArn:   "",
-							Filters:   nil,
-							PublicIp:  false,
-							Port:      0,
-						},
+				UpstreamType: &v1.Upstream_AwsEc2{
+					AwsEc2: &glooec2.UpstreamSpec{
+						Region:    "us-east-1",
+						SecretRef: nil,
+						RoleArn:   "",
+						Filters:   nil,
+						PublicIp:  false,
+						Port:      0,
 					},
 				},
 				Metadata: core.Metadata{
@@ -123,16 +121,14 @@ var _ = Describe("Plugin", func() {
 					},
 				}),
 			Entry("should use proper port and ip when specified", &v1.Upstream{
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_AwsEc2{
-						AwsEc2: &glooec2.UpstreamSpec{
-							Region:    "us-east-1",
-							SecretRef: nil,
-							RoleArn:   "",
-							Filters:   nil,
-							PublicIp:  true,
-							Port:      77,
-						},
+				UpstreamType: &v1.Upstream_AwsEc2{
+					AwsEc2: &glooec2.UpstreamSpec{
+						Region:    "us-east-1",
+						SecretRef: nil,
+						RoleArn:   "",
+						Filters:   nil,
+						PublicIp:  true,
+						Port:      77,
 					},
 				},
 				Metadata: core.Metadata{
@@ -156,16 +152,14 @@ var _ = Describe("Plugin", func() {
 					},
 				}),
 			Entry("should accept instances with private ip only", &v1.Upstream{
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_AwsEc2{
-						AwsEc2: &glooec2.UpstreamSpec{
-							Region:    "us-east-1",
-							SecretRef: nil,
-							RoleArn:   "",
-							Filters:   nil,
-							PublicIp:  false,
-							Port:      77,
-						},
+				UpstreamType: &v1.Upstream_AwsEc2{
+					AwsEc2: &glooec2.UpstreamSpec{
+						Region:    "us-east-1",
+						SecretRef: nil,
+						RoleArn:   "",
+						Filters:   nil,
+						PublicIp:  false,
+						Port:      77,
 					},
 				},
 				Metadata: core.Metadata{
@@ -188,16 +182,14 @@ var _ = Describe("Plugin", func() {
 					},
 				}),
 			Entry("should return nil if no ips are available for the given config", &v1.Upstream{
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_AwsEc2{
-						AwsEc2: &glooec2.UpstreamSpec{
-							Region:    "us-east-1",
-							SecretRef: nil,
-							RoleArn:   "",
-							Filters:   nil,
-							PublicIp:  false,
-							Port:      77,
-						},
+				UpstreamType: &v1.Upstream_AwsEc2{
+					AwsEc2: &glooec2.UpstreamSpec{
+						Region:    "us-east-1",
+						SecretRef: nil,
+						RoleArn:   "",
+						Filters:   nil,
+						PublicIp:  false,
+						Port:      77,
 					},
 				},
 				Metadata: core.Metadata{

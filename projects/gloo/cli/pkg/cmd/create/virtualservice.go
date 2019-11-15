@@ -2,7 +2,7 @@ package create
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -108,8 +108,8 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 	}
 	rl := input.RateLimit
 	if rl.Enable {
-		if vs.VirtualHost.VirtualHostPlugins == nil {
-			vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
+		if vs.VirtualHost.Options == nil {
+			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
 		}
 		timeUnit, ok := ratelimit.RateLimit_Unit_value[rl.TimeUnit]
 		if !ok {
@@ -121,7 +121,7 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 				RequestsPerUnit: rl.RequestsPerTimeUnit,
 			},
 		}
-		vs.VirtualHost.VirtualHostPlugins.RatelimitBasic = ingressRateLimit
+		vs.VirtualHost.Options.RatelimitBasic = ingressRateLimit
 	}
 
 	return vs, authFromOpts(vs, input)
@@ -136,12 +136,12 @@ func authFromOpts(vs *v1.VirtualService, input options.InputVirtualService) erro
 		Name:      input.AuthConfig.Name,
 		Namespace: input.AuthConfig.Namespace,
 	}
-	if vs.VirtualHost.VirtualHostPlugins == nil {
-		vs.VirtualHost.VirtualHostPlugins = &gloov1.VirtualHostPlugins{}
+	if vs.VirtualHost.Options == nil {
+		vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
 	}
-	if vs.VirtualHost.VirtualHostPlugins.Extauth == nil {
-		vs.VirtualHost.VirtualHostPlugins.Extauth = &extauthv1.ExtAuthExtension{}
+	if vs.VirtualHost.Options.Extauth == nil {
+		vs.VirtualHost.Options.Extauth = &extauthv1.ExtAuthExtension{}
 	}
-	vs.VirtualHost.VirtualHostPlugins.Extauth.Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
+	vs.VirtualHost.Options.Extauth.Spec = &extauthv1.ExtAuthExtension_ConfigRef{ConfigRef: acRef}
 	return nil
 }

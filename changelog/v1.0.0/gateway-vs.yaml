@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      When a Gateway has an empty httpGateway.virtualServices ref list, include all virtual services
+      in the same namespace as the gateway. Previously the behavior was to include all virtual services
+      in the cluster, which is unfriendly to multi-tenant setups.
+    issueLink: https://github.com/solo-io/gloo/issues/1142

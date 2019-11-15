@@ -1,0 +1,18 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: |
+      Rename all instances of `plugins` to `options` in Gloo's API. This prevents confusion as Gloo "plugins" is really an implementation detail for devs, and Gloo does not currently support dynamically-loaded plugins (aside from ExtAuth plugins).
+
+      Proto messages have been updated as such:
+
+      1. `VirtualHostPlugins` -> `VirtualHostOptions`
+      2. `RoutePlugins` -> `RouteOptions`
+      3. `WeightedDestinationPlugins` -> `WeightedDestinationOptions`
+      4. `ListenerPlugins` -> `ListenerOptions`
+      5. `HttpListenerPlugins` -> `HttpListenerOptions`
+      6. `TcpListenerPlugins` -> `TcpListenerOptions`
+
+      When referenced in yaml, each property is referenced as `options` under the appropriate containing resource.
+
+    issueLink: https://github.com/solo-io/gloo/issues/1171
+    resolvesIssue: false

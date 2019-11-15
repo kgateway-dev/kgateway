@@ -13,7 +13,7 @@ import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
 
 /*
 A Gateway describes a single Listener (bind address:port)
@@ -34,8 +34,8 @@ message Gateway {
     // bind ports must not conflict across gateways for a single proxy
     uint32 bind_port = 4;
 
-    // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.ListenerPlugins plugins = 5;
+    // top level optional configuration for all routes on the gateway
+    gloo.solo.io.ListenerOptions options = 5;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
@@ -79,7 +79,7 @@ message Gateway {
 
 message HttpGateway {
     // names of the the virtual services, which contain the actual routes for the gateway
-    // if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
+    // if the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above).
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
     // Select virtual services by their label. This will apply only to virtual services
@@ -88,13 +88,13 @@ message HttpGateway {
     map<string, string> virtual_service_selector = 2 ;
 
     // http gateway configuration
-    gloo.solo.io.HttpListenerPlugins plugins = 8;
+    gloo.solo.io.HttpListenerOptions options = 8;
 
 }
 
 message TcpGateway {
-    // Name of the destinations the gateway can route to
-    repeated gloo.solo.io.TcpHost destinations = 1;
+    // TCP hosts that the gateway can route to
+    repeated gloo.solo.io.TcpHost tcp_hosts = 1;
     // tcp gateway configuration
-    gloo.solo.io.TcpListenerPlugins plugins = 8;
+    gloo.solo.io.TcpListenerOptions options = 8;
 }

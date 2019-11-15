@@ -17,7 +17,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
-	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	transformutils "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/transformation"
@@ -48,7 +48,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoyapi.Cluster) error {
-	if withServiceSpec, ok := in.UpstreamSpec.UpstreamType.(UpstreamWithServiceSpec); ok {
+	if withServiceSpec, ok := in.UpstreamType.(UpstreamWithServiceSpec); ok {
 		serviceSpec := withServiceSpec.GetServiceSpec()
 		if serviceSpec == nil {
 			return nil

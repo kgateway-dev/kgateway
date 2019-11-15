@@ -19,7 +19,7 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc_web"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
@@ -75,7 +75,7 @@ var _ = Describe("Gateway", func() {
 			for _, g := range gw {
 				httpGateway := g.GetHttpGateway()
 				if httpGateway != nil {
-					httpGateway.Plugins = &gloov1.HttpListenerPlugins{
+					httpGateway.Options = &gloov1.HttpListenerOptions{
 						GrpcWeb: &grpc_web.GrpcWeb{
 							Disable: true,
 						},
@@ -87,7 +87,7 @@ var _ = Describe("Gateway", func() {
 			}
 
 			// write a virtual service so we have a proxy
-			vs := getTrivialVirtualServiceForUpstream("default", core.ResourceRef{Name: "test", Namespace: "test"})
+			vs := getTrivialVirtualServiceForUpstream("gloo-system", core.ResourceRef{Name: "test", Namespace: "test"})
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -101,7 +101,7 @@ var _ = Describe("Gateway", func() {
 					}
 					for _, l := range proxy.Listeners {
 						if h := l.GetHttpListener(); h != nil {
-							if p := h.GetListenerPlugins(); p != nil {
+							if p := h.GetOptions(); p != nil {
 								if grpcweb := p.GetGrpcWeb(); grpcweb != nil {
 									if grpcweb.Disable {
 										numdisable++
@@ -139,7 +139,7 @@ var _ = Describe("Gateway", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			// Create a virtual service with a route pointing to the above service
-			vs := getTrivialVirtualServiceForService("default", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
+			vs := getTrivialVirtualServiceForService("gloo-system", kubeutils.FromKubeMeta(svc.ObjectMeta).Ref(), uint32(svc.Spec.Ports[0].Port))
 			_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
@@ -207,7 +207,7 @@ var _ = Describe("Gateway", func() {
 
 			It("should work with no ssl", func() {
 				up := tu.Upstream
-				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -216,7 +216,7 @@ var _ = Describe("Gateway", func() {
 
 			It("should not match requests that contain a header that is excluded from match", func() {
 				up := tu.Upstream
-				vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -274,7 +274,7 @@ var _ = Describe("Gateway", func() {
 
 					up := tu.Upstream
 					vscli := testClients.VirtualServiceClient
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					vs.SslConfig = &gloov1.SslConfig{
 						SslSecrets: &gloov1.SslConfig_SecretRef{
 							SecretRef: &core.ResourceRef{

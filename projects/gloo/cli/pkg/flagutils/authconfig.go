@@ -13,7 +13,7 @@ func AddAuthConfigFlags(set *pflag.FlagSet, ac *options.InputAuthConfig) {
 
 func addVirtualServiceFlagsOIDC(set *pflag.FlagSet, oidc *options.OIDCAuth) {
 	// TODO: add support for authorization when it is supported for ratelimit
-	//set.StringVar(&virtualHostPlugins.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
+	//set.StringVar(&Options.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
 	set.BoolVar(&oidc.Enable, "enable-oidc-auth", false, "enable oidc auth features for this virtual service")
 	set.StringVar(&oidc.ClientId, "oidc-auth-client-id", "", "client id as registered with id provider")
 	set.StringVar(&oidc.ClientSecretRef.Name, "oidc-auth-client-secret-name", "", "name of the 'client secret' secret")
@@ -27,7 +27,7 @@ func addVirtualServiceFlagsOIDC(set *pflag.FlagSet, oidc *options.OIDCAuth) {
 
 func addVirtualServiceFlagsApiKey(set *pflag.FlagSet, apiKey *options.ApiKeyAuth) {
 	// TODO: add support for authorization when it is supported for ratelimit
-	//set.StringVar(&virtualHostPlugins.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
+	//set.StringVar(&Options.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
 	set.BoolVar(&apiKey.Enable, "enable-apikey-auth", false, "enable apikey auth features for this virtual service")
 	set.StringSliceVar(&apiKey.Labels, "apikey-label-selector", []string{}, "apikey label selector to identify valid apikeys for this virtual service; a comma-separated list of labels (key=value)")
 	set.StringVar(&apiKey.SecretNamespace, "apikey-secret-namespace", "", "namespace to search for an individual apikey secret")
@@ -36,7 +36,7 @@ func addVirtualServiceFlagsApiKey(set *pflag.FlagSet, apiKey *options.ApiKeyAuth
 
 func addVirtualServiceFlagsOpa(set *pflag.FlagSet, opa *options.OpaAuth) {
 	// TODO: add support for authorization when it is supported for ratelimit
-	//set.StringVar(&virtualHostPlugins.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
+	//set.StringVar(&Options.RateLimits.AuthorizedHeader, "rate-limit-authorize-header", "", "header name used to authorize requests")
 	set.BoolVar(&opa.Enable, "enable-opa-auth", false, "enable opa auth features for this virtual service")
 	set.StringVar(&opa.Query, "opa-query", "", "The OPA query to evaluate on a request")
 	set.StringSliceVar(&opa.Modules, "opa-module-ref", []string{}, "namespace.name references to a config map containing OPA modules")

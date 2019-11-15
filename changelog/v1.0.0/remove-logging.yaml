@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >
+      **Security Fix**: Fix a bug where, when Gloo's logging level is set to Debug, we may inadvertently write
+      the content of Secrets into the pod logs. We now print the same content into the logs, but with
+      the Secret data redacted.
+    issueLink: https://github.com/solo-io/gloo/issues/1679

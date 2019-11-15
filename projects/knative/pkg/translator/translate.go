@@ -16,11 +16,11 @@ import (
 
 	"github.com/solo-io/go-utils/contextutils"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	"github.com/pkg/errors"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
@@ -154,7 +154,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 					Action: &gloov1.Route_RouteAction{
 						RouteAction: action,
 					},
-					RoutePlugins: &gloov1.RoutePlugins{
+					Options: &gloov1.RouteOptions{
 						HeaderManipulation: getHeaderManipulation(route.AppendHeaders),
 						Timeout:            timeout,
 						Retries:            retryPolicy,
@@ -206,9 +206,9 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 
 	var destinations []*gloov1.WeightedDestination
 	for _, split := range splits {
-		var weightedDestinationPlugins *gloov1.WeightedDestinationPlugins
+		var weightedDestinationPlugins *gloov1.WeightedDestinationOptions
 		if headerManipulaion := getHeaderManipulation(split.AppendHeaders); headerManipulaion != nil {
-			weightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{
+			weightedDestinationPlugins = &gloov1.WeightedDestinationOptions{
 				HeaderManipulation: headerManipulaion,
 			}
 		}
@@ -220,8 +220,8 @@ func routeActionFromSplits(splits []knativev1alpha1.IngressBackendSplit) (*gloov
 			Destination: &gloov1.Destination{
 				DestinationType: serviceForSplit(split),
 			},
-			Weight:                     weight,
-			WeightedDestinationPlugins: weightedDestinationPlugins,
+			Weight:  weight,
+			Options: weightedDestinationPlugins,
 		})
 	}
 	return &gloov1.RouteAction{

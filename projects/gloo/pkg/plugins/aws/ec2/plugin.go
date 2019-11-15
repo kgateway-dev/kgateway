@@ -63,11 +63,11 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 // we do not need to update any fields, just check that the input is valid
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	originalSpec, ok := original.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return false, WrongUpstreamTypeError(original)
 	}
-	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return false, WrongUpstreamTypeError(desired)
 	}
@@ -78,7 +78,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	_, ok := in.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return nil
 	}
@@ -102,10 +102,10 @@ var (
 	}
 
 	WrongUpstreamTypeError = func(upstream *v1.Upstream) error {
-		return errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamSpec.UpstreamType).Name())
+		return errors.Errorf("internal error: expected *v1.Upstream_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamType).Name())
 	}
 
 	UpstreamDeltaError = func() error {
-		return errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
+		return errors.New("expected no difference between *v1.Upstream_AwsEc2 upstreams")
 	}
 )

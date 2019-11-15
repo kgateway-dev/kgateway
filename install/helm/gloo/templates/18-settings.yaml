@@ -28,6 +28,9 @@ spec:
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
+{{- if .Values.settings.linkerd }}
+  linkerd: true
+{{- end }}
 {{- if .Values.settings.integrations.knative.enabled }}
   knative:
 {{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
@@ -38,8 +41,9 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
   gateway:
+    readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}

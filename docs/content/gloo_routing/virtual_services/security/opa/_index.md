@@ -4,51 +4,105 @@ weight: 50
 description: Illustrating how to combine OpenID Connect with Open Policy Agent to achieve fine grained policy with Gloo.
 ---
 
-## Motivation
+{{% notice note %}}
+The OPA feature was introduced with **Gloo Enterprise**, release 0.18.21. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
-Open Policy Agent (OPA for short) can be used to express versatile organization policies.
-Starting in gloo-e version 0.18.21 you can use OPA policies to make authorization decisions
-on incoming requests.
-This allows you having uniform policy language all across your organization.
-This also allows you to create more fine grained policies compared to RBAC authorization system. For more information, see [here](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
+The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that 
+can be used to define and enforce versatile policies in a uniform way across your organization. 
+Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see 
+[the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-##  Prerequisites
+Be sure to check the external auth [configuration overview]({{< ref "gloo_routing/virtual_services/security#configuration-overview" >}}) 
+for detailed information about how authentication is configured on Virtual Services.
 
-- A Kubernetes cluster. [minikube](https://github.com/kubernetes/minikube) is a good way to get started
-- `glooctl` - To install and interact with Gloo (optional).
+## Table of Contents
+- [Setup](#setup)
+- [Validate requests attributes with Open Policy Agent](#validate-requests-attributes-with-open-policy-agent)
+    - [Deploy sample application](#deploy-a-sample-application)
+    - [Creating a Virtual Service](#creating-a-virtual-service)
+    - [Secure the Virtual Service](#securing-the-virtual-service)
+        - [Define an OPA policy](#define-an-opa-policy)
+        - [Create an OPA AuthConfig CRD](#create-an-opa-authconfig-crd)
+        - [Update the Virtual Service](#updating-the-virtual-service)
+    - [Testing our configuration](#testing-the-configuration)
+- [Validate JWTs with Open Policy Agent](#validate-jwts-with-open-policy-agent)
+    - [Deploy sample application](#deploy-sample-application)
+    - [Create a Virtual Service](#create-a-virtual-service)
+    - [Secure the Virtual Service](#secure-the-virtual-service)
+        - [Install Dex](#install-dex)
+        - [Make the client secret accessible to Gloo](#make-the-client-secret-accessible-to-gloo)
+        - [Create a Policy](#create-a-policy)
+        - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
+        - [Update the Virtual Service](#update-the-virtual-service)
+    - [Testing our configuration](#testing-our-configuration)
 
-## Install Gloo and Test Service
+## Setup
+{{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-That's easy!
+## Validate requests attributes with Open Policy Agent
 
+### Deploy a sample application
+Let's deploy a sample application that we will route requests to during this guide:
+
+```shell script
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
-glooctl install gateway enterprise --license-key=$GLOO_KEY
-kubectl --namespace default apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+
+### Creating a Virtual Service
+Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petstore` service.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
 ```
 
-See more information and options of installing Gloo [here](/installation/enterprise).
 
-### Verify Install
-Make sure all is deployed correctly:
+To verify that the Virtual Service works, let's send a request to `/api/pets`:
 
 ```shell
-curl $(glooctl proxy url)/api/pets
+curl $GATEWAY_URL/api/pets
 ```
 
-should respond with
+You should see the following output:
+
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## Configuring an Open Policy Agent Policy 
+### Securing the Virtual Service
+{{% notice warning %}}
+{{% extauth_version_info_note %}}
+{{% /notice %}}
 
-Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The Rego language is inspired from Datalog, which inturn is a subset of Prolog. Rego is more suited to work with modern JSON documents.
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
 
-### Create the Policy 
-Let's create a Policy to control what actions are allowed on our service, and apply it to Kubernetes as a ConfigMap:
+#### Define an OPA policy 
+Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). 
+The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work 
+with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
 
 ```shell
-cat <<EOF > /tmp/policy.rego
+cat <<EOF > policy.rego
 package test
 
 default allow = false
@@ -63,37 +117,56 @@ allow {
     })
 }
 EOF
-kubectl --namespace=gloo-system create configmap allow-get-users --from-file=/tmp/policy.rego
 ```
 
-Let's break this down:
+This policy:
 
-- This policy denies everything by default
-- It is allowed if:
-  - The path starts with "/api/pets" AND the http method is "GET"
-  - **OR**
-  - The path is exactly "/api/pets/2" AND the http method is either "GET" or "DELETE"
+- denies everything by default,
+- allows requests if:
+  - the path starts with `/api/pets` AND the http method is `GET` **OR**
+  - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
 
-In the next setup, we will attach this policy to a Gloo VirtualService to enforce it.
+#### Create an OPA AuthConfig CRD
+Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
+contents of the above policy file:
 
+```
+kubectl -n gloo-system create configmap allow-get-users --from-file=policy.rego
+```
 
-### Create a VirtualService with the OPA Authorization
+Now we can create an `AuthConfig` CRD with our OPA authorization configuration:
 
-To enforce the policy, we will create a Gloo VirtualService with OPA Authorization enabled. We will refer to the policy created above, and add a query that allows access
-only if the `allow` variable is `true`:
-
-{{< tabs >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name default --enable-opa-auth --opa-query 'data.test.allow == true' --opa-module-ref gloo-system.allow-get-users
-glooctl add route --name default --path-prefix / --dest-name default-petstore-8080 --dest-namespace gloo-system
-{{< /tab >}}
-{{< tab name="kubectl" codelang="yaml">}}
-kind: VirtualService
+{{< highlight shell "hl_lines=9-13" >}}
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
 metadata:
-  name: default
+  name: opa
   namespace: gloo-system
 spec:
-  displayName: default
+  configs:
+  - opa_auth:
+      modules:
+      - name: allow-get-users
+        namespace: gloo-system
+      query: "data.test.allow == true"
+EOF
+{{< /highlight >}}
+
+The above `AuthConfig` references the ConfigMap  (`modules`) we created earlier and adds a query that allows access only 
+if the `allow` variable is `true`. 
+
+#### Updating the Virtual Service
+Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
+
+{{< highlight shell "hl_lines=21-25" >}}
+kubectl apply -f - <<EOF
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
   virtualHost:
     domains:
     - '*'
@@ -102,63 +175,138 @@ spec:
         prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-petstore-8080
-            namespace: gloo-system
+          kube:
+            ref:
+              name: petstore
+              namespace: default
+            port: 8080
     virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            configs:
-            - opa_auth:
-                modules:
-                - name: allow-get-users
-                  namespace: gloo-system
-                query: "data.test.allow == true"
-{{< /tab >}}
-{{< /tabs >}} 
+      extauth:
+        config_ref:
+          name: opa
+          namespace: gloo-system
+EOF
+{{< /highlight >}}
 
-That's all that is needed as far as configuration. Let's verify that all is working as expected.
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
-## Verify
-
-```shell
-URL=$(glooctl proxy url)
+### Testing the configuration
+Paths that don't start with `/api/pets` are not authorized (should return 403):
 ```
-
-Paths that don't start with /api/pets are not authorized (should return 403):
-```
-curl -s -w "%{http_code}\n" $URL/api/
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/
 
 403
 ```
 
-Not allowed to delete pets/1  (should return 403):
+Not allowed to delete `pets/1` (should return 403):
 ```
-curl -s -w "%{http_code}\n" $URL/api/pets/1 -X DELETE
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/1 -X DELETE
 
 403
 ```
 
-Allowed to delete pets/2  (should return 204):
+Allowed to delete `pets/2` (should return 204):
 ```
-curl -s -w "%{http_code}\n" $URL/api/pets/2 -X DELETE
+curl -s -w "%{http_code}\n" $GATEWAY_URL/api/pets/2 -X DELETE
 
 204
 ```
 
-## Open Policy Agent and Open ID Connect
-
-We can use OPA to verify policies on the JWT coming from Gloo's OpenID Connect authentication.
-
-### Install Dex
-Let's first configure an OpenID Connect provider on your cluster. Dex Identity provider is an OpenID Connect that's easy to install for our purposes:
+#### Cleanup
+You can clean up the resources created in this guide by running:
 
 ```
-cat > /tmp/dex-values.yaml <<EOF
+kubectl delete vs -n gloo-system petstore
+kubectl delete ac -n gloo-system opa
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+rm policy.rego
+```
+
+## Validate JWTs with Open Policy Agent
+The Open Policy Agent policy language has in-built support for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you 
+to define policies based on the claims contained in a JWT. If you are using an **authentication** mechanism that conveys 
+identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)), this feature makes 
+it easy to implement **authorization** for authenticated users.
+
+In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo's **OpenID Connect** (OIDC) authentication module.
+
+### Deploy sample application
+{{% notice warning %}}
+The sample `petclinic` application deploys a MySql server. If you are using `minikube` v1.5 to run this guide, this 
+service is likely to crash due a `minikube` [issue](https://github.com/kubernetes/minikube/issues/5751). 
+To get around this, you can start `minikube` with the following flag:
+
+```shell
+minikube start --docker-opt="default-ulimit=nofile=102400:102400" 
+```
+{{% /notice %}}
+
+Let's deploy a sample web application that we will use to demonstrate these features:
+
+```shell script
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+```
+
+### Create a Virtual Service
+Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petclinic` service.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petclinic
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petclinic
+              namespace: default
+            port: 80
+```
+
+To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
+reachable from you machine at `localhost:8080`:
+```
+kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
+```
+
+If you open your browser and navigate to `localhost:8080` you should see the following page:
+
+![Pet Clinic app homepage](petclinic-home.png)
+
+### Secure the Virtual Service
+As we just saw, we were able to reach the service without having to provide any credentials. This is because by default 
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+We will update the Virtual Service so that each request to the sample application is:
+ 
+- authenticated using an **OpenID Connect** flow and
+- authorized by applying an **OPA policy** to the resulting JWT [ID token](https://auth0.com/docs/tokens/id-tokens_) 
+representing the identity of the authenticated user.
+
+#### Install Dex
+To implement the authentication flow, we need an OpenID Connect provider to be running in your cluster. To this end, we 
+will deploy the [Dex](https://github.com/dexidp/dex) identity service, as it easy to install and configure.
+
+Let's start by defining a `dex-values.yaml` Helm values file with some bootstrap configuration for Dex:
+
+```yaml
+cat > dex-values.yaml <<EOF
 config:
+  # The base path of dex and the external name of the OpenID Connect service.
+  # This is the canonical URL that all clients MUST use to refer to dex. If a
+  # path is provided, dex's HTTP service will listen at a non-root URL.
   issuer: http://dex.gloo-system.svc.cluster.local:32000
 
+  # Instead of reading from an external storage, use this list of clients.
   staticClients:
   - id: gloo
     redirectURIs:
@@ -166,6 +314,8 @@ config:
     name: 'GlooApp'
     secret: secretvalue
   
+  # A static list of passwords to login the end user. By identifying here, dex
+  # won't look in its underlying storage for passwords.
   staticPasswords:
   - email: "admin@example.com"
     # bcrypt hash of the string "password"
@@ -178,25 +328,53 @@ config:
     username: "user"
     userID: "123456789-db88-4b73-90a9-3cd1661f5466"
 EOF
-
-helm install --name dex --namespace gloo-system stable/dex -f /tmp/dex-values.yaml
 ```
 
-This configuration deploys dex with two static users.
+This configures Dex with two static users. Notice the **client secret** with value `secretvalue`.
 
-### Deploy Demo App
-
-Deploy the pet clinic demo app
+Using this configuration, we can deploy Dex to our cluster using Helm:
 
 ```shell
-kubectl --namespace default apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
+#### Make the client secret accessible to Gloo
+To be able to act as our OIDC client, Gloo needs to have access to the **client secret** we just defined, so that it can 
+use it to identify itself with the Dex authorization server. Gloo expects the client secret to be stored in a specific format 
+inside of a Kubernetes `Secret`. 
 
-### Create a Policy
+Let's create the secret and name it `oauth`:
+
+{{< tabs >}}
+{{< tab name="glooctl" codelang="shell">}}
+glooctl create secret oauth --client-secret secretvalue oauth
+{{< /tab >}}
+{{< tab name="kubectl" codelang="yaml">}}
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  name: oauth
+  namespace: gloo-system
+data:
+  # The value is a base64 encoding of the following YAML:
+  # config:
+  #   client_secret: secretvalue
+  # Gloo expected OAuth client secrets in this format.
+  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
+{{< /tab >}}
+{{< /tabs >}} 
+<br>
+
+#### Create a Policy
+We now need to define a Policy to control access to our sample application based on the properties contained in the JWT 
+ID tokens issued to authenticated requests by our OIDC provider. Let's store the policy in a file named `check-jwt.rego` 
+(see [the previous guide](#define-an-opa-policy) for more info about the policy language):
 
 ```shell
-cat <<EOF > /tmp/allow-jwt.rego
+cat <<EOF > check-jwt.rego
 package test
 
 default allow = false
@@ -211,58 +389,75 @@ allow {
     not startswith(input.http_request.path, "/owners")
 }
 EOF
-
-kubectl --namespace=gloo-system create configmap allow-jwt --from-file=/tmp/allow-jwt.rego
 ```
 
 This policy allows the request if:
 
-- The user's email is "admin@example.com"
-- **OR**
- - The user's email is "user@exmaple.com" 
- - **AND**
- - The path being accessed does **NOT** start with /owners
+- the user's email is "admin@example.com" **OR**
+- the user's email is "user@example.com" **AND** the path being accessed does **NOT** start with `/owners`.
 
-### Configure Gloo
+Notice how we are using the `io.jwt.decode` function to decode the JWT and how we access claims in the `payload`. 
 
-Cleanup the VirtualService from the previous section:
+Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
+contents of the above policy file:
 
-{{< tabs >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl delete virtualservice default
-{{< /tab >}}
-{{< tab name="kubectl" codelang="shell">}}
-kubectl -n gloo-system delete virtualservice default
-{{< /tab >}}
-{{< /tabs >}} 
+```
+kubectl --namespace=gloo-system create configmap allow-jwt --from-file=check-jwt.rego
+```
 
-Create a new virtual service with the new policy and demo app.
+#### Create a multi-step AuthConfig
+{{% notice warning %}}
+{{% extauth_version_info_note %}}
+{{% /notice %}}
 
-{{< tabs >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create  secret oauth --client-secret secretvalue oauth
-glooctl create vs --name default --namespace gloo-system --oidc-auth-app-url http://localhost:8080/ --oidc-auth-callback-path /callback --oidc-auth-client-id gloo --oidc-auth-client-secret-name oauth --oidc-auth-client-secret-namespace gloo-system --oidc-auth-issuer-url http://dex.gloo-system.svc.cluster.local:32000/ --oidc-scope email --enable-oidc-auth --enable-opa-auth --opa-query 'data.test.allow == true' --opa-module-ref gloo-system.allow-jwt
-glooctl add route --name default --path-prefix / --dest-name default-petclinic-80 --dest-namespace gloo-system
-{{< /tab >}}
-{{< tab name="kubectl" codelang="yaml">}}
-apiVersion: v1
-kind: Secret
-type: Opaque
+Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our 
+Virtual Service.
+
+{{< highlight shell "hl_lines=8-22" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
-  name: oauth
+  name: jwt-opa
   namespace: gloo-system
-data:
-  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
----
+spec:
+  configs:
+  - oauth:
+      app_url: http://localhost:8080/
+      callback_path: /callback
+      client_id: gloo
+      client_secret_ref:
+        name: oauth
+        namespace: gloo-system
+      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+      scopes:
+      - email
+  - opa_auth:
+      modules:
+      - name: allow-jwt
+        namespace: gloo-system
+      query: "data.test.allow == true"
+{{< /highlight >}}
+
+The above `AuthConfig` defines two configurations that Gloo will execute in order: 
+
+1. First, Gloo will use its extauth OIDC module to authenticate the incoming request. If authentication was successful, 
+Gloo will add the JWT ID token to the `Authorization` request header and execute the next configuration; otherwise it 
+will deny the request. Notice how the configuration references the client secret we created earlier and compare the 
+configuration values with the ones we used to bootstrap Dex.
+1. If authentication was successful, Gloo will check the request against the `allow-jwt` OPA policy to determine whether 
+it should be allowed. Notice how the configuration references the `modules` ConfigMap we created earlier and defines a 
+query that allows access only if the `allow` variable in the policy evaluates to `true`.
+
+#### Update the Virtual Service
+Once the AuthConfig has been created, we can use it to secure our Virtual Service:
+
+{{< highlight yaml "hl_lines=20-24" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: default
+  name: petclinic
   namespace: gloo-system
 spec:
-  displayName: default
   virtualHost:
     domains:
     - '*'
@@ -271,69 +466,66 @@ spec:
         prefix: /
       routeAction:
         single:
-          upstream:
-            name: default-petclinic-80
-            namespace: gloo-system
+          kube:
+            ref:
+              name: petclinic
+              namespace: default
+            port: 80
     virtualHostPlugins:
-      extensions:
-        configs:
-          extauth:
-            configs:
-            - oauth:
-                app_url: http://localhost:8080/
-                callback_path: /callback
-                client_id: gloo
-                client_secret_ref:
-                  name: oauth
-                  namespace: gloo-system
-                issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
-                scopes:
-                - email
-            - opa_auth:
-                modules:
-                - name: allow-jwt
-                  namespace: gloo-system
-                query: data.test.allow == true
-{{< /tab >}}
-{{< /tabs >}} 
+      extauth:
+        config_ref:
+          name: jwt-opa
+          namespace: gloo-system
+{{< /highlight >}}
 
+### Testing our configuration
+The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
+your cluster and is not publicly reachable, we need some additional configuration to make our example work. Please note 
+that this is just a workaround to reduce the amount of configuration necessary for this example to work.
 
-### Local Cluster Adjustments
-As we are testing in a local cluster, add `127.0.0.1 dex.gloo-system.svc.cluster.local` to your `/etc/hosts` file:
+1. Port-forward the Dex service so that it is reachable from you machine at `localhost:32000`:
+```shell
+kubectl -n gloo-system port-forward svc/dex 32000:32000 & 
+portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 ```
+
+1. Add an entry to the `/etc/hosts` file on your machine, mapping the `dex.gloo-system.svc.cluster.local` hostname to your 
+`localhost` (the loopback IP address `127.0.0.1`).
+```shell
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-The OIDC flow redirects the browser to a login page hosted by dex. This line in the hosts file will allow this flow to work, with 
-Dex hosted inside our cluster (using `kubectl port-forward`).
-
-Port forward to Gloo and Dex:
+1. Port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/dex 32000:32000 &
 kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+portForwardPid2=$!
 ```
 
-### Verify!
+Now we are ready to test our complete setup! Open you browser and navigate to `localhost:8080`. You should see the 
+following login page:
+
+![Dex login page](./dex-login.png)
 
 {{% notice note %}}
 As the demo app doesn't have a sign-out button, use a private browser window (also known as incognito mode) to access the demo app. This will make it easy to change the user we logged in with.
-If you would like to change the logged in user, just close and re-open the private browser window
+If you would like to change the logged in user, just close and re-open the private browser window.
 {{% /notice %}}
 
-Go to "localhost:8080". You can login with "admin@example.com" or "user@example.com" with the password "password".
+You can login with `admin@example.com` or `user@example.com` with the password `password`. Notice that the admin user 
+has access to all pages, while the regular user can't access the `"Find Owners"` page.
 
-You will notice that the admin user has access to all pages, and that the regular user can't access the "Find Owners" page.
-
-**Success!**
-
-## Summary
-I this tutorial we explored Gloo's Open Policy Agent integration to enable policies on incoming requests. We also saw that we can combine OpenID Connect and Open Policy Agent together to create policies on JSON Web Tokens.
-
-## Cleanup
+### Cleanup
+You can clean up the resources created in this guide by running:
 
 ```
+sudo sed '/127.0.0.1 dex.gloo-system.svc.cluster.local/d' /etc/hosts # remove line from hosts file
+kill $portForwardPid1
+kill $portForwardPid2
 helm delete --purge dex
-kubectl delete -n gloo-system secret  dex-grpc-ca  dex-grpc-client-tls  dex-grpc-server-tls  dex-web-server-ca  dex-web-server-tls
-kubectl delete -n gloo-system vs default
-kubectl delete -n gloo-system configmap allow-get-users allow-jwt
+kubectl delete -n gloo-system secret oauth dex-grpc-ca  dex-grpc-client-tls  dex-grpc-server-tls  dex-web-server-ca  dex-web-server-tls
+kubectl delete virtualservice -n gloo-system petclinic
+kubectl delete authconfig -n gloo-system jwt-opa
+kubectl delete -n gloo-system configmap allow-jwt
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+rm check-jwt.rego dex-values.yaml
 ```

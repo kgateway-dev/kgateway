@@ -6,7 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -40,11 +40,10 @@ metadata:
   namespace: gloo-system
   resourceVersion: "2"
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-      - addr: jsonplaceholder.typicode.com
-        port: 80
+  static:
+    hosts:
+    - addr: jsonplaceholder.typicode.com
+      port: 80
 status: {}
 `
 
@@ -53,12 +52,11 @@ metadata:
   name: jsonplaceholder-80
   namespace: gloo-system
   resourceVersion: "2"
+static:
+  hosts:
+  - addr: jsonplaceholder.typicode.com
+    port: 80
 status: {}
-upstreamSpec:
-  static:
-    hosts:
-    - addr: jsonplaceholder.typicode.com
-      port: 80
 `
 
 	Context("default output should be -o table", func() {
@@ -69,7 +67,7 @@ upstreamSpec:
 
 			// make sure that we created the upstream that we intended
 			up := getUpstream("jsonplaceholder-80")
-			staticSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).Static
+			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
 			expectedHosts := []*static.Host{{Addr: "jsonplaceholder.typicode.com", Port: 80}}
 			Expect(staticSpec.Hosts).To(Equal(expectedHosts))
 

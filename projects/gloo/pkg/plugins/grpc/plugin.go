@@ -24,9 +24,9 @@ import (
 	"github.com/pkg/errors"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -68,7 +68,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	upstreamType, ok := in.UpstreamSpec.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := in.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}

@@ -4,7 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/solo-kit/api/external/kubernetes/namespace"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,9 +113,9 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 
 func makeUpstream(name, namespace string, labels map[string]string) *gloov1.Upstream {
 	us := gloov1.NewUpstream("gloo-system", name)
-	us.UpstreamSpec = &gloov1.UpstreamSpec{UpstreamType: &gloov1.UpstreamSpec_Kube{
+	us.UpstreamType = &gloov1.Upstream_Kube{
 		Kube: &kubeplugin.UpstreamSpec{ServiceNamespace: namespace},
-	}}
+	}
 	us.Metadata.Labels = labels
 	return us
 }

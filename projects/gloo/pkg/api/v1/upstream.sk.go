@@ -39,8 +39,15 @@ func (r *Upstream) Hash() uint64 {
 	// investigate zeroing out owner refs as well
 	return hashutils.HashAll(
 		metaCopy,
-		r.UpstreamSpec,
 		r.DiscoveryMetadata,
+		r.SslConfig,
+		r.CircuitBreakers,
+		r.LoadBalancerConfig,
+		r.ConnectionConfig,
+		r.HealthChecks,
+		r.OutlierDetection,
+		r.UseHttp2,
+		r.UpstreamType,
 	)
 }
 

@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -276,7 +276,7 @@ func (u *updaterUpdater) Run() error {
 
 	if discoveryForUpstream == nil {
 		// TODO: this is probably not going to work unless the upstream type will also have the method required
-		_, ok := u.upstream.UpstreamSpec.UpstreamType.(v1.ServiceSpecSetter)
+		_, ok := u.upstream.UpstreamType.(v1.ServiceSpecSetter)
 		if !ok {
 			// can't set a service spec - which is required from this point on, as heuristic detection requires spec
 			return errors.New("discovery not possible for upstream")
@@ -297,7 +297,7 @@ func (u *updaterUpdater) Run() error {
 		}
 		discoveryForUpstream = res.fp
 		upstreamSave(func(upstream *v1.Upstream) error {
-			servicespecupstream, ok := upstream.UpstreamSpec.UpstreamType.(v1.ServiceSpecSetter)
+			servicespecupstream, ok := upstream.UpstreamType.(v1.ServiceSpecSetter)
 			if !ok {
 				return errors.New("can't set spec")
 			}

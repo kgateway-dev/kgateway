@@ -49,19 +49,18 @@ apiVersion: gloo.solo.io/v1
     name: default-petstore-8080
     namespace: gloo-system
   spec:
-    upstreamSpec:
-      kube:
-        selector:
-          app: petstore
-        serviceName: petstore
-        serviceNamespace: default
-        subsetSpec:
-          selectors:
-          - keys:
-            - color
-        servicePort: 8080
-        serviceSpec:
-          rest:
+    kube:
+      selector:
+        app: petstore
+      serviceName: petstore
+      serviceNamespace: default
+      subsetSpec:
+        selectors:
+        - keys:
+          - color
+      servicePort: 8080
+      serviceSpec:
+        rest:
 ...
 {{< /highlight >}}
 

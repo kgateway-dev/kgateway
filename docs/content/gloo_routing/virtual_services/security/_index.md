@@ -95,7 +95,7 @@ spec:
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-Authentication configuration is defined in [AuthConfig]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto.sk#authconfig" >}}) resources. 
+Authentication configuration is defined in {{< protobuf display="AuthConfig" name="enterprise.gloo.solo.io.AuthConfig">}} resources. 
 `AuthConfig`s are top-level resources, which means that if you are running in Kubernetes, they will be stored in a dedicated CRD.
 Here is an example of a simple `AuthConfig` CRD:
 
@@ -157,8 +157,8 @@ virtualHostPlugins: #  use `routePlugins` or `weightedDestinationPlugins` for ro
 ##### Inheritance rules
 By default, an `AuthConfig` defined on a `Virtual Service` attribute is inherited by all the child attribute:
 
-- `AuthConfig`s defined on `VirtualHosts` are inherited by `Route`s and `WeightedDestination`s.
-- `AuthConfig`s defined on `Route`s are inherited by `WeightedDestination`s.
+- `AuthConfig` resources defined on `VirtualHosts` are inherited by `Route`s and `WeightedDestination`s.
+- `AuthConfig` resources defined on `Route`s are inherited by `WeightedDestination`s.
 
 There are two exceptions to this rule:
 

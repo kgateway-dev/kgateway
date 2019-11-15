@@ -9,7 +9,7 @@ import (
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/errors"
@@ -34,10 +34,10 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
-	if in.GetPlugins() == nil {
+	if in.GetOptions() == nil {
 		return nil
 	}
-	alSettings := in.GetPlugins()
+	alSettings := in.GetOptions()
 	if alSettings.AccessLoggingService == nil {
 		return nil
 	}
