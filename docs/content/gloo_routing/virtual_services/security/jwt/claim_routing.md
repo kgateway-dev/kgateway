@@ -9,7 +9,7 @@ The features used here were introduced with **Gloo Enterprise**, release 0.14.0.
 {{% /notice %}}
 
 In this guide, we will show how to configure Gloo to route requests to different services based on the claims contained 
-in a Json Web Token (JWT). In our example scenario, Solo.io employees will be routed to the canary instance instance of 
+in a JSON Web Token (JWT). In our example scenario, Solo.io employees will be routed to the canary instance instance of 
 a service, while all other authenticated parties will be routed to the primary version of the same service.
 
 ## Setup
@@ -22,13 +22,11 @@ and echoes back a configurable string. We will deploy:
  
 1. a pod that responds with the string "primary" to simulate the primary deployment, 
 ```shell
-kubectl run --generator=run-pod/v1 --labels stage=primary,app=echoapp primary-pod \
-    --image=hashicorp/http-echo -- -text=primary -listen=:8080
+kubectl run --generator=run-pod/v1 --labels stage=primary,app=echoapp primary-pod --image=hashicorp/http-echo -- -text=primary -listen=:8080
 ```
 1. a pod that responds with the string "canary" to simulate the canary deployment, and 
 ```shell
-kubectl run --generator=run-pod/v1 --labels stage=canary,app=echoapp canary-pod \
-    --image=hashicorp/http-echo -- -text=canary -listen=:8080
+kubectl run --generator=run-pod/v1 --labels stage=canary,app=echoapp canary-pod --image=hashicorp/http-echo -- -text=canary -listen=:8080
 ```
 1. a service to route to them.
 ```shell

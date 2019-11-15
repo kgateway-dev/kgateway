@@ -8,13 +8,32 @@ description: JWT verification and Access Control (without an external auth serve
 The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-In this guide, we will show how to use Gloo to verify kubernetes service account JWTs and how to define RBAC policies to 
-control the resources service accounts are allowed to access.
-
+## Table of Contents
+- [Setup](#verifying-kubernetes-service-account-jwts)
+- [Verifying Kubernetes service account JWTs](#verifying-kubernetes-service-account-jwts)
+    - [Deploy sample application](#deploy-sample-application)
+    - [Create a Virtual Service](#create-a-virtual-service)
+    - [Setting up JWT authorization](#setting-up-jwt-authorization)
+        - [Anatomy of Kubernetes service account](#anatomy-of-kubernetes-service-account)
+        - [Retrieve the Kubernetes API server public key](#retrieve-the-kubernetes-api-server-public-key)
+        - [Secure the Virtual Service](#secure-the-virtual-service)
+    - [Testing our configuration](#testing-our-configuration)
+- [Appendix - Use a remote JSON Web Key Set (JWKS) server](#appendix---use-a-remote-json-web-key-set-jwks-server)
+    - [Create the private key](#deploy-sample-application)
+    - [Create the JSON Web Key Set (JWKS)](#create-a-virtual-service)
+    - [Create JWKS server](#setting-up-jwt-authorization)
+    - [Create the JSON Web Token (JWT)](#setting-up-jwt-authorization)
+    - [Testing the configuration](#testing-the-configuration)
+    
+    
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
 It is also assumed that you are using a local `minikube` cluster.
+
+## Verifying Kubernetes service account JWTs
+In this guide, we will show how to use Gloo to verify Kubernetes service account JWTs and how to define RBAC policies to 
+control the resources service accounts are allowed to access.
 
 ### Deploy sample application
 Let's deploy a sample application that we will route requests to during this guide:
@@ -60,7 +79,7 @@ You should see the following output:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-## Setting up JWT authorization
+### Setting up JWT authorization
 Let's create a test pod, with a different service account. We will use this pod to test access 
 with the new service account credentials.
 
@@ -69,7 +88,7 @@ kubectl create serviceaccount svc-a
 kubectl run --generator=run-pod/v1 test-pod --image=fedora:30 --serviceaccount=svc-a --command sleep 10h
 ```
 
-### Anatomy of kubernetes service account
+#### Anatomy of Kubernetes service account
 A service account provides an identity for processes that run inside a Pod. When kubernetes starts a pod, it automatically 
 generates a JWT contains information about the pod's service account and attaches it to the pod. 
 Inside the JWT are *claims* that provide identity information, and a signature for verification. 
@@ -111,7 +130,7 @@ In your output the `kubernetes.io/serviceaccount/service-account.uid` claim will
 The most important claims for this guide are the **iss** claim and the **sub** claim. We will use these
 claims later to verify the identity of the JWT.
 
-### Retrieve the Kubernetes API server public key
+#### Retrieve the Kubernetes API server public key
 Let's get the public key that the Kubernetes API server uses to  verify service accounts:
 
 ```shell
@@ -139,8 +158,8 @@ different on your minikube. The public key is given to the Kubernetes API server
 command line flag. You can check which value was passed via this flag by running `minikube ssh ps ax ww | grep kube-apiserver`.
 {{% /notice %}}
 
-### Secure the Virtual Service
-Now let's configure our Virtual Service to verify JWTs in incoming request using this public key:
+#### Secure the Virtual Service
+Now let's configure our Virtual Service to verify JWTs in the incoming request using this public key:
 
 {{< highlight shell "hl_lines=20-36" >}}
 apiVersion: gateway.solo.io/v1
@@ -354,23 +373,23 @@ kubectl delete virtualservice -n gloo-system petstore
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
-## Appendix - Use a remote Json Web Key Set (JWKS) Server
+## Appendix - Use a remote JSON Web Key Set (JWKS) server
 In the previous part of the guide we saw how to configure Gloo with a public key to verify JWTs. The way we provided 
 Gloo with the key was to include the key itself into the Virtual Service definition. While the simplicity of this 
 approach make it a good candidate for test setups and quick prototyping, it can quickly become unwieldy. 
-A more flexible and scalable approach is to use a **Json Web Key Set (JWKS) Server**. 
+A more flexible and scalable approach is to use a **JSON Web Key Set (JWKS) Server**. 
 A JWKS server allows us to manage the verification keys independently and centrally, making routine tasks 
 such as key rotation much easier.
 
-In this appendix we will demonstrate how to use an external Json Web Key Set (JWKS) server with Gloo. We will:
+In this appendix we will demonstrate how to use an external JSON Web Key Set (JWKS) server with Gloo. We will:
 
 1. create a private key that will be used to sign and verify custom JWTs that we will create;
-1. convert the key from PEM to Json Web Key format;
+1. convert the key from PEM to JSON Web Key format;
 1. deploy a JWKS server to serve the key;
 1. configure Gloo to verify JWTs using the key stored in the server;
 1. create and sign a custom JWT and use it to authenticate with Gloo.
 
-### Create the Private Key
+### Create the private key
 Let's start by creating a private key that we will use to sign our JWTs:
 ```shell
 openssl genrsa 2048 > private-key.pem
@@ -381,9 +400,9 @@ Storing a key on your laptop as done here is not considered secure! Do not use t
 for production workloads. Use appropriate secret management tools to store sensitive information.
 {{% /notice %}}
 
-### Create the Json Web Key Set (JWKS)
+### Create the JSON Web Key Set (JWKS)
 We can use the `openssl` command to extract a PEM encoded public key from the private key. 
-We can then use the `pem-jwk` utility to convert our public key to a Json Web Key format.
+We can then use the `pem-jwk` utility to convert our public key to a JSON Web Key format.
 
 ```shell
 # install pem-jwk utility.
@@ -438,11 +457,11 @@ jq '{"keys":[.]}' jwks.json | tee tmp.json && mv tmp.json jwks.json
 }
 {{< /highlight >}}
 
-Our `jwks.json` file now contains a valid Json Web Key Set (JWKS).
+Our `jwks.json` file now contains a valid JSON Web Key Set (JWKS).
 
-### Create JWKS Server
-Let's create our JWKS server. All that the server needs to do is to serve a Json Web Key Set file. 
-Later we will configure Gloo to grab the Json Web Key Set from the server.
+### Create JWKS server
+Let's create our JWKS server. All that the server needs to do is to serve a JSON Web Key Set file. 
+Later we will configure Gloo to grab the JSON Web Key Set from the server.
 
 We will start by copying the `jwks.json` to a ConfigMap:
 
@@ -558,7 +577,7 @@ spec:
                 url: http://jwks-server/jwks.json
 {{< /highlight >}}
 
-### Create the Json Web Token (JWT)
+### Create the JSON Web Token (JWT)
 We have everything we need to sign and verify a custom JWT with our custom claims.
 We will use the [jwt.io](https://jwt.io) debugger to do so easily.
 
@@ -590,7 +609,7 @@ Here is an image of how the page should look like (click to enlarge):
 
 <img src="../jwt-io.png" alt="jwt.io debugger" style="border: solid 1px; color: lightgrey" width="500px"/>
 
-### Testing our configuration
+### Testing the configuration
 Now we are ready to test our configuration. Let's port-forward the Gloo Gateway Proxy service so that it is reachable 
 from you machine at `localhost:8080`:
 
