@@ -8,6 +8,7 @@ k8s:
 
 settings:
   create: true
+  linkerd: false
   integrations:
     knative:
       enabled: true

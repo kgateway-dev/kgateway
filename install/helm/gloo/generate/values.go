@@ -104,6 +104,7 @@ type Settings struct {
 	Create          bool          `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions      interface{}   `json:"extensions,omitempty"`
 	SingleNamespace bool          `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	Linkerd         bool          `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 }
 
 type Gloo struct {

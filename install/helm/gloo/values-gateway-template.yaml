@@ -9,6 +9,7 @@ k8s:
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
+  linkerd: false
   integrations:
     knative:
       enabled: false
