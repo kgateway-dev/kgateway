@@ -1,5 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Revamp JWT Authorization and claim-based routing documentation.
-  issueLink: https://github.com/solo-io/gloo/issues/1655
-  resolvesIssue: false
