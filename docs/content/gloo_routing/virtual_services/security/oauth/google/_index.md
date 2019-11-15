@@ -5,7 +5,7 @@ description: Setup OpenID Connect (OIDC) authentication with the Google identity
 ---
 
 In this guide we will see how to authenticate users with your application by allowing them to log in to their Google 
-account. This document is just as example to get you started and does not cover all aspects of a complete setup, 
+account. This guide is just an example to get you started and does not cover all aspects of a complete setup, 
 like setting up a domain and SSL certificates.
 
 ## Setup

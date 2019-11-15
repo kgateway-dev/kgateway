@@ -6,13 +6,14 @@ description: Integrating Gloo and Dex Identity Provider
 
 [Dex](https://github.com/dexidp/dex) is an **OpenID Connect identity hub**. Dex can be used to expose a consistent 
 OpenID Connect interface to your applications while allowing your users to authenticate using their existing credentials 
-from various back-ends, including LDAP, SAML, and other OIDC providers. Using an Identity Hub like Dex has the advantage 
+from various back-ends, including LDAP, SAML, and other OIDC providers. Using an identity hub like Dex has the advantage 
 of allowing you to change your authentication back-ends without affecting the rest of the system. 
-You can also use Dex for Kubernetes itself; for example, to allow LDAP logins to work with `kubectl`. This is outside 
-the scope of this document, but you can read more about it [here](https://github.com/dexidp/dex/blob/master/Documentation/kubernetes.md).
+You can also use Dex for authentication to the Kubernetes API server itself; for example, to allow LDAP logins to work 
+with `kubectl`. This is outside the scope of this document, but you can read more about it 
+[here](https://github.com/dexidp/dex/blob/master/Documentation/kubernetes.md).
 
 In this guide we will see how to authenticate users with your application via an OIDC flow that uses Dex as an identity 
-provider. This document is just an example to get you started and does not cover all aspects of a complete setup, 
+provider. This guide is just an example to get you started and does not cover all aspects of a complete setup, 
 like setting up a domain and SSL certificates.
 
 ## Setup
@@ -60,7 +61,7 @@ spec:
 ```
 
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
-reachable from you machine at `localhost:8080`:
+reachable from your machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
 ```
@@ -109,7 +110,8 @@ config:
 EOF
 ```
 
-This configures Dex with a static users. Notice the **client secret** with value `secretvalue`.
+This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` 
+for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
 
 Using this configuration, we can deploy Dex to our cluster using Helm:
 
@@ -118,9 +120,9 @@ helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo
-To be able to act as our OIDC client, Gloo needs to have access to the **client secret** we just defined, so that it can 
-use it to identify itself with the Dex authorization server. Gloo expects the client secret to be stored in a specific format 
-inside of a Kubernetes `Secret`. 
+To be able to act as our OIDC client, Gloo needs to have access to the **client secret** we defined in the Dex configuration, 
+so that it can use it to identify itself with the Dex authorization server. Gloo expects the client secret to be stored 
+in a specific format inside of a Kubernetes `Secret`. 
 
 Let's create the secret and name it `oauth`:
 
@@ -141,7 +143,7 @@ data:
   # The value is a base64 encoding of the following YAML:
   # config:
   #   client_secret: secretvalue
-  # Gloo expected OAuth client secrets in this format.
+  # Gloo expects OAuth client secrets in this format.
   extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
 {{< /tab >}}
 {{< /tabs >}} 
@@ -211,9 +213,10 @@ spec:
 
 ### Testing our configuration
 The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
-your cluster and is not publicly reachable, we need some additional configuration to make our example work:
+your cluster and is not publicly reachable, we need some additional configuration to make our example work. Please note 
+that this is just a workaround to reduce the amount of configuration necessary for this example to work.
 
-1. Port-forward the Dex service so that it is reachable from you machine at `localhost:32000`:
+1. Port-forward the Dex service so that it is reachable from your machine at `localhost:32000`:
 ```shell
 kubectl -n gloo-system port-forward svc/dex 32000:32000 & 
 portForwardPid1=$! # Store the port-forward pid so we can kill the process later
@@ -225,7 +228,7 @@ portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-1. Port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
+1. Port-forward the Gloo Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
 portForwardPid2=$! # Store the port-forward pid so we can kill the process later
@@ -245,6 +248,7 @@ of our sample application!
 You can clean up the resources created in this guide by running:
 
 ```
+sudo sed '/127.0.0.1 dex.gloo-system.svc.cluster.local/d' /etc/hosts # remove line from hosts file
 kill $portForwardPid1
 kill $portForwardPid2
 rm dex-values.yaml

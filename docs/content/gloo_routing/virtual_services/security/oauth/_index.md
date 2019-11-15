@@ -17,11 +17,12 @@ The goal of OIDC is to address this ambiguity by additionally requiring Identity
 **ID Token**. OIDC ID tokens follow the [JSON Web Token (JWT)]({{< ref "gloo_routing/virtual_services/security/jwt" >}}) 
 standard and contain specific fields that your applications can expect and handle. This standardization allows you to
 switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your 
-downstream services; it also allows you to consistently apply additional security measures like 
-[Role-based Access Control (RBAC)]({{< ref "gloo_routing/virtual_services/security/jwt/access_control" >}}) based on the 
-identity of your users (i.e. the contents of their ID token).
+downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ 
+based on the identity of your users, i.e. the contents of their ID token 
+(check out [this guide]({{< ref "gloo_routing/virtual_services/security/jwt/access_control" >}}) for an example of how to 
+use Gloo to apply RBAC policies to JWTs). 
 
-In this page, we will focus on the format of the Gloo API for OIDC authentication.
+In this guide, we will focus on the format of the Gloo API for OIDC authentication.
 
 ## Configuration format
 {{% notice warning %}}
@@ -60,7 +61,8 @@ using Google as an identity provider, Gloo will expect to find OIDC discovery in
 `https://accounts.google.com/.well-known/openid-configuration`.
 - `app_url`: This is the public URL of your application. It is used in combination with the `callback_path` attribute.
 - `callback_path`: The callback path relative to the `app_url`. Once a user has been authenticated, the identity provider 
-will redirect them to this URL. Gloo will intercept requests with this path and will not forward them upstream.
+will redirect them to this URL. Gloo will intercept requests with this path, exchange the authorization code received from 
+Dex for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination.
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
@@ -82,7 +84,7 @@ data:
   # The value is a base64 encoding of the following YAML:
   # config:
   #   client_secret: secretvalue
-  # Gloo expected OAuth client secrets in this format.
+  # Gloo expects OAuth client secrets in this format.
   extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
 {{< /tab >}}
 {{< /tabs >}} 
@@ -90,6 +92,6 @@ data:
 
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
-Gloo, check out the following guides guides:
+Gloo, check out the following guides:
 
 {{% children description="true" %}}
