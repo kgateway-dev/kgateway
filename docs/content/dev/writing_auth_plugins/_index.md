@@ -158,20 +158,20 @@ the functions we just saw. The context will live as long as the plugin configura
 Whenever the auth configuration changes, Gloo will start new `AuthService` instances and signal the termination of the 
 previous ones by cancelling the context it provided them with.
 
-Assuming we start with a blank sheet, i.e. no `AuthConfig` resources are referenced on any of your Virtual Services, 
-following is the sequence of actions that the Gloo external auth service performs when it detects a change in an 
-auth configuration: 
+Assuming we start with a clean sheet, i.e. no `AuthConfig` resources are referenced on any of your Virtual Services, 
+the following is the sequence of actions that the Gloo external auth service performs when it detects a change in an 
+auth configuration. The service:
 
-1. It starts a new cancellable `context.Context`
-1. It loops over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
-    1. It loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
-    2. It invokes `NewConfigInstance` **passing in the context**
-    3. It deserializes the detected plugin config into the provided object
-    4. It invokes `GetAuthService` **passing in the context** and the configuration object
-1. If an error occurred, it returns and does not update the `extauth` server configuration, else it continues
-1. It cancels the previous `context.Context`
-1. It invokes the `Start` functions on all plugins **passing in the context**
-1. It applies the plugin configurations to the `extauth` server state
+1. starts a new cancellable `context.Context`
+1. loops over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
+    1. loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
+    2. invokes `NewConfigInstance` **passing in the context**
+    3. deserializes the detected plugin config into the provided object
+    4. invokes `GetAuthService` **passing in the context** and the configuration object
+1. if an error occurred, it returns and does not update the `extauth` server configuration, else it continues
+1. cancels the previous `context.Context`
+1. invokes the `Start` functions on all plugins **passing in the context**
+1. applies the plugin configurations to the `extauth` server state.
 
 We recommend that you tie all the goroutines that you may spawn to the provided context by watching its `Done` channel. 
 This will prevent your plugin from leaking memory. You can find a great overview of `Context` and how to best use it 
