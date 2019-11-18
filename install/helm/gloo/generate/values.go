@@ -188,6 +188,7 @@ type GatewayProxy struct {
 	Service                   *GatewayProxyService         `json:"service,omitempty"`
 	Tracing                   *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	Args                      map[string]string            `json:"args,omitempty" desc:"command-line arguments for envoy"`
 	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
 	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
 	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
