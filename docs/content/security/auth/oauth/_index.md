@@ -14,12 +14,12 @@ returns an **Access Token** representing the user identity. The protocol does no
 structure of the Access Token, which greatly reduces the portability of OAuth 2.0 implementations.
 
 The goal of OIDC is to address this ambiguity by additionally requiring Identity Providers to return a well-defined 
-**ID Token**. OIDC ID tokens follow the [JSON Web Token (JWT)]({{< ref "security/security/jwt" >}}) 
+**ID Token**. OIDC ID tokens follow the [JSON Web Token (JWT)]({{< ref "security/auth/jwt" >}}) 
 standard and contain specific fields that your applications can expect and handle. This standardization allows you to
 switch between Identity Providers - or support multiple ones at the same time - with minimal, if any, changes to your 
 downstream services; it also allows you to consistently apply additional security measures like _Role-based Access Control (RBAC)_ 
 based on the identity of your users, i.e. the contents of their ID token 
-(check out [this guide]({{< ref "security/security/jwt/access_control" >}}) for an example of how to 
+(check out [this guide]({{< ref "security/auth/jwt/access_control" >}}) for an example of how to 
 use Gloo to apply RBAC policies to JWTs). 
 
 In this guide, we will focus on the format of the Gloo API for OIDC authentication.
@@ -30,7 +30,7 @@ In this guide, we will focus on the format of the Gloo API for OIDC authenticati
 {{% /notice %}}
 
 Following is an example of an `AuthConfig` with an OIDC configuration (for more information on `AuthConfig` CRDs, see 
-the [main page]({{< versioned_link_path fromRoot="/security/security/#auth-configuration-overview" >}}) 
+the [main page]({{< versioned_link_path fromRoot="/security/auth/#auth-configuration-overview" >}}) 
 of the authentication docs):
 
 {{< highlight yaml "hl_lines=8-15" >}}

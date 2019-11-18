@@ -13,7 +13,7 @@ can be used to define and enforce versatile policies in a uniform way across you
 Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see 
 [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-Be sure to check the external auth [configuration overview]({{< ref "security/security#configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< ref "security/auth#configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Table of Contents
@@ -189,7 +189,7 @@ EOF
 {{< /highlight >}}
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "security/security#inheritance-rules" >}}) it.
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "security/auth#inheritance-rules" >}}) it.
 
 ### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):
