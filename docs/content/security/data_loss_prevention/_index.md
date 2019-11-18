@@ -56,7 +56,7 @@ First let's begin by configuring a simple static upstream to an echo site.
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
-{{< readfile file="gloo_routing/virtual_services/data_loss_prevention/us-echo-test.yaml">}}
+{{< readfile file="security/data_loss_prevention/us-echo-test.yaml">}}
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell script">}}
 glooctl create upstream static --static-hosts echo.jsontest.com:80 --name json-upstream
@@ -65,7 +65,7 @@ glooctl create upstream static --static-hosts echo.jsontest.com:80 --name json-u
 
 Now let's configure a simple virtual service to send requests to the upstream.
 ```yaml
-{{< readfile file="gloo_routing/virtual_services/data_loss_prevention/vs-json-upstream.yaml">}}
+{{< readfile file="security/data_loss_prevention/vs-json-upstream.yaml">}}
 ```
 
 Run the following `curl` to get the unmasked response:

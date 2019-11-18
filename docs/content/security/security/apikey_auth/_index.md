@@ -31,7 +31,7 @@ When Gloo matches a request to a route secured with API keys, it looks for a val
 the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on 
 the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
 
-Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security#auth-configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/security/security#auth-configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Setup
@@ -58,7 +58,7 @@ Service to match all requests that:
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
-{{< readfile file="gloo_routing/virtual_services/security/apikey_auth/test-no-auth-vs.yaml">}}
+{{< readfile file="security/security/apikey_auth/test-no-auth-vs.yaml">}}
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell">}}
 glooctl create vs --name test-no-auth --namespace gloo-system --domains foo
@@ -198,7 +198,7 @@ EOF
 {{< /highlight >}}
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/security/security#inheritance-rules" >}}) it.
 
 ### Testing denied requests
 Let's try and resend the same request we sent earlier:

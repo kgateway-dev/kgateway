@@ -15,7 +15,7 @@ control policies.
 ### Authentication in Gloo
 {{% notice note %}}
 This section refers specifically to the **Gloo Enterprise** external auth server. If you are using the open source version 
-of Gloo, please refer to the [Custom Auth section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/custom_auth" >}})
+of Gloo, please refer to the [Custom Auth section]({{< versioned_link_path fromRoot="/security/security/custom_auth" >}})
 of the security docs.
 {{% /notice %}}
 

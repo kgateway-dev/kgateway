@@ -10,7 +10,7 @@ version, this tutorial will not work.
 {{% /notice %}}
 
 We have seen that one way of implementing custom authentication logic is by 
-[providing your own auth server]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/custom_auth" >}}). 
+[providing your own auth server]({{< versioned_link_path fromRoot="/security/security/custom_auth" >}}). 
 While this approach gives you great freedom, it also comes at a cost: 
 
 - You have to write and manage an additional service. If your authentication logic is simple, the plumbing needed to get 
@@ -210,7 +210,7 @@ spec:
 {{< /highlight >}}
 
 Each plugin container image built as described in the *Packaging and publishing the plugin*
-[section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#packaging-and-publishing-the-plugin" >}}) 
+[section]({{< versioned_link_path fromRoot="/security/security/plugin_auth#packaging-and-publishing-the-plugin" >}}) 
 has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the 
 `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy 
 the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available 
@@ -311,7 +311,7 @@ for the next two fields.
 - `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this 
 attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case 
 this will be an instance of `*Config`, as seen in the 
-*Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#building-an-ext-auth-plugin" >}}).
+*Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/security/security/plugin_auth#building-an-ext-auth-plugin" >}}).
 
 {{% notice note %}}
 You may have noticed that the `configs` attribute in the above `AuthConfig` is an array. It is possible to define multiple 

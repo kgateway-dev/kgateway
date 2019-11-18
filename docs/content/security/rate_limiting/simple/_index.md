@@ -41,7 +41,7 @@ kubectl apply \
   --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
-Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security" %}}) documentation on how to configure Gloo to authenticate users.
+Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/security/security" %}}) documentation on how to configure Gloo to authenticate users.
 
 In this example, we restrict authorized users to 200 requests per minute and anonymous users to 1000 requests per hour.
 
