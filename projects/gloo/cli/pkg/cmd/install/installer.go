@@ -144,7 +144,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		return nil, errors.Wrapf(err, "retrieving gloo helm chart archive")
 	}
 
-	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileName, spec.ExtraValues, spec.ValueCallbacks...)
+	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileNames, spec.ExtraValues, spec.ValueCallbacks...)
 	if err != nil {
 		return nil, errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
 	}

@@ -47,7 +47,7 @@ type ValuesCallback func(config *generate.HelmConfig)
 
 // Searches for the value file with the given name in the chart and returns its raw content.
 // NOTE: this also sets the namespace.create attribute to 'true'.
-func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, userValuesFileName string, extraValues chartutil.Values, valueOptions ...ValuesCallback) (*chart.Config, error) {
+func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, userValuesFileNames []string, extraValues chartutil.Values, valueOptions ...ValuesCallback) (*chart.Config, error) {
 	rawAdditionalValues := "{}"
 	if fileName != "" {
 		var found bool
@@ -92,16 +92,18 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, us
 		values.MergeInto(extraValues)
 	}
 
-	if userValuesFileName != "" {
-		uservalues, err := ioutil.ReadFile(userValuesFileName)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed reading user values "+userValuesFileName)
+	for _, userValuesFileName := range userValuesFileNames {
+		if userValuesFileName != "" {
+			uservalues, err := ioutil.ReadFile(userValuesFileName)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed reading user values "+userValuesFileName)
+			}
+			userValues, err := chartutil.ReadValues(uservalues)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed parsing user values")
+			}
+			values.MergeInto(userValues)
 		}
-		userValues, err := chartutil.ReadValues(uservalues)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed parsing user values")
-		}
-		values.MergeInto(userValues)
 	}
 
 	valuesString, err := values.YAML()
@@ -114,7 +116,7 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, us
 }
 
 func GetValuesFromFile(helmChart *chart.Chart, fileName string) (*chart.Config, error) {
-	return GetValuesFromFileIncludingExtra(helmChart, fileName, "", nil)
+	return GetValuesFromFileIncludingExtra(helmChart, fileName, []string{""}, nil)
 }
 
 // Renders the content of the given Helm chart archive:

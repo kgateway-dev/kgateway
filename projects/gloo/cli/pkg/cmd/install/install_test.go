@@ -23,6 +23,11 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("shouldn't get errors for gateway dry run with multiple values", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --values %s --values %s ", file, values1, values2))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	const licenseKey = "--license-key=fake-license-key"
 
 	It("shouldn't get errors for enterprise dry run", func() {

@@ -92,12 +92,12 @@ func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
 	}
 
 	return &GlooInstallSpec{
-		HelmArchiveUri:    helmChartArchiveUri,
-		ProductName:       "glooe",
-		ValueFileName:     "",
-		ExtraValues:       extraValues,
-		ExcludeResources:  pvcExists(opts.Install.Namespace),
-		UserValueFileName: opts.Install.HelmChartValues,
+		HelmArchiveUri:     helmChartArchiveUri,
+		ProductName:        "glooe",
+		ValueFileName:      "",
+		ExtraValues:        extraValues,
+		ExcludeResources:   pvcExists(opts.Install.Namespace),
+		UserValueFileNames: opts.Install.HelmChartValues,
 	}, nil
 }
 

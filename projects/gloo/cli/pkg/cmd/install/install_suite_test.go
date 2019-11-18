@@ -21,7 +21,7 @@ func TestInstall(t *testing.T) {
 
 var RootDir string
 var dir string
-var file string
+var file, values1, values2 string
 
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
@@ -42,6 +42,13 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 
 	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")
+
+	values1 = filepath.Join(dir, "values1.yaml")
+	values2 = filepath.Join(dir, "values2.yaml")
+	_, err = os.Create(values1)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = os.Create(values2)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
