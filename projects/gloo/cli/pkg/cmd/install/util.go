@@ -175,7 +175,7 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	return &GlooInstallSpec{
 		HelmArchiveUri:     helmChartArchiveUri,
 		ValueFileName:      valueFileName,
-		UserValueFileNames: opts.Install.HelmChartValues,
+		UserValueFileNames: opts.Install.HelmChartValueFileNames,
 		ProductName:        "gloo",
 		ExtraValues:        extraValues,
 		ValueCallbacks:     valueCallbacks,
