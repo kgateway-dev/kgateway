@@ -97,7 +97,7 @@ func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
 		ValueFileName:      "",
 		ExtraValues:        extraValues,
 		ExcludeResources:   pvcExists(opts.Install.Namespace),
-		UserValueFileNames: opts.Install.HelmChartValues,
+		UserValueFileNames: opts.Install.HelmChartValueFileNames,
 	}, nil
 }
 

@@ -43,14 +43,14 @@ type Top struct {
 }
 
 type Install struct {
-	DryRun            bool
-	Upgrade           bool
-	Namespace         string
-	HelmChartOverride string
-	HelmChartValues   []string
-	Knative           Knative
-	LicenseKey        string
-	WithUi            bool
+	DryRun                  bool
+	Upgrade                 bool
+	Namespace               string
+	HelmChartOverride       string
+	HelmChartValueFileNames []string
+	Knative                 Knative
+	LicenseKey              string
+	WithUi                  bool
 }
 
 type Knative struct {

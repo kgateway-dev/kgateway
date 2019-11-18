@@ -45,14 +45,25 @@ var _ = BeforeSuite(func() {
 
 	values1 = filepath.Join(dir, "values1.yaml")
 	values2 = filepath.Join(dir, "values2.yaml")
-	_, err = os.Create(values1)
+	f, err := os.Create(values1)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = os.Create(values2)
+	_, err = f.WriteString("namespace:\n  create: false\n")
 	Expect(err).NotTo(HaveOccurred())
+	f.Close()
+
+	f2, err := os.Create(values2)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = f2.WriteString("namespace:\n  create: true\n")
+	Expect(err).NotTo(HaveOccurred())
+	f2.Close()
 })
 
 var _ = AfterSuite(func() {
 	err := os.Remove(file)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.Remove(values1)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.Remove(values2)
 	Expect(err).NotTo(HaveOccurred())
 	err = os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
