@@ -61,8 +61,6 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
       - {{< protobuf name="headers.options.gloo.solo.io.HeaderValueOption" >}}
   - Health Check
       - {{< protobuf name="healthcheck.options.gloo.solo.io.HealthCheck" >}}
-  - Host Rewrite
-      - {{< protobuf name="hostrewrite.options.gloo.solo.io.HostRewrite" >}}
   - JSON Web Tokens (JWT)
       - {{< protobuf name="jwt.options.gloo.solo.io.ClaimToHeader" >}}
       - {{< protobuf name="jwt.options.gloo.solo.io.Jwks" >}}
@@ -79,9 +77,9 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
       - {{< protobuf name="lbhash.options.gloo.solo.io.RouteActionHashConfig" >}}
       - {{< protobuf name="pipe.options.gloo.solo.io.UpstreamSpec" >}}
   - Grouping
-      - {{< protobuf name="plugins.gloo.solo.io.Selector" >}}
-      - {{< protobuf name="plugins.gloo.solo.io.ServiceSpec" >}}
-      - {{< protobuf name="plugins.gloo.solo.io.SubsetSpec" >}}
+      - {{< protobuf name="options.gloo.solo.io.Selector" >}}
+      - {{< protobuf name="options.gloo.solo.io.ServiceSpec" >}}
+      - {{< protobuf name="options.gloo.solo.io.SubsetSpec" >}}
   - Rate Limit
       - {{< protobuf name="ratelimit.options.gloo.solo.io.Action" >}}
       - {{< protobuf name="ratelimit.options.gloo.solo.io.Descriptor" >}}
