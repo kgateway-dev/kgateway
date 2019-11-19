@@ -93,17 +93,18 @@ func GetValuesFromFileIncludingExtra(helmChart *chart.Chart, fileName string, us
 	}
 
 	for _, userValuesFileName := range userValuesFileNames {
-		if userValuesFileName != "" {
-			uservalues, err := ioutil.ReadFile(userValuesFileName)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed reading user values "+userValuesFileName)
-			}
-			userValues, err := chartutil.ReadValues(uservalues)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed parsing user values")
-			}
-			values.MergeInto(userValues)
+		if userValuesFileName == "" {
+			continue
 		}
+		uservalues, err := ioutil.ReadFile(userValuesFileName)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed reading user values "+userValuesFileName)
+		}
+		userValues, err := chartutil.ReadValues(uservalues)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed parsing user values")
+		}
+		values.MergeInto(userValues)
 	}
 
 	valuesString, err := values.YAML()
