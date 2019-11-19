@@ -1,12 +1,16 @@
 ---
-title: Web Application Firewall (Enterprise)
+title: Web Application Firewall
 weight: 30
 ---
+
+{{% notice note %}}
+The WAF feature was introduced with **Gloo Enterprise**, release 0.18.23. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
 
 ## **What is a Web Application Firewall (WAF)**
 A web application firewall (WAF) protects web applications by monitoring, filtering and blocking potentially harmful traffic and attacks that can overtake or exploit them. WAFs do this by intercepting and inspecting the network packets and uses a set of rules to determine access to the web application. In enterprise security infrastructure, WAFs can be deployed to an application or group of applications to provide a layer of protection between the applications and the end users.
 
-Gloo now supports the popular Web Appplication Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
+Gloo now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
 
 ## **WAF in Gloo**
 Gloo Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. The OWASP Core Rule Set is included by default and can be toggled on and off easily, as well as the ability to add or create custom rule sets. More information on the rule sets, and the rules language generally can be found [here](https://www.modsecurity.org/rules.html).
@@ -23,9 +27,14 @@ ModSecurity rule sets are defined in gloo in one of 3 places:
 
 The precedence is as such: `Route` > `VirtualService` > `HttpGateway`. 
 
-The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise feaures in Gloo. The configuration is included in the extensions object of the various plugin sections, this process will be enumerated below, but first we will go over the general flow of configuring WAF in Gloo.
+The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise features in Gloo. 
+The configuration is included in the `plugins` object of the `httpGateway`. This process will be enumerated 
+below, but first we will go over the general flow of configuring WAF in Gloo.
 
-The WAF filter at it's core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. The Gloo API has a few conveniences built on top of that to allow easier access to the Core Rule Set. The  `RuleSet` Api looks as follows:
+The WAF filter at its core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. 
+The Gloo API has a few conveniences built on top of that to allow easier access to the Core Rule Set. 
+The  `RuleSet` Api looks as follows:
+
 ```proto
 message ModSecurity {
     // Disable all rules on the current route
@@ -90,15 +99,13 @@ spec:
   - gateway-proxy-v2
   httpGateway:
     plugins:
-      extensions:
-        configs:
-          waf:
-            customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
-            ruleSets:
-            - ruleStr: |
-                # Turn rule engine on
-                SecRuleEngine On
-                SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+      waf:
+        customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
+        ruleSets:
+        - ruleStr: |
+            # Turn rule engine on
+            SecRuleEngine On
+            SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
   useProxyProto: false
 {{< / highlight >}}
 
@@ -141,16 +148,14 @@ spec:
     domains:
     - '*'
     virtualHostPlugins:
-      extensions:
-        configs:
-          waf:
-            settings:
-              ruleSets:
-              customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
-              - ruleStr: |
-                  # Turn rule engine on
-                  SecRuleEngine On
-                  SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+      waf:
+        settings:
+          ruleSets:
+          customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
+          - ruleStr: |
+              # Turn rule engine on
+              SecRuleEngine On
+              SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
 ...
 {{< / highlight >}}
 
@@ -171,33 +176,31 @@ spec:
     - '*'
     name: gloo-system.default
     virtualHostPlugins:
-      extensions:
-        configs:
-          waf:
-            settings:
-              coreRuleSet:
-                customSettingsString: |
-                    # default rules section
-                    SecRuleEngine On
-                    SecRequestBodyAccess On
-                    # CRS section
-                    # Will block by default
-                    SecDefaultAction "phase:1,log,auditlog,deny,status:403"
-                    SecDefaultAction "phase:2,log,auditlog,deny,status:403"
-                    # only allow http2 connections
-                    SecAction \
-                      "id:900230,\
-                        phase:1,\
-                        nolog,\
-                        pass,\
-                        t:none,\
-                        setvar:'tx.allowed_http_versions=HTTP/2 HTTP/2.0'"
-                    SecAction \
-                    "id:900990,\
-                      phase:1,\
-                      nolog,\
-                      pass,\
-                      t:none,\
+      waf:
+        settings:
+          coreRuleSet:
+            customSettingsString: |
+                # default rules section
+                SecRuleEngine On
+                SecRequestBodyAccess On
+                # CRS section
+                # Will block by default
+                SecDefaultAction "phase:1,log,auditlog,deny,status:403"
+                SecDefaultAction "phase:2,log,auditlog,deny,status:403"
+                # only allow http2 connections
+                SecAction \
+                  "id:900230,\
+                    phase:1,\
+                    nolog,\
+                    pass,\
+                    t:none,\
+                    setvar:'tx.allowed_http_versions=HTTP/2 HTTP/2.0'"
+                SecAction \
+                "id:900990,\
+                  phase:1,\
+                  nolog,\
+                  pass,\
+                  t:none,\
                       setvar:tx.crs_setup_version=310"
 {{< / highlight >}}
 
