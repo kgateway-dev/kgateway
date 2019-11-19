@@ -1,7 +1,5 @@
 namespace:
   create: false
-crds:
-  create: true
 k8s:
   clusterName: cluster.local
 
