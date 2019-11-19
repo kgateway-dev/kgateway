@@ -13,7 +13,7 @@ message Settings {
     bool require_rbac = 1;
 }
 
-// RBAC settings for Virtual Hosts and Routes.s
+// RBAC settings for Virtual Hosts and Routes
 message ExtensionSettings {
     // Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks.
     // If provided on a route, all route settings override any vhost settings
