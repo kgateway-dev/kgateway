@@ -43,17 +43,21 @@ var _ = BeforeSuite(func() {
 
 	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")
 
-	values1 = filepath.Join(dir, "values1.yaml")
-	values2 = filepath.Join(dir, "values2.yaml")
+	values1 = filepath.Join(dir, "values-namespace1.yaml")
+	values2 = filepath.Join(dir, "values-namespace2.yaml")
 	f, err := os.Create(values1)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = f.WriteString("namespace:\n  create: false\n")
+	_, err = f.WriteString(`
+settings:
+  writeNamespace: test-namespace`)
 	Expect(err).NotTo(HaveOccurred())
 	f.Close()
 
 	f2, err := os.Create(values2)
 	Expect(err).NotTo(HaveOccurred())
-	_, err = f2.WriteString("namespace:\n  create: true\n")
+	_, err = f2.WriteString(`
+settings:
+  writeNamespace: test-namespace-2`)
 	Expect(err).NotTo(HaveOccurred())
 	f2.Close()
 })

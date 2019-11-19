@@ -26,9 +26,8 @@ var _ = Describe("Install", func() {
 	It("shouldn't get errors for gateway dry run with multiple values", func() {
 		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --values %s,%s ", file, values1, values2))
 		Expect(err).NotTo(HaveOccurred())
-
 		// Test that the values are being merged as we expect
-		Expect(outputYaml).To(ContainSubstring("kind: Namespace\n"))
+		Expect(outputYaml).To(ContainSubstring("test-namespace-2\n"))
 	})
 
 	const licenseKey = "--license-key=fake-license-key"
