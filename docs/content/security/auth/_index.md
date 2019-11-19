@@ -1,7 +1,7 @@
 ---
-title: Authentication
-weight: 30
-description: Gloo has a few different options for Authentication; choose the one that best suits your use case.
+title: External auth
+weight: 10
+description: Authenticate and authorize requests to your services using Gloo'sexternal auth service.
 ---
 
 ### Why Authenticate in API Gateway Environments

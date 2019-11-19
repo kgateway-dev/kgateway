@@ -1,13 +1,13 @@
 ---
 title: Data Loss Prevention
-weight: 20
-description: Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't logged or leaked
+weight: 40
+description: Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't logged or leaked.
 ---
 
 {{% notice note %}}
 DLP is a feature of **Gloo Enterprise v1.0.0+**. Gloo Enterprise release candidate v1.0.0-rc1 was the first version to
-support this feature. v1.0.0-rc2 contained some minor fixes to the Gloo-provided regexes. This guide is written for
-v1.0.0-rc2+
+support this feature. v1.0.0-rc2 contained some minor fixes to the Gloo-provided regular expressions. 
+This guide is written for v1.0.0-rc2+.
 {{% /notice %}}
 
 ### Understanding DLP

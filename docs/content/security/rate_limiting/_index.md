@@ -1,7 +1,7 @@
 ---
 title: Rate Limiting
-weight: 40
-description: Gloo offers a rate-limiting service based on the Envoy API or an optional simplified API for specifying limits
+weight: 20
+description: Control the rate of traffic sent to your services.
 ---
 
 #### Why Rate Limit in API Gateway Environments

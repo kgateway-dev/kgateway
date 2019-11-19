@@ -1,6 +1,7 @@
 ---
 title: Web Application Firewall
 weight: 30
+description: Filters, monitor, and block potentially harmful HTTP traffic.
 ---
 
 {{% notice note %}}
@@ -8,7 +9,11 @@ The WAF feature was introduced with **Gloo Enterprise**, release 0.18.23. If you
 {{% /notice %}}
 
 ## **What is a Web Application Firewall (WAF)**
-A web application firewall (WAF) protects web applications by monitoring, filtering and blocking potentially harmful traffic and attacks that can overtake or exploit them. WAFs do this by intercepting and inspecting the network packets and uses a set of rules to determine access to the web application. In enterprise security infrastructure, WAFs can be deployed to an application or group of applications to provide a layer of protection between the applications and the end users.
+A web application firewall (WAF) protects web applications by monitoring, filtering and blocking potentially harmful 
+traffic and attacks that can overtake or exploit them. WAFs do this by intercepting and inspecting the network packets 
+and uses a set of rules to determine access to the web application. In enterprise security infrastructure, WAFs can be 
+deployed to an application or group of applications to provide a layer of protection between the applications and the 
+end users.
 
 Gloo now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
 

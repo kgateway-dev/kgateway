@@ -1,12 +1,12 @@
 ---
 title: Open Policy Agent (OPA)
-weight: 20
-description: Fine grained control over Gloo Configuration using Open Policy Agent
+weight: 60
+description: Define fine-grained policies to control Gloo configuration itself.
 ---
 
 ## Motivation
 
-In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use
+In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use 
 normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability
 to create a Gloo VirtualService. RBAC only allows to grant permissions entire objects.
 With the Open Policy Agent, one can specify very fine grain control over Gloo objects.
@@ -18,8 +18,8 @@ You can of-course combine both, as you see fit.
 In this document we will show a simple OPA policy that dictates that all virtual services must not 
 have a prefix re-write.
 
-### Prereqs
-- Install Gloo gateway.
+### Prerequisites
+Install Gloo gateway.
 
 ### Setup
 
