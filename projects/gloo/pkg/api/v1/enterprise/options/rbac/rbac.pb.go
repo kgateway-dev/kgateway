@@ -63,7 +63,7 @@ func (m *Settings) GetRequireRbac() bool {
 	return false
 }
 
-// RBAC settings for Virtual Hosts and Routes.s
+// RBAC settings for Virtual Hosts and Routes
 type ExtensionSettings struct {
 	// Disable RBAC checks on this resource (default false). This is useful to allow access to static resources/login page without RBAC checks.
 	// If provided on a route, all route settings override any vhost settings
