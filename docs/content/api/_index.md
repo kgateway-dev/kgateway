@@ -96,15 +96,13 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
       - {{< protobuf name="ratelimit.options.gloo.solo.io.ServiceSettings" >}}
       - {{< protobuf name="ratelimit.options.gloo.solo.io.Settings" >}}
   - Role Based Access Control (RBAC)
-      - {{< protobuf name="rbac.options.gloo.solo.io.Config" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.ExtensionSettings" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.JWTPrincipal" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.Permissions" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.Policy" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.Principal" >}}
-      - {{< protobuf name="rbac.options.gloo.solo.io.RouteExtension" >}}
       - {{< protobuf name="rbac.options.gloo.solo.io.Settings" >}}
-      - {{< protobuf name="rbac.options.gloo.solo.io.VhostExtension" >}}
+      - {{< protobuf name="rbac.options.gloo.solo.io.ExtensionSettings" >}}
       - {{< protobuf name="rest.options.gloo.solo.io.DestinationSpec" >}}
   - REST Upstreams
       - {{< protobuf name="rest.options.gloo.solo.io.ServiceSpec" >}}
@@ -126,7 +124,6 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
       - {{< protobuf name="tracing.options.gloo.solo.io.TracePercentages" >}}
   - Request Transformation
       - {{< protobuf name="transformation.options.gloo.solo.io.Parameters" >}}
-      - {{< protobuf name="transformation.options.gloo.solo.io.PrefixRewrite" >}}
   - Web Application Firewall (WAF)
       - {{< protobuf name="waf.options.gloo.solo.io.CoreRuleSet" >}}
       - {{< protobuf name="waf.options.gloo.solo.io.Settings" >}}
