@@ -62,34 +62,37 @@ kubectl --namespace gloo-system get gateway
 ```
 
 ```noop
-NAME          AGE
-gateway       8h
-gateway-ssl   8h
+NAME                AGE
+gateway-proxy       61s
+gateway-proxy-ssl   61s
 ```
 
 Each Gateway object specifies a `bindPort` that ultimately gets converted to an Envoy listener:
 
 ```shell
-kubectl --namespace gloo-system get gateway gateway-ssl --output yaml
+kubectl --namespace gloo-system get gateway gateway-proxy-ssl --output yaml
 ```
 
-{{< highlight yaml "hl_lines=6-9" >}}
-apiVersion: gateway.solo.io.v2/v2
+{{< highlight yaml "hl_lines=13-14" >}}
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gateway-ssl
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "5"
+  labels:
+    app: gloo
+    installationId: mJJVFfg3zbihCY9msXdM
+  name: gateway-proxy-ssl
   namespace: gloo-system
 spec:
   bindAddress: '::'
   bindPort: 8443
+  httpGateway: {}
+  proxyNames:
+  - gateway-proxy
   ssl: true
-status:
-  reported_by: gateway
-  state: 1
-  subresource_statuses:
-    '*v1.Proxy gloo-system gateway-proxy':
-      reported_by: gloo
-      state: 1
+  useProxyProto: false
 {{< /highlight >}}
 
 You can change the bindPort in the Gateway resource.
@@ -144,10 +147,10 @@ If you create a VirtualService and assign it TLS/SSL configuration, it will be b
 In the event you have multiple Gateways/listeners or you want more fine-grained control over how a VirtualService gets associated with a Gateway, you can explicitly add the VirtualService name to the Gateway resource like this:
 
 {{< highlight yaml "hl_lines=9-11" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gateway
+  name: gateway-proxy
   namespace: gloo-system
 spec:
   bindAddress: '::'
@@ -223,30 +226,28 @@ items:
           - animalstore.example.com
           name: gloo-system.animal
           routes:
-          - matcher:
-              exact: /animals
+          - matchers:
+             - exact: /animals
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
         - domains:
           - '*'
           name: gloo-system.default
           routes:
-          - matcher:
-              exact: /sample-route-1
+          - matchers:
+             - exact: /sample-route-1
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
       name: listener-::-8443
       sslConfiguations:
       - secretRef:
@@ -389,11 +390,11 @@ glooctl get virtualservice default
 ```
 
 ```noop
-+-----------------|--------------|---------|------|----------|---------|--------+
-| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  |  STATUS  | PLUGINS | ROUTES |
-+-----------------|--------------|---------|------|----------|---------|--------+
-| default         | default      | *       | none | Accepted |         |        |
-+-----------------|--------------|---------|------|----------|---------|--------+
++-----------------|--------------|---------|------|----------|-----------------|--------+
+| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  |  STATUS  | LISTENERPLUGINS | ROUTES |
++-----------------|--------------|---------|------|----------|-----------------|--------+
+| default         | default      | *       | none | Accepted |                 |        |
++-----------------|--------------|---------|------|----------|-----------------|--------+
 ```
 
 This is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
@@ -407,7 +408,7 @@ When you create multiple VirtualServices that have TLS/SSL configuration, Gloo w
 This is similar to the previous FAQ: if you use wildcard domains on all your VirtualServices, they will be merged. If you happen to have wildcard domain on both an HTTP-intended VirtualService (ie, one without TLS/SSL config) and wildcard on the HTTPS-intended VirtualService (ie, one WITH TLS/SSL config), then you need to be explicit about which Gateway should serve which VirtualService. Using the examples from another FAQ in this document, we can explicitly list the VirtualServices for a Gateway:
 
 {{< highlight yaml "hl_lines=9-11" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway

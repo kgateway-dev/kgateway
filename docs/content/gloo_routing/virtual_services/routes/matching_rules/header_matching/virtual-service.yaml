@@ -8,8 +8,8 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          headers:
+      - matchers:
+         - headers:
             - name: header1
               value: value1
             - name: header2
@@ -21,7 +21,7 @@ spec:
             - name: header5
               value: value5
               invertMatch: true
-          prefix: /
+           prefix: /
         routeAction:
           single:
             upstream:

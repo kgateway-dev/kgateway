@@ -111,14 +111,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        exact: /route1
+    - matchers:
+       - exact: /route1
       routeAction:
         single:
           upstream:
             name: default-session-affinity-app-80
             namespace: gloo-system
-      routePlugins:
+      options:
         lbHash:
           hashPolicies: # (1)
           - header: x-test-affinity
@@ -129,8 +129,7 @@ spec:
               name: gloo
               path: /abc
               ttl: 1s # (6)
-        prefixRewrite:
-          prefixRewrite: /count
+        prefixRewrite: /count
 {{< /highlight >}}
 
 ##### Notes on hash policies
@@ -335,22 +334,21 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        exact: /route1
+    - matchers:
+       - exact: /route1
       routeAction:
         single:
           upstream:
             name: default-session-affinity-app-80
             namespace: gloo-system
-      routePlugins:
+      options:
         lbHash:
           hashPolicies:
           - cookie:
               name: gloo
               path: /abc
               ttl: 10s
-        prefixRewrite:
-          prefixRewrite: /count
+        prefixRewrite: /count
 {{< /highlight >}}
 
 Return to the app in your browser and refresh the page a few times.

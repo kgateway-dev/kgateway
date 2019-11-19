@@ -8,8 +8,8 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+         - prefix: /
         routeAction:
           single:
             upstream:

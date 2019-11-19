@@ -208,7 +208,7 @@ With the above configuration, the Virtual Service will look for a JWT on incomin
 
 {{% notice note %}}
 To see all the attributes supported by the JWT API, be sure to check out the correspondent 
-<b>{{< protobuf display="API docs" name="jwt.plugins.gloo.solo.io.VhostExtension">}}</b>.
+<b>{{< protobuf display="API docs" name="jwt.options.gloo.solo.io.VhostExtension">}}</b>.
 {{% /notice %}}
 
 To make things more interesting, we can further configure Gloo to enforce an access control policy on incoming JWTs. 
@@ -273,7 +273,7 @@ The above configuration defines an RBAC policy named `viewer` which only allows 
 
 {{% notice note %}}
 To see all the attributes supported by the RBAC API, be sure to check out the correspondent 
-<b>{{< protobuf display="API docs" name="rbac.plugins.gloo.solo.io.ExtensionSettings">}}</b>.
+<b>{{< protobuf display="API docs" name="rbac.options.gloo.solo.io.ExtensionSettings">}}</b>.
 {{% /notice %}}
 
 ### Testing our configuration
@@ -532,13 +532,12 @@ metadata:
   name: gloo-system-jwks-server-80
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      selector:
-        app: jwks-server
-      serviceName: jwks-server
-      serviceNamespace: gloo-system
-      servicePort: 80
+  kube:
+    selector:
+      app: jwks-server
+    serviceName: jwks-server
+    serviceNamespace: gloo-system
+    servicePort: 80
 {{< /tab >}}
 {{< /tabs >}} 
 

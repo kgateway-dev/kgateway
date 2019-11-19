@@ -11,7 +11,7 @@ provide a Kubernetes selector to allow request forwarding to a subset of Kuberne
 Kubernetes Service. There are currently two steps required to get subsetting to work for Kubernetes upstreams, which are
 the only upstream type currently supported. 
 
-**First**, you need to edit the {{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec">}}
+**First**, you need to edit the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec">}}
 of the Kubernetes Upstream that you want to define subsets for by adding a {{< protobuf name="plugins.gloo.solo.io.SubsetSpec">}}. 
 The `subsetSpec` contains a list of `selectors`, each of which consist of a set of `keys`. Each key represents a Kubernetes 
 label key. These selectors determine how the subsets for the upstream are to be calculated. For example, the following 
@@ -67,7 +67,7 @@ apiVersion: gloo.solo.io/v1
 And then you need to configure the subset within the Virtual Service route action, e.g. the following will only forward
 requests to a subset of the Petstore Service pods that have a label, `color: blue`.
 
-{{< highlight yaml "hl_lines=22-24" >}}
+{{< highlight yaml "hl_lines=21-23" >}}
 apiVersion: gateway.solo.io/v1
   kind: VirtualService
   metadata:
@@ -78,8 +78,8 @@ apiVersion: gateway.solo.io/v1
       domains:
       - '*'
       routes:
-      - matcher:
-          prefix: /petstore/findPetById
+      - matchers:
+         - prefix: /petstore/findPetById
         routeAction:
           single:
             destinationSpec:

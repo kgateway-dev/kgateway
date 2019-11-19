@@ -170,8 +170,8 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /petstore/findPet
+  - matchers:
+     - exact: /petstore/findPet
     routeAction:
       single:
         destinationSpec:

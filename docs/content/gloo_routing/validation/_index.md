@@ -60,7 +60,7 @@ and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
 by removing the `ValidatingWebhookConfiguration`.
 
-The webhook can be configured to perform strict or permissive validation, depending on the `gateay.validation.alwaysAccept` setting in the 
+The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
 {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
 When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo fails to 

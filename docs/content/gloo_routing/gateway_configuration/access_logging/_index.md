@@ -26,7 +26,7 @@ Possible use cases include:
 The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Loggins is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
 
 Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. 
-The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.plugins.gloo.solo.io.AccessLog">}}.
+The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.options.gloo.solo.io.AccessLog">}}.
 
 Gloo supports two types of Access Logging. `File Sink` and `GRPC`.
 
@@ -50,8 +50,8 @@ to see how to include custom attributes in your access logs by leveraging Gloo's
 ##### String formatted
 
 An example config for string formatted logs is as follows:
-{{< highlight yaml "hl_lines=14-19" >}}
-apiVersion: gateway.solo.io.v2/v2
+{{< highlight yaml "hl_lines=15-20" >}}
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   annotations:
@@ -61,10 +61,11 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: 8080
-  gatewayProxyName: gateway-proxy-v2
+  proxyNames: 
+    - gateway-proxy
   httpGateway: {}
   useProxyProto: false
-  plugins:
+  options:
     accessLoggingService:
       accessLog:
       - fileSink:
@@ -79,8 +80,8 @@ The above yaml also includes the Gateway object it is contained in. Notice that 
 
 An example config for JSON formatted logs is as follows:
 
-{{< highlight yaml "hl_lines=14-21" >}}
-apiVersion: gateway.solo.io.v2/v2
+{{< highlight yaml "hl_lines=15-22" >}}
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   annotations:
@@ -90,10 +91,11 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: 8080
-  gatewayProxyName: gateway-proxy-v2
+  proxyNames: 
+    - gateway-proxy
   httpGateway: {}
   useProxyProto: false
-  plugins:
+  options:
     accessLoggingService:
       accessLog:
       - fileSink:
@@ -148,9 +150,9 @@ kubectl get pods -n gloo-system
 NAME                                              READY   STATUS    RESTARTS   AGE
 api-server-5c46c77c9-9724f                        3/3     Running   0          2m49s
 discovery-56dcb649c8-4m9d4                        1/1     Running   0          2m49s
-gateway-proxy-v2-59c46d569-lwhbh                  1/1     Running   0          2m49s
-gateway-proxy-v2-access-logger-6bb9f97fb8-8v8h8   1/1     Running   0          2m49s
-gateway-v2-58c58fcd46-vccmt                       1/1     Running   0          2m49s
+gateway-proxy-59c46d569-lwhbh                  1/1     Running   0          2m49s
+gateway-proxy-access-logger-6bb9f97fb8-8v8h8   1/1     Running   0          2m49s
+gateway-58c58fcd46-vccmt                       1/1     Running   0          2m49s
 gloo-7975c97546-ssh26                             1/1     Running   0          2m49s
 ```
 The output should be similar to the above, minus the generated section of the names.
@@ -160,9 +162,9 @@ Once the petstore pod is up and running we will route some traffic to it, and te
 
 Run the following curl from the routing tutorial doc.
 ```bash
-export GATEWAY_URL=$(glooctl proxy url)
-curl ${GATEWAY_URL}/sample-route-1
+curl $(glooctl proxy url)/sample-route-1
 ```
+returns
 ```
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
@@ -170,8 +172,8 @@ curl ${GATEWAY_URL}/sample-route-1
 Once this command has been run successfully let's go check the access logs to see that it has been delivered and reported.
 
 ```bash
-kubectl get logs -n gloo-system deployments/gateway-proxy-v2-access-logger | grep /api/pets
-{"level":"info","ts":"2019-09-09T17:56:52.669Z","logger":"access_log","caller":"runner/run.go:50","msg":"received http request","logger_name":"test","node_id":"gateway-proxy-v2-59c46d569-kmjhb.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"&Struct{Fields:map[string]*Value{role: &Value{Kind:&Value_StringValue{StringValue:gloo-system~gateway-proxy-v2,},XXX_unrecognized:[],},},XXX_unrecognized:[],}","protocol_version":"HTTP11","request_path":"/api/pets","request_method":"GET","response_status":"&UInt32Value{Value:200,XXX_unrecognized:[],}"}
+kubectl get logs -n gloo-system deployments/gateway-proxy-access-logger | grep /api/pets
+{"level":"info","ts":"2019-09-09T17:56:52.669Z","logger":"access_log","caller":"runner/run.go:50","msg":"received http request","logger_name":"test","node_id":"gateway-proxy-59c46d569-kmjhb.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"&Struct{Fields:map[string]*Value{role: &Value{Kind:&Value_StringValue{StringValue:gloo-system~gateway-proxy,},XXX_unrecognized:[],},},XXX_unrecognized:[],}","protocol_version":"HTTP11","request_path":"/api/pets","request_method":"GET","response_status":"&UInt32Value{Value:200,XXX_unrecognized:[],}"}
 ```
 
 If all went well this command should yield all of the requests whose request path includes `/api/pets`. This particular implementation is very simplistic, meant more for demonstration than anything.

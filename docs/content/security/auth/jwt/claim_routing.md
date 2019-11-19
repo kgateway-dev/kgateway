@@ -47,15 +47,14 @@ metadata:
   name: echoapp
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      serviceName: echoapp
-      serviceNamespace: default
-      servicePort: 80
-      subsetSpec:
-        selectors:
-        - keys:
-          - stage
+  kube:
+    serviceName: echoapp
+    serviceNamespace: default
+    servicePort: 80
+    subsetSpec:
+      selectors:
+      - keys:
+        - stage
 ```
 
 The `subsetSpec` configuration instructs Gloo to partition the endpoints of the `echoapp` service into subsets based on 

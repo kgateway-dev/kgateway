@@ -71,14 +71,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
             name: booksapp-webapp-7000
             namespace: gloo-system
-      routePlugins:
+      options:
         headerManipulation:
           requestHeadersToAdd:
           - header:
@@ -89,7 +89,7 @@ spec:
 The important stanza here is:
 
 ```yaml
-      routePlugins:
+      options:
         headerManipulation:
           requestHeadersToAdd:
           - header:

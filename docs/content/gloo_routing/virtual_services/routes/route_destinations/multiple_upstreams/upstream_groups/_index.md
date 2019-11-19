@@ -43,16 +43,16 @@ spec:
 
 #### Reference Upstream Group in your Route Actions
 
-{{< highlight yaml "hl_lines=5-8 12-15" >}}
+{{< highlight yaml "hl_lines=5-7 11-15" >}}
 routes:
-- matcher:
-    prefix: /myservice
+- matchers:
+   - prefix: /myservice
   routeAction:
     upstreamGroup:
       name: my-service-group
       namespace: gloo-system
-- matcher:
-    prefix: /some/other/path
+- matchers:
+   - prefix: /some/other/path
   routeAction:
     upstreamGroup:
       name: my-service-group

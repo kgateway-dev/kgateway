@@ -65,8 +65,8 @@ For example, the following configuration will forward all matching requests to t
 
 {{< highlight yaml "hl_lines=6-9" >}}
 routes:
-- matcher:
-    prefix: /db
+- matchers:
+   - prefix: /db
   routeAction:
     single:
       consul:
@@ -79,8 +79,8 @@ while this next example will forward the same requests only to the first two ins
 
 {{< highlight yaml "hl_lines=6-9" >}}
 routes:
-- matcher:
-    prefix: /db
+- matchers:
+   - prefix: /db
   routeAction:
     single:
       consul:
@@ -93,8 +93,8 @@ Finally, not specifying any optional filter fields will cause requests to be for
 
 {{< highlight yaml "hl_lines=6-9" >}}
 routes:
-- matcher:
-    prefix: /db
+- matchers:
+   - prefix: /db
   routeAction:
     single:
       consul:

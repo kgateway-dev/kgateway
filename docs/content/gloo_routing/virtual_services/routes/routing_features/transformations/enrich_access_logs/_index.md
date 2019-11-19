@@ -13,20 +13,20 @@ In this tutorial we will see how to use transformations to add custom attributes
 Let's also update the default `Gateway` resource to enable access logging:
 
 {{< highlight yaml "hl_lines=14-38" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   labels:
     app: gloo
-  name: gateway-proxy-v2
+  name: gateway-proxy
   namespace: gloo-system
 proxyNames:
-- gateway-proxy-v2
+- gateway-proxy
 spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway: {}
-  plugins:
+  options:
     accessLoggingService:
       accessLog:
       - fileSink:
@@ -71,8 +71,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
@@ -113,7 +113,7 @@ Now let's take a look at the Gateway logs to verify whether the request has been
 
 ```shell
 # Print only log lines starting with {" (our access logs are formatted as JSON)
-kubectl logs -n gloo-system deployment/gateway-proxy-v2 | grep '^{' | jq
+kubectl logs -n gloo-system deployment/gateway-proxy | grep '^{' | jq
 ```
 
 You should see the following output, indicating that an access log entry has been created for the request we just sent:
@@ -152,20 +152,20 @@ returned by the Postman Echo service (see our earlier `curl` command output).
 We will start by updating the access logging configuration in our Gateway:
 
 {{< highlight yaml "hl_lines=38-41" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   labels:
     app: gloo
-  name: gateway-proxy-v2
+  name: gateway-proxy
   namespace: gloo-system
 proxyNames:
-- gateway-proxy-v2
+- gateway-proxy
 spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway: {}
-  plugins:
+  options:
     accessLoggingService:
       accessLog:
       - fileSink:
@@ -215,14 +215,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
             name: postman-echo
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       transformations:
         # Apply a transformation to the response
         responseTransformation:
@@ -250,7 +250,7 @@ curl $(glooctl proxy url)/get | jq
 Now let's inspect the access logs again:
 
 ```shell
-kubectl logs -n gloo-system deployment/gateway-proxy-v2 | grep '^{' | jq
+kubectl logs -n gloo-system deployment/gateway-proxy | grep '^{' | jq
 ```
 
 You should see an entry like the following:

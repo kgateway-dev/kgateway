@@ -12,7 +12,7 @@ For a more fine grained approach, take a look at using Gloo with [Envoy's native
 
 ## Rate Limit
 
-Rate limits are defined on the virtual service specification as [`spec.virtualHost.virtualHostPlugins.extensions.configs.rate-limit`]({{% protobuf name="ratelimit.plugins.gloo.solo.io.IngressRateLimit" %}}). There is a full example later in this document that shows the rate limit configuration in context.
+Rate limits are defined on the virtual service specification as [`spec.virtualHost.virtualHostPlugins.extensions.configs.rate-limit`]({{% protobuf name="ratelimit.options.gloo.solo.io.IngressRateLimit" %}}). There is a full example later in this document that shows the rate limit configuration in context.
 
 ```yaml
 rate-limit:

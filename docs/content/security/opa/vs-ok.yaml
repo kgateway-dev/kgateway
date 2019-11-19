@@ -8,8 +8,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        exact: /sample-route-1
+    - matchers:
+       - exact: /sample-route-1
       routeAction:
         single:
           upstream:

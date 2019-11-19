@@ -150,20 +150,19 @@ metadata:
   name: ec2-demo-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    awsEc2:
-      filters:
-      - key: gloo-id
-      - kvPair:
-          key: gloo-tag
-          value: group1
-      - kvPair:
-          key: version
-          value: v1.2.3
-      region: us-east-1
-      secretRef:
-        name: gloo-tag-group1
-        namespace: default
+  awsEc2:
+    filters:
+    - key: gloo-id
+    - kvPair:
+        key: gloo-tag
+        value: group1
+    - kvPair:
+        key: version
+        value: v1.2.3
+    region: us-east-1
+    secretRef:
+      name: gloo-tag-group1
+      namespace: default
 ```
 
 ## Create a route to your upstream

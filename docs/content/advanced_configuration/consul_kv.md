@@ -124,16 +124,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: petstore
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 ```
 
 Gloo YAML must be stored in Consul with the correct Key names.
