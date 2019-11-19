@@ -1,7 +1,7 @@
 ---
 title: External auth
 weight: 10
-description: Authenticate and authorize requests to your services using Gloo'sexternal auth service.
+description: Authenticate and authorize requests to your services using Gloo's external auth service.
 ---
 
 ### Why Authenticate in API Gateway Environments
