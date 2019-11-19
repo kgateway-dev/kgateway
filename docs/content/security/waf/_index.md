@@ -1,7 +1,7 @@
 ---
 title: Web Application Firewall
 weight: 30
-description: Filters, monitor, and block potentially harmful HTTP traffic.
+description: Filter, monitor, and block potentially harmful HTTP traffic.
 ---
 
 {{% notice note %}}
