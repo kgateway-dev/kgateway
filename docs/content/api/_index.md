@@ -129,9 +129,7 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
       - {{< protobuf name="transformation.options.gloo.solo.io.PrefixRewrite" >}}
   - Web Application Firewall (WAF)
       - {{< protobuf name="waf.options.gloo.solo.io.CoreRuleSet" >}}
-      - {{< protobuf name="waf.options.gloo.solo.io.RouteSettings" >}}
       - {{< protobuf name="waf.options.gloo.solo.io.Settings" >}}
-      - {{< protobuf name="waf.options.gloo.solo.io.VhostSettings" >}}
 
 <!-- Start of HubSpot Embed Code -->
 <script type="text/javascript" id="hs-script-loader" async defer src="//js.hs-scripts.com/5130874.js"></script>
