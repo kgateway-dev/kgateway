@@ -87,10 +87,12 @@ spec:
       {{- end }}
       containers:
       - args:
-          - --disable-hot-restart:
-          {{- range $key, $value := $spec.args }}
-          - {{ $key }}: {{ $value | quote }}
-          {{- end }}
+          - --disable-hot-restart
+          {{- with $spec.envoyArgs}}
+            {{- range . }}
+          - {{ . }}
+            {{- end }}
+          {{- end}}
         env:
         - name: POD_NAMESPACE
           valueFrom:
