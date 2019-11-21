@@ -1,4 +1,7 @@
 changelog:
 - type: NEW_FEATURE
-  description: Allow users to set envoy command line arguments with Helm values, (e.g. --component-log-level "upstream:trace,misc:error", to set log levels for individual envoy components)
+  description: Add `extraEnvoyArgs` to .Values.gatewayProxies.NAME so users can add additional envoy command line arguments (e.g. --set component-log-level="upstream:trace,misc:error", to set log levels for individual envoy components). See the full list of Envoy command line args here - https://www.envoyproxy.io/docs/envoy/latest/operations/cli
+  issueLink: https://github.com/solo-io/gloo/issues/1737
+- type: HELM
+  description: Add `extraEnvoyArgs` to .Values.gatewayProxies.NAME so users can add additional envoy command line arguments ((e.g. --component-log-level "upstream:trace,misc:error", to set log levels for individual envoy components).  See the full list of Envoy command line args here - https://www.envoyproxy.io/docs/envoy/latest/operations/cli
   issueLink: https://github.com/solo-io/gloo/issues/1737
