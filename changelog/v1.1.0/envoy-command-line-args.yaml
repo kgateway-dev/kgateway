@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Allow users to set envoy command line arguments with Helm values, (e.g. --component-log-level "upstream:trace,misc:error", to set log levels for individual envoy components)
+  issueLink: https://github.com/solo-io/gloo/issues/1737
