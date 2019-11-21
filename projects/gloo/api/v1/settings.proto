@@ -390,7 +390,7 @@ message GatewayOptions {
     // of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
     ValidationOptions validation = 3;
 
-    // When true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather
+    // When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
     // than just the Gateway CRDs in its own namespace
     bool read_gateways_from_all_namespaces = 4;
 }
