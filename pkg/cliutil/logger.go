@@ -1,6 +1,8 @@
 package cliutil
 
 import (
+	"fmt"
+	"github.com/solo-io/gloo/pkg/version"
 	"io"
 	"io/ioutil"
 	"os"
@@ -56,6 +58,8 @@ func Initialize() error {
 			initError = err
 			return
 		}
+		glooVersion := version.Version
+		file.WriteString(fmt.Sprintf("Glooctl Version - %s\n", glooVersion))
 		logger = file
 	})
 	if initError != nil {
