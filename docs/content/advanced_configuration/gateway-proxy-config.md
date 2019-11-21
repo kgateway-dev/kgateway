@@ -23,6 +23,10 @@ To see the entire list of Gloo Helm Overrides, see our [list of Helm Chart value
 The Helm value that sets additional Envoy command line arguments is `gatewayProxies.NAME.extraEnvoyArgs`. 
 To see a list of available Envoy command line arguments, see their [latest command line documentation](https://www.envoyproxy.io/docs/envoy/latest/operations/cli).
 
+{{% notice note %}}
+We will always set `--disable-hot-restart` regardless of any value provided to `extraEnvoyArgs`.
+{{% /notice %}}
+
 An example `values.yaml` file that you could pass in to configure Envoy is:
 ```
 gatewayProxies:
@@ -32,7 +36,6 @@ gatewayProxies:
       - upstream:debug,connection:trace
 ```
 
-{{% notice note %}}
-We will always set `--disable-hot-restart` regardless of any value provided to `extraEnvoyArgs`.
-{{% /notice %}}
+This sets the log levels of individual Envoy components - setting the upstream log levels to `debug`
+and the `connection` component's log level to `trace`.
 
