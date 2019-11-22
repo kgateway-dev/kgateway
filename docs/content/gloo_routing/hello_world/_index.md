@@ -205,16 +205,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
     {{< /highlight >}}
     
 When a virtual service is created, Gloo immediately updates the proxy configuration. Since the 

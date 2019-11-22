@@ -47,24 +47,24 @@ The request must also have a query parameter `param2` with any value, and `param
 To test we can run the following command. Note that the URL must have quotes around it for curl to accept query parameters. 
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=value2&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&param3=v"
 ```
 
 This should return a large json response. We can set an incorrect value for query param 1, and see the curl command return a 404:
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=othervalue&param2=value2&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=othervalue&param2=value2&param3=v"
 ```
 
 If we set a different value for query param 2, the command should work:
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=othervalue&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=othervalue&param3=v"
 ```
 
 Finally, if we set an invalid value for query param 3, the command will return a 404:
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=value2&param3=vv"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&param3=vv"
 ```
 
 ## Summary

@@ -29,14 +29,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/petstore'
+    - matchers:
+       - prefix: '/petstore'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
+      options:
         faults:
           abort:
             percentage: 2.5

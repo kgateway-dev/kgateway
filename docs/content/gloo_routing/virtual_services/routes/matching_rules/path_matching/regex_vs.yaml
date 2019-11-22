@@ -8,8 +8,8 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          regex: /[a-z]{5}
+      - matchers:
+         - regex: /[a-z]{5}
         routeAction:
           single:
             upstream:

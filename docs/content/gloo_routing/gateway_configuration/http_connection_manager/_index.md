@@ -14,7 +14,7 @@ For notes on configuring and using tracing with Gloo, please see the [tracing se
 The tracing configuration fields of the Gateway CRD are highlighted below.
 
 {{< highlight yaml "hl_lines=8-15" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
 spec:
@@ -22,7 +22,7 @@ spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway:
-    plugins:
+    options:
       httpConnectionManagerSettings:
         tracing:
           verbose: true
@@ -39,14 +39,14 @@ Gloo exposes Envoy's powerful configuration capabilities with the HTTP Connectio
 Below, see a reference configuration specification to demonstrate the structure of the expected yaml.
 
 {{< highlight yaml "hl_lines=7-24" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata: # collapsed for brevity
 spec:
   bindAddress: '::'
   bindPort: 8080
   httpGateway:
-    plugins:
+    options:
       httpConnectionManagerSettings:
         skipXffAppend: false
         via: reference-string

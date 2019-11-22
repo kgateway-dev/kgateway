@@ -159,7 +159,7 @@ glooctl add route --name test-petstore --path-prefix /api/pets --dest-name defau
 We can now query this route using curl. 
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/api/pets
+curl -H "Host: foo" $(glooctl proxy url)/api/pets
 ```
 
 This should return: 

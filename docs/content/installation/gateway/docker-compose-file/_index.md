@@ -89,8 +89,8 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      prefix: /petstore/findWithId
+  - matchers:
+     - prefix: /petstore/findWithId
     routeAction:
       single:
         destinationSpec:
@@ -102,8 +102,8 @@ virtualHost:
         upstream:
           name: petstore
           namespace: gloo-system
-  - matcher:
-      prefix: /petstore/findPets
+  - matchers:
+     - prefix: /petstore/findPets
     routeAction:
       single:
         destinationSpec:
@@ -113,16 +113,15 @@ virtualHost:
         upstream:
           name: petstore
           namespace: gloo-system
-  - matcher:
-      prefix: /petstore
+  - matchers:
+     - prefix: /petstore
     routeAction:
       single:
         upstream:
           name: petstore
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 ```
 
 You'll need to wait a minute for the virtual service to get processed by Gloo and the routes exposed externally.

@@ -8,9 +8,9 @@ description: Append and Remove Headers from Requests and Responses using Route c
 Gloo can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
 
 Header Manipulation is configured via the 
-{{< protobuf name="headers.plugins.gloo.solo.io.HeaderManipulation" display="headerManipulation">}} struct.
+{{< protobuf name="headers.options.gloo.solo.io.HeaderManipulation" display="headerManipulation">}} struct.
 
-This struct can be added to {{< protobuf name="gloo.solo.io.RoutePlugins" display="Route Plugins">}}, {{< protobuf name="gloo.solo.io.VirtualHostPlugins" display="Virtual Host Plugins">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationPlugins" display="Weighted Destination Plugins" >}}.
+This struct can be added to {{< protobuf name="gloo.solo.io.RouteOptions" display="Route Options">}}, {{< protobuf name="gloo.solo.io.VirtualHostOptions" display="Virtual Host Options">}}, and {{< protobuf name="gloo.solo.io.WeightedDestinationOptions" display="Weighted Destination Options" >}}.
 
 The `headerManipulation` struct contains four optional fields `requestHeadersToAdd`, `requestHeadersToRemove`,  `responseHeadersToAdd`, and `responseHeadersToRemove` :
 
@@ -62,13 +62,13 @@ headerManipulation:
 
 Depending on where the `headerManipulation` struct is added, the header manipulation will be applied on that level.
 
-* When using `headerManipulation` in `routePlugins`,
+* When using `headerManipulation` in route `options`,
 headers will be manipulated for all traffic matching that route.
 
-* When using `headerManipulation` in `virtualHostPlugins`,
+* When using `headerManipulation` in virtual host `options`,
 headers will be manipulated for all traffic handled by the virtual host.
 
-* When using `headerManipulation` in `weightedDestinationPlugins`,
+* When using `headerManipulation` in weighted destination `options`,
 headers will be manipulated for all traffic that is sent to the specific destination when it is selected for load balancing.
 
 Envoy supports adding dynamic values to request and response headers. The percent symbol (%) is used to 
@@ -89,16 +89,15 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/petstore'
+    - matchers:
+       - prefix: '/petstore'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/pets'
+      options:
+        prefixRewrite: '/api/pets'
         headerManipulation:
           # add headers to all responses 
           # returned by this route
@@ -124,17 +123,16 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/petstore'
+    - matchers:
+       - prefix: '/petstore'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/pets'
-    virtualHostPlugins:
+      options:
+        prefixRewrite: '/api/pets'
+    options:
       headerManipulation:
         # remove headers from all requests 
         # handled by this virtual host
@@ -160,8 +158,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /myservice
+    - matchers:
+       - prefix: /myservice
       routeAction:
         multi:
           destinations:
@@ -175,7 +173,7 @@ spec:
               upstream:
                 name: default-myservice-v2-8080
                 namespace: gloo-system
-            weightedDestinationPlugins:
+            options:
               headerManipulation:
                 # add headers to all requests
                 # that are load balanced to `default-myservice-v2-8080`

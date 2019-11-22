@@ -89,13 +89,13 @@ func init() {
 }
 
 type GlooInstallSpec struct {
-	ProductName       string // gloo or glooe
-	HelmArchiveUri    string
-	ValueFileName     string
-	UserValueFileName string
-	ExtraValues       map[string]interface{}
-	ValueCallbacks    []install.ValuesCallback
-	ExcludeResources  install.ResourceMatcherFunc
+	ProductName        string // gloo or glooe
+	HelmArchiveUri     string
+	ValueFileName      string
+	UserValueFileNames []string
+	ExtraValues        map[string]interface{}
+	ValueCallbacks     []install.ValuesCallback
+	ExcludeResources   install.ResourceMatcherFunc
 }
 
 // Entry point for all three GLoo installation commands
@@ -173,13 +173,13 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 	}
 
 	return &GlooInstallSpec{
-		HelmArchiveUri:    helmChartArchiveUri,
-		ValueFileName:     valueFileName,
-		UserValueFileName: opts.Install.HelmChartValues,
-		ProductName:       "gloo",
-		ExtraValues:       extraValues,
-		ValueCallbacks:    valueCallbacks,
-		ExcludeResources:  nil,
+		HelmArchiveUri:     helmChartArchiveUri,
+		ValueFileName:      valueFileName,
+		UserValueFileNames: opts.Install.HelmChartValueFileNames,
+		ProductName:        "gloo",
+		ExtraValues:        extraValues,
+		ValueCallbacks:     valueCallbacks,
+		ExcludeResources:   nil,
 	}, nil
 }
 

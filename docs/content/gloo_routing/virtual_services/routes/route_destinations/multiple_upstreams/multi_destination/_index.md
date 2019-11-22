@@ -16,8 +16,8 @@ decommissioning the original version. Here's what a route would look like with 9
 
 {{< highlight yaml "hl_lines=5-16" >}}
 routes:
-- matcher:
-    prefix: /myservice
+- matchers:
+   - prefix: /myservice
   routeAction:
     multi:
       destinations:

@@ -73,16 +73,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: petstore
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 ```
 
 {{% notice note %}}

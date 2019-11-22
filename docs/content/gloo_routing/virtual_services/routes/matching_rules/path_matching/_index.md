@@ -43,7 +43,7 @@ glooctl add route --name test-prefix --path-prefix / --dest-name json-upstream
 Since we are using the `foo` domain, if we make a curl request and don't provide the `Host` header, it will 404. 
 
 ```shell
-curl -v $GATEWAY_URL/posts
+curl -v $(glooctl proxy url)/posts
 ```
 
 This will print a 404 response containing:
@@ -57,7 +57,7 @@ This will print a 404 response containing:
 If we pass the `Host` header, we will successfully get results. 
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/posts
+curl -H "Host: foo" $(glooctl proxy url)/posts
 ```
 
 ```json
@@ -198,7 +198,7 @@ glooctl add route --name test-regex --path-regex /[a-z]{5} --dest-name json-upst
 This request will return a 404 because the path `/comments` is more than 5 characters:
 
 ```shell
-curl -v -H "Host: foo" $GATEWAY_URL/comments
+curl -v -H "Host: foo" $(glooctl proxy url)/comments
 ```
 
 However, the following requests will both succeed:

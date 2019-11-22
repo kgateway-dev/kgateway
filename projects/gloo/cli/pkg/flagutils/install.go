@@ -10,7 +10,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.BoolVarP(&install.Upgrade, "upgrade", "u", false, "Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo")
 	set.StringVarP(&install.HelmChartOverride, "file", "f", "", "Install Gloo from this Helm chart archive file rather than from a release")
-	set.StringVarP(&install.HelmChartValues, "values", "", "", "Values for the Gloo Helm chart")
+	set.StringSliceVarP(&install.HelmChartValueFileNames, "values", "", []string{}, "List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
 	set.StringVarP(&install.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
 	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }

@@ -37,9 +37,9 @@ providing advanced configuration for Envoy (including Gloo's custom Envoy filter
 ![Component Architecture](../component_architecture.png "Component Architecture")
 
 * The **Config Watcher** watches the storage layer for updates to user configuration objects ([Upstreams](../concepts#upstreams) and [Virtual Services](../concepts#virtual-services)).
-* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the {{% protobuf name="aws.plugins.gloo.solo.io.DestinationSpec" display="AWS Lambda Plugin"%}}.
+* The **Secret Watcher** watches a secret store for updates to secrets (which are required for certain plugins such as the {{% protobuf name="aws.options.gloo.solo.io.DestinationSpec" display="AWS Lambda Plugin"%}}.
 * **Endpoint Discovery** watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services.
-Endpoint Discovery is plugin-specific. For example, the {{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec" display="Kubernetes Plugin">}} runs its own Endpoint Discovery goroutine.
+Endpoint Discovery is plugin-specific. For example, the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec" display="Kubernetes Plugin">}} runs its own Endpoint Discovery goroutine.
 * The **Translator** receives snapshots of the entire state, composed of user configuration, secrets, and discovery information
 and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
   1. The translation cycle starts by creating **[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)** from all configured upstreams. Each upstream has a **type**, indicating which upstream plugin is responsible for

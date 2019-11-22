@@ -55,7 +55,7 @@ glooctl add route \
     --prefix-rewrite /api/pets
 ```
 
-Since we didn't explicitly create a VirtualSerivce, adding this route will create a default VirtualService named `default`.
+Since we didn't explicitly create a VirtualService, adding this route will create a default VirtualService named `default`.
 
 ```bash
 glooctl get virtualservice default -o yaml
@@ -78,16 +78,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 ```
 
 If we want to query the service to verify routing is working, we can like this:
@@ -158,16 +157,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 {{< /highlight >}}
 
 If we try query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
@@ -265,16 +263,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /animals
+  - matchers:
+     - exact: /animals
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 {{< /highlight >}}     
 
 If everything up to this point looks good, let's try to query the service and make sure to pass in the qualifying `Host` information so that Envoy can serve the correct certificates.
@@ -320,16 +317,15 @@ items:
           - '*'
           name: gloo-system.default
           routes:
-          - matcher:
-              exact: /sample-route-1
+          - matchers:
+             - exact: /sample-route-1
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
       name: listener-::-8443
       sslConfiguations:
       - secretRef:

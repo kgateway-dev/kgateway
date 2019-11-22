@@ -4,7 +4,7 @@ weight: 30
 description: Prefix-rewriting when routing to upstreams
 ---
 
-{{< protobuf name="gloo.solo.io.RoutePlugins" display="PrefixRewrite" >}}
+{{< protobuf name="gloo.solo.io.RouteOptions" display="PrefixRewrite" >}}
 is a route feature that allows you to replace (rewrite) the matched request path with a specified value before sending it upstream.
 
 Routes are processed in order, so the first matching request path is the only one that will be processed.
@@ -39,26 +39,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/invalid'
-    - matcher:
-        prefix: '/bar'
+      options:
+        prefixRewrite: '/api/invalid'
+    - matchers:
+       - prefix: '/bar'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/pets'
+      options:
+        prefixRewrite: '/api/pets'
 status: {}
 EOF
 ```
@@ -101,16 +99,15 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
+      options:
+        prefixRewrite: '/'
 status: {}
 EOF
 ```
@@ -146,26 +143,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo/'
+    - matchers:
+       - prefix: '/foo/'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
-    - matcher:
-        prefix: '/foo'
+      options:
+        prefixRewrite: '/'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
+      options:
+        prefixRewrite: '/'
 status: {}
 EOF
 ```

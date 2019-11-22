@@ -16,8 +16,8 @@ The following configuration will forward all requests to `/petstore` to port `80
 
 {{< highlight yaml "hl_lines=6-10" >}}
 routes:
-- matcher:
-    prefix: /petstore
+- matchers:
+   - prefix: /petstore
   routeAction:
     single:
       kube:

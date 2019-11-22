@@ -9,7 +9,7 @@ title: Gloo
 
 Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generation API gateway. Gloo is exceptional in its function-level routing; its support for legacy apps, microservices and serverless; its discovery capabilities; its numerous features; and its tight integration with leading open-source projects. Gloo is uniquely designed to support hybrid applications, in which multiple technologies, architectures, protocols, and clouds can coexist.
 
-![Gloo Architecture](introduction/gloo_diagram2.png)
+![Gloo Architecture](introduction/gloo_diagram.png)
 
 ## Next Generation API Gateway
 

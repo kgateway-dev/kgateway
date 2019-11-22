@@ -20,11 +20,11 @@ weight: 40
 The two top-level concepts in Gloo are **Virtual Services** and **Upstreams**.
 
 - **Virtual Services** define a set of route rules that live under a domain or set of domains. Route rules consist
-of a *matcher*, which specifies the kind of function calls to match (requests and events,  are currently supported),
+of *matchers*, which specify the kind of function calls to match (requests and events, are currently supported),
 and the name of the destination (or destinations) to route them to.
 
 - **Upstreams** define destinations for routes. Upstreams tell Gloo what to route to. Upstreams may also define
-{{< protobuf name="aws.plugins.gloo.solo.io.LambdaFunctionSpec" display="functions" >}}.)
+{{< protobuf name="aws.options.gloo.solo.io.LambdaFunctionSpec" display="functions" >}}
 and {{< protobuf name="plugins.gloo.solo.io.ServiceSpec" display="service specs">}} for *function-level routing*.
 
 ## Gateways
@@ -32,31 +32,35 @@ and {{< protobuf name="plugins.gloo.solo.io.ServiceSpec" display="service specs"
 **Gateway** definitions set up the protocols and ports on which Gloo listens for traffic.  For example, by default Gloo will have a gateway configured for HTTP and HTTPS traffic:
 
 ```bash
-$  kubectl get gateway -n gloo-system 
+$ kubectl get gateway -n gloo-system 
 
-NAME          AGE
-gateway       2m
-gateway-ssl   2m
+NAME                AGE
+gateway-proxy       61s
+gateway-proxy-ssl   61s
 ```
 
 A single gateway definition looks like the following:
 
 ```yaml
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   annotations:
-    origin: default
-  name: gateway-ssl
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "5"
+  labels:
+    app: gloo
+    installationId: mJJVFfg3zbihCY9msXdM
+  name: gateway-proxy-ssl
   namespace: gloo-system
 spec:
   bindAddress: '::'
   bindPort: 8443
-  gatewayProxyName: gateway-proxy-v2
   httpGateway: {}
+  proxyNames:
+  - gateway-proxy
   ssl: true
   useProxyProto: false
-status: {}
 ```
 
 In this case, we are setting up an HTTP listener on port 8443. When [VirtualServices](#virtual-services) define a TLS context, they'll automatically bind to this Gateway. You can explicitly configure the Gateway to which a [VirtualService](#virtual-services) binds. In addition, you can also create [TCP gateways](../../gloo_routing/tcp_proxy/) that allow for binary traffic. 
@@ -79,31 +83,45 @@ The each domain specified for a `virtualservice` must be unique across the set o
 For many use cases, it may be sufficient to let all routes live on a single virtual service. In this scenario,
 Gloo will use the same set of route rules to for requests, regardless of their `Host` or `:authority` header.
 
-Route rules consist of a *matcher*, which specifies the kind of function calls to match (requests and events,
+Route rules consist of *matchers*, which specify the kind of function calls to match (requests and events,
 are currently supported), and the name of the destination (or destinations, for load balancing) to route them to.
 
 A simple virtual service with a single route might look like this:
 
 ```yaml
-name: my-app
-routes:
-- request_matcher:
-    path_prefix: /
-  single_destination:
-    upstream:
-      name: my-upstream
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: my-upstream
+            namespace: gloo-system
 ```
 
-Note that `domains` is empty (not specified). That means this virtual service will act as the default virtual service, matching
-all domains.
+Note that we could have omitted `domains`, which would default to '*'. This virtual service will act as the default
+virtual service, matching all domains. We could have also omitted `matchers` here, which would default to the `/`
+prefix matcher, which matches all requests.
 
 ### Routes
 
-**Routes** are the primary building block of the virtual service. A route contains a single **matcher** and one of: a
-**single destination**, or a **list of weighted destinations**.
+**Routes** are the primary building block of the virtual service. A route contains a list of **matchers** and one of:
 
-In short, a route is essentially a rule which tells Gloo: **if** the request matches this matcher, **then** route it to this
-destination.
+* a **single destination**
+* a **list of weighted destinations**
+* an **upstream group**
+
+In short, a route is essentially a rule which tells Gloo: **if** the request matches a matcher on the route, **then**
+route it to this destination.
 
 Because multiple matchers can match a single request, the order of routes in the virtual service matters. Gloo
 will select the first route which matches the request when making routing decisions. It is therefore important to place
@@ -143,35 +161,36 @@ types as well as new function types through our plugin interface.
 how to handle routing for the upstream based on its `spec` field. Upstreams have a type-specific `spec` field which must
 be used to provide routing information to Gloo.
 
-The most basic upstream type is the {{< protobuf name="static.plugins.gloo.solo.io.UpstreamSpec" display="static upstream type" >}}, which tells Gloo
+The most basic upstream type is the {{< protobuf name="static.options.gloo.solo.io.UpstreamSpec" display="static upstream type" >}}, which tells Gloo
 a list of static hosts or dns names logically grouped together for an upstream. More sophisticated upstream types
-include the kubernetes upstream and the {{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec" display="AWS Lambda upstream">}}.
+include the kubernetes upstream and the {{< protobuf name="aws.options.gloo.solo.io.UpstreamSpec" display="AWS Lambda upstream">}}.
 
 Let's walk through an example of a kubernetes upstream in order to understand how this works.
 
 Gloo reads in a configuration that looks like the following:
 
 ```yaml
-metadata:
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata: 
   labels:
-    app: redis
     discovered_by: kubernetesplugin
   name: default-redis-6379
   namespace: gloo-system
-  resourceVersion: "7010"
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      gloo: redis
+    serviceName: redis
+    serviceNamespace: gloo-system
+    servicePort: 6379
 status:
-  reportedBy: gloo
-  state: Accepted
-kube:
-  selector:
-    gloo: redis
-  serviceName: redis
-  serviceNamespace: gloo-system
-  servicePort: 6379
+  reported_by: gloo
+  state: 1 # Accepted
 ```
 
 - `name` tells Gloo what the identifier for this upstream will be (for routes that point to it).
-- `type: kubernetes` tells Gloo that the kubernetes plugin knows how to route to this upstream
 - `spec: ...` tells the kubernetes plugin the service name and namespace, which is used by Gloo for routing
 
 ### Functions
@@ -183,37 +202,40 @@ parameters expected by the upstream service.
 We can now route to the function in our virtual service. An example of a virtual service with a route to this upstream:
 
 ```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
 metadata:
   name: default
   namespace: default
-  resourceVersion: "7306"
-status:
-  reportedBy: gateway
-  state: Accepted
-  subresourceStatuses:
-    '*v1.Proxy gloo-system gateway-proxy': {}
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matcher:
-      prefix: /
-    routeAction:
-      single:
-        upstream:
-          name: gloo-system-redis-6379
-          namespace: gloo-system
-    routePlugins:
-      prefixRewrite: {}
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+       - prefix: /petstore/findWithId
+      routeAction:
+        single:
+          destinationSpec:
+            rest:
+              functionName: findPetById
+              parameters:
+                headers:
+                  :path: /petstore/findWithId/{id}
+          upstream:
+            name: petstore
+            namespace: gloo-system
+      options:
+        prefixRewrite: /api/pets
 ```
 
 Note that it is necessary to specify `parameters` for this function invocation. Some function destinations
-require extensions to be specified on the route they belong to. Documentation for each plugin can be found in the Plugins
-section.
+require extensions to be specified on the route they belong to. Documentation for each plugin can be found in the
+Plugins section.
 
 ## Secrets
 
-Certain plugins such as the {{< protobuf name="aws.plugins.gloo.solo.io.UpstreamSpec" display="AWS Lambda Plugin">}}
+Certain plugins such as the {{< protobuf name="aws.options.gloo.solo.io.UpstreamSpec" display="AWS Lambda Plugin">}}
 require the use of secrets for authentication, configuration of SSL Certificates, and other data that should not be
 stored in plaintext configuration.
 

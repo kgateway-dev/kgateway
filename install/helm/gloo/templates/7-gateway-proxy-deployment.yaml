@@ -86,7 +86,13 @@ spec:
       {{- include $spec.extraInitContainersHelper $ | nindent 6 }}
       {{- end }}
       containers:
-      - args: ["--disable-hot-restart"]
+      - args:
+          - --disable-hot-restart
+          {{- with $spec.extraEnvoyArgs}}
+            {{- range . }}
+          - {{ . }}
+            {{- end }}
+          {{- end}}
         env:
         - name: POD_NAMESPACE
           valueFrom:
