@@ -293,7 +293,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:230c1845901af4a986e6820ed687f947e9eedac69fc458baa29e2930cb692ade"
+  digest = "1:9b5816d98ea1683eb564e80ad89e92d10883f2936b4eefbef7c4222307acd3fa"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -312,7 +312,6 @@
     "envoy/config/filter/http/fault/v2",
     "envoy/config/filter/http/health_check/v2",
     "envoy/config/filter/http/rate_limit/v2",
-    "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/filter/network/tcp_proxy/v2",
     "envoy/config/grpc_credential/v2alpha",
@@ -2762,7 +2761,6 @@
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2",
-    "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2",
     "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha",
@@ -2783,12 +2781,10 @@
     "github.com/go-openapi/spec",
     "github.com/go-openapi/swag",
     "github.com/go-swagger/go-swagger/examples/2.0/petstore/server/api",
-    "github.com/gogo/googleapis/google/api",
     "github.com/gogo/googleapis/google/rpc",
     "github.com/gogo/protobuf/gogoproto",
     "github.com/gogo/protobuf/jsonpb",
     "github.com/gogo/protobuf/proto",
-    "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
     "github.com/golang/mock/mockgen/model",
