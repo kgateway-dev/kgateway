@@ -57,7 +57,7 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	ctx = contextutils.WithLoggerValues(ctx, opts.LoggingPrefixVals)
+	ctx = contextutils.WithLoggerValues(ctx, opts.LoggingPrefixVals...)
 
 
 	if opts.UsageReporter != nil {
