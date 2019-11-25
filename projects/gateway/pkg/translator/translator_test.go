@@ -456,8 +456,8 @@ var _ = Describe("Translator", func() {
 				It("should allow a gateway to match virtual services outside its own namespace if so configured", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
-							VirtualServiceSelector: labelSet,
-							VirtualServiceNamespaces:      []string{"*"},
+							VirtualServiceSelector:   labelSet,
+							VirtualServiceNamespaces: []string{"*"},
 						},
 					}
 
