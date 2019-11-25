@@ -78,13 +78,15 @@ message Gateway {
 }
 
 message HttpGateway {
-    // Names of the the virtual services which contain the actual routes for the gateway.
+    // Names and namespaces of the the virtual services which contain the actual routes for the gateway.
     // If the list is empty, all virtual services in the same namespace as this gateway will apply,
-    // with accordance to tls flag above and `valid_vs_namespaces` flag below.
+    // with accordance to `ssl` flag on `Gateway` above.
+    // The default namespace matching behavior can be overridden via `valid_vs_namespaces` flag below.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
-    // Select virtual services by their label.
-    // This will apply only to virtual services in the same namespace as the gateway resource.
+    // Select virtual services by their label. This will apply only to virtual services in the same namespace
+    // as the gateway resource, unless `valid_vs_namespaces` is provided below.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
     map<string, string> virtual_service_selector = 2;
 
@@ -98,7 +100,6 @@ message HttpGateway {
 
     // HTTP Gateway configuration
     gloo.solo.io.HttpListenerOptions options = 8;
-
 }
 
 message TcpGateway {
