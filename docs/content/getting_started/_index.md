@@ -25,6 +25,8 @@ You will also want some type of text editor that understands *YAML*. For real, t
 
 ## Deployment Requirements
 
+There are a number of options when it comes to installing Gloo Gateway. The requirements for each deployment model are described below.
+
 ### Kuberenetes Deployments
 
 Not sure how you will deploy Gloo? This [section](../installation/cluster_setup/) is for you. Gloo Gateway deploys as a set of containers, and is usually deployed on a Kubernetes cluster. In order to install Gloo Gateway, you will need access to a Kubernetes deployment. That could be a local cluster using *minikube* or *minishift*. It could be a hosted cluster on one of the public clouds such as *Google Kubernetes Engine*, *Elastic Kubernetes Service*, or *Azure Kuberentes Service*. You could even host your own Kubernetes cluster in your datacenter! 
