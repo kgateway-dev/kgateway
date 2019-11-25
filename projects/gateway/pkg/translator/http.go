@@ -196,14 +196,14 @@ func virtualServiceNamespaceValidForGateway(gateway *v1.Gateway, virtualService 
 		return false
 	}
 
-	// by default, virtual services must live in the same namespace as the referencing gateway
-	validVsNs := []string{gateway.Metadata.Namespace}
+	// by default, virtual services live in the same namespace as the referencing gateway
+	virtualServiceNamespaces := []string{gateway.Metadata.Namespace}
 
-	if len(httpGateway.ValidVsNamespaces) > 0 {
-		validVsNs = httpGateway.ValidVsNamespaces
+	if len(httpGateway.VirtualServiceNamespaces) > 0 {
+		virtualServiceNamespaces = httpGateway.VirtualServiceNamespaces
 	}
 
-	for _, ns := range validVsNs {
+	for _, ns := range virtualServiceNamespaces {
 		if ns == "*" || virtualService.Metadata.Namespace == ns {
 			return true
 		}
