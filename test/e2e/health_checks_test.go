@@ -144,7 +144,8 @@ var _ = Describe("Health Checks", func() {
 				v.Check.Interval = gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval)
 				v.Check.HealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
 				v.Check.UnhealthyThreshold = gogoutils.UInt32GogoToProto(translator.DefaultThreshold)
-				us.HealthChecks = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{v.Check})
+				us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{v.Check})
+				Expect(err).NotTo(HaveOccurred())
 
 				_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{
 					OverwriteExisting: true,
@@ -211,7 +212,7 @@ var _ = Describe("Health Checks", func() {
 			us, err := testClients.UpstreamClient.Read(tu.Upstream.Metadata.Namespace, tu.Upstream.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			us.HealthChecks = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{
+			us.HealthChecks, err = gogoutils.ToGlooHealthCheckList([]*envoycore.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&translator.DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&translator.DefaultHealthCheckInterval),
@@ -224,6 +225,7 @@ var _ = Describe("Health Checks", func() {
 					},
 				},
 			})
+			Expect(err).NotTo(HaveOccurred())
 
 			_, err = testClients.UpstreamClient.Write(us, clients.WriteOpts{
 				OverwriteExisting: true,

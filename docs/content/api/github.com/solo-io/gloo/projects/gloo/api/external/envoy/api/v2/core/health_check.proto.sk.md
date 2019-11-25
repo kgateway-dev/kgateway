@@ -17,6 +17,7 @@ weight: 5
 - [TcpHealthCheck](#tcphealthcheck)
 - [RedisHealthCheck](#redishealthcheck)
 - [GrpcHealthCheck](#grpchealthcheck)
+- [CustomHealthCheck](#customhealthcheck)
   
 
  
@@ -51,6 +52,7 @@ weight: 5
 "httpHealthCheck": .envoy.api.v2.core.HealthCheck.HttpHealthCheck
 "tcpHealthCheck": .envoy.api.v2.core.HealthCheck.TcpHealthCheck
 "grpcHealthCheck": .envoy.api.v2.core.HealthCheck.GrpcHealthCheck
+"customHealthCheck": .envoy.api.v2.core.HealthCheck.CustomHealthCheck
 "noTrafficInterval": .google.protobuf.Duration
 "unhealthyInterval": .google.protobuf.Duration
 "unhealthyEdgeInterval": .google.protobuf.Duration
@@ -70,9 +72,10 @@ weight: 5
 | `unhealthyThreshold` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of unhealthy health checks required before a host is marked unhealthy. Note that for *http* health checking if a host responds with 503 this threshold is ignored and the host is considered unhealthy immediately. |  |
 | `healthyThreshold` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The number of healthy health checks required before a host is marked healthy. Note that during startup, only a single successful health check is required to mark a host healthy. |  |
 | `reuseConnection` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Reuse health check connection between health checks. Default is true. |  |
-| `httpHealthCheck` | [.envoy.api.v2.core.HealthCheck.HttpHealthCheck](../health_check.proto.sk/#httphealthcheck) | HTTP health check. Only one of `httpHealthCheck`, or `grpcHealthCheck` can be set. |  |
-| `tcpHealthCheck` | [.envoy.api.v2.core.HealthCheck.TcpHealthCheck](../health_check.proto.sk/#tcphealthcheck) | TCP health check. Only one of `tcpHealthCheck`, or `grpcHealthCheck` can be set. |  |
-| `grpcHealthCheck` | [.envoy.api.v2.core.HealthCheck.GrpcHealthCheck](../health_check.proto.sk/#grpchealthcheck) | gRPC health check. Only one of `grpcHealthCheck`, or `tcpHealthCheck` can be set. |  |
+| `httpHealthCheck` | [.envoy.api.v2.core.HealthCheck.HttpHealthCheck](../health_check.proto.sk/#httphealthcheck) | HTTP health check. Only one of `httpHealthCheck`, `tcpHealthCheck`, or `customHealthCheck` can be set. |  |
+| `tcpHealthCheck` | [.envoy.api.v2.core.HealthCheck.TcpHealthCheck](../health_check.proto.sk/#tcphealthcheck) | TCP health check. Only one of `tcpHealthCheck`, `httpHealthCheck`, or `customHealthCheck` can be set. |  |
+| `grpcHealthCheck` | [.envoy.api.v2.core.HealthCheck.GrpcHealthCheck](../health_check.proto.sk/#grpchealthcheck) | gRPC health check. Only one of `grpcHealthCheck`, `httpHealthCheck`, or `customHealthCheck` can be set. |  |
+| `customHealthCheck` | [.envoy.api.v2.core.HealthCheck.CustomHealthCheck](../health_check.proto.sk/#customhealthcheck) | Custom health check. Only one of `customHealthCheck`, `httpHealthCheck`, or `grpcHealthCheck` can be set. |  |
 | `noTrafficInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "no traffic interval" is a special health check interval that is used when a cluster has never had traffic routed to it. This lower interval allows cluster information to be kept up to date, without sending a potentially large amount of active health checking traffic for no reason. Once a cluster has been used for traffic routing, Envoy will shift back to using the standard health check interval that is defined. Note that this interval takes precedence over any other. The default value for "no traffic interval" is 60 seconds. |  |
 | `unhealthyInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy interval" is a health check interval that is used for hosts that are marked as unhealthy. As soon as the host is marked as healthy, Envoy will shift back to using the standard health check interval that is defined. The default value for "unhealthy interval" is the same as "interval". |  |
 | `unhealthyEdgeInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The "unhealthy edge interval" is a special health check interval that is used for the first health check right after a host is marked as unhealthy. For subsequent health checks Envoy will shift back to using either "unhealthy interval" if present or the standard health check interval that is defined. The default value for "unhealthy edge interval" is the same as "unhealthy interval". |  |
@@ -186,6 +189,28 @@ for details.
 | ----- | ---- | ----------- |----------- | 
 | `serviceName` | `string` | An optional service name parameter which will be sent to gRPC service in `grpc.health.v1.HealthCheckRequest <https://github.com/grpc/grpc/blob/master/src/proto/grpc/health/v1/health.proto#L20>`_. message. See `gRPC health-checking overview <https://github.com/grpc/grpc/blob/master/doc/health-checking.md>`_ for more information. |  |
 | `authority` | `string` | The value of the :authority header in the gRPC health check request. If left empty (default value), the name of the cluster this health check is associated with will be used. |  |
+
+
+
+
+---
+### CustomHealthCheck
+
+ 
+Custom health check.
+
+```yaml
+"name": string
+"config": .google.protobuf.Struct
+"typedConfig": .google.protobuf.Any
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `name` | `string` | The registered name of the custom health checker. |  |
+| `config` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) |  Only one of `config` or `typedConfig` can be set. |  |
+| `typedConfig` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) |  Only one of `typedConfig` or `config` can be set. |  |
 
 
 

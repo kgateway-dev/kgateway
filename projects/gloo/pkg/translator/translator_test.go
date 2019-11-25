@@ -493,7 +493,9 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.HealthChecks = gogoutils.ToGlooHealthCheckList(expectedResult)
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
@@ -513,7 +515,9 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.HealthChecks = gogoutils.ToGlooHealthCheckList(expectedResult)
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})

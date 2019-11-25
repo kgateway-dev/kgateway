@@ -3,11 +3,9 @@ package gogoutils
 import (
 	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
@@ -106,26 +104,3 @@ func DurationProtoToStd(pr *duration.Duration) *time.Duration {
 	return &dur
 }
 
-func StructGogoToProto(pr *types.Struct) (*structpb.Struct, error) {
-	byt, err := proto.Marshal(pr)
-	if err != nil {
-		return nil, err
-	}
-	var st structpb.Struct
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
-}
-
-func StructProtoToGogo(pr *structpb.Struct) (*types.Struct, error) {
-	byt, err := proto.Marshal(pr)
-	if err != nil {
-		return nil, err
-	}
-	var st types.Struct
-	if err := proto.Unmarshal(byt, &st); err != nil {
-		return nil, err
-	}
-	return &st, nil
-}

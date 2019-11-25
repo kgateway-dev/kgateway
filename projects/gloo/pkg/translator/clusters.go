@@ -115,7 +115,11 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
 		}
-		result = append(result, gogoutils.ToEnvoyHealthCheck(hc))
+		converted, err := gogoutils.ToEnvoyHealthCheck(hc)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, converted)
 	}
 	return result, nil
 }

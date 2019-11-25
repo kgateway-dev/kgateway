@@ -3,6 +3,7 @@ package gogoutils
 import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 )
@@ -63,15 +64,19 @@ func ToEnvoyOutlierDetection(detection *cluster.OutlierDetection) *envoycluster.
 	}
 }
 
-func ToEnvoyHealthCheckList(check []*core.HealthCheck) []*envoycore.HealthCheck {
+func ToEnvoyHealthCheckList(check []*core.HealthCheck) ([]*envoycore.HealthCheck, error) {
 	result := make([]*envoycore.HealthCheck, len(check))
 	for i, v := range check {
-		result[i] = ToEnvoyHealthCheck(v)
+		var err error
+		result[i], err = ToEnvoyHealthCheck(v)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return result
+	return result, nil
 }
 
-func ToEnvoyHealthCheck(check *core.HealthCheck) *envoycore.HealthCheck {
+func ToEnvoyHealthCheck(check *core.HealthCheck) (*envoycore.HealthCheck, error) {
 	hc := &envoycore.HealthCheck{
 		Timeout:                      DurationStdToProto(check.GetTimeout()),
 		Interval:                     DurationStdToProto(check.GetInterval()),
@@ -115,19 +120,52 @@ func ToEnvoyHealthCheck(check *core.HealthCheck) *envoycore.HealthCheck {
 				Authority:   typed.GrpcHealthCheck.Authority,
 			},
 		}
+	case *core.HealthCheck_CustomHealthCheck_:
+		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
+		case *core.HealthCheck_CustomHealthCheck_Config:
+			converted, err := protoutils.StructGogoToPb(typedConfig.Config)
+			if err != nil {
+				return nil, err
+			}
+			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
+				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
+					Name: typed.CustomHealthCheck.GetName(),
+					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_Config{
+						Config: converted,
+					},
+				},
+			}
+		case *core.HealthCheck_CustomHealthCheck_TypedConfig:
+			converted, err := protoutils.AnyGogoToPb(typedConfig.TypedConfig)
+			if err != nil {
+				return nil, err
+			}
+			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
+				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
+					Name: typed.CustomHealthCheck.GetName(),
+					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_TypedConfig{
+						TypedConfig: converted,
+					},
+				},
+			}
+		}
 	}
-	return hc
+	return hc, nil
 }
 
-func ToGlooHealthCheckList(check []*envoycore.HealthCheck) []*core.HealthCheck {
+func ToGlooHealthCheckList(check []*envoycore.HealthCheck) ([]*core.HealthCheck, error) {
 	result := make([]*core.HealthCheck, len(check))
 	for i, v := range check {
-		result[i] = ToGlooHealthCheck(v)
+		var err error
+		result[i], err = ToGlooHealthCheck(v)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return result
+	return result, nil
 }
 
-func ToGlooHealthCheck(check *envoycore.HealthCheck) *core.HealthCheck {
+func ToGlooHealthCheck(check *envoycore.HealthCheck) (*core.HealthCheck, error) {
 	hc := &core.HealthCheck{
 		Timeout:                      DurationProtoToStd(check.GetTimeout()),
 		Interval:                     DurationProtoToStd(check.GetInterval()),
@@ -171,8 +209,37 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) *core.HealthCheck {
 				Authority:   typed.GrpcHealthCheck.Authority,
 			},
 		}
+	case *envoycore.HealthCheck_CustomHealthCheck_:
+		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
+		case *envoycore.HealthCheck_CustomHealthCheck_Config:
+			converted, err := protoutils.StructPbToGogo(typedConfig.Config)
+			if err != nil {
+				return nil, err
+			}
+			hc.HealthChecker = &core.HealthCheck_CustomHealthCheck_{
+				CustomHealthCheck: &core.HealthCheck_CustomHealthCheck{
+					Name: typed.CustomHealthCheck.GetName(),
+					ConfigType: &core.HealthCheck_CustomHealthCheck_Config{
+						Config: converted,
+					},
+				},
+			}
+		case *envoycore.HealthCheck_CustomHealthCheck_TypedConfig:
+			converted, err := protoutils.AnyPbToGogo(typedConfig.TypedConfig)
+			if err != nil {
+				return nil, err
+			}
+			hc.HealthChecker = &core.HealthCheck_CustomHealthCheck_{
+				CustomHealthCheck: &core.HealthCheck_CustomHealthCheck{
+					Name: typed.CustomHealthCheck.GetName(),
+					ConfigType: &core.HealthCheck_CustomHealthCheck_TypedConfig{
+						TypedConfig: converted,
+					},
+				},
+			}
+		}
 	}
-	return hc
+	return hc, nil
 }
 
 func ToEnvoyPayloadList(payload []*core.HealthCheck_Payload) []*envoycore.HealthCheck_Payload {

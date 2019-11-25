@@ -6,13 +6,12 @@ package hcm
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-	time "time"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
+	math "math"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

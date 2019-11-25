@@ -7,7 +7,7 @@ import (
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -165,7 +165,7 @@ func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_
 			Format: fileSinkType.StringFormat,
 		}
 	case *als.FileSink_JsonFormat:
-		converted, err := gogoutils.StructGogoToProto(fileSinkType.JsonFormat)
+		converted, err := protoutils.StructGogoToPb(fileSinkType.JsonFormat)
 		if err != nil {
 			return err
 		}
