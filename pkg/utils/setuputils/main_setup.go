@@ -32,12 +32,14 @@ import (
 
 type SetupOpts struct {
 	LoggerName        string
-	LoggingPrefixVals []interface{}
 	SetupFunc         SetupFunc
 	ExitOnError       bool
 	CustomCtx         context.Context
 
-	// optional- if present, report usage with the payload this discovers
+	// optional - if present, add these values in each JSOn log line in the gloo pod.
+	// By default, we already log the glooctl version.
+	LoggingPrefixVals []interface{}
+	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
 	// otherwise, we'll provide redundant copies of the usage data
 	UsageReporter client.UsagePayloadReader
@@ -57,7 +59,8 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	ctx = contextutils.WithLoggerValues(ctx, opts.LoggingPrefixVals...)
+	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals)
+	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 
 	if opts.UsageReporter != nil {
