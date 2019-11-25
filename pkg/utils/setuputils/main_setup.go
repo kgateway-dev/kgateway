@@ -37,7 +37,7 @@ type SetupOpts struct {
 	CustomCtx   context.Context
 
 	// optional - if present, add these values in each JSON log line in the gloo pod.
-	// By default, we already log the glooctl version.
+	// By default, we already log the gloo version.
 	LoggingPrefixVals []interface{}
 	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
