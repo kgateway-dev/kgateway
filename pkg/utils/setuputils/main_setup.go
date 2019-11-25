@@ -36,7 +36,7 @@ type SetupOpts struct {
 	ExitOnError bool
 	CustomCtx   context.Context
 
-	// optional - if present, add these values in each JSOn log line in the gloo pod.
+	// optional - if present, add these values in each JSON log line in the gloo pod.
 	// By default, we already log the glooctl version.
 	LoggingPrefixVals []interface{}
 	// optional - if present, report usage with the payload this discovers
