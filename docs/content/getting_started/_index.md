@@ -1,5 +1,5 @@
 ---
-title: Getting Started
+title: Getting Started with Gloo
 weight: 15
 ---
 
@@ -7,7 +7,7 @@ weight: 15
 
 We know you want to jump right in and start hacking away with Gloo. That's awesome! If you want to try out Gloo in a hosted setting, please check out our [Katacoda](https://katacoda.com/solo-io) courses that will guide you through a number of scenarios using Gloo, all in a sandboxed environment.
 
-If you'd rather start using Gloo on your local machine, make sure you have following list of utilities necessary to work with the Gloo tutorials. After the list are some [optional components](#optional-components) and [recommendations](#where-to-next) of where to start.
+If you'd rather start using Gloo on your local machine, make sure you have following list of utilities necessary to work with the Gloo tutorials. After the list are some [deployment requirements](#deployment-requirements) depending on your deployment model and [recommendations](#where-to-next) of where to start.
 
 ## Utilities List
 
@@ -23,7 +23,7 @@ Below is a list of all the required components and common utilities for use with
 
 You will also want some type of text editor that understands *YAML*. For real, there is going to be **a lot** of *YAML* and getting the spacing wrong is a huge pain. There are many great tools out there including, but not limited to Visual Studio Code, Sublime Text, and the venerable Vim.
 
-## Optional Components
+## Deployment Requirements
 
 ### Kuberenetes Deployments
 
