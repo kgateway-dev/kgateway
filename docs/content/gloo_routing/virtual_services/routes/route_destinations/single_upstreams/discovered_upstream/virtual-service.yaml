@@ -8,8 +8,8 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /api/pets
+      - matchers:
+         - prefix: /api/pets
         routeAction:
           single:
             upstream:

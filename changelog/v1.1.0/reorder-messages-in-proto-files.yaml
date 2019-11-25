@@ -1,0 +1,9 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Re-order the messages in the security-related proto files so that higher-level messages appear at the top of the file.
+    this will improve the experience of navigating to the protos. We currently link mostly to the messages that represent
+    VirtualHost/Route options, which often are at the bottom of the proto files. This causes the browser to seemingly focus
+    on unrelated messages when navigating to such messages.
+  issueLink: https://github.com/solo-io/gloo/issues/1655
+  resolvesIssue: false

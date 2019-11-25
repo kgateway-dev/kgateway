@@ -22,7 +22,7 @@ glooctl install gateway [flags]
   -h, --help                 help for gateway
   -n, --namespace string     namespace to install gloo into (default "gloo-system")
   -u, --upgrade              Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
-      --values string        Values for the Gloo Helm chart
+      --values strings       List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
       --with-admin-console   install gloo and a read-only version of its admin console
 ```
 

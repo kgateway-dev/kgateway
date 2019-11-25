@@ -47,7 +47,7 @@ We'll write a simple `UpstreamSpec` proto for the new `gce` upstream type:
 
 ```proto
 syntax = "proto3";
-package gce.plugins.gloo.solo.io;
+package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
@@ -80,7 +80,7 @@ mkdir -p projects/gloo/api/v1/plugins/gce
 # paste the proto code from above to projects/gloo/api/v1/plugins/gce/gce.proto 
 cat > projects/gloo/api/v1/plugins/gce/gce.proto <<EOF
 syntax = "proto3";
-package gce.plugins.gloo.solo.io;
+package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
@@ -174,11 +174,11 @@ message UpstreamSpec {
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
-        kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;
-        static.plugins.gloo.solo.io.UpstreamSpec static = 4;
-        aws.plugins.gloo.solo.io.UpstreamSpec aws = 2;
-        azure.plugins.gloo.solo.io.UpstreamSpec azure = 3;
-        consul.plugins.gloo.solo.io.UpstreamSpec consul = 5;
+        kubernetes.options.gloo.solo.io.UpstreamSpec kube = 1;
+        static.options.gloo.solo.io.UpstreamSpec static = 4;
+        aws.options.gloo.solo.io.UpstreamSpec aws = 2;
+        azure.options.gloo.solo.io.UpstreamSpec azure = 3;
+        consul.options.gloo.solo.io.UpstreamSpec consul = 5;
         // add the following line
         gce.plugins.gloo.solo.io.UpstreamSpec gce = 11;
     }

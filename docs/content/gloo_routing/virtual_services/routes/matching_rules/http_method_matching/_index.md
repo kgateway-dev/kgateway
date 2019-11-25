@@ -42,7 +42,7 @@ glooctl add route --name test-post --method POST  --path-prefix / --dest-name js
 Let's POST to that route and make sure it works:
 
 ```shell
-curl -H "Host: foo" -XPOST $GATEWAY_URL/posts
+curl -H "Host: foo" -XPOST $(glooctl proxy url)/posts
 ```
 
 returns
@@ -79,13 +79,13 @@ glooctl add route --name test-get --method GET  --path-prefix / --dest-name json
 Now POST requests will return a 404:
 
 ```shell
-curl -v -H "Host: foo" -XPOST $GATEWAY_URL/posts
+curl -v -H "Host: foo" -XPOST $(glooctl proxy url)/posts
 ```
 
 But GET requests succeed:
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/posts
+curl -H "Host: foo" $(glooctl proxy url)/posts
 ```
 
 ## Summary 

@@ -59,6 +59,7 @@ message ExtAuthExtension {
   }
 }
 
+// Global external auth settings
 message Settings {
   // The upstream to ask about auth decisions
   core.solo.io.ResourceRef extauthz_server_ref = 1;

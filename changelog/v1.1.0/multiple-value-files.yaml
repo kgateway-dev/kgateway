@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow multiple value files to be passed in during installation, (e.g. `glooctl install gateway --dry-run --values file1.yaml,file2.yaml --values file3.yaml`).
+    issueLink: https://github.com/solo-io/gloo/issues/1731

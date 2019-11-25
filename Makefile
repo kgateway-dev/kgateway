@@ -413,7 +413,7 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(GLOOE_VERSION)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := true
+ASSETS_ONLY := false
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets

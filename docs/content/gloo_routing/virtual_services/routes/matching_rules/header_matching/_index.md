@@ -64,7 +64,7 @@ We can now make a curl request to the new virtual service and set valid values f
 Let's send a request that satisfies all these criteria:
 
 ```shell
-curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v"  $(glooctl proxy url)/posts
 ```
 
 This returns a `json` list of posts. 
@@ -72,30 +72,30 @@ This returns a `json` list of posts.
 If we use an incorrect value for `header1`, we'll see a 404:
 
 ```shell
-curl -v -H "Host: foo" -H "header1: othervalue" -H "header2: value2" -H "header3: v"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: othervalue" -H "header2: value2" -H "header3: v"  $(glooctl proxy url)/posts
 ```
 
 If we use a different value for `header2`, we'll see all the posts:
 ```shell
-curl -v -H "Host: foo" -H "header1: value1" -H "header2: othervalue" -H "header3: v"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: value1" -H "header2: othervalue" -H "header3: v"  $(glooctl proxy url)/posts
 ```
 
 If we use an invalid value for `header3`, we'll get a 404: 
 ```shell
-curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: value3"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: value3"  $(glooctl proxy url)/posts
 ```
 
 The `invertMatch` attribute in the last entry causes request to be matched only if it does **not** include a header named 
 `header4`. If we send a request with that header, we'll get a 404 response:
 ```shell
-curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v" -H "header4: value4"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v" -H "header4: value4"  $(glooctl proxy url)/posts
 ```
 
 The `invertMatch` attribute can be combined with value match specifications. Where `header4` had no value spec, the inversion invalidated all possible values.
 The match constraints on `header5`, on the other hand, mean that if `header5` is present, the request will only match if the value is not equal to ``value5``.
 If we send a request with that value, we'll get a 404 response:
 ```shell
-curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v" -H "header5: value5"  $GATEWAY_URL/posts
+curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v" -H "header5: value5"  $(glooctl proxy url)/posts
 ```
 
 ## Summary

@@ -167,8 +167,8 @@ metadata:
 spec:
   virtualHost:
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       route_action:
         single:
           upstream:

@@ -17,7 +17,7 @@ When shadowing traffic, you can use tools like [Open Diffy](https://github.com/o
 
 ## How to shadow traffic with Gloo
 
-To enable traffic shadowing in Gloo, we need to add a `routePlugin` to the VirtualService as seen below. We configure the new service to which to shadow as well as how much of the original live traffic to shadow. For example, you may wish to only shadow 5% of all traffic and observe how it behaves. The following fields control those variables:
+To enable traffic shadowing in Gloo, we need to add a route option to the VirtualService as seen below. We configure the new service to which to shadow as well as how much of the original live traffic to shadow. For example, you may wish to only shadow 5% of all traffic and observe how it behaves. The following fields control those variables:
 
 * `upstream` : Indicates the upstream to which to send the shadowed traffic.
 * `percentage` : Percent of traffic to shadow (must be an integer between 0 and 100).
@@ -34,14 +34,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/petstore'
+    - matchers:
+       - prefix: '/petstore'
       routeAction:
         single:
           upstream:
             name: 'petstore'
             namespace: 'gloo-system'
-      routePlugins:
+      options:
         shadowing:
           upstream:
             name: 'petstore-v2'

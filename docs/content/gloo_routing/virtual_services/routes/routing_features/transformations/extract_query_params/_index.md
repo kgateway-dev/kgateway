@@ -23,8 +23,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
@@ -79,14 +79,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
             name: postman-echo
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       transformations:
         requestTransformation:
           transformationTemplate:
@@ -113,7 +113,7 @@ spec:
                 text: '{{ bar }}'
 {{< /highlight >}}  
 
-The above `virtualHostPlugins` configuration is to be interpreted as following:
+The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.

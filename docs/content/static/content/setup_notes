@@ -1,6 +1,8 @@
-This guide assumes that you have installed Gloo into the `gloo-system` namespace and that `glooctl` is installed on your
-machine. For convenience, let's also store the URL of the Gloo Gateway in a variable in your terminal:
+This guide assumes that you have deployed Gloo to the `gloo-system` namespace and that the `glooctl` command line utility
+is installed on your machine. `glooctl` provides several convenient functions to view, manipulate, and debug Gloo resources;
+in particular, it is worth mentioning the following command, which we will use each time we need to retrieve the URL of
+the Gloo Gateway that is running inside your cluster:
 
 ```shell
-export GATEWAY_URL=$(glooctl proxy url)
+glooctl proxy url
 ```

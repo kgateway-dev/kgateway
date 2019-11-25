@@ -315,6 +315,7 @@ func (*ExtAuthExtension) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// Global external auth settings
 type Settings struct {
 	// The upstream to ask about auth decisions
 	ExtauthzServerRef *core.ResourceRef `protobuf:"bytes,1,opt,name=extauthz_server_ref,json=extauthzServerRef,proto3" json:"extauthz_server_ref,omitempty"`

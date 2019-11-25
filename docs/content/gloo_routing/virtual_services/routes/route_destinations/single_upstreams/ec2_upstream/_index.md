@@ -163,7 +163,7 @@ Add the ARNs of each of the user accounts that you want to allow to assume this 
 
 ### Create an EC2 Upstream
 
-- Finally, make an upstream that points to the resources that you want to route to.
+Finally, make an upstream that points to the resources that you want to route to:
 
 ```yaml
 apiVersion: gloo.solo.io/v1

@@ -4,8 +4,7 @@ metadata:
   name: json-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    static:
-      hosts:
-        - addr: jsonplaceholder.typicode.com
-          port: 80
+  static:
+    hosts:
+      - addr: jsonplaceholder.typicode.com
+        port: 80

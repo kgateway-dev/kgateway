@@ -266,22 +266,21 @@ metadata:
   uid: 28d7d8d5-4a96-11e9-b355-d2c82e77d7fe
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: productpage
-      serviceName: productpage
-      serviceNamespace: default
-      servicePort: 9080
-    sslConfig:
-      sds:
-        callCredentials:
-          fileCredentialSource:
-            header: istio_sds_credential_header-bin
-            tokenFileName: /var/run/secrets/kubernetes.io/serviceaccount/token
-        certificatesSecretName: default
-        targetUri: unix:/var/run/sds/uds_path
-        validationContextName: ROOTCA
+  kube:
+    selector:
+      app: productpage
+    serviceName: productpage
+    serviceNamespace: default
+    servicePort: 9080
+  sslConfig:
+    sds:
+      callCredentials:
+        fileCredentialSource:
+          header: istio_sds_credential_header-bin
+          tokenFileName: /var/run/secrets/kubernetes.io/serviceaccount/token
+      certificatesSecretName: default
+      targetUri: unix:/var/run/sds/uds_path
+      validationContextName: ROOTCA
 status:
   reported_by: gloo
   state: 1
@@ -369,20 +368,19 @@ apiVersion: gloo.solo.io/v1
 kind: Upstream
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: productpage
-      serviceName: productpage
-      serviceNamespace: default
-      servicePort: 9080
-    sslConfig:
-      sds:
-        callCredentials:
-          fileCredentialSource:
-            header: istio_sds_credential_header-bin
-            tokenFileName: /var/run/secrets/tokens/istio-token
-        certificatesSecretName: default
-        targetUri: unix:/var/run/sds/uds_path
-        validationContextName: ROOTCA
+  kube:
+    selector:
+      app: productpage
+    serviceName: productpage
+    serviceNamespace: default
+    servicePort: 9080
+  sslConfig:
+    sds:
+      callCredentials:
+        fileCredentialSource:
+          header: istio_sds_credential_header-bin
+          tokenFileName: /var/run/secrets/tokens/istio-token
+      certificatesSecretName: default
+      targetUri: unix:/var/run/sds/uds_path
+      validationContextName: ROOTCA
 {{< /highlight >}}

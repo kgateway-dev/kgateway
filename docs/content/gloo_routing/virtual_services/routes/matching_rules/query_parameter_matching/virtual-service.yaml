@@ -8,15 +8,15 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          queryParameters:
+      - matchers:
+         - queryParameters:
             - name: param1
               value: value1
             - name: param2
             - name: param3
               regex: true
               value: "[a-z]{1}"
-          prefix: /
+           prefix: /
         routeAction:
           single:
             upstream:

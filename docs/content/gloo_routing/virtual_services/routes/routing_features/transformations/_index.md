@@ -17,14 +17,14 @@ You can define this attribute on three different Virtual Service sub-resources:
 - on **Routes**, and
 - on **WeightedDestinations**.
 
-The configuration format is the same in all three cases and must be specified under the relevant `plugins` attribute 
-(`VirtualHostPlugins`, `RoutePlugins`, or `WeightedDestinationPlugins`). For example, to configure transformations for 
-all traffic matching a Virtual Host, you need to add the following attribute to your Virtual Host definition:
+The configuration format is the same in all three cases and must be specified under the relevant `options` attribute.
+For example, to configure transformations for all traffic matching a Virtual Host, you need to add the following
+attribute to your Virtual Host definition:
 
 {{< highlight yaml "hl_lines=3-11" >}}
 # This snippet has been abridged for brevity
 virtualHost:
-  virtualHostPlugins:
+  options:
     transformations:
       requestTransformation: 
         transformationTemplate:
@@ -32,8 +32,6 @@ virtualHost:
             foo:
               text: 'bar'
 {{< /highlight >}}
-
-In case of a Route or Weighted Destination the top attribute would be named `routePlugins` and `weightedDestinationPlugins` respectively.
 
 #### Inheritance rules
 

@@ -23,7 +23,7 @@ Let's create a virtual service with a redirect action instead of a route action,
 Now if we curl the route, we should get a 301 Permanently Moved response. 
 
 ```shell
-curl -v -H "Host: foo" $GATEWAY_URL/
+curl -v -H "Host: foo" $(glooctl proxy url)
 ```
 
 This will contain the following message:

@@ -16,10 +16,8 @@ import (
 
 var _ = Describe("Knative", func() {
 	knativeInstallOpts := options.Knative{
-		InstallKnativeVersion:         "0.8.0",
-		InstallKnativeEventingVersion: "0.7.0",
-		InstallKnativeBuildVersion:    "0.7.0",
-		InstallKnativeBuild:           true,
+		InstallKnativeVersion:         "0.10.0",
+		InstallKnativeEventingVersion: "0.10.0",
 		InstallKnativeEventing:        true,
 		InstallKnativeMonitoring:      true,
 	}
@@ -27,7 +25,7 @@ var _ = Describe("Knative", func() {
 		It("renders manifests for each knative component", func() {
 			manifests, err := RenderKnativeManifests(knativeInstallOpts)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(manifests).To(Equal(expected070Manifests))
+			Expect(manifests).To(Equal(expected0100Manifests))
 		})
 	})
 	Context("checkKnativeInstallation", func() {
@@ -74,7 +72,7 @@ var _ = Describe("Knative", func() {
 })
 
 // does not contain any networking.knative.dev/ingress-provider=istio resources
-var expected070Manifests = func() string {
+var expected0100Manifests = func() string {
 	currentFile, err := testutils.GetCurrentFile()
 	if err != nil {
 		panic(err)

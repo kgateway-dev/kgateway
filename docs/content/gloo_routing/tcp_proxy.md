@@ -12,7 +12,7 @@ of the relative simplicity of TCP level routing. Current features include standa
 
 For reference on  the 
 
-- {{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateway">}}
+- {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}}
 - {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}
 
 ### What you'll need
@@ -59,15 +59,10 @@ EOF
 
 Once the `tcp-echo` pod is up and running we are ready to create our gateway resource and begin routing to it.
 
-As of vesion v2 of the {{< protobuf name="gateway.solo.io.v2.Gateway" display="gateway">}} 
-resource, it now supports 2 different types, those being HTTP, and TCP. 
-The {{< protobuf name="gloo.solo.io.Proxy" display="proxy">}} resource has been extended as well with
-the TCP listener type. This is not a breaking change and therefore does not require an API upgrade. 
-
 The gateway will contain the following: 
 ```bash
 kubectl apply -n gloo-system -f - <<EOF
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: tcp
@@ -76,7 +71,7 @@ spec:
   bindAddress: '::'
   bindPort: 8000
   tcpGateway:
-    destinations:
+    tcpHosts:
     - name: one
       destination:
         single:
@@ -98,7 +93,7 @@ gloo-system   tcp           5s
 ```
 
 
-The above gateway will be read in by gloo, which will combine it with the other gateways into a Proxy resource.
+The above gateway will be read in by Gloo, which will combine it with the other gateways into a Proxy resource.
 To make sure that the configuration has been translated properly run:
 
 {{< highlight yaml "hl_lines=22-29" >}}
