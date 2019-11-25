@@ -15,6 +15,9 @@ message Descriptor {
    
     RateLimit rate_limit = 3;
     repeated Descriptor descriptors = 4;
+
+    uint32 weight = 5;
+    bool always_apply = 6;
 }
 
 message RateLimit {
