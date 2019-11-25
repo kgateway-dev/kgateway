@@ -113,7 +113,7 @@ func AnyGogoToPb(structuredData *types.Any) (*any.Any, error) {
 		return nil, errors.New("cannot unmarshal nil proto struct")
 	}
 	return &any.Any{
-		TypeUrl:              structuredData.GetTypeUrl(),
-		Value:                structuredData.GetValue(),
+		TypeUrl: structuredData.GetTypeUrl(),
+		Value:   structuredData.GetValue(),
 	}, nil
 }

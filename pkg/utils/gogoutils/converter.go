@@ -103,4 +103,3 @@ func DurationProtoToStd(pr *duration.Duration) *time.Duration {
 	dur, _ := ptypes.Duration(pr)
 	return &dur
 }
-

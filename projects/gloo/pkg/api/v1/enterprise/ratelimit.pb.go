@@ -7,6 +7,8 @@ import (
 	bytes "bytes"
 	context "context"
 	fmt "fmt"
+	math "math"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -15,7 +17,6 @@ import (
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
