@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Add Gloo version in its JSON log statements.
+    issueLink: https://github.com/solo-io/gloo/issues/1745

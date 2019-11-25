@@ -66,7 +66,6 @@ func installGlooE(opts *options.Options) error {
 // enterprise
 func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
 	glooEVersion := version.EnterpriseTag
-	glooEVersion = "1.0.0-rc2"
 
 	// Get location of Gloo helm chart
 	helmChartArchiveUri := fmt.Sprintf(GlooEHelmRepoTemplate, glooEVersion)
