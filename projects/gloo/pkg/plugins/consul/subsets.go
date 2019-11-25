@@ -3,7 +3,7 @@ package consul
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -123,20 +123,20 @@ func consulMetadataMatch(dest *v1.ConsulServiceDestination, upstream *v1.Upstrea
 		return nil
 	}
 
-	labelsStruct := &types.Struct{
-		Fields: map[string]*types.Value{},
+	labelsStruct := &structpb.Struct{
+		Fields: map[string]*structpb.Value{},
 	}
 
 	for k, v := range labels {
-		labelsStruct.Fields[k] = &types.Value{
-			Kind: &types.Value_StringValue{
+		labelsStruct.Fields[k] = &structpb.Value{
+			Kind: &structpb.Value_StringValue{
 				StringValue: v,
 			},
 		}
 	}
 
 	return &envoycore.Metadata{
-		FilterMetadata: map[string]*types.Struct{
+		FilterMetadata: map[string]*structpb.Struct{
 			translator.EnvoyLb: labelsStruct,
 		},
 	}

@@ -1,8 +1,9 @@
 package headers
 
 import (
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -80,8 +81,8 @@ var testHeaderManip = &headers.HeaderManipulation{
 }
 
 var expectedHeaders = envoyHeaderManipulation{
-	RequestHeadersToAdd:     []*core.HeaderValueOption{{Header: &core.HeaderValue{Key: "foo", Value: "bar"}, Append: &types.BoolValue{Value: true}}},
+	RequestHeadersToAdd:     []*core.HeaderValueOption{{Header: &core.HeaderValue{Key: "foo", Value: "bar"}, Append: &wrappers.BoolValue{Value: true}}},
 	RequestHeadersToRemove:  []string{"a"},
-	ResponseHeadersToAdd:    []*core.HeaderValueOption{{Header: &core.HeaderValue{Key: "foo", Value: "bar"}, Append: &types.BoolValue{Value: true}}},
+	ResponseHeadersToAdd:    []*core.HeaderValueOption{{Header: &core.HeaderValue{Key: "foo", Value: "bar"}, Append: &wrappers.BoolValue{Value: true}}},
 	ResponseHeadersToRemove: []string{"b"},
 }

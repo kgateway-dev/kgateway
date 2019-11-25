@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,7 +15,6 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -69,12 +69,12 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		filters := []envoylistener.Filter{{
-			Name: envoyutil.HTTPConnectionManager,
+		filters := []*envoylistener.Filter{{
+			Name: util.HTTPConnectionManager,
 		}}
 
 		outl := &envoyapi.Listener{
-			FilterChains: []envoylistener.FilterChain{{
+			FilterChains: []*envoylistener.FilterChain{{
 				Filters: filters,
 			}},
 		}
@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoyhttp.HttpConnectionManager
-		err = translatorutil.ParseConfig(&filters[0], &cfg)
+		err = translatorutil.ParseConfig(filters[0], &cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(hcms.UseRemoteAddress))
@@ -112,7 +112,7 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 
-		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.APPEND_FORWARD))
+		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.HttpConnectionManager_APPEND_FORWARD))
 
 		ccd := cfg.SetCurrentClientCertDetails
 		Expect(ccd.Subject.Value).To(BeTrue())

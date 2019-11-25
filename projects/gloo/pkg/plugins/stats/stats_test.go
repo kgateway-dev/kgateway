@@ -60,11 +60,11 @@ var _ = Describe("Virtual Clusters", func() {
 
 		Expect(outputVh.VirtualClusters[0].Name).To(Equal("get"))
 		Expect(outputVh.VirtualClusters[0].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.GET))
+		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.RequestMethod_GET))
 
 		Expect(outputVh.VirtualClusters[1].Name).To(Equal("post"))
 		Expect(outputVh.VirtualClusters[1].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[1].Method).To(Equal(envoycore.POST))
+		Expect(outputVh.VirtualClusters[1].Method).To(Equal(envoycore.RequestMethod_POST))
 
 		// Remove virtual clusters and verify that the rest of the resource has not changed
 		outputVh.VirtualClusters = nil
@@ -89,7 +89,7 @@ var _ = Describe("Virtual Clusters", func() {
 		Expect(outputVh.VirtualClusters).To(HaveLen(1))
 		Expect(outputVh.VirtualClusters[0].Name).To(Equal("test"))
 		Expect(outputVh.VirtualClusters[0].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.METHOD_UNSPECIFIED))
+		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.RequestMethod_METHOD_UNSPECIFIED))
 	})
 
 	Describe("expected failures", func() {

@@ -7,11 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
-
 	envoymet "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	_go "github.com/prometheus/client_model/go"
 	"github.com/solo-io/go-utils/contextutils"
-	prometheus "istio.io/gogo-genproto/prometheus"
+	"go.uber.org/zap"
 )
 
 type MetricsHandler interface {
@@ -96,19 +95,23 @@ func buildNewMetrics(ctx context.Context, metricsMessage *envoymet.StreamMetrics
 	return newMetricsEntry, nil
 }
 
-func sumMetricCounter(metrics []*prometheus.Metric) uint64 {
-	var sum uint64
+func sumMetricCounter(metrics []*_go.Metric) float64 {
+	var sum float64
 	for _, m := range metrics {
-		sum += uint64(m.Counter.Value)
+		if m != nil {
+			sum += *m.Counter.Value
+		}
 	}
 
 	return sum
 }
 
-func sumMetricGauge(metrics []*prometheus.Metric) uint64 {
-	var sum uint64
+func sumMetricGauge(metrics []*_go.Metric) float64 {
+	var sum float64
 	for _, m := range metrics {
-		sum += uint64(m.Gauge.Value)
+		if m != nil {
+			sum += *m.Gauge.Value
+		}
 	}
 
 	return sum

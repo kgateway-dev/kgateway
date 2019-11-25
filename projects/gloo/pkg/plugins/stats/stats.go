@@ -93,7 +93,7 @@ func (c converter) validateName(name string) (string, error) {
 
 func (c converter) validateHttpMethod(methodName string) (envoycore.RequestMethod, error) {
 	if methodName == "" {
-		return envoycore.METHOD_UNSPECIFIED, nil
+		return envoycore.RequestMethod_METHOD_UNSPECIFIED, nil
 	}
 	method, ok := envoycore.RequestMethod_value[strings.ToUpper(methodName)]
 	if !ok {

@@ -3,6 +3,8 @@ package ratelimit_test
 import (
 	"time"
 
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 
@@ -18,7 +20,6 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -69,7 +70,7 @@ var _ = Describe("Plugin", func() {
 			Domain:          "custom",
 			FailureModeDeny: false,
 			Stage:           1,
-			Timeout:         &hundredms,
+			Timeout:         gogoutils.DurationStdToProto(&hundredms),
 			RequestType:     "both",
 			RateLimitService: &rlconfig.RateLimitServiceConfig{
 				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -181,7 +182,7 @@ var _ = Describe("Plugin", func() {
 func getConfig(f *envoyhttp.HttpFilter) *envoyratelimit.RateLimit {
 	cfg := f.GetConfig()
 	rcfg := new(envoyratelimit.RateLimit)
-	err := util.StructToMessage(cfg, rcfg)
+	err := conversion.StructToMessage(cfg, rcfg)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return rcfg
 }

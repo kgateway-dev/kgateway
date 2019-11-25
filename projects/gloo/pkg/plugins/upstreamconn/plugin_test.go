@@ -5,7 +5,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -66,13 +66,13 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		outKeepAlive := out.GetUpstreamConnectionOptions().GetTcpKeepalive()
 		expectedValue := envoycore.TcpKeepalive{
-			KeepaliveInterval: &types.UInt32Value{
+			KeepaliveInterval: &wrappers.UInt32Value{
 				Value: 60,
 			},
-			KeepaliveTime: &types.UInt32Value{
+			KeepaliveTime: &wrappers.UInt32Value{
 				Value: 3600,
 			},
-			KeepaliveProbes: &types.UInt32Value{
+			KeepaliveProbes: &wrappers.UInt32Value{
 				Value: 3,
 			},
 		}

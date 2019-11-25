@@ -5,8 +5,10 @@ import (
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -100,10 +102,10 @@ var _ = Describe("retries", func() {
 		}
 		expectedRetryPolicy = &envoyroute.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
-			NumRetries: &types.UInt32Value{
+			NumRetries: &wrappers.UInt32Value{
 				Value: 5,
 			},
-			PerTryTimeout: &t,
+			PerTryTimeout: gogoutils.DurationStdToProto(&t),
 		}
 
 		plugin = NewPlugin()
@@ -190,7 +192,7 @@ var _ = Describe("host rewrite", func() {
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
 			HostRewriteSpecifier: &envoyroute.RouteAction_AutoHostRewrite{
-				AutoHostRewrite: &types.BoolValue{
+				AutoHostRewrite: &wrappers.BoolValue{
 					Value: false,
 				},
 			},

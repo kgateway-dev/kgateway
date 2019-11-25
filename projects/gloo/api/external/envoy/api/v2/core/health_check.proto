@@ -5,7 +5,7 @@ package envoy.api.v2.core;
 option java_outer_classname = "HealthCheckProto";
 option java_multiple_files = true;
 option java_package = "io.envoyproxy.envoy.api.v2.core";
-option go_package = "github.com/envoyproxy/go-control-plane/envoy/api/v2/core";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core";
 
 import "envoy/api/v2/core/base.proto";
 import "envoy/type/range.proto";
@@ -169,19 +169,6 @@ message HealthCheck {
         string authority = 2;
     }
 
-    // Custom health check.
-    message CustomHealthCheck {
-        // The registered name of the custom health checker.
-        string name = 1 [(validate.rules).string.min_bytes = 1];
-
-        // A custom health checker specific configuration which depends on the custom health checker
-        // being instantiated. See :api:`envoy/config/health_checker` for reference.
-        oneof config_type {
-            google.protobuf.Struct config = 2;
-
-            google.protobuf.Any typed_config = 3;
-        }
-    }
 
     oneof health_checker {
         option (validate.required) = true;
@@ -194,9 +181,6 @@ message HealthCheck {
 
         // gRPC health check.
         GrpcHealthCheck grpc_health_check = 11;
-
-        // Custom health check.
-        CustomHealthCheck custom_health_check = 13;
     }
 
     reserved 10; // redis_health_check is deprecated by :ref:`custom_health_check

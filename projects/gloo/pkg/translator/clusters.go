@@ -8,6 +8,7 @@ import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -76,7 +77,7 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       ClusterConnectionTimeout,
+		ConnectTimeout:       gogoutils.DurationStdToProto(&ClusterConnectionTimeout),
 		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 	// set Type = EDS if we have endpoints for the upstream
@@ -111,12 +112,10 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 		if hc.UnhealthyThreshold == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
 		}
-
-		if err := hc.Validate(); err != nil {
-			return nil, err
+		if hc.GetHealthChecker() == nil {
+			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
 		}
-
-		result = append(result, hc)
+		result = append(result, gogoutils.ToEnvoyHealthCheck(hc))
 	}
 	return result, nil
 }
@@ -125,12 +124,13 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierD
 	if upstream == nil {
 		return nil, nil
 	}
-	// This should be enough validation as nothing implicitly needs to be set
-	if err := upstream.GetOutlierDetection().Validate(); err != nil {
-		return nil, err
+	if upstream.GetOutlierDetection() == nil {
+		return nil, nil
 	}
-
-	return upstream.GetOutlierDetection(), nil
+	if upstream.GetOutlierDetection().GetInterval() == nil {
+		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker")))
+	}
+	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
@@ -176,10 +176,10 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 		if cfg != nil {
 			envoyCfg := &envoycluster.CircuitBreakers{}
 			envoyCfg.Thresholds = []*envoycluster.CircuitBreakers_Thresholds{{
-				MaxConnections:     cfg.MaxConnections,
-				MaxPendingRequests: cfg.MaxPendingRequests,
-				MaxRequests:        cfg.MaxRequests,
-				MaxRetries:         cfg.MaxRetries,
+				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.MaxConnections),
+				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.MaxPendingRequests),
+				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.MaxRequests),
+				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.MaxRetries),
 			}}
 			return envoyCfg
 		}
