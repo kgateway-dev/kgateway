@@ -31,10 +31,10 @@ import (
 )
 
 type SetupOpts struct {
-	LoggerName        string
-	SetupFunc         SetupFunc
-	ExitOnError       bool
-	CustomCtx         context.Context
+	LoggerName  string
+	SetupFunc   SetupFunc
+	ExitOnError bool
+	CustomCtx   context.Context
 
 	// optional - if present, add these values in each JSOn log line in the gloo pod.
 	// By default, we already log the glooctl version.
@@ -61,7 +61,6 @@ func Main(opts SetupOpts) error {
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
 	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
-
 
 	if opts.UsageReporter != nil {
 		go func() {

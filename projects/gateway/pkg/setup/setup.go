@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 )
