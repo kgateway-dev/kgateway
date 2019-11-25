@@ -31,10 +31,11 @@ import (
 )
 
 type SetupOpts struct {
-	LoggingPrefix string
-	SetupFunc     SetupFunc
-	ExitOnError   bool
-	CustomCtx     context.Context
+	LoggerName        string
+	LoggingPrefixVals []interface{}
+	SetupFunc         SetupFunc
+	ExitOnError       bool
+	CustomCtx         context.Context
 
 	// optional- if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
@@ -45,7 +46,6 @@ type SetupOpts struct {
 var once sync.Once
 
 func Main(opts SetupOpts) error {
-	loggingPrefix := opts.LoggingPrefix
 
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
@@ -56,12 +56,14 @@ func Main(opts SetupOpts) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = contextutils.WithLogger(ctx, loggingPrefix)
+	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
+	ctx = contextutils.WithLoggerValues(ctx, opts.LoggingPrefixVals)
+
 
 	if opts.UsageReporter != nil {
 		go func() {
 			signatureManager := signature.NewSignatureManager()
-			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix, signatureManager)
+			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggerName, signatureManager)
 			for err := range errs {
 				contextutils.LoggerFrom(ctx).Warnw("Error while reporting usage", zap.Error(err))
 			}

@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/version"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/projects/discovery/pkg/uds/syncer"
@@ -10,9 +11,10 @@ import (
 
 func Main(customCtx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggingPrefix: "uds",
-		SetupFunc:     gloosyncer.NewSetupFuncWithRun(syncer.RunUDS),
-		ExitOnError:   true,
-		CustomCtx:     customCtx,
+		LoggerName:        "uds",
+		LoggingPrefixVals: []interface{}{"version", version.Version},
+		SetupFunc:         gloosyncer.NewSetupFuncWithRun(syncer.RunUDS),
+		ExitOnError:       true,
+		CustomCtx:         customCtx,
 	})
 }
