@@ -457,7 +457,7 @@ var _ = Describe("Translator", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServiceSelector: labelSet,
-							ValidVsNamespaces:      []string{"*"},
+							VirtualServiceNamespaces:      []string{"*"},
 						},
 					}
 
