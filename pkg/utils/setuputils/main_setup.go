@@ -59,7 +59,7 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals)
+	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals...)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	if opts.UsageReporter != nil {
