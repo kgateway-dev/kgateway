@@ -1,43 +1,44 @@
 ---
 title: API Keys
 weight: 40
-description: How to setup ApiKey authentication. 
+description: How to setup ApiKey authentication.
 ---
 
 {{% notice note %}}
 The API keys authentication feature was introduced with **Gloo Enterprise**, release 0.18.5. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does 
-not change frequently. For example, these users might be other services or specific persons or teams in your organization. 
-You might also want to retain direct control over how credentials are generated and when they expire. If one of these 
-conditions applies to your use case, you should consider securing your service using 
-[API keys](https://en.wikipedia.org/wiki/Application_programming_interface_key). API keys are secure, long-lived UUIDs 
-that clients must provide when sending requests to a service that is protected using this method. 
+Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does
+not change frequently. For example, these users might be other services or specific persons or teams in your organization.
+You might also want to retain direct control over how credentials are generated and when they expire. If one of these
+conditions applies to your use case, you should consider securing your service using
+[API keys](https://en.wikipedia.org/wiki/Application_programming_interface_key). API keys are secure, long-lived UUIDs
+that clients must provide when sending requests to a service that is protected using this method.
 
 {{% notice warning %}}
-It is important to note that **your services are only as secure as your API keys**; securing API keys and proper API key 
+It is important to note that **your services are only as secure as your API keys**; securing API keys and proper API key
 rotation is up to the user, thus the security of the routes is up to the user.
 {{% /notice %}}
 
-To secure your services using API keys, you first need to provide Gloo with your secret API keys in the form of `Secrets`. 
-After your API key secrets are in place, you can configure authentication on your Virtual Services by referencing the 
+To secure your services using API keys, you first need to provide Gloo with your secret API keys in the form of `Secrets`.
+After your API key secrets are in place, you can configure authentication on your Virtual Services by referencing the
 secrets in one of two ways:
 
 1. you can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
 2. you can **explicitly reference** a set of secrets by their identifier (namespace and name).
 
-When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the `api-key` header. If 
-the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on 
+When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the `api-key` header. If
+the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on
 the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
 
-Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security#auth-configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security#auth-configuration-overview" >}})
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Setup
+
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-Let's create a [Static Upstream]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}}) 
+Let's create a [Static Upstream]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}})
 named `json-upstream` that routes to a static website; we will send requests to it during this tutorial.
 
 {{< tabs >}}
@@ -50,7 +51,8 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tabs >}}
 
 ## Creating a Virtual Service
-Now let's configure Gloo to route requests to the upstream we just created. To do that, we define a simple Virtual 
+
+Now let's configure Gloo to route requests to the upstream we just created. To do that, we define a simple Virtual
 Service to match all requests that:
 
 - contain a `Host` header with value `foo` and
@@ -64,7 +66,7 @@ Service to match all requests that:
 glooctl create vs --name test-no-auth --namespace gloo-system --domains foo
 glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
 {{< /tab >}}
-{{< /tabs >}} 
+{{< /tabs >}}
 
 Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 
@@ -84,12 +86,13 @@ The above command should return:
 ```
 
 ## Securing the Virtual Service
+
 {{% notice warning %}}
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
-Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default
+Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior.
 We will update the Virtual Service so that only requests containing a valid API key in their `api-key` header are allowed.
 
 We start by creating an API key secret using `glooctl`:
@@ -101,14 +104,14 @@ glooctl create secret apikey infra-apikey --apikey N2YwMDIxZTEtNGUzNS1jNzgzLTRkY
 The above command creates a secret that:
 
 - is named `infra-apikey`,
-- is placed in the `gloo-system` namespace (this  is the default if no namespace is provided via the `--namespace` flag),
+- is placed in the `gloo-system` namespace (this is the default if no namespace is provided via the `--namespace` flag),
 - is of kind `apikey` (this is just a Kubernetes secret with additional metadata that can be interpreted by Gloo),
-- is marked with a label named `team` with value `infrastructure`, and 
+- is marked with a label named `team` with value `infrastructure`, and
 - contains an API key with value `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`.
 
-Instead of providing a value for the API key we could also have asked `glooctl` to generate one for us using the 
+Instead of providing a value for the API key we could also have asked `glooctl` to generate one for us using the
 `--apikey-generate` flag.
- 
+
 Let's verify that we have indeed created a valid secret.
 
 ```shell
@@ -122,7 +125,7 @@ apiVersion: v1
 kind: Secret
 metadata:
   annotations:
-    resource_kind: '*v1.Secret'
+    resource_kind: "*v1.Secret"
   labels:
     team: infrastructure
   name: infra-apikey
@@ -138,19 +141,19 @@ Now let's take the value of `data.extension`, which is base64-encoded, and decod
 echo Y29uZmlnOgogIGFwaV9rZXk6IE4yWXdNREl4WlRFdE5HVXpOUzFqTnpnekxUUmtZakF0WWpFMll6UmtaR1ZtTmpjeQogIGxhYmVsczoKICAtIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
 ```
 
-You should get the following 
+You should get the following
 {{< protobuf display="API key secret configuration" name="enterprise.gloo.solo.io.ApiKeySecret" >}}:
 
 ```yaml
 config:
   api_key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy
   labels:
-  - team=infrastructure
+    - team=infrastructure
 ```
 
-Our API key is indeed `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`! 
+Our API key is indeed `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`!
 
-Now that we have a valid API key secret, let's go ahead and create and `AuthConfig` CRD with our API key 
+Now that we have a valid API key secret, let's go ahead and create and `AuthConfig` CRD with our API key
 authentication configuration:
 
 {{< highlight shell "hl_lines=9-11" >}}
@@ -158,16 +161,16 @@ kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
-  name: apikey-auth
-  namespace: gloo-system
+name: apikey-auth
+namespace: gloo-system
 spec:
-  configs:
-  - api_key_auth:
-      label_selector:
-        team: infrastructure
-EOF
-{{< /highlight >}}
+configs:
 
+- api_key_auth:
+  label_selector:
+  team: infrastructure
+  EOF
+  {{< /highlight >}}
 
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
@@ -176,32 +179,31 @@ kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: auth-tutorial
-  namespace: gloo-system
+name: auth-tutorial
+namespace: gloo-system
 spec:
-  virtualHost:
-    domains:
-      - 'foo'
-    routes:
-      - matcher:
-          prefix: /
-        routeAction:
-          single:
-            upstream:
-              name: json-upstream
-              namespace: gloo-system
-    virtualHostPlugins:
-      extauth:
-        config_ref:
-          name: apikey-auth
-          namespace: gloo-system
+virtualHost:
+domains: - 'foo'
+routes: - matcher:
+prefix: /
+routeAction:
+single:
+upstream:
+name: json-upstream
+namespace: gloo-system
+virtualHostPlugins:
+extauth:
+config_ref:
+name: apikey-auth
+namespace: gloo-system
 EOF
 {{< /highlight >}}
 
-In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will
 inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security#inheritance-rules" >}}) it.
 
 ### Testing denied requests
+
 Let's try and resend the same request we sent earlier:
 
 ```shell
@@ -211,11 +213,12 @@ curl -v -H "Host: foo" $GATEWAY_URL/posts/1
 You will see that the response now contains a **401 Unauthorized** code, indicating that Gloo denied the request.
 
 {{< highlight shell "hl_lines=6" >}}
-> GET /posts/1 HTTP/1.1
-> Host: foo
-> User-Agent: curl/7.54.0
-> Accept: */*
->
+
+- GET /posts/1 HTTP/1.1
+- Host: foo
+- User-Agent: curl/7.54.0
+- Accept: _/_
+
 < HTTP/1.1 401 Unauthorized
 < www-authenticate: API key is missing or invalid
 < date: Mon, 07 Oct 2019 19:28:14 GMT
@@ -224,7 +227,8 @@ You will see that the response now contains a **401 Unauthorized** code, indicat
 {{< /highlight >}}
 
 ### Testing authenticated requests
-For a request to be allowed, it must include a header named `api-key` with the value set to the API key we previously 
+
+For a request to be allowed, it must include a header named `api-key` with the value set to the API key we previously
 stored in our secret. Now let's add the authorization headers:
 
 ```shell
@@ -244,10 +248,10 @@ We are now able to reach the upstream again!
 
 ## Summary
 
-In this tutorial, we installed Gloo Enterprise and created an unauthenticated Virtual Service that routes requests to a 
-static upstream. We then created an API key `AuthConfig` object and used it to secure our Virtual Service. 
-We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send 
-authenticated requests successfully to the upstream. 
+In this tutorial, we installed Gloo Enterprise and created an unauthenticated Virtual Service that routes requests to a
+static upstream. We then created an API key `AuthConfig` object and used it to secure our Virtual Service.
+We first showed how unauthenticated requests fail with a `401 Unauthorized` response, and then showed how to send
+authenticated requests successfully to the upstream.
 
 Cleanup the resources by running:
 

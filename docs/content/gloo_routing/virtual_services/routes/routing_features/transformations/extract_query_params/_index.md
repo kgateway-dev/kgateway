@@ -7,6 +7,7 @@ description: Extract query parameters from a request
 In this tutorial we will see how to extract query parameters from a request and use them in a transformation.
 
 ### Setup
+
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
 Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
@@ -16,23 +17,21 @@ Let's also create a simple Virtual Service that matches any path and routes all 
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: extract-query-params
-  namespace: gloo-system
+name: extract-query-params
+namespace: gloo-system
 spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matcher:
-        prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: postman-echo
-            namespace: gloo-system
+virtualHost:
+domains: - '\*'
+routes: - matcher:
+prefix: /
+routeAction:
+single:
+upstream:
+name: postman-echo
+namespace: gloo-system
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name extract-query-params --namespace gloo-system 
+glooctl create vs --name extract-query-params --namespace gloo-system
 glooctl add route --name extract-query-params --path-prefix / --dest-name postman-echo
 {{< /tab >}}
 {{< /tabs >}}
@@ -62,8 +61,9 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-As you can see from the response above, the upstream service returns the request headers as part of the JSON payload. 
-We will now configure Gloo to extract the values of the `foo` and `bar` query parameters and use them to create two new 
+
+As you can see from the response above, the upstream service returns the request headers as part of the JSON payload.
+We will now configure Gloo to extract the values of the `foo` and `bar` query parameters and use them to create two new
 headers named - you guessed it - `foo` and `bar`.
 
 To implement this behavior, we need to add the following to our Virtual Service definition:
@@ -72,58 +72,50 @@ To implement this behavior, we need to add the following to our Virtual Service 
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: extract-query-params
-  namespace: gloo-system
+name: extract-query-params
+namespace: gloo-system
 spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matcher:
-        prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: postman-echo
-            namespace: gloo-system
-    virtualHostPlugins:
-      transformations:
-        requestTransformation:
-          transformationTemplate:
-            extractors:
-              # This extracts the 'foo' query param to an extractor named 'foo'
-              foo:
-                # The :path pseudo-header contains the URI
-                header: ':path'
-                # Use a nested capturing group to extract the query param
-                regex: '(.*foo=([^&]*).*)'
-                subgroup: 2
-              # This extracts the 'bar' query param to an extractor named 'bar'
-              bar:
-                # The :path pseudo-header contains the URI
-                header: ':path'
-                # Use a nested capturing group to extract the query param
-                regex: '(.*bar=([^&]*).*)'
-                subgroup: 2
-            # Add two new headers with the values of the 'foo' and 'bar' extractions
-            headers:
-              foo:
-                text: '{{ foo }}'
-              bar:
-                text: '{{ bar }}'
-{{< /highlight >}}  
+virtualHost:
+domains: - '*'
+routes: - matcher:
+prefix: /
+routeAction:
+single:
+upstream:
+name: postman-echo
+namespace: gloo-system
+virtualHostPlugins:
+transformations:
+requestTransformation:
+transformationTemplate:
+extractors: # This extracts the 'foo' query param to an extractor named 'foo'
+foo: # The :path pseudo-header contains the URI
+header: ':path' # Use a nested capturing group to extract the query param
+regex: '(.*foo=([^&]_)._)'
+subgroup: 2 # This extracts the 'bar' query param to an extractor named 'bar'
+bar: # The :path pseudo-header contains the URI
+header: ':path' # Use a nested capturing group to extract the query param
+regex: '(._bar=([^&]_).\*)'
+subgroup: 2 # Add two new headers with the values of the 'foo' and 'bar' extractions
+headers:
+foo:
+text: '{{ foo }}'
+bar:
+text: '{{ bar }}'
+{{< /highlight >}}
 
 The above `virtualHostPlugins` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.
-1. Define two [extractions]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#extractors" >}}) 
-to extract the values of the query parameters. We achieve this by using regex capturing groups and selecting the nested group 
-which matches only the value of the relevant query parameter.
+1. Define two [extractions]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations#extractors" >}})
+   to extract the values of the query parameters. We achieve this by using regex capturing groups and selecting the nested group
+   which matches only the value of the relevant query parameter.
 1. Add two headers and set their values of the values of the extractions.
 
 #### Test our configuration
-To test that our configuration has been correctly applied, let's add the two expected query parameters to the previously 
+
+To test that our configuration has been correctly applied, let's add the two expected query parameters to the previously
 used `curl` command:
 
 ```shell
@@ -160,6 +152,7 @@ In this guide we used **extractions** to add new headers, but you can use the ex
 {{% /notice %}}
 
 ### Cleanup
+
 To cleanup the resources created in this tutorial you can run the following commands:
 
 ```shell

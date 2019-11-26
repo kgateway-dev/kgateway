@@ -7,6 +7,7 @@ description: Conditionally update the request path
 In this tutorial we will see how to conditionally update the request path by using a transformation.
 
 ### Setup
+
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
 Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
@@ -16,23 +17,21 @@ Let's also create a simple Virtual Service that matches any path and routes all 
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: update-request-path
-  namespace: gloo-system
+name: update-request-path
+namespace: gloo-system
 spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matcher:
-        prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: postman-echo
-            namespace: gloo-system
+virtualHost:
+domains: - '\*'
+routes: - matcher:
+prefix: /
+routeAction:
+single:
+upstream:
+name: postman-echo
+namespace: gloo-system
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name update-request-path --namespace gloo-system 
+glooctl create vs --name update-request-path --namespace gloo-system
 glooctl add route --name update-request-path --path-prefix / --dest-name postman-echo
 {{< /tab >}}
 {{< /tabs >}}
@@ -62,8 +61,9 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-We will now configure Gloo to update the request path from `/get` to `/post` if a header named `foo` is present and has 
-the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update 
+
+We will now configure Gloo to update the request path from `/get` to `/post` if a header named `foo` is present and has
+the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update
 the HTTP method of the request as well.
 
 To do this, we need to add the following to our Virtual Service definition:
@@ -72,45 +72,42 @@ To do this, we need to add the following to our Virtual Service definition:
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: update-request-path
-  namespace: gloo-system
+name: update-request-path
+namespace: gloo-system
 spec:
-  virtualHost:
-    domains:
-    - '*'
-    routes:
-    - matcher:
-        prefix: /
-      routeAction:
-        single:
-          upstream:
-            name: postman-echo
-            namespace: gloo-system
-    virtualHostPlugins:
-      transformations:
-        requestTransformation:
-          transformationTemplate:
-            headers:
-              # By updating the :path pseudo-header, we update the request URI
-              ":path":
-                text: '{% if header("foo") == "bar" %}/post{% else %}{{ header(":path") }}{% endif %}'
-              # By updating the :method pseudo-header, we update the request HTTP method
-              ":method":
-                text: '{% if header("foo") == "bar" %}POST{% else %}{{ header(":method") }}{% endif %}'
-{{< /highlight >}}  
+virtualHost:
+domains: - '\*'
+routes: - matcher:
+prefix: /
+routeAction:
+single:
+upstream:
+name: postman-echo
+namespace: gloo-system
+virtualHostPlugins:
+transformations:
+requestTransformation:
+transformationTemplate:
+headers: # By updating the :path pseudo-header, we update the request URI
+":path":
+text: '{% if header("foo") == "bar" %}/post{% else %}{{ header(":path") }}{% endif %}' # By updating the :method pseudo-header, we update the request HTTP method
+":method":
+text: '{% if header("foo") == "bar" %}POST{% else %}{{ header(":method") }}{% endif %}'
+{{< /highlight >}}
 
 The above `virtualHostPlugins` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.
-1. Use a [template transformation]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
+1. Use a [template transformation]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
 1. Update the `:path` and `:method` pseudo-headers if the `foo` header is present and has value `bar`; otherwise keep the original values.
 
-The template uses the [Inja templating language]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}}) 
+The template uses the [Inja templating language]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}})
 to define the conditional logic that will be applied to the `:path` and `:method` pseudo-headers.
 
 #### Test our configuration
-To test that our configuration has been correctly applied, let's add the `foo` header with the expected `bar` value to 
+
+To test that our configuration has been correctly applied, let's add the `foo` header with the expected `bar` value to
 the previously used `curl` command:
 
 ```shell
@@ -121,25 +118,25 @@ You should get the following output:
 
 {{< highlight yaml "hl_lines=18" >}}
 {
-  "args": {},
-  "data": {},
-  "files": {},
-  "form": {},
-  "headers": {
-    "x-forwarded-proto": "https",
-    "host": "postman-echo.com",
-    "content-length": "0",
-    "accept": "*/*",
-    "foo": "bar",
-    "user-agent": "curl/7.54.0",
-    "x-envoy-expected-rq-timeout-ms": "15000",
-    "x-request-id": "193637cb-d551-4c0e-80a6-866218c25c3b",
-    "x-forwarded-port": "80"
-  },
-  "json": null,
-  "url": "https://postman-echo.com/post"
+"args": {},
+"data": {},
+"files": {},
+"form": {},
+"headers": {
+"x-forwarded-proto": "https",
+"host": "postman-echo.com",
+"content-length": "0",
+"accept": "_/_",
+"foo": "bar",
+"user-agent": "curl/7.54.0",
+"x-envoy-expected-rq-timeout-ms": "15000",
+"x-request-id": "193637cb-d551-4c0e-80a6-866218c25c3b",
+"x-forwarded-port": "80"
+},
+"json": null,
+"url": "https://postman-echo.com/post"
 }
-{{< /highlight >}} 
+{{< /highlight >}}
 
 Notice that the `url` attribute now displays a `/post` path where it previously displayed `/get`.
 
@@ -153,21 +150,22 @@ We will hit the same endpoint as we did at the beginning of this tutorial:
 
 {{< highlight yaml "hl_lines=12" >}}
 {
-  "args": {},
-  "headers": {
-    "x-forwarded-proto": "https",
-    "host": "postman-echo.com",
-    "accept": "*/*",
-    "user-agent": "curl/7.54.0",
-    "x-envoy-expected-rq-timeout-ms": "15000",
-    "x-request-id": "f8844eba-85cd-4253-81a2-12f143d9db41",
-    "x-forwarded-port": "80"
-  },
-  "url": "https://postman-echo.com/get"
+"args": {},
+"headers": {
+"x-forwarded-proto": "https",
+"host": "postman-echo.com",
+"accept": "_/_",
+"user-agent": "curl/7.54.0",
+"x-envoy-expected-rq-timeout-ms": "15000",
+"x-request-id": "f8844eba-85cd-4253-81a2-12f143d9db41",
+"x-forwarded-port": "80"
+},
+"url": "https://postman-echo.com/get"
 }
-{{< /highlight >}} 
+{{< /highlight >}}
 
 ### Cleanup
+
 To cleanup the resources created in this tutorial you can run the following commands:
 
 ```shell

@@ -5,20 +5,20 @@ weight: 35
 
 Gloo has a very flexible architecture and can be deployed in many ways on various infrastructure. If you have access to Kubernetes, we recommend it because it simplifies operations. Kubernetes, however, is not the only way to deploy Gloo. You can deploy and manage Gloo on any infrastructure (think VMs, or other container orchestrators) with out of the box support for Consul as the configuration backend. . The question you are probably asking: what options make sense for which problems? Let's take a look at some deployment architectures for Gloo:
 
-* As a simple ingress to Kubernetes
-* As a kube-native edge API Gateway for Kubernetes
-* As a sharded API Gateway
-* As a bounded-context API Gateway
-* As an API Gateway for a service mesh
-* As an Ingress for multi-tentant clusters
-* As an API Gateway in OpenShift
-* Across multiple clusters
+- As a simple ingress to Kubernetes
+- As a kube-native edge API Gateway for Kubernetes
+- As a sharded API Gateway
+- As a bounded-context API Gateway
+- As an API Gateway for a service mesh
+- As an Ingress for multi-tentant clusters
+- As an API Gateway in OpenShift
+- Across multiple clusters
 
 Let's dig a bit deeper and see why you might use some of these architectures.
 
 ## As a simple ingress to Kubernetes
 
-Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/gloo_integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
+Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/gloo_integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/ingress.png" %}})
 
@@ -30,8 +30,7 @@ Since the Kubernetes Ingress API is very limited and restricted to HTTP traffic,
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/gateway.png" %}})
 
-In this model, the `gloo`, and `gateway` components of the control plane are required. You will probably see a `discovery` component as well since that handles all of the automatic service discovery (from endpoints like Kubernetes, Consul, EC2, Lambda, etc). Please [see this blog for more information](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) on the identity crisis with ingress controllers, API management, and cloud-native API gateways. 
-
+In this model, the `gloo`, and `gateway` components of the control plane are required. You will probably see a `discovery` component as well since that handles all of the automatic service discovery (from endpoints like Kubernetes, Consul, EC2, Lambda, etc). Please [see this blog for more information](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) on the identity crisis with ingress controllers, API management, and cloud-native API gateways.
 
 ## As a sharded API Gateway
 
@@ -39,11 +38,11 @@ Sometimes, you'll want to isolate against the ["noisy neighbor"](https://en.wiki
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/sharded-gateway.png" %}})
 
-In the above architecture, we can expose the sharded proxies directly to the edge of the proxy. We may rely on separate IP addresses and DNS to perform this sharding. We could try avoid doing this by introducing a single gateway at the edge which is responsible for simple routing while offloading any other API gateway functionality to the second layer of proxies. 
+In the above architecture, we can expose the sharded proxies directly to the edge of the proxy. We may rely on separate IP addresses and DNS to perform this sharding. We could try avoid doing this by introducing a single gateway at the edge which is responsible for simple routing while offloading any other API gateway functionality to the second layer of proxies.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/sharded-gateway2.png" %}})
 
-Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{< ref "api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk.md" >}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it. 
+Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk.md" >}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it.
 
 ## As a bounded-context API Gateway
 
@@ -51,7 +50,7 @@ A variation of the previous deployment pattern of sharding the gateway is by exp
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/bounded-context.png" %}})
 
-In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo API specifically supports this (though API delegation). 
+In this model, the proxy sits close to its boundary of services and shares a single control plane with the rest of the cluster. Each group of services is self-managed by that group and enforces the idea of decentralizing these operations. This helps scale out the ability to make changes independently and the Gloo API specifically supports this (though API delegation).
 
 ## As an API Gateway for a service mesh
 
@@ -59,11 +58,11 @@ A service mesh uses proxies (including Envoy) to build a network of L7 connectiv
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/service-mesh-ingress.png" %}})
 
-A service mesh doesn't inherently solve (nor should it) API-level challenges. Things like Web Application Firewall, domain-specific rate limiting, Oauth AuthZ/N, request transformation, etc don't belong in the service mesh. Gloo helps fill those gaps. 
+A service mesh doesn't inherently solve (nor should it) API-level challenges. Things like Web Application Firewall, domain-specific rate limiting, Oauth AuthZ/N, request transformation, etc don't belong in the service mesh. Gloo helps fill those gaps.
 
 ## As an Ingress for multi-tentant clusters like OpenShift
 
-OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenent SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster. 
+OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenent SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/multi-tenant-openshift.png" %}})
 
@@ -88,11 +87,10 @@ If we need further isolation, we can also use proxy sharding which Gloo supports
 
 This solves some problems experienced with Legacy API Management vendors where a single API could take down the gateway for an entire set of APIs because isolation or bulkheading is not enforced.
 
-
 ## Across multiple clusters
 
-The previous deployment patterns can be extended out to multiple clusters. You may have multiple clusters divided by team, or service boundary, or some other construct. You may wish to abstract how your services get exposed to other parts of the organization by using an API Gateway. Gloo can play very well in this deployment. Each cluster would have its own deployment of the Gloo control plane with various proxies (see above) playing a role of ingress, sharded ingress, or even bounded context-API. 
+The previous deployment patterns can be extended out to multiple clusters. You may have multiple clusters divided by team, or service boundary, or some other construct. You may wish to abstract how your services get exposed to other parts of the organization by using an API Gateway. Gloo can play very well in this deployment. Each cluster would have its own deployment of the Gloo control plane with various proxies (see above) playing a role of ingress, sharded ingress, or even bounded context-API.
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/multi-cluster.png" %}})
 
-In this model, all traffic between the clusters routes between the API Gateways with appropriate security and policy enforced at these ingress/egress points. 
+In this model, all traffic between the clusters routes between the API Gateways with appropriate security and policy enforced at these ingress/egress points.
