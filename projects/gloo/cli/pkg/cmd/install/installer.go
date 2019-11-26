@@ -16,10 +16,10 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
 	"go.uber.org/zap"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/manifest"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/renderutil"
+	//"k8s.io/helm/pkg/chartutil"
+	//"k8s.io/helm/pkg/manifest"
+	//"k8s.io/helm/pkg/proto/hapi/chart"
+	//"k8s.io/helm/pkg/renderutil"
 )
 
 type GlooKubeInstallClient interface {
@@ -125,9 +125,9 @@ type GlooStagedInstaller interface {
 }
 
 type DefaultGlooStagedInstaller struct {
-	chart             *chart.Chart
-	values            *chart.Config
-	renderOpts        renderutil.Options
+	//chart             *chart.Chart
+	//values            *chart.Config
+	//renderOpts        renderutil.Options
 	excludeResources  install.ResourceMatcherFunc
 	manifestInstaller ManifestInstaller
 	dryRun            bool
@@ -139,23 +139,23 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		return nil, errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", spec.HelmArchiveUri)
 	}
 
-	chart, err := install.GetHelmArchive(spec.HelmArchiveUri)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving gloo helm chart archive")
-	}
+	//chart, err := install.GetHelmArchive(spec.HelmArchiveUri)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "retrieving gloo helm chart archive")
+	//}
 
-	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileNames, spec.ExtraValues, spec.ValueCallbacks...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
-	}
-
-	// These are the .Release.* variables used during rendering
-	renderOpts := renderutil.Options{
-		ReleaseOptions: chartutil.ReleaseOptions{
-			Namespace: opts.Install.Namespace,
-			Name:      spec.ProductName,
-		},
-	}
+	//values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileNames, spec.ExtraValues, spec.ValueCallbacks...)
+	//if err != nil {
+	//	return nil, errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
+	//}
+	//
+	//// These are the .Release.* variables used during rendering
+	//renderOpts := renderutil.Options{
+	//	ReleaseOptions: chartutil.ReleaseOptions{
+	//		Namespace: opts.Install.Namespace,
+	//		Name:      spec.ProductName,
+	//	},
+	//}
 
 	var manifestInstaller ManifestInstaller
 	if opts.Install.DryRun {
@@ -167,9 +167,9 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 	}
 
 	return &DefaultGlooStagedInstaller{
-		chart:             chart,
-		values:            values,
-		renderOpts:        renderOpts,
+		//chart:             chart,
+		//values:            values,
+		//renderOpts:        renderOpts,
 		excludeResources:  spec.ExcludeResources,
 		manifestInstaller: manifestInstaller,
 		dryRun:            opts.Install.DryRun,
@@ -180,58 +180,61 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 func (i *DefaultGlooStagedInstaller) DoCrdInstall() error {
 
 	// Keep only CRDs and collect the names
-	var crdNames []string
-	excludeNonCrdsAndCollectCrdNames := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
-		manifests, resourceNames, err := install.ExcludeNonCrds(input)
-		crdNames = resourceNames
-		return manifests, err
-	}
+	//var crdNames []string
+	//excludeNonCrdsAndCollectCrdNames := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
+	//	manifests, resourceNames, err := install.ExcludeNonCrds(input)
+	//	crdNames = resourceNames
+	//	return manifests, err
+	//}
 
 	// Render and install CRD manifests
-	crdManifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		excludeNonCrdsAndCollectCrdNames,
-		install.ExcludeEmptyManifests)
-	if err != nil {
-		return errors.Wrapf(err, "rendering crd manifests")
-	}
+	//crdManifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
+	//	install.ExcludeNotes,
+	//	excludeNonCrdsAndCollectCrdNames,
+	//	install.ExcludeEmptyManifests)
+	//if err != nil {
+	//	return errors.Wrapf(err, "rendering crd manifests")
+	//}
 
 	if !i.dryRun {
 		fmt.Printf("Installing CRDs...\n")
 	}
 
-	return i.manifestInstaller.InstallCrds(i.ctx, crdNames, crdManifestBytes)
+	//return i.manifestInstaller.InstallCrds(i.ctx, crdNames, crdManifestBytes)
+	return nil
 }
 
 func (i *DefaultGlooStagedInstaller) DoPreInstall() error {
 	// Render and install Gloo manifest
-	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		install.IncludeOnlyPreInstall,
-		install.ExcludeEmptyManifests,
-		install.ExcludeMatchingResources(i.excludeResources))
-	if err != nil {
-		return err
-	}
-	if !i.dryRun {
-		fmt.Printf("Preparing namespace and other pre-install tasks...\n")
-	}
-	return i.manifestInstaller.InstallManifest(manifestBytes)
+	//manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
+	//	install.ExcludeNotes,
+	//	install.IncludeOnlyPreInstall,
+	//	install.ExcludeEmptyManifests,
+	//	install.ExcludeMatchingResources(i.excludeResources))
+	//if err != nil {
+	//	return err
+	//}
+	//if !i.dryRun {
+	//	fmt.Printf("Preparing namespace and other pre-install tasks...\n")
+	//}
+	//return i.manifestInstaller.InstallManifest(manifestBytes)
+	return nil
 }
 
 func (i *DefaultGlooStagedInstaller) DoInstall() error {
 	// Render and install Gloo manifest
-	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		install.ExcludePreInstall,
-		install.ExcludeCrds,
-		install.ExcludeEmptyManifests,
-		install.ExcludeMatchingResources(i.excludeResources))
-	if err != nil {
-		return err
-	}
-	if !i.dryRun {
-		fmt.Printf("Installing...\n")
-	}
-	return i.manifestInstaller.InstallManifest(manifestBytes)
+	//manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
+	//	install.ExcludeNotes,
+	//	install.ExcludePreInstall,
+	//	install.ExcludeCrds,
+	//	install.ExcludeEmptyManifests,
+	//	install.ExcludeMatchingResources(i.excludeResources))
+	//if err != nil {
+	//	return err
+	//}
+	//if !i.dryRun {
+	//	fmt.Printf("Installing...\n")
+	//}
+	//return i.manifestInstaller.InstallManifest(manifestBytes)
+	return nil
 }
