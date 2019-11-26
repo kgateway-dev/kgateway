@@ -18,6 +18,8 @@ var (
 	jsonpbMarshalerEmitZeroValues = &jsonpb.Marshaler{OrigName: false, EmitDefaults: true}
 
 	gogoJsonpbMarshaler = &gogojson.Marshaler{OrigName: false}
+
+	NilStructError = errors.New("cannot unmarshal nil struct")
 )
 
 // this function is designed for converting go object (that is not a proto.Message) into a
@@ -44,7 +46,7 @@ func MarshalStructEmitZeroValues(m proto.Message) (*structpb.Struct, error) {
 
 func UnmarshalStruct(structuredData *structpb.Struct, into interface{}) error {
 	if structuredData == nil {
-		return errors.New("cannot unmarshal nil proto struct")
+		return NilStructError
 	}
 	strData, err := jsonpbMarshaler.MarshalToString(structuredData)
 	if err != nil {
@@ -68,52 +70,60 @@ func MarshalBytesEmitZeroValues(pb proto.Message) ([]byte, error) {
 
 func StructPbToGogo(structuredData *structpb.Struct) (*types.Struct, error) {
 	if structuredData == nil {
-		return nil, errors.New("cannot unmarshal nil proto struct")
+		return nil, NilStructError
 	}
-	buf := &bytes.Buffer{}
-	if err := jsonpbMarshaler.Marshal(buf, structuredData); err != nil {
+	byt, err := proto.Marshal(structuredData)
+	if err != nil {
 		return nil, err
 	}
 	var st types.Struct
-	if err := gogojson.Unmarshal(buf, &st); err != nil {
+	if err := proto.Unmarshal(byt, &st); err != nil {
 		return nil, err
 	}
-
 	return &st, nil
 }
 
 func StructGogoToPb(structuredData *types.Struct) (*structpb.Struct, error) {
 	if structuredData == nil {
-		return nil, errors.New("cannot unmarshal nil proto struct")
+		return nil, NilStructError
 	}
-	buf := &bytes.Buffer{}
-	if err := gogoJsonpbMarshaler.Marshal(buf, structuredData); err != nil {
+	byt, err := proto.Marshal(structuredData)
+	if err != nil {
 		return nil, err
 	}
 	var st structpb.Struct
-	if err := jsonpb.Unmarshal(buf, &st); err != nil {
+	if err := proto.Unmarshal(byt, &st); err != nil {
 		return nil, err
 	}
-
 	return &st, nil
 }
 
 func AnyPbToGogo(structuredData *any.Any) (*types.Any, error) {
 	if structuredData == nil {
-		return nil, errors.New("cannot unmarshal nil proto struct")
+		return nil, NilStructError
 	}
-	return &types.Any{
-		TypeUrl: structuredData.GetTypeUrl(),
-		Value:   structuredData.GetValue(),
-	}, nil
+	byt, err := proto.Marshal(structuredData)
+	if err != nil {
+		return nil, err
+	}
+	var st types.Any
+	if err := proto.Unmarshal(byt, &st); err != nil {
+		return nil, err
+	}
+	return &st, nil
 }
 
 func AnyGogoToPb(structuredData *types.Any) (*any.Any, error) {
 	if structuredData == nil {
-		return nil, errors.New("cannot unmarshal nil proto struct")
+		return nil, NilStructError
 	}
-	return &any.Any{
-		TypeUrl: structuredData.GetTypeUrl(),
-		Value:   structuredData.GetValue(),
-	}, nil
+	byt, err := proto.Marshal(structuredData)
+	if err != nil {
+		return nil, err
+	}
+	var st any.Any
+	if err := proto.Unmarshal(byt, &st); err != nil {
+		return nil, err
+	}
+	return &st, nil
 }
