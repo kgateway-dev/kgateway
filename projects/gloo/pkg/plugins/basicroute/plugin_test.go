@@ -82,7 +82,7 @@ var _ = Describe("timeout", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.Timeout).NotTo(BeNil())
-		Expect(*routeAction.Timeout).To(Equal(t))
+		Expect(routeAction.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
 	})
 })
 

@@ -92,7 +92,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
 			cfg := getConfig(f.HttpFilter)
-			Expect(*cfg.Timeout).To(Equal(timeout))
+			Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&timeout)))
 		}
 	})
 
@@ -172,7 +172,8 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
 				cfg := getConfig(f.HttpFilter)
-				Expect(*cfg.Timeout).To(Equal(time.Second))
+				t := time.Second
+				Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
 			}
 		})
 	})

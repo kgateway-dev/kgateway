@@ -3,6 +3,7 @@ package hcm_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
@@ -89,18 +90,18 @@ var _ = Describe("Plugin", func() {
 		err = translatorutil.ParseConfig(filters[0], &cfg)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(cfg.UseRemoteAddress).To(Equal(hcms.UseRemoteAddress))
+		Expect(cfg.UseRemoteAddress).To(Equal(gogoutils.BoolGogoToProto(hcms.UseRemoteAddress)))
 		Expect(cfg.XffNumTrustedHops).To(Equal(hcms.XffNumTrustedHops))
 		Expect(cfg.SkipXffAppend).To(Equal(hcms.SkipXffAppend))
 		Expect(cfg.Via).To(Equal(hcms.Via))
-		Expect(cfg.GenerateRequestId).To(Equal(hcms.GenerateRequestId))
+		Expect(cfg.GenerateRequestId).To(Equal(gogoutils.BoolGogoToProto(hcms.GenerateRequestId)))
 		Expect(cfg.Proxy_100Continue).To(Equal(hcms.Proxy_100Continue))
-		Expect(cfg.StreamIdleTimeout).To(Equal(hcms.StreamIdleTimeout))
-		Expect(cfg.IdleTimeout).To(Equal(hcms.IdleTimeout))
-		Expect(cfg.MaxRequestHeadersKb).To(Equal(hcms.MaxRequestHeadersKb))
-		Expect(cfg.RequestTimeout).To(Equal(hcms.RequestTimeout))
-		Expect(cfg.DrainTimeout).To(Equal(hcms.DrainTimeout))
-		Expect(cfg.DelayedCloseTimeout).To(Equal(hcms.DelayedCloseTimeout))
+		Expect(cfg.StreamIdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.StreamIdleTimeout)))
+		Expect(cfg.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
+		Expect(cfg.MaxRequestHeadersKb).To(Equal(gogoutils.UInt32GogoToProto(hcms.MaxRequestHeadersKb)))
+		Expect(cfg.RequestTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.RequestTimeout)))
+		Expect(cfg.DrainTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DrainTimeout)))
+		Expect(cfg.DelayedCloseTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DelayedCloseTimeout)))
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
