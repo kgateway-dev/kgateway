@@ -16,11 +16,10 @@ Data Loss Prevention (DLP) is a method of ensuring that sensitive data isn't log
 a series of regex replacements on the response body.
 
 For example, we can use Gloo to transform this response:
-
 ```json
 {
-  "fakevisa": "4397945340344828",
-  "ssn": "123-45-6789"
+   "fakevisa": "4397945340344828",
+   "ssn": "123-45-6789"
 }
 ```
 
@@ -28,8 +27,8 @@ into this response:
 
 ```json
 {
-  "fakevisa": "XXXXXXXXXXXX4828",
-  "ssn": "XXX-XX-X789"
+   "fakevisa": "XXXXXXXXXXXX4828",
+   "ssn": "XXX-XX-X789"
 }
 ```
 
@@ -65,27 +64,20 @@ glooctl create upstream static --static-hosts echo.jsontest.com:80 --name json-u
 {{< /tabs >}}
 
 Now let's configure a simple virtual service to send requests to the upstream.
-
 ```yaml
-{
-  {
-    < readfile file="gloo_routing/virtual_services/data_loss_prevention/vs-json-upstream.yaml">,
-  },
-}
+{{< readfile file="gloo_routing/virtual_services/data_loss_prevention/vs-json-upstream.yaml">}}
 ```
 
 Run the following `curl` to get the unmasked response:
-
 ```shell script
 curl $(glooctl proxy url)/ssn/123-45-6789/fakevisa/4397945340344828
 ```
 
 The `curl` should return:
-
 ```json
 {
-  "fakevisa": "4397945340344828",
-  "ssn": "123-45-6789"
+   "fakevisa": "4397945340344828",
+   "ssn": "123-45-6789"
 }
 ```
 
@@ -95,35 +87,37 @@ Now let's mask the SSN and credit card, apply the following virtual service:
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-name: vs
-namespace: gloo-system
+  name: vs
+  namespace: gloo-system
 spec:
-virtualHost:
-domains: - '\*'
-routes: - routeAction:
-single:
-upstream:
-name: json-upstream
-namespace: gloo-system
-routePlugins:
-autoHostRewrite: true
-virtualHostPlugins:
-dlp:
-actions: - actionType: SSN - actionType: ALL_CREDIT_CARDS
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - routeAction:
+        single:
+          upstream:
+            name: json-upstream
+            namespace: gloo-system
+      routePlugins:
+        autoHostRewrite: true
+    virtualHostPlugins:
+      dlp:
+        actions:
+        - actionType: SSN
+        - actionType: ALL_CREDIT_CARDS
 {{< /highlight >}}
 
 Run the same `curl` as before:
-
 ```shell script
 curl $(glooctl proxy url)/ssn/123-45-6789/fakevisa/4397945340344828
 ```
 
 This time it will return a masked response:
-
 ```json
 {
-  "fakevisa": "XXXXXXXXXXXX4828",
-  "ssn": "XXX-XX-X789"
+   "fakevisa": "XXXXXXXXXXXX4828",
+   "ssn": "XXX-XX-X789"
 }
 ```
 
@@ -149,13 +143,13 @@ metadata:
 spec:
   virtualHost:
     domains:
-      - "*"
+    - '*'
     routes:
-      - routeAction:
-          single:
-            upstream:
-              name: default-petstore-8080
-              namespace: gloo-system
+    - routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
 ```
 
 Query the petstore microservice for a list of pets:
@@ -167,10 +161,7 @@ curl $(glooctl proxy url)/api/pets
 You should obtain the following response:
 
 ```json
-[
-  { "id": 1, "name": "Dog", "status": "available" },
-  { "id": 2, "name": "Cat", "status": "pending" }
-]
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
 Names are often used as personally identifying information, or **PII**. Let's write our own regex to mask the
@@ -180,24 +171,28 @@ names returned by the petstore service:
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-name: vs
-namespace: gloo-system
+  name: vs
+  namespace: gloo-system
 spec:
-virtualHost:
-domains: - '_'
-routes: - routeAction:
-single:
-upstream:
-name: default-petstore-8080
-namespace: gloo-system
-virtualHostPlugins:
-dlp:
-actions: - customAction:
-maskChar: "Y"
-name: test # only used for logging
-percent:
-value: 60 # % of regex match to mask
-regex: - '(?!"name"[\s]_:[\s]_")[^"]+(?="[\s]_,|"[\s]})'
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+    virtualHostPlugins:
+      dlp:
+        actions:
+        - customAction:
+            maskChar: "Y"
+            name: test   # only used for logging
+            percent:
+              value: 60  # % of regex match to mask
+            regex:
+            - '(?!"name"[\s]*:[\s]*")[^"]+(?="[\s]*,|"[\s]})'
 {{< /highlight >}}
 
 Query for pets again:
@@ -209,10 +204,7 @@ curl $(glooctl proxy url)/api/pets
 You should get a masked response:
 
 ```json
-[
-  { "id": 1, "name": "YYg", "status": "available" },
-  { "id": 2, "name": "YYt", "status": "pending" }
-]
+[{"id":1,"name":"YYg","status":"available"},{"id":2,"name":"YYt","status":"pending"}]
 ```
 
 ### Summary

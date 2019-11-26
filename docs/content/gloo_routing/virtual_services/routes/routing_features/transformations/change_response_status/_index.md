@@ -4,13 +4,12 @@ weight: 10
 description: Conditionally update the status of an HTTP response
 ---
 
-Sometimes an upstream service does not communicate a failure via HTTP response status codes, but rather includes the
+Sometimes an upstream service does not communicate a failure via HTTP response status codes, but rather includes the 
 failure information within the response body. But what if some of your downstream clients expect the status code to be set?
-In this tutorial we will see how to use transformations to change the HTTP status code based on the contents of the
+In this tutorial we will see how to use transformations to change the HTTP status code based on the contents of the 
 response payload.
 
 ### Setup
-
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
 
 Let's also create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
@@ -20,26 +19,28 @@ Let's also create a simple Virtual Service that matches any path and routes all 
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-name: update-response-code
-namespace: gloo-system
+  name: update-response-code
+  namespace: gloo-system
 spec:
-virtualHost:
-domains: - '\*'
-routes: - matcher:
-prefix: /
-routeAction:
-single:
-upstream:
-name: postman-echo
-namespace: gloo-system
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: postman-echo
+            namespace: gloo-system
 {{< /tab >}}
 {{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name update-response-code --namespace gloo-system
+glooctl create vs --name update-response-code --namespace gloo-system 
 glooctl add route --name update-response-code --path-prefix / --dest-name postman-echo
 {{< /tab >}}
 {{< /tabs >}}
 
-We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request
+We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request 
 body. Create a file named `data.json` with the following content in your current working directory:
 
 ```shell
@@ -91,53 +92,53 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 ### Updating the response code
-
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside
-the `data` response body attribute. We will now configure Gloo to change the response status to 400 if the `data.error`
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside 
+the `data` response body attribute. We will now configure Gloo to change the response status to 400 if the `data.error` 
 attribute is present; otherwise, the original status code should be preserved.
 
 #### Update Virtual Service
-
 To implement this behavior, we need to add the following to our Virtual Service definition:
 
 {{< highlight yaml "hl_lines=18-33" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-name: update-response-code
-namespace: gloo-system
+  name: update-response-code
+  namespace: gloo-system
 spec:
-virtualHost:
-domains: - '\*'
-routes: - matcher:
-prefix: /
-routeAction:
-single:
-upstream:
-name: postman-echo
-namespace: gloo-system
-virtualHostPlugins:
-transformations:
-responseTransformation:
-transformationTemplate:
-headers: # We set the response status via the :status pseudo-header based on the response code
-":status":
-text: '{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}'
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matcher:
+        prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: postman-echo
+            namespace: gloo-system
+    virtualHostPlugins:
+      transformations:
+        responseTransformation:
+          transformationTemplate:
+            headers:
+              # We set the response status via the :status pseudo-header based on the response code
+              ":status":
+                text: '{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}'
 {{< /highlight >}}
 
 The above `virtualHostPlugins` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to responses.
-1. Use a [template transformation]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
+1. Use a [template transformation]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
 1. Transform the ":status" pseudo-header according to the template string.
 
-The template uses the [Inja templating language]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}})
+The template uses the [Inja templating language]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}}) 
 to define the conditional logic that will be applied to the ":status" header.
 
 #### Test our configuration
-
-To test that our configuration has been correctly applied, let's execute `curl` command again, with a slight
+To test that our configuration has been correctly applied, let's execute `curl` command again, with a slight 
 modification so that it will only output the status code:
 
 ```shell
@@ -151,6 +152,7 @@ You should get the following output, representing the response code:
 ```
 
 Now let's update the `data.json` file to turn `error` into an empty object:
+
 
 ```shell
 cat << EOF > data.json
@@ -168,7 +170,6 @@ curl -s -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" $(glo
 ```
 
 ### Cleanup
-
 To cleanup the resources created in this tutorial you can run the following commands:
 
 ```shell

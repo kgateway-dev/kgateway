@@ -4,41 +4,38 @@ weight: 10
 description: Use the Gloo Transformation API to transform requests and responses
 ---
 
-One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the
-decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your
-upstream services and do the same with the resulting responses before they reach the downstream clients.
+One of the core features of any API Gateway is the ability to transform the traffic that it manages. To really enable the 
+decoupling of your services, the API Gateway should be able to mutate requests before forwarding them to your 
+upstream services and do the same with the resulting responses before they reach the downstream clients. 
 Gloo delivers on this promise by providing you with a powerful transformation API.
 
 ## Defining a transformation
-
 Transformations are defined by adding the `transformations` attribute to your Virtual Services.
 You can define this attribute on three different Virtual Service sub-resources:
-
+ 
 - on **VirtualHosts**,
 - on **Routes**, and
 - on **WeightedDestinations**.
 
-The configuration format is the same in all three cases and must be specified under the relevant `plugins` attribute
-(`VirtualHostPlugins`, `RoutePlugins`, or `WeightedDestinationPlugins`). For example, to configure transformations for
+The configuration format is the same in all three cases and must be specified under the relevant `plugins` attribute 
+(`VirtualHostPlugins`, `RoutePlugins`, or `WeightedDestinationPlugins`). For example, to configure transformations for 
 all traffic matching a Virtual Host, you need to add the following attribute to your Virtual Host definition:
 
 {{< highlight yaml "hl_lines=3-11" >}}
-
-## This snippet has been abridged for brevity
-
+# This snippet has been abridged for brevity
 virtualHost:
-virtualHostPlugins:
-transformations:
-requestTransformation:
-transformationTemplate:
-headers:
-foo:
-text: 'bar'
+  virtualHostPlugins:
+    transformations:
+      requestTransformation: 
+        transformationTemplate:
+          headers:
+            foo:
+              text: 'bar'
 {{< /highlight >}}
 
 In case of a Route or Weighted Destination the top attribute would be named `routePlugins` and `weightedDestinationPlugins` respectively.
 
-## Inheritance rules
+#### Inheritance rules
 
 By default, a transformation defined on a Virtual Service attribute is **inherited** by all the child attributes:
 
@@ -47,8 +44,7 @@ By default, a transformation defined on a Virtual Service attribute is **inherit
 
 If however a child attribute defines its own transformation, it will override the configuration on its parent.
 
-## Configuration format
-
+### Configuration format
 In this section we will detail all the properties of the `transformations` {{< protobuf display="object" name="envoy.api.v2.filter.http.RouteTransformations" >}},
 which has the following structure:
 
@@ -59,33 +55,32 @@ transformations:
   responseTransformation: {}
 ```
 
-The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the
-request transformation was applied. If the transformation modifies the headers in a way that affects routing, this
+The `clearRouteCache` attribute is a boolean value that determines whether the route cache should be cleared if the 
+request transformation was applied. If the transformation modifies the headers in a way that affects routing, this 
 attribute must be set to `true`. The default value is `false`.
 
-The `requestTransformation` and `responseTransformation` attributes have the
-{{< protobuf display="same format" name="envoy.api.v2.filter.http.Transformation" >}} and specify transformations that
+The `requestTransformation` and `responseTransformation` attributes have the 
+{{< protobuf display="same format" name="envoy.api.v2.filter.http.Transformation" >}} and specify transformations that 
 will be applied to requests and responses respectively. The format can take one of two forms:
 
-- `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be
-  a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
-- `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more
-  powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
+- `headerBodyTransform`: this type of transformation will make all the headers available in the body. The result will be 
+a JSON body that consists of two attributes: `headers`, containing the headers, and `body`, containing the original body.
+- `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more 
+powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
 
-## Transformation templates
-
-{{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo's
-transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of
+#### Transformation templates
+{{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo's 
+transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of 
 the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
 
 ```yaml
 transformationTemplate:
   parseBodyBehavior: {}
   ignoreErrorOnParse: bool
-  extractors: {}
+  extractors:  {}
   headers: {}
   # Only one of body, passthrough, and mergeExtractorsToBody can be specified
-  body: {}
+  body: {} 
   passthrough: {}
   mergeExtractorsToBody: {}
   dynamicMetadataValues: []
@@ -93,14 +88,13 @@ transformationTemplate:
 ```
 
 {{% notice note %}}
-The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three different ways of handling the body of
+The `body`, `passthrough`, and `mergeExtractorsToBody` attributes define three different ways of handling the body of 
 the request/response. Please note that **only one of them may be set**, otherwise Gloo will reject the `transformationTemplate`.
 {{% /notice %}}
 
 Let's go ahead and describe each one of these attributes in detail.
 
-### parseBodyBehavior
-
+##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
 
 - `ParseAsJson`: Gloo will attempt to parse the body as a JSON structure. This is the default behavior.
@@ -108,14 +102,12 @@ This attribute determines how the request/response body will be parsed and can h
 
 As we will [see later](#templating-language), some of the templating features won't be available when treating the body as plain text.
 
-#### ignoreErrorOnParse
-
+##### ignoreErrorOnParse
 If set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
 
-#### extractors
-
-Use this attribute to extract information from a request or response. It consists of a set of mappings from a string
-to an `extraction`:
+##### extractors
+Use this attribute to extract information from a request or response. It consists of a set of mappings from a string 
+to an `extraction`: 
 
 - the `extraction` defines which information will be extracted
 - the string key will provide the extractor with a name it can be referred by.
@@ -123,32 +115,29 @@ to an `extraction`:
 An extraction must have one of two sources:
 
 - `header`: extract information from a header with the given name.
-
-  ```yaml
-  extractors:
-    myExtractor:
-      header: "foo"
-  ```
-
+    ```yaml
+    extractors:
+      myExtractor:
+        header: 'foo'
+    ```
 - `body`: extract information from the body. This attribute takes an empty value (as there is always only one body).
-
-  ```yaml
-  extractors:
-    myExtractor:
-      body: {}
-  ```
+    ```yaml
+    extractors:
+      myExtractor:
+        body: {}
+    ```
 
 {{% notice note %}}
-The `body` extraction source has been introduced with **Gloo**, release 0.20.12, and **Gloo Enterprise**, release 0.20.7.
+The `body` extraction source has been introduced with **Gloo**, release 0.20.12, and **Gloo Enterprise**, release 0.20.7. 
 If you are using an earlier version, it will not work.
 {{% /notice %}}
 
-An extraction must also define which information is to be extracted from the source. This can be done by providing a
-regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of
-relevant header. If your regular expression uses _capturing groups_, you can select the group match you want to use via
+An extraction must also define which information is to be extracted from the source. This can be done by providing a 
+regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of 
+relevant header. If your regular expression uses _capturing groups_, you can select the group match you want to use via 
 the `subgroup` attribute.
 
-As an example, to define an extraction named `foo` which will contain the value of the `foo` query parameter
+As an example, to define an extraction named `foo` which will contain the value of the `foo` query parameter 
 you can apply the following configuration:
 
 ```yaml
@@ -156,24 +145,23 @@ extractors:
   # This is the name of the extraction
   foo:
     # The :path pseudo-header contains the URI
-    header: ":path"
+    header: ':path'
     # Use a nested capturing group to extract the query param
-    regex: "(.*foo=([^&]*).*)"
+    regex: '(.*foo=([^&]*).*)'
     # Select the second group match
     subgroup: 2
 ```
 
 Extracted values can be used in two ways:
 
-- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}`
-  (or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of
+- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` 
+(or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of 
   the `my-extractor` extractor.
 - You can use them in conjunction with the `mergeExtractorsToBody` body transformation type to merge them into the body.
 
 ##### headers
-
-Use this attribute to apply templates to request/response headers. It consists of a map where each key determines the name of
-the resulting header, while the corresponding value is a {{< protobuf display="template" name="envoy.api.v2.filter.http.InjaTemplate" >}}
+Use this attribute to apply templates to request/response headers. It consists of a map where each key determines the name of 
+the resulting header, while the corresponding value is a {{< protobuf display="template" name="envoy.api.v2.filter.http.InjaTemplate" >}} 
 which will determine the value.
 
 For example, to set the header `foo` to the value of the header `bar`, you could use the following configuration:
@@ -188,17 +176,16 @@ transformationTemplate:
 See the [template language section](#templating-language) for more details about template strings.
 
 ##### body
-
-Use this attribute to apply templates to the request/response body. It consists of a template string that will determine
+Use this attribute to apply templates to the request/response body. It consists of a template string that will determine 
 the content of the resulting body.
 
-As an example, the following configuration snippet could be used to transform a response body only if the HTTP
+As an example, the following configuration snippet could be used to transform a response body only if the HTTP 
 response code is `404` and preserve the original response body in other cases.
 
 ```yaml
 transformationTemplate:
   # [...]
-  body:
+  body: 
     text: '{% if header(":status") == "404" %}{ "error": "Not found!" }{% else %}{{ body() }}{% endif %}'
   # [...]
 ```
@@ -206,9 +193,8 @@ transformationTemplate:
 See the [template language section](#templating-language) for more details about template strings.
 
 ##### passthrough
-
-In some cases your do not need to transform the request/response body nor extract information from it. In these cases,
-particularly if the payload is large, you should use the `passthrough` attribute to instruct Gloo to ignore the body
+In some cases your do not need to transform the request/response body nor extract information from it. In these cases, 
+particularly if the payload is large, you should use the `passthrough` attribute to instruct Gloo to ignore the body 
 (i.e. to not buffer it). The attribute always takes just the empty value:
 
 ```yaml
@@ -219,9 +205,8 @@ transformationTemplate:
 ```
 
 ##### mergeExtractorsToBody
-
 Use this type of body transformation to merge all the `extractions` defined in the `transformationTemplate` to the body.
-The values of the extractions will be merged to a location in the body JSON determined by their names. You can use separators
+The values of the extractions will be merged to a location in the body JSON determined by their names. You can use separators 
 in the extractor names to nest elements inside the body.
 
 For an example, see the following configuration:
@@ -231,12 +216,12 @@ transformationTemplate:
   mergeExtractorsToBody: {}
   extractors:
   path:
-    header: ":path"
-    regex: ".*"
+    header: ':path'
+    regex: '.*'
   # The name of this attribute determines where the value will be nested in the body
   host.name:
-    header: "host"
-    regex: ".*"
+    header: 'host'
+    regex: '.*'
 ```
 
 This will cause the resulting body to include the following extra attributes (in additional to the original ones):
@@ -251,48 +236,46 @@ This will cause the resulting body to include the following extra attributes (in
 ```
 
 ##### dynamicMetadataValues
-
-This attribute can be used to define an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata)
+This attribute can be used to define an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) 
 entry. This metadata can be used by other filters in the filter chain to implement custom behavior.
 
-As an example, the following configuration creates a dynamic metadata entry in the `com.example` namespace with key `foo` and
-value equal to that of the `foo` header .
+As an example, the following configuration creates a dynamic metadata entry in the `com.example` namespace with key  `foo` and 
+value equal to that of the `foo` header . 
 
 ```yaml
 dynamicMetadataValues:
-  - metadataNamespace: "com.example"
-    key: "foo"
-    value:
-      text: '{{ header("foo") }}'
+- metadataNamespace: "com.example"
+  key: 'foo'
+  value:
+    text: '{{ header("foo") }}'
+
 ```
 
 The `metadataNamespace` is optional. It defaults to the namespace of the Gloo transformation filter name, i.e. `io.solo.transformation`.
 
-A common use case for this attribute is to define custom data to be included in your access logs. See the
-[dedicated tutorial]({{< ref "/gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}})
+A common use case for this attribute is to define custom data to be included in your access logs. See the 
+[dedicated tutorial]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}}) 
 for an example of how this can be achieved.
 
 ##### advancedTemplates
-
-This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo will
+This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo will 
 expect JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start"). Defaults to `false`.
 
-Please note that, if set to `true`, you will need to use the `extraction` function to access extractors in template
+Please note that, if set to `true`, you will need to use the `extraction` function to access extractors in template 
 strings (e.g. `{{ extraction("myExtractor") }}`); if the default value of `false` is used, extractors will
 simply be available by their name (e.g. `{{ myExtractor }}`).
 
 #### Templating language
-
 {{% notice note %}}
 Templates can be used only if the request/response payload is a JSON string.
 {{% /notice %}}
 
-Gloo templates are powered by the [Inja](https://github.com/pantor/inja) template engine, which is inspired by
-the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python.
-When writing you templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic,
+Gloo templates are powered by the [Inja](https://github.com/pantor/inja) template engine, which is inspired by 
+the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. 
+When writing you templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, 
 and functions.
 
-In addition to the standard functions available in the core _Inja_ library, you can use additional custom functions that
+In addition to the standard functions available in the core _Inja_ library, you can use additional custom functions that 
 we have added:
 
 - `header(header_name)`: returns the value of the header with the given name.
@@ -304,9 +287,8 @@ we have added:
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 
 ### Common use cases
-
-On this page we have seen all the properties of the Gloo Transformation API as well as some simple example snippets.
-If are looking for complete examples, please check out the following tutorials, which will guide you through
+On this page we have seen all the properties of the Gloo Transformation API as well as some simple example snippets. 
+If are looking for complete examples, please check out the following tutorials, which will guide you through 
 some of the most common transformation use cases.
 
 {{% children description="true" %}}
