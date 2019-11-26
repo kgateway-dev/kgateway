@@ -186,6 +186,7 @@ type GatewayProxy struct {
 	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
 	Service                   *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	Tracing                   *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
@@ -208,7 +209,6 @@ type GatewayProxyKind struct {
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
-	AntiAffinity bool `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	*DeploymentSpec
 }
 

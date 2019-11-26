@@ -88,7 +88,6 @@
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller|
-|gatewayProxies.NAME.kind.deployment.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.NAME.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -127,6 +126,7 @@
 |gatewayProxies.NAME.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
 |gatewayProxies.NAME.service.externalTrafficPolicy|string|||
+|gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
 |gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
@@ -139,7 +139,6 @@
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.stats|bool||enable prometheus stats|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
-|gatewayProxies.gatewayProxy.kind.deployment.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -178,6 +177,7 @@
 |gatewayProxies.gatewayProxy.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
 |gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||
+|gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
 |gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool|false|set to true to disable the gateway generation for a gateway proxy|
@@ -234,8 +234,8 @@
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
-|global.image.registry|string|gcr.io/|image prefix/registry e.g. (quay.io/solo-io)|
-|global.image.pullPolicy|string|Always|image pull policy for the container|
+|global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|
+|global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|

@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Move `gatewayProxies.NAME.kind.deployment.antiAffinity` Helm value out into `gatewayProxies.NAME.antiAffinity`, since it can be applied to both DaemonSets and Deployments.
+    issueLink: https://github.com/solo-io/gloo/issues/1775
