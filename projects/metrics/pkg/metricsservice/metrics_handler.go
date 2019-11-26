@@ -3,6 +3,7 @@ package metricsservice
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -84,7 +85,7 @@ func buildNewMetrics(ctx context.Context, metricsMessage *envoymet.StreamMetrics
 			newMetricsEntry.TcpConnections += sumMetricCounter(v.Metric)
 		case v.GetName() == ServerUptime:
 			uptime := sumMetricGauge(v.Metric)
-			uptimeDuration, err := time.ParseDuration(fmt.Sprintf("%ds", uptime))
+			uptimeDuration, err := time.ParseDuration(fmt.Sprintf("%ds", uint64(math.Round(math.Abs(uptime)))))
 			if err != nil {
 				return nil, err
 			}
