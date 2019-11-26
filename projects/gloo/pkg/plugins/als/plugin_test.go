@@ -5,6 +5,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -167,7 +168,7 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			strFormat, path = "formatting string", "path"
 			jsonFormat = &types.Struct{
-				Fields: map[string]*types.Value{},
+				Fields: nil,
 			}
 			fsStrFormat = &als.FileSink_StringFormat{
 				StringFormat: strFormat,
@@ -281,7 +282,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
 				jsn := falCfg.GetJsonFormat()
-				Expect(jsn).To(Equal(jsonFormat))
+				Expect(protoutils.StructPbToGogo(jsn)).To(Equal(jsonFormat))
 			}
 
 			BeforeEach(func() {
