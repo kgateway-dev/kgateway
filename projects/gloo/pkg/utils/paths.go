@@ -1,7 +1,7 @@
 package utils
 
 import (
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 )
 
@@ -17,7 +17,7 @@ func PathAsString(matcher *matchers.Matcher) string {
 	return ""
 }
 
-func EnvoyPathAsString(matcher route.RouteMatch) string {
+func EnvoyPathAsString(matcher *route.RouteMatch) string {
 	switch path := matcher.GetPathSpecifier().(type) {
 	case *route.RouteMatch_Prefix:
 		return path.Prefix

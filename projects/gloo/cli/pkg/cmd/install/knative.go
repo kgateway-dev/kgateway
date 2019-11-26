@@ -29,7 +29,6 @@ const (
 	installedByUsAnnotationKey = "gloo.solo.io/glooctl_install_info"
 
 	servingReleaseUrlTemplate    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
-	buildReleaseUrlTemplate      = "https://github.com/knative/build/releases/download/v%v/build.yaml"
 	eventingReleaseUrlTemplate   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
 	monitoringReleaseUrlTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
 
@@ -160,7 +159,6 @@ func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *option
 // used by e2e test
 func RenderKnativeManifests(opts options.Knative) (string, error) {
 	knativeVersion := opts.InstallKnativeVersion
-	build := opts.InstallKnativeBuild
 	eventing := opts.InstallKnativeEventing
 	monitoring := opts.InstallKnativeMonitoring
 
@@ -170,15 +168,6 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 		return "", err
 	}
 	outputManifests := []string{servingManifest}
-
-	if build {
-		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, opts.InstallKnativeBuildVersion)
-		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
-		if err != nil {
-			return "", err
-		}
-		outputManifests = append(outputManifests, buildManifest)
-	}
 
 	if eventing {
 		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)

@@ -86,7 +86,7 @@ type ListenerFilterPlugin interface {
 }
 
 type StagedListenerFilter struct {
-	ListenerFilter envoylistener.Filter
+	ListenerFilter *envoylistener.Filter
 	Stage          FilterStage
 }
 
@@ -118,7 +118,7 @@ func (s StagedListenerFilterList) Swap(i, j int) {
 // Currently only supported for TCP listeners, plan to change this in the future
 type ListenerFilterChainPlugin interface {
 	Plugin
-	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]envoylistener.FilterChain, error)
+	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]*envoylistener.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {

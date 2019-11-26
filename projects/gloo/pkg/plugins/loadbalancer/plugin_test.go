@@ -3,6 +3,8 @@ package loadbalancer_test
 import (
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 
@@ -154,8 +156,8 @@ status: {}
 		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
 		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
 			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
-				MinimumRingSize: &types.UInt64Value{Value: 100},
-				MaximumRingSize: &types.UInt64Value{Value: 200},
+				MinimumRingSize: &wrappers.UInt64Value{Value: 100},
+				MaximumRingSize: &wrappers.UInt64Value{Value: 200},
 				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
 			},
 		}))
@@ -325,7 +327,7 @@ status: {}
 					PolicySpecifier: &envoyroute.RouteAction_HashPolicy_Cookie_{
 						Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
 							Name: "gloo",
-							Ttl:  &ttlDur,
+							Ttl:  gogoutils.DurationStdToProto(&ttlDur),
 							Path: "/abc",
 						},
 					},

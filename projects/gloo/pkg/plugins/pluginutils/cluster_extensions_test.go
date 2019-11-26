@@ -1,7 +1,7 @@
 package pluginutils_test
 
 import (
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,13 +14,13 @@ var _ = Describe("ClusterExtensions", func() {
 
 	var (
 		out  *envoyapi.Cluster
-		msg  *types.Struct
+		msg  *structpb.Struct
 		name string
 	)
 	BeforeEach(func() {
-		msg = &types.Struct{
-			Fields: map[string]*types.Value{
-				"test": &types.Value{Kind: &types.Value_BoolValue{
+		msg = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"test": &structpb.Value{Kind: &structpb.Value_BoolValue{
 					BoolValue: true,
 				}},
 			},

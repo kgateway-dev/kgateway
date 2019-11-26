@@ -5,8 +5,8 @@ import (
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -274,7 +274,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 }
 
 type envoyPerFilterConfig interface {
-	GetPerFilterConfig() map[string]*types.Struct
+	GetPerFilterConfig() map[string]*structpb.Struct
 }
 
 // Returns true if the ext_authz filter is explicitly disabled
@@ -286,7 +286,7 @@ func IsDisabled(e envoyPerFilterConfig) bool {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := util.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	return cfg.GetDisabled()
@@ -301,7 +301,7 @@ func IsEnabled(e envoyPerFilterConfig) bool {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := util.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	if cfg.GetCheckSettings() == nil {

@@ -25,6 +25,7 @@
 |settings.invalidConfigPolicy.replaceInvalidRoutes|bool|false|Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
 |settings.invalidConfigPolicy.invalidRouteResponseCode|int64|404|the response code for the direct response|
 |settings.invalidConfigPolicy.invalidRouteResponseBody|string|Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.|the response body for the direct response|
+|settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -132,6 +133,7 @@
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
@@ -182,6 +184,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
@@ -231,8 +234,8 @@
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
-|global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|
-|global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
+|global.image.registry|string|gcr.io/|image prefix/registry e.g. (quay.io/solo-io)|
+|global.image.pullPolicy|string|Always|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
