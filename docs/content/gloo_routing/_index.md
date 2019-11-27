@@ -3,17 +3,26 @@ title: Gloo Routing
 weight: 30
 ---
 
-Gloo has a powerful routing engine that can handle simple use cases like API-to-API routing as well as more complex ones like HTTP to gRPC with body and header transformations. Gloo can also route natively to cloud-function providers like AWS Lambda, Google Cloud Functions and Azure Functions. 
+### Motivation
 
-To understand Gloo routing, we should understand the high-level layout of the Gloo configuration. In general, you will be interacting with [Virtual Services](../introduction/concepts#virtual-services). These objects allow you to configure the details of the API you wish to expose on the Gateway as well as how the routing happens to any backends ([Upstreams](../introduction/concepts#upstreams). To get traffic into the Gloo gateway, you need to control the listeners through the [Gateway](../introduction/concepts#gateways) objects.
+Gloo has a powerful routing engine that can handle simple use cases like API-to-API routing as well as more complex ones like HTTP to gRPC with body and header transformations. Routing can also be done natively to cloud-function providers like AWS Lambda, Google Cloud Functions and Azure Functions.
 
-![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-concept-overview.png" %}})
+Gloo can route requests directly to functions, which can be: a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS function, etc.); an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.); or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes Gloo the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
-To configure the details of the routing engine, we define predicates that match on incoming requests (things like headers, path, method, etc) and then route them to Upstream destinations (like REST or gRPC services running in Kubernetes, EC2, Consul, etc or Cloud Functions like Lambda).
+### Gloo Configuration
+
+Let's see what underpins Gloo routing with a high-level look at the layout of the Gloo configuration. This can be seen as 3 layers: the Gateway listeners, Virtual Services, and Upstreams. Mostly you'll be interacting with [Virtual Services](../introduction/concepts#virtual-services), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to backends. [Upstreams](../introduction/concepts#upstreams) represent those backends. [Gateway](../introduction/concepts#gateways) objects help you control the listeners for incoming traffic.
+
+![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-concepts-overview.png" %}})
+
+### Route Rules
+
+Configuring the routing engine is done with defined predicates that match on incomoing requests. These requests, such as headers, path, method, etc., are then routed to Upstream destinations such as like REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the Virtual Services examples below we'll dig into this further.
 
 ![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-overview.png" %}})
 
-Take a look at getting started with the [hello world](./hello_world) guide and move to more advanced use cases by understanding the [Virtual Service](../introduction/concepts#virtual-services) concept. 
+### Implementations
 
+Get started with Hello World and manipulating configurations. Once you're comfortable, move to more advanced use cases for understanding Gloo concepts like [Virtual Services](../introduction/concepts#virtual-services).
 
 {{% children description="true" %}}
