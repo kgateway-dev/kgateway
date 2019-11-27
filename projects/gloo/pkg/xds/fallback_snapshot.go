@@ -6,8 +6,8 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 )
 
 func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) cache.Snapshot {
@@ -20,13 +20,13 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 	routes := []cache.Resource{
 		NewEnvoyResource(&envoyapi.RouteConfiguration{
 			Name: routeConfigName,
-			VirtualHosts: []envoyroute.VirtualHost{
+			VirtualHosts: []*envoyroute.VirtualHost{
 				{
 					Name:    "invalid-envoy-config-vhost",
 					Domains: []string{"*"},
-					Routes: []envoyroute.Route{
+					Routes: []*envoyroute.Route{
 						{
-							Match: envoyroute.RouteMatch{
+							Match: &envoyroute.RouteMatch{
 								PathSpecifier: &envoyroute.RouteMatch_Prefix{
 									Prefix: "/",
 								},
@@ -54,11 +54,11 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		},
 	}
 	manager := &envoyhttpconnectionmanager.HttpConnectionManager{
-		CodecType:  envoyhttpconnectionmanager.AUTO,
+		CodecType:  envoyhttpconnectionmanager.HttpConnectionManager_AUTO,
 		StatPrefix: "http",
 		RouteSpecifier: &envoyhttpconnectionmanager.HttpConnectionManager_Rds{
 			Rds: &envoyhttpconnectionmanager.Rds{
-				ConfigSource:    adsSource,
+				ConfigSource:    &adsSource,
 				RouteConfigName: routeConfigName,
 			},
 		},
@@ -68,17 +68,17 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 			},
 		},
 	}
-	pbst, err := util.MessageToStruct(manager)
+	pbst, err := conversion.MessageToStruct(manager)
 	if err != nil {
 		panic(err)
 	}
 
 	listener := &envoyapi.Listener{
 		Name: listenerName,
-		Address: envoycore.Address{
+		Address: &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
-					Protocol: envoycore.TCP,
+					Protocol: envoycore.SocketAddress_TCP,
 					Address:  bindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
@@ -87,8 +87,8 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 				},
 			},
 		},
-		FilterChains: []envoylistener.FilterChain{{
-			Filters: []envoylistener.Filter{
+		FilterChains: []*envoylistener.FilterChain{{
+			Filters: []*envoylistener.Filter{
 				{
 					Name:       "envoy.http_connection_manager",
 					ConfigType: &envoylistener.Filter_Config{Config: pbst},

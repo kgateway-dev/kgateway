@@ -6,6 +6,8 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,13 +32,13 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	if cfg.MaxRequestsPerConnection > 0 {
-		out.MaxRequestsPerConnection = &types.UInt32Value{
+		out.MaxRequestsPerConnection = &wrappers.UInt32Value{
 			Value: cfg.MaxRequestsPerConnection,
 		}
 	}
 
 	if cfg.ConnectTimeout != nil {
-		out.ConnectTimeout = *cfg.ConnectTimeout
+		out.ConnectTimeout = gogoutils.DurationStdToProto(cfg.ConnectTimeout)
 	}
 
 	if cfg.TcpKeepalive != nil {
@@ -56,9 +58,9 @@ func convertTcpKeepAlive(tcp *v1.ConnectionConfig_TcpKeepAlive) *envoycore.TcpKe
 		}
 	}
 	return &envoycore.TcpKeepalive{
-		KeepaliveInterval: roundToSecond(tcp.KeepaliveInterval),
-		KeepaliveTime:     roundToSecond(tcp.KeepaliveTime),
-		KeepaliveProbes:   probes,
+		KeepaliveInterval: gogoutils.UInt32GogoToProto(roundToSecond(tcp.KeepaliveInterval)),
+		KeepaliveTime:     gogoutils.UInt32GogoToProto(roundToSecond(tcp.KeepaliveTime)),
+		KeepaliveProbes:   gogoutils.UInt32GogoToProto(probes),
 	}
 }
 

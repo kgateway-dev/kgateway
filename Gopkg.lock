@@ -200,6 +200,17 @@
   revision = "3a771d992973f24aa725d07868b467d1ddfceafb"
 
 [[projects]]
+  digest = "1:530196e273d778fb94ad0481a801ae1d9a79f2ff40b8040413c33a1fb46505a1"
+  name = "github.com/census-instrumentation/opencensus-proto"
+  packages = [
+    "gen-go/resource/v1",
+    "gen-go/trace/v1",
+  ]
+  pruneopts = "UT"
+  revision = "d89fa54de508111353cb0b06403c00569be780d8"
+  version = "v0.2.1"
+
+[[projects]]
   branch = "master"
   digest = "1:95e08278c876d185ba67533f045e9e63b3c9d02cbd60beb0f4dbaa2344a13ac2"
   name = "github.com/chai2010/gettext-go"
@@ -293,7 +304,7 @@
   version = "v1.12.0"
 
 [[projects]]
-  digest = "1:230c1845901af4a986e6820ed687f947e9eedac69fc458baa29e2930cb692ade"
+  digest = "1:220cc108a4ee6f1cf5bd6776ea7c5088d6e53a0c794f9a6b79c12642c6978479"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
     "envoy/api/v2",
@@ -316,6 +327,7 @@
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/config/filter/network/tcp_proxy/v2",
     "envoy/config/grpc_credential/v2alpha",
+    "envoy/config/listener/v2",
     "envoy/config/metrics/v2",
     "envoy/config/overload/v2alpha",
     "envoy/config/ratelimit/v2",
@@ -328,11 +340,11 @@
     "envoy/service/ratelimit/v2",
     "envoy/type",
     "envoy/type/matcher",
-    "pkg/util",
+    "pkg/conversion",
   ]
   pruneopts = "UT"
-  revision = "0f0598e8dab0c0306119ca6fff632b0a672cbfa1"
-  version = "v0.8.2"
+  revision = "34c8be46e7fdd171a21e25203bc29e9e9ee56886"
+  version = "v0.9.1"
 
 [[projects]]
   digest = "1:dfe5159383dfcd370555c35374ac99022906f987b55cc65a830fb9ced970b4b1"
@@ -542,18 +554,15 @@
   revision = "6f2cf27854a4a29e3811b0371547be335d411b8b"
 
 [[projects]]
-  digest = "1:a507e8646bf3775af6f7e7b2a62a5e67d1c6a8f00754f87e66b96181b7f3d747"
+  digest = "1:b60efdeb75d3c0ceed88783ac2495256aba3491a537d0f31401202579fd62a94"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "51421b967af1f557f93a59e0057aaf15ca02e29c"
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:48eec3cd72d25c5277aec9b1f0c8a5f4c07210fd9e0c104997c7064486511d09"
+  digest = "1:4d57cfecf525530b26c012f5444aa6c892317bb8622c5c684b6becfa56bdb61f"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -567,8 +576,10 @@
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
+    "ptypes/empty",
     "ptypes/struct",
     "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
   pruneopts = "UT"
   revision = "b5d812f8a3706043e23a9cd5babf2e5423744d30"
@@ -1369,12 +1380,12 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:fa6bd41a75d99f159736704d3c8cd4529b15ca7725fd23796fe6541426a13564"
+  digest = "1:67e3edc538b069f5656768693bd90957ee55b6e2249901db834a24d0c9fa5947"
   name = "github.com/solo-io/envoy-operator"
   packages = ["pkg/downward"]
   pruneopts = "UT"
-  revision = "c0c348560c668090e5a1977d100a3b974f77f789"
-  version = "v0.1.0"
+  revision = "e0d812e3f3d8ee8c06c204b611608085b29d7f43"
+  version = "v0.1.1"
 
 [[projects]]
   digest = "1:7a9ff429c9395795e1cd5989449fce966f1968c333be79991f6f36a5b0daa583"
@@ -1442,15 +1453,18 @@
   version = "v0.1.1"
 
 [[projects]]
-  digest = "1:f9096021ca6e2134f80df8f3c54bbb33a96a1933ed7d90ae7b3e4576467708aa"
+  digest = "1:73b5fad1f8559d0f677fb7a311bd3b6ec4d549ea95e707621d6703420589f9d5"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
     "api/external/kubernetes/customresourcedefinition",
     "api/external/kubernetes/deployment",
+    "api/external/kubernetes/job",
     "api/external/kubernetes/namespace",
     "api/external/kubernetes/pod",
     "api/external/kubernetes/service",
+    "pkg/api/external/envoy/api/v2/core",
+    "pkg/api/external/envoy/type",
     "pkg/api/external/kubernetes/namespace",
     "pkg/api/external/kubernetes/service",
     "pkg/api/v1/clients",
@@ -1510,8 +1524,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "cb8abf21a54ea79cee99eed5936f587f5dbdd545"
-  version = "v0.11.7"
+  revision = "592d7edae56b1c0d6a10be34ca742d5735f39034"
+  version = "v0.11.12"
 
 [[projects]]
   digest = "1:3e39bafd6c2f4bf3c76c3bfd16a2e09e016510ad5db90dc02b88e2f565d6d595"
@@ -2102,17 +2116,6 @@
   pruneopts = "UT"
   revision = "afd67930eec2a9ed3e9b19f684d17a062285f16a"
   version = "2019.2.3"
-
-[[projects]]
-  branch = "master"
-  digest = "1:cb1518c8b771f09b1fa0a6722601460e0c0262f564340bf2fb24947b9f662194"
-  name = "istio.io/gogo-genproto"
-  packages = [
-    "opencensus/proto/trace/v1",
-    "prometheus",
-  ]
-  pruneopts = "UT"
-  revision = "e88dc8b0e4dba2caf977ab9ec040cc2081db103f"
 
 [[projects]]
   branch = "master"
@@ -2775,7 +2778,7 @@
     "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2",
     "github.com/envoyproxy/go-control-plane/envoy/type",
     "github.com/envoyproxy/go-control-plane/envoy/type/matcher",
-    "github.com/envoyproxy/go-control-plane/pkg/util",
+    "github.com/envoyproxy/go-control-plane/pkg/conversion",
     "github.com/envoyproxy/protoc-gen-validate/validate",
     "github.com/fgrosse/zaptest",
     "github.com/ghodss/yaml",
@@ -2791,10 +2794,14 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
+    "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
+    "github.com/golang/protobuf/ptypes",
     "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/duration",
+    "github.com/golang/protobuf/ptypes/struct",
+    "github.com/golang/protobuf/ptypes/wrappers",
     "github.com/google/go-github/github",
     "github.com/gorilla/mux",
     "github.com/grpc-ecosystem/go-grpc-middleware",
@@ -2826,6 +2833,7 @@
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",
+    "github.com/prometheus/client_model/go",
     "github.com/prometheus/prometheus/discovery/targetgroup",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-list-licenses/pkg/license",
@@ -2860,6 +2868,8 @@
     "github.com/solo-io/reporting-client/pkg/client",
     "github.com/solo-io/reporting-client/pkg/signature",
     "github.com/solo-io/solo-kit/api/external/kubernetes/namespace",
+    "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core",
+    "github.com/solo-io/solo-kit/pkg/api/external/envoy/type",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/namespace",
     "github.com/solo-io/solo-kit/pkg/api/external/kubernetes/service",
     "github.com/solo-io/solo-kit/pkg/api/v1/clients",
@@ -2910,6 +2920,7 @@
     "google.golang.org/api/compute/v1",
     "google.golang.org/api/option",
     "google.golang.org/genproto/googleapis/api/annotations",
+    "google.golang.org/genproto/googleapis/rpc/status",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
     "google.golang.org/grpc/health",
@@ -2921,7 +2932,6 @@
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "gopkg.in/yaml.v2",
-    "istio.io/gogo-genproto/prometheus",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",

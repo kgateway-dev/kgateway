@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -19,13 +19,13 @@ var _ = Describe("PerFilterConfig", func() {
 	var (
 		in   *v1.Route
 		out  *envoyroute.Route
-		msg  *types.Struct
+		msg  *structpb.Struct
 		name string
 	)
 	BeforeEach(func() {
-		msg = &types.Struct{
-			Fields: map[string]*types.Value{
-				"test": {Kind: &types.Value_BoolValue{
+		msg = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"test": {Kind: &structpb.Value_BoolValue{
 					BoolValue: true,
 				}},
 			},

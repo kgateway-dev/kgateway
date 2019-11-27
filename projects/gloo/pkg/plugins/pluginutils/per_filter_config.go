@@ -5,10 +5,9 @@ import (
 	"reflect"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-
-	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
@@ -16,19 +15,19 @@ import (
 
 func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
 	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
 	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
 func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
 	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
 	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
 func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
 	if out.PerFilterConfig == nil {
-		out.PerFilterConfig = make(map[string]*types.Struct)
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
 	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
@@ -57,7 +56,7 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 		return configureMultiDest(dest.Multi.Destinations, outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Single:
 		if out.PerFilterConfig == nil {
-			out.PerFilterConfig = make(map[string]*types.Struct)
+			out.PerFilterConfig = make(map[string]*structpb.Struct)
 		}
 		return configureSingleDest(dest.Single, out.PerFilterConfig, filterName, perFilterConfig)
 	}
@@ -81,7 +80,7 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 	}
 	for i := range in {
 		if out.Clusters[i].PerFilterConfig == nil {
-			out.Clusters[i].PerFilterConfig = make(map[string]*types.Struct)
+			out.Clusters[i].PerFilterConfig = make(map[string]*structpb.Struct)
 		}
 		err := configureSingleDest(in[i].Destination, out.Clusters[i].PerFilterConfig, filterName, perFilterConfig)
 		if err != nil {
@@ -92,7 +91,7 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 	return nil
 }
 
-func configureSingleDest(in *v1.Destination, out map[string]*types.Struct, filterName string, perFilterConfig PerFilterConfigFunc) error {
+func configureSingleDest(in *v1.Destination, out map[string]*structpb.Struct, filterName string, perFilterConfig PerFilterConfigFunc) error {
 	config, err := perFilterConfig(in)
 	if err != nil {
 		return err
@@ -100,11 +99,11 @@ func configureSingleDest(in *v1.Destination, out map[string]*types.Struct, filte
 	return setConfig(out, filterName, config)
 }
 
-func setConfig(out map[string]*types.Struct, filterName string, config proto.Message) error {
+func setConfig(out map[string]*structpb.Struct, filterName string, config proto.Message) error {
 	if config == nil {
 		return nil
 	}
-	configStruct, err := util.MessageToStruct(config)
+	configStruct, err := conversion.MessageToStruct(config)
 	if err != nil {
 		return err
 	}

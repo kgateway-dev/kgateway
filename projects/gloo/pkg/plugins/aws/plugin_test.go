@@ -3,16 +3,15 @@ package aws
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -113,7 +112,7 @@ var _ = Describe("Plugin", func() {
 	})
 
 	processProtocolOptions := func() {
-		err := util.StructToMessage(out.ExtensionProtocolOptions[filterName], lpe)
+		err := conversion.StructToMessage(out.ExtensionProtocolOptions[filterName], lpe)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
@@ -282,7 +281,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			err = util.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
+			err = conversion.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}

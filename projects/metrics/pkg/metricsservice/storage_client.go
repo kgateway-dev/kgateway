@@ -21,8 +21,8 @@ type StorageClient interface {
 }
 
 type EnvoyMetrics struct {
-	HttpRequests   uint64
-	TcpConnections uint64
+	HttpRequests   float64
+	TcpConnections float64
 	Uptime         time.Duration
 }
 

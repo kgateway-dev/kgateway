@@ -3,7 +3,7 @@ package plugins
 import (
 	"sort"
 
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
@@ -57,9 +57,9 @@ var _ = Describe("Plugin", func() {
 		ExpectNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 
 		By("verify stable sort")
-		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &types.Struct{Fields: map[string]*types.Value{"a": nil}}}}
-		secondFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &types.Struct{Fields: map[string]*types.Value{"b": nil}}}}
-		thirdFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &types.Struct{Fields: map[string]*types.Value{"c": nil}}}}
+		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"a": nil}}}}
+		secondFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"b": nil}}}}
+		thirdFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"c": nil}}}}
 		filters = StagedHttpFilterList{
 			StagedHttpFilter{firstFilter, DuringStage(RouteStage)},
 			StagedHttpFilter{secondFilter, DuringStage(RouteStage)},
@@ -72,15 +72,15 @@ var _ = Describe("Plugin", func() {
 	It("should order listener filter stages correctly", func() {
 		By("base case")
 		filters := StagedListenerFilterList{
-			StagedListenerFilter{envoylistener.Filter{Name: "H"}, DuringStage(RouteStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "G"}, DuringStage(OutAuthStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "F"}, DuringStage(AcceptedStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "E"}, DuringStage(RateLimitStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "D"}, DuringStage(AuthZStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "C"}, DuringStage(AuthNStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "Waf"}, DuringStage(WafStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "B"}, DuringStage(CorsStage)},
-			StagedListenerFilter{envoylistener.Filter{Name: "A"}, DuringStage(FaultStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "H"}, DuringStage(RouteStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "G"}, DuringStage(OutAuthStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "F"}, DuringStage(AcceptedStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "E"}, DuringStage(RateLimitStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "D"}, DuringStage(AuthZStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "C"}, DuringStage(AuthNStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "Waf"}, DuringStage(WafStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "B"}, DuringStage(CorsStage)},
+			StagedListenerFilter{&envoylistener.Filter{Name: "A"}, DuringStage(FaultStage)},
 		}
 		sort.Sort(filters)
 		ExpectListenerFilterNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
