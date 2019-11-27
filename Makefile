@@ -54,6 +54,11 @@ endif
 # Repo setup
 #----------------------------------------------------------------------------------
 
+# This target is used to get the dependencies that are marked as ignored in the Gopkg.toml file. These dependencies
+# cannot be imported by dep, as their module name (ending in /vN) gets interpreted as a package, causing a failure.
+go-get-ignored-deps:
+	GO111MODULE=on go get -u github.com/cespare/xxhash@v2
+
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
 init:
@@ -100,7 +105,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses go-get-ignored-deps
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
