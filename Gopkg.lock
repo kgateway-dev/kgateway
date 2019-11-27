@@ -1480,7 +1480,7 @@
 
 [[projects]]
   branch = "helm-3-dep"
-  digest = "1:73b5fad1f8559d0f677fb7a311bd3b6ec4d549ea95e707621d6703420589f9d5"
+  digest = "1:e501317a58a4e3b5bd510932e9a9c855714623cfc98144b09f7aa93a02d44431"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1551,7 +1551,7 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "d5cfe58ecbf2742dc3b97b48710c72439310be8b"
+  revision = "6bb54b82fcc9f0061c1ece7b3770509a0cc19f59"
 
 [[projects]]
   digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
@@ -2646,11 +2646,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:e6c5a71f8d9a763fd470bcae4d15c137d5088208c6e59aefb637043fb86dc745"
+  digest = "1:471919660152c1f92a50322b2652d8d5638fea91764bc08b0a0fa6988dea5451"
   name = "k8s.io/kubectl"
   packages = [
     "pkg/cmd/util",
+    "pkg/cmd/util/editor",
+    "pkg/cmd/util/editor/crlf",
     "pkg/scheme",
+    "pkg/util",
     "pkg/util/interrupt",
     "pkg/util/openapi",
     "pkg/util/openapi/validation",
@@ -3001,6 +3004,8 @@
     "gopkg.in/AlecAivazis/survey.v1",
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "gopkg.in/yaml.v2",
+    "helm.sh/helm/v3/pkg/chart",
+    "helm.sh/helm/v3/pkg/chartutil",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
@@ -3067,6 +3072,7 @@
     "k8s.io/client-go/util/cert",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/homedir",
+    "k8s.io/kubectl/pkg/cmd/util/editor",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
     "k8s.io/utils/pointer",

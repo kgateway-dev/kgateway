@@ -24,11 +24,6 @@ ignored = [
   name = "github.com/gogo/protobuf"
 
 [[override]]
-#  branch = "master"
-  name = "k8s.io/utils"
-  revision = "6ca3b61696b65b0e81f1a39b4937fc2d2994ed6a"
-
-[[override]]
   version = "1.3.1"
   name = "github.com/golang/protobuf"
 
@@ -98,6 +93,15 @@ ignored = [
   version = "kubernetes-1.16.2"
 
 [[override]]
+  name = "k8s.io/klog"
+  revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
+  source = "github.com/stefanprodan/klog"
+
+[[override]]
+  name = "k8s.io/utils"
+  revision = "6ca3b61696b65b0e81f1a39b4937fc2d2994ed6a"
+
+[[override]]
   name = "github.com/go-openapi/spec"
   version = "0.19.2"
 
@@ -114,11 +118,6 @@ ignored = [
 [[override]]
   name = "golang.org/x/xerrors"
   revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
-
-[[override]]
-  name = "k8s.io/klog"
-  revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
-  source = "github.com/stefanprodan/klog"
 
 [[constraint]]
   name = "github.com/spf13/viper"
