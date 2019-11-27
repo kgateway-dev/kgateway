@@ -1,8 +1,5 @@
-namespace:
-  create: false
 k8s:
   clusterName: cluster.local
-
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
@@ -16,7 +13,6 @@ settings:
       enabled: false
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
-
 gloo:
   deployment:
     image:
@@ -26,7 +22,6 @@ gloo:
     replicas: 1
     stats: true
     runAsUser: 10101
-
 discovery:
   enabled: true
   deployment:
@@ -35,7 +30,6 @@ discovery:
     replicas: 1
     stats: true
     runAsUser: 10101
-
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
@@ -58,7 +52,6 @@ gateway:
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
   proxyServiceAccount: {}
-
 gatewayProxies:
   gatewayProxy:
     gatewaySettings: {}
@@ -84,7 +77,6 @@ gatewayProxies:
     tracing:
     configMap:
       data:
-
 accessLogger:
   enabled: false
   port: 8083
@@ -92,10 +84,8 @@ accessLogger:
   image:
     repository: access-logger
   replicas: 1
-
 ingress:
   enabled: false
-
 global:
   image:
     registry: quay.io/solo-io

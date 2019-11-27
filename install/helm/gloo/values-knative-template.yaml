@@ -1,8 +1,5 @@
-namespace:
-  create: false
 k8s:
   clusterName: cluster.local
-
 settings:
   create: true
   linkerd: false
@@ -17,16 +14,12 @@ settings:
         httpsPort: 443
         replicas: 1
         stats: true
-
 gateway:
   enabled: false
-
 accessLogger:
   enabled: false
-
 discovery:
   fdsMode: WHITELIST
-
 ingress:
   # ingress proxy is disabled, but we still need the controller for knative
   enabled: false
@@ -34,7 +27,6 @@ ingress:
     image:
       repository: ingress
     replicas: 1
-
 global:
   image:
     registry: quay.io/solo-io

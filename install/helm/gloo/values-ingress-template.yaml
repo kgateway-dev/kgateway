@@ -1,16 +1,11 @@
-namespace:
-  create: false
 k8s:
   clusterName: cluster.local
-
 ingress:
   enabled: true
   deployment:
     image:
       repository: ingress
     replicas: 1
-
-
 ingressProxy:
   deployment:
     image:
@@ -22,13 +17,10 @@ ingressProxy:
   configMap:
     data:
   tracing:
-
 gateway:
   enabled: false
-
 accessLogger:
   enabled: false
-
 global:
   image:
     registry: quay.io/solo-io
