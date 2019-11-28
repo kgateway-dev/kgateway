@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -103,7 +104,6 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	cfg.DrainTimeout = hcmSettings.DrainTimeout
 	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
 	cfg.ServerName = hcmSettings.ServerName
-	cfg.ForwardClientCertDetails = envoyhttp.HttpConnectionManager_ForwardClientCertDetails(hcmSettings.ForwardClientCertDetails)
 
 	if hcmSettings.AcceptHttp_10 {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
@@ -111,6 +111,25 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
 		}
 	}
+
+	// allowed upgrades
+	upgradeConfigs := hcmSettings.GetUpgradeConfigs()
+
+	if upgradeConfigs != nil {
+		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(upgradeConfigs))
+
+		for i, config := range upgradeConfigs {
+			switch config.UpgradeType.(type) {
+			case *upgrade.UpgradeConfig_Websocket:
+				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
+					UpgradeType: "websocket",
+				}
+			}
+		}
+	}
+
+	// client certificate forwarding
+	cfg.ForwardClientCertDetails = envoyhttp.HttpConnectionManager_ForwardClientCertDetails(hcmSettings.ForwardClientCertDetails)
 
 	shouldConfigureClientCertDetails := (hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_APPEND_FORWARD ||
 		hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_SANITIZE_SET) &&

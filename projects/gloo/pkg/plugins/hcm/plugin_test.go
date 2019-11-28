@@ -3,6 +3,7 @@ package hcm_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 
 	. "github.com/onsi/ginkgo"
@@ -55,6 +56,12 @@ var _ = Describe("Plugin", func() {
 				Chain:   true,
 				Dns:     true,
 				Uri:     true,
+			},
+
+			UpgradeConfigs: []*upgrade.UpgradeConfig{
+				{
+					UpgradeType: &upgrade.UpgradeConfig_Websocket{},
+				},
 			},
 		}
 		hl := &v1.HttpListener{
@@ -111,6 +118,9 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
+
+		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
+		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
 
 		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.APPEND_FORWARD))
 
