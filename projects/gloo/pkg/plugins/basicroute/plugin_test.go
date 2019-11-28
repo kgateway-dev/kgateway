@@ -3,6 +3,8 @@ package basicroute_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
+
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
@@ -211,5 +213,33 @@ var _ = Describe("host rewrite", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
+	})
+})
+
+var _ = Describe("upgrades", func() {
+	It("works", func() {
+		p := NewPlugin()
+
+		routeAction := &envoyroute.RouteAction{}
+
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				UpgradeConfigs: []*upgrade.UpgradeConfig{
+					{
+						UpgradeType: &upgrade.UpgradeConfig_Websocket{},
+					},
+				},
+			},
+		}, out)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(1))
+		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 	})
 })
