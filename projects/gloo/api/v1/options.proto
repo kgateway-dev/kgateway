@@ -25,6 +25,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.pro
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/upgrade/upgrade.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 
@@ -171,6 +172,8 @@ message RouteOptions {
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
     // - route, upstream, virtual service
     lbhash.options.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
+    // todo: document
+    repeated upgrade.options.gloo.solo.io.UpgradeConfig upgrade_configs = 21;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;
     // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;

@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package upgrade.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade";
+
+import "google/protobuf/wrappers.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+message UpgradeConfig {
+    message WebSocket {}
+
+    oneof upgrade_type {
+        WebSocket websocket = 1;
+    }
+}

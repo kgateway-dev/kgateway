@@ -815,6 +815,9 @@ apis:
   transformation.options.gloo.solo.io.Parameters:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
+  upgrade.options.gloo.solo.io.UpgradeConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/upgrade/upgrade.proto.sk/#UpgradeConfig
+    package: upgrade.options.gloo.solo.io
   validate.AnyRules:
     relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#AnyRules
     package: validate
