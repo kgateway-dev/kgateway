@@ -10,9 +10,13 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
 message UpgradeConfig {
-    message WebSocket {}
+    message UpgradeSpec {
+        // Whether the upgrade should be enabled. `true` by default.
+        google.protobuf.BoolValue enabled = 1;
+    }
 
     oneof upgrade_type {
-        WebSocket websocket = 1;
+        // Specification for websocket upgrade requests.
+        UpgradeSpec websocket = 1;
     }
 }

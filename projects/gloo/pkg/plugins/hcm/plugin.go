@@ -123,6 +123,7 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			case *upgrade.UpgradeConfig_Websocket:
 				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 					UpgradeType: "websocket",
+					Enabled:     config.GetWebsocket().GetEnabled(),
 				}
 			}
 		}

@@ -172,7 +172,7 @@ message RouteOptions {
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
     // - route, upstream, virtual service
     lbhash.options.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
-    // todo: document
+    // Route configuration for protocol upgrade requests.
     repeated upgrade.options.gloo.solo.io.UpgradeConfig upgrade_configs = 21;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;

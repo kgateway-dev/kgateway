@@ -441,7 +441,7 @@ type RouteOptions struct {
 	// Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
 	// - route, upstream, virtual service
 	LbHash *lbhash.RouteActionHashConfig `protobuf:"bytes,12,opt,name=lb_hash,json=lbHash,proto3" json:"lb_hash,omitempty"`
-	// todo: document
+	// Route configuration for protocol upgrade requests.
 	UpgradeConfigs []*upgrade.UpgradeConfig `protobuf:"bytes,21,rep,name=upgrade_configs,json=upgradeConfigs,proto3" json:"upgrade_configs,omitempty"`
 	// Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
 	RatelimitBasic *ratelimit.IngressRateLimit `protobuf:"bytes,13,opt,name=ratelimit_basic,json=ratelimitBasic,proto3" json:"ratelimit_basic,omitempty"`

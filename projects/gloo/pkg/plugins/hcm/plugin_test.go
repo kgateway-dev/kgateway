@@ -60,7 +60,11 @@ var _ = Describe("Plugin", func() {
 
 			UpgradeConfigs: []*upgrade.UpgradeConfig{
 				{
-					UpgradeType: &upgrade.UpgradeConfig_Websocket{},
+					UpgradeType: &upgrade.UpgradeConfig_Websocket{
+						Websocket: &upgrade.UpgradeConfig_UpgradeSpec{
+							Enabled: &types.BoolValue{Value: true},
+						},
+					},
 				},
 			},
 		}
@@ -121,6 +125,7 @@ var _ = Describe("Plugin", func() {
 
 		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
 		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
+		Expect(cfg.UpgradeConfigs[0].Enabled.GetValue()).To(Equal(true))
 
 		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.APPEND_FORWARD))
 

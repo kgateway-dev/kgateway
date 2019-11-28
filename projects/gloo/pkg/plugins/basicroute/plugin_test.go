@@ -232,7 +232,11 @@ var _ = Describe("upgrades", func() {
 			Options: &v1.RouteOptions{
 				UpgradeConfigs: []*upgrade.UpgradeConfig{
 					{
-						UpgradeType: &upgrade.UpgradeConfig_Websocket{},
+						UpgradeType: &upgrade.UpgradeConfig_Websocket{
+							Websocket: &upgrade.UpgradeConfig_UpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
 					},
 				},
 			},
@@ -241,5 +245,6 @@ var _ = Describe("upgrades", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(1))
 		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(Equal(true))
 	})
 })

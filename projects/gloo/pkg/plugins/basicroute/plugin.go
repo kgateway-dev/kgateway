@@ -155,6 +155,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 		case *upgrade.UpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
 				UpgradeType: "websocket",
+				Enabled:     config.GetWebsocket().Enabled,
 			}
 		}
 	}

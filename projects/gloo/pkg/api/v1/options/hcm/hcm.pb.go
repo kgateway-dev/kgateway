@@ -84,10 +84,11 @@ type HttpConnectionManagerSettings struct {
 	Tracing                     *tracing.ListenerTracingSettings                           `protobuf:"bytes,17,opt,name=tracing,proto3" json:"tracing,omitempty"`
 	ForwardClientCertDetails    HttpConnectionManagerSettings_ForwardClientCertDetails     `protobuf:"varint,18,opt,name=forward_client_cert_details,json=forwardClientCertDetails,proto3,enum=hcm.options.gloo.solo.io.HttpConnectionManagerSettings_ForwardClientCertDetails" json:"forward_client_cert_details,omitempty"`
 	SetCurrentClientCertDetails *HttpConnectionManagerSettings_SetCurrentClientCertDetails `protobuf:"bytes,19,opt,name=set_current_client_cert_details,json=setCurrentClientCertDetails,proto3" json:"set_current_client_cert_details,omitempty"`
-	UpgradeConfigs              []*upgrade.UpgradeConfig                                   `protobuf:"bytes,20,rep,name=upgrade_configs,json=upgradeConfigs,proto3" json:"upgrade_configs,omitempty"`
-	XXX_NoUnkeyedLiteral        struct{}                                                   `json:"-"`
-	XXX_unrecognized            []byte                                                     `json:"-"`
-	XXX_sizecache               int32                                                      `json:"-"`
+	// Route configuration for protocol upgrade requests.
+	UpgradeConfigs       []*upgrade.UpgradeConfig `protobuf:"bytes,20,rep,name=upgrade_configs,json=upgradeConfigs,proto3" json:"upgrade_configs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
 }
 
 func (m *HttpConnectionManagerSettings) Reset()         { *m = HttpConnectionManagerSettings{} }

@@ -54,5 +54,6 @@ message HttpConnectionManagerSettings {
 
     SetCurrentClientCertDetails set_current_client_cert_details = 19;
 
+    // Route configuration for protocol upgrade requests.
     repeated upgrade.options.gloo.solo.io.UpgradeConfig upgrade_configs = 20;
 }
