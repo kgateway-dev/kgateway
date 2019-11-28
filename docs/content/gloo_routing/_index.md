@@ -11,18 +11,18 @@ Gloo can route requests directly to functions, which can be: a serverless functi
 
 ### Gloo Configuration
 
-Let's see what underpins Gloo routing with a high-level look at the layout of the Gloo configuration. This can be seen as 3 layers: the Gateway listeners, Virtual Services, and Upstreams. Mostly you'll be interacting with [Virtual Services](../introduction/concepts#virtual-services), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to backends. [Upstreams](../introduction/concepts#upstreams) represent those backends. [Gateway](../introduction/concepts#gateways) objects help you control the listeners for incoming traffic.
+Let's see what underpins Gloo routing with a high-level look at the layout of the Gloo configuration. This can be seen as 3 layers: the Gateway listeners, Virtual Services, and Upstreams. Mostly you'll be interacting with [Virtual Services]({{% versioned_link_path fromRoot="/introduction/concepts#virtual-services" %}}), which allow you to configure the details of the API you wish to expose on the Gateway and how routing happens to backends. [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts#upstreams" %}}) represent those backends. [Gateway]({{% versioned_link_path fromRoot="/introduction/concepts#gateways" %}}) objects help you control the listeners for incoming traffic.
 
 ![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-concepts-overview.png" %}})
 
 ### Route Rules
 
-Configuring the routing engine is done with defined predicates that match on incomoing requests. These requests, such as headers, path, method, etc., are then routed to Upstream destinations such as like REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the Virtual Services examples below we'll dig into this further.
+Configuring the routing engine is done with defined predicates that match on incoming requests. These requests, such as headers, path, method, etc., are then routed to Upstream destinations such as like REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the Virtual Services examples below we'll dig into this further.
 
 ![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-overview.png" %}})
 
 ### Implementations
 
-Get started with Hello World and manipulating configurations. Once you're comfortable, move to more advanced use cases for understanding Gloo concepts like [Virtual Services](../introduction/concepts#virtual-services).
+Get started with Hello World and manipulating configurations. Once you're comfortable, move to more advanced use cases for understanding Gloo concepts like Virtual Services.
 
 {{% children description="true" %}}
