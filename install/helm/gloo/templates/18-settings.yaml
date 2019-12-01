@@ -8,9 +8,6 @@ metadata:
     installationId: {{ include "gloo.installationId" . }}
   name: default
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5"
 spec:
   gloo:
     xdsBindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}

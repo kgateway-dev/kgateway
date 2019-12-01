@@ -12,9 +12,6 @@ metadata:
   labels:
     app: gloo
     installationId: {{ include "gloo.installationId" $ }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpPort }}
@@ -39,9 +36,6 @@ metadata:
   labels:
     app: gloo
     installationId: {{ include "gloo.installationId" $ }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpsPort }}
