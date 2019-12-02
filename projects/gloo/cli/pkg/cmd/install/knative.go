@@ -72,7 +72,6 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddInstallFlags(pflags, &opts.Install)
 	flagutils.AddKnativeInstallFlags(pflags, &opts.Install.Knative)
 	return cmd
 }

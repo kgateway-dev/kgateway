@@ -6,10 +6,7 @@ import (
 
 	"github.com/solo-io/go-utils/errors"
 
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
-
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -94,8 +91,8 @@ type GlooInstallSpec struct {
 	ValueFileName      string
 	UserValueFileNames []string
 	ExtraValues        map[string]interface{}
-	ValueCallbacks     []install.ValuesCallback
-	ExcludeResources   install.ResourceMatcherFunc
+	//ValueCallbacks     []install.ValuesCallback
+	//ExcludeResources   install.ResourceMatcherFunc
 }
 
 // Entry point for all three GLoo installation commands
@@ -157,20 +154,20 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 			},
 		}
 	}
-	var valueCallbacks []install.ValuesCallback
-	if opts.Install.Knative.InstallKnativeVersion != "" {
-		valueCallbacks = append(valueCallbacks, func(config *generate.HelmConfig) {
-			if config.Settings != nil &&
-				config.Settings.Integrations != nil &&
-				config.Settings.Integrations.Knative != nil &&
-				config.Settings.Integrations.Knative.Enabled != nil &&
-				*config.Settings.Integrations.Knative.Enabled {
-
-				config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
-
-			}
-		})
-	}
+	//var valueCallbacks []install.ValuesCallback
+	//if opts.Install.Knative.InstallKnativeVersion != "" {
+	//	valueCallbacks = append(valueCallbacks, func(config *generate.HelmConfig) {
+	//		if config.Settings != nil &&
+	//			config.Settings.Integrations != nil &&
+	//			config.Settings.Integrations.Knative != nil &&
+	//			config.Settings.Integrations.Knative.Enabled != nil &&
+	//			*config.Settings.Integrations.Knative.Enabled {
+	//
+	//			config.Settings.Integrations.Knative.Version = &opts.Install.Knative.InstallKnativeVersion
+	//
+	//		}
+	//	})
+	//}
 
 	return &GlooInstallSpec{
 		HelmArchiveUri:     helmChartArchiveUri,
@@ -178,8 +175,8 @@ func GetInstallSpec(opts *options.Options, valueFileName string) (*GlooInstallSp
 		UserValueFileNames: opts.Install.HelmChartValueFileNames,
 		ProductName:        "gloo",
 		ExtraValues:        extraValues,
-		ValueCallbacks:     valueCallbacks,
-		ExcludeResources:   nil,
+		//ValueCallbacks:     valueCallbacks,
+		//ExcludeResources:   nil,
 	}, nil
 }
 

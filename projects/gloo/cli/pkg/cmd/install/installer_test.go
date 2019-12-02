@@ -3,7 +3,10 @@ package install_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/go-utils/log"
 	"io"
+	"os"
 	"os/exec"
 
 	. "github.com/onsi/ginkgo"
@@ -12,6 +15,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
 )
 
 type MockInstallClient struct {
@@ -26,9 +32,9 @@ type MockInstallClient struct {
 func (i *MockInstallClient) KubectlApply(manifest []byte) error {
 	Expect(i.applied).To(BeFalse())
 	i.applied = true
-	resources, err := install2.GetResources(string(manifest))
-	Expect(err).NotTo(HaveOccurred())
-	i.resources = resources
+	//resources, err := install2.GetResources(string(manifest))
+	//Expect(err).NotTo(HaveOccurred())
+	//i.resources = resources
 	return nil
 }
 
@@ -89,6 +95,41 @@ var _ = Describe("Install", func() {
 
 		return kindsWithSettings
 	}
+
+	FIt("", func() {
+
+		settings := cli.New()
+		actionConfig := new(action.Configuration)
+		noOpDebugLog := func(format string, v ...interface{}) {}
+
+		if err := actionConfig.Init(
+			settings.RESTClientGetter(),
+			defaults.GlooSystem,
+			os.Getenv("HELM_DRIVER"),
+			noOpDebugLog,
+		); err != nil {
+			log.Fatalf("oh no: %s", err.Error())
+		}
+
+		client := action.NewInstall(actionConfig)
+
+		chartFile := "/Users/marco/code/projects/helm3/gloo-1.0.0.tgz"
+
+		// TODO: This just takes a local file path
+		chartRequested, err := loader.Load(chartFile)
+		if err != nil {
+			log.Fatalf("oh no: %s", err.Error())
+		}
+
+		client.ReleaseName = "gloo"
+		client.Namespace = "gloo-system"
+
+		// Build vals ourselves and pass them in
+		_, err = client.Run(chartRequested, nil)
+		if err != nil {
+			log.Fatalf("oh no: %s", err.Error())
+		}
+	})
 
 	Context("Gateway with default values", func() {
 		BeforeEach(func() {

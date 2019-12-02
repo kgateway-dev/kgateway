@@ -9,11 +9,8 @@ import (
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
-	kubeerrors "k8s.io/apimachinery/pkg/api/errors"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -92,38 +89,38 @@ func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
 	}
 
 	return &GlooInstallSpec{
-		HelmArchiveUri:     helmChartArchiveUri,
-		ProductName:        "glooe",
-		ValueFileName:      "",
-		ExtraValues:        extraValues,
-		ExcludeResources:   pvcExists(opts.Install.Namespace),
+		HelmArchiveUri: helmChartArchiveUri,
+		ProductName:    "glooe",
+		ValueFileName:  "",
+		ExtraValues:    extraValues,
+		//ExcludeResources:   pvcExists(opts.Install.Namespace),
 		UserValueFileNames: opts.Install.HelmChartValueFileNames,
 	}, nil
 }
 
 const PersistentVolumeClaim = "PersistentVolumeClaim"
 
-func pvcExists(namespace string) install.ResourceMatcherFunc {
-	return func(resource install.ResourceType) (bool, error) {
-		kubeClient, err := helpers.KubeClient()
-		if err != nil {
-			return false, err
-		}
-
-		// If this is a PVC, check if it already exists. If so, exclude this resource from the manifest.
-		// We don't want to overwrite existing PVCs.
-		if resource.TypeMeta.Kind == PersistentVolumeClaim {
-
-			_, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Get(resource.Metadata.Name, v1.GetOptions{})
-			if err != nil {
-				if !kubeerrors.IsNotFound(err) {
-					return false, errors.Wrapf(err, "retrieving %s: %s.%s", PersistentVolumeClaim, namespace, resource.Metadata.Name)
-				}
-			} else {
-				// The PVC exists, exclude it from manifest
-				return true, nil
-			}
-		}
-		return false, nil
-	}
-}
+//func pvcExists(namespace string) install.ResourceMatcherFunc {
+//	return func(resource install.ResourceType) (bool, error) {
+//		kubeClient, err := helpers.KubeClient()
+//		if err != nil {
+//			return false, err
+//		}
+//
+//		// If this is a PVC, check if it already exists. If so, exclude this resource from the manifest.
+//		// We don't want to overwrite existing PVCs.
+//		if resource.TypeMeta.Kind == PersistentVolumeClaim {
+//
+//			_, err := kubeClient.CoreV1().PersistentVolumeClaims(namespace).Get(resource.Metadata.Name, v1.GetOptions{})
+//			if err != nil {
+//				if !kubeerrors.IsNotFound(err) {
+//					return false, errors.Wrapf(err, "retrieving %s: %s.%s", PersistentVolumeClaim, namespace, resource.Metadata.Name)
+//				}
+//			} else {
+//				// The PVC exists, exclude it from manifest
+//				return true, nil
+//			}
+//		}
+//		return false, nil
+//	}
+//}

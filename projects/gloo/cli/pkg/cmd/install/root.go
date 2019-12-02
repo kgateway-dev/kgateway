@@ -2,7 +2,6 @@ package install
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -10,16 +9,11 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
-	"helm.sh/helm/v3/pkg/action"
+	//"helm.sh/helm/v3/pkg/action"
+	//"helm.sh/helm/v3/pkg/chart/loader"
 )
 
 func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
-
-	actionConfig := new(action.Configuration)
-
-	if err := actionConfig.Init(settings.RESTClientGetter(), settings.Namespace(), os.Getenv("HELM_DRIVER"), debug); err != nil {
-
-	}
 
 	cmd := &cobra.Command{
 		Use:   constants.INSTALL_COMMAND.Use,
@@ -32,7 +26,10 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		knativeCmd(opts),
 	)
 	cliutils.ApplyOptions(cmd, optionsFunc)
-	flagutils.AddVerboseFlag(cmd.PersistentFlags(), opts)
+
+	pFlags := cmd.PersistentFlags()
+	flagutils.AddVerboseFlag(pFlags, opts)
+	flagutils.AddInstallFlags(pFlags, &opts.Install)
 	return cmd
 }
 

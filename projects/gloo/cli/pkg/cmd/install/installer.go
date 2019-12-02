@@ -77,12 +77,12 @@ type GlooKubeManifestInstaller struct {
 }
 
 func (i *GlooKubeManifestInstaller) InstallManifest(manifest []byte) error {
-	if install.IsEmptyManifest(string(manifest)) {
-		return nil
-	}
-	if err := i.GlooKubeInstallClient.KubectlApply(manifest); err != nil {
-		return errors.Wrapf(err, "running kubectl apply on manifest")
-	}
+	//if install.IsEmptyManifest(string(manifest)) {
+	//	return nil
+	//}
+	//if err := i.GlooKubeInstallClient.KubectlApply(manifest); err != nil {
+	//	return errors.Wrapf(err, "running kubectl apply on manifest")
+	//}
 	return nil
 }
 
@@ -99,13 +99,13 @@ func (i *GlooKubeManifestInstaller) InstallCrds(ctx context.Context, crdNames []
 type DryRunManifestInstaller struct{}
 
 func (i *DryRunManifestInstaller) InstallManifest(manifest []byte) error {
-	manifestString := string(manifest)
-	if install.IsEmptyManifest(manifestString) {
-		return nil
-	}
-	fmt.Printf("%s", manifestString)
-	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Println("\n---")
+	//manifestString := string(manifest)
+	//if install.IsEmptyManifest(manifestString) {
+	//	return nil
+	//}
+	//fmt.Printf("%s", manifestString)
+	//// For safety, print a YAML separator so multiple invocations of this function will produce valid output
+	//fmt.Println("\n---")
 	return nil
 }
 
@@ -128,7 +128,7 @@ type DefaultGlooStagedInstaller struct {
 	//chart             *chart.Chart
 	//values            *chart.Config
 	//renderOpts        renderutil.Options
-	excludeResources  install.ResourceMatcherFunc
+	//excludeResources  install.ResourceMatcherFunc
 	manifestInstaller ManifestInstaller
 	dryRun            bool
 	ctx               context.Context
@@ -170,7 +170,7 @@ func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client 
 		//chart:             chart,
 		//values:            values,
 		//renderOpts:        renderOpts,
-		excludeResources:  spec.ExcludeResources,
+		//excludeResources:  spec.ExcludeResources,
 		manifestInstaller: manifestInstaller,
 		dryRun:            opts.Install.DryRun,
 		ctx:               opts.Top.Ctx,
