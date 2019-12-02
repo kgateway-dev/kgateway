@@ -108,31 +108,5 @@ rules:
   # update is needed for status updates, create for creating the default ones.
   verbs: ["get", "list", "watch", "create", "update"]
 
-{{- if and .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
----
-# this role requires access to cluster-scoped resources
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
-    labels:
-        app: gloo
-        gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
-    annotations:
-        "helm.sh/hook": pre-install
-        "helm.sh/hook-weight": "5" # must come before cert-gen job
-rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "get", "update"]
-- apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingwebhookconfigurations"]
-  verbs: ["get", "update"]
-
-{{- end -}}
-
-
-
 {{- end -}}
 {{- end -}}

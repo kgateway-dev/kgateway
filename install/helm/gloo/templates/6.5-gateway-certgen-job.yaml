@@ -1,6 +1,5 @@
-{{- if .Values.gateway.enabled }}
-{{- if .Values.gateway.validation.enabled }}
-{{- if .Values.gateway.certGenJob.enabled }}
+{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
+
 {{- $image := .Values.gateway.certGenJob.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.certGenJob.image .Values.global.image }}
@@ -45,6 +44,133 @@ spec:
   {{- if .Values.gateway.certGenJob.setTtlAfterFinished }}
   ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
   {{- end }}
-{{- end }}
-{{- end }}
+
+---
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+    installationId: {{ include "gloo.installationId" . }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5" # must come before cert-gen job
+  name: gateway-certgen
+  namespace: {{ $.Release.Namespace }}
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+    installationId: {{ include "gloo.installationId" . }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5" # must come before cert-gen job
+subjects:
+- kind: ServiceAccount
+  name: gateway-certgen
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+    installationId: {{ include "gloo.installationId" . }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5" # must come before cert-gen job
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["get", "update"]
+
+---
+
+# Resources created as hooks are not considered part of a release by Helm. This means that they
+# will not be cleaned up when running `helm uninstall`. The ways to get around this are documented here:
+# https://helm.sh/docs/topics/charts_hooks/#hook-resources-are-not-managed-with-corresponding-releases).
+# These will not work for us though: we can't use `hook-delete-policy` since we have multiple hooks that depend
+# on each other (RBAC resources needed by the job), and we cannot write a job to clean them up as this would result
+# in a catch-22 (this second job would in turn need its own RBAC resources and who would clean up those?).
+#
+# To be able to clean up these hook resources, which are needed only temporarily during the pre-install phase, we
+# redefine them as `post-install` hooks with a `hook-delete-policy`. This way Helm will reapply them and immediately
+# delete them after the installation completes. Note that we have to explicitly define a `before-hook-creation`
+# policy as well, to avoid failing on existing resources (`before-hook-creation` is the default `hook-delete-policy`
+# if none is specified`).
+#
+# The following resources implement this workaround.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: gloo
+    gloo: gateway
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+  name: gateway-certgen
+  namespace: {{ $.Release.Namespace }}
+
+---
+
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+subjects:
+- kind: ServiceAccount
+  name: gateway-certgen
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  apiGroup: rbac.authorization.k8s.io
+
+---
+
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["get", "update"]
+
 {{- end }}
