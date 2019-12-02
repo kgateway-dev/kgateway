@@ -531,7 +531,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		if extensions.MetricsHandler == nil {
 			handler, err = metricsservice.NewConfigMapBackedDefaultHandler(opts.WatchOpts.Ctx)
 			if err != nil {
-				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Fatalw("Error starting metrics watcher", zap.Error(err))
+				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Debugw("Error starting metrics watcher", zap.Error(err))
 			}
 		} else {
 			handler = extensions.MetricsHandler

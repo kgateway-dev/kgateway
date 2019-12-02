@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: No longer error when metrics server cannot be started, therefore allow non-kube environments.
+  issueLink: https://github.com/solo-io/gloo/issues/1777
