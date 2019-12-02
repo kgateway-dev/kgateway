@@ -9,9 +9,6 @@ metadata:
         app: gloo
         gloo: rbac
         installationId: {{ include "gloo.installationId" . }}
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]

@@ -12,9 +12,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -38,9 +35,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: discovery
@@ -61,9 +55,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -84,9 +75,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -113,9 +101,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -136,9 +121,6 @@ metadata:
     app: gloo
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -161,8 +143,8 @@ metadata:
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
   annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "5" # must come before cert-gen job
 subjects:
 - kind: ServiceAccount
   name: gateway-certgen
