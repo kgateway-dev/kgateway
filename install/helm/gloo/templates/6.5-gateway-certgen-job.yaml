@@ -14,7 +14,7 @@ metadata:
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
@@ -55,8 +55,8 @@ metadata:
     gloo: gateway
     installationId: {{ include "gloo.installationId" . }}
   annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5" # must come before cert-gen job
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
   name: gateway-certgen
   namespace: {{ $.Release.Namespace }}
 
@@ -71,8 +71,8 @@ metadata:
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
   annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5" # must come before cert-gen job
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 subjects:
 - kind: ServiceAccount
   name: gateway-certgen
@@ -93,8 +93,8 @@ metadata:
     gloo: rbac
     installationId: {{ include "gloo.installationId" . }}
   annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5" # must come before cert-gen job
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -112,9 +112,9 @@ rules:
 # on each other (RBAC resources needed by the job), and we cannot write a job to clean them up as this would result
 # in a catch-22 (this second job would in turn need its own RBAC resources and who would clean up those?).
 #
-# To be able to clean up these hook resources, which are needed only temporarily during the pre-install phase, we
-# redefine them as `post-install` hooks with a `hook-delete-policy`. This way Helm will reapply them and immediately
-# delete them after the installation completes. Note that we have to explicitly define a `before-hook-creation`
+# To be able to clean up these hook resources, which are needed only temporarily during the pre-install(/upgrade) phase,
+# we redefine them as `post-install(upgrade)` hooks with a `hook-delete-policy`. This way Helm will reapply them and
+# immediately delete them after the installation completes. Note that we have to explicitly define a `before-hook-creation`
 # policy as well, to avoid failing on existing resources (`before-hook-creation` is the default `hook-delete-policy`
 # if none is specified`).
 #
@@ -127,7 +127,7 @@ metadata:
     app: gloo
     gloo: gateway
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
   name: gateway-certgen
   namespace: {{ $.Release.Namespace }}
@@ -142,7 +142,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 subjects:
 - kind: ServiceAccount
@@ -163,7 +163,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install
+    "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 rules:
 - apiGroups: [""]
