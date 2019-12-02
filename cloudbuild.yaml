@@ -32,7 +32,7 @@ steps:
 
 # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
 # Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.16'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -41,7 +41,7 @@ steps:
   args: ['check-format']
   waitFor: ['dep']
   id: 'check-format'
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
   env:
@@ -84,7 +84,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['dep']
   id: 'make-helm-dir'
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['fetch-helm']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -95,7 +95,7 @@ steps:
   waitFor: ['dep']
 # Docker related setup
 # grab this container immediately in parallel
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.16'
   entrypoint: ls
   waitFor: ['-']
   id: 'grab-ginkgo-container'
@@ -106,7 +106,7 @@ steps:
   # run after dep so it doesn't move our settings
   waitFor: ['dep']
 
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.16'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GOPATH=/workspace/gopath'
@@ -134,7 +134,7 @@ steps:
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
   waitFor: ['dep']
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['docker']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -147,7 +147,7 @@ steps:
   id: 'compile'
 
 # Run regression tests
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['build-test-assets']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -159,7 +159,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   waitFor: ['compile', 'docker-login', 'test']
   id: 'build-test-assets'
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.16'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GOPATH=/workspace/gopath'
@@ -177,7 +177,7 @@ steps:
   id: 'get-credentials'
   # wait for dep so our kube config is not moved.
   waitFor: ['set-zone', 'dep']
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.16'
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -192,7 +192,7 @@ steps:
   id: 'regression-tests-cluster-lock'
 
 # 1) Run make targets to push docker images
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['docker-push']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -205,7 +205,7 @@ steps:
   id: 'release-images'
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['manifest', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', '-B']
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
@@ -217,7 +217,7 @@ steps:
   secretEnv: ['GITHUB_TOKEN']
   id: 'release-chart'
 # 3) Sync helm chart data back to google storage bucket
-- name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
+- name: 'gcr.io/$PROJECT_ID/go-make:0.1.16'
   args: ['save-helm']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
