@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Gloo Validation now always rejects resources which fail to unmarshal, even when strict validation is disabled.
+    issueLink: https://github.com/solo-io/gloo/issues/1795
