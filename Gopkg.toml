@@ -105,6 +105,10 @@ ignored = [
   name = "github.com/go-openapi/spec"
   version = "0.19.2"
 
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "be7ac8be2ae072032a4005e8f232be3fc57e4127"
+
 [[constraint]]
   name = "knative.dev/serving"
   version = "v0.8.0"
