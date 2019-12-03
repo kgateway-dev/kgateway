@@ -8,7 +8,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
 subjects:
 - kind: ServiceAccount
   name: default
