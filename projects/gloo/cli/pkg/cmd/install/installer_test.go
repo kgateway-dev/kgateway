@@ -3,8 +3,10 @@ package install_test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"helm.sh/helm/v3/pkg/chartutil"
 )
@@ -56,7 +58,7 @@ var _ = Describe("Install", func() {
 	//	return kindsWithSettings
 	//}
 
-	FIt("", func() {
+	FIt("install", func() {
 
 		val, err := chartutil.ReadValues([]byte(`
 global:
@@ -70,8 +72,18 @@ global:
 			Namespace:               defaults.GlooSystem,
 			HelmChartOverride:       "/Users/marco/code/projects/helm3/gloo-1.0.0.tgz",
 			HelmChartValueFileNames: []string{"/Users/marco/code/projects/helm3/values.yaml"},
-		}, val, true)
+		}, val, false)
 		Expect(err).NotTo(HaveOccurred())
+	})
+
+	FIt("uninstall", func() {
+
+		uninstallAction, err := helm.NewUninstall("gloo-system")
+		Expect(err).NotTo(HaveOccurred())
+
+		rel, err := uninstallAction.Run(constants.GlooReleaseName)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(rel).NotTo(BeNil())
 	})
 
 	//Context("Gateway with default values", func() {

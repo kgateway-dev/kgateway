@@ -15,7 +15,7 @@ const (
 func enterpriseCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "enterprise",
-		Short:  "install the Gloo Enterprise Gateway on kubernetes",
+		Short:  "install the Gloo Enterprise Gateway on Kubernetes",
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -30,7 +30,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if err := Install(&opts.Install, extraValues, true); err != nil {
-				return errors.Wrapf(err, "installing gloo enterprise in gateway mode")
+				return errors.Wrapf(err, "installing Gloo Enterprise in gateway mode")
 			}
 
 			return nil
@@ -44,7 +44,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 
 //const PersistentVolumeClaim = "PersistentVolumeClaim"
 
-// TODO: Since we rely on helm and not on a simple `kubectl apply` this check should be redundant. Still worth verifying.
+// TODO(helm3): Since we rely on helm and not on a simple `kubectl apply` this check should be redundant. Still worth verifying.
 //func pvcExists(namespace string) install.ResourceMatcherFunc {
 //	return func(resource install.ResourceType) (bool, error) {
 //		kubeClient, err := helpers.KubeClient()

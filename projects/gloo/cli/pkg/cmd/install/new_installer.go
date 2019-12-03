@@ -24,7 +24,8 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 		if releaseExists, err := ReleaseExists(installOpts.Namespace); err != nil {
 			return err
 		} else if releaseExists {
-			return errors.New("TODO")
+			// TODO(helm3): improve error message
+			return errors.New("Gloo already installed")
 		}
 	}
 

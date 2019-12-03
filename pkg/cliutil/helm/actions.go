@@ -34,6 +34,14 @@ func NewInstall(namespace, releaseName string, dryRun bool) (*action.Install, *c
 	return client, settings, nil
 }
 
+func NewUninstall(namespace string) (*action.Uninstall, error) {
+	actionConfig, _, err := newActionConfig(namespace)
+	if err != nil {
+		return nil, err
+	}
+	return action.NewUninstall(actionConfig), nil
+}
+
 func NewList(namespace string) (*action.List, error) {
 	actionConfig, _, err := newActionConfig(namespace)
 	if err != nil {
