@@ -45,6 +45,10 @@ func TestE2e(t *testing.T) {
 		return
 	}
 
+	// set KUBECONFIG to a nonexistent cfg.
+	// this way we are also testing that Gloo can run without a kubeconfig present
+	os.Setenv("KUBECONFIG", ".")
+
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
 	RunSpecs(t, "Consul+Vault E2e Suite")
