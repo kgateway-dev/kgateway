@@ -12,7 +12,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
@@ -21,20 +24,48 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise, verbose bool) error {
+type Installer interface {
+	Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error
+}
 
+// an interface around Helm's action.Install struct
+//go:generate mockgen -destination mocks/mock_helm_installation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmInstallation
+type HelmInstallation interface {
+	Run(chrt *chart.Chart, vals map[string]interface{}) (*release.Release, error)
+}
+
+var _ HelmInstallation = &action.Install{}
+
+//go:generate mockgen -destination mocks/mock_helm_client.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmClient
+type HelmClient interface {
+	NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error)
+	ReleaseList(namespace string) (*action.List, error)
+	DownloadChart(chartArchiveUri string) (*chart.Chart, error)
+}
+
+func DefaultHelmClient() HelmClient {
+	return &defaultHelmClient{}
+}
+
+func NewInstaller(helmClient HelmClient) Installer {
+	return &installer{
+		helmClient: helmClient,
+	}
+}
+
+func (i *installer) Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error {
+	namespace := installOpts.Namespace
 	if !installOpts.DryRun {
-		if releaseExists, err := ReleaseExists(installOpts.Namespace); err != nil {
+		if releaseExists, err := ReleaseExists(i.helmClient, namespace); err != nil {
 			return err
 		} else if releaseExists {
-			// TODO(helm3): improve error message
-			return errors.New("Gloo already installed")
+			return GlooAlreadyInstalled(namespace)
 		}
 	}
 
 	preInstallMessage(installOpts, enterprise)
 
-	helmInstall, helmEnv, err := helm.NewInstall(installOpts.Namespace, constants.GlooReleaseName, installOpts.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, constants.GlooReleaseName, installOpts.DryRun)
 	if err != nil {
 		return err
 	}
@@ -47,7 +78,7 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 		fmt.Printf("Looking for chart at %s\n", chartUri)
 	}
 
-	chartObj, err := helm.DownloadChart(chartUri)
+	chartObj, err := i.helmClient.DownloadChart(chartUri)
 	if err != nil {
 		return err
 	}
@@ -89,8 +120,8 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 	return nil
 }
 
-func ReleaseExists(namespace string) (bool, error) {
-	list, err := helm.NewList(namespace)
+func ReleaseExists(helmClient HelmClient, namespace string) (bool, error) {
+	list, err := helmClient.ReleaseList(namespace)
 	if err != nil {
 		return false, err
 	}
@@ -113,21 +144,11 @@ func PrintReleaseManifest(release *release.Release) error {
 	}
 
 	// Print hook resources
-	for _, hook := range release.Hooks {
-
-		// Parse the resource in order to access the annotations
-		var resource struct{ Metadata v1.ObjectMeta }
-		if err := yaml.Unmarshal([]byte(hook.Manifest), &resource); err != nil {
-			return errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
-		}
-
-		// Skip hook cleanup resources
-		if annotations := resource.Metadata.Annotations; len(annotations) > 0 {
-			if _, ok := annotations[constants.HookCleanupResourceAnnotation]; ok {
-				continue
-			}
-		}
-
+	nonCleanupHooks, err := GetNonCleanupHooks(release.Hooks)
+	if err != nil {
+		return err
+	}
+	for _, hook := range nonCleanupHooks {
 		fmt.Println(hook.Manifest)
 		fmt.Println("---")
 	}
@@ -138,6 +159,30 @@ func PrintReleaseManifest(release *release.Release) error {
 	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
 	fmt.Println("---")
 	return nil
+}
+
+// some resources are duplicated because of weirdness with Helm hooks.
+// a job needs a service account/rbac resources, and we would like those to be cleaned up after the job is complete
+// this isn't really expressible cleanly through Helm hooks.
+func GetNonCleanupHooks(hooks []*release.Hook) (results []*release.Hook, err error) {
+	for _, hook := range hooks {
+		// Parse the resource in order to access the annotations
+		var resource struct{ Metadata v1.ObjectMeta }
+		if err := yaml.Unmarshal([]byte(hook.Manifest), &resource); err != nil {
+			return nil, errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
+		}
+
+		// Skip hook cleanup resources
+		if annotations := resource.Metadata.Annotations; len(annotations) > 0 {
+			if _, ok := annotations[constants.HookCleanupResourceAnnotation]; ok {
+				continue
+			}
+		}
+
+		results = append(results, hook)
+	}
+
+	return results, nil
 }
 
 // The resulting URI can be either a URL or a local file path.
@@ -194,4 +239,24 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 		fmt.Println("Gloo was successfully installed!")
 	}
 
+}
+
+type installer struct {
+	helmClient HelmClient
+}
+
+type defaultHelmClient struct {
+
+}
+
+func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error) {
+	return helm.NewInstall(namespace, releaseName, dryRun)
+}
+
+func (d *defaultHelmClient) ReleaseList(namespace string) (*action.List, error) {
+	return helm.NewList(namespace)
+}
+
+func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart, error) {
+	return helm.DownloadChart(chartArchiveUri)
 }

@@ -1,6 +1,9 @@
 package install_test
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	"os"
+	"path/filepath"
 	//"os"
 	//"path/filepath"
 	"testing"
@@ -25,50 +28,50 @@ var file, values1, values2 string
 
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
-	//	cwd, err := os.Getwd()
-	//	Expect(err).NotTo(HaveOccurred())
-	//	RootDir = filepath.Join(cwd, "../../../../../..")
-	//
-	//	// the regression test depend on having only one chart in _test.
-	//	// so run these in a different location.
-	//	dir = filepath.Join(RootDir, "_unit_test/")
-	//	os.Mkdir(dir, 0755)
-	//
-	//	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing")
-	//	Expect(err).NotTo(HaveOccurred())
-	//
-	//	// Some tests need the Gloo/GlooE version that gets linked into the glooctl binary at build time
-	//	err = testutils.Make(RootDir, "glooctl")
-	//	Expect(err).NotTo(HaveOccurred())
-	//
-	//	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")
-	//
-	//	values1 = filepath.Join(dir, "values-namespace1.yaml")
-	//	values2 = filepath.Join(dir, "values-namespace2.yaml")
-	//	f, err := os.Create(values1)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	_, err = f.WriteString(`
-	//settings:
-	//  writeNamespace: test-namespace`)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	f.Close()
-	//
-	//	f2, err := os.Create(values2)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	_, err = f2.WriteString(`
-	//settings:
-	//  writeNamespace: test-namespace-2`)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	f2.Close()
+	cwd, err := os.Getwd()
+	Expect(err).NotTo(HaveOccurred())
+	RootDir = filepath.Join(cwd, "../../../../../..")
+
+	// the regression test depend on having only one chart in _test.
+	// so run these in a different location.
+	dir = filepath.Join(RootDir, "_unit_test/")
+	os.Mkdir(dir, 0755)
+
+	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing")
+	Expect(err).NotTo(HaveOccurred())
+
+	// Some tests need the Gloo/GlooE version that gets linked into the glooctl binary at build time
+	err = testutils.Make(RootDir, "glooctl")
+	Expect(err).NotTo(HaveOccurred())
+
+	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")
+
+	values1 = filepath.Join(dir, "values-namespace1.yaml")
+	values2 = filepath.Join(dir, "values-namespace2.yaml")
+	f, err := os.Create(values1)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = f.WriteString(`
+settings:
+ writeNamespace: test-namespace`)
+	Expect(err).NotTo(HaveOccurred())
+	f.Close()
+
+	f2, err := os.Create(values2)
+	Expect(err).NotTo(HaveOccurred())
+	_, err = f2.WriteString(`
+settings:
+ writeNamespace: test-namespace-2`)
+	Expect(err).NotTo(HaveOccurred())
+	f2.Close()
 })
 
 var _ = AfterSuite(func() {
-	//err := os.Remove(file)
-	//Expect(err).NotTo(HaveOccurred())
-	//err = os.Remove(values1)
-	//Expect(err).NotTo(HaveOccurred())
-	//err = os.Remove(values2)
-	//Expect(err).NotTo(HaveOccurred())
-	//err = os.RemoveAll(dir)
-	//Expect(err).NotTo(HaveOccurred())
+	err := os.Remove(file)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.Remove(values1)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.Remove(values2)
+	Expect(err).NotTo(HaveOccurred())
+	err = os.RemoveAll(dir)
+	Expect(err).NotTo(HaveOccurred())
 })

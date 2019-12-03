@@ -1,6 +1,7 @@
 package test
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -8,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/ghodss/yaml"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -105,7 +105,11 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
 
 	// also need to add in the hooks, which are not included in the release manifest
-	for _, hook := range rel.Hooks {
+	// be sure to skip the resources that we duplicate because of Helm hook weirdness (see the comment on install.GetNonCleanupHooks)
+	nonCleanupHooks, err := install.GetNonCleanupHooks(rel.Hooks)
+	Expect(err).NotTo(HaveOccurred(), "Should be able to get the non-cleanup hooks in the helm unit test setup")
+
+	for _, hook := range nonCleanupHooks {
 		manifest := hook.Manifest
 		_, err = f.Write([]byte("\n---\n" + manifest))
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
@@ -114,9 +118,7 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 	// We have some duplicated resources in our manifest in order to get them to be cleaned up correctly
 	// by Helm's hook lifecycle management. Those resources should be marked with the annotation referenced
 	// below, so we skip all those that match that criteria.
-	return NewTestManifest(f.Name()).SelectResources(func(resource *unstructured.Unstructured) bool {
-		return resource.GetAnnotations()[constants.HookCleanupResourceAnnotation] != "true"
-	}), nil
+	return NewTestManifest(f.Name()), nil
 }
 
 // each entry in valuesArgs should look like `path.to.helm.field=value`
