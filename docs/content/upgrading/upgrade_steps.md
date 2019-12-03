@@ -1,6 +1,6 @@
 ---
 title: Upgrade Steps
-weight: 2
+weight: 3
 description: Steps for upgrading Gloo components
 ---
 

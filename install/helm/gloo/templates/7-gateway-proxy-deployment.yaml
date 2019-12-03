@@ -67,7 +67,7 @@ spec:
 {{- end}}
     spec:
 {{- if $spec.kind.deployment }}
-{{- if $spec.kind.deployment.antiAffinity }}
+{{- if $spec.antiAffinity }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:

@@ -141,7 +141,7 @@ type Gateway struct {
 	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
 	UpdateValues                  bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount" `
-	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller"`
+	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
 }
 
 type ServiceAccount struct {
@@ -180,6 +180,7 @@ type GatewayProxy struct {
 	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
 	Service                   *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	Tracing                   *Tracing                     `json:"tracing,omitempty"`
 	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
@@ -202,7 +203,6 @@ type GatewayProxyKind struct {
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
-	AntiAffinity bool `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	*DeploymentSpec
 }
 

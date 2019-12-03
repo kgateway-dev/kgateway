@@ -473,7 +473,7 @@ Settings specific to the Gateway controller
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
 | `disableAutoGenGateways` | `bool` | Disable auto generation of default gateways from gateway pod. |  |
 | `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk/#validationoptions) | If provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
-| `readGatewaysFromAllNamespaces` | `bool` | When true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather than just the Gateway CRDs in its own namespace. |  |
+| `readGatewaysFromAllNamespaces` | `bool` | When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather than just the Gateway CRDs in its own namespace. |  |
 
 
 
