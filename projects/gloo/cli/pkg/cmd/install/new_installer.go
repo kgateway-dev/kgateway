@@ -12,9 +12,11 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"os"
 	"path"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -79,7 +81,9 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 	}
 
 	if installOpts.DryRun {
-		PrintReleaseManifest(rel)
+		if err := PrintReleaseManifest(rel); err != nil {
+			return err
+		}
 	}
 
 	postInstallMessage(installOpts, enterprise)
@@ -102,21 +106,40 @@ func ReleaseExists(namespace string) (bool, error) {
 	return len(releases) > 0, nil
 }
 
-func PrintReleaseManifest(release *release.Release) {
+func PrintReleaseManifest(release *release.Release) error {
 
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
 		fmt.Printf("%s", string(crdFile.Data))
-		fmt.Println("\n---")
+		fmt.Println("---")
 	}
 
-	// TODO: print hooks, filtering out the duplicated hook resources
+	// Print hook resources
+	for _, hook := range release.Hooks {
+
+		// Parse the resource in order to access the annotations
+		var resource struct{ Metadata v1.ObjectMeta }
+		if err := yaml.Unmarshal([]byte(hook.Manifest), &resource); err != nil {
+			return errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
+		}
+
+		// Skip hook cleanup resources
+		if annotations := resource.Metadata.Annotations; len(annotations) > 0 {
+			if _, ok := annotations[constants.HookCleanupResourceAnnotation]; ok {
+				continue
+			}
+		}
+
+		fmt.Println(hook.Manifest)
+		fmt.Println("---")
+	}
 
 	// Print the actual release resources
 	fmt.Printf("%s", release.Manifest)
 
 	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Println("\n---")
+	fmt.Println("---")
+	return nil
 }
 
 // The resulting URI can be either a URL or a local file path.

@@ -68,15 +68,15 @@ global:
 		Expect(err).NotTo(HaveOccurred())
 
 		err = install.Install(&options.Install{
-			DryRun:                  false,
+			DryRun:                  true,
 			Namespace:               defaults.GlooSystem,
-			HelmChartOverride:       "/Users/marco/code/projects/helm3/gloo-1.0.0.tgz",
+			HelmChartOverride:       "/Users/marco/code/projects/helm3/gloo-1.1.0.tgz",
 			HelmChartValueFileNames: []string{"/Users/marco/code/projects/helm3/values.yaml"},
 		}, val, false)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	FIt("uninstall", func() {
+	It("uninstall", func() {
 
 		uninstallAction, err := helm.NewUninstall("gloo-system")
 		Expect(err).NotTo(HaveOccurred())

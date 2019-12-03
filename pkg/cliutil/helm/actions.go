@@ -31,6 +31,10 @@ func NewInstall(namespace, releaseName string, dryRun bool) (*action.Install, *c
 	client.Namespace = namespace
 	client.DryRun = dryRun
 
+	// If this is a dry run, we don't want to query the API server.
+	// In the future we can make this configurable to emulate the `helm template --validate` behavior.
+	client.ClientOnly = dryRun
+
 	return client, settings, nil
 }
 
