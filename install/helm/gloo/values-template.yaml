@@ -1,3 +1,5 @@
+namespace:
+  create: false
 k8s:
   clusterName: cluster.local
 settings:
@@ -11,6 +13,14 @@ settings:
   integrations:
     knative:
       enabled: false
+      version: "0.8.0"
+      proxy:
+        image:
+          repository: gloo-envoy-wrapper
+        httpPort: 80
+        httpsPort: 443
+        replicas: 1
+        stats: true
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
 gloo:
@@ -24,6 +34,7 @@ gloo:
     runAsUser: 10101
 discovery:
   enabled: true
+  fdsMode: WHITELIST
   deployment:
     image:
       repository: discovery
@@ -86,6 +97,21 @@ accessLogger:
   replicas: 1
 ingress:
   enabled: false
+  deployment:
+    image:
+      repository: ingress
+    replicas: 1
+ingressProxy:
+  deployment:
+    image:
+      repository: gloo-envoy-wrapper
+    httpPort: 80
+    httpsPort: 443
+    replicas: 1
+    stats: true
+  configMap:
+    data:
+  tracing:
 global:
   image:
     registry: quay.io/solo-io
