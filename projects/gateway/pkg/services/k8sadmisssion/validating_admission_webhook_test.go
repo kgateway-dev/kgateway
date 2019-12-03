@@ -87,6 +87,27 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		table.Entry("valid route table", true, v1.RouteTableCrd, routeTable),
 		table.Entry("invalid route table", false, v1.RouteTableCrd, routeTable),
 	)
+
+	Context("invalid yaml", func() {
+		It("rejects the resource even when alwaysAccept=true", func() {
+			wh.alwaysAccept = true
+
+			req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd, v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace, []byte(`{"metadata": [1, 2, 3]}`))
+			Expect(err).NotTo(HaveOccurred())
+
+			res, err := srv.Client().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			review, err := parseReviewResponse(res)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(review.Response).NotTo(BeNil())
+
+			Expect(review.Response.Allowed).To(BeFalse())
+			Expect(review.Response.Result).NotTo(BeNil())
+			Expect(review.Response.Result.Message).To(ContainSubstring("could not unmarshal raw object: unmarshalling from raw json: json: cannot unmarshal array into Go struct field Resource.metadata of type v1.ObjectMeta"))
+
+		})
+	})
 })
 
 func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, resource resources.InputResource) (*http.Request, error) {
@@ -98,6 +119,11 @@ func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, res
 		return nil, err
 	}
 
+	return makeReviewRequestRaw(url, crd, operation, resource.GetMetadata().Name, resource.GetMetadata().Namespace, raw)
+}
+
+func makeReviewRequestRaw(url string, crd crd.Crd, operation v1beta1.Operation, name, namespace string, raw []byte) (*http.Request, error) {
+
 	review := v1beta1.AdmissionReview{
 		Request: &v1beta1.AdmissionRequest{
 			UID: "1234",
@@ -106,8 +132,8 @@ func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, res
 				Version: crd.GroupVersionKind().Version,
 				Kind:    crd.GroupVersionKind().Kind,
 			},
-			Name:      resource.GetMetadata().Name,
-			Namespace: resource.GetMetadata().Namespace,
+			Name:      name,
+			Namespace: namespace,
 			Operation: operation,
 			Object: runtime.RawExtension{
 				Raw: raw,
