@@ -36,6 +36,26 @@ func (m *MockProxyValidationServiceClient) EXPECT() *MockProxyValidationServiceC
 	return m.recorder
 }
 
+// NotifyOnResync mocks base method
+func (m *MockProxyValidationServiceClient) NotifyOnResync(arg0 context.Context, arg1 *validation.NotificationRequest, arg2 ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "NotifyOnResync", varargs...)
+	ret0, _ := ret[0].(validation.ProxyValidationService_NotifyOnResyncClient)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NotifyOnResync indicates an expected call of NotifyOnResync
+func (mr *MockProxyValidationServiceClientMockRecorder) NotifyOnResync(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyOnResync", reflect.TypeOf((*MockProxyValidationServiceClient)(nil).NotifyOnResync), varargs...)
+}
+
 // ValidateProxy mocks base method
 func (m *MockProxyValidationServiceClient) ValidateProxy(arg0 context.Context, arg1 *validation.ProxyValidationServiceRequest, arg2 ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
 	m.ctrl.T.Helper()

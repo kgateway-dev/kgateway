@@ -90,6 +90,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			return err
 		}
 
+		if validateErr := reports.ValidateStrict(); validateErr != nil {
+			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.Metadata.Ref()), zap.Error(validateErr))
+		}
+
 		allReports.Merge(reports)
 
 		key := xds.SnapshotKey(proxy)

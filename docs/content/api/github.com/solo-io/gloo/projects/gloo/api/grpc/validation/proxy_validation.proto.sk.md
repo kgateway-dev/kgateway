@@ -13,6 +13,8 @@ weight: 5
 
 - [ProxyValidationServiceRequest](#proxyvalidationservicerequest)
 - [ProxyValidationServiceResponse](#proxyvalidationserviceresponse)
+- [NotificationRequest](#notificationrequest)
+- [NotificationResponse](#notificationresponse)
 - [ProxyReport](#proxyreport)
 - [ListenerReport](#listenerreport)
 - [Error](#error)
@@ -74,6 +76,36 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `proxyReport` | [.gloo.solo.io.ProxyReport](../proxy_validation.proto.sk/#proxyreport) |  |  |
+
+
+
+
+---
+### NotificationRequest
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+
+
+
+
+---
+### NotificationResponse
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
 
 
 

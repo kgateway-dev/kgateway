@@ -4,6 +4,8 @@ import (
 	"context"
 	"sort"
 
+	"go.uber.org/zap"
+
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reporting"
@@ -39,7 +41,7 @@ func (s *proxyReconciler) ReconcileProxies(ctx context.Context, proxiesToWrite G
 		return errors.Wrapf(err, "failed to add proxy validation results to reports")
 	}
 
-	proxiesToWrite, err := stripInvalidListenersAndVirtualHosts(proxiesToWrite)
+	proxiesToWrite, err := stripInvalidListenersAndVirtualHosts(ctx, proxiesToWrite)
 	if err != nil {
 		return err
 	}
@@ -94,8 +96,10 @@ func forEachVhost(lis *gloov1.Listener, reports reporter.ResourceReports, fn fun
 // this function makes a gRPC call to gloo validation server
 func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxiesToWrite GeneratedProxies) error {
 
+	logger := contextutils.LoggerFrom(ctx)
+
 	if s.proxyValidator == nil {
-		contextutils.LoggerFrom(ctx).Warnf("proxy validation is not configured, skipping proxy validation check")
+		logger.Warnf("proxy validation is not configured, skipping proxy validation check")
 		return nil
 	}
 
@@ -106,6 +110,10 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 		})
 		if err != nil {
 			return errors.Wrapf(err, proxyValidationErrMsg)
+		}
+
+		if validateErr := reports.ValidateStrict(); validateErr != nil {
+			logger.Warnw("Proxy had invalid config", zap.Any("proxy", proxy.Metadata.Ref()), zap.Error(validateErr))
 		}
 
 		// add the proxy validation result to the existing resource reports
@@ -122,8 +130,9 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 // check the vs/gateway for the listener/virtualhost by looking at their metadata.sources
 // check the error on the vs/gateway by searching through the resource reports
 // this function must be called before reconciling the proxies
-func stripInvalidListenersAndVirtualHosts(proxiesToWrite GeneratedProxies) (GeneratedProxies, error) {
+func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite GeneratedProxies) (GeneratedProxies, error) {
 	strippedProxies := GeneratedProxies{}
+	logger := contextutils.LoggerFrom(ctx)
 
 	for proxy, reports := range proxiesToWrite {
 
@@ -135,6 +144,8 @@ func stripInvalidListenersAndVirtualHosts(proxiesToWrite GeneratedProxies) (Gene
 		if err := forEachListener(proxy, reports, func(listener *gloov1.Listener, accepted bool) {
 			if accepted {
 				validListeners = append(validListeners, listener)
+			} else {
+				logger.Warnw("stripping invalid listener from proxy", zap.Any("proxy", proxy.Metadata.Ref()), zap.String("listener", listener.Name))
 			}
 		}); err != nil {
 			return nil, err
@@ -148,6 +159,8 @@ func stripInvalidListenersAndVirtualHosts(proxiesToWrite GeneratedProxies) (Gene
 				if err := forEachVhost(lis, reports, func(vhost *gloov1.VirtualHost, accepted bool) {
 					if accepted {
 						validVhosts = append(validVhosts, vhost)
+					} else {
+						logger.Warnw("stripping invalid virtualhost from proxy", zap.Any("proxy", proxy.Metadata.Ref()), zap.String("listener", lis.Name), zap.String("virtual host", vhost.Name))
 					}
 				}); err != nil {
 					return nil, err
