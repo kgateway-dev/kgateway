@@ -10,6 +10,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -21,7 +22,7 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
 
 	validateListenerPorts(proxy, listenerReport)
-	var filterChains []envoylistener.FilterChain
+	var filterChains []*envoylistener.FilterChain
 	switch listener.GetListenerType().(type) {
 	case *v1.Listener_HttpListener:
 		// run the http filter chain plugins and listener plugins
@@ -50,10 +51,10 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 
 	out := &envoyapi.Listener{
 		Name: listener.Name,
-		Address: envoycore.Address{
+		Address: &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
-					Protocol: envoycore.TCP,
+					Protocol: envoycore.SocketAddress_TCP,
 					Address:  listener.BindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: listener.BindPort,
@@ -81,7 +82,7 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 	return out
 }
 
-func (t *translatorInstance) computeListenerFilters(params plugins.Params, listener *v1.Listener, listenerReport *validationapi.ListenerReport) []envoylistener.Filter {
+func (t *translatorInstance) computeListenerFilters(params plugins.Params, listener *v1.Listener, listenerReport *validationapi.ListenerReport) []*envoylistener.Filter {
 	var listenerFilters []plugins.StagedListenerFilter
 	// run the Listener Filter Plugins
 	for _, plug := range t.plugins {
@@ -124,17 +125,17 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []envoylistener.Filter, listenerReport *validationapi.ListenerReport) []envoylistener.FilterChain {
+func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []*envoylistener.Filter, listenerReport *validationapi.ListenerReport) []*envoylistener.FilterChain {
 
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
-		return []envoylistener.FilterChain{{
+		return []*envoylistener.FilterChain{{
 			Filters:       listenerFilters,
-			UseProxyProto: listener.UseProxyProto,
+			UseProxyProto: gogoutils.BoolGogoToProto(listener.UseProxyProto),
 		}}
 	}
 
-	var secureFilterChains []envoylistener.FilterChain
+	var secureFilterChains []*envoylistener.FilterChain
 
 	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 		// get secrets
@@ -218,21 +219,21 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 	}
 }
 
-func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []envoylistener.Filter) envoylistener.FilterChain {
+func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
 
-	return envoylistener.FilterChain{
+	return &envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
 		Filters:       listenerFilters,
 		TlsContext:    downstreamConfig,
-		UseProxyProto: useProxyProto,
+		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
 	}
 }
 
-func sortListenerFilters(filters plugins.StagedListenerFilterList) []envoylistener.Filter {
+func sortListenerFilters(filters plugins.StagedListenerFilterList) []*envoylistener.Filter {
 	sort.Sort(filters)
-	var sortedFilters []envoylistener.Filter
+	var sortedFilters []*envoylistener.Filter
 	for _, filter := range filters {
 		sortedFilters = append(sortedFilters, filter.ListenerFilter)
 	}

@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -122,11 +123,11 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
+			err = translatorutil.ParseConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(cfg.IdleTimeout).To(Equal(tcps.IdleTimeout))
-			Expect(cfg.MaxConnectAttempts).To(Equal(tcps.MaxConnectAttempts))
+			Expect(cfg.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(tcps.IdleTimeout)))
+			Expect(cfg.MaxConnectAttempts).To(Equal(gogoutils.UInt32GogoToProto(tcps.MaxConnectAttempts)))
 		})
 
 		It("can transform a single destination", func() {
@@ -152,7 +153,7 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
+			err = translatorutil.ParseConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 			cluster := cfg.GetCluster()
 			Expect(cluster).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "one"})))
@@ -175,7 +176,7 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
+			err = translatorutil.ParseConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 			clusters := cfg.GetWeightedClusters()
 			Expect(clusters.Clusters).To(HaveLen(2))
@@ -210,7 +211,7 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(&filterChains[0].Filters[0], &cfg)
+			err = translatorutil.ParseConfig(filterChains[0].Filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 			clusters := cfg.GetWeightedClusters()
 			Expect(clusters.Clusters).To(HaveLen(2))

@@ -2,19 +2,19 @@ package pluginutils
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/pkg/errors"
 )
 
 func SetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {
 
 	if out.ExtensionProtocolOptions == nil {
-		out.ExtensionProtocolOptions = make(map[string]*types.Struct)
+		out.ExtensionProtocolOptions = make(map[string]*structpb.Struct)
 	}
 
-	protoextStruct, err := util.MessageToStruct(protoext)
+	protoextStruct, err := conversion.MessageToStruct(protoext)
 	if err != nil {
 		return errors.Wrapf(err, "converting extension "+filterName+" protocol options to struct")
 	}

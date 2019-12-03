@@ -3,6 +3,7 @@ package headers
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -123,7 +124,7 @@ func convertHeaderValueOption(in []*headers.HeaderValueOption) ([]*envoycore.Hea
 				Key:   h.Header.Key,
 				Value: h.Header.Value,
 			},
-			Append: h.Append,
+			Append: gogoutils.BoolGogoToProto(h.Append),
 		})
 	}
 	return out, nil

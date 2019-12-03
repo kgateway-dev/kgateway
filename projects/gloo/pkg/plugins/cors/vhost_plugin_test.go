@@ -3,10 +3,10 @@ package cors
 import (
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -57,7 +57,7 @@ var _ = Describe("VirtualHost Plugin", func() {
 			AllowHeaders:     strings.Join(allowHeaders1, ","),
 			ExposeHeaders:    strings.Join(exposeHeaders1, ","),
 			MaxAge:           maxAge1,
-			AllowCredentials: &types.BoolValue{Value: allowCredentials1},
+			AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
 		}
 		envoy1 = &envoyroute.VirtualHost{
 			Cors: out1,

@@ -1349,7 +1349,7 @@ type GatewayOptions struct {
 	// If provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 	// of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
 	Validation *GatewayOptions_ValidationOptions `protobuf:"bytes,3,opt,name=validation,proto3" json:"validation,omitempty"`
-	// When true, the Gateway controller will consume Gateway CRDs from all watch namespaces, rather
+	// When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
 	// than just the Gateway CRDs in its own namespace
 	ReadGatewaysFromAllNamespaces bool     `protobuf:"varint,4,opt,name=read_gateways_from_all_namespaces,json=readGatewaysFromAllNamespaces,proto3" json:"read_gateways_from_all_namespaces,omitempty"`
 	XXX_NoUnkeyedLiteral          struct{} `json:"-"`

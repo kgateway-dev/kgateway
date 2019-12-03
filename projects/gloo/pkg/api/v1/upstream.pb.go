@@ -8,10 +8,10 @@ import (
 	fmt "fmt"
 	math "math"
 
-	cluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
+	cluster "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
+	core1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	aws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	ec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	azure "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"

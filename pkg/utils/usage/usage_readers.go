@@ -44,8 +44,8 @@ func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
 	}
 
 	envoys := 0
-	requestsCount := uint64(0)
-	connectionsCount := uint64(0)
+	requestsCount := float64(0)
+	connectionsCount := float64(0)
 
 	for _, envoyUsage := range usage.EnvoyIdToUsage {
 		if envoyUsage.Active {

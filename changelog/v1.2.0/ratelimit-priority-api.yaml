@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1724
+    description: >
+      Add advanced rule priority options to Gloo Enterprise rate limit API, which will be supported in the next 1.x
+      Gloo Enterprise release.
+    resolvesIssue: false

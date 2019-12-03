@@ -4,6 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/golang/protobuf/ptypes/duration"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
@@ -229,7 +235,7 @@ var _ = Describe("Translator", func() {
 
 		hcmFilter := listener.FilterChains[0].Filters[0]
 		hcmCfg = &envoyhttp.HttpConnectionManager{}
-		err = ParseConfig(&hcmFilter, hcmCfg)
+		err = ParseConfig(hcmFilter, hcmCfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
@@ -433,8 +439,8 @@ var _ = Describe("Translator", func() {
 				// the routes should be otherwise identical. wipe the matchers and compare them
 				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
 				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
-				fooRoute.Match = envoyrouteapi.RouteMatch{}
-				barRoute.Match = envoyrouteapi.RouteMatch{}
+				fooRoute.Match = &envoyrouteapi.RouteMatch{}
+				barRoute.Match = &envoyrouteapi.RouteMatch{}
 
 				Expect(fooRoute).To(Equal(barRoute))
 			})
@@ -442,8 +448,9 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("Health check config", func() {
+
 		It("will error if required field is nil", func() {
-			upstream.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*gloo_envoy_core.HealthCheck{
 				{
 					Interval: &DefaultHealthCheckInterval,
 				},
@@ -454,7 +461,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("will error if no health checker is supplied", func() {
-			upstream.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*gloo_envoy_core.HealthCheck{
 				{
 					Timeout:            &DefaultHealthCheckTimeout,
 					Interval:           &DefaultHealthCheckInterval,
@@ -469,21 +476,26 @@ var _ = Describe("Translator", func() {
 		It("can translate the http health check", func() {
 			expectedResult := []*envoycore.HealthCheck{
 				{
-					Timeout:            &DefaultHealthCheckTimeout,
-					Interval:           &DefaultHealthCheckInterval,
-					HealthyThreshold:   DefaultThreshold,
-					UnhealthyThreshold: DefaultThreshold,
+					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
+					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
+					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
+					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
-							Host:        "host",
-							Path:        "path",
-							ServiceName: "svc",
-							UseHttp2:    true,
+							Host:                   "host",
+							Path:                   "path",
+							ServiceName:            "svc",
+							RequestHeadersToAdd:    []*envoycore.HeaderValueOption{},
+							RequestHeadersToRemove: []string{},
+							UseHttp2:               true,
+							ExpectedStatuses:       []*envoy_type.Int64Range{},
 						},
 					},
 				},
 			}
-			upstream.HealthChecks = expectedResult
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
@@ -491,10 +503,10 @@ var _ = Describe("Translator", func() {
 		It("can translate the grpc health check", func() {
 			expectedResult := []*envoycore.HealthCheck{
 				{
-					Timeout:            &DefaultHealthCheckTimeout,
-					Interval:           &DefaultHealthCheckInterval,
-					HealthyThreshold:   DefaultThreshold,
-					UnhealthyThreshold: DefaultThreshold,
+					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
+					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
+					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
+					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
 						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
 							ServiceName: "svc",
@@ -503,41 +515,40 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.HealthChecks = expectedResult
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
 
 		It("can properly translate outlier detection config", func() {
-			dur := &types.Duration{Seconds: 1}
+			dur := &duration.Duration{Seconds: 1}
 			expectedResult := &envoycluster.OutlierDetection{
-				Consecutive_5Xx:                        DefaultThreshold,
+				Consecutive_5Xx:                        gogoutils.UInt32GogoToProto(DefaultThreshold),
 				Interval:                               dur,
 				BaseEjectionTime:                       dur,
-				MaxEjectionPercent:                     DefaultThreshold,
-				EnforcingConsecutive_5Xx:               DefaultThreshold,
-				EnforcingSuccessRate:                   DefaultThreshold,
-				SuccessRateMinimumHosts:                DefaultThreshold,
-				SuccessRateRequestVolume:               DefaultThreshold,
+				MaxEjectionPercent:                     gogoutils.UInt32GogoToProto(DefaultThreshold),
+				EnforcingConsecutive_5Xx:               gogoutils.UInt32GogoToProto(DefaultThreshold),
+				EnforcingSuccessRate:                   gogoutils.UInt32GogoToProto(DefaultThreshold),
+				SuccessRateMinimumHosts:                gogoutils.UInt32GogoToProto(DefaultThreshold),
+				SuccessRateRequestVolume:               gogoutils.UInt32GogoToProto(DefaultThreshold),
 				SuccessRateStdevFactor:                 nil,
-				ConsecutiveGatewayFailure:              DefaultThreshold,
+				ConsecutiveGatewayFailure:              gogoutils.UInt32GogoToProto(DefaultThreshold),
 				EnforcingConsecutiveGatewayFailure:     nil,
 				SplitExternalLocalOriginErrors:         true,
 				ConsecutiveLocalOriginFailure:          nil,
 				EnforcingConsecutiveLocalOriginFailure: nil,
 				EnforcingLocalOriginSuccessRate:        nil,
 			}
-			upstream.OutlierDetection = expectedResult
+			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
 			translate()
 			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
 		})
 
 		It("can properly validate outlier detection config", func() {
-			dur := &types.Duration{Seconds: 0}
-			expectedResult := &envoycluster.OutlierDetection{
-				Interval: dur,
-			}
-			upstream.OutlierDetection = expectedResult
+			expectedResult := &envoycluster.OutlierDetection{}
+			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
@@ -563,10 +574,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -588,10 +599,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -620,10 +631,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -1096,13 +1107,13 @@ var _ = Describe("Translator", func() {
 				return constants.ConsulTagKeyPrefix + tagName
 			}
 
-			trueValue = &types.Value{
-				Kind: &types.Value_StringValue{
+			trueValue = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: constants.ConsulEndpointMetadataMatchTrue,
 				},
 			}
-			falseValue = &types.Value{
-				Kind: &types.Value_StringValue{
+			falseValue = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: constants.ConsulEndpointMetadataMatchFalse,
 				},
 			}
@@ -1303,7 +1314,7 @@ var _ = Describe("Translator", func() {
 			cfg := tcpFilter.GetConfig()
 			Expect(cfg).NotTo(BeNil())
 			var typedCfg envoytcp.TcpProxy
-			Expect(ParseConfig(&tcpFilter, &typedCfg)).NotTo(HaveOccurred())
+			Expect(ParseConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
 			clusterSpec := typedCfg.GetCluster()
 			Expect(clusterSpec).To(Equal("test_gloo-system"))
 		})
@@ -1582,9 +1593,9 @@ var _ = Describe("Translator", func() {
 
 })
 
-func sv(s string) *types.Value {
-	return &types.Value{
-		Kind: &types.Value_StringValue{
+func sv(s string) *structpb.Value {
+	return &structpb.Value{
+		Kind: &structpb.Value_StringValue{
 			StringValue: s,
 		},
 	}

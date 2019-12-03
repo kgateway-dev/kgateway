@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -32,7 +32,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 
 		missingCluster = "missing_cluster"
 
-		validRouteSingle = route.Route{
+		validRouteSingle = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_Cluster{
@@ -42,7 +42,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		validRouteMulti = route.Route{
+		validRouteMulti = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_WeightedClusters{
@@ -61,7 +61,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		missingRouteSingle = route.Route{
+		missingRouteSingle = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_Cluster{
@@ -71,7 +71,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		fixedRouteSingle = route.Route{
+		fixedRouteSingle = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_Cluster{
@@ -81,7 +81,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		missingRouteMulti = route.Route{
+		missingRouteMulti = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_WeightedClusters{
@@ -100,7 +100,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		fixedRouteMulti = route.Route{
+		fixedRouteMulti = &route.Route{
 			Action: &route.Route_Route{
 				Route: &route.RouteAction{
 					ClusterSpecifier: &route.RouteAction_WeightedClusters{
@@ -131,8 +131,8 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 
 		// make Consistent() happy
 		listener = &envoyapi.Listener{
-			FilterChains: []listener.FilterChain{{
-				Filters: []listener.Filter{{
+			FilterChains: []*listener.FilterChain{{
+				Filters: []*listener.Filter{{
 					Name:       util.HTTPConnectionManager,
 					ConfigType: config,
 				}},
@@ -141,7 +141,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		config.TypedConfig, err = types.MarshalAny(&hcm.HttpConnectionManager{
+		config.TypedConfig, err = ptypes.MarshalAny(&hcm.HttpConnectionManager{
 			RouteSpecifier: &hcm.HttpConnectionManager_Rds{
 				Rds: &hcm.Rds{
 					RouteConfigName: routeCfgName,
@@ -153,15 +153,15 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 	It("replaces routes which point to a missing cluster", func() {
 		routeCfg := &envoyapi.RouteConfiguration{
 			Name: routeCfgName,
-			VirtualHosts: []route.VirtualHost{
+			VirtualHosts: []*route.VirtualHost{
 				{
-					Routes: []route.Route{
+					Routes: []*route.Route{
 						validRouteSingle,
 						missingRouteSingle,
 					},
 				},
 				{
-					Routes: []route.Route{
+					Routes: []*route.Route{
 						missingRouteMulti,
 						validRouteMulti,
 					},
@@ -171,15 +171,15 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 
 		expectedRoutes := &envoyapi.RouteConfiguration{
 			Name: routeCfgName,
-			VirtualHosts: []route.VirtualHost{
+			VirtualHosts: []*route.VirtualHost{
 				{
-					Routes: []route.Route{
+					Routes: []*route.Route{
 						validRouteSingle,
 						fixedRouteSingle,
 					},
 				},
 				{
-					Routes: []route.Route{
+					Routes: []*route.Route{
 						fixedRouteMulti,
 						validRouteMulti,
 					},

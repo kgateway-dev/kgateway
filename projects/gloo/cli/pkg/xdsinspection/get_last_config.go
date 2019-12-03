@@ -8,15 +8,16 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.uber.org/zap"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
@@ -94,8 +95,8 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 		Role: fmt.Sprintf("%v~%v", proxyNamespace, proxyName),
 	}
 	dr := &v2.DiscoveryRequest{Node: &envoy_api_v2_core1.Node{
-		Metadata: &types.Struct{
-			Fields: map[string]*types.Value{"role": {Kind: &types.Value_StringValue{StringValue: xdsDump.Role}}}},
+		Metadata: &structpb.Struct{
+			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: xdsDump.Role}}}},
 	}}
 
 	conn, err := grpc.Dial("localhost:"+xdsPort, grpc.WithInsecure())
@@ -131,7 +132,7 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 							hcms = append(hcms, hcm)
 						}
 					case *envoylistener.Filter_TypedConfig:
-						if err := types.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+						if err := ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
 							hcms = append(hcms, hcm)
 						}
 					}
@@ -165,7 +166,7 @@ func listClusters(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clien
 	for _, anyCluster := range dresp.Resources {
 
 		var cluster v2.Cluster
-		if err := cluster.Unmarshal(anyCluster.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyCluster, &cluster); err != nil {
 			return nil, err
 		}
 		clusters = append(clusters, cluster)
@@ -184,7 +185,7 @@ func listEndpoints(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	for _, anyCla := range dresp.Resources {
 
 		var cla v2.ClusterLoadAssignment
-		if err := cla.Unmarshal(anyCla.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyCla, &cla); err != nil {
 			return nil, err
 		}
 		class = append(class, cla)
@@ -204,7 +205,7 @@ func listListeners(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 
 	for _, anylistener := range dresp.Resources {
 		var listener v2.Listener
-		if err := listener.Unmarshal(anylistener.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anylistener, &listener); err != nil {
 			return nil, err
 		}
 		listeners = append(listeners, listener)
@@ -227,7 +228,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *v2.DiscoveryRequ
 
 	for _, anyRoute := range dresp.Resources {
 		var route v2.RouteConfiguration
-		if err := route.Unmarshal(anyRoute.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyRoute, &route); err != nil {
 			return nil, err
 		}
 		routes = append(routes, route)

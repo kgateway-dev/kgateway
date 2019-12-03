@@ -6,16 +6,15 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -23,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 )
 
@@ -305,8 +305,8 @@ func startCustomExtauthServer(port uint) (*grpc.Server, error) {
 }
 
 var (
-	deny  = &pb.CheckResponse{Status: &rpc.Status{Code: int32(rpc.PERMISSION_DENIED)}}
-	allow = &pb.CheckResponse{Status: &rpc.Status{Code: int32(rpc.OK)}}
+	deny  = &pb.CheckResponse{Status: &status.Status{Code: int32(rpc.PERMISSION_DENIED)}}
+	allow = &pb.CheckResponse{Status: &status.Status{Code: int32(rpc.OK)}}
 )
 
 // This custom auth server expects requests to provide the username in a "user" header.
