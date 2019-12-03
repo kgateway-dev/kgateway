@@ -8,7 +8,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps"]

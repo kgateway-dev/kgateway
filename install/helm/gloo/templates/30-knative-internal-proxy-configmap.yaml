@@ -10,7 +10,6 @@ metadata:
   labels:
     app: gloo
     gloo: knative-internal-proxy
-    installationId: {{ include "gloo.installationId" . }}
 data:
   envoy.yaml: |
     node:

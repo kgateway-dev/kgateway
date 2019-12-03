@@ -9,7 +9,6 @@ metadata:
   labels:
     app: gloo
     gloo: discovery
-    installationId: {{ include "gloo.installationId" . }}
   name: discovery
   namespace: {{ .Release.Namespace }}
 spec:

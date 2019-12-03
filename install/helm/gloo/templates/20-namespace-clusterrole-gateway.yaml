@@ -11,7 +11,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps", "namespaces"]
@@ -27,7 +26,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["upstreams"]
@@ -44,7 +42,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io"]
   resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
@@ -64,7 +61,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings"]
@@ -81,7 +77,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
@@ -97,7 +92,6 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: {{ include "gloo.installationId" . }}
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "routetables"]

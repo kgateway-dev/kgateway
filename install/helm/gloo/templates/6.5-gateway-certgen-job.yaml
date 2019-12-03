@@ -10,7 +10,6 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-certgen
-    installationId: {{ include "gloo.installationId" . }}
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
@@ -53,7 +52,6 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-    installationId: {{ include "gloo.installationId" . }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
@@ -69,7 +67,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
@@ -91,7 +88,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
@@ -129,6 +125,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
   name: gateway-certgen
   namespace: {{ $.Release.Namespace }}
 
@@ -144,6 +141,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
 subjects:
 - kind: ServiceAccount
   name: gateway-certgen
@@ -165,6 +163,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-install,post-upgrade
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
 rules:
 - apiGroups: [""]
   resources: ["secrets"]

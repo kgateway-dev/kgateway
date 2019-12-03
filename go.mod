@@ -47,11 +47,13 @@ require (
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
+	gopkg.in/yaml.v2 v2.2.4
 	helm.sh/helm/v3 v3.0.0
 	k8s.io/api v0.0.0-20191121015604-11707872ac1c
 	k8s.io/apiextensions-apiserver v0.0.0-20191121021419-88daf26ec3b8
 	k8s.io/apimachinery v0.0.0-20191123233150-4c4803ed55e3
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	sigs.k8s.io/yaml v1.1.0
 )
 

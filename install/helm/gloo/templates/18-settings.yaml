@@ -5,13 +5,8 @@ kind: Settings
 metadata:
   labels:
     app: gloo
-    installationId: {{ include "gloo.installationId" . }}
   name: default
   namespace: {{ .Release.Namespace }}
-  # We need this because the controllers will try to write a default settings object
-  # and if they are able to do so before this resource gets applied, installation will fail.
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
   gloo:
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"

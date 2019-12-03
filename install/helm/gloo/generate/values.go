@@ -67,7 +67,7 @@ type JobSpec struct {
 
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
-	Resources *ResourceRequirements `json:"resources,omitEmpty" desc:"resources for the main pod in the deployment"`
+	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
 }
 
 type Integrations struct {
@@ -221,7 +221,7 @@ type GatewayProxyPodTemplate struct {
 	NodeSelector     map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
-	Resources        *ResourceRequirements `json:"resources"`
+	Resources        *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`

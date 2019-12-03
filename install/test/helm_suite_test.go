@@ -4,8 +4,19 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"sync"
+	"path"
 	"testing"
+
+	"github.com/ghodss/yaml"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"helm.sh/helm/v3/pkg/action"
+	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/strvals"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	k8syamlutil "sigs.k8s.io/yaml"
 
 	"github.com/solo-io/go-utils/testutils"
 	v1 "k8s.io/api/core/v1"
@@ -31,16 +42,20 @@ func TestHelm(t *testing.T) {
 	RunSpecs(t, "Helm Suite")
 }
 
+var _ = BeforeSuite(func() {
+	// generate the values.yaml and Chart.yaml files
+	MustMake(".", "-C", "../../", "clean")
+	MustMake(".", "-C", "../../", "prepare-helm")
+})
+
 const (
 	namespace = "gloo-system"
+	chartDir  = "../helm/gloo"
 )
 
 var (
-	version string
-	// use a mutex to prevent these tests from running in parallel
-	makefileSerializer sync.Mutex
-	pullPolicy         v1.PullPolicy
-	manifests          = map[string]TestManifest{}
+	version    string
+	pullPolicy v1.PullPolicy
 )
 
 func MustMake(dir string, args ...string) {
@@ -54,22 +69,152 @@ func MustMake(dir string, args ...string) {
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 }
 
-func renderManifest(helmFlags string) TestManifest {
-	makefileSerializer.Lock()
-	defer makefileSerializer.Unlock()
+type helmValues struct {
+	valuesFile string
+	valuesArgs []string // each entry should look like `path.to.helm.field=value`
+}
 
-	if tm, ok := manifests[helmFlags]; ok {
-		return tm
+// returns a TestManifest containing all resources NOT marked by our hook-cleanup annotation
+func renderManifest(namespace string, values helmValues) (TestManifest, error) {
+	chartRequested, err := loader.Load(chartDir)
+	if err != nil {
+		return nil, err
 	}
 
-	f, err := ioutil.TempFile("", "*.yaml")
-	ExpectWithOffset(2, err).NotTo(HaveOccurred())
-	_ = f.Close()
-	manifestYaml := f.Name()
-	defer os.Remove(manifestYaml)
+	helmValues, err := buildHelmValues(values)
+	if err != nil {
+		return nil, err
+	}
 
-	MustMake(".", "-C", "../..", "install/gloo-gateway.yaml", "HELMFLAGS="+helmFlags, "OUTPUT_YAML="+manifestYaml)
-	tm := NewTestManifest(manifestYaml)
-	manifests[helmFlags] = tm
-	return tm
+	client, err := buildInstallClient(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	rel, err := client.Run(chartRequested, helmValues)
+	if err != nil {
+		return nil, err
+	}
+
+	// the test manifest utils can only read from a file, ugh
+	f, err := ioutil.TempFile("", "*.yaml")
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
+	defer os.Remove(f.Name())
+
+	_, err = f.Write([]byte(rel.Manifest))
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
+
+	// also need to add in the hooks, which are not included in the release manifest
+	for _, hook := range rel.Hooks {
+		manifest := hook.Manifest
+		_, err = f.Write([]byte("\n---\n" + manifest))
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
+	}
+
+	// We have some duplicated resources in our manifest in order to get them to be cleaned up correctly
+	// by Helm's hook lifecycle management. Those resources should be marked with the annotation referenced
+	// below, so we skip all those that match that criteria.
+	return NewTestManifest(f.Name()).SelectResources(func(resource *unstructured.Unstructured) bool {
+		return resource.GetAnnotations()[constants.HookCleanupResourceAnnotation] != "true"
+	}), nil
+}
+
+// each entry in valuesArgs should look like `path.to.helm.field=value`
+func buildHelmValues(values helmValues) (map[string]interface{}, error) {
+	// read the chart's base values file first
+	finalValues, err := readValuesFile(path.Join(chartDir, "values.yaml"))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, v := range values.valuesArgs {
+		err := strvals.ParseInto(v, finalValues)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if values.valuesFile != "" {
+		// these lines ripped out of Helm internals
+		// https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go
+		mapFromFile, err := readValuesFile(values.valuesFile)
+		if err != nil {
+			return nil, err
+		}
+
+		// Merge with the previous map
+		finalValues = mergeMaps(finalValues, mapFromFile)
+	}
+
+	return finalValues, nil
+}
+
+func readValuesFile(filePath string) (map[string]interface{}, error) {
+	mapFromFile := map[string]interface{}{}
+
+	bytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+
+	// NOTE: This is not the default golang yaml.Unmarshal, because that implementation
+	// does not unmarshal into a map[string]interface{}; it unmarshals the file into a map[interface{}]interface{}
+	// https://github.com/go-yaml/yaml/issues/139
+	if err := k8syamlutil.Unmarshal(bytes, &mapFromFile); err != nil {
+		return nil, err
+	}
+
+	return mapFromFile, nil
+}
+
+func buildInstallClient(namespace string) (*action.Install, error) {
+	settings := cli.New()
+	actionConfig := new(action.Configuration)
+	noOpDebugLog := func(format string, v ...interface{}) {}
+
+	if err := actionConfig.Init(
+		settings.RESTClientGetter(),
+		defaults.GlooSystem,
+		os.Getenv("HELM_DRIVER"),
+		noOpDebugLog,
+	); err != nil {
+		return nil, err
+	}
+
+	client := action.NewInstall(actionConfig)
+	client.DryRun = true
+	client.Namespace = namespace
+	client.ReleaseName = "gloo"
+	client.Namespace = "gloo-system"
+
+	return client, nil
+}
+
+// stolen from Helm internals
+// https://github.com/helm/helm/blob/release-3.0/pkg/cli/values/options.go#L88
+func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(a))
+	for k, v := range a {
+		out[k] = v
+	}
+	for k, v := range b {
+		if v, ok := v.(map[string]interface{}); ok {
+			if bv, ok := out[k]; ok {
+				if bv, ok := bv.(map[string]interface{}); ok {
+					out[k] = mergeMaps(bv, v)
+					continue
+				}
+			}
+		}
+		out[k] = v
+	}
+	return out
+}
+
+func makeUnstructured(yam string) *unstructured.Unstructured {
+	jsn, err := yaml.YAMLToJSON([]byte(yam))
+	Expect(err).NotTo(HaveOccurred())
+	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
+	Expect(err).NotTo(HaveOccurred())
+	return runtimeObj.(*unstructured.Unstructured)
 }
