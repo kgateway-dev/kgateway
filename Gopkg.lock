@@ -2384,7 +2384,7 @@
   version = "v2.2.7"
 
 [[projects]]
-  digest = "1:1901d7b6c4487eaa5df3439c94edd38872b8b750d2076a647d052ef8dc51d11b"
+  digest = "1:69b0954070ae8353bf65f366e7f884d7a9e72af3f4edaac7967f739b76181ce2"
   name = "helm.sh/helm/v3"
   packages = [
     "internal/experimental/registry",
@@ -2418,6 +2418,7 @@
     "pkg/repo",
     "pkg/storage",
     "pkg/storage/driver",
+    "pkg/strvals",
     "pkg/time",
   ]
   pruneopts = "UT"
@@ -3234,6 +3235,7 @@
     "helm.sh/helm/v3/pkg/action",
     "helm.sh/helm/v3/pkg/chart/loader",
     "helm.sh/helm/v3/pkg/cli",
+    "helm.sh/helm/v3/pkg/strvals",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",
