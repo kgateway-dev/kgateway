@@ -43,6 +43,7 @@ metadata:
   annotations:
     "helm.sh/hook": post-delete
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "solo.io/hook-cleanup": true # Used internally to mark "hook cleanup" resources
 webhooks:
 - name: gateway.{{ .Release.Namespace }}.svc
   clientConfig:
