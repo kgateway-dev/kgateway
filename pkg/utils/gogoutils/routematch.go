@@ -17,19 +17,18 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-
 // used in enterprise test code
 func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteMatch {
 	if routeMatch == nil {
 		return nil
 	}
 	rm := &envoyroute_gloo.RouteMatch{
-		PathSpecifier:        nil, // gets set later in function
-		CaseSensitive:        BoolProtoToGogo(routeMatch.GetCaseSensitive()),
-		RuntimeFraction:      ToGlooRuntimeFractionalPercent(routeMatch.GetRuntimeFraction()),
-		Headers:              ToGlooHeaders(routeMatch.GetHeaders()),
-		QueryParameters:      ToGlooQueryParameterMatchers(routeMatch.GetQueryParameters()),
-		Grpc:                 ToGlooGrpc(routeMatch.GetGrpc()),
+		PathSpecifier:   nil, // gets set later in function
+		CaseSensitive:   BoolProtoToGogo(routeMatch.GetCaseSensitive()),
+		RuntimeFraction: ToGlooRuntimeFractionalPercent(routeMatch.GetRuntimeFraction()),
+		Headers:         ToGlooHeaders(routeMatch.GetHeaders()),
+		QueryParameters: ToGlooQueryParameterMatchers(routeMatch.GetQueryParameters()),
+		Grpc:            ToGlooGrpc(routeMatch.GetGrpc()),
 	}
 	switch typed := routeMatch.GetPathSpecifier().(type) {
 	case *envoyroute.RouteMatch_Prefix:
@@ -48,13 +47,13 @@ func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteM
 	return rm
 }
 
-func ToGlooRuntimeFractionalPercent(fp *envoycore.RuntimeFractionalPercent)*envoycore_sk.RuntimeFractionalPercent{
+func ToGlooRuntimeFractionalPercent(fp *envoycore.RuntimeFractionalPercent) *envoycore_sk.RuntimeFractionalPercent {
 	if fp == nil {
 		return nil
 	}
 	return &envoycore_sk.RuntimeFractionalPercent{
-		DefaultValue:         ToGlooFractionalPercent(fp.GetDefaultValue()),
-		RuntimeKey:           fp.GetRuntimeKey(),
+		DefaultValue: ToGlooFractionalPercent(fp.GetDefaultValue()),
+		RuntimeKey:   fp.GetRuntimeKey(),
 	}
 }
 
@@ -62,7 +61,7 @@ func ToGlooFractionalPercent(fp *envoytype.FractionalPercent) *envoytype_sk.Frac
 	if fp == nil {
 		return nil
 	}
-	glooFp :=  &envoytype_sk.FractionalPercent{
+	glooFp := &envoytype_sk.FractionalPercent{
 		Numerator:   fp.GetNumerator(),
 		Denominator: envoytype_sk.FractionalPercent_HUNDRED, // gets set later in function
 	}
@@ -140,18 +139,18 @@ func ToGlooQueryParameterMatchers(queryParamMatchers []*envoyroute.QueryParamete
 	return result
 }
 
-func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMatcher)*envoyroute_gloo.QueryParameterMatcher{
+func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMatcher) *envoyroute_gloo.QueryParameterMatcher {
 	if queryParamMatcher == nil {
 		return nil
 	}
 	return &envoyroute_gloo.QueryParameterMatcher{
-		Name:                 queryParamMatcher.GetName(),
-		Value:                queryParamMatcher.GetValue(),
-		Regex:                BoolProtoToGogo(queryParamMatcher.GetRegex()),
+		Name:  queryParamMatcher.GetName(),
+		Value: queryParamMatcher.GetValue(),
+		Regex: BoolProtoToGogo(queryParamMatcher.GetRegex()),
 	}
 }
 
-func ToGlooGrpc(grpc *envoyroute.RouteMatch_GrpcRouteMatchOptions)*envoyroute_gloo.RouteMatch_GrpcRouteMatchOptions{
+func ToGlooGrpc(grpc *envoyroute.RouteMatch_GrpcRouteMatchOptions) *envoyroute_gloo.RouteMatch_GrpcRouteMatchOptions {
 	if grpc == nil {
 		return nil
 	}

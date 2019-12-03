@@ -15,7 +15,6 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-
 func ToGlooOutlierDetectionList(list []*envoycluster.OutlierDetection) []*envoycluster_gloo.OutlierDetection {
 	if list == nil {
 		return nil
