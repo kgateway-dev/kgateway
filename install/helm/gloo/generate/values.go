@@ -23,10 +23,9 @@ type Config struct {
 }
 
 type Global struct {
-	Image              *Image      `json:"image,omitempty"`
-	Extensions         interface{} `json:"extensions,omitempty"`
-	GlooRbac           *Rbac       `json:"glooRbac,omitempty"`
-	GlooInstallationId string      `json:"glooInstallationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
+	Image      *Image      `json:"image,omitempty"`
+	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 }
 
 type Namespace struct {
