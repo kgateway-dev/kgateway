@@ -33,7 +33,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: {{template "gloo.image" $image}}
+        image: {{ template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: knative-external-proxy
 {{- if .Values.settings.integrations.knative.proxy.resources }}
