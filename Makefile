@@ -363,14 +363,14 @@ HELM_DIR := install/helm
 INSTALL_NAMESPACE ?= gloo-system
 
 .PHONY: manifest
-manifest: prepare-helm install/gloo-gateway.yaml install/gloo-knative.yaml update-helm-chart
+manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml update-helm-chart
 
-# creates Chart.yaml, values.yaml, values-knative.yaml, values-ingress.yaml. See install/helm/gloo/README.md for more info.
+# Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
 .PHONY: prepare-helm
 prepare-helm: $(OUTPUT_DIR)/.helm-prepared
 
 $(OUTPUT_DIR)/.helm-prepared:
-	go run install/helm/gloo/generate.go $(VERSION)
+	GO111MODULE=on go run install/helm/gloo/generate.go $(VERSION)
 	touch $@
 
 update-helm-chart:
@@ -378,7 +378,7 @@ update-helm-chart:
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
 	helm repo index $(HELM_SYNC_DIR)
 
-HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
+HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE)
 
 MANIFEST_OUTPUT = > /dev/null
 ifneq ($(BUILD_ID),)
@@ -386,13 +386,20 @@ MANIFEST_OUTPUT =
 endif
 
 install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+	helm template install/helm/gloo $(HELMFLAGS) --set namespace.create=true | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 
+# TODO(helm3): something weird is going on here, helm2 works, helm3 throws: "mapping values are not allowed in this context"
+# See https://github.com/helm/helm/issues/6251
+# Update: has to do withthe $image we pass to the template in 10/26/29
 install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+	helm template install/helm/gloo $(HELMFLAGS) \
+		--set namespace.create=true,gateway.enabled=false,settings.integrations.knative.enabled=true \sss
+		| tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 
+# TODO(helm3): same issue as above
 install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+	helm template install/helm/gloo $(HELMFLAGS) \
+		--set namespace.create=true,gateway.enabled=false,ingress.enabled=true| tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
