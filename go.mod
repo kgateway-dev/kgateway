@@ -4,9 +4,8 @@ go 1.12
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.8 // indirect
-	github.com/Azure/go-autorest v12.2.0+incompatible
+	github.com/Azure/go-autorest v12.2.0+incompatible // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
-	github.com/Masterminds/semver/v3 v3.0.1
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
@@ -17,6 +16,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
+	github.com/fgrosse/zaptest v1.1.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.4
@@ -38,7 +38,7 @@ require (
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 // indirect
 	github.com/ilackarms/protoc-gen-doc v1.0.0 // indirect
-	github.com/ilackarms/protokit v0.1.0 // indirect
+	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jhump/protoreflect v1.5.0
 	github.com/k0kubun/pp v2.3.0+incompatible
@@ -80,7 +80,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0-20191121021419-88daf26ec3b8
 	k8s.io/apimachinery v0.0.0-20191123233150-4c4803ed55e3
 	k8s.io/client-go v11.0.0+incompatible
-	k8s.io/kubernetes v1.13.2 // indirect
+	k8s.io/kubernetes v1.13.2
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef // indirect
 	knative.dev/serving v0.10.0
