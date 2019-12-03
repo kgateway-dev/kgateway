@@ -2384,7 +2384,7 @@
   version = "v2.2.7"
 
 [[projects]]
-  digest = "1:69b0954070ae8353bf65f366e7f884d7a9e72af3f4edaac7967f739b76181ce2"
+  digest = "1:b22bdbf75096db5930ec7f4b77e3d07aab9926e3693b178780a2225b72606afc"
   name = "helm.sh/helm/v3"
   packages = [
     "internal/experimental/registry",
@@ -2401,6 +2401,7 @@
     "pkg/chart/loader",
     "pkg/chartutil",
     "pkg/cli",
+    "pkg/cli/values",
     "pkg/downloader",
     "pkg/engine",
     "pkg/getter",
@@ -3233,9 +3234,13 @@
     "gopkg.in/AlecAivazis/survey.v1/terminal",
     "gopkg.in/yaml.v2",
     "helm.sh/helm/v3/pkg/action",
+    "helm.sh/helm/v3/pkg/chart",
     "helm.sh/helm/v3/pkg/chart/loader",
+    "helm.sh/helm/v3/pkg/chartutil",
     "helm.sh/helm/v3/pkg/cli",
-    "helm.sh/helm/v3/pkg/strvals",
+    "helm.sh/helm/v3/pkg/cli/values",
+    "helm.sh/helm/v3/pkg/getter",
+    "helm.sh/helm/v3/pkg/release",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
     "k8s.io/api/apps/v1",

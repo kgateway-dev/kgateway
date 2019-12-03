@@ -1,8 +1,13 @@
 package install
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/kubeutils"
+	"go.uber.org/zap"
+	"helm.sh/helm/v3/pkg/chartutil"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -41,10 +46,11 @@ const (
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "knative",
-		Short:  "install Knative with Gloo on kubernetes",
+		Short:  "install Knative with Gloo on Kubernetes",
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			if opts.Install.Knative.InstallKnative {
 				if !opts.Install.DryRun {
 					installed, _, err := checkKnativeInstallation()
@@ -64,7 +70,16 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if !opts.Install.Knative.SkipGlooInstall {
-				if err := installGloo(opts, constants.KnativeValuesFileName); err != nil {
+				knativeValues, err := RenderKnativeValues(opts.Install.Knative.InstallKnativeVersion)
+				if err != nil {
+					return err
+				}
+				knativeOverrides, err := chartutil.ReadValues([]byte(knativeValues))
+				if err != nil {
+					return errors.Wrapf(err, "parsing override values for knative mode")
+				}
+
+				if err := Install(&opts.Install, knativeOverrides, false); err != nil {
 					return errors.Wrapf(err, "installing gloo in knative mode")
 				}
 			}
@@ -340,4 +355,17 @@ func getCrdManifests(manifests string) ([]string, string, error) {
 
 	// re-join the objects into a single manifest
 	return crdNames, strings.Join(crdManifests, yamlJoiner), nil
+}
+
+func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
+	apiExts := helpers.MustApiExtsClient()
+	logger := contextutils.LoggerFrom(ctx)
+	for _, crdName := range crds {
+		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
+		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
+			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
+		}
+	}
+
+	return nil
 }

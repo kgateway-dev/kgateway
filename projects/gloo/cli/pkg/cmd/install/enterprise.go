@@ -1,12 +1,6 @@
 package install
 
 import (
-	"fmt"
-	"os"
-
-	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/errors"
@@ -25,81 +19,32 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := installGlooE(opts); err != nil {
+
+			extraValues := map[string]interface{}{
+				"license_key": opts.Install.LicenseKey,
+				"gloo": map[string]interface{}{
+					"namespace": map[string]interface{}{
+						"create": "true",
+					},
+				},
+			}
+
+			if err := Install(&opts.Install, extraValues, true); err != nil {
 				return errors.Wrapf(err, "installing gloo enterprise in gateway mode")
 			}
+
 			return nil
 		},
 	}
-	pflags := cmd.PersistentFlags()
-	flagutils.AddEnterpriseInstallFlags(pflags, &opts.Install)
+
+	pFlags := cmd.PersistentFlags()
+	flagutils.AddEnterpriseInstallFlags(pFlags, &opts.Install)
 	return cmd
 }
 
-func installGlooE(opts *options.Options) error {
-	if !opts.Install.DryRun {
-		fmt.Printf("Starting Gloo Enterprise installation...\n")
-	}
-	spec, err := GetEnterpriseInstallSpec(opts)
-	if err != nil {
-		return err
-	}
+//const PersistentVolumeClaim = "PersistentVolumeClaim"
 
-	kubeInstallClient := NamespacedGlooKubeInstallClient{
-		Namespace: opts.Install.Namespace,
-		Delegate:  &DefaultGlooKubeInstallClient{},
-		Executor:  install.Kubectl,
-	}
-	if err := InstallGloo(opts, *spec, &kubeInstallClient); err != nil {
-		fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
-		return err
-	}
-	if !opts.Install.DryRun {
-		fmt.Printf("\nGloo Enterprise was successfully installed!\n")
-	}
-	return nil
-}
-
-// enterprise
-func GetEnterpriseInstallSpec(opts *options.Options) (*GlooInstallSpec, error) {
-	glooEVersion := version.EnterpriseTag
-
-	// Get location of Gloo helm chart
-	helmChartArchiveUri := fmt.Sprintf(GlooEHelmRepoTemplate, glooEVersion)
-	if helmChartOverride := opts.Install.HelmChartOverride; helmChartOverride != "" {
-		helmChartArchiveUri = helmChartOverride
-	}
-
-	extraValues := map[string]interface{}{
-		"license_key": opts.Install.LicenseKey,
-	}
-
-	if opts.Install.Upgrade {
-		extraValues["gloo"] = map[string]interface{}{
-			"gateway": map[string]interface{}{
-				"upgrade": "true",
-			},
-		}
-	} else {
-		extraValues["gloo"] = map[string]interface{}{
-			"namespace": map[string]interface{}{
-				"create": "true",
-			},
-		}
-	}
-
-	return &GlooInstallSpec{
-		HelmArchiveUri: helmChartArchiveUri,
-		ProductName:    "glooe",
-		ValueFileName:  "",
-		ExtraValues:    extraValues,
-		//ExcludeResources:   pvcExists(opts.Install.Namespace),
-		UserValueFileNames: opts.Install.HelmChartValueFileNames,
-	}, nil
-}
-
-const PersistentVolumeClaim = "PersistentVolumeClaim"
-
+// TODO: Since we rely on helm and not on a simple `kubectl apply` this check should be redundant. Still worth verifying.
 //func pvcExists(namespace string) install.ResourceMatcherFunc {
 //	return func(resource install.ResourceType) (bool, error) {
 //		kubeClient, err := helpers.KubeClient()
