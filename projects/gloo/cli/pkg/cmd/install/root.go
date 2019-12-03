@@ -59,6 +59,6 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 
 func setVerboseMode(opts *options.Options) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		install.SetVerbose(opts.Top.Verbose)
+		SetVerbose(opts.Top.Verbose)
 	}
 }

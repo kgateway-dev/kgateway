@@ -21,11 +21,12 @@ func newActionConfig(namespace string) (*action.Configuration, *cli.EnvSettings,
 	return actionConfig, settings, nil
 }
 
-func NewInstall(namespace, releaseName string, dryRun bool) (*action.Install, *cli.EnvSettings, error) {
+func NewInstall(namespace, releaseName string, dryRun, verbose bool) (*action.Install, *cli.EnvSettings, error) {
 	actionConfig, settings, err := newActionConfig(namespace)
 	if err != nil {
 		return nil, nil, err
 	}
+	settings.Debug = verbose
 
 	client := action.NewInstall(actionConfig)
 	client.ReleaseName = releaseName

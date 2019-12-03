@@ -12,7 +12,6 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		Use:   "gateway",
 		Short: "install the Gloo Gateway on Kubernetes",
 		Long:  "requires kubectl to be installed",
-		// TODO(helm3): wire this up properly
 		PreRun: setVerboseMode(opts),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
