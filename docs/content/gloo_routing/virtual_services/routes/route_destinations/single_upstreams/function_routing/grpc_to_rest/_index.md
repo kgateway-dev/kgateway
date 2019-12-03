@@ -117,62 +117,62 @@ spec:
        - methods:
          - GET
          prefix: /items/
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: GetItem
-               package: solo.examples.v1
-               parameters:
-                 path: /items/{name}
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: GetItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
        - methods:
          - DELETE
          prefix: /items/
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: DeleteItem
-               package: solo.examples.v1
-               parameters:
-                 path: /items/{name}
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: DeleteItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
        - methods:
          - GET
          exact: /items
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: ListItems
-               package: solo.examples.v1
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: ListItems
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
        - methods:
          - POST
          exact: /items
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: CreateItem
-               package: solo.examples.v1
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: CreateItem
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
 EOF
 ```
 
