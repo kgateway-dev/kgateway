@@ -2,6 +2,10 @@ package install
 
 import (
 	"fmt"
+	"os"
+	"path"
+	"strings"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/pkg/version"
@@ -14,10 +18,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"os"
-	"path"
 	"sigs.k8s.io/yaml"
-	"strings"
 )
 
 func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error {

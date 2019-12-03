@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl install gateway enterprise
 
-install the Gloo Enterprise Gateway on kubernetes
+install the Gloo Enterprise Gateway on Kubernetes
 
 ### Synopsis
 
@@ -38,5 +38,5 @@ glooctl install gateway enterprise [flags]
 
 ### SEE ALSO
 
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on kubernetes
+* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on Kubernetes
 

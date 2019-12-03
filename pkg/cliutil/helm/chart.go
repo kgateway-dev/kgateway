@@ -1,11 +1,12 @@
 package helm
 
 import (
+	"io/ioutil"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"io/ioutil"
-	"os"
 )
 
 // Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)

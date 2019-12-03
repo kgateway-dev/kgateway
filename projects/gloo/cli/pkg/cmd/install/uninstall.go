@@ -2,12 +2,13 @@ package install
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"os"
 )
 
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
