@@ -17,7 +17,7 @@ import (
 // we should work to remove that assumption from solokit and delete this code:
 // https://github.com/solo-io/gloo/issues/1793
 
-// used in enterprise test code
+// used in enterprise code
 func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteMatch {
 	if routeMatch == nil {
 		return nil
