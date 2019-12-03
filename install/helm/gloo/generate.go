@@ -64,12 +64,16 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always
+		cfg.Gateway.CertGenJob.Image.PullPolicy = always
+
 		cfg.AccessLogger.Image.PullPolicy = always
+
+		cfg.Ingress.Deployment.Image.PullPolicy = always
+		cfg.IngressProxy.Deployment.Image.PullPolicy = always
+		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = always
+
 		for _, v := range cfg.GatewayProxies {
 			v.PodTemplate.Image.PullPolicy = always
-		}
-		if cfg.Gateway.CertGenJob != nil {
-			cfg.Gateway.CertGenJob.Image.PullPolicy = always
 		}
 	}
 
@@ -150,10 +154,13 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
-	if cfg.Gateway.CertGenJob != nil {
-		cfg.Gateway.CertGenJob.Image.Tag = version
-	}
+	cfg.Gateway.CertGenJob.Image.Tag = version
+
 	cfg.AccessLogger.Image.Tag = version
+
+	cfg.Ingress.Deployment.Image.Tag = version
+	cfg.IngressProxy.Deployment.Image.Tag = version
+	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
 		v.PodTemplate.Image.Tag = version
