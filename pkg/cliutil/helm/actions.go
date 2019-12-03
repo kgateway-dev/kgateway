@@ -7,6 +7,12 @@ import (
 	"helm.sh/helm/v3/pkg/cli"
 )
 
+var verbose bool
+
+func SetVerbose(b bool) {
+	verbose = b
+}
+
 func noOpDebugLog(_ string, _ ...interface{}) {}
 
 // Returns an action configuration that can be used to create Helm actions and the Helm env settings.
@@ -21,7 +27,7 @@ func newActionConfig(namespace string) (*action.Configuration, *cli.EnvSettings,
 	return actionConfig, settings, nil
 }
 
-func NewInstall(namespace, releaseName string, dryRun, verbose bool) (*action.Install, *cli.EnvSettings, error) {
+func NewInstall(namespace, releaseName string, dryRun bool) (*action.Install, *cli.EnvSettings, error) {
 	actionConfig, settings, err := newActionConfig(namespace)
 	if err != nil {
 		return nil, nil, err

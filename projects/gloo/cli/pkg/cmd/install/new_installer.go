@@ -21,12 +21,6 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-var verbose bool
-
-func SetVerbose(b bool) {
-	verbose = b
-}
-
 func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error {
 
 	if !installOpts.DryRun {
@@ -40,7 +34,7 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 
 	preInstallMessage(installOpts, enterprise)
 
-	helmInstall, helmEnv, err := helm.NewInstall(installOpts.Namespace, constants.GlooReleaseName, installOpts.DryRun, verbose)
+	helmInstall, helmEnv, err := helm.NewInstall(installOpts.Namespace, constants.GlooReleaseName, installOpts.DryRun)
 	if err != nil {
 		return err
 	}

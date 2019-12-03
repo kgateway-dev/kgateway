@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -59,6 +60,6 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 
 func setVerboseMode(opts *options.Options) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		SetVerbose(opts.Top.Verbose)
+		helm.SetVerbose(opts.Top.Verbose)
 	}
 }
