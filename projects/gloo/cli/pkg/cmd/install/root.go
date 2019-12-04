@@ -10,8 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
-	//"helm.sh/helm/v3/pkg/action"
-	//"helm.sh/helm/v3/pkg/chart/loader"
 )
 
 func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
