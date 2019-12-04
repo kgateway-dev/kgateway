@@ -2,8 +2,9 @@ package validation
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/hashutils"
 	"sync"
+
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
