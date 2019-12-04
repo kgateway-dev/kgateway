@@ -27,7 +27,7 @@ func NewResourceClient(knativeClient knativeclient.Interface, cache Cache) *Reso
 	}
 }
 
-func FromKube(ci *knativev1alpha1.ClusterIngress) *v1alpha1.ClusterIngress {
+func FromKube(ci *knativev1alpha1.Ingress) *v1alpha1.ClusterIngress {
 	deepCopy := ci.DeepCopy()
 	baseType := knative.ClusterIngress(*deepCopy)
 	resource := &v1alpha1.ClusterIngress{
@@ -37,13 +37,13 @@ func FromKube(ci *knativev1alpha1.ClusterIngress) *v1alpha1.ClusterIngress {
 	return resource
 }
 
-func ToKube(resource resources.Resource) (*knativev1alpha1.ClusterIngress, error) {
+func ToKube(resource resources.Resource) (*knativev1alpha1.Ingress, error) {
 	clusterIngressResource, ok := resource.(*v1alpha1.ClusterIngress)
 	if !ok {
 		return nil, errors.Errorf("internal error: invalid resource %v passed to clusteringress client", resources.Kind(resource))
 	}
 
-	clusterIngress := knativev1alpha1.ClusterIngress(clusterIngressResource.ClusterIngress)
+	clusterIngress := knativev1alpha1.Ingress(clusterIngressResource.ClusterIngress)
 
 	return &clusterIngress, nil
 }
@@ -148,6 +148,6 @@ func (rc *ResourceClient) Watch(_ string, opts clients.WatchOpts) (<-chan resour
 }
 
 func (rc *ResourceClient) exist(namespace, name string) bool {
-	_, err := rc.knativeClient.NetworkingV1alpha1().ClusterIngresses().Get(name, metav1.GetOptions{})
+	_, err := rc.knativeClient.NetworkingV1alpha1().Ingresses(namespace).Get(name, metav1.GetOptions{})
 	return err == nil
 }

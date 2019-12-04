@@ -45,3 +45,8 @@ changelog:
     To be able to clean up the hook resources related to the `certgen` Job, which are needed only temporarily during the
     pre-install(upgrade) phase, we redefine them as `post-install(upgrade)` hooks with a `hook-delete-policy`. This way
     Helm will reapply and immediately delete them after the installation (upgrade) completes.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: knative
+  dependencyRepo: serving
+  dependencyTag: v0.10.0
+  description: Updated `knative/serving` to version 0.10.0.

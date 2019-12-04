@@ -219,7 +219,7 @@ INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
 
 
 .PHONY: ingress
