@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/hashutils"
 	"sync"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -29,11 +30,33 @@ func NewValidator(translator translator.Translator) *validator {
 	return &validator{translator: translator, notifyResync: make(map[*validation.NotificationRequest]chan struct{}, 1)}
 }
 
-func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
-	snapCopy := snap.Clone()
-	s.lock.Lock()
-	s.latestSnapshot = &snapCopy
-	// notify all receivers
+// only call within a lock
+// should we notify on this snap update
+func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
+	if s.latestSnapshot == nil {
+		return true
+	}
+	// rather than compare the hash of the whole snapshot,
+	// we compare the hash of resources that can affect
+	// the validation result (which excludes Endpoints)
+	hashFunc := func(snap *v1.ApiSnapshot) uint64 {
+		return hashutils.HashAll(
+			snap.Upstreams,
+			snap.UpstreamGroups,
+			snap.Secrets,
+			// we also include proxies as this will help
+			// the gateway to resync in case the proxy was deleted
+			snap.Proxies,
+		)
+	}
+
+	// notify if the hash of what we care about has changed
+	return hashFunc(s.latestSnapshot) != hashFunc(snap)
+}
+
+// only call within a lock
+// notify all receivers
+func (s *validator) pushNotifications() {
 	for _, receiver := range s.notifyResync {
 		receiver := receiver
 		go func() {
@@ -44,6 +67,17 @@ func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 			}
 		}()
 	}
+}
+
+// the gloo snapshot has changed.
+// update the local snapshot, notify subscribers
+func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
+	snapCopy := snap.Clone()
+	s.lock.Lock()
+	if s.shouldNotify(snap) {
+		s.pushNotifications()
+	}
+	s.latestSnapshot = &snapCopy
 	s.lock.Unlock()
 	return nil
 }
@@ -70,6 +104,8 @@ func (s *validator) NotifyOnResync(req *validation.NotificationRequest, stream v
 		s.lock.Unlock()
 	}()
 
+	// loop forever, sending a notification
+	// whenever we read from the receiver channel
 	for {
 		select {
 		case <-stream.Context().Done():
