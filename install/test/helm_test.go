@@ -547,7 +547,7 @@ var _ = Describe("Helm Test", func() {
 
 				It("enables anti affinity ", func() {
 					prepareMakefile(namespace, helmValues{
-						valuesArgs: []string{"gatewayProxies.gatewayProxy.kind.deployment.antiAffinity=true"},
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.antiAffinity=true"},
 					})
 					gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
 						PodAntiAffinity: &v1.PodAntiAffinity{
