@@ -63,12 +63,8 @@ type Knative struct {
 }
 
 type Uninstall struct {
-	Namespace       string
-	DeleteCrds      bool
-	DeleteNamespace bool
-	DeleteAll       bool
-	// Deprecated: currently not used, will be removed
-	Force bool
+	Namespace  string
+	DeleteCrds bool
 }
 
 type Proxy struct {

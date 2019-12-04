@@ -1,365 +1,187 @@
 package install_test
 
 import (
+	"bytes"
+
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"helm.sh/helm/v3/pkg/chartutil"
+	helmchart "helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/cli"
+	"helm.sh/helm/v3/pkg/release"
 )
 
 var _ = Describe("Install", func() {
+	var (
+		mockHelmClient        *mocks.MockHelmClient
+		mockReleaseListRunner *mocks.MockHelmReleaseListRunner
+		mockHelmInstallation  *mocks.MockHelmInstallation
+		ctrl                  *gomock.Controller
 
-	//var (
-	//	installer install.GlooStagedInstaller
-	//	opts      options.Options
-	//	validator MockInstallClient
-	//)
-	//
-	//BeforeEach(func() {
-	//	opts.Install.Namespace = "gloo-system"
-	//	opts.Install.HelmChartOverride = file
-	//})
-	//
-	//expectKinds := func(resources []install2.ResourceType, kinds []string) {
-	//	for _, resource := range resources {
-	//		ExpectWithOffset(1, kinds).To(ContainElement(resource.Kind))
-	//	}
-	//}
-	//
-	//expectNames := func(resources []install2.ResourceType, names []string) {
-	//	for _, resource := range resources {
-	//		ExpectWithOffset(1, names).To(ContainElement(resource.Metadata.Name))
-	//	}
-	//}
-	//
-	//expectLabels := func(resources []install2.ResourceType, labels map[string]string) {
-	//	for _, resource := range resources {
-	//		actualLabels := resource.Metadata.Labels
-	//		for k, v := range labels {
-	//			val, ok := actualLabels[k]
-	//			ExpectWithOffset(1, ok).To(BeTrue())
-	//			ExpectWithOffset(1, v).To(BeEquivalentTo(val))
-	//		}
-	//	}
-	//}
-	//
-	//withSettings := func(kinds []string) []string {
-	//	// default knative values create Settings
-	//	kindsWithSettings := make([]string, len(kinds))
-	//	for _, kind := range kinds {
-	//		kindsWithSettings = append(kindsWithSettings, kind)
-	//	}
-	//	kindsWithSettings = append(kindsWithSettings, "Settings")
-	//
-	//	return kindsWithSettings
-	//}
+		glooOsVersion   = "v1.0.0"
+		glooOsChartUri  = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
+		testCrdContent  = "test-crd-content"
+		testHookContent = `
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update-gloo-system
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
+subjects:
+- kind: ServiceAccount
+  name: gateway-certgen
+  namespace: gloo-system
+roleRef:
+  kind: ClusterRole
+  name: gloo-gateway-secret-create-vwc-update-gloo-system
+  apiGroup: rbac.authorization.k8s.io
+`
+		testCleanupHook = `
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gloo-gateway-secret-create-vwc-update-gloo-system
+  labels:
+    app: gloo
+    gloo: rbac
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "` + constants.HookCleanupResourceAnnotation + `": "true" # Used internally to mark "hook cleanup" resources
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "get", "update"]
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["get", "update"]
+`
 
-	FIt("install", func() {
+		chart = &helmchart.Chart{
+			Metadata: &helmchart.Metadata{
+				Name: "gloo-installer-test-chart",
+			},
+			Files: []*helmchart.File{{
+				Name: "crds/crdA.yaml",
+				Data: []byte(testCrdContent),
+			}},
+		}
 
-		val, err := chartutil.ReadValues([]byte(`
-global:
-  glooRbac:
-    nameSuffix: asdf
-`))
-		Expect(err).NotTo(HaveOccurred())
+		helmRelease = &release.Release{
+			Chart: chart,
+			Hooks: []*release.Hook{
+				{
+					Manifest: testHookContent,
+				},
+				{
+					Manifest: testCleanupHook,
+				},
+			},
+			Namespace: defaults.GlooSystem,
+		}
+	)
 
-		err = install.Install(&options.Install{
-			DryRun:                  true,
-			Namespace:               defaults.GlooSystem,
-			HelmChartOverride:       "/Users/marco/code/projects/helm3/gloo-1.1.0.tgz",
-			HelmChartValueFileNames: []string{"/Users/marco/code/projects/helm3/values.yaml"},
-		}, val, false, false)
-		Expect(err).NotTo(HaveOccurred())
+	BeforeEach(func() {
+		version.Version = glooOsVersion
+
+		ctrl = gomock.NewController(GinkgoT())
+		mockHelmClient = mocks.NewMockHelmClient(ctrl)
+		mockReleaseListRunner = mocks.NewMockHelmReleaseListRunner(ctrl)
+		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 	})
 
-	It("uninstall", func() {
-
-		uninstallAction, err := helm.NewUninstall("gloo-system")
-		Expect(err).NotTo(HaveOccurred())
-
-		rel, err := uninstallAction.Run(constants.GlooReleaseName)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(rel).NotTo(BeNil())
+	AfterEach(func() {
+		version.Version = version.UndefinedVersion
+		ctrl.Finish()
 	})
 
-	//Context("Gateway with default values", func() {
-	//	BeforeEach(func() {
-	//		spec, err := install.GetInstallSpec(&opts, constants.GatewayValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds: install.GlooCrdNames,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs expected crds for gloo", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooPreInstallKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooInstallKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Gateway with default values and upgrade option", func() {
-	//	BeforeEach(func() {
-	//		opts.Install.Upgrade = true
-	//		spec, err := install.GetInstallSpec(&opts, constants.GatewayValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds: install.GlooCrdNames,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs expected crds for gloo", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooPreInstallKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooGatewayUpgradeKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Ingress with default values", func() {
-	//	BeforeEach(func() {
-	//		spec, err := install.GetInstallSpec(&opts, constants.IngressValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds: install.GlooCrdNames,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs expected crds for gloo", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooPreInstallKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, install.GlooInstallKinds)
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Knative with default values and no previous knative", func() {
-	//
-	//	BeforeEach(func() {
-	//		spec, err := install.GetInstallSpec(&opts, constants.KnativeValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds: install.GlooCrdNames,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs all crds", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//
-	//		expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Knative with default values and previous knative (ours)", func() {
-	//
-	//	BeforeEach(func() {
-	//		spec, err := install.GetInstallSpec(&opts, constants.KnativeValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds:     install.GlooCrdNames,
-	//			knativeInstalled: true,
-	//			knativeOurs:      true,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs gloo crds only", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Knative with default values and previous knative (not ours)", func() {
-	//
-	//	BeforeEach(func() {
-	//		spec, err := install.GetInstallSpec(&opts, constants.KnativeValuesFileName)
-	//		Expect(err).NotTo(HaveOccurred())
-	//		validator = MockInstallClient{
-	//			expectedCrds:     install.GlooCrdNames,
-	//			knativeInstalled: true,
-	//		}
-	//		installer, err = install.NewGlooStagedInstaller(&opts, *spec, &validator)
-	//		Expect(err).NotTo(HaveOccurred())
-	//	})
-	//
-	//	It("installs gloo crds only", func() {
-	//		err := installer.DoCrdInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeTrue())
-	//		expectKinds(validator.resources, []string{"CustomResourceDefinition"})
-	//		expectNames(validator.resources, install.GlooCrdNames)
-	//	})
-	//
-	//	It("does nothing on preinstall", func() {
-	//		err := installer.DoPreInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, append([]string{"Settings"}, install.GlooPreInstallKinds...))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//	It("installs expected kinds for gloo", func() {
-	//		err := installer.DoInstall()
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(validator.applied).To(BeTrue())
-	//		Expect(validator.waited).To(BeFalse())
-	//		expectKinds(validator.resources, withSettings(install.GlooInstallKinds))
-	//		expectLabels(validator.resources, install.ExpectedLabels)
-	//	})
-	//
-	//})
-	//
-	//Context("Enterprise Gateway NamespacedGlooKubeInstallClient", func() {
-	//	var (
-	//		kubectlCmd        string
-	//		kubeInstallClient install.NamespacedGlooKubeInstallClient
-	//	)
-	//	BeforeEach(func() {
-	//
-	//		MockKubectl := func(stdin io.Reader, args ...string) error {
-	//			kubectl := exec.Command("kubectl", args...)
-	//			kubectlCmd = fmt.Sprintf("running kubectl command: %v\n", kubectl.Args)
-	//			return nil
-	//		}
-	//
-	//		opts.Install.Namespace = "gloo-system-test"
-	//		kubeInstallClient = install.NamespacedGlooKubeInstallClient{
-	//			Namespace: opts.Install.Namespace,
-	//			Delegate:  &MockInstallClient{},
-	//			Executor:  MockKubectl,
-	//		}
-	//	})
-	//
-	//	It("ensure namespace argument is passed into kubectl apply", func() {
-	//		err := kubeInstallClient.KubectlApply([]byte{})
-	//		Expect(err).NotTo(HaveOccurred())
-	//		Expect(kubectlCmd).To(Equal("running kubectl command: [kubectl apply -n gloo-system-test -f -]\n"))
-	//	})
-	//
-	//})
+	It("installs cleanly by default", func() {
+		installConfig := &options.Install{
+			Namespace: defaults.GlooSystem,
+		}
+
+		helmEnv := &cli.EnvSettings{
+			KubeConfig: "path-to-kube-config",
+		}
+
+		mockReleaseListRunner.EXPECT().
+			Run().
+			Return([]*release.Release{}, nil)
+		mockReleaseListRunner.EXPECT().
+			SetFilter(constants.GlooReleaseName)
+
+		mockHelmInstallation.EXPECT().
+			Run(chart, map[string]interface{}{}).
+			Return(helmRelease, nil)
+
+		mockHelmClient.EXPECT().
+			ReleaseList(defaults.GlooSystem).
+			Return(mockReleaseListRunner, nil)
+		mockHelmClient.EXPECT().
+			NewInstall(defaults.GlooSystem, constants.GlooReleaseName, installConfig.DryRun).
+			Return(mockHelmInstallation, helmEnv, nil)
+
+		mockHelmClient.EXPECT().
+			DownloadChart(glooOsChartUri).
+			Return(chart, nil)
+
+		dryRunOutputBuffer := new(bytes.Buffer)
+
+		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
+		err := installer.Install(&install.InstallerConfig{
+			InstallCliArgs: installConfig,
+		})
+
+		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
+		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
+	})
+
+	It("outputs the expected kinds when in a dry run", func() {
+		installConfig := &options.Install{
+			Namespace: defaults.GlooSystem,
+			DryRun:    true,
+		}
+
+		helmEnv := &cli.EnvSettings{
+			KubeConfig: "path-to-kube-config",
+		}
+
+		mockHelmInstallation.EXPECT().
+			Run(chart, map[string]interface{}{}).
+			Return(helmRelease, nil)
+
+		mockHelmClient.EXPECT().
+			NewInstall(defaults.GlooSystem, constants.GlooReleaseName, installConfig.DryRun).
+			Return(mockHelmInstallation, helmEnv, nil)
+
+		mockHelmClient.EXPECT().
+			DownloadChart(glooOsChartUri).
+			Return(chart, nil)
+
+		dryRunOutputBuffer := new(bytes.Buffer)
+		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
+
+		err := installer.Install(&install.InstallerConfig{
+			InstallCliArgs: installConfig,
+		})
+
+		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
+
+		dryRunOutput := dryRunOutputBuffer.String()
+
+		Expect(dryRunOutput).To(ContainSubstring(testCrdContent), "Should output CRD definitions")
+		Expect(dryRunOutput).NotTo(ContainSubstring(constants.HookCleanupResourceAnnotation), "Should not output cleanup hooks")
+		Expect(dryRunOutput).To(ContainSubstring("helm.sh/hook"), "Should output non-cleanup hooks")
+	})
 })

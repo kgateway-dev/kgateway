@@ -19,7 +19,7 @@ settings:
   integrations:
     knative:
       enabled: true
-	  version: {{ . }}
+      version: {{ . }}
 `
 )
 

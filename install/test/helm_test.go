@@ -714,6 +714,8 @@ metadata:
  name: default
  namespace: ` + namespace + `
 spec:
+ discovery:
+   fdsMode: WHITELIST
  gateway:
    readGatewaysFromAllNamespaces: false
    validation:

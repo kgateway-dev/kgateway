@@ -2,12 +2,12 @@ package install
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -21,40 +21,62 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise, verbose bool) error {
+type Installer interface {
+	Install(installerConfig *InstallerConfig) error
+}
 
-	if !installOpts.DryRun {
-		if releaseExists, err := ReleaseExists(installOpts.Namespace); err != nil {
+type InstallerConfig struct {
+	InstallCliArgs *options.Install
+	ExtraValues    map[string]interface{}
+	Enterprise     bool
+	Verbose        bool
+}
+
+func NewInstaller(helmClient HelmClient) Installer {
+	return NewInstallerWithWriter(helmClient, os.Stdout)
+}
+
+// visible for testing
+func NewInstallerWithWriter(helmClient HelmClient, outputWriter io.Writer) Installer {
+	return &installer{
+		helmClient:         helmClient,
+		dryRunOutputWriter: outputWriter,
+	}
+}
+
+func (i *installer) Install(installerConfig *InstallerConfig) error {
+	namespace := installerConfig.InstallCliArgs.Namespace
+	if !installerConfig.InstallCliArgs.DryRun {
+		if releaseExists, err := ReleaseExists(i.helmClient, namespace, constants.GlooReleaseName); err != nil {
 			return err
 		} else if releaseExists {
-			// TODO(helm3): improve error message
-			return errors.New("Gloo already installed")
+			return GlooAlreadyInstalled(namespace)
 		}
 	}
 
-	preInstallMessage(installOpts, enterprise)
+	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
-	helmInstall, helmEnv, err := helm.NewInstall(installOpts.Namespace, constants.GlooReleaseName, installOpts.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, constants.GlooReleaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
 		return err
 	}
 
-	chartUri, err := getChartUri(installOpts.HelmChartOverride, installOpts.WithUi, enterprise)
+	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
 	if err != nil {
 		return err
 	}
-	if verbose {
+	if installerConfig.Verbose {
 		fmt.Printf("Looking for chart at %s\n", chartUri)
 	}
 
-	chartObj, err := helm.DownloadChart(chartUri)
+	chartObj, err := i.helmClient.DownloadChart(chartUri)
 	if err != nil {
 		return err
 	}
 
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
-		ValueFiles: installOpts.HelmChartValueFileNames,
+		ValueFiles: installerConfig.InstallCliArgs.HelmChartValueFileNames,
 	}
 	cliValues, err := valueOpts.MergeValues(getter.All(helmEnv))
 	if err != nil {
@@ -63,8 +85,8 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
-	completeValues := chartutil.CoalesceTables(extraValues, cliValues)
-	if verbose {
+	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
+	if installerConfig.Verbose {
 		fmt.Printf("Merged CLI values into default values: %v\n", completeValues)
 	}
 
@@ -74,51 +96,55 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
-	if verbose {
+	if installerConfig.Verbose {
 		fmt.Printf("Successfully ran helm install with release %s\n", constants.GlooReleaseName)
 	}
 
-	if installOpts.DryRun {
-		if err := PrintReleaseManifest(rel); err != nil {
+	if installerConfig.InstallCliArgs.DryRun {
+		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
 	}
 
-	postInstallMessage(installOpts, enterprise)
+	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
 	return nil
 }
 
-func ReleaseExists(namespace string) (bool, error) {
-	list, err := helm.NewList(namespace)
-	if err != nil {
-		return false, err
-	}
-	list.Filter = constants.GlooReleaseName
-
-	releases, err := list.Run()
-	if err != nil {
-		return false, err
-	}
-
-	return len(releases) > 0, nil
-}
-
-func PrintReleaseManifest(release *release.Release) error {
-
+func (i *installer) printReleaseManifest(release *release.Release) error {
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
-		fmt.Printf("%s", string(crdFile.Data))
-		fmt.Println("---")
+		fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
+		fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
 	// Print hook resources
-	for _, hook := range release.Hooks {
+	nonCleanupHooks, err := GetNonCleanupHooks(release.Hooks)
+	if err != nil {
+		return err
+	}
+	for _, hook := range nonCleanupHooks {
+		fmt.Fprintln(i.dryRunOutputWriter, hook.Manifest)
+		fmt.Fprintln(i.dryRunOutputWriter, "---")
+	}
 
+	// Print the actual release resources
+	fmt.Fprintf(i.dryRunOutputWriter, "%s", release.Manifest)
+
+	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
+	fmt.Fprintln(i.dryRunOutputWriter, "---")
+	return nil
+}
+
+// some resources are duplicated because of weirdness with Helm hooks.
+// a job needs a service account/rbac resources, and we would like those to be cleaned up after the job is complete
+// this isn't really expressible cleanly through Helm hooks.
+func GetNonCleanupHooks(hooks []*release.Hook) (results []*release.Hook, err error) {
+	for _, hook := range hooks {
 		// Parse the resource in order to access the annotations
 		var resource struct{ Metadata v1.ObjectMeta }
 		if err := yaml.Unmarshal([]byte(hook.Manifest), &resource); err != nil {
-			return errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
+			return nil, errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
 		}
 
 		// Skip hook cleanup resources
@@ -128,16 +154,10 @@ func PrintReleaseManifest(release *release.Release) error {
 			}
 		}
 
-		fmt.Println(hook.Manifest)
-		fmt.Println("---")
+		results = append(results, hook)
 	}
 
-	// Print the actual release resources
-	fmt.Printf("%s", release.Manifest)
-
-	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Println("---")
-	return nil
+	return results, nil
 }
 
 // The resulting URI can be either a URL or a local file path.
@@ -194,4 +214,9 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 		fmt.Println("Gloo was successfully installed!")
 	}
 
+}
+
+type installer struct {
+	helmClient         HelmClient
+	dryRunOutputWriter io.Writer
 }
