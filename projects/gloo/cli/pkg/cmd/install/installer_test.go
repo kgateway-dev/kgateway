@@ -72,7 +72,7 @@ global:
 			Namespace:               defaults.GlooSystem,
 			HelmChartOverride:       "/Users/marco/code/projects/helm3/gloo-1.1.0.tgz",
 			HelmChartValueFileNames: []string{"/Users/marco/code/projects/helm3/values.yaml"},
-		}, val, false)
+		}, val, false, false)
 		Expect(err).NotTo(HaveOccurred())
 	})
 

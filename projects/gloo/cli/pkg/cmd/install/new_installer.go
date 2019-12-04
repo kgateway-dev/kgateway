@@ -21,7 +21,7 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
-func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error {
+func Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise, verbose bool) error {
 
 	if !installOpts.DryRun {
 		if releaseExists, err := ReleaseExists(installOpts.Namespace); err != nil {
@@ -43,6 +43,9 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 	if err != nil {
 		return err
 	}
+	if verbose {
+		fmt.Printf("Looking for chart at %s\n", chartUri)
+	}
 
 	chartObj, err := helm.DownloadChart(chartUri)
 	if err != nil {
@@ -61,12 +64,18 @@ func Install(installOpts *options.Install, extraValues map[string]interface{}, e
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
 	completeValues := chartutil.CoalesceTables(extraValues, cliValues)
+	if verbose {
+		fmt.Printf("Merged CLI values into default values: %v\n", completeValues)
+	}
 
 	rel, err := helmInstall.Run(chartObj, completeValues)
 	if err != nil {
 		// TODO: verify whether we actually log something there after these changes
 		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
+	}
+	if verbose {
+		fmt.Printf("Successfully ran helm install with release %s\n", constants.GlooReleaseName)
 	}
 
 	if installOpts.DryRun {

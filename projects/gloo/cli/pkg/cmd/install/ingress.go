@@ -22,7 +22,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 				return errors.Wrapf(err, "parsing override values for ingress mode")
 			}
 
-			if err := Install(&opts.Install, ingressOverrides, false); err != nil {
+			if err := Install(&opts.Install, ingressOverrides, false, opts.Top.Verbose); err != nil {
 				return errors.Wrapf(err, "installing gloo in ingress mode")
 			}
 

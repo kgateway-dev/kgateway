@@ -15,7 +15,7 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := Install(&opts.Install, nil, false); err != nil {
+			if err := Install(&opts.Install, nil, false, opts.Top.Verbose); err != nil {
 				return errors.Wrapf(err, "installing gloo in gateway mode")
 			}
 			return nil
