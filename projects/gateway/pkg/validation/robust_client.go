@@ -57,18 +57,35 @@ func NewConnectionRefreshingValidationClient(constructValidationClient func() (v
 }
 
 func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context, proxy *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
-	ctx = contextutils.WithLogger(ctx, "robust-validation-client")
+	ctx = contextutils.WithLogger(ctx, "retrying-validation-client")
 
-	var validationClient validation.ProxyValidationServiceClient
 	var proxyReport *validation.ProxyValidationServiceResponse
-	var reinstantiateClientErr error
-	if err := retry.Do(func() error {
-		c.lock.RLock()
-		defer c.lock.RUnlock()
-		validationClient = c.validationClient
+
+	return proxyReport, c.retryWithNewClient(ctx, func(validationClient validation.ProxyValidationServiceClient) error {
 		var err error
 		proxyReport, err = validationClient.ValidateProxy(ctx, proxy, opts...)
 		return err
+	})
+}
+
+func (c *connectionRefreshingValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotificationRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	var notifier validation.ProxyValidationService_NotifyOnResyncClient
+
+	return notifier, c.retryWithNewClient(ctx, func(validationClient validation.ProxyValidationServiceClient) error {
+		var err error
+		notifier, err = validationClient.NotifyOnResync(ctx, in, opts...)
+		return err
+	})
+}
+
+func (c *connectionRefreshingValidationClient) retryWithNewClient(ctx context.Context, fn func(validationClient validation.ProxyValidationServiceClient) error) error {
+	var validationClient validation.ProxyValidationServiceClient
+	var reinstantiateClientErr error
+	return retry.Do(func() error {
+		c.lock.RLock()
+		defer c.lock.RUnlock()
+		validationClient = c.validationClient
+		return fn(validationClient)
 	}, retry.RetryIf(func(e error) bool {
 		if reinstantiateClientErr != nil {
 			contextutils.LoggerFrom(ctx).Warnw("failed to create new validation client during retry", zap.Error(reinstantiateClientErr))
@@ -85,10 +102,7 @@ func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context
 		if validationClient == c.validationClient {
 			c.validationClient, reinstantiateClientErr = c.constructValidationClient()
 		}
-	})); err != nil {
-		return nil, err
-	}
-	return proxyReport, nil
+	}))
 }
 
 func isUnavailableErr(err error) bool {
