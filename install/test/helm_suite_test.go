@@ -1,12 +1,13 @@
 package test
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
