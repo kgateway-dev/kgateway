@@ -21,7 +21,7 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
 func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
 
-	if releaseExists, err := ReleaseExists(opts.Uninstall.Namespace); err != nil {
+	if releaseExists, err := ReleaseExists(DefaultHelmClient(), opts.Uninstall.Namespace); err != nil {
 		return err
 	} else if !releaseExists {
 		fmt.Printf("No Gloo installation found in namespace %s\n", opts.Uninstall.Namespace)

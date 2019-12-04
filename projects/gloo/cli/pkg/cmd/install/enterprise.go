@@ -29,7 +29,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 				},
 			}
 
-			if err := Install(&opts.Install, extraValues, true, opts.Top.Verbose); err != nil {
+			if err := NewInstaller(DefaultHelmClient()).Install(&opts.Install, extraValues, true, opts.Top.Verbose); err != nil {
 				return errors.Wrapf(err, "installing Gloo Enterprise in gateway mode")
 			}
 

@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"strings"
@@ -28,6 +29,17 @@ type Installer interface {
 	Install(installOpts *options.Install, extraValues map[string]interface{}, enterprise bool) error
 }
 
+//go:generate mockgen -destination mocks/mock_helm_client.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmClient
+type HelmClient interface {
+	// prepare an installation object that can then be .Run() with a chart object
+	NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error)
+
+	// list the already-existing releases in the given namespace
+	ReleaseList(namespace string) (HelmReleaseListRunner, error)
+
+	DownloadChart(chartArchiveUri string) (*chart.Chart, error)
+}
+
 // an interface around Helm's action.Install struct
 //go:generate mockgen -destination mocks/mock_helm_installation.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmInstallation
 type HelmInstallation interface {
@@ -36,20 +48,27 @@ type HelmInstallation interface {
 
 var _ HelmInstallation = &action.Install{}
 
-//go:generate mockgen -destination mocks/mock_helm_client.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmClient
-type HelmClient interface {
-	NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error)
-	ReleaseList(namespace string) (*action.List, error)
-	DownloadChart(chartArchiveUri string) (*chart.Chart, error)
+// an interface around Helm's action.List struct
+//go:generate mockgen -destination mocks/mock_helm_release_list.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmReleaseListRunner
+type HelmReleaseListRunner interface {
+	Run() ([]*release.Release, error)
+	SetFilter(filter string)
 }
 
+// a HelmClient that talks to the kube api server and creates resources
 func DefaultHelmClient() HelmClient {
 	return &defaultHelmClient{}
 }
 
 func NewInstaller(helmClient HelmClient) Installer {
+	return NewInstallerWithWriter(helmClient, os.Stdout)
+}
+
+// visible for testing
+func NewInstallerWithWriter(helmClient HelmClient, outputWriter io.Writer) Installer {
 	return &installer{
-		helmClient: helmClient,
+		helmClient:         helmClient,
+		dryRunOutputWriter: outputWriter,
 	}
 }
 
@@ -110,7 +129,7 @@ func (i *installer) Install(installOpts *options.Install, extraValues map[string
 	}
 
 	if installOpts.DryRun {
-		if err := PrintReleaseManifest(rel); err != nil {
+		if err := i.printReleaseManifest(rel); err != nil {
 			return err
 		}
 	}
@@ -125,7 +144,7 @@ func ReleaseExists(helmClient HelmClient, namespace string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	list.Filter = constants.GlooReleaseName
+	list.SetFilter(constants.GlooReleaseName)
 
 	releases, err := list.Run()
 	if err != nil {
@@ -135,12 +154,11 @@ func ReleaseExists(helmClient HelmClient, namespace string) (bool, error) {
 	return len(releases) > 0, nil
 }
 
-func PrintReleaseManifest(release *release.Release) error {
-
+func (i *installer) printReleaseManifest(release *release.Release) error {
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
-		fmt.Printf("%s", string(crdFile.Data))
-		fmt.Println("---")
+		fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
+		fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
 	// Print hook resources
@@ -149,15 +167,15 @@ func PrintReleaseManifest(release *release.Release) error {
 		return err
 	}
 	for _, hook := range nonCleanupHooks {
-		fmt.Println(hook.Manifest)
-		fmt.Println("---")
+		fmt.Fprintln(i.dryRunOutputWriter, hook.Manifest)
+		fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
 	// Print the actual release resources
-	fmt.Printf("%s", release.Manifest)
+	fmt.Fprintf(i.dryRunOutputWriter, "%s", release.Manifest)
 
 	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Println("---")
+	fmt.Fprintln(i.dryRunOutputWriter, "---")
 	return nil
 }
 
@@ -242,19 +260,35 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 }
 
 type installer struct {
-	helmClient HelmClient
+	helmClient         HelmClient
+	dryRunOutputWriter io.Writer
 }
 
 type defaultHelmClient struct {
-
 }
 
 func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error) {
 	return helm.NewInstall(namespace, releaseName, dryRun)
 }
 
-func (d *defaultHelmClient) ReleaseList(namespace string) (*action.List, error) {
-	return helm.NewList(namespace)
+type helmReleaseListRunner struct {
+	list *action.List
+}
+
+func (h *helmReleaseListRunner) Run() ([]*release.Release, error) {
+	return h.list.Run()
+}
+
+func (h *helmReleaseListRunner) SetFilter(filter string) {
+	h.list.Filter = filter
+}
+
+func (d *defaultHelmClient) ReleaseList(namespace string) (HelmReleaseListRunner, error) {
+	list, err := helm.NewList(namespace)
+	if err != nil {
+		return nil, err
+	}
+	return &helmReleaseListRunner{list: list}, nil
 }
 
 func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart, error) {
