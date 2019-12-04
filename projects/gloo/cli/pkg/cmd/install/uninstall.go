@@ -2,89 +2,166 @@ package install
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/yaml"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 )
 
 func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
-	if err := uninstallGloo(opts, cli); err != nil {
+	uninstaller := NewUninstaller(DefaultHelmClient(), cli)
+	if err := uninstaller.Uninstall(opts); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
 	return nil
 }
 
-func uninstallGloo(opts *options.Options, cli install.KubeCli) error {
+type Uninstaller interface {
+	Uninstall(cliArgs *options.Options) error
+}
 
-	if releaseExists, err := ReleaseExists(DefaultHelmClient(), opts.Uninstall.Namespace); err != nil {
+type uninstaller struct {
+	helmClient HelmClient
+	kubeCli    install.KubeCli
+	output     io.Writer
+}
+
+func NewUninstaller(helmClient HelmClient, kubeCli install.KubeCli) Uninstaller {
+	return NewUninstallerWithOutput(helmClient, kubeCli, os.Stdout)
+}
+
+// visible for testing
+func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, output io.Writer) Uninstaller {
+	return &uninstaller{
+		helmClient: helmClient,
+		kubeCli:    kubeCli,
+		output:     output,
+	}
+}
+
+func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
+	namespace := cliArgs.Uninstall.Namespace
+
+	if releaseExists, err := ReleaseExists(u.helmClient, namespace, constants.GlooReleaseName); err != nil {
 		return err
 	} else if !releaseExists {
-		fmt.Printf("No Gloo installation found in namespace %s\n", opts.Uninstall.Namespace)
+		fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
 		return nil
 	}
 
-	uninstallAction, err := helm.NewUninstall(opts.Uninstall.Namespace)
+	uninstallAction, err := u.helmClient.NewUninstall(namespace)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Removing Gloo system components from namespace %s...\n", opts.Uninstall.Namespace)
+	var crdNames []string
+
+	// need to run this first, as it depends on the release still being present
+	if cliArgs.Uninstall.DeleteCrds {
+		crdNames, err = u.findCrdNamesForRelease(namespace, constants.GlooReleaseName)
+		if err != nil {
+			return err
+		}
+	}
+
+	fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
 	if _, err = uninstallAction.Run(constants.GlooReleaseName); err != nil {
 		return err
 	}
 
-	if opts.Uninstall.DeleteNamespace || opts.Uninstall.DeleteAll {
-		deleteNamespace(cli, opts.Uninstall.Namespace)
-	}
+	u.uninstallKnativeIfNecessary()
 
-	if opts.Uninstall.DeleteCrds || opts.Uninstall.DeleteAll {
-		deleteGlooCrds(cli)
+	if cliArgs.Uninstall.DeleteCrds {
+		err := u.deleteGlooCrds(crdNames)
+		if err != nil {
+			return err
+		}
 	}
-
-	uninstallKnativeIfNecessary()
 
 	return nil
 }
 
-// TODO(helm3): would be better to get the CRDs from the release object that we get back from uninstall
-func deleteGlooCrds(cli install.KubeCli) {
-	fmt.Printf("Removing Gloo CRDs...\n")
+func (u *uninstaller) findCrdNamesForRelease(namespace, releaseName string) (crdNames []string, err error) {
+	lister, err := u.helmClient.ReleaseList(namespace)
+	if err != nil {
+		return nil, err
+	}
+	releases, err := lister.Run()
+	if err != nil {
+		return nil, err
+	}
+	if len(releases) == 0 {
+		return nil, NoReleaseForCRDs
+	} else if len(releases) > 1 {
+		return nil, MultipleReleasesForCRDs
+	}
+
+	rel := releases[0]
+	for _, crd := range rel.Chart.CRDs() {
+		resource, err := makeUnstructured(string(crd.Data))
+		if err != nil {
+			return nil, err
+		}
+
+		crdNames = append(crdNames, resource.GetName())
+	}
+
+	return crdNames, nil
+}
+
+// expects the Helm release to still be present
+func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
+	if len(crdNames) == 0 {
+		return nil
+	}
+
+	fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
-	for _, crd := range GlooCrdNames {
-		args = append(args, crd)
+	for _, crdName := range crdNames {
+		args = append(args, crdName)
 	}
-	if err := cli.Kubectl(nil, args...); err != nil {
-		fmt.Printf("Unable to delete Gloo CRDs. Continuing...\n")
+	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
+		fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
 	}
+
+	return nil
 }
 
-func deleteNamespace(cli install.KubeCli, namespace string) {
-	fmt.Printf("Removing namespace %s...\n", namespace)
-	if err := cli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
-		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
+func makeUnstructured(manifest string) (*unstructured.Unstructured, error) {
+	jsn, err := yaml.YAMLToJSON([]byte(manifest))
+	if err != nil {
+		return nil, err
 	}
+	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
+	if err != nil {
+		return nil, err
+	}
+	return runtimeObj.(*unstructured.Unstructured), nil
 }
 
-func uninstallKnativeIfNecessary() {
+func (u *uninstaller) uninstallKnativeIfNecessary() {
 	_, installOpts, err := checkKnativeInstallation()
 	if err != nil {
-		fmt.Printf("Finding knative installation\n")
+		fmt.Fprintf(u.output, "Finding knative installation\n")
 		return
 	}
 	if installOpts != nil {
-		fmt.Printf("Removing knative components installed by Gloo %#v...\n", installOpts)
+		fmt.Fprintf(u.output, "Removing knative components installed by Gloo %#v...\n", installOpts)
 		manifests, err := RenderKnativeManifests(*installOpts)
 		if err != nil {
-			fmt.Printf("Could not determine which knative components to remove. Continuing...\n")
+			fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
 			return
 		}
 		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
-			fmt.Printf("Unable to delete knative. Continuing...\n")
+			fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
 		}
 	}
 }

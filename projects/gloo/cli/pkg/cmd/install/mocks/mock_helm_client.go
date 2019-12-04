@@ -67,6 +67,21 @@ func (mr *MockHelmClientMockRecorder) NewInstall(arg0, arg1, arg2 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewInstall", reflect.TypeOf((*MockHelmClient)(nil).NewInstall), arg0, arg1, arg2)
 }
 
+// NewUninstall mocks base method
+func (m *MockHelmClient) NewUninstall(arg0 string) (install.HelmUninstallation, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "NewUninstall", arg0)
+	ret0, _ := ret[0].(install.HelmUninstallation)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// NewUninstall indicates an expected call of NewUninstall
+func (mr *MockHelmClientMockRecorder) NewUninstall(arg0 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUninstall", reflect.TypeOf((*MockHelmClient)(nil).NewUninstall), arg0)
+}
+
 // ReleaseList mocks base method
 func (m *MockHelmClient) ReleaseList(arg0 string) (install.HelmReleaseListRunner, error) {
 	m.ctrl.T.Helper()

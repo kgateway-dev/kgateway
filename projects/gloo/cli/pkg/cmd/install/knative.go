@@ -80,7 +80,11 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					return errors.Wrapf(err, "parsing override values for knative mode")
 				}
 
-				if err := NewInstaller(DefaultHelmClient()).Install(&opts.Install, knativeOverrides, false, opts.Top.Verbose); err != nil {
+				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+					InstallCliArgs: &opts.Install,
+					ExtraValues:    knativeOverrides,
+					Verbose:        opts.Top.Verbose,
+				}); err != nil {
 					return errors.Wrapf(err, "installing gloo in knative mode")
 				}
 			}

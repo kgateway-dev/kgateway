@@ -139,7 +139,9 @@ rules:
 		dryRunOutputBuffer := new(bytes.Buffer)
 
 		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
-		err := installer.Install(installConfig, nil, false)
+		err := installer.Install(&install.InstallerConfig{
+			InstallCliArgs: installConfig,
+		})
 
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
@@ -170,7 +172,9 @@ rules:
 		dryRunOutputBuffer := new(bytes.Buffer)
 		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
 
-		err := installer.Install(installConfig, nil, false)
+		err := installer.Install(&install.InstallerConfig{
+			InstallCliArgs: installConfig,
+		})
 
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 
