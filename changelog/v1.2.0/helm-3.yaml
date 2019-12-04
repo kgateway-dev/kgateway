@@ -50,3 +50,37 @@ changelog:
   dependencyRepo: serving
   dependencyTag: v0.10.0
   description: Updated `knative/serving` to version 0.10.0.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.11.0
+  description: Update go-util to version v0.11.0.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: reporting-client
+  dependencyTag: v0.1.2
+  description: Update reporting-client to version v0.1.2.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: api
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: client-go
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: kubectl
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apimachinery
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiextensions-apiserver
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiserver
+  dependencyTag: kubernetes-1.16.2

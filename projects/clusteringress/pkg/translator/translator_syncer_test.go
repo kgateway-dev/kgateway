@@ -2,8 +2,9 @@ package translator
 
 import (
 	"context"
-	alpha1 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 	"time"
+
+	alpha1 "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

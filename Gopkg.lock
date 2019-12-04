@@ -736,12 +736,9 @@
   revision = "611e8accdfc92c4187d399e95ce826046d4c8d73"
 
 [[projects]]
-  digest = "1:f92fd6e98da2322ddd7f60b9fd647b11bb67c6ab01dfdfb59f8f5ded2e7522d6"
+  digest = "1:be408f349cae090a7c17a279633d6e62b00068e64af66a582cae0983de8890ea"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
   version = "1.3.1"
@@ -1706,8 +1703,8 @@
     "pkg/signature",
   ]
   pruneopts = "UT"
-  revision = "2729ed44327179fe4ab1afee9957b8375b9845b4"
-  version = "v0.1.1"
+  revision = "a1c75ffaa40ea2b89368bfc338dc3f6f990b6df2"
+  version = "v0.1.2"
 
 [[projects]]
   branch = "helm-3-dep"
@@ -3152,7 +3149,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
@@ -3382,7 +3378,6 @@
     "knative.dev/serving/pkg/client/clientset/versioned/typed/networking/v1alpha1",
     "knative.dev/serving/pkg/client/informers/externalversions",
     "knative.dev/serving/pkg/client/listers/networking/v1alpha1",
-    "knative.dev/serving/pkg/network",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"
