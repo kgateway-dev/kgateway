@@ -721,9 +721,12 @@
   revision = "611e8accdfc92c4187d399e95ce826046d4c8d73"
 
 [[projects]]
-  digest = "1:be408f349cae090a7c17a279633d6e62b00068e64af66a582cae0983de8890ea"
+  digest = "1:f92fd6e98da2322ddd7f60b9fd647b11bb67c6ab01dfdfb59f8f5ded2e7522d6"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
   version = "1.3.1"
@@ -2844,12 +2847,9 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:dff36aea297baf62b073b2d4b389f887863ad1015708af9b23f535fc8bc66cb6"
+  digest = "1:bb2e100c8957b6b6cf4a7523b645247c09bc450292b01dedfcdbfdc85aea371d"
   name = "k8s.io/component-base"
-  packages = [
-    "featuregate",
-    "version",
-  ]
+  packages = ["featuregate"]
   pruneopts = "UT"
   revision = "9e57f2cf1edade764d8307c4f3d4073e204d46de"
 
@@ -2874,21 +2874,25 @@
   revision = "30be4d16710ac61bce31eb28a01054596fe6a9f1"
 
 [[projects]]
-  branch = "master"
-  digest = "1:e6c5a71f8d9a763fd470bcae4d15c137d5088208c6e59aefb637043fb86dc745"
+  digest = "1:a77dadc9f3907357738dc651b7fdeb7376f52d721900a22b5c30d27b6a9b52b9"
   name = "k8s.io/kubectl"
   packages = [
     "pkg/cmd/util",
+    "pkg/cmd/util/editor",
+    "pkg/cmd/util/editor/crlf",
     "pkg/scheme",
+    "pkg/util",
     "pkg/util/interrupt",
     "pkg/util/openapi",
     "pkg/util/openapi/validation",
     "pkg/util/templates",
     "pkg/util/term",
     "pkg/validation",
+    "pkg/version",
   ]
   pruneopts = "UT"
-  revision = "c273777957bd657233cf867892fb061a6498dab8"
+  revision = "2ed914427d51f6fd865e0db43d72b2f22610cf32"
+  version = "kubernetes-1.16.2"
 
 [[projects]]
   digest = "1:b6a12d259e842f2adfa1ec1c53ccae0dc911a4c7a072d48b55104dfc4f2b11bc"
@@ -3092,6 +3096,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
@@ -3311,6 +3316,7 @@
     "k8s.io/client-go/util/cert",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/homedir",
+    "k8s.io/kubectl/pkg/cmd/util/editor",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",
     "k8s.io/utils/pointer",

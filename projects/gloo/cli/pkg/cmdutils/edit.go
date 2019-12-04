@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/go-utils/protoutils"
 
-	//"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
+	"k8s.io/kubectl/pkg/cmd/util/editor"
 
 	"github.com/ghodss/yaml"
 )
@@ -26,8 +26,8 @@ type Editor struct {
 }
 
 func defaultEdit(prefix, suffix string, r io.Reader) ([]byte, string, error) {
-	//edit := editor.NewDefaultEditor([]string{"EDITOR"})
-	//return edit.LaunchTempFile(fmt.Sprintf("%s-edit-", filepath.Base(os.Args[0])), ".yaml", r)
+	edit := editor.NewDefaultEditor([]string{"EDITOR"})
+	return edit.LaunchTempFile(fmt.Sprintf("%s-edit-", filepath.Base(os.Args[0])), ".yaml", r)
 	return nil, "", nil
 }
 
