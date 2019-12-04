@@ -24,6 +24,10 @@ func (s *mockValidationService) ValidateProxy(context.Context, *validation.Proxy
 	return res, s.err
 }
 
+func (s *mockValidationService) NotifyOnResync(*validation.NotificationRequest, validation.ProxyValidationService_NotifyOnResyncServer) error {
+	panic("implement me")
+}
+
 func makeListener(errToReturn error, addr string) (string, func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 

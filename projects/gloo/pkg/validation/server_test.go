@@ -2,6 +2,11 @@ package validation_test
 
 import (
 	"context"
+	"net"
+	"sync"
+	"time"
+
+	"google.golang.org/grpc"
 
 	"github.com/solo-io/gloo/test/samples"
 
@@ -60,19 +65,117 @@ var _ = Describe("Validation Server", func() {
 	})
 
 	JustBeforeEach(func() {
-
 		getPlugins := func() []plugins.Plugin {
 			return registeredPlugins
 		}
 		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
 	})
 
-	It("validates the requested proxy", func() {
-		proxy := params.Snapshot.Proxies[0]
-		s := NewValidator(translator)
-		_ = s.Sync(context.TODO(), params.Snapshot)
-		rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
-		Expect(err).NotTo(HaveOccurred())
-		Expect(rpt).To(Equal(&validationgrpc.ProxyValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
+	Context("proxy validation", func() {
+		It("validates the requested proxy", func() {
+			proxy := params.Snapshot.Proxies[0]
+			s := NewValidator(translator)
+			_ = s.Sync(context.TODO(), params.Snapshot)
+			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(rpt).To(Equal(&validationgrpc.ProxyValidationServiceResponse{ProxyReport: validation.MakeReport(proxy)}))
+		})
+	})
+
+	Context("Watch Sync Notifications", func() {
+		var (
+			srv    *grpc.Server
+			v      Validator
+			client validationgrpc.ProxyValidationServiceClient
+		)
+		BeforeEach(func() {
+			lis, err := net.Listen("tcp", ":0")
+			Expect(err).NotTo(HaveOccurred())
+
+			cc, err := grpc.DialContext(context.TODO(), lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
+			Expect(err).NotTo(HaveOccurred())
+
+			client = validationgrpc.NewProxyValidationServiceClient(cc)
+
+			srv = grpc.NewServer()
+
+			v = NewValidator(nil)
+
+			server := NewValidationServer()
+			server.SetValidator(v)
+			server.Register(srv)
+
+			go func() {
+				defer GinkgoRecover()
+				err = srv.Serve(lis)
+				Expect(err).NotTo(HaveOccurred())
+			}()
+		})
+		AfterEach(func() {
+			srv.Stop()
+		})
+
+		It("sends sync notifications", func() {
+			ctx, cancel := context.WithCancel(context.TODO())
+			defer cancel()
+
+			stream, err := client.NotifyOnResync(ctx, &validationgrpc.NotificationRequest{})
+			Expect(err).NotTo(HaveOccurred())
+
+			var notifications []*validationgrpc.NotificationResponse
+			var l sync.Mutex
+			var desiredErr string
+
+			// watch notifications
+			go func() {
+				defer GinkgoRecover()
+				for {
+					notification, err := stream.Recv()
+					if desiredErr == "" {
+						Expect(err).To(BeNil())
+					} else {
+						Expect(err).NotTo(BeNil())
+						Expect(err.Error()).To(ContainSubstring(desiredErr))
+						continue
+					}
+					l.Lock()
+					notifications = append(notifications, notification)
+					l.Unlock()
+				}
+			}()
+
+			getNotifications := func() []*validationgrpc.NotificationResponse {
+				l.Lock()
+				notesCopy := make([]*validationgrpc.NotificationResponse, len(notifications))
+				copy(notesCopy, notifications)
+				l.Unlock()
+				return notesCopy
+			}
+
+			// check that we received ACK
+			Eventually(getNotifications, time.Hour).Should(HaveLen(1))
+
+			// do some syncs
+			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(getNotifications, time.Second).Should(HaveLen(2))
+
+			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(getNotifications, time.Second).Should(HaveLen(3))
+
+			// test close
+			desiredErr = "transport is closing"
+			srv.Stop()
+
+			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			Expect(err).NotTo(HaveOccurred())
+
+			time.Sleep(time.Second / 2)
+			Expect(getNotifications()).To(HaveLen(3))
+
+		})
 	})
 })
