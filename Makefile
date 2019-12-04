@@ -592,4 +592,4 @@ fetch-tagged-helm:
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
 update-licenses:
-	cd hack/utils/oss_compliance && go run main.go
+	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
