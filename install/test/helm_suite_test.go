@@ -116,9 +116,6 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
 	}
 
-	// We have some duplicated resources in our manifest in order to get them to be cleaned up correctly
-	// by Helm's hook lifecycle management. Those resources should be marked with the annotation referenced
-	// below, so we skip all those that match that criteria.
 	return NewTestManifest(f.Name()), nil
 }
 
