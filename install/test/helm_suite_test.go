@@ -87,7 +87,7 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 		return nil, err
 	}
 
-	client, err := buildInstallClient(namespace)
+	client, err := buildRenderer(namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 	return mapFromFile, nil
 }
 
-func buildInstallClient(namespace string) (*action.Install, error) {
+func buildRenderer(namespace string) (*action.Install, error) {
 	settings := cli.New()
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
@@ -184,13 +184,14 @@ func buildInstallClient(namespace string) (*action.Install, error) {
 		return nil, err
 	}
 
-	client := action.NewInstall(actionConfig)
-	client.DryRun = true
-	client.Namespace = namespace
-	client.ReleaseName = "gloo"
-	client.Namespace = "gloo-system"
+	renderer := action.NewInstall(actionConfig)
+	renderer.DryRun = true
+	renderer.Namespace = namespace
+	renderer.ReleaseName = "gloo"
+	renderer.Namespace = "gloo-system"
+	renderer.ClientOnly = true
 
-	return client, nil
+	return renderer, nil
 }
 
 // stolen from Helm internals
