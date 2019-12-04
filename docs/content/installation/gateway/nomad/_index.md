@@ -326,4 +326,4 @@ Curl will return the following JSON payload from the Pet Store application.
 
 Congratulations! You've successfully deployed Gloo to Nomad and created your first route. Now let's delve deeper into the world of [Gloo routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}). 
 
-Most of the existing tutorials for Gloo use Kubernetes as the underlying resource, but they can be also with Nomad. Remember that all `glooctl` commands should be used with the `--use-consul` flag, and deployments will need to be orchestrated through Nomad instead of Kubernetes.
+Most of the existing tutorials for Gloo use Kubernetes as the underlying resource, but they can also use Nomad. Remember that all `glooctl` commands should be used with the `--use-consul` flag, and deployments will need to be orchestrated through Nomad instead of Kubernetes.
