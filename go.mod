@@ -83,7 +83,7 @@ require (
 	k8s.io/kubectl v0.0.0-20191016120415-2ed914427d51
 	k8s.io/kubernetes v1.13.2
 	k8s.io/utils v0.0.0-20191114184206-e782cd3c129f
-	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef // indirect
+	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef
 	knative.dev/serving v0.10.0
 	sigs.k8s.io/yaml v1.1.0
 )

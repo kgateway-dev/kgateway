@@ -86,7 +86,7 @@
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
-|gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller|
+|gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.NAME.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -233,8 +233,8 @@
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
-|global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|
-|global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
+|global.image.registry|string|gcr.io/solo-public|image prefix/registry e.g. (quay.io/solo-io)|
+|global.image.pullPolicy|string|Always|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|

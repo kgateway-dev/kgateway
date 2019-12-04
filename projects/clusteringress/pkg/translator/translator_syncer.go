@@ -20,22 +20,22 @@ import (
 )
 
 type translatorSyncer struct {
-	proxyAddress         string
-	writeNamespace       string
-	writeErrs            chan error
-	proxyClient          gloov1.ProxyClient
-	proxyReconciler      gloov1.ProxyReconciler
-	clusterIngressClient knativeclient.ClusterIngressInterface
+	proxyAddress    string
+	writeNamespace  string
+	writeErrs       chan error
+	proxyClient     gloov1.ProxyClient
+	proxyReconciler gloov1.ProxyReconciler
+	ingressClient   knativeclient.IngressesGetter
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, clusterIngressClient knativeclient.ClusterIngressInterface, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:         proxyAddress,
-		writeNamespace:       writeNamespace,
-		writeErrs:            writeErrs,
-		proxyClient:          proxyClient,
-		clusterIngressClient: clusterIngressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		proxyAddress:    proxyAddress,
+		writeNamespace:  writeNamespace,
+		writeErrs:       writeErrs,
+		proxyClient:     proxyClient,
+		ingressClient:   ingressClient,
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
 	}
 }
 
@@ -123,9 +123,9 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 }
 
 func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, clusterIngresses v1alpha1.ClusterIngressList) error {
-	var updatedClusterIngresses []*knativev1alpha1.ClusterIngress
+	var updatedClusterIngresses []*knativev1alpha1.Ingress
 	for _, wrappedCi := range clusterIngresses {
-		ci := knativev1alpha1.ClusterIngress(wrappedCi.ClusterIngress)
+		ci := knativev1alpha1.Ingress(wrappedCi.ClusterIngress)
 		if ci.Status.ObservedGeneration == ci.ObjectMeta.Generation {
 			continue
 		}
@@ -139,7 +139,7 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}
 	for _, ci := range updatedClusterIngresses {
-		if _, err := s.clusterIngressClient.UpdateStatus(ci); err != nil {
+		if _, err := s.ingressClient.Ingresses(ci.Namespace).UpdateStatus(ci); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status with error %v", ci.Name, err)
 		}
 	}

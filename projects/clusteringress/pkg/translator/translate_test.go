@@ -29,7 +29,7 @@ var _ = Describe("Translate", func() {
 		serviceNamespace := "peteszah-service-namespace"
 		servicePort := int32(80)
 		secretName := "areallygreatsecret"
-		ingress := &v1alpha1.ClusterIngress{
+		ingress := &v1alpha1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ing",
 				Namespace: namespace,
@@ -95,7 +95,7 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		ingressTls := &v1alpha1.ClusterIngress{
+		ingressTls := &v1alpha1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ing-tls",
 				Namespace: namespace,
