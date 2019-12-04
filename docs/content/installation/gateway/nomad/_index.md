@@ -40,7 +40,7 @@ This tutorial uses files stored on the [Gloo GitHub repository](https://github.c
 In order to install Gloo on Nomad, you'll want to clone the repository:
 
 ```
-git clone --branch feature-rc1 https://github.com/solo-io/gloo
+git clone --branch v1.1.0 https://github.com/solo-io/gloo
 cd gloo/install/nomad
 ```
 
