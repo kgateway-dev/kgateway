@@ -79,7 +79,7 @@ update-deps:
 
 .PHONY: pin-repos
 pin-repos:
-	go run pin_repos.go
+	GO111MODULE=on go run pin_repos.go
 
 .PHONY: check-format
 check-format:
@@ -125,7 +125,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -197,7 +197,7 @@ GATEWAY_DIR=projects/gateway
 GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
 
 .PHONY: gateway
@@ -219,7 +219,7 @@ INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
 
 
 .PHONY: ingress
@@ -241,7 +241,7 @@ ACCESS_LOG_DIR=projects/accesslogger
 ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 
 $(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
 
 .PHONY: access-logger
@@ -263,7 +263,7 @@ DISCOVERY_DIR=projects/discovery
 DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 
 .PHONY: discovery
@@ -285,7 +285,7 @@ GLOO_DIR=projects/gloo
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
 
 .PHONY: gloo
@@ -308,7 +308,7 @@ ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 
 $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
@@ -332,7 +332,7 @@ CERTGEN_DIR=jobs/certgen/cmd
 CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
 
 $(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
 certgen: $(OUTPUT_DIR)/certgen-linux-amd64
@@ -426,7 +426,7 @@ ASSETS_ONLY := false
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
 upload-github-release-assets: build-cli render-yaml
-	go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
+	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
 .PHONY: publish-docs
 publish-docs: prepare-helm
@@ -548,14 +548,14 @@ certgen-docker-test: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
 	helm repo index $(TEST_ASSET_DIR)
 
 .PHONY: build-kind-chart
 build-kind-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(VERSION)
+	GO111MODULE=on go run install/helm/gloo/generate.go $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
 	helm repo index $(TEST_ASSET_DIR)
 
@@ -573,7 +573,7 @@ build-kind-chart:
 .PHONY: build-tagged-chart
 build-tagged-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run install/helm/gloo/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
 	mkdir -p $(HELM_SYNC_DIR)/charts
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
 	helm repo index $(HELM_SYNC_DIR)
