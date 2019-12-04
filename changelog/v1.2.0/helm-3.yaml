@@ -23,7 +23,7 @@ changelog:
     to their counterparts in the Helm 3 libraries).
   issueLink: https://github.com/solo-io/gloo/issues/1635
 - type: NON_USER_FACING
-  description: Refactored Helm chart unit tests to avoid runnin `make manifest` out-process for each spec.
+  description: Refactored Helm chart unit tests to avoid running `make manifest` out-process for each spec.
   issueLink: https://github.com/solo-io/gloo/issues/1269
 - type: NEW_FEATURE
   description: >
