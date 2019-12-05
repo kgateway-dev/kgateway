@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -87,7 +88,15 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	// (The first argument to CoalesceTables has higher priority)
 	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
 	if installerConfig.Verbose {
-		fmt.Printf("Merged CLI values into default values: %v\n", completeValues)
+		b, err := json.Marshal(completeValues)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
+		y, err := yaml.JSONToYAML(b)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
+		fmt.Printf("Installing the %s chart with the following value overrides:\n%v\n", chartObj.Metadata.Name, y)
 	}
 
 	rel, err := helmInstall.Run(chartObj, completeValues)
