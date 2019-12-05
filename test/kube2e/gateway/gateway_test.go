@@ -577,7 +577,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			FIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
