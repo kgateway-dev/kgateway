@@ -3,7 +3,7 @@ title: Getting Started with Gloo
 weight: 15
 ---
 
-# Gloo Says Go
+## Gloo Says Go
 
 We know you want to jump right in and start hacking away with Gloo. That's awesome! If you want to try out Gloo in a hosted setting, please check out our [Katacoda](https://katacoda.com/solo-io) courses that will guide you through a number of scenarios using Gloo, all in a sandboxed environment.
 
