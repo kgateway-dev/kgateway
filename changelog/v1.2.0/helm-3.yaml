@@ -9,7 +9,7 @@ changelog:
     consistent behavior across different installation flows; for example, it is now possible to install Gloo using
     `glooctl` and uninstall it using Helm, or vice-versa
   issueLink: https://github.com/solo-io/gloo/issues/1732
-- type: FIX
+- type: HELM
   description: >
     Added `hook-delete-policy` to clean up the validation webhook certificate generation job after it has successfully
     completed.
