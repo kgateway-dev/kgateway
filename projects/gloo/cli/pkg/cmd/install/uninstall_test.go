@@ -59,7 +59,7 @@ spec:
 		ctrl.Finish()
 	})
 
-	FIt("uninstalls cleanly by default", func() {
+	It("uninstalls cleanly by default", func() {
 		mockReleaseListRunner.EXPECT().
 			Run().
 			Return([]*release.Release{{
@@ -125,6 +125,7 @@ spec:
 		err := uninstaller.Uninstall(&options.Options{
 			Uninstall: options.Uninstall{
 				Namespace:  defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds: true,
 			},
 		})
