@@ -66,7 +66,7 @@ require (
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.11.0
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.11.13-0.20191127032754-6bb54b82fcc9
+	github.com/solo-io/solo-kit v0.11.13
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
@@ -100,7 +100,6 @@ require (
 replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	github.com/solo-io/solo-kit => github.com/solo-io/solo-kit v0.11.13-0.20191127032754-6bb54b82fcc9
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191204090712-e0e829f17bab
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb

@@ -1218,8 +1218,11 @@ github.com/solo-io/go-utils v0.11.0 h1:x4LB+TnWr6uWI8oP89d6FvGXbGFrsFpuHj5ovAiK6
 github.com/solo-io/go-utils v0.11.0/go.mod h1:R8lbLuLtMaTOhD+6wGpdxj60r1Vwt63fHe1UxlObHig=
 github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4tPthhnYko=
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
+github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
 github.com/solo-io/solo-kit v0.11.13-0.20191127032754-6bb54b82fcc9 h1:9nAptfBB8jGy0MxSFCFVL2sZrbKMkuUfavAPDaBE03w=
 github.com/solo-io/solo-kit v0.11.13-0.20191127032754-6bb54b82fcc9/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
+github.com/solo-io/solo-kit v0.11.13 h1:Vhi9Y8GA0foe10Wc2fvi2S6vZ4Srh0Y/ObHHPXTRN/0=
+github.com/solo-io/solo-kit v0.11.13/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
 github.com/spf13/afero v0.0.0-20160816080757-b28a7effac97/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
