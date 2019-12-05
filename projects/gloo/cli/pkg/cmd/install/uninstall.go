@@ -48,8 +48,8 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 
 func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 	namespace := cliArgs.Uninstall.Namespace
-
-	if releaseExists, err := ReleaseExists(u.helmClient, namespace, cliArgs.Uninstall.HelmReleaseName); err != nil {
+	releaseName := cliArgs.Uninstall.HelmReleaseName
+	if releaseExists, err := ReleaseExists(u.helmClient, namespace, releaseName); err != nil {
 		return err
 	} else if !releaseExists {
 		fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
@@ -65,14 +65,14 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 
 	// need to run this first, as it depends on the release still being present
 	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
-		crdNames, err = u.findCrdNamesForRelease(namespace, cliArgs.Uninstall.HelmReleaseName)
+		crdNames, err = u.findCrdNamesForRelease(namespace, releaseName)
 		if err != nil {
 			return err
 		}
 	}
 
 	fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
-	if _, err = uninstallAction.Run(cliArgs.Uninstall.HelmReleaseName); err != nil {
+	if _, err = uninstallAction.Run(releaseName); err != nil {
 		return err
 	}
 

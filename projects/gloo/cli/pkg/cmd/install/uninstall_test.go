@@ -59,7 +59,7 @@ spec:
 		ctrl.Finish()
 	})
 
-	It("uninstalls cleanly by default", func() {
+	FIt("uninstalls cleanly by default", func() {
 		mockReleaseListRunner.EXPECT().
 			Run().
 			Return([]*release.Release{{
@@ -82,7 +82,7 @@ spec:
 
 		uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), outputBuffer)
 		err := uninstaller.Uninstall(&options.Options{
-			Uninstall: options.Uninstall{Namespace: defaults.GlooSystem},
+			Uninstall: options.Uninstall{Namespace: defaults.GlooSystem, HelmReleaseName: constants.GlooReleaseName},
 		})
 
 		Expect(err).NotTo(HaveOccurred())
@@ -163,6 +163,7 @@ spec:
 		err := uninstaller.Uninstall(&options.Options{
 			Uninstall: options.Uninstall{
 				Namespace: defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
 			},
 		})
 
