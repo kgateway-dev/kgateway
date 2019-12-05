@@ -99,6 +99,10 @@ type mockWrappedValidationClient struct {
 	err  error
 }
 
+func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotificationRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	return nil, nil
+}
+
 func (c *mockWrappedValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
 	return res, c.err
 }

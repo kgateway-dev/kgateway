@@ -373,6 +373,10 @@ type mockValidationClient struct {
 	validateProxy func(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error)
 }
 
+func (c *mockValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotificationRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	return nil, nil
+}
+
 func (c *mockValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
 	if c.validateProxy == nil {
 		Fail("validateProxy was called unexpectedly")
