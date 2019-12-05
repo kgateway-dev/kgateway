@@ -69,8 +69,6 @@ type Uninstall struct {
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
-	// Deprecated: currently not used, will be removed
-	Force bool
 }
 
 type Proxy struct {

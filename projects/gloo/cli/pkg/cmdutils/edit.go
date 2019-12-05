@@ -28,7 +28,6 @@ type Editor struct {
 func defaultEdit(prefix, suffix string, r io.Reader) ([]byte, string, error) {
 	edit := editor.NewDefaultEditor([]string{"EDITOR"})
 	return edit.LaunchTempFile(fmt.Sprintf("%s-edit-", filepath.Base(os.Args[0])), ".yaml", r)
-	return nil, "", nil
 }
 
 func (e *Editor) EditConfig(m proto.Message) (proto.Message, error) {
