@@ -15,7 +15,9 @@ require (
 	github.com/aws/aws-sdk-go v1.25.44
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
+	github.com/denverdino/aliyungo v0.0.0-20190125010748-a747050bb1ba // indirect
 	github.com/docker/docker v1.13.1 // indirect
+	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
@@ -63,6 +65,7 @@ require (
 	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/solo-io/envoy-operator v0.1.1
+	github.com/solo-io/extend-envoy v0.0.0-20191204224055-e26d79aef9bd
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.11.0
 	github.com/solo-io/reporting-client v0.1.2
@@ -99,8 +102,9 @@ require (
 
 replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
+	github.com/deislabs/oras => github.com/deislabs/oras v0.7.0
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	github.com/solo-io/solo-kit => github.com/solo-io/solo-kit v0.11.13-0.20191127032754-6bb54b82fcc9
+	github.com/solo-io/solo-kit => github.com/solo-io/solo-kit v0.11.13
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191204090712-e0e829f17bab
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb

@@ -303,7 +303,7 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		$(call get_test_tag,gloo)
 
 #----------------------------------------------------------------------------------
-# Envoy init
+# Envoy init (BASE)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
@@ -324,6 +324,29 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) \
 		$(call get_test_tag,gloo-envoy-wrapper)
+
+#----------------------------------------------------------------------------------
+# Envoy init (WASM)
+#----------------------------------------------------------------------------------
+
+ENVOY_WASM_DIR=projects/envoyinit/wasm
+ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
+
+$(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
+
+.PHONY: envoywasm
+envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
+
+
+$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile
+	cp $< $@
+
+.PHONY: gloo-envoy-wasm-wrapper-docker
+gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
+		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) \
+		$(call get_test_tag,gloo-envoy-wasm-wrapper)
 
 
 #----------------------------------------------------------------------------------
