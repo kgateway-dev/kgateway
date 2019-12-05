@@ -3,7 +3,8 @@ module github.com/solo-io/gloo
 go 1.12
 
 require (
-	contrib.go.opencensus.io/exporter/stackdriver v0.12.8 // indirect
+	cloud.google.com/go v0.45.1 // indirect
+	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
 	github.com/Azure/go-autorest v12.2.0+incompatible // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
