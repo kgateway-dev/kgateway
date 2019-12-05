@@ -6,8 +6,8 @@ require (
 	cloud.google.com/go v0.45.1 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
 	github.com/Azure/go-autorest v12.2.0+incompatible // indirect
-	github.com/Azure/go-autorest/autorest v0.9.2 // indirect
 	github.com/Azure/go-autorest/autorest/adal v0.8.0 // indirect
+	github.com/Azure/go-autorest/autorest/azure/auth v0.4.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
@@ -20,7 +20,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
-	github.com/ghodss/yaml v1.0.0
+	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-openapi/swag v0.19.5
@@ -34,11 +34,12 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
-	github.com/hashicorp/consul v1.5.2
+	github.com/hashicorp/consul v1.5.2 // indirect
 	github.com/hashicorp/consul/api v1.1.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-uuid v1.0.1
-	github.com/hashicorp/vault/api v1.0.4
+	github.com/hashicorp/vault v1.2.0 // indirect
+	github.com/hashicorp/vault/api v1.0.5-0.20190730042357-746c0b111519
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
 	github.com/iancoleman/strcase v0.0.0-20191112232945-16388991a334 // indirect
 	github.com/ilackarms/protoc-gen-doc v1.0.0 // indirect
