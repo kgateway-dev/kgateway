@@ -79,7 +79,8 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 				defer cancel()
 				for {
-					stdout, _ := setup.KubectlOut("get apiservice -o jsonpath='{.items[*].status.conditions[*].status}'")
+					stdout, _ := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+					fmt.Println(stdout)
 					if len(stdout) > 0 && !strings.Contains(stdout, "False") {
 						// knative apiservice is ready, we can attempt gloo installation now!
 						break
