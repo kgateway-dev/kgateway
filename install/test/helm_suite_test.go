@@ -1,6 +1,7 @@
 package test
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -28,6 +29,9 @@ import (
 )
 
 func TestHelm(t *testing.T) {
+
+	// TODO(marco): adding this line to the output so we can tell when the actual testing starts (this is the first suite to be executed)
+	fmt.Println("Starting Helm test suite")
 
 	version = os.Getenv("TAGGED_VERSION")
 	if version == "" {
