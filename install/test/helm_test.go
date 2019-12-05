@@ -8,11 +8,6 @@ import (
 	"github.com/solo-io/reporting-client/pkg/client"
 	"k8s.io/utils/pointer"
 
-	//"fmt"
-
-	//"github.com/solo-io/reporting-client/pkg/client"
-
-	//"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -22,8 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	//"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
