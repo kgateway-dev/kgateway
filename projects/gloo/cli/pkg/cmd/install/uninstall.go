@@ -65,7 +65,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 	var crdNames []string
 
 	// need to run this first, as it depends on the release still being present
-	if cliArgs.Uninstall.DeleteCrds {
+	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
 		crdNames, err = u.findCrdNamesForRelease(namespace, constants.GlooReleaseName)
 		if err != nil {
 			return err
@@ -79,11 +79,15 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 
 	u.uninstallKnativeIfNecessary()
 
-	if cliArgs.Uninstall.DeleteCrds {
+	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
 		err := u.deleteGlooCrds(crdNames)
 		if err != nil {
 			return err
 		}
+	}
+
+	if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
+		u.deleteNamespace(cliArgs.Uninstall.Namespace)
 	}
 
 	return nil
@@ -133,6 +137,13 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 	}
 
 	return nil
+}
+
+func (u *uninstaller) deleteNamespace(namespace string) {
+	fmt.Printf("Removing namespace %s...\n", namespace)
+	if err := u.kubeCli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
+		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
+	}
 }
 
 func makeUnstructured(manifest string) (*unstructured.Unstructured, error) {

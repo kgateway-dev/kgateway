@@ -13,6 +13,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.25.44
+	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
@@ -71,8 +72,11 @@ require (
 	go.opencensus.io v0.22.2
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/crypto v0.0.0-20191202143827-86a70503ff7e // indirect
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20191204072324-ce4227a45e2e // indirect
+	golang.org/x/tools v0.0.0-20191205133340-d1f10d1c4e25 // indirect
 	google.golang.org/api v0.10.0
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1

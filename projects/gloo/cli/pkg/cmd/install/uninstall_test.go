@@ -131,4 +131,41 @@ spec:
 
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("can remove namespace when requested", func() {
+		mockReleaseListRunner.EXPECT().
+			Run().
+			Return([]*release.Release{{
+				Name: constants.GlooReleaseName,
+			}}, nil).
+			Times(1)
+		mockReleaseListRunner.EXPECT().
+			SetFilter(constants.GlooReleaseName)
+
+		mockHelmClient.EXPECT().
+			ReleaseList(defaults.GlooSystem).
+			Return(mockReleaseListRunner, nil).
+			Times(1)
+		mockHelmClient.EXPECT().
+			NewUninstall(defaults.GlooSystem).
+			Return(mockHelmUninstallation, nil)
+		mockHelmUninstallation.EXPECT().
+			Run(constants.GlooReleaseName).
+			Return(nil, nil)
+
+		outputBuffer := new(bytes.Buffer)
+
+		mockKubectl := installutil.NewMockKubectl([]string{
+			"delete namespace " + defaults.GlooSystem,
+		}, []string{})
+
+		uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, outputBuffer)
+		err := uninstaller.Uninstall(&options.Options{
+			Uninstall: options.Uninstall{
+				Namespace: defaults.GlooSystem,
+			},
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+	})
 })
