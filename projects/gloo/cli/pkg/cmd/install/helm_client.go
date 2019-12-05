@@ -2,7 +2,6 @@ package install
 
 import (
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
@@ -87,7 +86,7 @@ func ReleaseExists(helmClient HelmClient, namespace, releaseName string) (releas
 	if err != nil {
 		return false, err
 	}
-	list.SetFilter(constants.GlooReleaseName)
+	list.SetFilter(releaseName)
 
 	releases, err := list.Run()
 	if err != nil {
