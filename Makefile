@@ -60,7 +60,7 @@ endif
 # cannot be imported by dep, as their module name (ending in /vN) gets interpreted as a package, causing a failure.
 .PHONY: go-get-ignored-deps
 go-get-ignored-deps:
-#	GO111MODULE=on go get -u github.com/cespare/xxhash@v2
+	GO111MODULE=on go get -u github.com/cespare/xxhash/v2
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -80,7 +80,7 @@ update-deps:
 	go install github.com/golang/mock/mockgen
 
 .PHONY: pin-repos
-pin-repos:
+pin-repos: go-get-ignored-deps
 	GO111MODULE=on go run pin_repos.go
 
 .PHONY: check-format
