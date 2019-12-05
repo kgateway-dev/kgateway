@@ -109,6 +109,7 @@ rules:
 	It("installs cleanly by default", func() {
 		installConfig := &options.Install{
 			Namespace: defaults.GlooSystem,
+			HelmReleaseName: constants.GlooReleaseName,
 		}
 
 		helmEnv := &cli.EnvSettings{
@@ -119,7 +120,7 @@ rules:
 			Run().
 			Return([]*release.Release{}, nil)
 		mockReleaseListRunner.EXPECT().
-			SetFilter(constants.GlooReleaseName)
+			SetFilter(installConfig.HelmReleaseName)
 
 		mockHelmInstallation.EXPECT().
 			Run(chart, map[string]interface{}{}).
@@ -129,7 +130,7 @@ rules:
 			ReleaseList(defaults.GlooSystem).
 			Return(mockReleaseListRunner, nil)
 		mockHelmClient.EXPECT().
-			NewInstall(defaults.GlooSystem, constants.GlooReleaseName, installConfig.DryRun).
+			NewInstall(defaults.GlooSystem, installConfig.HelmReleaseName, installConfig.DryRun).
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().
@@ -150,6 +151,7 @@ rules:
 	It("outputs the expected kinds when in a dry run", func() {
 		installConfig := &options.Install{
 			Namespace: defaults.GlooSystem,
+			HelmReleaseName: constants.GlooReleaseName,
 			DryRun:    true,
 		}
 
@@ -162,7 +164,7 @@ rules:
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
-			NewInstall(defaults.GlooSystem, constants.GlooReleaseName, installConfig.DryRun).
+			NewInstall(defaults.GlooSystem, installConfig.HelmReleaseName, installConfig.DryRun).
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().

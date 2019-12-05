@@ -82,7 +82,7 @@ spec:
 
 		uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), outputBuffer)
 		err := uninstaller.Uninstall(&options.Options{
-			Uninstall: options.Uninstall{Namespace: defaults.GlooSystem},
+			Uninstall: options.Uninstall{Namespace: defaults.GlooSystem, HelmReleaseName: constants.GlooReleaseName},
 		})
 
 		Expect(err).NotTo(HaveOccurred())
@@ -125,6 +125,7 @@ spec:
 		err := uninstaller.Uninstall(&options.Options{
 			Uninstall: options.Uninstall{
 				Namespace:  defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds: true,
 			},
 		})
@@ -163,6 +164,7 @@ spec:
 		err := uninstaller.Uninstall(&options.Options{
 			Uninstall: options.Uninstall{
 				Namespace: defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
 			},
 		})
 

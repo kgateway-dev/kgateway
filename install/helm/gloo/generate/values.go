@@ -94,7 +94,7 @@ type Settings struct {
 	Create              bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions          interface{}          `json:"extensions,omitempty"`
 	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
 	Linkerd             bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 }
 

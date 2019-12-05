@@ -47,8 +47,9 @@ func NewInstallerWithWriter(helmClient HelmClient, outputWriter io.Writer) Insta
 
 func (i *installer) Install(installerConfig *InstallerConfig) error {
 	namespace := installerConfig.InstallCliArgs.Namespace
+	releaseName := installerConfig.InstallCliArgs.HelmReleaseName
 	if !installerConfig.InstallCliArgs.DryRun {
-		if releaseExists, err := ReleaseExists(i.helmClient, namespace, constants.GlooReleaseName); err != nil {
+		if releaseExists, err := ReleaseExists(i.helmClient, namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
 			return GlooAlreadyInstalled(namespace)
@@ -57,7 +58,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
-	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, constants.GlooReleaseName, installerConfig.InstallCliArgs.DryRun)
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
 		return err
 	}
@@ -106,7 +107,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 	if installerConfig.Verbose {
-		fmt.Printf("Successfully ran helm install with release %s\n", constants.GlooReleaseName)
+		fmt.Printf("Successfully ran helm install with release %s\n", releaseName)
 	}
 
 	if installerConfig.InstallCliArgs.DryRun {
