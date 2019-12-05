@@ -7,7 +7,7 @@ changelog:
     Refactor `glooctl` to make it compatible with the new Helm 3 chart format. `glooctl` now uses the new Helm 3
     libraries and delegates the `install` and `uninstall` operations to the corresponding Helm functions to provide
     consistent behavior across different installation flows; for example, it is now possible to install Gloo using
-    `glooctl install` and uninstall it using `helm uninstall gloo`, or vice-versa.
+    `glooctl` and uninstall it using Helm, or vice-versa
   issueLink: https://github.com/solo-io/gloo/issues/1732
 - type: FIX
   description: >
