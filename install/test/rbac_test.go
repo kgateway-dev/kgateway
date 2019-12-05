@@ -3,10 +3,9 @@ package test
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	. "github.com/solo-io/go-utils/manifesttestutils"
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-
-	. "github.com/solo-io/go-utils/manifesttestutils"
 )
 
 var _ = Describe("RBAC Test", func() {
@@ -34,6 +33,13 @@ var _ = Describe("RBAC Test", func() {
 			prepareMakefile("namespace.create=true", "global.glooRbac.namespaced=false")
 			permissions := GetServiceAccountPermissions("")
 			testManifest.ExpectPermissions(permissions)
+		})
+
+		It("creates no permissions when rbac is disabled", func() {
+			prepareMakefile("global.glooRbac.create=false")
+			testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
+				Expect(resource.GetAPIVersion()).NotTo(ContainSubstring("rbac.authorization.k8s.io"), "Should not contain the RBAC API group")
+			})
 		})
 	})
 
