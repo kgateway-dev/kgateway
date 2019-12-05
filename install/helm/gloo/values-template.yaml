@@ -13,7 +13,7 @@ settings:
   integrations:
     knative:
       enabled: false
-      version: "0.8.0"
+      version: "0.10.0"
       proxy:
         image:
           repository: gloo-envoy-wrapper
