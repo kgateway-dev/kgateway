@@ -162,7 +162,7 @@ var _ = Describe("Validation Server", func() {
 			Eventually(getNotifications, time.Second).Should(HaveLen(2))
 
 			// create jitter by changing upstreams
-			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams:v1.UpstreamList{{}}})
+			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(3))
@@ -172,7 +172,7 @@ var _ = Describe("Validation Server", func() {
 			srv.Stop()
 
 			// create jitter by changing upstreams
-			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams:v1.UpstreamList{{}, {}}})
+			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}, {}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			time.Sleep(time.Second / 2)
