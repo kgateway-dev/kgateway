@@ -22,6 +22,8 @@ GLOOE_VERSION ?= 0.20.4
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION) -X github.com/solo-io/gloo/pkg/version.EnterpriseTag=$(GLOOE_VERSION)"
 GCFLAGS := all="-N -l"
 
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
 BUILD_ID := $(BUILD_ID)
@@ -125,7 +127,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -168,13 +170,13 @@ $(OUTPUT_DIR)/glooctl: $(SOURCES)
 	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-windows-amd64.exe: $(SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 
 .PHONY: glooctl
@@ -197,7 +199,7 @@ GATEWAY_DIR=projects/gateway
 GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
 
 .PHONY: gateway
@@ -219,7 +221,7 @@ INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
 
 
 .PHONY: ingress
@@ -241,7 +243,7 @@ ACCESS_LOG_DIR=projects/accesslogger
 ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 
 $(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
 
 .PHONY: access-logger
@@ -263,7 +265,7 @@ DISCOVERY_DIR=projects/discovery
 DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 
 .PHONY: discovery
@@ -285,7 +287,7 @@ GLOO_DIR=projects/gloo
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
 
 .PHONY: gloo
@@ -308,7 +310,7 @@ ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 
 $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
