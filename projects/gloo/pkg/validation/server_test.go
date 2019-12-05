@@ -161,7 +161,8 @@ var _ = Describe("Validation Server", func() {
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(2))
 
-			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			// create jitter by changing upstreams
+			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams:v1.UpstreamList{{}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(3))
@@ -170,7 +171,8 @@ var _ = Describe("Validation Server", func() {
 			desiredErr = "transport is closing"
 			srv.Stop()
 
-			err = v.Sync(ctx, &v1.ApiSnapshot{})
+			// create jitter by changing upstreams
+			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams:v1.UpstreamList{{}, {}}})
 			Expect(err).NotTo(HaveOccurred())
 
 			time.Sleep(time.Second / 2)

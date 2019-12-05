@@ -617,7 +617,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// the err message should be that the rest spec is missing
 				var reason string
 				Eventually(func() (core.Status_State, error) {
-					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+					vs, err := virtualServiceClient.Read(testHelper.InstallNamespace, petstoreName, clients.ReadOpts{})
 					if err != nil {
 						return 0, err
 					}
