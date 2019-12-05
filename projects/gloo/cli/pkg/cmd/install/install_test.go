@@ -78,4 +78,10 @@ var _ = Describe("Install", func() {
 		Expect(out).NotTo(BeEmpty())
 	})
 
+	It("should not error when providing a new release-name flag value", func() {
+		out, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --release-name test --dry-run", file))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out).NotTo(BeEmpty())
+	})
+
 })
