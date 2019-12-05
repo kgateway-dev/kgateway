@@ -33,7 +33,7 @@ FDS can run in one of 3 modes:
 
 * `BLACKLIST`: The most liberal FDS polling policy. Using this mode, FDS will poll any service unless its namespace or the service itself is explicitly blacklisted.
 * `WHITELIST`: A more restricted FDS polling policy. Using this mode, FDS will poll only those services who either live in an explicitly whitelisted namespace, or themselves are are explicitly whitelisted. *`WHITELIST` is the default mode for FDS*.
-* `DISABLED`: FDS will not run. Upstream Discovery (UDS) will still run as normal.
+* `DISABLED`: FDS will not run. **Upstream Discovery Service** (UDS) will still run as normal.
 
 Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo's installation namespace (`gloo-system`).
 
