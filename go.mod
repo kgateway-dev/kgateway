@@ -33,7 +33,8 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
-	github.com/hashicorp/consul/api v1.3.0
+	github.com/hashicorp/consul v1.5.2
+	github.com/hashicorp/consul/api v1.1.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/hashicorp/go-uuid v1.0.1
 	github.com/hashicorp/vault/api v1.0.4
