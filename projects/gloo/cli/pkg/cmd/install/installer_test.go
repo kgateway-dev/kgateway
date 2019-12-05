@@ -108,7 +108,7 @@ rules:
 
 	It("installs cleanly by default", func() {
 		installConfig := &options.Install{
-			Namespace: defaults.GlooSystem,
+			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
 		}
 
@@ -150,9 +150,9 @@ rules:
 
 	It("outputs the expected kinds when in a dry run", func() {
 		installConfig := &options.Install{
-			Namespace: defaults.GlooSystem,
+			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
-			DryRun:    true,
+			DryRun:          true,
 		}
 
 		helmEnv := &cli.EnvSettings{
