@@ -7,6 +7,8 @@ import (
 	"path"
 	"testing"
 
+	"helm.sh/helm/v3/pkg/release"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	helm2chartutil "k8s.io/helm/pkg/chartutil"
 	helm2renderutil "k8s.io/helm/pkg/renderutil"
@@ -108,22 +110,7 @@ type helm3Renderer struct {
 }
 
 func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
-	chartRequested, err := loader.Load(h3.chartDir)
-	if err != nil {
-		return nil, err
-	}
-
-	helmValues, err := buildHelmValues(h3.chartDir, values)
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := buildRenderer(namespace)
-	if err != nil {
-		return nil, err
-	}
-
-	rel, err := client.Run(chartRequested, helmValues)
+	rel, err := BuildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
 		return nil, err
 	}
@@ -148,6 +135,25 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	}
 
 	return NewTestManifest(f.Name()), nil
+}
+
+func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
+	chartRequested, err := loader.Load(chartDir)
+	if err != nil {
+		return nil, err
+	}
+
+	helmValues, err := buildHelmValues(chartDir, values)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := buildRenderer(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Run(chartRequested, helmValues)
 }
 
 type helm2Renderer struct {
