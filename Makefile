@@ -588,4 +588,5 @@ fetch-tagged-helm:
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
 update-licenses:
-	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
+# TODO(helm3): fix after we completely drop toml parsing in favor of go modules
+#	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
