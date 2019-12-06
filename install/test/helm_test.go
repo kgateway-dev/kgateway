@@ -27,6 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	. "github.com/solo-io/go-utils/manifesttestutils"
+
+	"k8s.io/helm/pkg/renderutil"
 )
 
 func GetPodNamespaceStats() v1.EnvVar {
@@ -72,6 +74,14 @@ var _ = Describe("Helm Test", func() {
 			{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 		}
 	)
+
+	Describe("Helm 2 compatibility", func() {
+		_ = &renderutil.Options{
+
+			KubeVersion    : "",
+			APIVersions: []string{},
+		}
+	})
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
