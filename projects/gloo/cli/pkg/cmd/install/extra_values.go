@@ -6,13 +6,13 @@ import (
 )
 
 const (
-	IngressValues = `
+	ingressValues = `
 gateway:
   enabled: false
 ingress:
   enabled: true
 `
-	KnativeValuesTemplate = `
+	knativeValuesTemplate = `
 gateway:
   enabled: false
 settings:
@@ -24,7 +24,7 @@ settings:
 )
 
 func RenderKnativeValues(version string) (string, error) {
-	parsedTemplate := template.Must(template.New("knativeValues").Parse(KnativeValuesTemplate))
+	parsedTemplate := template.Must(template.New("knativeValues").Parse(knativeValuesTemplate))
 
 	var b bytes.Buffer
 	if err := parsedTemplate.Execute(&b, version); err != nil {

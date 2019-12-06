@@ -17,7 +17,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
 
-			ingressOverrides, err := chartutil.ReadValues([]byte(IngressValues))
+			ingressOverrides, err := chartutil.ReadValues([]byte(ingressValues))
 			if err != nil {
 				return errors.Wrapf(err, "parsing override values for ingress mode")
 			}

@@ -1,12 +1,23 @@
 package install
 
 import (
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
+	"github.com/solo-io/gloo/pkg/cliutil"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
+	"io/ioutil"
+	"os"
 )
+
+const tempChartFilePermissions = 0644
+
+var verbose bool
+
+func setVerbose(b bool) {
+	verbose = b
+}
 
 //go:generate mockgen -destination mocks/mock_helm_client.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmClient
 type HelmClient interface {
@@ -16,6 +27,8 @@ type HelmClient interface {
 
 	// list the already-existing releases in the given namespace
 	ReleaseList(namespace string) (HelmReleaseListRunner, error)
+
+	// Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)
 	DownloadChart(chartArchiveUri string) (*chart.Chart, error)
 }
 
@@ -50,11 +63,30 @@ type defaultHelmClient struct {
 }
 
 func (d *defaultHelmClient) NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error) {
-	return helm.NewInstall(namespace, releaseName, dryRun)
+	actionConfig, settings, err := newActionConfig(namespace)
+	if err != nil {
+		return nil, nil, err
+	}
+	settings.Debug = verbose
+
+	client := action.NewInstall(actionConfig)
+	client.ReleaseName = releaseName
+	client.Namespace = namespace
+	client.DryRun = dryRun
+
+	// If this is a dry run, we don't want to query the API server.
+	// In the future we can make this configurable to emulate the `helm template --validate` behavior.
+	client.ClientOnly = dryRun
+
+	return client, settings, nil
 }
 
 func (d *defaultHelmClient) NewUninstall(namespace string) (HelmUninstallation, error) {
-	return helm.NewUninstall(namespace)
+	actionConfig, _, err := newActionConfig(namespace)
+	if err != nil {
+		return nil, err
+	}
+	return action.NewUninstall(actionConfig), nil
 }
 
 type helmReleaseListRunner struct {
@@ -70,15 +102,48 @@ func (h *helmReleaseListRunner) SetFilter(filter string) {
 }
 
 func (d *defaultHelmClient) ReleaseList(namespace string) (HelmReleaseListRunner, error) {
-	list, err := helm.NewList(namespace)
+	actionConfig, _, err := newActionConfig(namespace)
 	if err != nil {
 		return nil, err
 	}
-	return &helmReleaseListRunner{list: list}, nil
+	return &helmReleaseListRunner{
+		list: action.NewList(actionConfig),
+	}, nil
 }
 
 func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart, error) {
-	return helm.DownloadChart(chartArchiveUri)
+
+	// 1. Get a reader to the chart file (remote URL or local file path)
+	chartFileReader, err := cliutil.GetResource(chartArchiveUri)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = chartFileReader.Close() }()
+
+	// 2. Write chart to a temporary file
+	chartBytes, err := ioutil.ReadAll(chartFileReader)
+	if err != nil {
+		return nil, err
+	}
+
+	chartFile, err := ioutil.TempFile("", "gloo-helm-chart")
+	if err != nil {
+		return nil, err
+	}
+	charFilePath := chartFile.Name()
+	defer func() { _ = os.RemoveAll(charFilePath) }()
+
+	if err := ioutil.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
+		return nil, err
+	}
+
+	// 3. Load the chart file
+	chartObj, err := loader.Load(charFilePath)
+	if err != nil {
+		return nil, err
+	}
+
+	return chartObj, nil
 }
 
 func ReleaseExists(helmClient HelmClient, namespace, releaseName string) (releaseExists bool, err error) {
@@ -98,4 +163,18 @@ func ReleaseExists(helmClient HelmClient, namespace, releaseName string) (releas
 	}
 
 	return releaseExists, nil
+}
+
+func noOpDebugLog(_ string, _ ...interface{}) {}
+
+// Returns an action configuration that can be used to create Helm actions and the Helm env settings.
+// We currently get the Helm storage driver from the standard HELM_DRIVER env (defaults to 'secret').
+func newActionConfig(namespace string) (*action.Configuration, *cli.EnvSettings, error) {
+	settings := cli.New()
+	actionConfig := new(action.Configuration)
+
+	if err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), noOpDebugLog); err != nil {
+		return nil, nil, err
+	}
+	return actionConfig, settings, nil
 }
