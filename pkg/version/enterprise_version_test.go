@@ -20,10 +20,10 @@ var _ = Describe("LatestVersionFromRepo", func() {
 	})
 
 	AfterEach(func() {
-		fs.RemoveAll(dir)
+		_ = fs.RemoveAll(dir)
 	})
 
-	It("returns the latest version", func() {
+	FIt("returns the latest version", func() {
 		fileString := `
 apiVersion: v1
 entries:

@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/solo-io/gloo/pkg/version"
 	"os"
+
+	"github.com/solo-io/gloo/pkg/version"
 )
 
 func main() {
