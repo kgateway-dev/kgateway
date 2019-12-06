@@ -23,10 +23,11 @@ var _ = Describe("Install", func() {
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
-		glooOsVersion   = "v1.0.0"
-		glooOsChartUri  = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
-		testCrdContent  = "test-crd-content"
-		testHookContent = `
+		glooOsVersion          = "v1.0.0"
+		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
+		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-v1.0.0.tgz"
+		testCrdContent         = "test-crd-content"
+		testHookContent        = `
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -104,7 +105,7 @@ rules:
 		ctrl.Finish()
 	})
 
-	It("installs cleanly by default", func() {
+	defaultInstall := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string) {
 		installConfig := &options.Install{
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
@@ -115,7 +116,7 @@ rules:
 		}
 
 		mockHelmInstallation.EXPECT().
-			Run(chart, map[string]interface{}{}).
+			Run(chart, expectedValues).
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
@@ -123,7 +124,7 @@ rules:
 			Return(mockHelmInstallation, helmEnv, nil)
 
 		mockHelmClient.EXPECT().
-			DownloadChart(glooOsChartUri).
+			DownloadChart(expectedChartUri).
 			Return(chart, nil)
 
 		mockHelmClient.EXPECT().
@@ -135,10 +136,34 @@ rules:
 		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
+			Enterprise:     enterprise,
 		})
 
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
+	}
+
+	It("installs cleanly by default", func() {
+		defaultInstall(false,
+			map[string]interface{}{
+				"crds": map[string]interface{}{
+					"create": false,
+				},
+			},
+			glooOsChartUri)
+	})
+
+	It("installs enterprise cleanly by default", func() {
+		version.EnterpriseTag = "v1.0.0"
+		defaultInstall(true,
+			map[string]interface{}{
+				"gloo": map[string]interface{}{
+					"crds": map[string]interface{}{
+						"create": false,
+					},
+				},
+			},
+			glooEnterpriseChartUri)
 	})
 
 	It("outputs the expected kinds when in a dry run", func() {
@@ -153,7 +178,11 @@ rules:
 		}
 
 		mockHelmInstallation.EXPECT().
-			Run(chart, map[string]interface{}{}).
+			Run(chart, map[string]interface{}{
+				"crds": map[string]interface{}{
+					"create": false,
+				},
+			}).
 			Return(helmRelease, nil)
 
 		mockHelmClient.EXPECT().
