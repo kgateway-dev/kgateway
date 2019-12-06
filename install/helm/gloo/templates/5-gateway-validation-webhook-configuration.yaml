@@ -32,7 +32,6 @@ webhooks:
 # will not be cleaned up when running `helm uninstall`.
 # See https://helm.sh/docs/topics/charts_hooks/#hook-resources-are-not-managed-with-corresponding-releases).
 # To be able to clean up the above hook resource, we redefine it as a `post-delete` hook with a `hook-delete-policy`.
-
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -51,7 +50,7 @@ webhooks:
       name: gateway
       namespace: {{ .Release.Namespace }}
       path: "/validation"
-    caBundle: "" # update manually or use certgen job
+    caBundle: ""
   rules:
   - operations: [ "CREATE", "UPDATE", "DELETE" ]
     apiGroups: ["gateway.solo.io"]
@@ -60,5 +59,4 @@ webhooks:
         {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
         {{- end }}
-
 {{- end }}

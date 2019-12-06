@@ -58,7 +58,7 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 
 func setVerboseMode(opts *options.Options) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		install.SetVerbose(opts.Top.Verbose) // Sets kubectl vebose flag
+		install.SetVerbose(opts.Top.Verbose) // Sets kubectl verbose flag
 		helm.SetVerbose(opts.Top.Verbose)    // Sets helm library's debug flag
 	}
 }

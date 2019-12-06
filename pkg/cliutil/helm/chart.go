@@ -9,6 +9,8 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 )
 
+const tempChartFilePermissions = 0644
+
 // Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)
 func DownloadChart(chartArchiveUri string) (*chart.Chart, error) {
 
@@ -32,7 +34,7 @@ func DownloadChart(chartArchiveUri string) (*chart.Chart, error) {
 	charFilePath := chartFile.Name()
 	defer func() { _ = os.RemoveAll(charFilePath) }()
 
-	if err := ioutil.WriteFile(charFilePath, chartBytes, 0644); err != nil {
+	if err := ioutil.WriteFile(charFilePath, chartBytes, tempChartFilePermissions); err != nil {
 		return nil, err
 	}
 

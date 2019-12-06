@@ -12,7 +12,8 @@ Check the [Gloo docs](https://gloo.solo.io/installation/quick_start/#2-choosing-
 for a description of the different installation options.
 
 ## /crds
-This directory contains the Gloo `CustomResourceDefinitions`.
+This directory contains the Gloo `CustomResourceDefinitions`. This is the 
+[required location](https://helm.sh/docs/topics/charts/#custom-resource-definitions-crds) for CRDs in Helm 3 charts.
 
 ## /templates
 This directory contains the Helm templates used to generate the Gloo manifests.

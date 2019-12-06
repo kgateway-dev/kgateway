@@ -4,7 +4,7 @@
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
-|settings.integrations.knative.version|string|0.8.0|the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
+|settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
 |settings.integrations.knative.proxy.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |settings.integrations.knative.proxy.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |settings.integrations.knative.proxy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|

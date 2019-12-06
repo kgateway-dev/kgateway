@@ -116,7 +116,6 @@ rules:
 # if none is specified`).
 #
 # The following resources implement this workaround.
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -132,6 +131,7 @@ metadata:
 
 ---
 
+# The following resources implement the hook cleanup workaround.
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -154,6 +154,7 @@ roleRef:
 
 ---
 
+# The following resources implement the hook cleanup workaround.
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:

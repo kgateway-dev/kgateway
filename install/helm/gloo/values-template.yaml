@@ -68,8 +68,8 @@ gatewayProxies:
     gatewaySettings: {}
     stats: true
     kind:
-       deployment:
-         replicas: 1
+      deployment:
+        replicas: 1
     podTemplate:
       probes: false
       image:
