@@ -1,14 +1,12 @@
 package test
 
 import (
-	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -29,10 +27,6 @@ import (
 )
 
 func TestHelm(t *testing.T) {
-
-	// TODO(marco): adding this line to the output so we can tell when the actual testing starts (this is the first suite to be executed)
-	fmt.Println("Starting Helm test suite")
-
 	version = os.Getenv("TAGGED_VERSION")
 	if version == "" {
 		version = "dev"
@@ -104,14 +98,14 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 	// the test manifest utils can only read from a file, ugh
 	f, err := ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
-	defer os.Remove(f.Name())
+	defer func() { _ = os.Remove(f.Name()) }()
 
 	_, err = f.Write([]byte(rel.Manifest))
 	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
 
 	// also need to add in the hooks, which are not included in the release manifest
 	// be sure to skip the resources that we duplicate because of Helm hook weirdness (see the comment on install.GetNonCleanupHooks)
-	nonCleanupHooks, err := install.GetNonCleanupHooks(rel.Hooks)
+	nonCleanupHooks, err := helm.GetNonCleanupHooks(rel.Hooks)
 	Expect(err).NotTo(HaveOccurred(), "Should be able to get the non-cleanup hooks in the helm unit test setup")
 
 	for _, hook := range nonCleanupHooks {

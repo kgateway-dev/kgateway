@@ -20,16 +20,23 @@ func setVerbose(b bool) {
 }
 
 //go:generate mockgen -destination mocks/mock_helm_client.go -package mocks github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install HelmClient
+
+// This interface implements the Helm CLI actions. The implementation relies on the Helm 3 libraries.
 type HelmClient interface {
-	// prepare an installation object that can then be .Run() with a chart object
+	// Prepare an installation object that can then be .Run() with a chart object
 	NewInstall(namespace, releaseName string, dryRun bool) (HelmInstallation, *cli.EnvSettings, error)
+
+	// Prepare an un-installation object that can then be .Run() with a release name
 	NewUninstall(namespace string) (HelmUninstallation, error)
 
-	// list the already-existing releases in the given namespace
+	// List the already-existing releases in the given namespace
 	ReleaseList(namespace string) (HelmReleaseListRunner, error)
 
 	// Returns the Helm chart archive located at the given URI (can be either an http(s) address or a file path)
 	DownloadChart(chartArchiveUri string) (*chart.Chart, error)
+
+	// Returns true if the release with the given name exists in the given namespace
+	ReleaseExists(namespace, releaseName string) (releaseExists bool, err error)
 }
 
 // an interface around Helm's action.Install struct
@@ -146,8 +153,8 @@ func (d *defaultHelmClient) DownloadChart(chartArchiveUri string) (*chart.Chart,
 	return chartObj, nil
 }
 
-func ReleaseExists(helmClient HelmClient, namespace, releaseName string) (releaseExists bool, err error) {
-	list, err := helmClient.ReleaseList(namespace)
+func (d *defaultHelmClient) ReleaseExists(namespace, releaseName string) (releaseExists bool, err error) {
+	list, err := d.ReleaseList(namespace)
 	if err != nil {
 		return false, err
 	}

@@ -60,23 +60,15 @@ spec:
 	})
 
 	It("uninstalls cleanly by default", func() {
-		mockReleaseListRunner.EXPECT().
-			Run().
-			Return([]*release.Release{{
-				Name: constants.GlooReleaseName,
-			}}, nil)
-		mockReleaseListRunner.EXPECT().
-			SetFilter(constants.GlooReleaseName)
-
-		mockHelmClient.EXPECT().
-			ReleaseList(defaults.GlooSystem).
-			Return(mockReleaseListRunner, nil)
 		mockHelmClient.EXPECT().
 			NewUninstall(defaults.GlooSystem).
 			Return(mockHelmUninstallation, nil)
 		mockHelmUninstallation.EXPECT().
 			Run(constants.GlooReleaseName).
 			Return(nil, nil)
+		mockHelmClient.EXPECT().
+			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
+			Return(true, nil)
 
 		outputBuffer := new(bytes.Buffer)
 
@@ -89,6 +81,9 @@ spec:
 	})
 
 	It("can uninstall CRDs when requested", func() {
+		mockHelmClient.EXPECT().
+			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
+			Return(true, nil)
 		mockReleaseListRunner.EXPECT().
 			Run().
 			Return([]*release.Release{{
@@ -100,14 +95,11 @@ spec:
 					}},
 				},
 			}}, nil).
-			Times(2)
-		mockReleaseListRunner.EXPECT().
-			SetFilter(constants.GlooReleaseName)
-
+			Times(1)
 		mockHelmClient.EXPECT().
 			ReleaseList(defaults.GlooSystem).
 			Return(mockReleaseListRunner, nil).
-			Times(2)
+			Times(1)
 		mockHelmClient.EXPECT().
 			NewUninstall(defaults.GlooSystem).
 			Return(mockHelmUninstallation, nil)
@@ -134,19 +126,9 @@ spec:
 	})
 
 	It("can remove namespace when requested", func() {
-		mockReleaseListRunner.EXPECT().
-			Run().
-			Return([]*release.Release{{
-				Name: constants.GlooReleaseName,
-			}}, nil).
-			Times(1)
-		mockReleaseListRunner.EXPECT().
-			SetFilter(constants.GlooReleaseName)
-
 		mockHelmClient.EXPECT().
-			ReleaseList(defaults.GlooSystem).
-			Return(mockReleaseListRunner, nil).
-			Times(1)
+			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
+			Return(true, nil)
 		mockHelmClient.EXPECT().
 			NewUninstall(defaults.GlooSystem).
 			Return(mockHelmUninstallation, nil)

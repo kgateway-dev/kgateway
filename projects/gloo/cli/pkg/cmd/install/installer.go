@@ -3,6 +3,7 @@ package install
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"io"
 	"os"
 	"path"
@@ -17,7 +18,6 @@ import (
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
 )
@@ -49,7 +49,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	namespace := installerConfig.InstallCliArgs.Namespace
 	releaseName := installerConfig.InstallCliArgs.HelmReleaseName
 	if !installerConfig.InstallCliArgs.DryRun {
-		if releaseExists, err := ReleaseExists(i.helmClient, namespace, releaseName); err != nil {
+		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
 			return GlooAlreadyInstalled(namespace)
@@ -124,50 +124,26 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 func (i *installer) printReleaseManifest(release *release.Release) error {
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
-		fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
-		fmt.Fprintln(i.dryRunOutputWriter, "---")
+		_, _ = fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
 	// Print hook resources
-	nonCleanupHooks, err := GetNonCleanupHooks(release.Hooks)
+	nonCleanupHooks, err := helm.GetNonCleanupHooks(release.Hooks)
 	if err != nil {
 		return err
 	}
 	for _, hook := range nonCleanupHooks {
-		fmt.Fprintln(i.dryRunOutputWriter, hook.Manifest)
-		fmt.Fprintln(i.dryRunOutputWriter, "---")
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, hook.Manifest)
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
 	// Print the actual release resources
-	fmt.Fprintf(i.dryRunOutputWriter, "%s", release.Manifest)
+	_, _ = fmt.Fprintf(i.dryRunOutputWriter, "%s", release.Manifest)
 
 	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Fprintln(i.dryRunOutputWriter, "---")
+	_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	return nil
-}
-
-// some resources are duplicated because of weirdness with Helm hooks.
-// a job needs a service account/rbac resources, and we would like those to be cleaned up after the job is complete
-// this isn't really expressible cleanly through Helm hooks.
-func GetNonCleanupHooks(hooks []*release.Hook) (results []*release.Hook, err error) {
-	for _, hook := range hooks {
-		// Parse the resource in order to access the annotations
-		var resource struct{ Metadata v1.ObjectMeta }
-		if err := yaml.Unmarshal([]byte(hook.Manifest), &resource); err != nil {
-			return nil, errors.Wrapf(err, "parsing resource: %s", hook.Manifest)
-		}
-
-		// Skip hook cleanup resources
-		if annotations := resource.Metadata.Annotations; len(annotations) > 0 {
-			if _, ok := annotations[constants.HookCleanupResourceAnnotation]; ok {
-				continue
-			}
-		}
-
-		results = append(results, hook)
-	}
-
-	return results, nil
 }
 
 // The resulting URI can be either a URL or a local file path.
