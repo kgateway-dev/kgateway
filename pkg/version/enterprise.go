@@ -6,27 +6,32 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-// The version of GlooE installed by the CLI
-// This will be set by the linker during build
-var EnterpriseTag = GetEnterpriseTag()
+const EnterpriseHelmRepoIndex = "https://storage.googleapis.com/gloo-ee-helm/index.yaml"
+const GlooEE = "gloo-ee"
 
-var EnterpriseHelmRepoIndex = "https://storage.googleapis.com/gloo-ee-helm/index.yaml"
-
-// Calculate the latest gloo-ee version from the helm repo index, using the helm library
-func GetEnterpriseTag() string {
+// The version of GlooE installed by the CLI.
+// Calculated from the latest gloo-ee version in the helm repo index
+func GetEnterpriseTag() (string, error) {
 	fs := afero.NewOsFs()
 	tmpFile, err := afero.TempFile(fs, "", "")
+	if err != nil {
+		return "", err
+	}
 	if err := githubutils.DownloadFile(EnterpriseHelmRepoIndex, tmpFile); err != nil {
-		return UndefinedVersion
+		return "", err
 	}
 	defer fs.Remove(tmpFile.Name())
-	ind, err := repo.LoadIndexFile(tmpFile.Name())
+	return LatestVersionFromRepo(tmpFile.Name())
+}
+
+func LatestVersionFromRepo(file string) (string, error) {
+	ind, err := repo.LoadIndexFile(file)
 	if err != nil {
-		return UndefinedVersion
+		return "", err
 	}
-	version, err := ind.Get("gloo-ee", "")
+	version, err := ind.Get(GlooEE, "")
 	if err != nil {
-		return UndefinedVersion
+		return "", err
 	}
-	return version.Version
+	return version.Version, nil
 }

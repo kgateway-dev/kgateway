@@ -150,11 +150,15 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 // The resulting URI can be either a URL or a local file path.
 func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, error) {
 	var helmChartArchiveUri string
+	enterpriseTag, err := version.GetEnterpriseTag()
+	if err != nil {
+		return "", err
+	}
 
 	if enterprise {
-		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, version.EnterpriseTag)
+		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
 	} else if withUi {
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, version.EnterpriseTag)
+		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
 	} else {
 		glooOsVersion, err := getGlooVersion(chartOverride)
 		if err != nil {
