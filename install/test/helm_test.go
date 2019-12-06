@@ -65,11 +65,6 @@ func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource
 	}
 }
 
-type renderTestCase struct {
-	rendererName string
-	renderer     ChartRenderer
-}
-
 var _ = Describe("Helm Test", func() {
 	var allTests = func(rendererTestCase renderTestCase) {
 		var (

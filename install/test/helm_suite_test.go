@@ -53,6 +53,11 @@ var _ = BeforeSuite(func() {
 	MustMake(".", "-C", "../../", "prepare-helm")
 })
 
+type renderTestCase struct {
+	rendererName string
+	renderer     ChartRenderer
+}
+
 var renderers = []renderTestCase{
 	{"Helm 2", helm2Renderer{chartDir}},
 	{"Helm 3", helm3Renderer{chartDir}},
