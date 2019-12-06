@@ -78,7 +78,7 @@ var _ = Describe("Helm Test", func() {
 	Describe("Helm 2 compatibility", func() {
 		_ = &renderutil.Options{
 
-			KubeVersion    : "",
+			KubeVersion: "",
 			APIVersions: []string{},
 		}
 	})
