@@ -1,11 +1,14 @@
 package test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/reporting-client/pkg/client"
+	"helm.sh/helm/v3/pkg/releaseutil"
 	"k8s.io/utils/pointer"
 
 	"github.com/gogo/protobuf/types"
@@ -75,11 +78,25 @@ var _ = Describe("Helm Test", func() {
 			for _, f := range release.Chart.Raw {
 				if f.Name == "templates/100-crds.yaml" {
 					foundCrdFile = true
-					legacyCrdTemplate := string(f.Data)
+					legacyCrdTemplateData := string(f.Data)
 
 					for _, helm3Crd := range release.Chart.CRDs() {
-						Expect(legacyCrdTemplate).To(ContainSubstring(string(helm3Crd.Data)), "CRD "+helm3Crd.Name+" does not match legacy duplicate")
+						Expect(legacyCrdTemplateData).To(ContainSubstring(string(helm3Crd.Data)), "CRD "+helm3Crd.Name+" does not match legacy duplicate")
 					}
+
+					legacyCrdTemplate, err := template.New("").Parse(legacyCrdTemplateData)
+					Expect(err).NotTo(HaveOccurred())
+
+					renderedLegacyCrds := new(bytes.Buffer)
+					err = legacyCrdTemplate.Execute(renderedLegacyCrds, map[string]interface{}{
+						"Values": map[string]interface{}{
+							"crds": map[string]interface{}{
+								"create": true,
+							},
+						},
+					})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to render the legacy CRDs")
+					Expect(len(releaseutil.SplitManifests(renderedLegacyCrds.String()))).To(Equal(len(release.Chart.CRDs())), "Should have the same number of CRDs")
 				}
 			}
 			Expect(foundCrdFile).To(BeTrue(), "Should have found the legacy CRD file")
