@@ -101,7 +101,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if not $spec.wasmEnabled }}
         image: {{ template "gloo.image" $image }}
+        {{- else }}
+        image: "{{ $image.registry }}/gloo-envoy-wasm-wrapper:{{ $image.tag }}"
+        {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: {{ $name | kebabcase }}
         securityContext:

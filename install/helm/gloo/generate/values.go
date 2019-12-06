@@ -189,6 +189,7 @@ type GatewayProxy struct {
 	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
 	Stats                     bool                         `json:"stats" desc:"enable prometheus stats"`
 	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	WasmEnabled               bool                         `json:"wasmEnabled" desc:"switch the envoy image to one which supports WASM"`
 }
 
 type GatewayProxyGatewaySettings struct {

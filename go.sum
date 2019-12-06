@@ -1246,6 +1246,8 @@ github.com/solo-io/envoy-operator v0.1.1 h1:fiUN3lqvR9OwmMuktX0MjLSNwGdya+1ObvxX
 github.com/solo-io/envoy-operator v0.1.1/go.mod h1:ZP5hB+khljAFCROj/yDjVPXCPHntdewy6mqYybcCneQ=
 github.com/solo-io/extend-envoy v0.0.0-20191204224055-e26d79aef9bd h1:Z6oSXk8Mx4yNVQDmfxZaLIJ9TyF6hHhdXKLRv2eOlrA=
 github.com/solo-io/extend-envoy v0.0.0-20191204224055-e26d79aef9bd/go.mod h1:m8BRelDbKdf0zLKuQewGzxmaUupSU2ThCvrLfc1/edc=
+github.com/solo-io/extend-envoy v0.0.0-20191206014053-77ced808eb81 h1:7/UCM/9oWLnroVozbXII/V0mHIsm+JDFcrFQ3xTJ2XE=
+github.com/solo-io/extend-envoy v0.0.0-20191206014053-77ced808eb81/go.mod h1:YVQsA4DoG5o70LQG1pwkXD7WbxEuktaNjP3dv0oHT9o=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f h1:CHgAq6eqV0JkJJifAEQ3f80YYmsxqTmhJfg6UnGVrCA=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1:lojsKFoQQH0O/ElLmagtWINB9zAaq04E8z0xIVS/gLU=
 github.com/solo-io/go-utils v0.11.0 h1:x4LB+TnWr6uWI8oP89d6FvGXbGFrsFpuHj5ovAiK68A=

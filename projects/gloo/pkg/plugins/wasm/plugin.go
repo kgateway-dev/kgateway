@@ -2,7 +2,6 @@ package wasm
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"
@@ -88,12 +87,15 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 		},
 	}
 
-	jason, _ := json.Marshal(filterCfg)
-	var strct types.Struct
-
-	protoutils.UnmarshalBytes(jason, &strct)
+	strct, err := protoutils.MarshalStruct(filterCfg)
+	if err != nil {
+		return nil, err
+	}
+	// var strct types.Struct
+	//
+	// protoutils.UnmarshalBytes(jason, &strct)
 	// TODO: allow customizing the stage
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, &strct, plugins.DuringStage(plugins.AcceptedStage))
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, strct, plugins.DuringStage(plugins.AcceptedStage))
 	if err != nil {
 		return nil, err
 	}
