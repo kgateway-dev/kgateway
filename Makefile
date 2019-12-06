@@ -17,7 +17,6 @@ ifeq ($(TAGGED_VERSION),)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-GLOOE_VERSION ?= 0.20.4
 
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
@@ -410,11 +409,14 @@ fetch-helm:
 #----------------------------------------------------------------------------------
 GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
 
+$(OUTPUT_DIR)/gloo-enterprise-version:
+	GO111MODULE=on go run hack/find_latest_enterprise_version.go
+
 .PHONY: download-glooe-changelog
-download-glooe-changelog:
+download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
 ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
-	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(GLOOE_VERSION)/* '../solo-projects/changelog'
+	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
 ASSETS_ONLY := false
