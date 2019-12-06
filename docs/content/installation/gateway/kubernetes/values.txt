@@ -138,7 +138,6 @@
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.stats|bool||enable prometheus stats|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
-|gatewayProxies.NAME.wasmEnabled|bool||switch the envoy image to one which supports WASM|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -190,7 +189,6 @@
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
 |gatewayProxies.gatewayProxy.stats|bool|true|enable prometheus stats|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
-|gatewayProxies.gatewayProxy.wasmEnabled|bool|false|switch the envoy image to one which supports WASM|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
@@ -242,3 +240,4 @@
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
+|global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|

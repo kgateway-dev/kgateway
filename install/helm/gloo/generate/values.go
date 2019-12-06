@@ -26,6 +26,7 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
+	Wasm       Wasm       `json:"wasm"`
 }
 
 type Namespace struct {
@@ -189,7 +190,6 @@ type GatewayProxy struct {
 	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
 	Stats                     bool                         `json:"stats" desc:"enable prometheus stats"`
 	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
-	WasmEnabled               bool                         `json:"wasmEnabled" desc:"switch the envoy image to one which supports WASM"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -286,4 +286,8 @@ type IngressProxyConfigMap struct {
 
 type K8s struct {
 	ClusterName string `json:"clusterName" desc:"cluster name to use when referencing services."`
+}
+
+type Wasm struct {
+	Enabled bool `json:"enabled" desc:"switch the gateway-proxy image to one which supports WASM"`
 }
