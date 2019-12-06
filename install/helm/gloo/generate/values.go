@@ -26,7 +26,7 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	Wasm       Wasm       `json:"wasm"`
+	Wasm       Wasm        `json:"wasm"`
 }
 
 type Namespace struct {

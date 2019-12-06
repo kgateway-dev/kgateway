@@ -382,7 +382,8 @@ HELM_DIR := install/helm
 INSTALL_NAMESPACE ?= gloo-system
 
 .PHONY: manifest
-manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml update-helm-chart
+manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml \
+ 		install/gloo-knative.yaml update-helm-chart
 
 # Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
 .PHONY: prepare-helm
@@ -539,10 +540,12 @@ push-kind-images: docker
 # The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
 
 .PHONY: build-test-assets
-build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 .PHONY: build-kind-assets
-build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
 

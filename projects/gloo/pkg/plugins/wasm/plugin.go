@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 	"strings"
-	"sync"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/extend-envoy/pkg/cache"
@@ -26,12 +25,14 @@ const (
 )
 
 type Plugin struct {
-	// listenerEnabled map[*v1.HttpListener]bool
+	imageCache cache.Cache
 }
 
 func NewPlugin() *Plugin {
+	imageCache := defaults.NewDefaultCache()
+	go http.ListenAndServe(":9979", imageCache)
 	return &Plugin{
-		// listenerEnabled: make(map[*v1.HttpListener]bool),
+		imageCache: imageCache,
 	}
 }
 
@@ -59,6 +60,14 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 		return nil, err
 	}
 
+	var runtime string
+	switch pc.GetVmType() {
+	case wasm.PluginSource_V8:
+		runtime = V8Runtime
+	case wasm.PluginSource_WAVM:
+		runtime = WavmRuntime
+	}
+
 	filterCfg := &config.WasmService{
 		Config: &config.PluginConfig{
 			Name:          pc.Name,
@@ -66,7 +75,7 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 			Configuration: pc.Config,
 			VmConfig: &config.VmConfig{
 				VmId:    VmId,
-				Runtime: WavmRuntime,
+				Runtime: runtime,
 				Code: &core.AsyncDataSource{
 					Specifier: &core.AsyncDataSource_Remote{
 						Remote: &core.RemoteDataSource{
@@ -100,19 +109,9 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 	return &stagedFilter, nil
 }
 
-var (
-	imageCache cache.Cache
-	once       sync.Once
-)
-
-func init() {
-	imageCache = defaults.NewDefaultCache()
-	go http.ListenAndServe(":9979", imageCache)
-}
-
 func (p *Plugin) ensurePluginInCache(pc *wasm.PluginSource) (*CachedPlugin, error) {
 
-	digest, err := imageCache.Add(context.TODO(), pc.Image)
+	digest, err := p.imageCache.Add(context.TODO(), pc.Image)
 	if err != nil {
 		return nil, err
 	}
@@ -129,11 +128,11 @@ func (p *Plugin) verifyConfiguration(schema Schema, config string) error {
 func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	wasm := l.GetOptions().GetWasm()
 	if wasm != nil {
-			stagedPlugin, err := p.plugin(wasm)
-			if err != nil {
-				return nil, err
-			}
-			return []plugins.StagedHttpFilter{*stagedPlugin}, nil
+		stagedPlugin, err := p.plugin(wasm)
+		if err != nil {
+			return nil, err
+		}
+		return []plugins.StagedHttpFilter{*stagedPlugin}, nil
 	}
 	return nil, nil
 }

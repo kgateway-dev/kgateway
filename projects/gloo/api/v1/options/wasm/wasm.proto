@@ -20,4 +20,10 @@ message PluginSource {
 
     string root_id = 6;
 
+    enum VmType {
+        V8 = 0;
+        WAVM = 1;
+    }
+
+    VmType vm_type = 7;
 }
