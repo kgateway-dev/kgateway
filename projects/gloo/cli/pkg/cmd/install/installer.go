@@ -3,11 +3,12 @@ package install
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"io"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"

@@ -1,14 +1,15 @@
 package install
 
 import (
+	"io/ioutil"
+	"os"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
-	"io/ioutil"
-	"os"
 )
 
 const tempChartFilePermissions = 0644
