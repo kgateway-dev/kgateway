@@ -11,6 +11,7 @@ type HelmConfig struct {
 
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
+	Crds           *Crds                   `json:"crds,omitempty"`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
 	Discovery      *Discovery              `json:"discovery,omitempty"`
@@ -30,6 +31,11 @@ type Global struct {
 
 type Namespace struct {
 	Create bool `json:"create" desc:"create the installation namespace"`
+}
+
+type Crds struct {
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
 type Rbac struct {
