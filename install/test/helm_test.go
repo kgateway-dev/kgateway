@@ -720,7 +720,6 @@ spec:
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
      invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -734,7 +733,6 @@ spec:
 
 				It("creates the validating webhook configuration", func() {
 					vwc := makeUnstructured(`
-
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -759,7 +757,6 @@ webhooks:
        apiVersions: ["v1"]
        resources: ["*"]
    failurePolicy: Ignore
-
 `)
 					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
@@ -769,7 +766,6 @@ webhooks:
 
 					gwDeployment := makeUnstructured(`
 # Source: gloo/templates/5-gateway-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -801,7 +797,6 @@ spec:
           - containerPort: 8443
             name: https
             protocol: TCP
-
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -875,12 +870,10 @@ spec:
             - "--svc-name=gateway"
             - "--validating-webhook-configuration-name=gloo-gateway-validation-webhook-` + namespace + `"
       restartPolicy: OnFailure
-
 `)
 					testManifest.ExpectUnstructured(job.GetKind(), job.GetNamespace(), job.GetName()).To(BeEquivalentTo(job))
 
 					clusterRole := makeUnstructured(`
-
 # this role requires access to cluster-scoped resources
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -927,7 +920,6 @@ roleRef:
 					testManifest.ExpectUnstructured(clusterRoleBinding.GetKind(), clusterRoleBinding.GetNamespace(), clusterRoleBinding.GetName()).To(BeEquivalentTo(clusterRoleBinding))
 
 					serviceAccount := makeUnstructured(`
-
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -939,7 +931,6 @@ metadata:
     "helm.sh/hook-weight": "5"
   name: gateway-certgen
   namespace: ` + namespace + `
-
 `)
 					testManifest.ExpectUnstructured(serviceAccount.GetKind(), serviceAccount.GetNamespace(), serviceAccount.GetName()).To(BeEquivalentTo(serviceAccount))
 

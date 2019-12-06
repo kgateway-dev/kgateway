@@ -3,7 +3,7 @@ title: Getting Started with Gloo
 weight: 15
 ---
 
-# Gloo Says Go
+## Gloo Says Go
 
 We know you want to jump right in and start hacking away with Gloo. That's awesome! If you want to try out Gloo in a hosted setting, please check out our [Katacoda](https://katacoda.com/solo-io) courses that will guide you through a number of scenarios using Gloo, all in a sandboxed environment.
 
@@ -29,7 +29,7 @@ There are a number of options when it comes to installing Gloo Gateway. The requ
 
 ### Kuberenetes Deployments
 
-Not sure how you will deploy Gloo? This [section](../installation/cluster_setup/) is for you. Gloo Gateway deploys as a set of containers, and is usually deployed on a Kubernetes cluster. In order to install Gloo Gateway, you will need access to a Kubernetes deployment. That could be a local cluster using *minikube* or *minishift*. It could be a hosted cluster on one of the public clouds such as *Google Kubernetes Engine*, *Elastic Kubernetes Service*, or *Azure Kuberentes Service*. You could even host your own Kubernetes cluster in your datacenter! 
+Not sure how you will deploy Gloo? This [section](../installation/gateway/kubernetes/cluster_setup/) is for you. Gloo Gateway deploys as a set of containers, and is usually deployed on a Kubernetes cluster. In order to install Gloo Gateway, you will need access to a Kubernetes deployment. That could be a local cluster using *minikube* or *minishift*. It could be a hosted cluster on one of the public clouds such as *Google Kubernetes Engine*, *Elastic Kubernetes Service*, or *Azure Kuberentes Service*. You could even host your own Kubernetes cluster in your datacenter! 
 
 As long as you can run *kubectl* and have cluster-admin permissions, you're all set.
 
@@ -49,7 +49,7 @@ Nomad is a workload scheduler that can be used in place of Docker Compose or Kub
 
 The most common starting point is to [install Gloo Gateway](../installation/). Once Gloo Gateway is installed, [Gloo Routing](../gloo_routing/) is likely your go-to destination.  Otherwise, here are some common paths to learning.
 
-- Do you need a Kubernetes cluster? Start [here](../installation/cluster_setup/).
+- Do you need a Kubernetes cluster? Start [here](../installation/gateway/kubernetes/cluster_setup/).
 - Need to install the Gloo Gateway? Start [here](../installation/).
 - Want to know more about Gloo Routing? Start [here](../gloo_routing/).
 - Concerned about security? Start [here](../security/). (*Enterprise Gloo only*)

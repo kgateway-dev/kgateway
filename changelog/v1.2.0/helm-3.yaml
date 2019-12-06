@@ -40,8 +40,13 @@ changelog:
     and should therefore be used only when strictly necessary.
     Not being considered part of a release, hooks will not be cleaned up when running `helm uninstall`. The documented
     ways to get around this will not work for us though: we can't use `hook-delete-policy` since we have multiple hooks
+<<<<<<< HEAD
     that depend on each other (RBAC resources needed by the job), and we cannot write a job to clean them up as this
     would result in a catch-22 (this second job would in turn need its own RBAC resources, and who would clean up those?).
+=======
+    that depend on each other (RBAC resources needed by the job), and we cannot write a job to clean them up, as this
+    this second job would in turn need dedicated RBAC resources, which need to be cleaned up, and so on.
+>>>>>>> fc5c3705edf575adc9b7386cfbecaf088e5d13e9
     To be able to clean up the hook resources related to the `certgen` Job, which are needed only temporarily during the
     pre-install(upgrade) phase, we redefine them as `post-install(upgrade)` hooks with a `hook-delete-policy`. This way
     Helm will reapply and immediately delete them after the installation (upgrade) completes.

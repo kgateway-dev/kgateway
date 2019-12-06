@@ -19,10 +19,9 @@ import (
 
 var _ = Describe("Install", func() {
 	var (
-		mockHelmClient        *mocks.MockHelmClient
-		mockReleaseListRunner *mocks.MockHelmReleaseListRunner
-		mockHelmInstallation  *mocks.MockHelmInstallation
-		ctrl                  *gomock.Controller
+		mockHelmClient       *mocks.MockHelmClient
+		mockHelmInstallation *mocks.MockHelmInstallation
+		ctrl                 *gomock.Controller
 
 		glooOsVersion   = "v1.0.0"
 		glooOsChartUri  = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
@@ -97,7 +96,6 @@ rules:
 
 		ctrl = gomock.NewController(GinkgoT())
 		mockHelmClient = mocks.NewMockHelmClient(ctrl)
-		mockReleaseListRunner = mocks.NewMockHelmReleaseListRunner(ctrl)
 		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 	})
 
@@ -116,19 +114,10 @@ rules:
 			KubeConfig: "path-to-kube-config",
 		}
 
-		mockReleaseListRunner.EXPECT().
-			Run().
-			Return([]*release.Release{}, nil)
-		mockReleaseListRunner.EXPECT().
-			SetFilter(installConfig.HelmReleaseName)
-
 		mockHelmInstallation.EXPECT().
 			Run(chart, map[string]interface{}{}).
 			Return(helmRelease, nil)
 
-		mockHelmClient.EXPECT().
-			ReleaseList(defaults.GlooSystem).
-			Return(mockReleaseListRunner, nil)
 		mockHelmClient.EXPECT().
 			NewInstall(defaults.GlooSystem, installConfig.HelmReleaseName, installConfig.DryRun).
 			Return(mockHelmInstallation, helmEnv, nil)
@@ -136,6 +125,10 @@ rules:
 		mockHelmClient.EXPECT().
 			DownloadChart(glooOsChartUri).
 			Return(chart, nil)
+
+		mockHelmClient.EXPECT().
+			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
+			Return(false, nil)
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 

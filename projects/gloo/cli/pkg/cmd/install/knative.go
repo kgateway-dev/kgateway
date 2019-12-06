@@ -9,9 +9,11 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/setup"
 	"go.uber.org/zap"
 	"helm.sh/helm/v3/pkg/chartutil"
 
@@ -71,6 +73,23 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if !opts.Install.Knative.SkipGlooInstall {
+
+				// wait for knative apiservice (autoscaler metrics) to be healthy before attempting gloo installation
+				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancel()
+				for {
+					stdout, _ := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+					if len(stdout) > 0 && !strings.Contains(stdout, "False") {
+						// knative apiservice is ready, we can attempt gloo installation now!
+						break
+					}
+					if ctx.Err() != nil {
+						return errors.New("timed out waiting for knative apiservice to be ready")
+					}
+					time.Sleep(1 * time.Second)
+				}
+
 				knativeValues, err := RenderKnativeValues(opts.Install.Knative.InstallKnativeVersion)
 				if err != nil {
 					return err

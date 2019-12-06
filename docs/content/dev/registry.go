@@ -1,3 +1,6 @@
+// +build ignore
+
+
 package docs_demo
 
 // package registry

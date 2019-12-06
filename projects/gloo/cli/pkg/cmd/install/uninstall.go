@@ -49,10 +49,10 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 	namespace := cliArgs.Uninstall.Namespace
 	releaseName := cliArgs.Uninstall.HelmReleaseName
-	if releaseExists, err := ReleaseExists(u.helmClient, namespace, releaseName); err != nil {
+	if releaseExists, err := u.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 		return err
 	} else if !releaseExists {
-		fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
+		_, _ = fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
 		return nil
 	}
 
@@ -71,7 +71,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		}
 	}
 
-	fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
+	_, _ = fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
 	if _, err = uninstallAction.Run(releaseName); err != nil {
 		return err
 	}
@@ -126,13 +126,13 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 		return nil
 	}
 
-	fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
+	_, _ = fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
 	for _, crdName := range crdNames {
 		args = append(args, crdName)
 	}
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
-		fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
+		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
 	}
 
 	return nil
@@ -160,18 +160,18 @@ func makeUnstructured(manifest string) (*unstructured.Unstructured, error) {
 func (u *uninstaller) uninstallKnativeIfNecessary() {
 	_, installOpts, err := checkKnativeInstallation()
 	if err != nil {
-		fmt.Fprintf(u.output, "Finding knative installation\n")
+		_, _ = fmt.Fprintf(u.output, "Finding knative installation\n")
 		return
 	}
 	if installOpts != nil {
-		fmt.Fprintf(u.output, "Removing knative components installed by Gloo %#v...\n", installOpts)
+		_, _ = fmt.Fprintf(u.output, "Removing knative components installed by Gloo %#v...\n", installOpts)
 		manifests, err := RenderKnativeManifests(*installOpts)
 		if err != nil {
-			fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
+			_, _ = fmt.Fprintf(u.output, "Could not determine which knative components to remove. Continuing...\n")
 			return
 		}
 		if err := install.KubectlDelete([]byte(manifests), "--ignore-not-found"); err != nil {
-			fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
+			_, _ = fmt.Fprintf(u.output, "Unable to delete knative. Continuing...\n")
 		}
 	}
 }

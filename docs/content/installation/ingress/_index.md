@@ -7,7 +7,7 @@ weight: 4
 ## Installing the Gloo Ingress Controller on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 

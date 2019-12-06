@@ -4,7 +4,7 @@ description: Guides for installing the Gloo Gateway.
 weight: 2
 ---
 
-# Install the Gloo Gateway
+## Install the Gloo Gateway
 
 <dic markdown=1>
 <table>

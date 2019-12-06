@@ -258,6 +258,11 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	logger.Errorf("Validation failed: %v", validationErr)
 
 	if len(proxyReports) > 0 {
+		if wh.alwaysAccept {
+			// if not an unmarshal error, accept the resource
+			return success
+		}
+
 		var proxyErrs []error
 		for _, rpt := range proxyReports {
 			err := validationutil.GetProxyError(rpt)
@@ -266,10 +271,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 			}
 		}
 		validationErr = errors.Errorf("resource incompatible with current Gloo snapshot: %v", proxyErrs)
-	}
-
-	if wh.alwaysAccept {
-		return success
 	}
 
 	details := &metav1.StatusDetails{

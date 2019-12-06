@@ -82,6 +82,21 @@ func (mr *MockHelmClientMockRecorder) NewUninstall(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewUninstall", reflect.TypeOf((*MockHelmClient)(nil).NewUninstall), arg0)
 }
 
+// ReleaseExists mocks base method
+func (m *MockHelmClient) ReleaseExists(arg0, arg1 string) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReleaseExists", arg0, arg1)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ReleaseExists indicates an expected call of ReleaseExists
+func (mr *MockHelmClientMockRecorder) ReleaseExists(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReleaseExists", reflect.TypeOf((*MockHelmClient)(nil).ReleaseExists), arg0, arg1)
+}
+
 // ReleaseList mocks base method
 func (m *MockHelmClient) ReleaseList(arg0 string) (install.HelmReleaseListRunner, error) {
 	m.ctrl.T.Helper()

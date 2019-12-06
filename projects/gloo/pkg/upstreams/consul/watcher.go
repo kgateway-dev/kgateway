@@ -139,8 +139,9 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						return err
 					},
-					retry.Attempts(5),
-					retry.Delay(1*time.Second),
+					retry.Attempts(6),
+					//  Last delay is 2^6 * 100ms = 3.2s
+					retry.Delay(100*time.Millisecond),
 					retry.DelayType(retry.BackOffDelay),
 				)
 

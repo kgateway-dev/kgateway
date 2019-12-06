@@ -22,11 +22,6 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 
 			extraValues := map[string]interface{}{
 				"license_key": opts.Install.LicenseKey,
-				"gloo": map[string]interface{}{
-					"namespace": map[string]interface{}{
-						"create": "true",
-					},
-				},
 			}
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{

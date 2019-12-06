@@ -144,7 +144,7 @@ var _ = Describe("ConsulClient", func() {
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
+				Eventually(upstreamChan, 500*time.Millisecond).Should(Receive(ConsistOf(
 					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
@@ -211,7 +211,8 @@ var _ = Describe("ConsulClient", func() {
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
+				// The retry delay in the consul client is 100ms
+				Eventually(upstreamChan, 300*time.Millisecond).Should(Receive(ConsistOf(
 					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
 				)))
@@ -276,7 +277,6 @@ var _ = Describe("ConsulClient", func() {
 type svcQueryFunc func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error)
 
 func returnWithDelay(newIndex uint64, services []string, delay time.Duration) svcQueryFunc {
-	time.Sleep(delay)
 
 	svcMap := make(map[string][]string, len(services))
 	for _, svc := range services {
@@ -284,6 +284,7 @@ func returnWithDelay(newIndex uint64, services []string, delay time.Duration) sv
 	}
 
 	return func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
+		time.Sleep(delay)
 		return svcMap, &consulapi.QueryMeta{LastIndex: newIndex}, nil
 	}
 }

@@ -17,7 +17,7 @@ This port defaults to `19000`.
 
 To add the health check to a gateway, add the `healthCheck` stanza to the Gateway's `options`, like so:
 
-{{< highlight yaml "hl_lines=9-11" >}}
+{{< highlight yaml "hl_lines=9-12" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -26,9 +26,10 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: 8080
-  options:
-    healthCheck:
-      path: /any-path-you-want
+  httpGateway:
+    options:
+      healthCheck:
+        path: /any-path-you-want
 {{< /highlight >}}
 
 The HTTP Path of health check requests must be an *exact* match to the provided `healthCheck.path` variable.

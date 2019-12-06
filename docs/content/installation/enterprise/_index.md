@@ -7,7 +7,7 @@ weight: 10
 ## Installing the Gloo Gateway on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
 
 Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
 
@@ -26,7 +26,7 @@ your unique key.
 {{% /notice %}}
 
 Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community
-[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/cluster_setup" >}}) instructions.
+[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup" >}}) instructions.
 
 
 ### Installing on Kubernetes with `glooctl`
