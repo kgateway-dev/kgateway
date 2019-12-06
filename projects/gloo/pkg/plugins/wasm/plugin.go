@@ -66,7 +66,7 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 			Configuration: pc.Config,
 			VmConfig: &config.VmConfig{
 				VmId:    VmId,
-				Runtime: V8Runtime,
+				Runtime: WavmRuntime,
 				Code: &core.AsyncDataSource{
 					Specifier: &core.AsyncDataSource_Remote{
 						Remote: &core.RemoteDataSource{
@@ -91,9 +91,6 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 	if err != nil {
 		return nil, err
 	}
-	// var strct types.Struct
-	//
-	// protoutils.UnmarshalBytes(jason, &strct)
 	// TODO: allow customizing the stage
 	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, strct, plugins.DuringStage(plugins.AcceptedStage))
 	if err != nil {
