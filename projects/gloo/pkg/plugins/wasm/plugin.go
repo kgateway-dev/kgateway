@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/extend-envoy/pkg/cache"
@@ -24,15 +25,20 @@ const (
 	WasmCacheCluster = "wasm-cache"
 )
 
-type Plugin struct {
+var (
+	once sync.Once
 	imageCache cache.Cache
+)
+
+type Plugin struct {
 }
 
 func NewPlugin() *Plugin {
-	imageCache := defaults.NewDefaultCache()
-	go http.ListenAndServe(":9979", imageCache)
+	once.Do(func() {
+		imageCache = defaults.NewDefaultCache()
+		go http.ListenAndServe(":9979", imageCache)
+	})
 	return &Plugin{
-		imageCache: imageCache,
 	}
 }
 
@@ -111,7 +117,7 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 
 func (p *Plugin) ensurePluginInCache(pc *wasm.PluginSource) (*CachedPlugin, error) {
 
-	digest, err := p.imageCache.Add(context.TODO(), pc.Image)
+	digest, err := imageCache.Add(context.TODO(), pc.Image)
 	if err != nil {
 		return nil, err
 	}
