@@ -3298,6 +3298,7 @@
     "helm.sh/helm/v3/pkg/cli/values",
     "helm.sh/helm/v3/pkg/getter",
     "helm.sh/helm/v3/pkg/release",
+    "helm.sh/helm/v3/pkg/repo",
     "helm.sh/helm/v3/pkg/strvals",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
