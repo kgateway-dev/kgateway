@@ -69,7 +69,9 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 				// first apply the core HCM settings, if any
 				if hcmSettings != nil {
-					copyCoreHcmSettings(&cfg, hcmSettings)
+					if err := copyCoreHcmSettings(&cfg, hcmSettings); err != nil {
+						return err
+					}
 				}
 
 				// then allow any HCM plugins to make their changes, with respect to any changes the core plugin made
@@ -90,7 +92,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
+func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
 	cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
 	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
 	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
@@ -119,12 +121,14 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(upgradeConfigs))
 
 		for i, config := range upgradeConfigs {
-			switch config.UpgradeType.(type) {
+			switch upgradeType := config.UpgradeType.(type) {
 			case *upgrade.UpgradeConfig_Websocket:
 				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 					UpgradeType: "websocket",
 					Enabled:     config.GetWebsocket().GetEnabled(),
 				}
+			default:
+				return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 			}
 		}
 	}
@@ -145,6 +149,8 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			Uri:     hcmSettings.SetCurrentClientCertDetails.Uri,
 		}
 	}
+
+	return nil
 }
 
 var (
