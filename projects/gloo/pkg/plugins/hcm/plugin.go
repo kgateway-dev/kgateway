@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -115,14 +115,14 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	}
 
 	// allowed upgrades
-	upgradeConfigs := hcmSettings.GetUpgradeConfigs()
+	protocolUpgrades := hcmSettings.GetUpgrades()
 
-	if upgradeConfigs != nil {
-		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(upgradeConfigs))
+	if protocolUpgrades != nil {
+		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(protocolUpgrades))
 
-		for i, config := range upgradeConfigs {
+		for i, config := range protocolUpgrades {
 			switch upgradeType := config.UpgradeType.(type) {
-			case *upgrade.UpgradeConfig_Websocket:
+			case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 					UpgradeType: "websocket",
 					Enabled:     config.GetWebsocket().GetEnabled(),

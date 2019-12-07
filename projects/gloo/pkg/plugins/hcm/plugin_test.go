@@ -3,7 +3,7 @@ package hcm_test
 import (
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 
 	. "github.com/onsi/ginkgo"
@@ -58,10 +58,10 @@ var _ = Describe("Plugin", func() {
 				Uri:     true,
 			},
 
-			UpgradeConfigs: []*upgrade.UpgradeConfig{
+			Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
 				{
-					UpgradeType: &upgrade.UpgradeConfig_Websocket{
-						Websocket: &upgrade.UpgradeConfig_UpgradeSpec{
+					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
 							Enabled: &types.BoolValue{Value: true},
 						},
 					},

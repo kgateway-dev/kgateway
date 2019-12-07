@@ -722,6 +722,9 @@ apis:
   pipe.options.gloo.solo.io.UpstreamSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/pipe/pipe.proto.sk/#UpstreamSpec
     package: pipe.options.gloo.solo.io
+  protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto.sk/#ProtocolUpgradeConfig
+    package: protocol_upgrade.options.gloo.solo.io
   ratelimit.options.gloo.solo.io.Action:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#Action
     package: ratelimit.options.gloo.solo.io
@@ -815,9 +818,6 @@ apis:
   transformation.options.gloo.solo.io.Parameters:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
-  upgrade.options.gloo.solo.io.UpgradeConfig:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/upgrade/upgrade.proto.sk/#UpgradeConfig
-    package: upgrade.options.gloo.solo.io
   validate.AnyRules:
     relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#AnyRules
     package: validate

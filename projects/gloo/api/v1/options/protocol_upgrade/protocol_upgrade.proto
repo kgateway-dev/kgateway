@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package protocol_upgrade.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade";
+
+import "google/protobuf/wrappers.proto";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+message ProtocolUpgradeConfig {
+    message ProtocolUpgradeSpec {
+        // Whether the upgrade should be enabled.
+        google.protobuf.BoolValue enabled = 1;
+    }
+
+    oneof upgrade_type {
+        // Specification for websocket upgrade requests.
+        ProtocolUpgradeSpec websocket = 1;
+    }
+}

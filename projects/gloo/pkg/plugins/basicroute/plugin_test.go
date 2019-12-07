@@ -3,7 +3,7 @@ package basicroute_test
 import (
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
@@ -230,10 +230,10 @@ var _ = Describe("upgrades", func() {
 
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				UpgradeConfigs: []*upgrade.UpgradeConfig{
+				Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
 					{
-						UpgradeType: &upgrade.UpgradeConfig_Websocket{
-							Websocket: &upgrade.UpgradeConfig_UpgradeSpec{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
 								Enabled: &types.BoolValue{Value: true},
 							},
 						},

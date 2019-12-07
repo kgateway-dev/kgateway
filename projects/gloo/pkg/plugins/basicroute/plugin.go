@@ -4,8 +4,8 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
@@ -131,7 +131,7 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 }
 
 func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
-	upgrades := in.GetOptions().GetUpgradeConfigs()
+	upgrades := in.GetOptions().GetUpgrades()
 	if upgrades == nil {
 		return nil
 	}
@@ -150,7 +150,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 
 	for i, config := range upgrades {
 		switch upgradeType := config.GetUpgradeType().(type) {
-		case *upgrade.UpgradeConfig_Websocket:
+		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
 				UpgradeType: "websocket",
 				Enabled:     config.GetWebsocket().Enabled,
