@@ -4,12 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/solo-io/reporting-client/pkg/client"
-
-	"k8s.io/apimachinery/pkg/runtime"
-	"sigs.k8s.io/yaml"
-
 	"github.com/gogo/protobuf/proto"
+	"github.com/solo-io/reporting-client/pkg/client"
+	"k8s.io/utils/pointer"
+
 	"github.com/gogo/protobuf/types"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -19,7 +17,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-	"k8s.io/utils/pointer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -74,14 +71,11 @@ var _ = Describe("Helm Test", func() {
 			{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 			{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 		}
-		helmTestInstallId = "helm-unit-test-install-id"
 	)
 
 	Describe("gateway proxy extra annotations and crds", func() {
 		var (
-			globalLabels = map[string]string{
-				"installationId": helmTestInstallId,
-			}
+			globalLabels    = map[string]string{}
 			setGlobalLabels = func(testLabels map[string]string) {
 				for k, v := range globalLabels {
 					testLabels[k] = v
@@ -92,18 +86,21 @@ var _ = Describe("Helm Test", func() {
 			statsAnnotations map[string]string
 		)
 
-		// adds the install ID into the provided helm flags- no need to provide it yourself
-		prepareMakefile := func(helmFlags string) {
-			testManifest = renderManifest(helmFlags + " --set global.glooInstallationId=" + helmTestInstallId)
+		// each entry in valuesArgs should look like `path.to.helm.field=value`
+		prepareMakefile := func(namespace string, values helmValues) {
+			tm, err := renderManifest(namespace, values)
+			Expect(err).NotTo(HaveOccurred(), "Failed to render manifest")
+			testManifest = tm
 		}
 
 		// helper for passing a values file
 		prepareMakefileFromValuesFile := func(valuesFile string) {
-			helmFlags := "--namespace " + namespace +
-				" --set namespace.create=true" +
-				" --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test" +
-				" --values " + valuesFile
-			prepareMakefile(helmFlags)
+			prepareMakefile(namespace, helmValues{
+				valuesFile: valuesFile,
+				valuesArgs: []string{
+					"gatewayProxies.gatewayProxy.service.extraAnnotations.test=test",
+				},
+			})
 		}
 		BeforeEach(func() {
 			statsAnnotations = map[string]string{
@@ -111,58 +108,6 @@ var _ = Describe("Helm Test", func() {
 				"prometheus.io/port":   "9091",
 				"prometheus.io/scrape": "true",
 			}
-		})
-
-		Context("installation", func() {
-			installIdLabel := "installationId"
-
-			It("attaches a unique installation ID label to all top-level kubernetes resources if install ID is omitted", func() {
-				testManifest = renderManifest("--namespace " + namespace)
-
-				Expect(testManifest.NumResources()).NotTo(BeZero(), "Test manifest should have a nonzero number of resources")
-				var uniqueInstallationId string
-				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
-					installationId, ok := resource.GetLabels()[installIdLabel]
-					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
-						resource.GetKind(),
-						resource.GetName(),
-						resource.GetNamespace()))
-
-					if uniqueInstallationId == "" {
-						uniqueInstallationId = installationId
-					}
-
-					Expect(installationId).To(Equal(uniqueInstallationId),
-						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
-							installationId,
-							resource.GetKind(),
-							resource.GetNamespace(),
-							resource.GetNamespace()))
-				})
-
-				Expect(uniqueInstallationId).NotTo(Equal(helmTestInstallId), "Make sure we didn't accidentally set our install ID to the helm test ID")
-			})
-
-			It("can assign a custom installation ID", func() {
-				installId := "custom-install-id"
-				testManifest = renderManifest("--namespace " + namespace + " --set global.glooInstallationId=" + installId)
-
-				Expect(testManifest.NumResources()).NotTo(BeZero())
-				testManifest.ExpectAll(func(resource *unstructured.Unstructured) {
-					installationId, ok := resource.GetLabels()[installIdLabel]
-					Expect(ok).To(BeTrue(), fmt.Sprintf("The installation ID key should be present, but is not present on %s %s in namespace %s",
-						resource.GetKind(),
-						resource.GetName(),
-						resource.GetNamespace()))
-
-					Expect(installationId).To(Equal(installId),
-						fmt.Sprintf("Should not have generated several installation IDs, but found %s on %s %s in namespace %s",
-							installationId,
-							resource.GetKind(),
-							resource.GetNamespace(),
-							resource.GetNamespace()))
-				})
-			})
 		})
 
 		Context("gateway", func() {
@@ -181,8 +126,9 @@ var _ = Describe("Helm Test", func() {
 			})
 
 			It("has a namespace", func() {
-				helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
-				prepareMakefile(helmFlags)
+				prepareMakefile(namespace, helmValues{
+					valuesArgs: []string{"gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
+				})
 				rb := ResourceBuilder{
 					Namespace: namespace,
 					Name:      defaults.GatewayProxyName,
@@ -222,7 +168,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can create an access logging deployment/service", func() {
-					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
+					prepareMakefileFromValuesFile("val_access_logger.yaml")
 					container := GetQuayContainerSpec("access-logger", version, GetPodNamespaceEnvVar(), GetPodNameEnvVar(),
 						v1.EnvVar{
 							Name:  "SERVICE_NAME",
@@ -285,7 +231,7 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("has a proxy with access logging cluster", func() {
-					prepareMakefileFromValuesFile("install/test/val_access_logger.yaml")
+					prepareMakefileFromValuesFile("val_access_logger.yaml")
 					proxySpec := make(map[string]string)
 					labels = map[string]string{
 						"gloo":             "gateway-proxy",
@@ -312,7 +258,7 @@ var _ = Describe("Helm Test", func() {
 				)
 
 				It("renders with http/https gateways by default", func() {
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName)
 					var gateway1 gwv1.Gateway
 					ConvertKubeResource(gatewayUns, &gateway1)
@@ -331,7 +277,9 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("can disable rendering http/https gateways", func() {
-					prepareMakefile("--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true")
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways=true"},
+					})
 					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName).To(BeNil())
 					testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-ssl").To(BeNil())
 				})
@@ -344,7 +292,7 @@ var _ = Describe("Helm Test", func() {
 							Namespace: "one",
 						},
 					}
-					prepareMakefileFromValuesFile("install/test/val_custom_gateways.yaml")
+					prepareMakefileFromValuesFile("val_custom_gateways.yaml")
 					for _, name := range []string{newGatewayProxyName, defaults.GatewayProxyName} {
 						name := name
 						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, name)
@@ -408,34 +356,46 @@ var _ = Describe("Helm Test", func() {
 
 				It("sets extra annotations", func() {
 					gatewayProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
-					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxy.service.extraAnnotations.foo=bar" +
-						" --set gatewayProxies.gatewayProxy.service.extraAnnotations.bar=baz")
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.service.extraAnnotations.foo=bar",
+							"gatewayProxies.gatewayProxy.service.extraAnnotations.bar=baz",
+						},
+					})
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
 				It("sets external traffic policy", func() {
 					gatewayProxyService.Spec.ExternalTrafficPolicy = v1.ServiceExternalTrafficPolicyTypeLocal
-					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxy.service.externalTrafficPolicy=Local")
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.service.externalTrafficPolicy=" + string(v1.ServiceExternalTrafficPolicyTypeLocal),
+						},
+					})
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
 				It("sets cluster IP", func() {
 					gatewayProxyService.Spec.Type = v1.ServiceTypeClusterIP
 					gatewayProxyService.Spec.ClusterIP = "test-ip"
-					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxy.service.type=ClusterIP" +
-						" --set gatewayProxies.gatewayProxy.service.clusterIP=test-ip")
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.service.type=ClusterIP",
+							"gatewayProxies.gatewayProxy.service.clusterIP=test-ip",
+						},
+					})
 					testManifest.ExpectService(gatewayProxyService)
 				})
 
 				It("sets load balancer IP", func() {
 					gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
 					gatewayProxyService.Spec.LoadBalancerIP = "test-lb-ip"
-					prepareMakefile("--namespace " + namespace +
-						" --set gatewayProxies.gatewayProxy.service.type=LoadBalancer" +
-						" --set gatewayProxies.gatewayProxy.service.loadBalancerIP=test-lb-ip")
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.service.type=LoadBalancer",
+							"gatewayProxies.gatewayProxy.service.loadBalancerIP=test-lb-ip",
+						},
+					})
 					testManifest.ExpectService(gatewayProxyService)
 				})
 			})
@@ -544,28 +504,33 @@ var _ = Describe("Helm Test", func() {
 					})
 
 					It("creates a daemonset", func() {
-						helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.kind.deployment=null --set gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true"
-						prepareMakefile(helmFlags)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment=null",
+								"gatewayProxies.gatewayProxy.kind.daemonSet.hostPort=true",
+							},
+						})
 						testManifest.Expect("DaemonSet", gatewayProxyDeployment.Namespace, gatewayProxyDeployment.Name).To(BeEquivalentTo(daemonSet))
 					})
 				})
 
 				It("creates a deployment", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
 				It("disables net bind", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.podTemplate.disableNetBind=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.disableNetBind=true"},
+					})
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.Capabilities.Add = nil
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
 				It("unprivelged user", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.podTemplate.runUnprivileged=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.runUnprivileged=true"},
+					})
 					truez := true
 					uid := int64(10101)
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = &truez
@@ -574,8 +539,9 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("enables anti affinity ", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.antiAffinity=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.antiAffinity=true"},
+					})
 					gatewayProxyDeployment.Spec.Template.Spec.Affinity = &v1.Affinity{
 						PodAntiAffinity: &v1.PodAntiAffinity{
 							PreferredDuringSchedulingIgnoredDuringExecution: []v1.WeightedPodAffinityTerm{{
@@ -593,8 +559,6 @@ var _ = Describe("Helm Test", func() {
 				})
 
 				It("enables probes", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.probes=true"
-
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
 						Handler: v1.Handler{
 							Exec: &v1.ExecAction{
@@ -619,13 +583,21 @@ var _ = Describe("Helm Test", func() {
 						PeriodSeconds:       10,
 						FailureThreshold:    10,
 					}
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.probes=true"},
+					})
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
 				It("has limits", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2  --set gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3 --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4  --set gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.podTemplate.resources.limits.memory=2",
+							"gatewayProxies.gatewayProxy.podTemplate.resources.limits.cpu=3",
+							"gatewayProxies.gatewayProxy.podTemplate.resources.requests.memory=4",
+							"gatewayProxies.gatewayProxy.podTemplate.resources.requests.cpu=5",
+						},
+					})
 
 					// Add the limits we are testing:
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
@@ -644,8 +616,12 @@ var _ = Describe("Helm Test", func() {
 				It("can overwrite the container image information", func() {
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = fmt.Sprintf("gcr.io/solo-public/gloo-envoy-wrapper:%s", version)
 					gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ImagePullPolicy = "Always"
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy=Always --set gatewayProxies.gatewayProxy.podTemplate.image.registry=gcr.io/solo-public"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy=Always",
+							"gatewayProxies.gatewayProxy.podTemplate.image.registry=gcr.io/solo-public",
+						},
+					})
 
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
@@ -656,8 +632,9 @@ var _ = Describe("Helm Test", func() {
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-config_dump"] = "/config_dump"
 					gatewayProxyDeployment.Spec.Template.Annotations["readconfig-port"] = "8082"
 
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.readConfig=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true"},
+					})
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 
@@ -686,8 +663,9 @@ var _ = Describe("Helm Test", func() {
 							},
 						})
 
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gatewayProxies.gatewayProxy.extraContainersHelper=gloo.testcontainer"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.extraContainersHelper=gloo.testcontainer"},
+					})
 					testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 				})
 			})
@@ -698,24 +676,23 @@ var _ = Describe("Helm Test", func() {
 apiVersion: v1
 kind: Service
 metadata:
-  labels:
-    discovery.solo.io/function_discovery: disabled
-    app: gloo
-    gloo: gateway
-    installationId: ` + helmTestInstallId + `
-  name: gateway
-  namespace: ` + namespace + `
+ labels:
+   discovery.solo.io/function_discovery: disabled
+   app: gloo
+   gloo: gateway
+ name: gateway
+ namespace: ` + namespace + `
 spec:
-  ports:
-  - name: https
-    port: 443
-    protocol: TCP
-    targetPort: 8443
-  selector:
-    gloo: gateway
+ ports:
+ - name: https
+   port: 443
+   protocol: TCP
+   targetPort: 8443
+ selector:
+   gloo: gateway
 `)
 
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectUnstructured(gwService.GetKind(), gwService.GetNamespace(), gwService.GetName()).To(BeEquivalentTo(gwService))
 
 				})
@@ -725,35 +702,35 @@ spec:
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-weight: "5"
   labels:
     app: gloo
-    installationId: ` + helmTestInstallId + `
   name: default
   namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
-  gateway:
-    readGatewaysFromAllNamespaces: false
-    validation:
-      alwaysAccept: true
-      proxyValidationServerAddr: gloo:9988
-  gloo:
-    xdsBindAddr: 0.0.0.0:9977
-    invalidConfigPolicy:
-      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-      invalidRouteResponseCode: 404
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
 
-  kubernetesArtifactSource: {}
-  kubernetesConfigSource: {}
-  kubernetesSecretSource: {}
-  refreshRate: 60s
-  discoveryNamespace: ` + namespace + `
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
 `)
 
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 				})
 
@@ -767,27 +744,26 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-    installationId: ` + helmTestInstallId + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # should come before cert-gen job
 webhooks:
-  - name: gateway.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
-    clientConfig:
-      service:
-        name: gateway
-        namespace: ` + namespace + `
-        path: "/validation"
-      caBundle: "" # update manually or use certgen job
-    rules:
-      - operations: [ "CREATE", "UPDATE", "DELETE" ]
-        apiGroups: ["gateway.solo.io"]
-        apiVersions: ["v1"]
-        resources: ["*"]
-    failurePolicy: Ignore
+ - name: gateway.` + namespace + `.svc  # must be a domain with at least three segments separated by dots
+   clientConfig:
+     service:
+       name: gateway
+       namespace: ` + namespace + `
+       path: "/validation"
+     caBundle: "" # update manually or use certgen job
+   rules:
+     - operations: [ "CREATE", "UPDATE", "DELETE" ]
+       apiGroups: ["gateway.solo.io"]
+       apiVersions: ["v1"]
+       resources: ["*"]
+   failurePolicy: Ignore
 
 `)
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectUnstructured(vwc.GetKind(), vwc.GetNamespace(), vwc.GetName()).To(BeEquivalentTo(vwc))
 				})
 
@@ -802,7 +778,6 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-    installationId: ` + helmTestInstallId + `
   name: gateway
   namespace: ` + namespace + `
 spec:
@@ -861,12 +836,12 @@ spec:
             defaultMode: 420
             secretName: gateway-validation-certs
 `)
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectUnstructured(gwDeployment.GetKind(), gwDeployment.GetNamespace(), gwDeployment.GetName()).To(BeEquivalentTo(gwDeployment))
 				})
 
 				It("creates the certgen job, rbac, and service account", func() {
-					prepareMakefile("--namespace " + namespace)
+					prepareMakefile(namespace, helmValues{})
 					job := makeUnstructured(`
 apiVersion: batch/v1
 kind: Job
@@ -874,11 +849,11 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-certgen
-    installationId: ` + helmTestInstallId + `
   name: gateway-certgen
   namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": "hook-succeeded"
     "helm.sh/hook-weight": "10"
 spec:
   ttlSecondsAfterFinished: 60
@@ -916,9 +891,8 @@ metadata:
     labels:
         app: gloo
         gloo: rbac
-        installationId: ` + helmTestInstallId + `
     annotations:
-      "helm.sh/hook": "pre-install"
+      "helm.sh/hook": pre-install,pre-upgrade
       "helm.sh/hook-weight": "5"
 rules:
 - apiGroups: [""]
@@ -939,9 +913,8 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: ` + helmTestInstallId + `
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
 subjects:
 - kind: ServiceAccount
@@ -963,9 +936,8 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-    installationId: ` + helmTestInstallId + `
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-install,pre-upgrade"
     "helm.sh/hook-weight": "5"
   name: gateway-certgen
   namespace: ` + namespace + `
@@ -1065,14 +1037,14 @@ metadata:
 				})
 
 				It("should create a deployment", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectDeploymentAppsV1(glooDeployment)
 				})
 
 				It("should disable usage stats collection when appropriate", func() {
-					helmFlags := fmt.Sprintf("--namespace %s --set namespace.create=true --set gloo.deployment.disableUsageStatistics=true", namespace)
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gloo.deployment.disableUsageStatistics=true"},
+					})
 
 					glooDeployment.Spec.Template.Spec.Containers[0].Env = append(glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
 						Name:  client.DisableUsageVar,
@@ -1083,8 +1055,14 @@ metadata:
 				})
 
 				It("has limits", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.resources.limits.memory=2  --set gloo.deployment.resources.limits.cpu=3 --set gloo.deployment.resources.requests.memory=4  --set gloo.deployment.resources.requests.cpu=5"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gloo.deployment.resources.limits.memory=2",
+							"gloo.deployment.resources.limits.cpu=3",
+							"gloo.deployment.resources.requests.memory=4",
+							"gloo.deployment.resources.requests.cpu=5",
+						},
+					})
 
 					// Add the limits we are testing:
 					glooDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
@@ -1116,8 +1094,12 @@ metadata:
 					deploy.Spec.Template.Spec.ServiceAccountName = "gloo"
 
 					glooDeployment = deploy
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gloo.deployment.image.pullPolicy=Always --set gloo.deployment.image.registry=gcr.io/solo-public"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gloo.deployment.image.pullPolicy=Always",
+							"gloo.deployment.image.registry=gcr.io/solo-public",
+						},
+					})
 
 				})
 			})
@@ -1187,14 +1169,19 @@ metadata:
 				})
 
 				It("has a creates a deployment", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 				})
 
 				It("has limits", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.resources.limits.memory=2  --set gateway.deployment.resources.limits.cpu=3 --set gateway.deployment.resources.requests.memory=4  --set gateway.deployment.resources.requests.cpu=5"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.resources.limits.memory=2",
+							"gateway.deployment.resources.limits.cpu=3",
+							"gateway.deployment.resources.requests.memory=4",
+							"gateway.deployment.resources.requests.cpu=5",
+						},
+					})
 
 					// Add the limits we are testing:
 					gatewayDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
@@ -1224,8 +1211,12 @@ metadata:
 					updateDeployment(deploy)
 
 					gatewayDeployment = deploy
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set gateway.deployment.image.pullPolicy=Always --set gateway.deployment.image.registry=gcr.io/solo-public"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.image.pullPolicy=Always",
+							"gateway.deployment.image.registry=gcr.io/solo-public",
+						},
+					})
 
 				})
 			})
@@ -1260,22 +1251,28 @@ metadata:
 				})
 
 				It("has a creates a deployment", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{})
 					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 				})
 
 				It("disables probes", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.probes=false"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"discovery.deployment.probes=false"},
+					})
 					discoveryDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = nil
 					discoveryDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = nil
 					testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 				})
 
 				It("has limits", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.resources.limits.memory=2  --set discovery.deployment.resources.limits.cpu=3 --set discovery.deployment.resources.requests.memory=4  --set discovery.deployment.resources.requests.cpu=5"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"discovery.deployment.resources.limits.memory=2",
+							"discovery.deployment.resources.limits.cpu=3",
+							"discovery.deployment.resources.requests.memory=4",
+							"discovery.deployment.resources.requests.cpu=5",
+						},
+					})
 
 					// Add the limits we are testing:
 					discoveryDeployment.Spec.Template.Spec.Containers[0].Resources = v1.ResourceRequirements{
@@ -1306,8 +1303,12 @@ metadata:
 
 					discoveryDeployment = deploy
 					deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true --set discovery.deployment.image.pullPolicy=Always --set discovery.deployment.image.registry=gcr.io/solo-public"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"discovery.deployment.image.pullPolicy=Always",
+							"discovery.deployment.image.registry=gcr.io/solo-public",
+						},
+					})
 
 				})
 			})
@@ -1331,8 +1332,9 @@ metadata:
 
 			Describe("gateway proxy - tracing config", func() {
 				It("has a proxy without tracing", func() {
-					helmFlags := "--namespace " + namespace + " --set namespace.create=true  --set gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{" gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
+					})
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithoutTracing
 					cmRb := ResourceBuilder{
@@ -1346,7 +1348,7 @@ metadata:
 				})
 
 				It("has a proxy with tracing provider", func() {
-					prepareMakefileFromValuesFile("install/test/val_tracing_provider.yaml")
+					prepareMakefileFromValuesFile("val_tracing_provider.yaml")
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithTracingProvider
 					cmRb := ResourceBuilder{
@@ -1360,7 +1362,7 @@ metadata:
 				})
 
 				It("has a proxy with tracing provider and cluster", func() {
-					prepareMakefileFromValuesFile("install/test/val_tracing_provider_cluster.yaml")
+					prepareMakefileFromValuesFile("val_tracing_provider_cluster.yaml")
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithTracingProviderCluster
 					cmRb := ResourceBuilder{
@@ -1376,8 +1378,9 @@ metadata:
 
 			Describe("gateway proxy -- readConfig config", func() {
 				It("has a listener for reading a subset of the admin api", func() {
-					helmFlags := "--namespace " + namespace + " --set gatewayProxies.gatewayProxy.readConfig=true"
-					prepareMakefile(helmFlags)
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.readConfig=true"},
+					})
 					proxySpec := make(map[string]string)
 					proxySpec["envoy.yaml"] = confWithReadConfig
 					cmRb := ResourceBuilder{
@@ -1397,9 +1400,9 @@ metadata:
 
 			// helper for passing a values file
 			prepareMakefileFromValuesFile := func(valuesFile string) {
-				helmFlags := "--namespace " + namespace +
-					" -f " + valuesFile
-				prepareMakefile(helmFlags)
+				prepareMakefile(namespace, helmValues{
+					valuesFile: valuesFile,
+				})
 			}
 
 			It("merges the config correctly, allow override of ingress without altering gloo", func() {
@@ -1563,7 +1566,7 @@ metadata:
 						},
 					},
 				}
-				prepareMakefileFromValuesFile("install/test/merge_ingress_values.yaml")
+				prepareMakefileFromValuesFile("merge_ingress_values.yaml")
 				testManifest.ExpectDeploymentAppsV1(glooDeploymentPostMerge)
 				testManifest.ExpectDeploymentAppsV1(ingressDeploymentPostMerge)
 			})
@@ -1572,14 +1575,6 @@ metadata:
 
 	})
 })
-
-func makeUnstructured(yam string) *unstructured.Unstructured {
-	jsn, err := yaml.YAMLToJSON([]byte(yam))
-	Expect(err).NotTo(HaveOccurred())
-	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
-	Expect(err).NotTo(HaveOccurred())
-	return runtimeObj.(*unstructured.Unstructured)
-}
 
 func cloneMap(input map[string]string) map[string]string {
 	ret := map[string]string{}

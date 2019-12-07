@@ -1,3 +1,18 @@
+# This file remains temporarily because several libaries parse
+# toml files and our cloudbuild setup depends on GOPATH.
+#
+# Gloo is currently building using go modules, however. We are
+# actively working to rewrite our parsing libraries to use go
+# modules and updating our CI to work outside of the GOPATH.
+
+ignored = [
+"github.com/Masterminds/semver/v3",
+"github.com/Masterminds/sprig/v3",
+"github.com/pierrec/lz4/v3",
+"github.com/russross/blackfriday/v2",
+"github.com/cespare/xxhash/v2",
+]
+
 [prune]
   go-tests = true
   unused-packages = true
@@ -15,10 +30,6 @@
   name = "github.com/gogo/protobuf"
 
 [[override]]
-  branch = "master"
-  name = "k8s.io/api"
-
-[[override]]
   version = "1.3.1"
   name = "github.com/golang/protobuf"
 
@@ -28,11 +39,20 @@
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  version = "0.11.12"
+  version = "0.11.13"
+
+[[override]]
+  name = "github.com/evanphx/json-patch"
+  version = "3.0.0"
+
+[[override]]
+  name = "helm.sh/helm/v3"
+  version = "3.0.0"
+  source = "https://github.com/helm/helm"
 
 [[override]]
   name = "github.com/solo-io/go-utils"
-  version = "0.10.25"
+  version = "0.11.0"
 
 [[constraint]]
   name = "github.com/hashicorp/consul"
@@ -40,7 +60,7 @@
 
 [[constraint]]
   name = "github.com/solo-io/reporting-client"
-  version = "0.1.1"
+  version = "0.1.2"
 
 [[constraint]]
   name = "github.com/onsi/gomega"
@@ -55,54 +75,52 @@
 
 [[override]]
   name = "k8s.io/kubernetes"
-  version = "=v1.13.1"
+  version = "v1.16.2"
+
+[[override]]
+  name = "k8s.io/api"
+  version = "kubernetes-1.16.2"
 
 [[constraint]]
-  name = "k8s.io/api"
-  version = "kubernetes-1.13.1"
+  name = "k8s.io/kubectl"
+  version = "kubernetes-1.16.2"
 
 [[override]]
   name = "k8s.io/client-go"
-  version = "kubernetes-1.13.1"
+  version = "kubernetes-1.16.2"
 
 [[override]]
   name = "k8s.io/apimachinery"
-  version = "kubernetes-1.13.1"
+  version = "kubernetes-1.16.2"
 
 [[override]]
   name = "k8s.io/apiextensions-apiserver"
-  version = "kubernetes-1.13.1"
+  version = "kubernetes-1.16.2"
 
 [[override]]
   name = "k8s.io/apiserver"
-  version = "kubernetes-1.13.1"
-
-[[override]]
-  name = "k8s.io/helm"
-  version = "v2.12.3"
-
-[[override]]
-  name = "github.com/go-openapi/spec"
-  version = "0.19.2"
-
-[[constraint]]
-  name = "knative.dev/serving"
-  version = "v0.8.0"
-
-# added to support knative v0.8.0
-[[override]]
-  name = "golang.org/x/net"
-  revision = "aaf60122140d3fcf75376d319f0554393160eb50"
-
-# added to support knative v0.8.0
-[[override]]
-  name = "golang.org/x/xerrors"
-  revision = "a985d3407aa71f30cf86696ee0a2f409709f22e1"
+  version = "kubernetes-1.16.2"
 
 [[override]]
   name = "k8s.io/klog"
   revision = "9cbb78b20423182f9e5b2a214dd255f5e117d2d1"
   source = "github.com/stefanprodan/klog"
+
+[[override]]
+  name = "k8s.io/utils"
+  revision = "6ca3b61696b65b0e81f1a39b4937fc2d2994ed6a"
+
+[[override]]
+  name = "github.com/go-openapi/spec"
+  version = "0.19.2"
+
+[[override]]
+  name = "github.com/docker/docker"
+  revision = "be7ac8be2ae072032a4005e8f232be3fc57e4127"
+
+[[constraint]]
+  name = "knative.dev/serving"
+  version = "v0.10.0"
 
 [[constraint]]
   name = "github.com/spf13/viper"

@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
+	"knative.dev/pkg/network"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "k8s.io/api/core/v1"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
-	"knative.dev/serving/pkg/network"
-
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"

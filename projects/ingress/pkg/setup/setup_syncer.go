@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"knative.dev/serving/pkg/network"
+	"knative.dev/pkg/network"
 
 	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
 
@@ -238,7 +238,7 @@ func RunIngress(opts Opts) error {
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
 				proxyClient,
-				knative.NetworkingV1alpha1().ClusterIngresses(),
+				knative.NetworkingV1alpha1(),
 				writeErrs,
 			)
 			clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)

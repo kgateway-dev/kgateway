@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,6 +9,13 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/setup"
+	"go.uber.org/zap"
+	"helm.sh/helm/v3/pkg/chartutil"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,10 +49,11 @@ const (
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "knative",
-		Short:  "install Knative with Gloo on kubernetes",
+		Short:  "install Knative with Gloo on Kubernetes",
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			if opts.Install.Knative.InstallKnative {
 				if !opts.Install.DryRun {
 					installed, _, err := checkKnativeInstallation()
@@ -64,7 +73,37 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 			}
 
 			if !opts.Install.Knative.SkipGlooInstall {
-				if err := installGloo(opts, constants.KnativeValuesFileName); err != nil {
+
+				// wait for knative apiservice (autoscaler metrics) to be healthy before attempting gloo installation
+				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+				defer cancel()
+				for {
+					stdout, _ := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+					if len(stdout) > 0 && !strings.Contains(stdout, "False") {
+						// knative apiservice is ready, we can attempt gloo installation now!
+						break
+					}
+					if ctx.Err() != nil {
+						return errors.New("timed out waiting for knative apiservice to be ready")
+					}
+					time.Sleep(1 * time.Second)
+				}
+
+				knativeValues, err := RenderKnativeValues(opts.Install.Knative.InstallKnativeVersion)
+				if err != nil {
+					return err
+				}
+				knativeOverrides, err := chartutil.ReadValues([]byte(knativeValues))
+				if err != nil {
+					return errors.Wrapf(err, "parsing override values for knative mode")
+				}
+
+				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+					InstallCliArgs: &opts.Install,
+					ExtraValues:    knativeOverrides,
+					Verbose:        opts.Top.Verbose,
+				}); err != nil {
 					return errors.Wrapf(err, "installing gloo in knative mode")
 				}
 			}
@@ -72,7 +111,6 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddInstallFlags(pflags, &opts.Install)
 	flagutils.AddKnativeInstallFlags(pflags, &opts.Install.Knative)
 	return cmd
 }
@@ -341,4 +379,17 @@ func getCrdManifests(manifests string) ([]string, string, error) {
 
 	// re-join the objects into a single manifest
 	return crdNames, strings.Join(crdManifests, yamlJoiner), nil
+}
+
+func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
+	apiExts := helpers.MustApiExtsClient()
+	logger := contextutils.LoggerFrom(ctx)
+	for _, crdName := range crds {
+		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
+		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
+			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
+		}
+	}
+
+	return nil
 }
