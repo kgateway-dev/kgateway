@@ -119,12 +119,12 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 			"had nil route", in.Action)
 	}
 	switch rewriteType := hostRewriteType.(type) {
-	default:
-		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	case *v1.RouteOptions_HostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
 	case *v1.RouteOptions_AutoHostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{AutoHostRewrite: rewriteType.AutoHostRewrite}
+	default:
+		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	}
 
 	return nil
@@ -150,13 +150,13 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 
 	for i, config := range upgrades {
 		switch upgradeType := config.GetUpgradeType().(type) {
-		default:
-			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		case *upgrade.UpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
 				UpgradeType: "websocket",
 				Enabled:     config.GetWebsocket().Enabled,
 			}
+		default:
+			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		}
 	}
 
