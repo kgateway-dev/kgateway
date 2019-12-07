@@ -702,10 +702,12 @@ spec:
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
- labels:
-   app: gloo
- name: default
- namespace: ` + namespace + `
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
  discovery:
    fdsMode: WHITELIST
