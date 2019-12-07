@@ -10,6 +10,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+const (
+	webSocketUpgradeType = "websocket"
+)
+
 type Plugin struct{}
 
 var _ plugins.RoutePlugin = NewPlugin()
@@ -152,7 +156,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 		switch upgradeType := config.GetUpgradeType().(type) {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
-				UpgradeType: "websocket",
+				UpgradeType: webSocketUpgradeType,
 				Enabled:     config.GetWebsocket().Enabled,
 			}
 		default:
