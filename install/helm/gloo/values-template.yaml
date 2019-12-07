@@ -1,5 +1,5 @@
 namespace:
-  create: false
+  create: true
 k8s:
   clusterName: cluster.local
 settings:
