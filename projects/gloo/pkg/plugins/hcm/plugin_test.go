@@ -137,4 +137,41 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Uri).To(BeTrue())
 	})
 
+	It("enables websockets by default", func() {
+		hcms := &hcm.HttpConnectionManagerSettings{}
+
+		hl := &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: hcms,
+			},
+		}
+
+		in := &v1.Listener{
+			ListenerType: &v1.Listener_HttpListener{
+				HttpListener: hl,
+			},
+		}
+
+		filters := []envoylistener.Filter{{
+			Name: envoyutil.HTTPConnectionManager,
+		}}
+
+		outl := &envoyapi.Listener{
+			FilterChains: []envoylistener.FilterChain{{
+				Filters: filters,
+			}},
+		}
+
+		p := NewPlugin()
+
+		err := p.ProcessListener(plugins.Params{}, in, outl)
+		Expect(err).NotTo(HaveOccurred())
+
+		var cfg envoyhttp.HttpConnectionManager
+		err = translatorutil.ParseConfig(&filters[0], &cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+		Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+	})
 })
