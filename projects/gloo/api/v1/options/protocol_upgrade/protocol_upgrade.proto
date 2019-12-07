@@ -11,7 +11,7 @@ option (gogoproto.equal_all) = true;
 
 message ProtocolUpgradeConfig {
     message ProtocolUpgradeSpec {
-        // Whether the upgrade should be enabled.
+        // Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade.
         google.protobuf.BoolValue enabled = 1;
     }
 

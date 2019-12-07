@@ -54,6 +54,7 @@ message HttpConnectionManagerSettings {
 
     SetCurrentClientCertDetails set_current_client_cert_details = 19;
 
-    // HttpConnectionManager configuration for protocol upgrade requests.
+    // HttpConnectionManager configuration for protocol upgrade requests. 
+    // Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled.
     repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 20;
 }
