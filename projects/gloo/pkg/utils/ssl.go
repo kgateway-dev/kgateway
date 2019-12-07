@@ -3,8 +3,10 @@ package utils
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	gogo_types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errors"
@@ -68,7 +70,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	common.AlpnProtocols = []string{"h2", "http/1.1"}
 	return &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
-		RequireClientCertificate: requireClientCert,
+		RequireClientCertificate: gogoutils.BoolGogoToProto(requireClientCert),
 	}, nil
 }
 
@@ -106,7 +108,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 		},
 		HeaderKey: sslSecrets.CallCredentials.FileCredentialSource.Header,
 	}
-	any, _ := gogo_types.MarshalAny(config)
+	any, _ := ptypes.MarshalAny(config)
 
 	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
 		TargetUri:  sslSecrets.TargetUri,

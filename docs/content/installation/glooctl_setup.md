@@ -8,16 +8,16 @@ The `glooctl` command line provides useful functions to install, configure, and 
   brew install solo-io/tap/glooctl
   ```
 
-* To install on any platform run the following.
+* To install on most platforms you can use the install script. Python is required for installation to execute properly.
 
   ```bash
   curl -sL https://run.solo.io/gloo/install | sh
   export PATH=$HOME/.gloo/bin:$PATH
   ```
 
-* You can download `glooctl` directly via the GitHub releases page. You need to add `glooctl` to your system's `PATH` after downloading.
+* You can download `glooctl` directly via the [GitHub releases page](https://github.com/solo-io/gloo/releases). You will need to rename the executable to `glooctl` and add it to your system's `PATH` after downloading.
 
-Verify the CLI is installed and running correctly with:
+You can verify the `glooctl` CLI is installed and running correctly by executing the command:
 
 ```bash
 glooctl version

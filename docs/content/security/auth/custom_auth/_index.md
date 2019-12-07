@@ -41,8 +41,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
@@ -228,12 +228,12 @@ spec:
   virtualHost:
     domains:
     - '*'
-    virtualHostPlugins:
+    options:
       extauth:
         customAuth: {}
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:

@@ -31,12 +31,15 @@ import (
 )
 
 type SetupOpts struct {
-	LoggingPrefix string
-	SetupFunc     SetupFunc
-	ExitOnError   bool
-	CustomCtx     context.Context
+	LoggerName  string
+	SetupFunc   SetupFunc
+	ExitOnError bool
+	CustomCtx   context.Context
 
-	// optional- if present, report usage with the payload this discovers
+	// optional - if present, add these values in each JSON log line in the gloo pod.
+	// By default, we already log the gloo version.
+	LoggingPrefixVals []interface{}
+	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
 	// otherwise, we'll provide redundant copies of the usage data
 	UsageReporter client.UsagePayloadReader
@@ -45,7 +48,6 @@ type SetupOpts struct {
 var once sync.Once
 
 func Main(opts SetupOpts) error {
-	loggingPrefix := opts.LoggingPrefix
 
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
@@ -56,12 +58,14 @@ func Main(opts SetupOpts) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = contextutils.WithLogger(ctx, loggingPrefix)
+	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
+	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals...)
+	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	if opts.UsageReporter != nil {
 		go func() {
 			signatureManager := signature.NewSignatureManager()
-			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix, signatureManager)
+			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggerName, signatureManager)
 			for err := range errs {
 				contextutils.LoggerFrom(ctx).Warnw("Error while reporting usage", zap.Error(err))
 			}

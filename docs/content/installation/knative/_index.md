@@ -20,7 +20,7 @@ Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/in
 ## Installing the Gloo Knative Ingress on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 

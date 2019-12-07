@@ -15,3 +15,5 @@ spec:
             upstream:
               name: json-upstream
               namespace: gloo-system
+        options:
+          autoHostRewrite: true

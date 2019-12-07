@@ -128,6 +128,9 @@ apis:
   envoy.api.v2.cluster.OutlierDetection:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: envoy.api.v2.cluster
+  envoy.api.v2.core.AsyncDataSource:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#AsyncDataSource
+    package: envoy.api.v2.core
   envoy.api.v2.core.ControlPlane:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#ControlPlane
     package: envoy.api.v2.core
@@ -146,6 +149,9 @@ apis:
   envoy.api.v2.core.HealthCheck:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#HealthCheck
     package: envoy.api.v2.core
+  envoy.api.v2.core.HttpUri:
+    relativepath: api/envoy/api/v2/core/http_uri.proto.sk/#HttpUri
+    package: envoy.api.v2.core
   envoy.api.v2.core.Locality:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#Locality
     package: envoy.api.v2.core
@@ -154,6 +160,12 @@ apis:
     package: envoy.api.v2.core
   envoy.api.v2.core.Node:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#Node
+    package: envoy.api.v2.core
+  envoy.api.v2.core.RemoteDataSource:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#RemoteDataSource
+    package: envoy.api.v2.core
+  envoy.api.v2.core.RuntimeFeatureFlag:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#RuntimeFeatureFlag
     package: envoy.api.v2.core
   envoy.api.v2.core.RuntimeFractionalPercent:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#RuntimeFractionalPercent

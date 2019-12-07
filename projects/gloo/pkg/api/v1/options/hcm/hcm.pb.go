@@ -85,6 +85,7 @@ type HttpConnectionManagerSettings struct {
 	ForwardClientCertDetails    HttpConnectionManagerSettings_ForwardClientCertDetails     `protobuf:"varint,18,opt,name=forward_client_cert_details,json=forwardClientCertDetails,proto3,enum=hcm.options.gloo.solo.io.HttpConnectionManagerSettings_ForwardClientCertDetails" json:"forward_client_cert_details,omitempty"`
 	SetCurrentClientCertDetails *HttpConnectionManagerSettings_SetCurrentClientCertDetails `protobuf:"bytes,19,opt,name=set_current_client_cert_details,json=setCurrentClientCertDetails,proto3" json:"set_current_client_cert_details,omitempty"`
 	// HttpConnectionManager configuration for protocol upgrade requests.
+	// Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled.
 	Upgrades             []*protocol_upgrade.ProtocolUpgradeConfig `protobuf:"bytes,20,rep,name=upgrades,proto3" json:"upgrades,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                                  `json:"-"`
 	XXX_unrecognized     []byte                                    `json:"-"`

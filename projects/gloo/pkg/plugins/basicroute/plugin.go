@@ -2,7 +2,8 @@ package basicroute
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
@@ -87,7 +88,7 @@ func applyTimeout(in *v1.Route, out *envoyroute.Route) error {
 			"had nil route", in.Action)
 	}
 
-	routeAction.Route.Timeout = in.Options.Timeout
+	routeAction.Route.Timeout = gogoutils.DurationStdToProto(in.Options.Timeout)
 	return nil
 }
 
@@ -126,7 +127,9 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 	case *v1.RouteOptions_HostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
 	case *v1.RouteOptions_AutoHostRewrite:
-		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{AutoHostRewrite: rewriteType.AutoHostRewrite}
+		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{
+			AutoHostRewrite: gogoutils.BoolGogoToProto(rewriteType.AutoHostRewrite),
+		}
 	default:
 		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	}
@@ -157,7 +160,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
 				UpgradeType: webSocketUpgradeType,
-				Enabled:     config.GetWebsocket().Enabled,
+				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().Enabled),
 			}
 		default:
 			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
@@ -184,7 +187,7 @@ func convertPolicy(policy *retries.RetryPolicy) *envoyroute.RetryPolicy {
 
 	return &envoyroute.RetryPolicy{
 		RetryOn:       policy.RetryOn,
-		NumRetries:    &types.UInt32Value{Value: numRetries},
-		PerTryTimeout: policy.PerTryTimeout,
+		NumRetries:    &wrappers.UInt32Value{Value: numRetries},
+		PerTryTimeout: gogoutils.DurationStdToProto(policy.PerTryTimeout),
 	}
 }

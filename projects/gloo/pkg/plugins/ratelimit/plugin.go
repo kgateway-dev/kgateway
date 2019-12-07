@@ -5,7 +5,7 @@ import (
 	"time"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -74,7 +74,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	ra := out.GetRoute()
 	if ra != nil {
 		ra.RateLimits = generateCustomEnvoyConfigForVhost(rateLimit.RateLimits)
-		ra.IncludeVhRateLimits = &types.BoolValue{Value: rateLimit.IncludeVhRateLimits}
+		ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimit.IncludeVhRateLimits}
 	} else {
 		// TODO(yuval-k): maybe return nil here instead and just log a warning?
 		return fmt.Errorf("cannot apply rate limits without a route action")

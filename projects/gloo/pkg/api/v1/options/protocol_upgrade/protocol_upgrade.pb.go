@@ -90,7 +90,7 @@ func (*ProtocolUpgradeConfig) XXX_OneofWrappers() []interface{} {
 }
 
 type ProtocolUpgradeConfig_ProtocolUpgradeSpec struct {
-	// Whether the upgrade should be enabled.
+	// Whether the upgrade should be enabled. If left unset, Envoy will enable the protocol upgrade.
 	Enabled              *types.BoolValue `protobuf:"bytes,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`

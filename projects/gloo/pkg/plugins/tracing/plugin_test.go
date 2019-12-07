@@ -35,7 +35,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				OperationName:         envoyhttp.INGRESS,
+				OperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				RequestHeadersForTags: []string{"header1", "header2"},
 				ClientSampling:        &envoy_type.Percent{Value: 10},
 				RandomSampling:        &envoy_type.Percent{Value: 20},
@@ -56,7 +56,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				OperationName:   envoyhttp.INGRESS,
+				OperationName:   envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				ClientSampling:  &envoy_type.Percent{Value: 100},
 				RandomSampling:  &envoy_type.Percent{Value: 100},
 				OverallSampling: &envoy_type.Percent{Value: 100},

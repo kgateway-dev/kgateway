@@ -452,6 +452,26 @@ var _ = Describe("Translator", func() {
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 					Expect(listener.VirtualHosts).To(HaveLen(1))
 				})
+
+				It("should allow a gateway to match virtual services outside its own namespace if so configured", func() {
+					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
+						HttpGateway: &v1.HttpGateway{
+							VirtualServiceSelector:   labelSet,
+							VirtualServiceNamespaces: []string{"*"},
+						},
+					}
+
+					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+
+					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(proxy).NotTo(BeNil())
+					Expect(proxy.Listeners).To(HaveLen(1))
+					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
+					Expect(listener.VirtualHosts).To(HaveLen(2))
+					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[0].VirtualHost.Domains))
+					Expect(listener.VirtualHosts[1].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
+				})
+
 			})
 
 			It("should not have vhosts with ssl", func() {

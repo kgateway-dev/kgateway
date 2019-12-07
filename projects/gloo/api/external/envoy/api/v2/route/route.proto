@@ -6,7 +6,7 @@ option java_outer_classname = "RouteProto";
 option java_multiple_files = true;
 option java_package = "io.envoyproxy.envoy.api.v2.route";
 option java_generic_services = true;
-option go_package = "github.com/envoyproxy/go-control-plane/envoy/api/v2/route";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route";
 
 import "envoy/api/v2/core/base.proto";
 import "envoy/type/percent.proto";
@@ -21,7 +21,6 @@ import "validate/validate.proto";
 import "gogoproto/gogo.proto";
 
 option (gogoproto.equal_all) = true;
-option (gogoproto.stable_marshaler_all) = true;
 
 // [#protodoc-title: HTTP route]
 // * Routing :ref:`architecture overview <arch_overview_http_routing>`

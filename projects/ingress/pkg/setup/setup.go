@@ -8,9 +8,9 @@ import (
 
 func Main(customCtx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggingPrefix: "ingress",
-		SetupFunc:     Setup,
-		ExitOnError:   true,
-		CustomCtx:     customCtx,
+		LoggerName:  "ingress",
+		SetupFunc:   Setup,
+		ExitOnError: true,
+		CustomCtx:   customCtx,
 	})
 }

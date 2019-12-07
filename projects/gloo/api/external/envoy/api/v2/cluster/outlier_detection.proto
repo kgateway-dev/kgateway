@@ -5,7 +5,7 @@ package envoy.api.v2.cluster;
 option java_outer_classname = "OutlierDetectionProto";
 option java_multiple_files = true;
 option java_package = "io.envoyproxy.envoy.api.v2.cluster";
-option go_package = "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";

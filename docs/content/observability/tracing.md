@@ -4,7 +4,7 @@ weight: 4
 description: Configure Gloo for tracing
 ---
 
-# Tracing
+## Tracing
 
 Gloo makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).
 

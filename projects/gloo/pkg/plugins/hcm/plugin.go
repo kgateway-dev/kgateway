@@ -4,13 +4,14 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 )
 
 const (
@@ -62,10 +63,10 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 	for _, f := range out.FilterChains {
 		for i, filter := range f.Filters {
-			if filter.Name == envoyutil.HTTPConnectionManager {
+			if filter.Name == util.HTTPConnectionManager {
 				// get config
 				var cfg envoyhttp.HttpConnectionManager
-				err := translatorutil.ParseConfig(&filter, &cfg)
+				err := translatorutil.ParseConfig(filter, &cfg)
 				// this should never error
 				if err != nil {
 					return err
@@ -85,7 +86,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 				}
 
-				f.Filters[i], err = translatorutil.NewFilterWithConfig(envoyutil.HTTPConnectionManager, &cfg)
+				f.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &cfg)
 				// this should never error
 				if err != nil {
 					return err
@@ -97,18 +98,18 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 }
 
 func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
-	cfg.UseRemoteAddress = hcmSettings.UseRemoteAddress
+	cfg.UseRemoteAddress = gogoutils.BoolGogoToProto(hcmSettings.UseRemoteAddress)
 	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
 	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
 	cfg.Via = hcmSettings.Via
-	cfg.GenerateRequestId = hcmSettings.GenerateRequestId
+	cfg.GenerateRequestId = gogoutils.BoolGogoToProto(hcmSettings.GenerateRequestId)
 	cfg.Proxy_100Continue = hcmSettings.Proxy_100Continue
-	cfg.StreamIdleTimeout = hcmSettings.StreamIdleTimeout
-	cfg.IdleTimeout = hcmSettings.IdleTimeout
-	cfg.MaxRequestHeadersKb = hcmSettings.MaxRequestHeadersKb
-	cfg.RequestTimeout = hcmSettings.RequestTimeout
-	cfg.DrainTimeout = hcmSettings.DrainTimeout
-	cfg.DelayedCloseTimeout = hcmSettings.DelayedCloseTimeout
+	cfg.StreamIdleTimeout = gogoutils.DurationStdToProto(hcmSettings.StreamIdleTimeout)
+	cfg.IdleTimeout = gogoutils.DurationStdToProto(hcmSettings.IdleTimeout)
+	cfg.MaxRequestHeadersKb = gogoutils.UInt32GogoToProto(hcmSettings.MaxRequestHeadersKb)
+	cfg.RequestTimeout = gogoutils.DurationStdToProto(hcmSettings.RequestTimeout)
+	cfg.DrainTimeout = gogoutils.DurationStdToProto(hcmSettings.DrainTimeout)
+	cfg.DelayedCloseTimeout = gogoutils.DurationStdToProto(hcmSettings.DelayedCloseTimeout)
 	cfg.ServerName = hcmSettings.ServerName
 
 	if hcmSettings.AcceptHttp_10 {
@@ -131,7 +132,7 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
 					UpgradeType: webSocketUpgradeType,
-					Enabled:     config.GetWebsocket().GetEnabled(),
+					Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().GetEnabled()),
 				}
 
 				webSocketUpgradeSpecified = true
@@ -157,7 +158,7 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 
 	if shouldConfigureClientCertDetails {
 		cfg.SetCurrentClientCertDetails = &envoyhttp.HttpConnectionManager_SetCurrentClientCertDetails{
-			Subject: hcmSettings.SetCurrentClientCertDetails.Subject,
+			Subject: gogoutils.BoolGogoToProto(hcmSettings.SetCurrentClientCertDetails.Subject),
 			Cert:    hcmSettings.SetCurrentClientCertDetails.Cert,
 			Chain:   hcmSettings.SetCurrentClientCertDetails.Chain,
 			Dns:     hcmSettings.SetCurrentClientCertDetails.Dns,

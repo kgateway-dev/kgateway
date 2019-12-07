@@ -50,7 +50,7 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	trCfg.Verbose = tracingSettings.Verbose
 
 	// Gloo configures envoy as an ingress, rather than an egress
-	trCfg.OperationName = envoyhttp.INGRESS
+	trCfg.OperationName = envoyhttp.HttpConnectionManager_Tracing_INGRESS
 	if percentages := tracingSettings.GetTracePercentages(); percentages != nil {
 		trCfg.ClientSampling = envoySimplePercentWithDefault(percentages.GetClientSamplePercentage(), oneHundredPercent)
 		trCfg.RandomSampling = envoySimplePercentWithDefault(percentages.GetRandomSamplePercentage(), oneHundredPercent)
