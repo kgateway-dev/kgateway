@@ -13,6 +13,10 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
 
+const (
+	webSocketUpgradeType = "websocket"
+)
+
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -117,6 +121,8 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	// allowed upgrades
 	protocolUpgrades := hcmSettings.GetUpgrades()
 
+	webSocketUpgradeSpecified := false
+
 	if protocolUpgrades != nil {
 		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(protocolUpgrades))
 
@@ -124,13 +130,22 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			switch upgradeType := config.UpgradeType.(type) {
 			case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
-					UpgradeType: "websocket",
+					UpgradeType: webSocketUpgradeType,
 					Enabled:     config.GetWebsocket().GetEnabled(),
 				}
+
+				webSocketUpgradeSpecified = true
 			default:
 				return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 			}
 		}
+	}
+
+	// enable websockets by default if no websocket upgrade was specified
+	if !webSocketUpgradeSpecified {
+		cfg.UpgradeConfigs = append(cfg.UpgradeConfigs, &envoyhttp.HttpConnectionManager_UpgradeConfig{
+			UpgradeType: webSocketUpgradeType,
+		})
 	}
 
 	// client certificate forwarding
