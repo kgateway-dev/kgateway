@@ -7,8 +7,8 @@ metadata:
     app: gloo
   name: default
   namespace: {{ .Release.Namespace }}
-  # We need this because the gateway controller will try to write default settings objects
-  # and if it is able to do so before this resource gets applied, installation will fail.
+  # We need this because the Gloo controllers will try to write default settings objects
+  # and if any of them is able to do so before this resource gets applied, installation will fail.
   annotations:
     "helm.sh/hook": pre-install
 spec:
