@@ -1,8 +1,0 @@
-changelog:
-  - type: FIX
-    description: >
-      The recent `v1.2.0` release updated the Gloo chart to be compatible with Helm 3. This included moving the CRDs
-      to the new dedicated `/crd` directory inside the chart. Helm 2 is not aware of this directory and hence will
-      never render the CRDs. This fix adds back a CRD template file in the `templates` directory to make the chart
-      backwards-compatible with Helm 2.
-    issueLink: https://github.com/solo-io/gloo/issues/1835
