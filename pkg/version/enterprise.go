@@ -39,8 +39,10 @@ func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {
 	} else {
 		ind.SortEntries()
 		if vs, ok := ind.Entries[GlooEE]; ok {
-			return vs[0].Version, nil
+			if len(vs) > 0 {
+				return vs[0].Version, nil
+			}
 		}
 	}
-	return "", errors.Errorf("Couldn't find %s versions in index file %s", GlooEE, file)
+	return "", errors.Errorf("Couldn't find any %s versions in index file %s", GlooEE, file)
 }
