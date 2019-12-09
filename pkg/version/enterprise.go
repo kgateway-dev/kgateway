@@ -8,6 +8,7 @@ import (
 )
 
 var EnterpriseTag = UndefinedVersion
+
 const EnterpriseHelmRepoIndex = "https://storage.googleapis.com/gloo-ee-helm/index.yaml"
 const GlooEE = "gloo-ee"
 
