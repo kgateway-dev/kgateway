@@ -75,7 +75,7 @@ update-deps:
 
 .PHONY: pin-repos
 pin-repos:
-	GO111MODULE=on go run pin_repos.go
+	GO111MODULE=on go run ci/pin_repos/pin_repos.go
 
 .PHONY: check-format
 check-format:
