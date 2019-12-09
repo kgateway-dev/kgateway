@@ -110,4 +110,18 @@ entries:
 		Expect(err).To(BeNil())
 		Expect(enterpriseVersion).To(Equal("1.2.0"))
 	})
+
+	It("throws an error if the file is invalid", func() {
+		fileString := `
+apiVersion: v1
+entries:
+  gloo-ee:`
+		tmpFile, err := afero.TempFile(fs, dir, "")
+		Expect(err).To(BeNil())
+		_, err = tmpFile.WriteString(fileString)
+		Expect(err).To(BeNil())
+		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), false)
+		Expect(enterpriseVersion).To(Equal(""))
+		Expect(err).NotTo(BeNil())
+	})
 })
