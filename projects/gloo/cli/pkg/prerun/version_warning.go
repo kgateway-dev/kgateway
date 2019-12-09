@@ -97,7 +97,7 @@ func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*versionutils.
 		versions.Insert(mismatch.String())
 	}
 
-	message := fmt.Sprintf("glooctl binary version (%s) differs from server components (%v) by at least a minor version.\n", linkedversion.Version, versions.List())
+	message := fmt.Sprintf("glooctl binary version (%s) differs from server components (%v) by at least a minor version.\n", linkedversion.Version, strings.Join(versions.List(), ","))
 
 	if versions.Len() > 1 {
 		message += "Multiple server versions found. Consider running any of:"
