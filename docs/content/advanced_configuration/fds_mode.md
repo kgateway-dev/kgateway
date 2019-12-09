@@ -46,14 +46,14 @@ settings:
 
 discovery:
   # set to either WHITELIST, BLACKLIST, or DISABLED
-  # BLACKLIST is the default value
-  fdsMode: WHITELIST 
+  # WHITELIST is the default value
+  fdsMode: BLACKLIST
 ```
 
 Or add the following CLI flags to `helm install|template` commands:
 
 ```bash
-helm install|template ... --set settings.create=true --set discovery.fdsMode=WHITELIST
+helm install|template ... --set settings.create=true --set discovery.fdsMode=BLACKLIST
 ```
 
 ### Settings `fdsMode` by editing the `gloo.solo.io/v1.Settings` custom resource:
@@ -84,7 +84,7 @@ spec:
   # add the following lines
   discovery:
     # set to either WHITELIST, BLACKLIST, or DISABLED
-    # BLACKLIST is the default value
+    # WHITELIST is the default value
     fdsMode: WHITELIST
 {{< /highlight >}}
 
