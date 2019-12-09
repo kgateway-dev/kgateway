@@ -1,6 +1,7 @@
 package version
 
 import (
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/spf13/afero"
 	"helm.sh/helm/v3/pkg/repo"
@@ -11,7 +12,7 @@ const GlooEE = "gloo-ee"
 
 // The version of GlooE installed by the CLI.
 // Calculated from the latest gloo-ee version in the helm repo index
-func GetEnterpriseTag() (string, error) {
+func GetEnterpriseTag(stableOnly bool) (string, error) {
 	fs := afero.NewOsFs()
 	tmpFile, err := afero.TempFile(fs, "", "")
 	if err != nil {
@@ -21,17 +22,25 @@ func GetEnterpriseTag() (string, error) {
 		return "", err
 	}
 	defer fs.Remove(tmpFile.Name())
-	return LatestVersionFromRepo(tmpFile.Name())
+	return LatestVersionFromRepo(tmpFile.Name(), stableOnly)
 }
 
-func LatestVersionFromRepo(file string) (string, error) {
+func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {
 	ind, err := repo.LoadIndexFile(file)
 	if err != nil {
 		return "", err
 	}
-	version, err := ind.Get(GlooEE, "")
-	if err != nil {
-		return "", err
+	if stableOnly {
+		version, err := ind.Get(GlooEE, "")
+		if err != nil {
+			return "", err
+		}
+		return version.Version, nil
+	} else {
+		ind.SortEntries()
+		if vs, ok := ind.Entries[GlooEE]; ok {
+			return vs[0].Version, nil
+		}
 	}
-	return version.Version, nil
+	return "", errors.Errorf("Couldn't find %s versions in index file %s", GlooEE, file)
 }

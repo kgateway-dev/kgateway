@@ -40,12 +40,12 @@ entries:
 		Expect(err).To(BeNil())
 		_, err = tmpFile.WriteString(fileString)
 		Expect(err).To(BeNil())
-		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name())
+		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), true)
 		Expect(err).To(BeNil())
 		Expect(enterpriseVersion).To(Equal("0.19.1"))
 	})
 
-	It("ignores release candidate versions", func() {
+	It("ignores release candidate versions if stableOnly=true", func() {
 		fileString := `
 apiVersion: v1
 entries:
@@ -60,9 +60,29 @@ entries:
 		Expect(err).To(BeNil())
 		_, err = tmpFile.WriteString(fileString)
 		Expect(err).To(BeNil())
-		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name())
+		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), true)
 		Expect(err).To(BeNil())
 		Expect(enterpriseVersion).To(Equal("0.20.1"))
+	})
+
+	It("doesn't ignore release candidate versions if stableOnly=false", func() {
+		fileString := `
+apiVersion: v1
+entries:
+  gloo-ee:
+  - apiVersion: v1
+    version: 1.0.0-rc2
+  - apiVersion: v1
+    version: 1.0.0-rc1
+  - apiVersion: v1
+    version: 0.20.1`
+		tmpFile, err := afero.TempFile(fs, dir, "")
+		Expect(err).To(BeNil())
+		_, err = tmpFile.WriteString(fileString)
+		Expect(err).To(BeNil())
+		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), false)
+		Expect(err).To(BeNil())
+		Expect(enterpriseVersion).To(Equal("1.0.0-rc2"))
 	})
 
 	It("works with versions > 1.0.0", func() {
@@ -86,7 +106,7 @@ entries:
 		Expect(err).To(BeNil())
 		_, err = tmpFile.WriteString(fileString)
 		Expect(err).To(BeNil())
-		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name())
+		enterpriseVersion, err := version.LatestVersionFromRepo(tmpFile.Name(), true)
 		Expect(err).To(BeNil())
 		Expect(enterpriseVersion).To(Equal("1.2.0"))
 	})
