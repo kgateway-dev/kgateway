@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"go.uber.org/zap/zapcore"
 
