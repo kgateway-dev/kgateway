@@ -178,6 +178,10 @@ func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, er
 	if err != nil {
 		return "", err
 	}
+	// Overrides
+	if version.EnterpriseTag != version.UndefinedVersion {
+		enterpriseTag = version.EnterpriseTag
+	}
 
 	if enterprise {
 		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)

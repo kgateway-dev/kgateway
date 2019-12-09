@@ -7,6 +7,7 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
+var EnterpriseTag = UndefinedVersion
 const EnterpriseHelmRepoIndex = "https://storage.googleapis.com/gloo-ee-helm/index.yaml"
 const GlooEE = "gloo-ee"
 
