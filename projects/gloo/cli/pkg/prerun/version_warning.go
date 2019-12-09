@@ -34,10 +34,12 @@ type defaultLogger struct {
 }
 
 func (d *defaultLogger) Printf(format string, args ...interface{}) {
+	// important that this remains writing to stderr, as we don't want this output to interfere with things like $(glooctl proxy url)
 	fmt.Fprintf(os.Stderr, format, args...)
 }
 
 func (d *defaultLogger) Println(str string) {
+	// important that this remains writing to stderr, as we don't want this output to interfere with things like $(glooctl proxy url)
 	fmt.Fprintln(os.Stderr, str)
 }
 
