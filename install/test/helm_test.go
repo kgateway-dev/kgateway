@@ -156,7 +156,7 @@ var _ = Describe("Helm Test", func() {
 					"ValidatingWebhookConfiguration",
 				)
 
-				// all non-namespaced resources should have a namespace set on them
+				// all namespaced resources should have a namespace set on them
 				// this tests that nothing winds up in the default kube namespace from your config when you install (unless that's what you intended)
 				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 					return !nonNamespacedKinds.Has(resource.GetKind())
