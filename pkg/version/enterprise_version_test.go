@@ -23,7 +23,7 @@ var _ = Describe("LatestVersionFromRepo", func() {
 		_ = fs.RemoveAll(dir)
 	})
 
-	FIt("returns the latest version", func() {
+	It("returns the latest version", func() {
 		fileString := `
 apiVersion: v1
 entries:
