@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Do not delete to  `_output` directory during Helm chart unit tests.
+  issueLink: https://github.com/solo-io/gloo/issues/1834

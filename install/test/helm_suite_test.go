@@ -44,7 +44,6 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// generate the values.yaml and Chart.yaml files
-	MustMake(".", "-C", "../../", "clean")
 	MustMake(".", "-C", "../../", "prepare-helm")
 })
 
