@@ -35,7 +35,7 @@ Next, deploy the Pet Store app to kubernetes:
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/sololabs/demos2/masteresources/petstore.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
 ```console
