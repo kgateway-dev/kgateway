@@ -309,7 +309,7 @@ $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
 
-$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
+$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
@@ -322,7 +322,7 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 # Envoy init (WASM)
 #----------------------------------------------------------------------------------
 
-ENVOY_WASM_DIR=projects/envoyinit/wasm
+ENVOY_WASM_DIR=projects/envoyinit/cmd
 ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
 
 $(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
@@ -332,7 +332,7 @@ $(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
 envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
 
 
-$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile
+$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 	cp $< $@
 
 .PHONY: gloo-envoy-wasm-wrapper-docker
