@@ -157,7 +157,7 @@ The containers should have loaded their base configuration as well as the Pet St
 
 ## Examining the *Upstream* and *Virtual Service*
 
-Docker Compose created the necessary Gloo containers along with the Pet Store applicaiton. The configuration comes pre-loaded with an example *Upstream* Gloo uses to allow function level routing. Let's examine the contents of the `petstore.yaml` file.
+Docker Compose created the necessary Gloo containers along with the Pet Store application. The configuration comes pre-loaded with an example *Upstream* Gloo uses to allow function level routing. Let's examine the contents of the `petstore.yaml` file.
 
 ```shell
 # view the upstream definition
