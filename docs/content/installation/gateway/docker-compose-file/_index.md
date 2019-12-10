@@ -116,7 +116,7 @@ The updated `data` directory structure should look like this:
 
 The file `data/gloo-system/default.yaml` provides the initial configuration for each Gloo container, including where to store secrets, configs, and artifacts.
 
-The file `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use to route requests.
+The file `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use as a target to route requests.
 
 The file `data/config/virtualservice/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
 
@@ -276,6 +276,8 @@ virtualHost:
 The default *Virtual Service* defines several possible routes to pass through to the Pet Store application. For instance, a request on the prefix `/petstore` would route that request to the `/api/pets` prefix on the Pet Store *Upstream*.
 
 You'll need to wait a minute for the virtual service to get processed by Gloo and the routes exposed externally.
+
+### Testing the Gloo Configuration
 
 We should now be able to send a request to the Gloo proxy and receive a reply based on the prefix we use. Let's use `curl` to send a request:
 
