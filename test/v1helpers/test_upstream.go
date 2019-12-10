@@ -235,7 +235,7 @@ func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string
 		}
 
 		return nil
-	}, "10s", ".5s").Should(BeNil())
+	}, "30s", "1s").Should(BeNil())
 
 	if response != "" {
 		body, err := ioutil.ReadAll(res.Body)
