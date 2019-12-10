@@ -43,8 +43,9 @@ services:
     - "19000:19000"
     restart: always
 
+ # example application, the swagger petstore
   petstore:
-    image: ${GLOO_REPO:-quay.io/solo-io}/petstore:v1
-    ports:
+    image: ${PETSTORE_REPO:-quay.io/solo-io}/petstore:v1
+    ports: 
     - "8090:8080"
     restart: always

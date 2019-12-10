@@ -1,9 +1,18 @@
 metadata:
   name: default
   namespace: gloo-system
+  resourceVersion: "3"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy gloo-system gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
 virtualHost:
   domains:
   - '*'
+  name: gloo-system.default
   routes:
   - matcher:
       prefix: /petstore/findWithId
