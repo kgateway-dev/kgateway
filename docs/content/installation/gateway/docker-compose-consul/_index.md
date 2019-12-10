@@ -164,20 +164,27 @@ Looking in the Consul UI, we can drill down on the K/V store to find the configu
 metadata:
   name: default
   namespace: gloo-system
-status: {}
+  resourceVersion: "20"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
 virtualHost:
   domains:
   - '*'
   routes:
   - matchers:
     - exact: /all-pets
+    options:
+      prefixRewrite: /api/pets
     routeAction:
       single:
         upstream:
           name: petstore
           namespace: gloo-system
-    options:
-      prefixRewrite: /api/pets
 ```
 
 We should now be able to send a request to the Gloo proxy on the path `/all-pets` and retrieve a result from the Pet Store application on the path `/api/pets`. Let's use `curl` to send a request:

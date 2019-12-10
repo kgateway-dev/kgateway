@@ -1,0 +1,24 @@
+metadata:
+  name: default
+  namespace: gloo-system
+  resourceVersion: "117"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+virtualHost:
+  domains:
+  - '*'
+  routes:
+  - matchers:
+    - prefix: /
+    options:
+      prefixRewrite: /api/pets
+    routeAction:
+      single:
+        upstream:
+          name: petstore
+          namespace: gloo-system
