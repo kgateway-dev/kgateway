@@ -3,6 +3,8 @@ package syncer
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"go.uber.org/zap/zapcore"
 
@@ -49,11 +51,22 @@ const (
 )
 
 func filterUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+	whitelistNamespaces := sets.NewString()
+	blacklistNamespaces := sets.NewString()
+	for _, namespace := range namespaces {
+		if isBlacklistedNamespace(namespace) {
+			blacklistNamespaces.Insert(namespace.Name)
+		}
+		if isWhitelisted(namespace.Labels) {
+			whitelistNamespaces.Insert(namespace.Name)
+		}
+	}
+
 	switch fdsMode {
 	case v1.Settings_DiscoveryOptions_BLACKLIST:
-		return filterUpstreamsBlacklist(upstreams, namespaces)
+		return filterUpstreamsBlacklist(upstreams, blacklistNamespaces)
 	case v1.Settings_DiscoveryOptions_WHITELIST:
-		return filterUpstreamsWhitelist(upstreams, namespaces)
+		return filterUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
 	}
 	panic("invalid fds mode: " + fdsMode.String())
 }
@@ -81,43 +94,38 @@ func isBlacklistedNamespace(ns *kubernetes.KubeNamespace) bool {
 	return false
 }
 
-func filterUpstreamsBlacklist(upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
-	blacklistedNamespaces := make(map[string]bool)
-
-	for _, ns := range namespaces {
-		if isBlacklistedNamespace(ns) {
-			blacklistedNamespaces[ns.Name] = true
-		}
-	}
-
+func filterUpstreamsBlacklist(upstreams v1.UpstreamList, blacklistedNamespaces sets.String) v1.UpstreamList {
 	var filtered v1.UpstreamList
 	for _, us := range upstreams {
-		inBlacklistedNamespace := blacklistedNamespaces[getUpstreamNamespace(us)]
-		blacklisted := isBlacklisted(us.Metadata.Labels)
-		whitelisted := isWhitelisted(us.Metadata.Labels)
-		if (inBlacklistedNamespace && !whitelisted) || blacklisted {
-			continue
+		if shouldIncludeUpstreamInBlacklistMode(us, blacklistedNamespaces) {
+			filtered = append(filtered, us)
 		}
-		filtered = append(filtered, us)
 	}
 	return filtered
 }
 
-func filterUpstreamsWhitelist(upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
-	whitelistedNamespaces := make(map[string]bool)
+func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces sets.String) bool {
+	inBlacklistedNamespace := blacklistedNamespaces.Has(getUpstreamNamespace(us))
+	blacklisted := isBlacklisted(us.Metadata.Labels)
+	whitelisted := isWhitelisted(us.Metadata.Labels)
 
-	for _, ns := range namespaces {
-		if isWhitelisted(ns.Labels) {
-			whitelistedNamespaces[ns.Name] = true
-		}
-	}
+	return (!inBlacklistedNamespace || whitelisted) && !blacklisted
+}
 
-	var filtered v1.UpstreamList
+func filterUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, blacklistedNamespaces sets.String) (filtered v1.UpstreamList) {
 	for _, us := range upstreams {
-		inWhitelistedNamespace := whitelistedNamespaces[getUpstreamNamespace(us)]
+		inWhitelistedNamespace := whitelistedNamespaces.Has(getUpstreamNamespace(us))
 		blacklisted := isBlacklisted(us.Metadata.Labels)
 		whitelisted := isWhitelisted(us.Metadata.Labels)
-		if (inWhitelistedNamespace && !blacklisted) || whitelisted {
+
+		// if an upstream is AWS, then include it only if it would be included in blacklist mode (https://github.com/solo-io/solo-projects/issues/1339)
+		// otherwise, include the upstream only if it is *not* AWS, and either condition holds:
+		//   - the upstream is in a whitelisted namespace and not explicitly blacklisted
+		//   - the upstream itself is explicitly whitelisted
+		shouldIncludeAwsUpstream := us.GetAws() != nil && shouldIncludeUpstreamInBlacklistMode(us, blacklistedNamespaces)
+		shouldIncludeNonAwsUpstream := us.GetAws() == nil && ((inWhitelistedNamespace && !blacklisted) || whitelisted)
+
+		if shouldIncludeAwsUpstream || shouldIncludeNonAwsUpstream {
 			filtered = append(filtered, us)
 		}
 	}
