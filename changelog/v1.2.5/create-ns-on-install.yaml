@@ -2,4 +2,4 @@ changelog:
   - type: FIX
     description: >
       A fresh gloo install shouldn't fail on missing namespace.
-    issueLink: https://github.com/solo-io/solo-projects/issues/1348
+    issueLink: https://github.com/solo-io/gloo/issues/1871
