@@ -133,11 +133,11 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 }
 
 func (i *installer) createNamespace(namespace string) {
-	fmt.Printf("Creating namespace %s...\n", namespace)
+	fmt.Printf("Creating namespace %s...", namespace)
 	if _, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{Name: namespace},
 	}); err != nil {
-		fmt.Printf("Unable to create namespace %s. Continuing...\n", namespace)
+		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
 	} else {
 		fmt.Printf("Done.\n")
 	}

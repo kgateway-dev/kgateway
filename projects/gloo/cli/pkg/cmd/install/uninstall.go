@@ -145,9 +145,9 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 }
 
 func (u *uninstaller) deleteNamespace(namespace string) {
-	fmt.Printf("Removing namespace %s...\n", namespace)
+	fmt.Printf("Removing namespace %s...", namespace)
 	if err := helpers.MustKubeClient().CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{}); err != nil {
-		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
+		fmt.Printf("\nUnable to delete namespace %s. Continuing...\n", namespace)
 	} else {
 		fmt.Printf("Done.\n")
 	}
