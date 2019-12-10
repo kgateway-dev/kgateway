@@ -1,10 +1,11 @@
 package checks
 
 import (
-	"golang.org/x/mod/modfile"
 	"io/ioutil"
 	"os/exec"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
