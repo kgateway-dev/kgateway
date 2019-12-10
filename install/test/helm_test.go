@@ -111,7 +111,7 @@ var _ = Describe("Helm Test", func() {
 			glooPorts = []v1.ContainerPort{
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
-				{Name: "wasm-cache", ContainerPort: 9979, Protocol:"TCP"},
+				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
 			globalLabels    = map[string]string{}
 			setGlobalLabels = func(testLabels map[string]string) {
