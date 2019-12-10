@@ -5,10 +5,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"golang.org/x/mod/modfile"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/mod/modfile"
 )
 
 var _ = Describe("Checks", func() {
@@ -22,6 +22,7 @@ var _ = Describe("Checks", func() {
 		gomodfile := strings.TrimSpace(string(gomod))
 		data, err := ioutil.ReadFile(gomodfile)
 		Expect(err).NotTo(HaveOccurred())
+
 		modFile, err := modfile.Parse(gomodfile, data, nil)
 		Expect(err).NotTo(HaveOccurred())
 
