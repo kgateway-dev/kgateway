@@ -102,7 +102,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		if err != nil {
 			fmt.Printf("error: %v\n", err)
 		}
-		fmt.Printf("Installing the %s chart with the following value overrides:\n%v\n", chartObj.Metadata.Name, y)
+		fmt.Printf("Installing the %s chart with the following value overrides:\n%s\n", chartObj.Metadata.Name, string(y))
 	}
 
 	rel, err := helmInstall.Run(chartObj, completeValues)
