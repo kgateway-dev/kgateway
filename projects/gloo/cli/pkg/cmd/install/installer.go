@@ -86,6 +86,10 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
+	// We need this to avoid rendering the CRDs we include in the /templates directory
+	// for backwards-compatibility with Helm 2.
+	setCrdCreateToFalse(installerConfig)
+
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
 	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
@@ -122,6 +126,26 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	return nil
 }
 
+func setCrdCreateToFalse(config *InstallerConfig) {
+	if config.ExtraValues == nil {
+		config.ExtraValues = map[string]interface{}{}
+	}
+
+	mapWithCrdValueToOverride := config.ExtraValues
+
+	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
+	if config.Enterprise {
+		if _, ok := config.ExtraValues["gloo"]; !ok {
+			config.ExtraValues["gloo"] = map[string]interface{}{}
+		}
+		mapWithCrdValueToOverride = config.ExtraValues["gloo"].(map[string]interface{})
+	}
+
+	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
+		"create": false,
+	}
+}
+
 func (i *installer) printReleaseManifest(release *release.Release) error {
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
@@ -150,11 +174,19 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 // The resulting URI can be either a URL or a local file path.
 func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, error) {
 	var helmChartArchiveUri string
+	enterpriseTag, err := version.GetEnterpriseTag(true)
+	if err != nil {
+		return "", err
+	}
+	// Overrides
+	if version.EnterpriseTag != version.UndefinedVersion {
+		enterpriseTag = version.EnterpriseTag
+	}
 
 	if enterprise {
-		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, version.EnterpriseTag)
+		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
 	} else if withUi {
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, version.EnterpriseTag)
+		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
 	} else {
 		glooOsVersion, err := getGlooVersion(chartOverride)
 		if err != nil {

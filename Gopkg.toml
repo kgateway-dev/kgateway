@@ -11,6 +11,7 @@ ignored = [
 "github.com/pierrec/lz4/v3",
 "github.com/russross/blackfriday/v2",
 "github.com/cespare/xxhash/v2",
+"k8s.io/helm",
 ]
 
 [prune]

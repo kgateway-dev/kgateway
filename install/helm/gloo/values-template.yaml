@@ -2,6 +2,9 @@ namespace:
   create: false
 k8s:
   clusterName: cluster.local
+# We need this for backwards-compatibility with Helm 2
+crds:
+  create: false
 settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
