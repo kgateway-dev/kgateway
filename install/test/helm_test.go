@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"html/template"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/reporting-client/pkg/client"
 	"helm.sh/helm/v3/pkg/releaseutil"
@@ -143,6 +145,24 @@ var _ = Describe("Helm Test", func() {
 					"prometheus.io/port":   "9091",
 					"prometheus.io/scrape": "true",
 				}
+			})
+
+			It("should have all resources marked with a namespace", func() {
+				prepareMakefile(namespace, helmValues{})
+
+				nonNamespacedKinds := sets.NewString(
+					"ClusterRole",
+					"ClusterRoleBinding",
+					"ValidatingWebhookConfiguration",
+				)
+
+				// all namespaced resources should have a namespace set on them
+				// this tests that nothing winds up in the default kube namespace from your config when you install (unless that's what you intended)
+				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return !nonNamespacedKinds.Has(resource.GetKind())
+				}).ExpectAll(func(resource *unstructured.Unstructured) {
+					Expect(resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
+				})
 			})
 
 			Context("gateway", func() {

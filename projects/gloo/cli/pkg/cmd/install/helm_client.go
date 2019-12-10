@@ -12,7 +12,10 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 )
 
-const tempChartFilePermissions = 0644
+const (
+	tempChartFilePermissions = 0644
+	helmNamespaceEnvVar      = "HELM_NAMESPACE"
+)
 
 var verbose bool
 
@@ -173,12 +176,31 @@ func (d *defaultHelmClient) ReleaseExists(namespace, releaseName string) (releas
 	return releaseExists, nil
 }
 
+// Build a Helm EnvSettings struct
+// basically, abstracted cli.New() into our own function call because of the weirdness described in the big comment below
+func NewCLISettings(namespace string) *cli.EnvSettings {
+	// The installation namespace is expressed as a "config override" in the Helm internals
+	// It's normally set by the --namespace flag when invoking the Helm binary, which ends up
+	// setting a non-exported field in the Helm settings struct (https://github.com/helm/helm/blob/v3.0.1/pkg/cli/environment.go#L77)
+	// However, we are not invoking the Helm binary, so that field doesn't get set. It is left as "", which means
+	// that any resources that are non-namespaced (at the time of writing, some of Prometheus's resources do not
+	// have a namespace attached to them but they probably should) wind up in the default namespace from YOUR
+	// kube config. To get around this, we temporarily set an env var before the Helm settings are initialized
+	// so that the proper namespace override is piped through. (https://github.com/helm/helm/blob/v3.0.1/pkg/cli/environment.go#L64)
+	if os.Getenv(helmNamespaceEnvVar) == "" {
+		os.Setenv(helmNamespaceEnvVar, namespace)
+		defer os.Setenv(helmNamespaceEnvVar, "")
+	}
+
+	return cli.New()
+}
+
 func noOpDebugLog(_ string, _ ...interface{}) {}
 
 // Returns an action configuration that can be used to create Helm actions and the Helm env settings.
 // We currently get the Helm storage driver from the standard HELM_DRIVER env (defaults to 'secret').
 func newActionConfig(namespace string) (*action.Configuration, *cli.EnvSettings, error) {
-	settings := cli.New()
+	settings := NewCLISettings(namespace)
 	actionConfig := new(action.Configuration)
 
 	if err := actionConfig.Init(settings.RESTClientGetter(), namespace, os.Getenv("HELM_DRIVER"), noOpDebugLog); err != nil {

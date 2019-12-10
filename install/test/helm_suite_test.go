@@ -7,6 +7,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+
 	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -19,7 +21,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/strvals"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -249,7 +250,7 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 }
 
 func buildRenderer(namespace string) (*action.Install, error) {
-	settings := cli.New()
+	settings := install.NewCLISettings(namespace)
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
 
