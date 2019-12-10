@@ -179,7 +179,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
 
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest
 	for {
 		select {

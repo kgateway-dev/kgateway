@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
@@ -35,13 +37,14 @@ type InstallerConfig struct {
 }
 
 func NewInstaller(helmClient HelmClient) Installer {
-	return NewInstallerWithWriter(helmClient, os.Stdout)
+	return NewInstallerWithWriter(helmClient, &install.CmdKubectl{}, os.Stdout)
 }
 
 // visible for testing
-func NewInstallerWithWriter(helmClient HelmClient, outputWriter io.Writer) Installer {
+func NewInstallerWithWriter(helmClient HelmClient, kubeCli install.KubeCli, outputWriter io.Writer) Installer {
 	return &installer{
 		helmClient:         helmClient,
+		kubeCli:            kubeCli,
 		dryRunOutputWriter: outputWriter,
 	}
 }
@@ -54,6 +57,10 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return err
 		} else if releaseExists {
 			return GlooAlreadyInstalled(namespace)
+		}
+		if installerConfig.InstallCliArgs.CreateNamespace {
+			// Create the namespace if it doesn't exist. Helm3 no longer does this.
+			i.createNamespace(namespace)
 		}
 	}
 
@@ -102,7 +109,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		if err != nil {
 			fmt.Printf("error: %v\n", err)
 		}
-		fmt.Printf("Installing the %s chart with the following value overrides:\n%v\n", chartObj.Metadata.Name, y)
+		fmt.Printf("Installing the %s chart with the following value overrides:\n%s\n", chartObj.Metadata.Name, string(y))
 	}
 
 	rel, err := helmInstall.Run(chartObj, completeValues)
@@ -124,6 +131,15 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
 	return nil
+}
+
+func (i *installer) createNamespace(namespace string) {
+	fmt.Printf("Creating namespace %s... ", namespace)
+	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
+		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+	} else {
+		fmt.Printf("Done.\n")
+	}
 }
 
 func setCrdCreateToFalse(config *InstallerConfig) {
@@ -237,5 +253,6 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 
 type installer struct {
 	helmClient         HelmClient
+	kubeCli            install.KubeCli
 	dryRunOutputWriter io.Writer
 }

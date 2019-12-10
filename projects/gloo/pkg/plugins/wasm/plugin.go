@@ -39,7 +39,9 @@ type Plugin struct {
 
 func NewPlugin() *Plugin {
 	once.Do(func() {
-		go http.ListenAndServe(":9979", imageCache)
+		if os.Getenv(WasmEnabled) != "" {
+			go http.ListenAndServe(":9979", imageCache)
+		}
 	})
 	return &Plugin{}
 }

@@ -191,7 +191,7 @@ func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
 			return err
 		}
 		return nil
-	}, "20s", ".1s").Should(BeNil())
+	}, "10s", ".1s").Should(BeNil())
 	// Call with retries to ensure proxy is available
 	Eventually(func() error {
 		proxy, err := td.getGlooCorsProxy(cors)
@@ -199,7 +199,7 @@ func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
 			return err
 		}
 		return td.setupProxy(proxy)
-	}, "20s", ".1s").Should(BeNil())
+	}, "10s", ".1s").Should(BeNil())
 }
 
 func (td *corsTestData) setupUpstream() *gloov1.Upstream {

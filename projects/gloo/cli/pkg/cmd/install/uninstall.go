@@ -53,6 +53,9 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		return err
 	} else if !releaseExists {
 		_, _ = fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
+		if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
+			u.deleteNamespace(cliArgs.Uninstall.Namespace)
+		}
 		return nil
 	}
 
@@ -139,9 +142,11 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 }
 
 func (u *uninstaller) deleteNamespace(namespace string) {
-	fmt.Printf("Removing namespace %s...\n", namespace)
+	fmt.Printf("Removing namespace %s... ", namespace)
 	if err := u.kubeCli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
-		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
+		fmt.Printf("\nUnable to delete namespace %s. Continuing...\n", namespace)
+	} else {
+		fmt.Printf("Done.\n")
 	}
 }
 
