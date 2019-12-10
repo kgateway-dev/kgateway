@@ -233,7 +233,7 @@ var _ = Describe("Gateway", func() {
 						return 0
 					}
 					return response.StatusCode
-				}, 5*time.Second, 500*time.Millisecond).Should(Equal(200))
+				}, 20*time.Second, 500*time.Millisecond).Should(Equal(200))
 
 				// Add the header that we are explicitly excluding from the match
 				request.Header = map[string][]string{"this-header-must-not-be-present": {"some-value"}}
