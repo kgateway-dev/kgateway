@@ -94,7 +94,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 	// We need this to avoid rendering the CRDs we include in the /templates directory
 	// for backwards-compatibility with Helm 2.
-	//setCrdCreateToFalse(installerConfig)
+	setCrdCreateToFalse(installerConfig)
 
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
