@@ -1,7 +1,7 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
 |namespace.create|bool|false|create the installation namespace|
-|crds.create|bool|false|create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)|
+|crds.create|bool|false||
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|

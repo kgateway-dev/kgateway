@@ -2,10 +2,12 @@ package install_test
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	installutil "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/mocks"
@@ -20,6 +22,7 @@ import (
 var _ = Describe("Install", func() {
 	var (
 		mockHelmClient       *mocks.MockHelmClient
+		mockKubeCli          *installutil.MockKubectl
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
@@ -133,7 +136,8 @@ rules:
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 
-		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
+		mockKubeCli = installutil.NewMockKubectl([]string{fmt.Sprintf("create namespace %s", defaults.GlooSystem)}, []string{""})
+		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubeCli, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Enterprise:     enterprise,
@@ -194,7 +198,8 @@ rules:
 			Return(chart, nil)
 
 		dryRunOutputBuffer := new(bytes.Buffer)
-		installer := install.NewInstallerWithWriter(mockHelmClient, dryRunOutputBuffer)
+		mockKubeCli = installutil.NewMockKubectl([]string{fmt.Sprintf("delete namespace %s", defaults.GlooSystem)}, []string{""})
+		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubeCli, dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
