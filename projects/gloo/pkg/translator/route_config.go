@@ -66,7 +66,7 @@ func (t *translatorInstance) computeVirtualHosts(params plugins.Params, proxy *v
 		return nil
 	}
 	virtualHosts := httpListener.HttpListener.VirtualHosts
-	validateVirtualHostDomains(virtualHosts, httpListenerReport)
+	ValidateVirtualHostDomains(virtualHosts, httpListenerReport)
 	requireTls := len(listener.SslConfigurations) > 0
 	var envoyVirtualHosts []*envoyroute.VirtualHost
 	for i, virtualHost := range virtualHosts {
@@ -515,7 +515,8 @@ func envoyQueryMatcher(in []*matchers.QueryParameterMatcher) []*envoyroute.Query
 }
 
 // returns an error if any of the virtualhost domains overlap
-func validateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerReport *validationapi.HttpListenerReport) {
+// Visible for testing
+func ValidateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerReport *validationapi.HttpListenerReport) {
 	// this shouldbe a 1-1 mapping
 	// if len(domainsToVirtualHosts[domain]) > 1, it's an error
 	domainsToVirtualHosts := make(map[string][]int)
@@ -525,9 +526,13 @@ func validateVirtualHostDomains(virtualHosts []*v1.VirtualHost, httpListenerRepo
 			domainsToVirtualHosts["*"] = append(domainsToVirtualHosts["*"], i)
 		}
 		for _, domain := range vHost.Domains {
-			// default virtualhost can be specified with empty string
 			if domain == "" {
-				domain = "*"
+				vhostReport := httpListenerReport.VirtualHostReports[i]
+				validation.AppendVirtualHostError(
+					vhostReport,
+					validationapi.VirtualHostReport_Error_EmptyDomainError,
+					fmt.Sprintf("virtual host %s has an empty domain", vHost.Name),
+				)
 			}
 			domainsToVirtualHosts[domain] = append(domainsToVirtualHosts[domain], i)
 		}
