@@ -1,0 +1,16 @@
+apiVersion: v1
+entries:
+  gloo:
+  - apiVersion: v1
+    created: "2019-12-10T15:54:44.607262-05:00"
+    description: Gloo Helm chart for Kubernetes
+    digest: dbe606b75b7edd3053c770c39f7d818f158a6f56b1fef2f1037092855cbb00a6
+    home: https://gloo.solo.io/
+    icon: https://raw.githubusercontent.com/solo-io/gloo/master/docs/img/Gloo-01.png
+    name: gloo
+    sources:
+    - https://github.com/solo-io/gloo
+    urls:
+    - gloo-test-unit-testing.tgz
+    version: test-unit-testing
+generated: "2019-12-10T15:54:44.605997-05:00"

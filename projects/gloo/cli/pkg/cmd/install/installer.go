@@ -59,7 +59,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 			return GlooAlreadyInstalled(namespace)
 		}
 		if installerConfig.InstallCliArgs.CreateNamespace {
-			// Create the namespace if it doesn't exist. Regression from Helm2 behavior.
+			// Create the namespace if it doesn't exist. Helm3 no longer does this.
 			i.createNamespace(namespace)
 		}
 	}
@@ -134,7 +134,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 }
 
 func (i *installer) createNamespace(namespace string) {
-	fmt.Printf("Creating namespace %s...", namespace)
+	fmt.Printf("Creating namespace %s... ", namespace)
 	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
 		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
 	} else {

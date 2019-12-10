@@ -22,7 +22,7 @@ import (
 var _ = Describe("Install", func() {
 	var (
 		mockHelmClient       *mocks.MockHelmClient
-		mockKubeCli          *installutil.MockKubectl
+		mockKubectl          *installutil.MockKubectl
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
@@ -112,6 +112,7 @@ rules:
 		installConfig := &options.Install{
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
+			CreateNamespace: true,
 		}
 
 		helmEnv := &cli.EnvSettings{
@@ -136,13 +137,16 @@ rules:
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 
-		mockKubeCli = installutil.NewMockKubectl([]string{fmt.Sprintf("create namespace %s", defaults.GlooSystem)}, []string{""})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubeCli, dryRunOutputBuffer)
+		mockKubectl := installutil.NewMockKubectl([]string{
+			"create namespace " + defaults.GlooSystem,
+		}, []string{})
+		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Enterprise:     enterprise,
 		})
 
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
 	}
@@ -198,13 +202,14 @@ rules:
 			Return(chart, nil)
 
 		dryRunOutputBuffer := new(bytes.Buffer)
-		mockKubeCli = installutil.NewMockKubectl([]string{fmt.Sprintf("delete namespace %s", defaults.GlooSystem)}, []string{""})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubeCli, dryRunOutputBuffer)
+		mockKubectl = installutil.NewMockKubectl([]string{fmt.Sprintf("delete namespace %s", defaults.GlooSystem)}, []string{""})
+		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 		})
 
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 
 		dryRunOutput := dryRunOutputBuffer.String()

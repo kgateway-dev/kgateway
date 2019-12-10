@@ -121,20 +121,14 @@ spec:
 				DeleteCrds:      true,
 			},
 		})
-
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("can remove namespace when requested", func() {
 		mockHelmClient.EXPECT().
 			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
-			Return(true, nil)
-		mockHelmClient.EXPECT().
-			NewUninstall(defaults.GlooSystem).
-			Return(mockHelmUninstallation, nil)
-		mockHelmUninstallation.EXPECT().
-			Run(constants.GlooReleaseName).
-			Return(nil, nil)
+			Return(false, nil)
 
 		outputBuffer := new(bytes.Buffer)
 
@@ -147,9 +141,10 @@ spec:
 			Uninstall: options.Uninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
+				DeleteAll:       true,
 			},
 		})
-
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred())
 	})
 })
