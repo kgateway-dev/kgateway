@@ -2,8 +2,6 @@ package install_test
 
 import (
 	"bytes"
-	"fmt"
-
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -202,7 +200,7 @@ rules:
 			Return(chart, nil)
 
 		dryRunOutputBuffer := new(bytes.Buffer)
-		mockKubectl = installutil.NewMockKubectl([]string{fmt.Sprintf("delete namespace %s", defaults.GlooSystem)}, []string{""})
+		mockKubectl = installutil.NewMockKubectl([]string{}, []string{})
 		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
