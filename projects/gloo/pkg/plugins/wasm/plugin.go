@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/extend-envoy/pkg/cache"
-	"github.com/solo-io/extend-envoy/pkg/defaults"
+	"github.com/solo-io/wasme/pkg/cache"
+	"github.com/solo-io/wasme/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
