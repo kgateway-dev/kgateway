@@ -14,7 +14,8 @@ message PluginSource {
     // Currently has to be json or will crash
     string config = 3;
 
-    string filter_stage = 4;
+    // not implemented yet
+//    string filter_stage = 4;
 
     string name = 5;
 

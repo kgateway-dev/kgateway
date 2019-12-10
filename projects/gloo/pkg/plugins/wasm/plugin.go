@@ -1,5 +1,7 @@
 package wasm
 
+//go:generate mockgen -destination mocks/mock_cache.go  github.com/solo-io/wasme/pkg/cache Cache
+
 import (
 	"context"
 	"net/http"
@@ -7,14 +9,13 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/wasme/pkg/cache"
-	"github.com/solo-io/wasme/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/wasme/pkg/defaults"
 )
 
 const (
@@ -26,8 +27,8 @@ const (
 )
 
 var (
-	once sync.Once
-	imageCache cache.Cache
+	once       sync.Once
+	imageCache = defaults.NewDefaultCache()
 )
 
 type Plugin struct {
@@ -35,11 +36,9 @@ type Plugin struct {
 
 func NewPlugin() *Plugin {
 	once.Do(func() {
-		imageCache = defaults.NewDefaultCache()
 		go http.ListenAndServe(":9979", imageCache)
 	})
-	return &Plugin{
-	}
+	return &Plugin{}
 }
 
 // TODO:not a string..

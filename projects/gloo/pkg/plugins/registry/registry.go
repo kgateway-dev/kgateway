@@ -68,7 +68,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		healthcheck.NewPlugin(),
 		extauth.NewCustomAuthPlugin(),
 		ratelimit.NewPlugin(),
-		wasm.NewPlugin(),
+		wasm.NewPlugin(nil),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))

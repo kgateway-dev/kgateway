@@ -5,7 +5,6 @@ go 1.13
 require (
 	cloud.google.com/go v0.45.1 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
-	github.com/Azure/go-autorest v13.0.0+incompatible // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
@@ -54,6 +53,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.3
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.1
+	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
