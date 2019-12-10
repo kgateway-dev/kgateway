@@ -10,6 +10,10 @@ import (
 
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -55,6 +59,8 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		} else if releaseExists {
 			return GlooAlreadyInstalled(namespace)
 		}
+		// Create the namespace if it doesn't exist. Regression from Helm2 behavior.
+		i.createNamespace(namespace)
 	}
 
 	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
@@ -88,7 +94,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 	// We need this to avoid rendering the CRDs we include in the /templates directory
 	// for backwards-compatibility with Helm 2.
-	setCrdCreateToFalse(installerConfig)
+	//setCrdCreateToFalse(installerConfig)
 
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
@@ -124,6 +130,17 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
 	return nil
+}
+
+func (i *installer) createNamespace(namespace string) {
+	fmt.Printf("Creating namespace %s...\n", namespace)
+	if _, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: namespace},
+	}); err != nil {
+		fmt.Printf("Unable to create namespace %s. Continuing...\n", namespace)
+	} else {
+		fmt.Printf("Done.\n")
+	}
 }
 
 func setCrdCreateToFalse(config *InstallerConfig) {

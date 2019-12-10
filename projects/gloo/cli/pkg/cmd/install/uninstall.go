@@ -5,6 +5,9 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -53,6 +56,9 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		return err
 	} else if !releaseExists {
 		_, _ = fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
+		if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
+			u.deleteNamespace(cliArgs.Uninstall.Namespace)
+		}
 		return nil
 	}
 
@@ -140,8 +146,10 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 
 func (u *uninstaller) deleteNamespace(namespace string) {
 	fmt.Printf("Removing namespace %s...\n", namespace)
-	if err := u.kubeCli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
+	if err := helpers.MustKubeClient().CoreV1().Namespaces().Delete(namespace, &metav1.DeleteOptions{}); err != nil {
 		fmt.Printf("Unable to delete namespace %s. Continuing...\n", namespace)
+	} else {
+		fmt.Printf("Done.\n")
 	}
 }
 
