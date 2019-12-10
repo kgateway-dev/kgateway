@@ -19,6 +19,7 @@ glooctl install gateway enterprise [flags]
 ```
   -h, --help                 help for enterprise
       --license-key string   License key to activate GlooE features
+      --version string       Version of gloo-ee to install (overrides the latest enterprise release)
 ```
 
 ### Options inherited from parent commands
