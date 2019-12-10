@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gogo/protobuf/proto"
@@ -110,6 +111,7 @@ var _ = Describe("Helm Test", func() {
 			glooPorts = []v1.ContainerPort{
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
+				{Name: "wasm-cache", ContainerPort: 9979, Protocol:"TCP"},
 			}
 			globalLabels    = map[string]string{}
 			setGlobalLabels = func(testLabels map[string]string) {
@@ -571,6 +573,23 @@ var _ = Describe("Helm Test", func() {
 
 					It("creates a deployment", func() {
 						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("creates a deployment with gloo wasm envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"global.wasm.enabled=true"},
+						})
+						podname := v1.EnvVar{
+							Name: "POD_NAME",
+							ValueFrom: &v1.EnvVarSource{
+								FieldRef: &v1.ObjectFieldSelector{
+									FieldPath: "metadata.name",
+								},
+							},
+						}
+						container := GetQuayContainerSpec("gloo-envoy-wasm-wrapper", version, GetPodNamespaceEnvVar(), podname)
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = container.Image
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -1093,6 +1112,18 @@ metadata:
 
 					It("should create a deployment", func() {
 						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+
+					It("creates a deployment with gloo wasm envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"global.wasm.enabled=true"},
+						})
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
+								Name:  wasm.WasmEnabled,
+								Value: "true",
+							})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 

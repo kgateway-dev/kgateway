@@ -11,7 +11,7 @@ type HelmConfig struct {
 
 type Config struct {
 	Namespace      *Namespace              `json:"namespace,omitempty"`
-	Crds           *Crds                   `json:"crds,omitempty"`
+	Crds           Crds                   `json:"crds"`
 	Settings       *Settings               `json:"settings,omitempty"`
 	Gloo           *Gloo                   `json:"gloo,omitempty"`
 	Discovery      *Discovery              `json:"discovery,omitempty"`
