@@ -52,8 +52,13 @@ type Install struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Knative                 Knative
-	LicenseKey              string
+	Enterprise              InstallEnterprise
 	WithUi                  bool
+}
+
+type InstallEnterprise struct {
+	LicenseKey string
+	Version       string
 }
 
 type Knative struct {

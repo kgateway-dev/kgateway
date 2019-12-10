@@ -1,6 +1,7 @@
 package install
 
 import (
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/errors"
@@ -21,8 +22,9 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			extraValues := map[string]interface{}{
-				"license_key": opts.Install.LicenseKey,
+				"license_key": opts.Install.Enterprise.LicenseKey,
 			}
+			version.EnterpriseTag = opts.Install.Enterprise.Version
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
