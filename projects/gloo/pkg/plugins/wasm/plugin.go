@@ -13,7 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/wasme/pkg/defaults"
 )
@@ -101,12 +100,8 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 		},
 	}
 
-	strct, err := protoutils.MarshalStruct(filterCfg)
-	if err != nil {
-		return nil, err
-	}
 	// TODO: allow customizing the stage
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, strct, plugins.DuringStage(plugins.AcceptedStage))
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, filterCfg, plugins.DuringStage(plugins.AcceptedStage))
 	if err != nil {
 		return nil, err
 	}
