@@ -13,7 +13,7 @@ import (
 
 var disabledLabels = map[string]string{FdsLabelKey: disbledLabelValue}
 var enabledLabels = map[string]string{FdsLabelKey: enbledLabelValue}
-var _ = Describe("filterUpstreamsForDiscovery", func() {
+var _ = Describe("selectUpstreamsForDiscovery", func() {
 	disabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:   "explicitly-disabled-ns",
@@ -63,7 +63,7 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 
 	Context("blacklist mode", func() {
 		BeforeEach(func() {
-			filtered = filterUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
+			filtered = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_BLACKLIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {
@@ -89,7 +89,7 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 
 	Context("whitelist mode", func() {
 		BeforeEach(func() {
-			filtered = filterUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
+			filtered = selectUpstreamsForDiscovery(gloov1.Settings_DiscoveryOptions_WHITELIST, usList, nsList)
 		})
 
 		It("excludes upstreams whose namespace has the disabled label", func() {
@@ -114,7 +114,7 @@ var _ = Describe("filterUpstreamsForDiscovery", func() {
 			Expect(filtered).To(ContainElement(explicitlyEnabledUs1))
 			Expect(filtered).To(ContainElement(explicitlyEnabledUs2))
 		})
-		FIt("includes AWS upstreams as if they were in blacklist mode", func() {
+		It("includes AWS upstreams as if they were in blacklist mode", func() {
 			Expect(filtered).To(ContainElement(enabledAwsUs1))
 			Expect(filtered).To(ContainElement(enabledAwsUs2))
 			Expect(filtered).To(ContainElement(enabledAwsUs3))

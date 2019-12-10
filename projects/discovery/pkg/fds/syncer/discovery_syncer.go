@@ -39,7 +39,7 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	upstreamsToDetect := filterUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
+	upstreamsToDetect := selectUpstreamsForDiscovery(s.fdsMode, snap.Upstreams, snap.Kubenamespaces)
 
 	return s.fd.Update(upstreamsToDetect, snap.Secrets)
 }
@@ -50,7 +50,7 @@ const (
 	disbledLabelValue = "disabled"
 )
 
-func filterUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
+func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
 	whitelistNamespaces := sets.NewString()
 	blacklistNamespaces := sets.NewString()
 	for _, namespace := range namespaces {
@@ -64,9 +64,9 @@ func filterUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 
 	switch fdsMode {
 	case v1.Settings_DiscoveryOptions_BLACKLIST:
-		return filterUpstreamsBlacklist(upstreams, blacklistNamespaces)
+		return selectUpstreamsBlacklist(upstreams, blacklistNamespaces)
 	case v1.Settings_DiscoveryOptions_WHITELIST:
-		return filterUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
+		return selectUpstreamsWhitelist(upstreams, whitelistNamespaces, blacklistNamespaces)
 	}
 	panic("invalid fds mode: " + fdsMode.String())
 }
@@ -94,14 +94,14 @@ func isBlacklistedNamespace(ns *kubernetes.KubeNamespace) bool {
 	return false
 }
 
-func filterUpstreamsBlacklist(upstreams v1.UpstreamList, blacklistedNamespaces sets.String) v1.UpstreamList {
-	var filtered v1.UpstreamList
+func selectUpstreamsBlacklist(upstreams v1.UpstreamList, blacklistedNamespaces sets.String) v1.UpstreamList {
+	var selected v1.UpstreamList
 	for _, us := range upstreams {
 		if shouldIncludeUpstreamInBlacklistMode(us, blacklistedNamespaces) {
-			filtered = append(filtered, us)
+			selected = append(selected, us)
 		}
 	}
-	return filtered
+	return selected
 }
 
 func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces sets.String) bool {
@@ -112,7 +112,7 @@ func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces
 	return (!inBlacklistedNamespace || whitelisted) && !blacklisted
 }
 
-func filterUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, blacklistedNamespaces sets.String) (filtered v1.UpstreamList) {
+func selectUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, blacklistedNamespaces sets.String) (selected v1.UpstreamList) {
 	for _, us := range upstreams {
 		inWhitelistedNamespace := whitelistedNamespaces.Has(getUpstreamNamespace(us))
 		blacklisted := isBlacklisted(us.Metadata.Labels)
@@ -126,10 +126,10 @@ func filterUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, 
 		shouldIncludeNonAwsUpstream := us.GetAws() == nil && ((inWhitelistedNamespace && !blacklisted) || whitelisted)
 
 		if shouldIncludeAwsUpstream || shouldIncludeNonAwsUpstream {
-			filtered = append(filtered, us)
+			selected = append(selected, us)
 		}
 	}
-	return filtered
+	return selected
 }
 
 // TODO: The way we resolve namespace is a bit confusing -- using the service namespace if the upstream is a kube service, or the upstream namespace otherwise
