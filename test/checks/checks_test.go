@@ -14,7 +14,7 @@ var _ = Describe("Checks", func() {
 
 	It("should used forked klog instead of klog", func() {
 		// regular klog writes to disk, so make sure we used a forked version that doesn't write to
-		// disk
+		// disk, which is a problem with hardened containers with root only file systems.
 
 		gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
 		Expect(err).NotTo(HaveOccurred())
@@ -22,6 +22,7 @@ var _ = Describe("Checks", func() {
 		data, err := ioutil.ReadFile(gomodfile)
 		Expect(err).NotTo(HaveOccurred())
 		modFile, err := modfile.Parse(gomodfile, data, nil)
+		Expect(err).NotTo(HaveOccurred())
 
 		var klogReplace *modfile.Replace
 		for _, replace := range modFile.Replace {
