@@ -1,6 +1,9 @@
 package wasm
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -12,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
 	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
 var _ = Describe("wasm plugin", func() {
@@ -26,6 +30,7 @@ var _ = Describe("wasm plugin", func() {
 		mockCache = mock_cache.NewMockCache(ctrl)
 		imageCache = mockCache
 		p = NewPlugin()
+		Expect(os.Setenv(WasmEnabled, "1")).NotTo(HaveOccurred())
 	})
 
 	It("should not add filter if wasm config is nil", func() {
@@ -52,16 +57,33 @@ var _ = Describe("wasm plugin", func() {
 		Expect(err).To(Equal(fakeErr))
 	})
 
+	It("should not add filter if wasm env is not set", func() {
+		Expect(os.Setenv(WasmEnabled, "")).NotTo(HaveOccurred())
+		sha := "test-sha"
+		image := "image"
+		hl := &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				Wasm: &wasm.PluginSource{},
+			},
+		}
+
+		mockCache.EXPECT().Add(gomock.Any(), image).Return(digest.Digest(sha), nil)
+		f, err := p.HttpFilters(plugins.Params{}, hl)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(f).To(BeNil())
+	})
+
 	It("will return the proper config", func() {
 		sha := "test-sha"
 		image := "image"
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Wasm: &wasm.PluginSource{
-					Image:       image,
-					Config:      "test-config",
-					Name:        "test",
-					RootId:      "test-root",
+					Image:  image,
+					Config: "test-config",
+					Name:   "test",
+					RootId: "test-root",
+					VmType: wasm.PluginSource_V8,
 				},
 			},
 		}
@@ -76,6 +98,14 @@ var _ = Describe("wasm plugin", func() {
 		Expect(pc.Config.RootId).To(Equal(hl.Options.Wasm.RootId))
 		Expect(pc.Config.Name).To(Equal(hl.Options.Wasm.Name))
 		Expect(pc.Config.Configuration).To(Equal(hl.Options.Wasm.Config))
+		Expect(pc.Config.VmConfig.VmId).To(Equal(VmId))
+		Expect(pc.Config.VmConfig.Runtime).To(Equal(V8Runtime))
+		remote := pc.Config.VmConfig.Code.GetRemote()
+		Expect(remote).NotTo(BeNil())
+		Expect(remote.Sha256).To(Equal(sha))
+		Expect(remote.HttpUri.Uri).To(Equal(fmt.Sprintf("http://gloo/images/%s", sha)))
+		Expect(remote.HttpUri.HttpUpstreamType).To(BeEquivalentTo(&core.HttpUri_Cluster{
+			Cluster: WasmCacheCluster,
+		}))
 	})
-
 })

@@ -5,6 +5,7 @@ package wasm
 import (
 	"context"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/wasme/pkg/defaults"
 )
@@ -23,6 +25,8 @@ const (
 	WavmRuntime      = "envoy.wasm.runtime.wavm"
 	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
+
+	WasmEnabled = "WASM_ENABLED"
 )
 
 var (
@@ -126,6 +130,10 @@ func (p *Plugin) verifyConfiguration(schema Schema, config string) error {
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+	if os.Getenv(WasmEnabled) == "" {
+		contextutils.LoggerFrom(params.Ctx).Debugf("%s was not set, therefore not creating wasm config")
+		return nil, nil
+	}
 	wasm := l.GetOptions().GetWasm()
 	if wasm != nil {
 		stagedPlugin, err := p.plugin(wasm)
