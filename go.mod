@@ -66,7 +66,7 @@ require (
 	github.com/solo-io/go-utils v0.11.0
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/solo-kit v0.11.13
-	github.com/solo-io/wasme v0.0.1
+	github.com/solo-io/wasme v0.0.1 // indirect
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
