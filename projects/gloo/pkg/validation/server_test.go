@@ -120,10 +120,10 @@ var _ = Describe("Validation Server", func() {
 			ctx, cancel := context.WithCancel(context.TODO())
 			defer cancel()
 
-			stream, err := client.NotifyOnResync(ctx, &validationgrpc.NotificationRequest{})
+			stream, err := client.NotifyOnResync(ctx, &validationgrpc.NotifyOnResyncRequest{})
 			Expect(err).NotTo(HaveOccurred())
 
-			var notifications []*validationgrpc.NotificationResponse
+			var notifications []*validationgrpc.NotifyOnResyncResponse
 			var l sync.Mutex
 			var desiredErr string
 
@@ -145,9 +145,9 @@ var _ = Describe("Validation Server", func() {
 				}
 			}()
 
-			getNotifications := func() []*validationgrpc.NotificationResponse {
+			getNotifications := func() []*validationgrpc.NotifyOnResyncResponse {
 				l.Lock()
-				notesCopy := make([]*validationgrpc.NotificationResponse, len(notifications))
+				notesCopy := make([]*validationgrpc.NotifyOnResyncResponse, len(notifications))
 				copy(notesCopy, notifications)
 				l.Unlock()
 				return notesCopy

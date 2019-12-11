@@ -24,7 +24,7 @@ func (s *mockValidationService) ValidateProxy(context.Context, *validation.Proxy
 	return res, s.err
 }
 
-func (s *mockValidationService) NotifyOnResync(*validation.NotificationRequest, validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *mockValidationService) NotifyOnResync(*validation.NotifyOnResyncRequest, validation.ProxyValidationService_NotifyOnResyncServer) error {
 	panic("implement me")
 }
 
@@ -99,7 +99,7 @@ type mockWrappedValidationClient struct {
 	err  error
 }
 
-func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotificationRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
 	return nil, nil
 }
 

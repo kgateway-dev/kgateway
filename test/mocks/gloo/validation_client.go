@@ -37,7 +37,7 @@ func (m *MockProxyValidationServiceClient) EXPECT() *MockProxyValidationServiceC
 }
 
 // NotifyOnResync mocks base method
-func (m *MockProxyValidationServiceClient) NotifyOnResync(arg0 context.Context, arg1 *validation.NotificationRequest, arg2 ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func (m *MockProxyValidationServiceClient) NotifyOnResync(arg0 context.Context, arg1 *validation.NotifyOnResyncRequest, arg2 ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
 	for _, a := range arg2 {

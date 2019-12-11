@@ -422,11 +422,11 @@ apis:
   gloo.solo.io.MultiDestination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
     package: gloo.solo.io
-  gloo.solo.io.NotificationRequest:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotificationRequest
+  gloo.solo.io.NotifyOnResyncRequest:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncRequest
     package: gloo.solo.io
-  gloo.solo.io.NotificationResponse:
-    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotificationResponse
+  gloo.solo.io.NotifyOnResyncResponse:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncResponse
     package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy

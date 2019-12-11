@@ -7,7 +7,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
 // the proxy validation service validates proxies for clients against current snapshot resources
 service ProxyValidationService {
     // Notify the client whenever the Proxy Validation Service resyncs
-    rpc NotifyOnResync (NotificationRequest) returns (stream NotificationResponse) {
+    rpc NotifyOnResync (NotifyOnResyncRequest) returns (stream NotifyOnResyncResponse) {
     }
     // Submit a proxy for validation
     rpc ValidateProxy (ProxyValidationServiceRequest) returns (ProxyValidationServiceResponse) {
@@ -22,12 +22,11 @@ message ProxyValidationServiceResponse {
     ProxyReport proxy_report = 1;
 }
 
-
-message NotificationRequest {
+message NotifyOnResyncRequest {
 
 }
 
-message NotificationResponse {
+message NotifyOnResyncResponse {
 
 }
 

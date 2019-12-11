@@ -24,11 +24,11 @@ type validator struct {
 	lock           sync.RWMutex
 	latestSnapshot *v1.ApiSnapshot
 	translator     translator.Translator
-	notifyResync   map[*validation.NotificationRequest]chan struct{}
+	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
 }
 
 func NewValidator(translator translator.Translator) *validator {
-	return &validator{translator: translator, notifyResync: make(map[*validation.NotificationRequest]chan struct{}, 1)}
+	return &validator{translator: translator, notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1)}
 }
 
 // only call within a lock
@@ -83,9 +83,9 @@ func (s *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	return nil
 }
 
-func (s *validator) NotifyOnResync(req *validation.NotificationRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
 	// send initial response as ACK
-	if err := stream.Send(&validation.NotificationResponse{}); err != nil {
+	if err := stream.Send(&validation.NotifyOnResyncResponse{}); err != nil {
 		return err
 	}
 
@@ -112,7 +112,7 @@ func (s *validator) NotifyOnResync(req *validation.NotificationRequest, stream v
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-receiver:
-			if err := stream.Send(&validation.NotificationResponse{}); err != nil {
+			if err := stream.Send(&validation.NotifyOnResyncResponse{}); err != nil {
 				contextutils.LoggerFrom(stream.Context()).Errorw("failed to send validation resync notification", zap.Error(err))
 			}
 		}
@@ -165,7 +165,7 @@ func (s *validationServer) Register(grpcServer *grpc.Server) {
 	validation.RegisterProxyValidationServiceServer(grpcServer, s)
 }
 
-func (s *validationServer) NotifyOnResync(req *validation.NotificationRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
+func (s *validationServer) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
 	s.lock.Lock()
 	validator := s.validator
 	s.lock.Unlock()

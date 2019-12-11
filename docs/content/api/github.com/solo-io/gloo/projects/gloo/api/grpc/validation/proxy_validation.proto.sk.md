@@ -13,8 +13,8 @@ weight: 5
 
 - [ProxyValidationServiceRequest](#proxyvalidationservicerequest)
 - [ProxyValidationServiceResponse](#proxyvalidationserviceresponse)
-- [NotificationRequest](#notificationrequest)
-- [NotificationResponse](#notificationresponse)
+- [NotifyOnResyncRequest](#notifyonresyncrequest)
+- [NotifyOnResyncResponse](#notifyonresyncresponse)
 - [ProxyReport](#proxyreport)
 - [ListenerReport](#listenerreport)
 - [Error](#error)
@@ -81,7 +81,7 @@ weight: 5
 
 
 ---
-### NotificationRequest
+### NotifyOnResyncRequest
 
 
 
@@ -96,7 +96,7 @@ weight: 5
 
 
 ---
-### NotificationResponse
+### NotifyOnResyncResponse
 
 
 

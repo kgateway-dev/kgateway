@@ -68,7 +68,7 @@ func (c *connectionRefreshingValidationClient) ValidateProxy(ctx context.Context
 	})
 }
 
-func (c *connectionRefreshingValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotificationRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+func (c *connectionRefreshingValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
 	var notifier validation.ProxyValidationService_NotifyOnResyncClient
 
 	return notifier, c.retryWithNewClient(ctx, func(validationClient validation.ProxyValidationServiceClient) error {

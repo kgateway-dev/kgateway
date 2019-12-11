@@ -9,7 +9,7 @@ import (
 )
 
 func MakeNotificationChannel(ctx context.Context, stream validation.ProxyValidationService_NotifyOnResyncClient) <-chan struct{} {
-	notifications := make(chan struct{}, 10)
+	notifications := make(chan struct{}, 1)
 
 	go func() {
 		logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "validation-resync-notifications"))
