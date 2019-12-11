@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"github.com/solo-io/go-utils/errors"
 	"sync"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -39,6 +40,10 @@ func (s *validator) Sync(_ context.Context, snap *v1.ApiSnapshot) error {
 
 func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
 	s.lock.RLock()
+	// we may receive a ValidateProxy call before a Sync has occurred
+	if s.latestSnapshot == nil {
+		return nil, errors.New("proxy validation called before the validation server received its first sync of resources")
+	}
 	snapCopy := s.latestSnapshot.Clone()
 	s.lock.RUnlock()
 
