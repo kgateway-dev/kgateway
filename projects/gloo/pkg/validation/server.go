@@ -2,8 +2,9 @@ package validation
 
 import (
 	"context"
-	"github.com/solo-io/go-utils/errors"
 	"sync"
+
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
