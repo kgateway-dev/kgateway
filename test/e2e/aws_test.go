@@ -125,7 +125,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			return string(body), nil
-		}, "10s", "1s").Should(ContainSubstring(substring))
+		}, "20s", "1s").Should(ContainSubstring(substring))
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(envoyPort, "SOLO.IO")

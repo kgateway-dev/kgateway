@@ -4,14 +4,16 @@ import (
 	"context"
 	"sync"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 )
 
@@ -121,6 +123,11 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 
 func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
 	s.lock.RLock()
+	// we may receive a ValidateProxy call before a Sync has occurred
+	if s.latestSnapshot == nil {
+		s.lock.RUnlock()
+		return nil, errors.New("proxy validation called before the validation server received its first sync of resources")
+	}
 	snapCopy := s.latestSnapshot.Clone()
 	s.lock.RUnlock()
 

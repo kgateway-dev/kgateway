@@ -112,7 +112,7 @@ var _ = Describe("Transformations", func() {
 			}
 			b, err := ioutil.ReadAll(res.Body)
 			return string(b), err
-		}, "10s", ".5s").Should(Equal("test"))
+		}, "20s", ".5s").Should(Equal("test"))
 	}
 
 	WriteVhost := func(vs *gloov1.VirtualHost) {
