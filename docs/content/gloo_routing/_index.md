@@ -7,7 +7,7 @@ Gloo has a powerful routing engine that can handle simple use cases like API-to-
 
 Gloo can route requests directly to functions, which can be: a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS function, etc.); an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.); or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes Gloo the only API gateway that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
-[Add Doc Summary Here]
+This document is meant to provide a high-level overview of how routing works in Gloo, and some starting points to dig deeper into concepts like *Upstreams*, *Virtual Services*, and *Gateway Configuration*.
 
 ---
 

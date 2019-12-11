@@ -17,35 +17,50 @@ Finally, we will test the routes by submitting web requests using `curl`.
 If there are no routes configured, Envoy will not be listening on the gateway port.
 {{% /notice %}}
 
-### What you'll need
+---
+
+## Preparing the Environment
+
+To follow along in this guide, you will need to fulfill a few prerequisites.  
+
+### Prerequisite Software
+
+Your local system should have `kubectl` and `glooctl` installed, and you should have access to a Kubernetes deployment to install the Gloo Gateway.
 
 * [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
+* `glooctl`
 * Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a
 great way to get a cluster up quickly.
 
-### Steps
+### Install the Gloo Gateway and glooctl
 
-#### Install the Gloo Gateway and glooctl
+The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on on Kubernetes to the default `gloo-system` namespace.
 
-Start by [installing]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) the Gloo Gateway on Kubernetes to the default `gloo-system` namespace. Then install `glooctl` on the same system you will use to run the `kubectl` commands.
+Once you have completed the installation of `glooctl` and Gloo Gateway, you are now ready to deploy an example application and configure routing.
 
-#### Deploy the Pet Store Application
+--- 
 
-Next, deploy the Pet Store app to kubernetes:
+## Example Application Setup
+
+On your Kubernetes installation, you will deploy the Pet Store Application and validate this it is operational.
+
+### Deploy the Pet Store Application
+
+Let's deploy the Pet Store Application on Kubernetes using a YAML file hosted on GitHub. The deployment will stand up the Pet Store container and expose the Pet Store API through a Kubernetes service.
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/sololabs/demos2/masteresources/petstore.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
 ```console
-deployment.apps/petstore created
+deployment.extensions/petstore created
 service/petstore created
 ```
 
-#### Verify the Pet Store Application
+### Verify the Pet Store Application
 
-Now let's verify the petstore pod is running and the petstore service has been created:
+Now let's verify the pod running the Pet Store application launched successfully the petstore service has been created:
 
 ```shell
 kubectl -n default get pods
@@ -69,9 +84,9 @@ NAME      TYPE       CLUSTER-IP   EXTERNAL-IP  PORT(S)   AGE
 petstore  ClusterIP  10.XX.XX.XX  <none>       8080/TCP  1m
 ```
 
-#### Verify the Upstream for the Pet Store Application
+### Verify the Upstream for the Pet Store Application
 
-The Gloo discovery services should have already created an upstream for the petstore service, and the **STATUS** should be **Accepted**. Let’s verify this by using the `glooctl` command line tool:
+The Gloo discovery services watch for new services added to the Kubernetes cluster. We the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. Let’s verify this by using the `glooctl` command line tool:
 
 ```shell
 glooctl get upstreams
@@ -105,17 +120,17 @@ glooctl get upstreams
 +--------------------------------+------------+----------+------------------------------+
 ```
 
-This command lists all the upstreams Gloo has discovered, each written to an *Upstream* CRD. 
+This command lists all the Upstreams Gloo has discovered, each written to an *Upstream* CRD. 
 
 The upstream we want to see is `default-petstore-8080`. 
 
-Digging a little deeper, we can verify that Gloo's function discovery populated our upstream with the available rest endpoints it implements. 
+Digging a little deeper into the details of the table, we can see that Gloo's function discovery populated our upstream with the available rest endpoints it implements. 
     
 {{% notice note %}}
 The upstream was created in the `gloo-system` namespace rather than `default` because it was created by a discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo. 
 {{% /notice %}}
 
-#### Investigate the YAML of the Upstream
+### Investigate the YAML of the Upstream
 
 Let's take a closer look at the upstream that Gloo's Discovery service created:
 
@@ -191,11 +206,17 @@ kube:
             transfer-encoding: {}
 ```
 
-The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these to demonstrate function routing in the [next tutorial](../virtual_services/routes/route_destinations/single_upstreams/function_routing/).
+The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these endpoints to demonstrate function routing in the [next tutorial](../virtual_services/routes/route_destinations/single_upstreams/function_routing/).
 
-#### Add a Routing Rule
+---
 
-Even though the upstream has been created, Gloo will not route traffic to it until we add some routing rules on a `virtualservice`. Let’s now use glooctl to create a basic route for this upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
+## Configuring Routing
+
+We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service.
+
+### Add a Routing Rule
+
+Even though the Upstream has been created, Gloo will not route traffic to it until we add some routing rules on a `virtualservice`. Let’s now use glooctl to create a basic route for this Upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
 
 ```shell
 glooctl add route \
@@ -208,7 +229,7 @@ glooctl add route \
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |          ROUTES           |
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
-| petstore        |              | *       | none | Pending |                 | /all-pets -> gloo-system. |
+| default         |              | *       | none | Pending |                 | /all-pets -> gloo-system. |
 |                 |              |         |      |         |                 | .default-petstore-8080    |
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
 ```
@@ -223,17 +244,12 @@ glooctl get virtualservice petstore
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS   | LISTENERPLUGINS |          ROUTES           |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
-| petstore        |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
+| default         |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
 |                 |              |         |      |          |                 | .default-petstore-8080    |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 ```
 
-{{% notice note %}}
-See TODO for a guide on creating a route to a REST endpoint without requiring 
-prefix rewriting. 
-{{% /notice %}}
-
-#### Verify Virtual Service Creation
+### Verify Virtual Service Creation
 
 Let's verify that a virtual service was created with that route. 
 
@@ -248,39 +264,40 @@ glooctl get virtualservice --output yaml
 {{< highlight yaml >}}
 ---
 metadata:
+  generation: "3"
   name: default
   namespace: gloo-system
-  resourceVersion: "268264"
+  ownerReferences: []
+  resourceVersion: "1018063"
 status:
   reportedBy: gateway
   state: Accepted
   subresourceStatuses:
-    '*v1.Proxy gloo-system gateway-proxy':
+    '*v1.Proxy.gloo-system.gateway-proxy':
       reportedBy: gloo
       state: Accepted
 virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /all-pets
+  - matchers:
+    - exact: /all-pets
+    options:
+      prefixRewrite: /api/pets
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
 {{< /highlight >}}
     
 When a virtual service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
 
 At this point we have a `virtualservice` with a routing rule sending traffic on the path `/all-pets` to the `upstream` petstore at a path of `/api/pets`.
 
-#### Test the Route Rule
+### Test the Route Rule
 
-Let’s test the route rule by retrive the url of the Gloo gateway, and sending a web request to the `/all-pets` path of the url using curl:
+Let’s test the route rule by retrieving the url of the Gloo gateway, and sending a web request to the `/all-pets` path of the url using curl:
 
 ```shell
 curl $(glooctl proxy url)/all-pets
@@ -290,7 +307,15 @@ curl $(glooctl proxy url)/all-pets
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-The proxy has now been configured to route requests to this REST endpoint in Kubernetes. 
+The proxy has now been configured to route requests to the `/api/pets` REST endpoint on the Pet Store application in Kubernetes.
 
-In the next sections, we'll take a closer look at more HTTP routing capabilities, including customizing the matching rules, route destinations, other routing features, security, and more. We'll also look at TCP routing, advanced proxy configuration, and integrations with different applications and service meshes. 
+---
+
+## Next Steps
+
+Congratulations! You've successfully set up your first routing rule. That's just the tip of the iceberg though. In the next sections, we'll take a closer look at more HTTP routing capabilities, including [customizing the matching rules]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules" %}}), [route destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations" %}}), and [routing features]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features" %}}).
+
+To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}}) page.
+
+If you're ready to dive deeper into routing, the next logical step is trying out different matching rules starting with [Path Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}}).
 
