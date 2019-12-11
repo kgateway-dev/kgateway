@@ -8,8 +8,14 @@ import (
 	"go.uber.org/zap"
 )
 
-func MakeNotificationChannel(ctx context.Context, stream validation.ProxyValidationService_NotifyOnResyncClient) <-chan struct{} {
+func MakeNotificationChannel(ctx context.Context, stream validation.ProxyValidationService_NotifyOnResyncClient) (<-chan struct{}, error) {
 	notifications := make(chan struct{}, 1)
+
+	// we expect a notification right away as our "ack"
+	_, err := stream.Recv()
+	if err != nil {
+		return nil, err
+	}
 
 	go func() {
 		logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "validation-resync-notifications"))
@@ -40,5 +46,5 @@ func MakeNotificationChannel(ctx context.Context, stream validation.ProxyValidat
 		}
 	}()
 
-	return notifications
+	return notifications, nil
 }

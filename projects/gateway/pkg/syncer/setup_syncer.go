@@ -230,7 +230,11 @@ func RunGateway(opts translator.Opts) error {
 			return errors.Wrapf(err, "failed to stream notifications from validation server.")
 		}
 
-		notifications = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
+		notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read notifications from stream")
+		}
+
 		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
 		allowMissingLinks = opts.Validation.AllowMissingLinks
 	}
