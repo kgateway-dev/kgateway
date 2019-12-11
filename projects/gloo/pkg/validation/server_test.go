@@ -92,11 +92,6 @@ var _ = Describe("Validation Server", func() {
 			lis, err := net.Listen("tcp", ":0")
 			Expect(err).NotTo(HaveOccurred())
 
-			cc, err := grpc.DialContext(context.TODO(), lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
-			Expect(err).NotTo(HaveOccurred())
-
-			client = validationgrpc.NewProxyValidationServiceClient(cc)
-
 			srv = grpc.NewServer()
 
 			v = NewValidator(nil)
@@ -110,6 +105,12 @@ var _ = Describe("Validation Server", func() {
 				err = srv.Serve(lis)
 				Expect(err).NotTo(HaveOccurred())
 			}()
+
+			cc, err := grpc.DialContext(context.TODO(), lis.Addr().String(), grpc.WithInsecure(), grpc.WithBlock())
+			Expect(err).NotTo(HaveOccurred())
+
+			client = validationgrpc.NewProxyValidationServiceClient(cc)
+
 		})
 		AfterEach(func() {
 			srv.Stop()
@@ -175,9 +176,7 @@ var _ = Describe("Validation Server", func() {
 			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}, {}}})
 			Expect(err).NotTo(HaveOccurred())
 
-			time.Sleep(time.Second / 2)
-			Expect(getNotifications()).To(HaveLen(3))
-
+			Consistently(getNotifications, time.Second).Should(HaveLen(3))
 		})
 	})
 })
