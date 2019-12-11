@@ -103,7 +103,7 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 
 	// return if listener type != http || no virtual hosts
 	httpListener, ok := listener.ListenerType.(*v1.Listener_HttpListener)
-	if !ok {
+	if !ok || len(httpListener.HttpListener.VirtualHosts) == 0 {
 		return nil
 	}
 
