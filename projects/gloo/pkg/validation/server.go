@@ -42,6 +42,7 @@ func (s *validator) ValidateProxy(ctx context.Context, req *validation.ProxyVali
 	s.lock.RLock()
 	// we may receive a ValidateProxy call before a Sync has occurred
 	if s.latestSnapshot == nil {
+		s.lock.RUnlock()
 		return nil, errors.New("proxy validation called before the validation server received its first sync of resources")
 	}
 	snapCopy := s.latestSnapshot.Clone()
