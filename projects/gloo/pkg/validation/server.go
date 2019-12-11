@@ -147,7 +147,7 @@ type ValidationServer interface {
 }
 
 type validationServer struct {
-	lock      sync.Mutex
+	lock      sync.RWMutex
 	validator Validator
 }
 
@@ -166,17 +166,17 @@ func (s *validationServer) Register(grpcServer *grpc.Server) {
 }
 
 func (s *validationServer) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream validation.ProxyValidationService_NotifyOnResyncServer) error {
-	s.lock.Lock()
+	s.lock.RLock()
 	validator := s.validator
-	s.lock.Unlock()
+	s.lock.RUnlock()
 
 	return validator.NotifyOnResync(req, stream)
 }
 
 func (s *validationServer) ValidateProxy(ctx context.Context, req *validation.ProxyValidationServiceRequest) (*validation.ProxyValidationServiceResponse, error) {
-	s.lock.Lock()
+	s.lock.RLock()
 	validator := s.validator
-	s.lock.Unlock()
+	s.lock.RUnlock()
 
 	return validator.ValidateProxy(ctx, req)
 }
