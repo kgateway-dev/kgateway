@@ -45,7 +45,7 @@ Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/s
 
 In this example, we restrict authorized users to 200 requests per minute and anonymous users to 1000 requests per hour.
 
-{{< highlight yaml "hl_lines=22-28" >}}
+{{< highlight yaml "hl_lines=20-26" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -57,31 +57,29 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 1000
-              unit: HOUR
-            authorized_limits:
-              requests_per_unit: 200
-              unit: MINUTE
-        # extauth:
-        #   oauth:
-        #     # your OAuth settings here to authorize users
+    options:
+      ratelimit_basic:
+        anonymous_limits:
+          requests_per_unit: 1000
+          unit: HOUR
+        authorized_limits:
+          requests_per_unit: 200
+          unit: MINUTE
+    # extauth:
+    #   oauth:
+    #     # your OAuth settings here to authorize users
 {{< /highlight >}}
 
 You can also just set rate limits for just anonymous users (rate limit by remote address) or just authorized users (rate limit by user id). For example, to rate limit for anonymous users, you would configure the `anonymous_limits` section like as follows.
 
-{{< highlight yaml "hl_lines=23-26" >}}
+{{< highlight yaml "hl_lines=20-23" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -93,18 +91,16 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 1000
-              unit: HOUR
+    options:
+      ratelimit_basic:
+        anonymous_limits:
+          requests_per_unit: 1000
+          unit: HOUR
 {{< /highlight >}}

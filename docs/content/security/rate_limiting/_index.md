@@ -17,18 +17,49 @@ request limits to these varied services in one place.
 Gloo exposes Envoy's rate-limit API, which allows users to provide their own implementation of an Envoy gRPC rate-limit
 service. Lyft provides an example implementation of this gRPC rate-limit service 
 [here](https://github.com/lyft/ratelimit). To configure Gloo to use your rate-limit server implementation,
-install Gloo gateway with helm and provide the following `.Values.settings.extensions` values override:
+install Gloo gateway and then modify the settings to use your rate limit server upstream:
 
-```yaml
-configs:
-  rate-limit:
-    ratelimit_server_ref:
-      name: ...      # rate-limit upstream name
-      namespace: ... # rate-limit upstream namespace
-    request_timeout: ...  # optional, default 100ms
-    deny_on_fail: ...     # optional, default false
-    rate_limit_before_auth: ... # optional, default false
+Open editor to modify the settings:
+```shell script
+kubectl --namespace gloo-system edit settings default
 ```
+
+Update the highlighted portion to point to your rate limit server:
+{{< highlight yaml "hl_lines=26-32" >}}
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  annotations:
+    helm.sh/hook: pre-install
+  labels:
+    app: gloo
+    gloo: settings
+  name: default
+  namespace: gloo-system
+spec:
+  discoveryNamespace: gloo-system  
+  extauth:
+    extauthzServerRef:
+      name: extauth
+      namespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}      
+  ratelimitServer:
+    ratelimitServerRef:
+      name: ...        # rate-limit server upstream name
+      namespace: ...   # rate-limit server upstream namespace
+    requestTimeout: ...      # optional, default 100ms
+    denyOnFail: ...          # optional, default false
+    rateLimitBeforeAuth: ... # optional, default false
+  refreshRate: 60s
+{{< /highlight  >}}
 
 {{% notice note %}}
 Setting the value `rate_limit_before_auth` to true will cause the rate limiting filter to run before the Ext Auth filter.
@@ -37,10 +68,11 @@ vs non-authenticated users.
 {{% /notice %}}
 
 Gloo Enterprise provides an enhanced version of [Lyft's rate limit service](https://github.com/lyft/ratelimit) that
-supports the full Envoy rate limit server API, as well as a simplified API built on top of this service. Gloo uses
-this rate-limit service to enforce rate-limits. The rate-limit service can work in tandem with the Gloo external auth
-service to define separate rate-limit policies for authorized & unauthorized users. The Gloo Enteprise rate-limit service
-enabled and configured by default, no configuration is needed to point Gloo toward the rate-limit service.
+supports the full Envoy rate limit server API (with some additional enhancements, e.g. rule priority), as well as a
+simplified API built on top of this service. Gloo uses this rate-limit service to enforce rate-limits. The rate-limit
+service can work in tandem with the Gloo external auth service to define separate rate-limit policies for authorized &
+unauthorized users. The Gloo Enteprise rate-limit service enabled and configured by default, no configuration is needed
+to point Gloo toward the rate-limit service.
 
 ### Rate Limit Configuration
 
