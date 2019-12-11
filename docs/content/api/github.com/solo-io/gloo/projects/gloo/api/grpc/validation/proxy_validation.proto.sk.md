@@ -256,6 +256,7 @@ error types for top-level virtual host config
 | `NameNotUniqueError` |  |
 | `DomainsNotUniqueError` |  |
 | `ProcessingError` |  |
+| `EmptyDomainError` |  |
 
 
 

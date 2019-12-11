@@ -5,7 +5,6 @@ import (
 	"os/exec"
 	"strings"
 
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/mod/modfile"
