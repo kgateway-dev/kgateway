@@ -60,10 +60,6 @@ Service to match all requests that:
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="security/auth/apikey_auth/test-no-auth-vs.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-no-auth --namespace gloo-system --domains foo
-glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}} 
 
 Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
@@ -129,13 +125,13 @@ metadata:
   namespace: gloo-system
 type: Opaque
 data:
-  extension: Y29uZmlnOgogIGFwaV9rZXk6IE4yWXdNREl4WlRFdE5HVXpOUzFqTnpnekxUUmtZakF0WWpFMll6UmtaR1ZtTmpjeQogIGxhYmVsczoKICAtIHRlYW09aW5mcmFzdHJ1Y3R1cmUK
+  apiKey: YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK
 ```
 
-Now let's take the value of `data.extension`, which is base64-encoded, and decode it:
+Now let's take the value of `data.apiKey`, which is base64-encoded, and decode it:
 
 ```shell
-echo Y29uZmlnOgogIGFwaV9rZXk6IE4yWXdNREl4WlRFdE5HVXpOUzFqTnpnekxUUmtZakF0WWpFMll6UmtaR1ZtTmpjeQogIGxhYmVsczoKICAtIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
+echo YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
 ```
 
 You should get the following 
@@ -170,7 +166,7 @@ EOF
 
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
-{{< highlight shell "hl_lines=19-23" >}}
+{{< highlight shell "hl_lines=21-25" >}}
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
@@ -182,14 +178,16 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+        - prefix: /
         routeAction:
           single:
             upstream:
               name: json-upstream
               namespace: gloo-system
-    virtualHostPlugins:
+        options:
+          autoHostRewrite: true
+    options:
       extauth:
         config_ref:
           name: apikey-auth

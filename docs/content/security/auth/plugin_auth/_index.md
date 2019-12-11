@@ -229,7 +229,7 @@ kc logs -n gloo-system deployment/extauth
 Let's deploy a sample application that we will route requests to when testing our auth plugin:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
 ### Create a Virtual Service
@@ -246,8 +246,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -336,8 +336,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -345,7 +345,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       extauth:
         configRef:
           name: plugin-auth
@@ -415,7 +415,7 @@ plugin.
 You can cleanup the resources created while following this guide by running:
 ```bash
 glooctl uninstall --all
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
 ## Next steps

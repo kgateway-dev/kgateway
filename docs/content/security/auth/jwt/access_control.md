@@ -39,7 +39,7 @@ control the resources service accounts are allowed to access.
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
 ### Create a Virtual Service
@@ -56,8 +56,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -172,8 +172,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -181,7 +181,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       jwt:
         providers:
           kube:
@@ -225,8 +225,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -234,7 +234,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       jwt:
         providers:
           kube:
@@ -282,7 +282,7 @@ at the beginning of this guide. Remember that the encrypted JWT is stored inside
 
 An unauthenticated request should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/api/pets/1'
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/api/pets/1'
 ```
 {{< highlight shell "hl_lines=6 12" >}}
 > GET /api/pets/1 HTTP/1.1
@@ -301,7 +301,7 @@ Jwt is missing%
 
 An authenticated GET request to a path that starts with `/api/pets` should succeed:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/api/pets/1 \
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/api/pets/1 \
     -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
 {{< highlight shell "hl_lines=7" >}}
@@ -322,7 +322,7 @@ kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/a
 
 An authenticated POST request to a path that starts with `/api/pets` should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -sv -X POST http://gateway-proxy-v2.gloo-system/api/pets/1 \
+kubectl exec test-pod -- bash -c 'curl -sv -X POST http://gateway-proxy.gloo-system/api/pets/1 \
     -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
 {{< highlight shell "hl_lines=7 13" >}}
@@ -343,7 +343,7 @@ RBAC: access denied%
 
 An authenticated GET request to a path that doesn't start with `/api/pets` should fail:
 ```shell
-kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy-v2.gloo-system/foo/ \
+kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/foo/ \
     -H "Authorization: Bearer $(cat /var/run/secrets/kubernetes.io/serviceaccount/token)"'
 ```
 {{< highlight shell "hl_lines=7 13" >}}
@@ -370,7 +370,7 @@ rm public-key.pem
 kubectl delete pod test-pod
 kubectl delete virtualservice -n gloo-system petstore
 # Don't remove the sample application if you want to run through the appendix to this guide
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
 ## Appendix - Use a remote JSON Web Key Set (JWKS) server
@@ -554,8 +554,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -563,7 +563,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       jwt:
         providers:
           solo-provider:
@@ -613,7 +613,7 @@ Now we are ready to test our configuration. Let's port-forward the Gloo Gateway 
 from you machine at `localhost:8080`:
 
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid=$!
 ```
 
@@ -668,5 +668,5 @@ kubectl -n gloo-system delete svc jwks-server
 kubectl -n gloo-system delete deployment jwks-server
 kubectl -n gloo-system delete configmap jwks
 kubectl delete virtualservice -n gloo-system petstore
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```

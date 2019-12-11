@@ -83,6 +83,10 @@ To verify that the Virtual Service works, let's send a request to `/echo`:
 
 ```bash
 curl $(glooctl proxy url)/echo
+```
+
+returns
+```
 'Hello World!'
 ```
 
