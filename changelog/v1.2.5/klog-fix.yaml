@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Use klog shim so that klog doesn't attempt to write files.
+    issueLink: https://github.com/solo-io/gloo/issues/1039

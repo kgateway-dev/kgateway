@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >
+      AWS function discovery is more painful after our change to make FDS run in Whitelist mode
+      by default. This changes FDS so that, in Whitelist mode, AWS functions are discovered as if
+      FDS is running in Blacklist mode.
+    issueLink: https://github.com/solo-io/gloo/issues/1878

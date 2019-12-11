@@ -45,6 +45,7 @@ type Top struct {
 type Install struct {
 	DryRun                  bool
 	Upgrade                 bool
+	CreateNamespace         bool
 	Namespace               string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
