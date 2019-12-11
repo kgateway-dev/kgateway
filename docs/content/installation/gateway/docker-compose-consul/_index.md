@@ -2,35 +2,116 @@
 title: Run Gloo Gateway Locally with Hashicorp Consul & Vault
 menuTitle: Run Gloo with Consul & Vault
 weight: 5
-description: How to run Gloo Locally using Docker-Compose
+description: How to run Gloo Locally using Docker Compose with HashiCorp Consul & Vault
 ---
 
-## Motivation
+While Gloo is typically run on Kubernetes, it doesn't need to be! You can run Gloo using Docker Compose on your local machine.
 
-While Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), credential storage ([Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)), and service discovery ([Services](https://kubernetes.io/docs/concepts/services-networking/service/)), users may wish to run Gloo without using Kubernetes.
+Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), credential storage ([Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)), and service discovery ([Services](https://kubernetes.io/docs/concepts/services-networking/service/)). These APIs need to be substituted with another option when Gloo is not running on Kuberenetes.
 
-Gloo provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [Consul Key-Value storage](https://www.consul.io/api/kv.html) and [Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
+Fortunately, Gloo provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [Consul Key-Value storage](https://www.consul.io/api/kv.html) and [Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
 
-This tutorial provides a basic installation flow for running Gloo with 
-Docker Compose, connecting it to Consul for configuration storage and Vault for credential storage.
+This tutorial provides a basic installation flow for running Gloo with Docker Compose, connecting it to Consul for configuration storage, and using Vault for credential storage.
 
-> Note: the deployment steps in this tutorial should be modified for production environments. This tutorial is  meant as an example of how to configure Gloo to connect to Consul and Vault for configuration/secrets. In a production environment, additional steps should be taken to ensure Gloo has the proper ACL tokens to communicate with production Consul and Vault clusters.
+First we will copy the necessary files from the [Solo.io GitHub](https://github.com/solo-io/gloo) repository. 
 
-## Installation
+Then we will use `docker-compose` to create the containers for Gloo, Consul, Vault, and the Pet Store application.
 
-1. Clone the solo-docs repository and cd to this example: `git clone https://github.com/solo-io/solo-docs && cd solo-docs/gloo/docs/installation/gateway/docker-compose-consul`
-2. Run `./prepare-directories.sh`
-3. You can optionally set `GLOO_VERSION` environment variable to the Gloo version you want (defaults to "0.18.3").
-4. Run `docker-compose up`
+Once the containers are up and running, we will create an *Upstream* for the Pet Store application and a *Virtual Service* on Gloo to route requests from the Gloo Gateway to the Pet Store application.
+
+Finally, we will observe the entries made in Consul and validate the routing rule on the *Virtual Service* is working.
 
 {{% notice note %}}
-Consul's KV interface will be exposed on `localhost:8500`, while the Gloo Gateway Proxy will be listening for HTTP on `localhost:8080`
-and HTTPS on `localhost:8443`, respectively. You can view resources stored in the Consul UI at `http://localhost:8500/ui`.
+The deployment steps in this tutorial should be modified for production environments. This tutorial is meant as an example of how to configure Gloo to connect to Consul and Vault for configuration/secrets. In a production environment, additional steps should be taken to ensure Gloo has the proper ACL tokens to communicate with production Consul and Vault clusters.
 {{% /notice %}}
 
-## Example using Petstore
+---
 
-Get the IP of the Petstore service:
+## Architecture
+
+Gloo Gateway without Kubernetes uses multiple pieces of software for deployment and functionality.
+
+- **Docker Compose**: The components of Gloo are deployed as containers running discovery, proxy, envoy, and the gateway
+- **Consul**: Consul is used to store key/value pairs that represent the configuration of Gloo
+- **Vault**: Vault is used to house sensitive data used by Gloo
+- **Glooctl**: Command line tool for installing and configuring Gloo
+
+## Preparing for Installation
+
+Before proceeding to the installation, you will need to complete some prerequisites.
+
+### Prerequisite Software
+
+Installation on your local system requires the following applications to be installed.
+
+- [Docker](https://docs.docker.com/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- [Glooctl](https://github.com/solo-io/gloo/releases)
+
+### Download the Installation Files
+
+This tutorial uses files stored on the [Gloo GitHub repository](https://github.com/solo-io/gloo).
+
+In order to install Gloo using Docker-Compose, let's clone the repository:
+
+```
+git clone --branch v1.1.0 https://github.com/solo-io/gloo
+cd gloo/install/docker-compose-consul
+```
+
+The files used for installation live in the `install/docker-compose-consul` directory.
+
+```bash
+├── data
+│   ├── envoy-config.yaml
+│   └── gloo-system
+│       └── default.yaml
+├── docker-compose.yaml
+└── prepare-directories.sh
+```
+
+Now we are ready to deploy the containers using Docker Compose.
+
+---
+
+## Deploying with Docker Compose
+
+Now that we have all the necessary files, it is time to deploy the containers using Docker Compose. The `docker-compose.yaml` file will create seven containers: `consul`, `vault`, `petstore`, `gloo`, `discovery`, `gateway`, and `gateway-proxy`.
+
+First we need to create some directories that will be used by the Gloo containers. Running the `prepare-directories.sh` script will create the necessary directory structure in the `data` directory.
+
+```bash
+./prepare-directories.sh
+```
+
+Next let's run `docker-compose up` from the `docker-compose-consul` directory to start up the containers. The version of Consul, Vault, and Gloo can be controlled using the environment variables `CONSUL_VERSION`, `VAULT_VERSION`, and `GLOO_VERSION`. It's probably best to stick with the defaults, unless you have a compelling reason to change them.
+
+```bash
+docker-compose up
+```
+
+The following ports will be exposed to the host machine:
+
+|  service  | port |
+| ----- | ---- |  
+| consul | 8500 | 
+| vault | 8200 | 
+| gloo/http | 8080 | 
+| petstore | 8090 |
+| gloo/https | 8443 | 
+| gloo/admin | 19000 | 
+
+You can view resources stored in the Consul UI at `http://localhost:8500/ui`.
+
+With all the containers now running, it is time to configure the *Upstream* for the Per Store application and a *Virtual Service* on the Gloo gateway to serve content from the Pet Store app.
+
+---
+
+## Configuring Upstream and Virtual Services
+
+The next step is to expose the Pet Store's API through the Gloo gateway. We will do this by creating a service on Consul that Gloo will use as an *Upstream*. Then we will create a *Virtual Service* on Gloo with a routing rule. The configuration data for the *Virtual Service* will be stored in Consul.
+
+To create the service on Consul, we need to get the IP address of the `petstore` container. The command below retrieves the IP address and then creates a JSON file with information about the Pet Store application. The JSON file will be submitted to Consul to create the service.
 
 ```bash
 PETSTORE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' docker-compose-consul_petstore_1)
@@ -44,7 +125,7 @@ cat > petstore-service.json <<EOF
 EOF
 ```
 
-Register the Petstore service with consul:
+Now that we have the JSON file for the Pet Store application, let's register the `petstore` service with Consul using `curl`:
 
 ```bash
 curl -v \
@@ -53,16 +134,31 @@ curl -v \
     "http://127.0.0.1:8500/v1/agent/service/register"
 ```
 
-Generate a VirtualService definition with a route to the Petstore:
+Looking at the Consul UI under Services, we should see two services registered. The `consul` service and the `petstore` service.
+
+![Consul UI Services]({{% versioned_link_path fromRoot="/img/docker-compose-consul-services.png" %}})
+
+The `petstore` service can be used as an *Upstream* destination by a *Virtual Service* definition on Gloo. Let’s now use `glooctl` to create a basic route for this upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects. The `--use-consul` flag indicates to Gloo that it will be using Consul to store this configuration and not Kubernetes.
 
 ```bash
 glooctl add route \
-    --path-exact /sample-route-1 \
+    --path-exact /all-pets \
     --dest-name petstore \
-    --prefix-rewrite /api/pets --yaml > virtual-service.yaml
+    --prefix-rewrite /api/pets \
+    --use-consul
 ```
 
-We can see the output YAML here:
+```console
++-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
+| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
++-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
+| default         |              | *       | none | Pending |                 | /all-pets ->                   |
+|                 |              |         |      |         |                 | gloo-system.petstore           |
+|                 |              |         |      |         |                 | (upstream)                     |
++-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
+```
+
+Looking in the Consul UI, we can drill down on the K/V store to find the configuration stored at `gloo/gateway.solo.io/v1/VirtualService/gloo-system/default`.
 
 ```yaml
 metadata:
@@ -74,7 +170,7 @@ virtualHost:
   - '*'
   routes:
   - matchers:
-     - exact: /sample-route-1
+    - exact: /all-pets
     routeAction:
       single:
         upstream:
@@ -84,39 +180,22 @@ virtualHost:
       prefixRewrite: /api/pets
 ```
 
-{{% notice note %}}
-All `glooctl add` and `glooctl create` commands can be run with a `--yaml` flag
-which will output Gloo YAML to stdout. These outputs can be stored as Consul Values
-and `.yaml` files for configuring Gloo. See the {{< protobuf name="gateway.solo.io.VirtualService" display="API reference" >}}.)
-for details on writing Gloo configuration YAML.
-{{% /notice %}}
-
-Store the Virtual Service in Consul's Key-Value store:
+We should now be able to send a request to the Gloo proxy on the path `/all-pets` and retrieve a result from the Pet Store application on the path `/api/pets`. Let's use `curl` to send a request:
 
 ```bash
-curl -v \
-    -XPUT \
-    --data-binary "@virtual-service.yaml" \
-    "http://127.0.0.1:8500/v1/kv/gloo/gateway.solo.io/v1/VirtualService/gloo-system/default"
+curl http://localhost:8080/all-pets
 ```
 
-{{% notice note %}}
-Note: Consul Keys for Gloo resources follow the following format: 
-`gloo/<resource group>/<group version>/<resource kind>/<resource namespace>/<resource name>`. 
-See [the Consul Key-Value configuration guide]({{< versioned_link_path fromRoot="/advanced_configuration/consul_kv" >}})
-for more information.
-{{% /notice %}}
-
-You should now be able to hit the route we exposed with `curl`:
-
-```bash
-curl http://localhost:8080/sample-route-1
-```
+The response should look like the JSON payload shown below.
 
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-While the tutorials in User Guides have been written with Kubernetes in mind, most concepts will map directly to
-Consul-based installations of Gloo. Please correspond with us on [our Slack channel](https://slack.solo.io/) while we work to expand our 
-documentation on running Gloo without Kubernetes.
+---
+
+## Next Steps
+
+Congratulations! You've successfully deployed Gloo with Docker Compose and created your first route. Now let's delve deeper into the world of [Gloo routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}). 
+
+Most of the existing tutorials for Gloo use Kubernetes as the underlying resource, but they can also use a Docker Compose deployment. Remember that all `glooctl` commands should be used with the `--use-consul` flag, and deployments will need to be orchestrated through Docker Compose.

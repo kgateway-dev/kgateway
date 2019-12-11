@@ -45,9 +45,11 @@ type Top struct {
 type Install struct {
 	DryRun                  bool
 	Upgrade                 bool
+	CreateNamespace         bool
 	Namespace               string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
+	HelmReleaseName         string
 	Knative                 Knative
 	LicenseKey              string
 	WithUi                  bool
@@ -64,10 +66,10 @@ type Knative struct {
 
 type Uninstall struct {
 	Namespace       string
+	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
-	Force           bool
 }
 
 type Proxy struct {

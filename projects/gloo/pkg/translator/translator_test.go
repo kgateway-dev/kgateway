@@ -1591,6 +1591,24 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	It("Should report an error for virtual services with empty domains", func() {
+		virtualHosts := []*v1.VirtualHost{
+			{
+				Domains: []string{"*"},
+			},
+			{
+				Name:    "problem-vhost",
+				Domains: []string{"", "nonempty-url.com"},
+			},
+		}
+		report := &validation.HttpListenerReport{VirtualHostReports: []*validation.VirtualHostReport{{}, {}}}
+
+		ValidateVirtualHostDomains(virtualHosts, report)
+
+		Expect(report.VirtualHostReports[0].Errors).To(BeEmpty(), "The virtual host with domain * should not have an error")
+		Expect(report.VirtualHostReports[1].Errors).NotTo(BeEmpty(), "The virtual host with an empty domain should report errors")
+		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
+	})
 })
 
 func sv(s string) *structpb.Value {

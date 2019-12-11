@@ -26,12 +26,3 @@ Expand the name of a container image
 {{- define "gloo.image" -}}
 {{ .registry }}/{{ .repository }}:{{ .tag }}
 {{- end -}}
-
-{{/* This value makes its way into k8s labels, so if the implementation changes,
-     make sure it's compatible with label values */}}
-{{- define "gloo.installationId" -}}
-{{- if not .Values.global.glooInstallationId -}}
-{{- $_ := set .Values.global "glooInstallationId" (randAlphaNum 20) -}}
-{{- end -}}
-{{ .Values.global.glooInstallationId }}
-{{- end -}}

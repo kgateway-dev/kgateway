@@ -11,10 +11,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -37,10 +33,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: discovery
@@ -60,10 +52,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -83,10 +71,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -112,10 +96,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -135,10 +115,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
@@ -147,33 +123,6 @@ roleRef:
   kind: {{ include "gloo.roleKind" . }}
   name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
-
-
-{{- if and .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled }}
----
-# this role requires access to cluster-scoped resources
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
-  labels:
-    app: gloo
-    gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
-subjects:
-- kind: ServiceAccount
-  name: gateway-certgen
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rbacNameSuffix" . }}
-  apiGroup: rbac.authorization.k8s.io
-
-{{- end -}}
-
 
 {{- end -}}
 {{- end -}}

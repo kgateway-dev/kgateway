@@ -8,7 +8,6 @@ metadata:
   labels:
     app: gloo
     gloo: ingress-proxy
-    installationId: {{ include "gloo.installationId" . }}
 data:
 {{ if (empty .Values.ingressProxy.configMap.data) }}
   envoy.yaml: |

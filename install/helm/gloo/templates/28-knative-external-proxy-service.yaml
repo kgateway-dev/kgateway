@@ -6,7 +6,6 @@ metadata:
   labels:
     app: gloo
     gloo: knative-external-proxy
-    installationId: {{ include "gloo.installationId" . }}
   name: knative-external-proxy
   namespace: {{ .Release.Namespace }}
 spec:

@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Ensure that our usage of the Helm client libraries assigns a namespace to all resources, even those
+      whose YAML definition does not specify a namespace. This is to fix the bug where observability resources
+      can wind up in the default namespace set by the user's kube config; as of the time of writing, Prometheus's
+      chart defines resources that are namespaced but do not have a namespace explicitly set on them.
+    issueLink: https://github.com/solo-io/gloo/issues/1857

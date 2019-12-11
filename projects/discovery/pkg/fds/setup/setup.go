@@ -10,9 +10,9 @@ import (
 
 func Main(customCtx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggingPrefix: "fds",
-		SetupFunc:     gloosyncer.NewSetupFuncWithRun(syncer.RunFDS),
-		ExitOnError:   true,
-		CustomCtx:     customCtx,
+		LoggerName:  "fds",
+		SetupFunc:   gloosyncer.NewSetupFuncWithRun(syncer.RunFDS),
+		ExitOnError: true,
+		CustomCtx:   customCtx,
 	})
 }

@@ -24,6 +24,6 @@ glooctl version
 ```
 The command returns your client version and a missing server version (we have not installed Gloo yet!):
 ```shell
-Client: {"version":"1.0.0"}
+Client: {"version":"1.2.3"}
 Server: version undefined, could not find any version of gloo running
 ```

@@ -24,24 +24,24 @@ type Config struct {
 }
 
 type Global struct {
-	Image              *Image      `json:"image,omitempty"`
-	Extensions         interface{} `json:"extensions,omitempty"`
-	GlooRbac           *Rbac       `json:"glooRbac,omitempty"`
-	GlooInstallationId string      `json:"glooInstallationId" desc:"If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling"`
+	Image      *Image      `json:"image,omitempty"`
+	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 }
 
 type Namespace struct {
 	Create bool `json:"create" desc:"create the installation namespace"`
 }
 
+type Crds struct {
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
+}
+
 type Rbac struct {
 	Create     bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
 	Namespaced bool   `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
 	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
-}
-
-type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)"`
 }
 
 // Common
@@ -72,7 +72,7 @@ type JobSpec struct {
 
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
-	Resources *ResourceRequirements `json:"resources,omitEmpty" desc:"resources for the main pod in the deployment"`
+	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
 }
 
 type Integrations struct {
@@ -100,7 +100,7 @@ type Settings struct {
 	Create              bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
 	Extensions          interface{}          `json:"extensions,omitempty"`
 	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
 	Linkerd             bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 }
 
@@ -226,7 +226,7 @@ type GatewayProxyPodTemplate struct {
 	NodeSelector     map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
-	Resources        *ResourceRequirements `json:"resources"`
+	Resources        *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`

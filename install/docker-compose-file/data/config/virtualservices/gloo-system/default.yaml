@@ -1,0 +1,50 @@
+metadata:
+  name: default
+  namespace: gloo-system
+  resourceVersion: "3"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy gloo-system gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+virtualHost:
+  domains:
+  - '*'
+  name: gloo-system.default
+  routes:
+  - matcher:
+      prefix: /petstore/findWithId
+    routeAction:
+      single:
+        destinationSpec:
+          rest:
+            functionName: findPetById
+            parameters:
+              headers:
+                :path: /petstore/findWithId/{id}
+        upstream:
+          name: petstore
+          namespace: gloo-system
+  - matcher:
+      prefix: /petstore/findPets
+    routeAction:
+      single:
+        destinationSpec:
+          rest:
+            functionName: findPets
+            parameters: {}
+        upstream:
+          name: petstore
+          namespace: gloo-system
+  - matcher:
+      prefix: /petstore
+    routeAction:
+      single:
+        upstream:
+          name: petstore
+          namespace: gloo-system
+    routePlugins:
+      prefixRewrite:
+        prefixRewrite: /api/pets

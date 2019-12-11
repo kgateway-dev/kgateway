@@ -95,6 +95,7 @@ message VirtualHostReport {
             NameNotUniqueError = 0;
             DomainsNotUniqueError = 1;
             ProcessingError = 2;
+            EmptyDomainError = 3;
         }
 
         // the type of the error

@@ -31,11 +31,16 @@ Start by [installing]({{< versioned_link_path fromRoot="/installation/gateway/ku
 
 #### Deploy the Pet Store Application
 
+Turn on function discovery in the `default` namespace with:
+
+```shell script
+kubectl label namespace default discovery.solo.io/function_discovery=enabled
+```
 Next, deploy the Pet Store app to kubernetes:
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/sololabs/demos2/masteresources/petstore.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
 ```
 
 ```console
@@ -216,14 +221,14 @@ glooctl add route \
 The initial **STATUS** of the petstore virtual service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `virtualservice` with `glooctl`.
 
 ```shell
-glooctl get virtualservice petstore
+glooctl get virtualservice
 ```
 
 ```console
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS   | LISTENERPLUGINS |          ROUTES           |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
-| petstore        |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
+| default         |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
 |                 |              |         |      |          |                 | .default-petstore-8080    |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 ```

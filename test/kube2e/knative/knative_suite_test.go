@@ -1,10 +1,15 @@
 package knative_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -44,9 +49,11 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
+	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
+		defaults.InstallNamespace = "knative-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())
@@ -57,6 +64,12 @@ var _ = BeforeSuite(func() {
 	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
+
+	// Create namespace
+	_, err = clienthelpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{Name: testHelper.InstallNamespace},
+	})
+	Expect(err).NotTo(HaveOccurred())
 
 	// Install Gloo
 	err = testHelper.InstallGloo(helper.KNATIVE, 5*time.Minute)

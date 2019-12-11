@@ -1,237 +1,258 @@
 package install
 
 import (
-	"bytes"
-	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"os"
 	"path"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-
-	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/kubeutils"
-	"go.uber.org/zap"
-	"k8s.io/helm/pkg/chartutil"
-	"k8s.io/helm/pkg/manifest"
-	"k8s.io/helm/pkg/proto/hapi/chart"
-	"k8s.io/helm/pkg/renderutil"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/go-utils/errors"
+	"helm.sh/helm/v3/pkg/chartutil"
+	"helm.sh/helm/v3/pkg/cli/values"
+	"helm.sh/helm/v3/pkg/getter"
+	"helm.sh/helm/v3/pkg/release"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
+	"sigs.k8s.io/yaml"
 )
 
-type GlooKubeInstallClient interface {
-	KubectlApply(manifest []byte) error
-	WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error
+type Installer interface {
+	Install(installerConfig *InstallerConfig) error
 }
 
-type DefaultGlooKubeInstallClient struct{}
-
-func (i *DefaultGlooKubeInstallClient) KubectlApply(manifest []byte) error {
-	return install.KubectlApply(manifest)
+type InstallerConfig struct {
+	InstallCliArgs *options.Install
+	ExtraValues    map[string]interface{}
+	Enterprise     bool
+	Verbose        bool
 }
 
-func (i *DefaultGlooKubeInstallClient) WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
-	return waitForCrdsToBeRegistered(ctx, crds)
+func NewInstaller(helmClient HelmClient) Installer {
+	return NewInstallerWithWriter(helmClient, &install.CmdKubectl{}, os.Stdout)
 }
 
-type NamespacedGlooKubeInstallClient struct {
-	Namespace string
-	Delegate  GlooKubeInstallClient
-	Executor  func(stdin io.Reader, args ...string) error
-}
-
-func (i *NamespacedGlooKubeInstallClient) KubectlApply(manifest []byte) error {
-	if i.Namespace == "" {
-		return i.Delegate.KubectlApply(manifest)
+// visible for testing
+func NewInstallerWithWriter(helmClient HelmClient, kubeCli install.KubeCli, outputWriter io.Writer) Installer {
+	return &installer{
+		helmClient:         helmClient,
+		kubeCli:            kubeCli,
+		dryRunOutputWriter: outputWriter,
 	}
-	return i.Executor(bytes.NewBuffer(manifest), "apply", "-n", i.Namespace, "-f", "-")
 }
 
-func (i *NamespacedGlooKubeInstallClient) WaitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
-	return i.Delegate.WaitForCrdsToBeRegistered(ctx, crds)
-}
-
-func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
-	apiExts := helpers.MustApiExtsClient()
-	logger := contextutils.LoggerFrom(ctx)
-	for _, crdName := range crds {
-		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
-		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
-			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
+func (i *installer) Install(installerConfig *InstallerConfig) error {
+	namespace := installerConfig.InstallCliArgs.Namespace
+	releaseName := installerConfig.InstallCliArgs.HelmReleaseName
+	if !installerConfig.InstallCliArgs.DryRun {
+		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
+			return err
+		} else if releaseExists {
+			return GlooAlreadyInstalled(namespace)
+		}
+		if installerConfig.InstallCliArgs.CreateNamespace {
+			// Create the namespace if it doesn't exist. Helm3 no longer does this.
+			i.createNamespace(namespace)
 		}
 	}
 
-	return nil
-}
+	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
 
-type ManifestInstaller interface {
-	InstallManifest(manifest []byte) error
-	InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error
-}
-
-type GlooKubeManifestInstaller struct {
-	GlooKubeInstallClient GlooKubeInstallClient
-}
-
-func (i *GlooKubeManifestInstaller) InstallManifest(manifest []byte) error {
-	if install.IsEmptyManifest(string(manifest)) {
-		return nil
-	}
-	if err := i.GlooKubeInstallClient.KubectlApply(manifest); err != nil {
-		return errors.Wrapf(err, "running kubectl apply on manifest")
-	}
-	return nil
-}
-
-func (i *GlooKubeManifestInstaller) InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error {
-	if err := i.InstallManifest(manifest); err != nil {
+	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
+	if err != nil {
 		return err
 	}
-	if err := i.GlooKubeInstallClient.WaitForCrdsToBeRegistered(ctx, crdNames); err != nil {
-		return errors.Wrapf(err, "waiting for crds to be registered")
+
+	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
+	if err != nil {
+		return err
 	}
+	if installerConfig.Verbose {
+		fmt.Printf("Looking for chart at %s\n", chartUri)
+	}
+
+	chartObj, err := i.helmClient.DownloadChart(chartUri)
+	if err != nil {
+		return err
+	}
+
+	// Merge values provided via the '--values' flag
+	valueOpts := &values.Options{
+		ValueFiles: installerConfig.InstallCliArgs.HelmChartValueFileNames,
+	}
+	cliValues, err := valueOpts.MergeValues(getter.All(helmEnv))
+	if err != nil {
+		return err
+	}
+
+	// We need this to avoid rendering the CRDs we include in the /templates directory
+	// for backwards-compatibility with Helm 2.
+	setCrdCreateToFalse(installerConfig)
+
+	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
+	// (The first argument to CoalesceTables has higher priority)
+	completeValues := chartutil.CoalesceTables(installerConfig.ExtraValues, cliValues)
+	if installerConfig.Verbose {
+		b, err := json.Marshal(completeValues)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
+		y, err := yaml.JSONToYAML(b)
+		if err != nil {
+			fmt.Printf("error: %v\n", err)
+		}
+		fmt.Printf("Installing the %s chart with the following value overrides:\n%s\n", chartObj.Metadata.Name, string(y))
+	}
+
+	rel, err := helmInstall.Run(chartObj, completeValues)
+	if err != nil {
+		// TODO: verify whether we actually log something there after these changes
+		_, _ = fmt.Fprintf(os.Stderr, "\nGloo failed to install! Detailed logs available at %s.\n", cliutil.GetLogsPath())
+		return err
+	}
+	if installerConfig.Verbose {
+		fmt.Printf("Successfully ran helm install with release %s\n", releaseName)
+	}
+
+	if installerConfig.InstallCliArgs.DryRun {
+		if err := i.printReleaseManifest(rel); err != nil {
+			return err
+		}
+	}
+
+	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
+
 	return nil
 }
 
-type DryRunManifestInstaller struct{}
-
-func (i *DryRunManifestInstaller) InstallManifest(manifest []byte) error {
-	manifestString := string(manifest)
-	if install.IsEmptyManifest(manifestString) {
-		return nil
-	}
-	fmt.Printf("%s", manifestString)
-	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
-	fmt.Println("\n---")
-	return nil
-}
-
-func (i *DryRunManifestInstaller) InstallCrds(ctx context.Context, crdNames []string, manifest []byte) error {
-	return i.InstallManifest(manifest)
-}
-
-type KnativeInstallStatus struct {
-	isInstalled bool
-	isOurs      bool
-}
-
-type GlooStagedInstaller interface {
-	DoCrdInstall() error
-	DoPreInstall() error
-	DoInstall() error
-}
-
-type DefaultGlooStagedInstaller struct {
-	chart             *chart.Chart
-	values            *chart.Config
-	renderOpts        renderutil.Options
-	excludeResources  install.ResourceMatcherFunc
-	manifestInstaller ManifestInstaller
-	dryRun            bool
-	ctx               context.Context
-}
-
-func NewGlooStagedInstaller(opts *options.Options, spec GlooInstallSpec, client GlooKubeInstallClient) (GlooStagedInstaller, error) {
-	if path.Ext(spec.HelmArchiveUri) != ".tgz" && !strings.HasSuffix(spec.HelmArchiveUri, ".tar.gz") {
-		return nil, errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", spec.HelmArchiveUri)
-	}
-
-	chart, err := install.GetHelmArchive(spec.HelmArchiveUri)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving gloo helm chart archive")
-	}
-
-	values, err := install.GetValuesFromFileIncludingExtra(chart, spec.ValueFileName, spec.UserValueFileNames, spec.ExtraValues, spec.ValueCallbacks...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "retrieving value file: %s", spec.ValueFileName)
-	}
-
-	// These are the .Release.* variables used during rendering
-	renderOpts := renderutil.Options{
-		ReleaseOptions: chartutil.ReleaseOptions{
-			Namespace: opts.Install.Namespace,
-			Name:      spec.ProductName,
-		},
-	}
-
-	var manifestInstaller ManifestInstaller
-	if opts.Install.DryRun {
-		manifestInstaller = &DryRunManifestInstaller{}
+func (i *installer) createNamespace(namespace string) {
+	fmt.Printf("Creating namespace %s... ", namespace)
+	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
+		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
 	} else {
-		manifestInstaller = &GlooKubeManifestInstaller{
-			GlooKubeInstallClient: client,
+		fmt.Printf("Done.\n")
+	}
+}
+
+func setCrdCreateToFalse(config *InstallerConfig) {
+	if config.ExtraValues == nil {
+		config.ExtraValues = map[string]interface{}{}
+	}
+
+	mapWithCrdValueToOverride := config.ExtraValues
+
+	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
+	if config.Enterprise {
+		if _, ok := config.ExtraValues["gloo"]; !ok {
+			config.ExtraValues["gloo"] = map[string]interface{}{}
 		}
+		mapWithCrdValueToOverride = config.ExtraValues["gloo"].(map[string]interface{})
 	}
 
-	return &DefaultGlooStagedInstaller{
-		chart:             chart,
-		values:            values,
-		renderOpts:        renderOpts,
-		excludeResources:  spec.ExcludeResources,
-		manifestInstaller: manifestInstaller,
-		dryRun:            opts.Install.DryRun,
-		ctx:               opts.Top.Ctx,
-	}, nil
+	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
+		"create": false,
+	}
 }
 
-func (i *DefaultGlooStagedInstaller) DoCrdInstall() error {
-
-	// Keep only CRDs and collect the names
-	var crdNames []string
-	excludeNonCrdsAndCollectCrdNames := func(input []manifest.Manifest) ([]manifest.Manifest, error) {
-		manifests, resourceNames, err := install.ExcludeNonCrds(input)
-		crdNames = resourceNames
-		return manifests, err
+func (i *installer) printReleaseManifest(release *release.Release) error {
+	// Print CRDs
+	for _, crdFile := range release.Chart.CRDs() {
+		_, _ = fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 
-	// Render and install CRD manifests
-	crdManifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		excludeNonCrdsAndCollectCrdNames,
-		install.ExcludeEmptyManifests)
-	if err != nil {
-		return errors.Wrapf(err, "rendering crd manifests")
-	}
-
-	if !i.dryRun {
-		fmt.Printf("Installing CRDs...\n")
-	}
-
-	return i.manifestInstaller.InstallCrds(i.ctx, crdNames, crdManifestBytes)
-}
-
-func (i *DefaultGlooStagedInstaller) DoPreInstall() error {
-	// Render and install Gloo manifest
-	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		install.IncludeOnlyPreInstall,
-		install.ExcludeEmptyManifests,
-		install.ExcludeMatchingResources(i.excludeResources))
+	// Print hook resources
+	nonCleanupHooks, err := helm.GetNonCleanupHooks(release.Hooks)
 	if err != nil {
 		return err
 	}
-	if !i.dryRun {
-		fmt.Printf("Preparing namespace and other pre-install tasks...\n")
+	for _, hook := range nonCleanupHooks {
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, hook.Manifest)
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
-	return i.manifestInstaller.InstallManifest(manifestBytes)
+
+	// Print the actual release resources
+	_, _ = fmt.Fprintf(i.dryRunOutputWriter, "%s", release.Manifest)
+
+	// For safety, print a YAML separator so multiple invocations of this function will produce valid output
+	_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
+	return nil
 }
 
-func (i *DefaultGlooStagedInstaller) DoInstall() error {
-	// Render and install Gloo manifest
-	manifestBytes, err := install.RenderChart(i.chart, i.values, i.renderOpts,
-		install.ExcludeNotes,
-		install.ExcludePreInstall,
-		install.ExcludeCrds,
-		install.ExcludeEmptyManifests,
-		install.ExcludeMatchingResources(i.excludeResources))
+// The resulting URI can be either a URL or a local file path.
+func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, error) {
+	var helmChartArchiveUri string
+	enterpriseTag, err := version.GetEnterpriseTag(true)
 	if err != nil {
-		return err
+		return "", err
 	}
-	if !i.dryRun {
-		fmt.Printf("Installing...\n")
+	// Overrides
+	if version.EnterpriseTag != version.UndefinedVersion {
+		enterpriseTag = version.EnterpriseTag
 	}
-	return i.manifestInstaller.InstallManifest(manifestBytes)
+
+	if enterprise {
+		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
+	} else if withUi {
+		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
+	} else {
+		glooOsVersion, err := getGlooVersion(chartOverride)
+		if err != nil {
+			return "", err
+		}
+		helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+	}
+
+	if chartOverride != "" {
+		helmChartArchiveUri = chartOverride
+	}
+
+	if path.Ext(helmChartArchiveUri) != ".tgz" && !strings.HasSuffix(helmChartArchiveUri, ".tar.gz") {
+		return "", errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmChartArchiveUri)
+	}
+	return helmChartArchiveUri, nil
+}
+
+func getGlooVersion(chartOverride string) (string, error) {
+	if !version.IsReleaseVersion() && chartOverride == "" {
+		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+			"when running an unreleased version of glooctl")
+	}
+	return version.Version, nil
+}
+
+func preInstallMessage(installOpts *options.Install, enterprise bool) {
+	if installOpts.DryRun {
+		return
+	}
+	if enterprise {
+		fmt.Println("Starting Gloo Enterprise installation...")
+	} else {
+		fmt.Println("Starting Gloo installation...")
+	}
+}
+func postInstallMessage(installOpts *options.Install, enterprise bool) {
+	if installOpts.DryRun {
+		return
+	}
+	if enterprise {
+		fmt.Println("Gloo Enterprise was successfully installed!")
+	} else {
+		fmt.Println("Gloo was successfully installed!")
+	}
+
+}
+
+type installer struct {
+	helmClient         HelmClient
+	kubeCli            install.KubeCli
+	dryRunOutputWriter io.Writer
 }

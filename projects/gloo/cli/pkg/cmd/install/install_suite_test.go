@@ -3,14 +3,13 @@ package install_test
 import (
 	"os"
 	"path/filepath"
+
 	"testing"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-
-	gotestutils "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	gotestutils "github.com/solo-io/go-utils/testutils"
 )
 
 func TestInstall(t *testing.T) {
@@ -49,7 +48,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = f.WriteString(`
 settings:
-  writeNamespace: test-namespace`)
+ writeNamespace: test-namespace`)
 	Expect(err).NotTo(HaveOccurred())
 	f.Close()
 
@@ -57,7 +56,7 @@ settings:
 	Expect(err).NotTo(HaveOccurred())
 	_, err = f2.WriteString(`
 settings:
-  writeNamespace: test-namespace-2`)
+ writeNamespace: test-namespace-2`)
 	Expect(err).NotTo(HaveOccurred())
 	f2.Close()
 })

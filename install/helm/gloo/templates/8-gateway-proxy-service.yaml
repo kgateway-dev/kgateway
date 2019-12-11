@@ -8,7 +8,6 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
-    installationId: {{ include "gloo.installationId" $ }}
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
