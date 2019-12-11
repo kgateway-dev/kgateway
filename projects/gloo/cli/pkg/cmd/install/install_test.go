@@ -38,6 +38,11 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("shouldn't get errors for enterprise dry run without file", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --dry-run %s", licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 	It("shouldn't get errors when overriding enterprise version", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --version %s --dry-run %s", file, overrideVersion, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
