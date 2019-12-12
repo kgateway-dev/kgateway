@@ -68,5 +68,5 @@ spec:
     - 'docs.solo.io'
     routes:
     - matcher:
-# (put the real routes here)
+# (put the https routes here)
 {{< /highlight >}}
