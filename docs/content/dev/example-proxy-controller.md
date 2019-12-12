@@ -869,7 +869,11 @@ Using `curl`, we can connect to any service in our cluster by using the correct 
 
 ```bash
 curl $(glooctl proxy url -n default -p my-cool-proxy)/api/pets -H "Host: default-petstore-8080"
+```
 
+returns
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
