@@ -404,16 +404,35 @@ ifneq ($(BUILD_ID),)
 MANIFEST_OUTPUT =
 endif
 
-install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+define HELM_VALUES
+namespace:
+  create: true
+crds:
+  create: true
+endef
 
-install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,settings.integrations.knative.enabled=true | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+# Export as a shell variable, make variables do not play well with multiple lines
+export HELM_VALUES
+$(OUTPUT_DIR)/release-manifest-values.yaml:
+	@echo "$$HELM_VALUES" > $@
 
-install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,ingress.enabled=true| tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install gateway -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install knative -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+    		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install ingress -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+    		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
