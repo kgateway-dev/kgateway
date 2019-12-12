@@ -25,7 +25,8 @@ Each `RateLimitAction` (the top-level list) generates a descriptor tuple to be s
 checked for rate limiting. Each `Action` within a `RateLimitAction` (i.e., the inner list) gets appended in order to
 generate the final rate-limiting descriptor.
 
-For a single request with the `x-type` and `x-number` headers, the generated descriptor tuples would look like:
+For a single request with the `x-type` and `x-number` headers, the generated descriptor tuples for the above Envoy
+client config would look like:
 
 - `('type', '<x-type header value>')`
 - `('type', '<x-type header value>'), ('number', '<x-number header value>')`
@@ -56,6 +57,17 @@ always be considered for rate limiting, regardless of the rule's weight. The rul
 will still be considered. (this can be a rule that also has `alwaysApply` set to `true`)
 
 # Test the Example
+
+Install the petclinic application and create a virtual service that routes to it:
+```bash
+kubectl apply \
+  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+
+glooctl add route --name default --namespace gloo-system \
+  --path-prefix / \
+  --dest-name default-petclinic-8080 \
+  --dest-namespace gloo-system
+```
 
 Open an editor to modify your rate-limit client config:
 ```shell script
@@ -94,3 +106,10 @@ curl -H "x-type: Whatsapp" -H "x-number: 411" --head $(glooctl proxy url)
 Requests to number `411` have a much higher rate limit, and will not return HTTP 429 after a couple curls. Note that
 this wouldn't work without rule priority (play around with the server settings to test this!) because our requests
 would match the inner Whatsapp rule (Rule 2) that limits all requests to 2/min, regardless of the provided number.
+
+### Cleanup
+
+```bash
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl delete vs default --namespace gloo-system
+```
