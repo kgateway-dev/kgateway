@@ -65,7 +65,7 @@ spec:
             name: default-petclinic-8080
             namespace: gloo-system
     options:
-      ratelimit_basic:
+      ratelimitBasic:
         anonymous_limits:
           requests_per_unit: 1000
           unit: HOUR
@@ -99,7 +99,7 @@ spec:
             name: default-petclinic-8080
             namespace: gloo-system
     options:
-      ratelimit_basic:
+      ratelimitBasic:
         anonymous_limits:
           requests_per_unit: 1000
           unit: HOUR

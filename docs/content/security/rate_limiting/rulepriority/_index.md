@@ -6,13 +6,13 @@ weight: 20
 
 ## Overview
 
-In this guide we explore some more advanced configuration options added to Gloo's implementation of Envoy's rate-limit
-API. If you are not already familiar with Gloo's Envoy rate-limit API support and examples, you should read our Envoy
+In this guide we explore some more advanced configuration options added to Gloo's implementation of Envoy's rate limit
+API. If you are not already familiar with Gloo's Envoy rate limit API support and examples, you should read our Envoy
 rate limit API [intro]({{% versioned_link_path fromRoot="/security/rate_limiting/envoy" %}}) first.
 
 ## Motivation
 
-Remember that rate-limit configuration is defined in two places in the Envoy API:
+Remember that rate limit configuration is defined in two places in the Envoy API:
 
 * Envoy client config lives on `VirtualService`s and `Route`s
 * The rate limit server config lives on the `Settings` resource
@@ -34,7 +34,7 @@ client config would look like:
 Descriptor tuples that cannot be built aren't sent to the rate limit server in their incomplete form, rather they are
 ignored. For the above example, a request with only the `x-type` header generates only the first descriptor tuple.
 
-Sample rate-limit server config:
+Sample rate limit server config:
 
 {{< readfile file="security/rate_limiting/rulepriority/serverconfig.yaml" markdown="true">}}
 
@@ -49,12 +49,13 @@ Requests. This is a strict requirement that rule priority lets us get around.
 In Gloo Enterprise 1.x, Gloo added the `weight` (default 0) and `alwaysApply` (default `false`) configuration options
 to the `Descriptor` definition:
 
-- all rules with the highest weight are processed, if any of these rules trigger rate limiting then the entire request
-will return a 429. Rules that are not considered for rate limiting are ignored in the rate limit server, and their
-request count is not incremented in the rate limit server cache.
-- `alwaysApply` is a boolean override for rule priority via weighted rules. Any rule with `alwaysApply` set to `true` will
-always be considered for rate limiting, regardless of the rule's weight. The rule with the highest weight
-will still be considered. (this can be a rule that also has `alwaysApply` set to `true`)
+- when evaluating matched rules, only rules with the highest weight (of the matched rules) are processed; if any of
+these rules trigger rate limiting then the entire request will return a 429. Matched rules that are not considered for
+rate-limiting are ignored in the rate limit server, and their request count is not incremented in the rate limit server
+cache.
+- `alwaysApply` is a boolean override for rule priority via weighted rules. Any rule matching a request with
+`alwaysApply` set to `true` will always be considered for rate limiting, regardless of the rule's weight. The matching
+rule with the highest weight will still be considered. (this can be a rule that also has `alwaysApply` set to `true`)
 
 # Test the Example
 
@@ -69,7 +70,7 @@ glooctl add route --name default --namespace gloo-system \
   --dest-namespace gloo-system
 ```
 
-Open an editor to modify your rate-limit client config:
+Open an editor to modify your rate limit client config:
 ```shell script
 glooctl edit virtualservice --namespace gloo-system --name default ratelimit client-config
 ```
@@ -77,7 +78,7 @@ And paste the example config:
 
 {{< readfile file="security/rate_limiting/rulepriority/vsconfig.yaml" markdown="true">}}
 
-Now open an editor to modify your rate-limit server config:
+Now open an editor to modify your rate limit server config:
 ```shell script
 glooctl edit settings --namespace gloo-system --name default ratelimit server-config
 ```
@@ -103,9 +104,10 @@ Run the following a couple times:
 curl -H "x-type: Whatsapp" -H "x-number: 411" --head $(glooctl proxy url)
 ```
 
-Requests to number `411` have a much higher rate limit, and will not return HTTP 429 unless more than 100 requests are sent within a minute. Note that
-this wouldn't work without rule priority (play around with the server settings to test this!) because our requests
-would match the inner Whatsapp rule (Rule 2) that limits all requests to 2/min, regardless of the provided number.
+Requests to number `411` have a much higher rate limit, and will not return HTTP 429 unless more than 100 requests
+are sent within a minute. Note that this wouldn't work without rule priority (play around with the server settings
+to test this!) because our requests would match the inner Whatsapp rule (Rule 2) that limits all requests to 2/min,
+regardless of the provided number.
 
 ### Cleanup
 
