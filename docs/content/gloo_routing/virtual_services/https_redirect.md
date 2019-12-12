@@ -5,7 +5,7 @@ description: Route HTTP traffic to HTTPS services
 ---
 
 To help users or old services find your https endpoints, it is a common practice to redirect http traffic to https endpoints.
-With Gloo, this is a simple matter of creating an auxillary http virtual service that routes to your full
+With Gloo, this is a simple matter of creating an auxiliary http virtual service that routes to your full
 {{% protobuf
 display="https virtual service" 
 name="gateway.solo.io.VirtualService"
@@ -13,19 +13,19 @@ name="gateway.solo.io.VirtualService"
 
 Here is an example redirect config (which is used to host these docs). Please take note of a few details which enable this behavior:
 
-- There are two virtual services, an "auxillary" and a "main" virtual service.
+- There are two virtual services, an "auxiliary" and a "main" virtual service.
   - The main VS is an https VS because it specifies an
 {{% protobuf
 name="gloo.solo.io.SslConfig"
 display="sslConfig"
 %}}
-  - The auxillary VS is an http VS because it does not specify an
+  - The auxiliary VS is an http VS because it does not specify an
 {{% protobuf
 name="gloo.solo.io.SslConfig"
 display="sslConfig"
 %}}
-- The domain listed in the auxillary VS matches that of the main VS.
-- The auxillary VS has a single route which matches all traffic and applies a
+- The domain listed in the auxiliary VS matches that of the main VS.
+- The auxiliary VS has a single route which matches all traffic and applies a
 {{% protobuf
 display="redirectAction" 
 name="gloo.solo.io.RedirectAction"
@@ -33,7 +33,7 @@ name="gloo.solo.io.RedirectAction"
 
 
 {{< highlight yaml "hl_lines=9-10 14-16 25-30 32-33" >}}
-# auxillary virtual service to redirect http traffic to the full https virtual service
+# auxiliary virtual service to redirect http traffic to the full https virtual service
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
