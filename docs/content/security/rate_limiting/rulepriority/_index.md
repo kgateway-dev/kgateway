@@ -19,22 +19,7 @@ Remember that rate-limit configuration is defined in two places in the Envoy API
 
 Sample Envoy client config:
 
-```yaml
-rateLimits:
-  # generate descriptors for Rule 1 and 2
-  - actions:
-    - requestHeaders:
-        descriptorKey: type
-        headerName: x-type
-  # generate descriptors for Rule 3
-  - actions:
-    - requestHeaders:
-        descriptorKey: type
-        headerName: x-type
-    - requestHeaders:
-        descriptorKey: number
-        headerName: x-number
-```
+{{< readfile file="security/rate_limiting/rulepriority/vsconfig.yaml" markdown="true">}}
 
 Each `RateLimitAction` (the top-level list) generates a descriptor tuple to be sent to the rate limit server to be
 checked for rate limiting. Each `Action` within a `RateLimitAction` (i.e., the inner list) gets appended in order to
@@ -49,29 +34,8 @@ Descriptor tuples that cannot be built aren't sent to the rate limit server in t
 ignored. For the above example, a request with only the `x-type` header generates only the first descriptor tuple.
 
 Sample rate-limit server config:
-```yaml
-descriptors:
- # Rule 1, limit all Messenger requests to 1/min
- - key: type
-   value: Messenger
-   rateLimit:
-     requestsPerUnit: 1
-     unit: MINUTE
- # Rule 2, limit all Whatsapp requests to 1/min
- - key: type
-   value: Whatsapp
-   rateLimit:
-     requestsPerUnit: 1
-     unit: MINUTE
-   descriptors:
-   # Rule 3, limit all Whatsapp requests to number '411' to 100/min
-   - key: number
-     rateLimit:
-       requestsPerUnit: 100
-       unit: MINUTE
-     value: "411"
-     weight: 1 # Rule 3 takes priority over other rules
-```
+
+{{< readfile file="security/rate_limiting/rulepriority/serverconfig.yaml" markdown="true">}}
 
 Each descriptor with a rate limit defines a rule to be considered during rate-limiting. When a request comes into Envoy,
 rate limit actions are applied to the request to generate a list of descriptor tuples that are sent to the rate limit
