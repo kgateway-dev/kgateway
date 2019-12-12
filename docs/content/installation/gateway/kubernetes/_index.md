@@ -74,7 +74,7 @@ or `helm template`:
 # https://github.com/helm/helm/issues/4527
 helm fetch --untar --untardir . 'gloo/gloo'
 
-# deploy gloo resources to gloo1 with our value overrides
+# deploy gloo resources to my-namespace with our value overrides
 helm template gloo --namespace my-namespace  --set crds.create=true | k apply -f - -n my-namespace
 ```
 {{< /tab >}}
