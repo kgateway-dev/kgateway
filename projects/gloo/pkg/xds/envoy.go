@@ -29,7 +29,7 @@ const (
 type ProxyKeyHasher struct {
 	// (ilackarms) for the purpose of invalidation in the hasher
 	validKeysLock sync.Mutex
-	validKeys     []string
+	ValidKeys     []string
 	lock          sync.RWMutex
 }
 
@@ -65,7 +65,7 @@ func (h *ProxyKeyHasher) SetKeysFromProxies(proxies v1.ProxyList) {
 	}
 
 	h.validKeysLock.Lock()
-	h.validKeys = validKeys
+	h.ValidKeys = validKeys
 	h.validKeysLock.Unlock()
 }
 

@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
@@ -72,6 +73,33 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
 
+	if len(snap.Proxies) == 0 {
+		for _, key := range s.xdsHasher.ValidKeys {
+			emptySnapshot := xds.NewSnapshotFromResources(
+				cache.Resources{
+					Version: "empty",
+					Items:   map[string]cache.Resource{},
+				},
+				cache.Resources{
+					Version: "empty",
+					Items:   map[string]cache.Resource{},
+				},
+				cache.Resources{
+					Version: "empty",
+					Items:   map[string]cache.Resource{},
+				},
+				cache.Resources{
+					Version: "empty",
+					Items:   map[string]cache.Resource{},
+				},
+			)
+			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
+				err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
+				logger.DPanicw("", zap.Error(err))
+				return err
+			}
+		}
+	}
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
