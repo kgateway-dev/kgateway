@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 
@@ -75,23 +76,15 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 	if len(snap.Proxies) == 0 {
 		for _, key := range s.xdsHasher.ValidKeys {
+			emptyResource := cache.Resources{
+				Version: time.Now().String(),
+				Items:   map[string]cache.Resource{},
+			}
 			emptySnapshot := xds.NewSnapshotFromResources(
-				cache.Resources{
-					Version: "empty",
-					Items:   map[string]cache.Resource{},
-				},
-				cache.Resources{
-					Version: "empty",
-					Items:   map[string]cache.Resource{},
-				},
-				cache.Resources{
-					Version: "empty",
-					Items:   map[string]cache.Resource{},
-				},
-				cache.Resources{
-					Version: "empty",
-					Items:   map[string]cache.Resource{},
-				},
+				emptyResource,
+				emptyResource,
+				emptyResource,
+				emptyResource,
 			)
 			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
 				err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
