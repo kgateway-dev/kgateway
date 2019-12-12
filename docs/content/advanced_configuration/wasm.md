@@ -10,17 +10,17 @@ Experimental support for Envoy WASM filters has been added to Open Source Gloo a
 
 {{% notice note %}}
 This feature is considered incredibly experimental. It uses a fork of Envoy which does not have any official support. It 
-is meant to show off the potential of WASM filtes, and how they will integrate with Gloo going forward.
+is meant to show off the potential of WASM filters, and how they will integrate with Gloo going forward.
 {{% /notice %}}
 
 
 ### Configuration
 
-Getting started with Envoy is simple, it requires setting one new value in the gloo helm chart.
+Getting started with WASM is simple, it requires setting one new value in the gloo helm chart.
 
 The easiest way to install with this value is using helm 3 as follows:
 {{< tabs >}}
-{{< tab name="helm 3" codelang="shell script">}}
+{{< tab name="helm" codelang="shell script">}}
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 
 helm repo update
@@ -66,3 +66,6 @@ To find our more information about WASM filters, and how to build/run them check
 
 `wasme` is a tool for building and deploying Envoy WASM filters, in Gloo, and in vanilla Envoy. Much more detailed information
 can be found there on how the filters work.
+
+To find more information about WASM filters, and find more filters which can be included in Gloo check out 
+[WebAssembly Hub!](https://webassemblyhub.io/).
