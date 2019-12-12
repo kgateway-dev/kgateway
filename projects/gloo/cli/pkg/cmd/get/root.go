@@ -18,6 +18,9 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Aliases: constants.GET_COMMAND.Aliases,
 		Short:   constants.GET_COMMAND.Short,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := prerun.VersionMismatchWarning(opts); err != nil {
+				return err
+			}
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}

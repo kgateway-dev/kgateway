@@ -10,7 +10,6 @@ import (
 	versiondiscovery "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/versionutils"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"strings"
@@ -20,8 +19,11 @@ const (
 	ContainerNameToCheck = "discovery"
 )
 
-func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
-	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
+func VersionMismatchWarning(opts *options.Options) error {
+	if !opts.Get.Consul.UseConsul {
+		return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
+	}
+	return nil
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output
