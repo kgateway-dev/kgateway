@@ -61,7 +61,7 @@ glooctl install gateway -n gloo1 --values gloo1-overrides.yaml
 Either:
 
 ```shell script
-helm install gloo/gloo --name gloo --namespace gloo1 -f gloo1-overrides.yaml
+helm install gloo/gloo --name gloo1 --namespace gloo1 -f gloo1-overrides.yaml
 ```
 
 or:
@@ -135,7 +135,7 @@ glooctl install gateway -n gloo2 --values gloo2-overrides.yaml
 Either:
 
 ```shell script
-helm install gloo/gloo --name gloo --namespace gloo2 -f gloo2-overrides.yaml
+helm install gloo/gloo --name gloo2 --namespace gloo2 -f gloo2-overrides.yaml
 ```
 
 or:
