@@ -50,7 +50,7 @@ In Gloo Enterprise 1.x, Gloo added the `weight` (default 0) and `alwaysApply` (d
 to the `Descriptor` definition:
 
 - when evaluating matched rules, only rules with the highest weight (of the matched rules) are processed; if any of
-these rules trigger rate limiting then the entire request will return a 429. Matched rules that are not considered for
+these rules trigger rate limiting then the entire request will return HTTP 429. Matched rules that are not considered for
 rate-limiting are ignored in the rate limit server, and their request count is not incremented in the rate limit server
 cache.
 - `alwaysApply` is a boolean override for rule priority via weighted rules. Any rule matching a request with
