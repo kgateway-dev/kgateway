@@ -154,20 +154,7 @@ By default the upstream created is rather simple. It represents a specific kuber
 a swagger service. Gloo can discover this swagger spec, but by default Gloo's function discovery features are turned off to improve 
 performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
 ```shell
-kubectl edit namespace default
-```
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  labels:
-    discovery.solo.io/function_discovery: enabled
-  name: default
-spec:
-  finalizers:
-  - kubernetes
-status:
-  phase: Active
+kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
 Now fds will discovery the swagger spec.
