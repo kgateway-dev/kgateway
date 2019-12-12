@@ -32,14 +32,15 @@ helm install --namespace gloo-system --set global.wasm.enabled=true gloo gloo/gl
 Once this process has been completed, gloo should be up and running in the `gloo-system` namespace.
 To check run the following:
 ```shell script
-$ kubectl get pods -n gloo-system
-
+kubectl get pods -n gloo-system
+``` 
+```shell script
 NAME                            READY   STATUS    RESTARTS   AGE
 discovery-5ff9ddbc8f-p7njb      1/1     Running   0          45s
 gateway-578f5b7d9d-khw8m        1/1     Running   0          45s
 gateway-proxy-c9b4cc476-x6h5j   1/1     Running   0          45s
 gloo-6889d56b5c-f28gv           1/1     Running   0          45s
-``` 
+```
 
 Once all of the pods are up and running you are all ready to configure your first WASM filter.
 The API to configure the filter can be found [here]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk.md" >}}).
