@@ -52,4 +52,6 @@ message HttpConnectionManagerSettings {
     ForwardClientCertDetails forward_client_cert_details = 18;
 
     SetCurrentClientCertDetails set_current_client_cert_details = 19;
+
+    bool preserve_external_request_id = 20;
 }
