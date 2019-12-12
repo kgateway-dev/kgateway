@@ -113,7 +113,7 @@ spec:
             namespace: gloo-system
     options:
       ratelimit:
-        rate_limits:
+        rateLimits:
         - actions:
           - requestHeaders:
               descriptorKey: account_id
