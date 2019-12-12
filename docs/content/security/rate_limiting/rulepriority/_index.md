@@ -103,7 +103,7 @@ Run the following a couple times:
 curl -H "x-type: Whatsapp" -H "x-number: 411" --head $(glooctl proxy url)
 ```
 
-Requests to number `411` have a much higher rate limit, and will not return HTTP 429 after a couple curls. Note that
+Requests to number `411` have a much higher rate limit, and will not return HTTP 429 unless more than 100 requests are sent within a minute. Note that
 this wouldn't work without rule priority (play around with the server settings to test this!) because our requests
 would match the inner Whatsapp rule (Rule 2) that limits all requests to 2/min, regardless of the provided number.
 
