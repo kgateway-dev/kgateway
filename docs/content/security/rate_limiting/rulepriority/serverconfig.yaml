@@ -1,10 +1,10 @@
 ```yaml
 descriptors:
-  # Rule 1, limit all Messenger requests to 1/min
+  # Rule 1, limit all Messenger requests to 2/min
   - key: type
     value: Messenger
     rateLimit:
-      requestsPerUnit: 1
+      requestsPerUnit: 2
       unit: MINUTE
   # Rule 2, limit all Whatsapp requests to 1/min
   - key: type

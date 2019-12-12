@@ -87,7 +87,7 @@ And paste the example config:
 
 {{< readfile file="security/rate_limiting/rulepriority/serverconfig.yaml" markdown="true">}}
 
-Run the following two times; you should get HTTP 429 Too Many Requests on the second request.
+Run the following three times; you should get HTTP 429 Too Many Requests on the third request.
 ```shell script
 curl -H "x-type: Messenger" -H "x-number: 311" --head $(glooctl proxy url)
 ```
@@ -99,14 +99,14 @@ curl -H "x-type: Whatsapp" -H "x-number: 311" --head $(glooctl proxy url)
 
 By changing the number we can match the more specific rule that has a higher priority.
 
-Run the following a couple times:
+Run the following a couple times; you shouldn't get rate-limited:
 ```shell script
 curl -H "x-type: Whatsapp" -H "x-number: 411" --head $(glooctl proxy url)
 ```
 
 Requests to number `411` have a much higher rate limit, and will not return HTTP 429 unless more than 100 requests
 are sent within a minute. Note that this wouldn't work without rule priority (play around with the server settings
-to test this!) because our requests would match the inner Whatsapp rule (Rule 2) that limits all requests to 2/min,
+to test this!) because our requests would match the inner Whatsapp rule (Rule 2) that limits all requests to 1/min,
 regardless of the provided number.
 
 ### Cleanup
