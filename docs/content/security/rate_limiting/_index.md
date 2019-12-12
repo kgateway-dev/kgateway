@@ -71,7 +71,7 @@ Gloo Enterprise provides an enhanced version of [Lyft's rate limit service](http
 supports the full Envoy rate limit server API (with some additional enhancements, e.g. rule priority), as well as a
 simplified API built on top of this service. Gloo uses this rate-limit service to enforce rate-limits. The rate-limit
 service can work in tandem with the Gloo external auth service to define separate rate-limit policies for authorized &
-unauthorized users. The Gloo Enteprise rate-limit service enabled and configured by default, no configuration is needed
+unauthorized users. The Gloo Enteprise rate-limit service is enabled and configured by default, no configuration is needed
 to point Gloo toward the rate-limit service.
 
 ### Rate Limit Configuration
