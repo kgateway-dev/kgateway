@@ -37,7 +37,7 @@ type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) *registry {
+var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugins.Plugin) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	hcmPlugin := hcm.NewPlugin()
 	reg := &registry{}
@@ -76,14 +76,11 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 	if opts.ConsulWatcher != nil {
 		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulWatcher))
 	}
-	for _, pluginExtension := range pluginExtensions {
-		reg.plugins = append(reg.plugins, pluginExtension)
-	}
 	hcmPlugin.RegisterHcmPlugins(reg.plugins)
 
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
-	return globalRegistry(opts, pluginExtensions...).plugins
+func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+	return globalRegistry(opts).plugins
 }
