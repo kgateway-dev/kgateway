@@ -30,10 +30,6 @@ Now let's create a virtual service that routes all requests to the `foo` domain 
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream/virtual-service.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-static --namespace gloo-system --domains foo 
-glooctl add route --name test-static --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}}
 
 ## Test routes
