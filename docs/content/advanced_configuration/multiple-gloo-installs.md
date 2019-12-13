@@ -31,16 +31,26 @@ In this section we'll deploy Gloo twice, each instance to a different namespace,
 
 Create a file named `gloo1-overrides.yaml` and paste the following inside:
 
-```yaml
+{{< tabs >}}
+{{< tab name="Helm 2" codelang="yaml" >}}
 crds:
-  create: true # see our installation guide- this is only necessary if you are using Helm 2 with Gloo >=v1.2.3
+  create: true
 settings:
   create: true
   writeNamespace: gloo1
   watchNamespaces:
   - default
   - gloo1
-```
+{{< /tab >}}
+{{< tab name="Helm 3" codelang="yaml">}}
+settings:
+  create: true
+  writeNamespace: gloo1
+  watchNamespaces:
+  - default
+  - gloo1
+{{< /tab >}}
+{{< /tabs >}}
 
 Now, let's install Gloo. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}})
 if you need a refresher.
@@ -107,16 +117,26 @@ Let's repeat the above process, substituting `gloo2` for `gloo1`:
 
 Create a file named `gloo2-overrides.yaml` and paste the following inside:
 
-```yaml
+{{< tabs >}}
+{{< tab name="Helm 2" codelang="yaml" >}}
 crds:
-  create: true # see our installation guide- this is only necessary if you are using Helm 2 with Gloo >=v1.2.3
+  create: true
 settings:
   create: true
   writeNamespace: gloo2
   watchNamespaces:
   - default
   - gloo2
-```
+{{< /tab >}}
+{{< tab name="Helm 3" codelang="yaml">}}
+settings:
+  create: true
+  writeNamespace: gloo2
+  watchNamespaces:
+  - default
+  - gloo2
+{{< /tab >}}
+{{< /tabs >}}
 
 Now, let's install Gloo for the second time. First create the second namespace:
 
