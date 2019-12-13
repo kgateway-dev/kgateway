@@ -23,7 +23,7 @@ the Envoy spec for an [external authorization server](https://github.com/envoypr
 Let's start by creating the sample `petstore` application:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 We can now add a route to the sample application by running the following command:

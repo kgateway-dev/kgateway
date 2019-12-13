@@ -46,7 +46,7 @@ for detailed information about how authentication is configured on Virtual Servi
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ### Creating a Virtual Service
@@ -213,7 +213,7 @@ You can clean up the resources created in this guide by running:
 ```
 kubectl delete vs -n gloo-system petstore
 kubectl delete ac -n gloo-system opa
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 rm policy.rego
 ```
 
@@ -239,7 +239,7 @@ minikube start --docker-opt="default-ulimit=nofile=102400:102400"
 Let's deploy a sample web application that we will use to demonstrate these features:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 ```
 
 ### Create a Virtual Service
@@ -519,6 +519,6 @@ kubectl delete -n gloo-system secret oauth dex-grpc-ca  dex-grpc-client-tls  dex
 kubectl delete virtualservice -n gloo-system petclinic
 kubectl delete authconfig -n gloo-system jwt-opa
 kubectl delete -n gloo-system configmap allow-jwt
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 rm check-jwt.rego dex-values.yaml
 ```
