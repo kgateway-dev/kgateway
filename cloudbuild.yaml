@@ -1,12 +1,12 @@
 steps:
 
-- name: 'gcr.io/cloud-builders/wget'
-  entrypoint: ./ci/spell.sh
-  args: ['check']
-  waitFor: ['-']
-  env:
-  - 'LSCOMMAND=find * -path gopath -prune -o -print'
-  id: 'check-spelling'
+# - name: 'gcr.io/cloud-builders/wget'
+#   entrypoint: ./ci/spell.sh
+#   args: ['check']
+#   waitFor: ['-']
+#   env:
+#   - 'LSCOMMAND=find * -path gopath -prune -o -print'
+#   id: 'check-spelling'
 # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
 # These two steps should populate the cache
 - name: gcr.io/cloud-builders/gsutil
@@ -226,12 +226,12 @@ steps:
 #   dir: './gopath/src/github.com/solo-io/gloo'
 #   id: 'save-helm-chart'
 
-secrets:
-- kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
-  secretEnv:
-    GITHUB_TOKEN: CiQABlzmSYYiveU0gTxGH2139eaBUedjV3vNCxQmJU+nRPlfQ/YSUQCCPGSGzbGp49fwDYuefAx9V94b8mivdp9AqB7zQAa07VtGJmrGdg9ZuhKGFrrgqxwABE0LLVNHyngCSHYSYMH8Vn/mRtT7wQuEHBlKVGtqPw==
-    QUAY_IO_PASSWORD: CiQABlzmSRx5TcOqbldXa/d/+bkmAfpNAWa3PTS06WvuloZL+vASaQCCPGSGCogonVZVEUNx4G3YJtWi18gSuNx4PvLe08q8xAflTMFkjsyQirAOK3Y2oCvgYwiw/ITcuydjkpMjxDygFyENXS9FKFJoAXHlPQE5qidKr8xxmxF5ezhmjGB0gjyjXIIkbSEnBg==
-    AWS_ARN_ROLE_1: CiQABlzmSTKWrIEGaH8UvsX3Wp8pz8ClQODVSjIZAiHuE9gNhM4SXACCPGSGCDSNJtdfkA0BLLmKTJLIM06XXEOV4iIooqlLfo9p7EOzOwqZaV9DFygO8/oKQqTFstc1vKgOz7YHrMaCx3GzqiHN2u//UmHRpvIwrDDfuIP5XNa0aOrj
+# secrets:
+# - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
+#   secretEnv:
+#     GITHUB_TOKEN: CiQABlzmSYYiveU0gTxGH2139eaBUedjV3vNCxQmJU+nRPlfQ/YSUQCCPGSGzbGp49fwDYuefAx9V94b8mivdp9AqB7zQAa07VtGJmrGdg9ZuhKGFrrgqxwABE0LLVNHyngCSHYSYMH8Vn/mRtT7wQuEHBlKVGtqPw==
+#     QUAY_IO_PASSWORD: CiQABlzmSRx5TcOqbldXa/d/+bkmAfpNAWa3PTS06WvuloZL+vASaQCCPGSGCogonVZVEUNx4G3YJtWi18gSuNx4PvLe08q8xAflTMFkjsyQirAOK3Y2oCvgYwiw/ITcuydjkpMjxDygFyENXS9FKFJoAXHlPQE5qidKr8xxmxF5ezhmjGB0gjyjXIIkbSEnBg==
+#     AWS_ARN_ROLE_1: CiQABlzmSTKWrIEGaH8UvsX3Wp8pz8ClQODVSjIZAiHuE9gNhM4SXACCPGSGCDSNJtdfkA0BLLmKTJLIM06XXEOV4iIooqlLfo9p7EOzOwqZaV9DFygO8/oKQqTFstc1vKgOz7YHrMaCx3GzqiHN2u//UmHRpvIwrDDfuIP5XNa0aOrj
 
 timeout: 4200s
 tags: ['gloo']
