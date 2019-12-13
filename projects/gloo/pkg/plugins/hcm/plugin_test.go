@@ -58,6 +58,7 @@ var _ = Describe("Plugin", func() {
 				Dns:     true,
 				Uri:     true,
 			},
+			PreserveExternalRequestId: true,
 
 			Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
 				{
@@ -116,6 +117,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
+		Expect(cfg.PreserveExternalRequestId).To(Equal(hcms.PreserveExternalRequestId))
 
 		trace := cfg.Tracing
 		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))

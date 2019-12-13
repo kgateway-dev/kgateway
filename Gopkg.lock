@@ -90,6 +90,14 @@
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:a5f0485ed2aad9b9c6a730815d1f2bc92b0acc126d7ee8e36c1a51882fc284f5"
+  name = "github.com/Masterminds/semver"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "25911d36c978be5eb3e81847734874fd4e1dc6c7"
+  version = "v3.0.2"
+
+[[projects]]
   digest = "1:181a6a5506bd83827d826df5b3272040e92c487516b2fc8edd066be941d68d9e"
   name = "github.com/Masterminds/sprig"
   packages = ["."]
@@ -2895,6 +2903,23 @@
   revision = "9e57f2cf1edade764d8307c4f3d4073e204d46de"
 
 [[projects]]
+  digest = "1:f8751d822425fd0686c759bb92b1b9db017cf0ce8d23d40b15b9ea23841e229e"
+  name = "k8s.io/helm"
+  packages = [
+    "pkg/chartutil",
+    "pkg/engine",
+    "pkg/ignore",
+    "pkg/proto/hapi/chart",
+    "pkg/proto/hapi/version",
+    "pkg/renderutil",
+    "pkg/sympath",
+    "pkg/version",
+  ]
+  pruneopts = "UT"
+  revision = "bbdfe5e7803a12bbdf97e94cd847859890cf4050"
+  version = "v2.16.1"
+
+[[projects]]
   digest = "1:16a43d0b78057f165fbf32077f8a1f6bd6993d9cf6ef97fb669dc152e70626cd"
   name = "k8s.io/klog"
   packages = ["."]
@@ -3294,6 +3319,8 @@
     "helm.sh/helm/v3/pkg/cli/values",
     "helm.sh/helm/v3/pkg/getter",
     "helm.sh/helm/v3/pkg/release",
+    "helm.sh/helm/v3/pkg/releaseutil",
+    "helm.sh/helm/v3/pkg/repo",
     "helm.sh/helm/v3/pkg/strvals",
     "k8s.io/api/admission/v1beta1",
     "k8s.io/api/admissionregistration/v1beta1",
@@ -3368,6 +3395,9 @@
     "k8s.io/client-go/util/cert",
     "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/homedir",
+    "k8s.io/helm/pkg/chartutil",
+    "k8s.io/helm/pkg/proto/hapi/chart",
+    "k8s.io/helm/pkg/renderutil",
     "k8s.io/kubectl/pkg/cmd/util/editor",
     "k8s.io/kubernetes/pkg/apis/core",
     "k8s.io/kubernetes/pkg/apis/core/validation",

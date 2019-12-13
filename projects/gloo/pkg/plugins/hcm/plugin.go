@@ -111,6 +111,7 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	cfg.DrainTimeout = gogoutils.DurationStdToProto(hcmSettings.DrainTimeout)
 	cfg.DelayedCloseTimeout = gogoutils.DurationStdToProto(hcmSettings.DelayedCloseTimeout)
 	cfg.ServerName = hcmSettings.ServerName
+	cfg.PreserveExternalRequestId = hcmSettings.PreserveExternalRequestId
 
 	if hcmSettings.AcceptHttp_10 {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{

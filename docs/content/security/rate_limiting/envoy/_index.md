@@ -48,12 +48,9 @@ metadata:
   name: default
   namespace: gloo-system
 spec:
-  extensions:
-    configs:
-      envoy-rate-limit:
-        customConfig:
-          descriptors:
-          - # list of descriptors here
+  ratelimit:
+    descriptors:
+    - # list of descriptors here
 {{< /highlight >}}
 
 #### Actions
@@ -78,7 +75,7 @@ This action says to pass in the request header values as the descriptor values. 
 
 Rate limit actions can be specified both at the Virtual Service level and on a per route basis. For example, the look at the following:
 
-{{< highlight yaml "hl_lines=21-30 42-50" >}}
+{{< highlight yaml "hl_lines=19-28 37-45" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -89,45 +86,41 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /service/service1
+    - matchers:
+      - prefix: /service/service1
       routeAction:
         single:
           upstream:
             name: default-echo-server-8080
             namespace: gloo-system
-      routePlugins:
-        extensions:
-          configs:
-            envoy-rate-limit:
-              includeVhRateLimits: false
-              rateLimits:
-              - actions:
-                - requestHeaders:
-                    descriptorKey: account_id
-                    headerName: x-account-id
-                - requestHeaders:
-                    descriptorKey: plan
-                    headerName: x-plan-other
-    - matcher:
-        prefix: /service/service2
+      options:
+        ratelimit:
+          includeVhRateLimits: false
+          rateLimits:
+          - actions:
+            - requestHeaders:
+                descriptorKey: account_id
+                headerName: x-account-id
+            - requestHeaders:
+                descriptorKey: plan
+                headerName: x-plan-other
+    - matchers:
+      - prefix: /service/service2
       routeAction:
         single:
           upstream:
             name: default-echo-server-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          envoy-rate-limit:
-            rate_limits:
-            - actions:
-              - requestHeaders:
-                  descriptorKey: account_id
-                  headerName: x-account-id
-              - requestHeaders:
-                  descriptorKey: plan
-                  headerName: x-plan
+    options:
+      ratelimit:
+        rateLimits:
+        - actions:
+          - requestHeaders:
+              descriptorKey: account_id
+              headerName: x-account-id
+          - requestHeaders:
+              descriptorKey: plan
+              headerName: x-plan
 {{< /highlight >}}
 
 {{% notice info %}}
@@ -171,7 +164,7 @@ server: envoy
 Edit the rate limit server settings. This opens your default editor controlled by the `EDITOR` environment variable on most operating systems.
 
 ```bash
-glooctl edit settings --namespace gloo-system --name default ratelimit custom-server-config
+glooctl edit settings --namespace gloo-system --name default ratelimit server-config
 ```
 
 That command opens the rate limit server configuration in your editor. Paste the following descriptor block into the editor. This descriptor uses `generic_key` key, which works with the `generic_key` rate limiting action in Envoy, effectively passing a literal value to the rate limiting service. For your convenience, you can download the descriptor block [here](serverconfig.yaml).
@@ -187,7 +180,7 @@ descriptors:
 
 The `glooctl` tool merges those descriptors into the Gloo Settings manifest as follows:
 
-{{< highlight yaml "hl_lines=18-23" >}}
+{{< highlight yaml "hl_lines=26-32" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -199,29 +192,31 @@ metadata:
   name: default
   namespace: gloo-system
 spec:
-  bindAddr: 0.0.0.0:9977
-  discoveryNamespace: gloo-system
-  extensions:
-    configs:
-      envoy-rate-limit:
-        customConfig:
-          descriptors:
-          - key: generic_key
-            rateLimit:
-              requestsPerUnit: 1
-              unit: MINUTE
-            value: some_value
-      extauth:
-        extauthzServerRef:
-          name: extauth
-          namespace: gloo-system
-      rate-limit:
-        ratelimit_server_ref:
-          name: rate-limit
-          namespace: gloo-system
+  discoveryNamespace: gloo-system  
+  extauth:
+    extauthzServerRef:
+      name: extauth
+      namespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
-  kubernetesSecretSource: {}
+  kubernetesSecretSource: {}      
+  ratelimit:
+    descriptors:
+    - key: generic_key
+      rateLimit:
+        requestsPerUnit: 1
+        unit: MINUTE
+      value: some_value
+  ratelimitServer:
+    ratelimitServerRef:
+      name: rate-limit
+      namespace: gloo-system
   refreshRate: 60s
 {{< /highlight  >}}
 
@@ -230,7 +225,7 @@ spec:
 Edit the virtual service settings:
 
 ```bash
-glooctl edit virtualservice --namespace gloo-system --name default ratelimit custom-envoy-config
+glooctl edit virtualservice --namespace gloo-system --name default ratelimit client-config
 ```
 
 That command opens the virtual service rate limit configuration in your editor. Paste the following rate limit action block into the editor. For your convenience, you can download the rate limiting action [here](vsconfig.yaml). The structure of the virtual service configuration is as described in the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action). This configuration will be passed to Envoy as is.

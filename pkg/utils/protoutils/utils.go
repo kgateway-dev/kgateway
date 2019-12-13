@@ -2,7 +2,6 @@ package protoutils
 
 import (
 	"bytes"
-	"encoding/json"
 
 	gogojson "github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
@@ -44,7 +43,7 @@ func MarshalStructEmitZeroValues(m proto.Message) (*structpb.Struct, error) {
 	return &pb, err
 }
 
-func UnmarshalStruct(structuredData *structpb.Struct, into interface{}) error {
+func UnmarshalStruct(structuredData *structpb.Struct, into proto.Message) error {
 	if structuredData == nil {
 		return NilStructError
 	}
@@ -52,8 +51,7 @@ func UnmarshalStruct(structuredData *structpb.Struct, into interface{}) error {
 	if err != nil {
 		return err
 	}
-	data := []byte(strData)
-	return json.Unmarshal(data, into)
+	return jsonpb.UnmarshalString(strData, into)
 }
 
 func MarshalBytes(pb proto.Message) ([]byte, error) {

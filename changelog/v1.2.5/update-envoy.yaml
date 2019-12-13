@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: envoy-gloo
+  dependencyRepo: solo-io
+  dependencyTag: v0.1.19
+- type: FIX
+  description: Updated envoy to upstream envoy 1.12.2, that includes the latest security fixes.
+  issueLink: https://github.com/solo-io/gloo/pull/1887
+

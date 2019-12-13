@@ -93,7 +93,11 @@ If we want to query the service to verify routing is working, we can like this:
 
 ```bash
 curl $(glooctl proxy url --port http)/sample-route-1
+```
 
+returns
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
@@ -183,7 +187,11 @@ It's possible that if you used self-signed certs, `curl` cannot validate the cer
 
 ```bash
 curl -k https://192.168.64.50:31767/sample-route-1
+```
 
+returns
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
@@ -280,7 +288,11 @@ If everything up to this point looks good, let's try to query the service and ma
 ```bash
 curl -k -H "Host: animalstore.example.com"  \
 $(glooctl proxy url --port https)/animals
+```
 
+returns
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 

@@ -13,6 +13,8 @@ Gloo Gateway can be used as an Ingress/Gateway for the Nomad platform. This guid
 
 ## Architecture
 
+<img src="{{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}}" alt="Gloo Gateway on Nomad Architecture" width="50%">
+
 Gloo Gateway on Nomad uses multiple pieces of software for deployment and functionality.
 
 - **Docker**: The components of Gloo are deployed as containers running discovery, proxy, envoy, and the gateway

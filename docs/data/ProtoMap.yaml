@@ -299,6 +299,15 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.wasm.v2.PluginConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#PluginConfig
+    package: envoy.config.wasm.v2
+  envoy.config.wasm.v2.VmConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#VmConfig
+    package: envoy.config.wasm.v2
+  envoy.config.wasm.v2.WasmService:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#WasmService
+    package: envoy.config.wasm.v2
   envoy.type.DoubleRange:
     relativepath: api/envoy/type/range.proto.sk/#DoubleRange
     package: envoy.type
@@ -421,6 +430,12 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.MultiDestination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
+    package: gloo.solo.io
+  gloo.solo.io.NotifyOnResyncRequest:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncRequest
+    package: gloo.solo.io
+  gloo.solo.io.NotifyOnResyncResponse:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncResponse
     package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
@@ -905,3 +920,6 @@ apis:
   waf.options.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings
     package: waf.options.gloo.solo.io
+  wasm.options.gloo.solo.io.PluginSource:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#PluginSource
+    package: wasm.options.gloo.solo.io

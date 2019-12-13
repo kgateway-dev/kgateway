@@ -33,7 +33,7 @@ ModSecurity rule sets are defined in gloo in one of 3 places:
 The precedence is as such: `Route` > `VirtualService` > `HttpGateway`. 
 
 The configuration of the three of them is nearly identical at the moment, and follows the same pattern as other enterprise features in Gloo. 
-The configuration is included in the `plugins` object of the `httpGateway`. This process will be enumerated 
+The configuration is included in the `options` object of the `httpGateway`. This process will be enumerated 
 below, but first we will go over the general flow of configuring WAF in Gloo.
 
 The WAF filter at its core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. 
@@ -76,7 +76,7 @@ As stated earlier, the above rule is very simple. It does only two things:
 1. It enables the rules engine. This step is important, by default the rules engine is off, so it must be explicitally turned on. It can also be set to `DetectionOnly`, which runs the rules but does not perform any obtrusive actions.
 2. It creates a rule which inspects the request header `"user-agent"`. If that specific header equals the value `"scammer"` then the request will be denied and return a `403` status.
 
-This is a very basic example of the capabilities of the ModSecurity rules engine but useful in how it demonstrates it's implementation in Enterprise Gloo.
+This is a very basic example of the capabilities of the ModSecurity rules engine but useful in how it demonstrates its implementation in Enterprise Gloo.
 
 The following sections will explain how to enable this rule on the gateway level as well as on the virtual service level.
 
@@ -88,22 +88,22 @@ The first option for configuring WAF is on the Http Gateway level on the Gateway
 
 Run the following command to edit the gateway object with the waf config:
 ```bash
-kubectl edit gateway -n gloo-system gateway-proxy-v2
+kubectl edit gateway -n gloo-system gateway-proxy
 ```
 
-{{< highlight yaml "hl_lines=12-21" >}}
-apiVersion: gateway.solo.io.v2/v2
+{{< highlight yaml "hl_lines=11-19" >}}
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gateway-proxy-v2
+  name: gateway-proxy
   namespace: gloo-system
 spec:
   bindAddress: '::'
   bindPort: 8080
   proxyNames:
-  - gateway-proxy-v2
+  - gateway-proxy
   httpGateway:
-    plugins:
+    options:
       waf:
         customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
         ruleSets:
@@ -146,21 +146,20 @@ Firstly, remove the extension config from the gateway which was added in the sec
 ```bash
 kubectl edit virtualservices.gateway.solo.io -n gloo-system default
 ```
-{{< highlight yaml "hl_lines=6-16" >}}
+{{< highlight yaml "hl_lines=6-13" >}}
 ...
 spec:
   virtualHost:
     domains:
     - '*'
-    virtualHostPlugins:
+    options:
       waf:
-        settings:
-          ruleSets:
-          customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
-          - ruleStr: |
-              # Turn rule engine on
-              SecRuleEngine On
-              SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
+        customInterventionMessage: 'ModSecurity intervention! Custom message details here..'
+        ruleSets:
+        - ruleStr: |
+            # Turn rule engine on
+            SecRuleEngine On
+            SecRule REQUEST_HEADERS:User-Agent "scammer" "deny,status:403,id:107,phase:1,msg:'blocked scammer'"
 ...
 {{< / highlight >}}
 
@@ -174,39 +173,38 @@ As mentioned earlier, the main free Mod Security rule set available is the owasp
 
 In order to apply the core rule set add the following to the default virtual service.
 
-{{< highlight yaml "hl_lines=7-34" >}}
+{{< highlight yaml "hl_lines=7-33" >}}
 spec:
   virtualHost:
     domains:
     - '*'
     name: gloo-system.default
-    virtualHostPlugins:
+    options:
       waf:
-        settings:
-          coreRuleSet:
-            customSettingsString: |
-                # default rules section
-                SecRuleEngine On
-                SecRequestBodyAccess On
-                # CRS section
-                # Will block by default
-                SecDefaultAction "phase:1,log,auditlog,deny,status:403"
-                SecDefaultAction "phase:2,log,auditlog,deny,status:403"
-                # only allow http2 connections
-                SecAction \
-                  "id:900230,\
-                    phase:1,\
-                    nolog,\
-                    pass,\
-                    t:none,\
-                    setvar:'tx.allowed_http_versions=HTTP/2 HTTP/2.0'"
-                SecAction \
-                "id:900990,\
+        coreRuleSet:
+          customSettingsString: |
+              # default rules section
+              SecRuleEngine On
+              SecRequestBodyAccess On
+              # CRS section
+              # Will block by default
+              SecDefaultAction "phase:1,log,auditlog,deny,status:403"
+              SecDefaultAction "phase:2,log,auditlog,deny,status:403"
+              # only allow http2 connections
+              SecAction \
+                "id:900230,\
                   phase:1,\
                   nolog,\
                   pass,\
                   t:none,\
-                      setvar:tx.crs_setup_version=310"
+                  setvar:'tx.allowed_http_versions=HTTP/2 HTTP/2.0'"
+              SecAction \
+              "id:900990,\
+                phase:1,\
+                nolog,\
+                pass,\
+                t:none,\
+                    setvar:tx.crs_setup_version=310"
 {{< / highlight >}}
 
 Once this config has been accepted run the following to test that it works.

@@ -17,9 +17,8 @@ ifeq ($(TAGGED_VERSION),)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-GLOOE_VERSION ?= 0.20.4
 
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION) -X github.com/solo-io/gloo/pkg/version.EnterpriseTag=$(GLOOE_VERSION)"
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
@@ -75,7 +74,7 @@ update-deps:
 
 .PHONY: pin-repos
 pin-repos:
-	GO111MODULE=on go run pin_repos.go
+	GO111MODULE=on go run ci/pin_repos/pin_repos.go
 
 .PHONY: check-format
 check-format:
@@ -297,7 +296,7 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		$(call get_test_tag,gloo)
 
 #----------------------------------------------------------------------------------
-# Envoy init
+# Envoy init (BASE)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
@@ -310,7 +309,7 @@ $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
 
-$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
+$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
@@ -318,6 +317,29 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) \
 		$(call get_test_tag,gloo-envoy-wrapper)
+
+#----------------------------------------------------------------------------------
+# Envoy init (WASM)
+#----------------------------------------------------------------------------------
+
+ENVOY_WASM_DIR=projects/envoyinit/cmd
+ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
+
+$(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
+
+.PHONY: envoywasm
+envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
+
+
+$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
+	cp $< $@
+
+.PHONY: gloo-envoy-wasm-wrapper-docker
+gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
+		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) \
+		$(call get_test_tag,gloo-envoy-wasm-wrapper)
 
 
 #----------------------------------------------------------------------------------
@@ -359,7 +381,8 @@ HELM_DIR := install/helm
 INSTALL_NAMESPACE ?= gloo-system
 
 .PHONY: manifest
-manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml update-helm-chart
+manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml \
+ 		install/gloo-knative.yaml update-helm-chart
 
 # Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
 .PHONY: prepare-helm
@@ -381,16 +404,35 @@ ifneq ($(BUILD_ID),)
 MANIFEST_OUTPUT =
 endif
 
-install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+define HELM_VALUES
+namespace:
+  create: true
+crds:
+  create: true
+endef
 
-install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,settings.integrations.knative.enabled=true | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+# Export as a shell variable, make variables do not play well with multiple lines
+export HELM_VALUES
+$(OUTPUT_DIR)/release-manifest-values.yaml:
+	@echo "$$HELM_VALUES" > $@
 
-install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,ingress.enabled=true| tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install gateway -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install knative -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+    		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml prepare-helm
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install ingress -n $(INSTALL_NAMESPACE) --values $(OUTPUT_DIR)/release-manifest-values.yaml \
+    		--dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
 
 .PHONY: render-yaml
 render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
@@ -410,11 +452,14 @@ fetch-helm:
 #----------------------------------------------------------------------------------
 GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
 
+$(OUTPUT_DIR)/gloo-enterprise-version:
+	GO111MODULE=on go run hack/find_latest_enterprise_version.go
+
 .PHONY: download-glooe-changelog
-download-glooe-changelog:
+download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
 ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
-	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(GLOOE_VERSION)/* '../solo-projects/changelog'
+	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
 ASSETS_ONLY := false
@@ -472,7 +517,9 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker certgen-docker ingress-docker access-logger-docker
+docker: discovery-docker gateway-docker gloo-docker \
+ 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
+ 		certgen-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -485,6 +532,7 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
 	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/certgen:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 endif
@@ -513,10 +561,12 @@ push-kind-images: docker
 # The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
 
 .PHONY: build-test-assets
-build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 .PHONY: build-kind-assets
-build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
 

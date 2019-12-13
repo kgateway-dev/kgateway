@@ -130,6 +130,21 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+      - name: wasm-cache
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: wasm-cache
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
+                    port_value: 9979
+        upstream_connection_options:
+          tcp_keepalive: {}
+        type: STRICT_DNS
+        respect_dns_ttl: true
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966
         alt_stat_name: metrics_cluster
         connect_timeout: 5.000s

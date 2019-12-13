@@ -47,10 +47,6 @@ Let's create a virtual service with several header match rules. For simplicity, 
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/matching_rules/header_matching/virtual-service.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-header --namespace gloo-system --domains foo 
-glooctl add route --name test-header --header "header1=value1" --header "header2=" --header "header3=[a-z]{1}" --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}}
 
 We can now make a curl request to the new virtual service and set valid values for each header. In this case, 

@@ -45,12 +45,14 @@ var _ prerun.Logger = &testLogger{}
 
 var _ = Describe("version command", func() {
 	var (
-		binaryName = "glooctl-version-warn-unit-test-binary"
-		namespace  = "test-namespace"
-		v_20_12    = "0.20.12"
-		v_20_13    = "0.20.13"
-		v_21_0     = "0.21.0"
-		v_1_0_0    = "1.0.0"
+		binaryName   = "glooctl-version-warn-unit-test-binary"
+		namespace    = "test-namespace"
+		otherPodName = "other-pod"
+
+		v_20_12 = "0.20.12"
+		v_20_13 = "0.20.13"
+		v_21_0  = "0.21.0"
+		v_1_0_0 = "1.0.0"
 
 		buildContainerVersions = func(isEnterprise bool, containers []*version.Kubernetes_Container) []*version.ServerVersion {
 			return []*version.ServerVersion{{
@@ -94,7 +96,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions match exactly", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_12,
-			Name:     "test-name",
+			Name:     prerun.ContainerNameToCheck,
 			Registry: "test-registry",
 		}})
 
@@ -105,7 +107,7 @@ var _ = Describe("version command", func() {
 	It("should not warn when the versions differ only by patch version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_20_13,
-			Name:     "test-name",
+			Name:     prerun.ContainerNameToCheck,
 			Registry: "test-registry",
 		}})
 
@@ -116,21 +118,17 @@ var _ = Describe("version command", func() {
 	It("should warn when the versions differ by minor version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_21_0,
-			Name:     "test-name",
+			Name:     prerun.ContainerNameToCheck,
 			Registry: "test-registry",
 		}})
 
-		mismatches := []*prerun.ContainerVersion{{
-			ContainerName: "test-name",
-			Version: &versionutils.Version{
-				Major: 0,
-				Minor: 21,
-				Patch: 0,
-			},
+		mismatches := []*versionutils.Version{{
+			Major: 0,
+			Minor: 21,
+			Patch: 0,
 		}}
 
 		expectedOutputLines = []string{
-			prerun.BuildVersionMismatchMessage(mismatches, "v"+linkedversion.Version, "minor"),
 			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
 		}
 
@@ -140,24 +138,38 @@ var _ = Describe("version command", func() {
 	It("should warn when the versions differ by major version", func() {
 		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{{
 			Tag:      v_1_0_0,
-			Name:     "test-name",
+			Name:     prerun.ContainerNameToCheck,
 			Registry: "test-registry",
 		}})
 
-		mismatches := []*prerun.ContainerVersion{{
-			ContainerName: "test-name",
-			Version: &versionutils.Version{
-				Major: 1,
-				Minor: 0,
-				Patch: 0,
-			},
+		mismatches := []*versionutils.Version{{
+			Major: 1,
+			Minor: 0,
+			Patch: 0,
 		}}
 
 		expectedOutputLines = []string{
-			prerun.BuildVersionMismatchMessage(mismatches, "v"+linkedversion.Version, "major"),
 			prerun.BuildSuggestedUpgradeCommand(binaryName, mismatches),
 		}
 
 		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
+	})
+
+	It("should ignore containers other than the one we specifically look for", func() {
+		versionGetter.versions = buildContainerVersions(false, []*version.Kubernetes_Container{
+			{
+				Tag:      v_20_12,
+				Name:     prerun.ContainerNameToCheck,
+				Registry: "test-registry",
+			},
+			{
+				Tag:      v_1_0_0,
+				Name:     otherPodName,
+				Registry: "test-registry",
+			},
+		})
+
+		err = prerun.WarnOnMismatch(binaryName, versionGetter, logger)
+		Expect(logger.printedLines).To(BeEmpty(), "Should not warn when the versions match exactly")
 	})
 })

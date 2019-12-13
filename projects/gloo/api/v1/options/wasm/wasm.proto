@@ -1,0 +1,30 @@
+syntax = "proto3";
+package wasm.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+message PluginSource {
+    // name of image which houses the compiled wasm filter
+    string image = 2;
+
+    // string of the config sent to the wasm filter
+    // Currently has to be json or will crash
+    string config = 3;
+
+    // not implemented yet
+//    string filter_stage = 4;
+
+    string name = 5;
+
+    string root_id = 6;
+
+    enum VmType {
+        V8 = 0;
+        WAVM = 1;
+    }
+
+    VmType vm_type = 7;
+}

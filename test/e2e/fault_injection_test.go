@@ -107,7 +107,7 @@ var _ = Describe("Fault Injection", func() {
 				}
 				opts.OverwriteExisting = true
 				return setupProxy(proxy, up)
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 
 			Eventually(func() error {
 				res, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", envoyPort))
@@ -118,7 +118,7 @@ var _ = Describe("Fault Injection", func() {
 					return errors.New(fmt.Sprintf("%v is not ServiceUnavailable", res.StatusCode))
 				}
 				return nil
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 		})
 
 		It("should cause envoy delay fault", func() {
@@ -135,7 +135,7 @@ var _ = Describe("Fault Injection", func() {
 				}
 				opts.OverwriteExisting = true
 				return setupProxy(proxy, up)
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 
 			Eventually(func() error {
 				start := time.Now()
@@ -153,7 +153,7 @@ var _ = Describe("Fault Injection", func() {
 					return errors.New(fmt.Sprintf("Elapsed time %s not longer than delay %s", elapsed.String(), fixedDelay.String()))
 				}
 				return nil
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 
 		})
 	})

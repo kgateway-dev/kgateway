@@ -121,7 +121,7 @@ spec:
 				DeleteCrds:      true,
 			},
 		})
-
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -147,9 +147,33 @@ spec:
 			Uninstall: options.Uninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
+				DeleteNamespace: true,
 			},
 		})
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+		Expect(err).NotTo(HaveOccurred())
+	})
 
+	It("can remove namespace when gloo isn't installed", func() {
+		mockHelmClient.EXPECT().
+			ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).
+			Return(false, nil)
+
+		outputBuffer := new(bytes.Buffer)
+
+		mockKubectl := installutil.NewMockKubectl([]string{
+			"delete namespace " + defaults.GlooSystem,
+		}, []string{})
+
+		uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, outputBuffer)
+		err := uninstaller.Uninstall(&options.Options{
+			Uninstall: options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteAll:       true,
+			},
+		})
+		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred())
 	})
 })

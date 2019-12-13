@@ -32,7 +32,7 @@ the name and namespace of the service, and the port.
 We can do this using `glooctl`: 
 
 ```shell
-glooctl get upstream -n gloo-system default-petstore-8080 -oyaml
+glooctl get upstream -n gloo-system default-petstore-8080
 ```
 
 ```shell

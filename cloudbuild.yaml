@@ -60,7 +60,7 @@ steps:
   args:
   - '-c'
   - |
-    ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile|cut -d: -f2)
+    ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile.envoyinit|cut -d: -f2)
     gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
   waitFor: ['dep']
@@ -120,7 +120,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'HELM_HOME=/root/.helm'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '--noColor']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=10', '--noColor']
   waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'

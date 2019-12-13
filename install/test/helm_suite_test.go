@@ -7,16 +7,24 @@ import (
 	"path"
 	"testing"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+
+	"helm.sh/helm/v3/pkg/release"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	helm2chartutil "k8s.io/helm/pkg/chartutil"
+	helm2renderutil "k8s.io/helm/pkg/renderutil"
+
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart/loader"
-	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/strvals"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	helm2chartapi "k8s.io/helm/pkg/proto/hapi/chart"
 	k8syamlutil "sigs.k8s.io/yaml"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -44,9 +52,24 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// generate the values.yaml and Chart.yaml files
-	MustMake(".", "-C", "../../", "clean")
 	MustMake(".", "-C", "../../", "prepare-helm")
 })
+
+type renderTestCase struct {
+	rendererName string
+	renderer     ChartRenderer
+}
+
+var renderers = []renderTestCase{
+	{"Helm 2", helm2Renderer{chartDir}},
+	{"Helm 3", helm3Renderer{chartDir}},
+}
+
+func runTests(callback func(testCase renderTestCase)) {
+	for _, r := range renderers {
+		callback(r)
+	}
+}
 
 const (
 	namespace = "gloo-system"
@@ -74,24 +97,20 @@ type helmValues struct {
 	valuesArgs []string // each entry should look like `path.to.helm.field=value`
 }
 
-// returns a TestManifest containing all resources NOT marked by our hook-cleanup annotation
-func renderManifest(namespace string, values helmValues) (TestManifest, error) {
-	chartRequested, err := loader.Load(chartDir)
-	if err != nil {
-		return nil, err
-	}
+type ChartRenderer interface {
+	// returns a TestManifest containing all resources NOT marked by our hook-cleanup annotation
+	RenderManifest(namespace string, values helmValues) (TestManifest, error)
+}
 
-	helmValues, err := buildHelmValues(values)
-	if err != nil {
-		return nil, err
-	}
+var _ ChartRenderer = &helm3Renderer{}
+var _ ChartRenderer = &helm2Renderer{}
 
-	client, err := buildRenderer(namespace)
-	if err != nil {
-		return nil, err
-	}
+type helm3Renderer struct {
+	chartDir string
+}
 
-	rel, err := client.Run(chartRequested, helmValues)
+func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
+	rel, err := BuildHelm3Release(h3.chartDir, namespace, values)
 	if err != nil {
 		return nil, err
 	}
@@ -118,8 +137,72 @@ func renderManifest(namespace string, values helmValues) (TestManifest, error) {
 	return NewTestManifest(f.Name()), nil
 }
 
+func BuildHelm3Release(chartDir, namespace string, values helmValues) (*release.Release, error) {
+	chartRequested, err := loader.Load(chartDir)
+	if err != nil {
+		return nil, err
+	}
+
+	helmValues, err := buildHelmValues(chartDir, values)
+	if err != nil {
+		return nil, err
+	}
+
+	client, err := buildRenderer(namespace)
+	if err != nil {
+		return nil, err
+	}
+
+	return client.Run(chartRequested, helmValues)
+}
+
+type helm2Renderer struct {
+	chartDir string
+}
+
+func (h2 helm2Renderer) RenderManifest(namespace string, values helmValues) (TestManifest, error) {
+	chart, err := helm2chartutil.Load(h2.chartDir)
+	if err != nil {
+		return nil, err
+	}
+
+	helmValues, err := buildHelmValues(h2.chartDir, values)
+	if err != nil {
+		return nil, err
+	}
+
+	helmValuesRaw, err := yaml.Marshal(helmValues)
+	if err != nil {
+		return nil, err
+	}
+
+	templateConfig := &helm2chartapi.Config{Raw: string(helmValuesRaw), Values: map[string]*helm2chartapi.Value{}}
+
+	renderedTemplates, err := helm2renderutil.Render(chart, templateConfig, helm2renderutil.Options{
+		ReleaseOptions: helm2chartutil.ReleaseOptions{
+			Name:      constants.GlooReleaseName,
+			Namespace: namespace,
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// the test manifest utils can only read from a file, ugh
+	f, err := ioutil.TempFile("", "*.yaml")
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write a temp file for the helm unit test manifest")
+	defer func() { _ = os.Remove(f.Name()) }()
+
+	for _, manifest := range renderedTemplates {
+		_, err := f.WriteString(manifest + "\n---\n")
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
+	}
+
+	return NewTestManifest(f.Name()), nil
+}
+
 // each entry in valuesArgs should look like `path.to.helm.field=value`
-func buildHelmValues(values helmValues) (map[string]interface{}, error) {
+func buildHelmValues(chartDir string, values helmValues) (map[string]interface{}, error) {
 	// read the chart's base values file first
 	finalValues, err := readValuesFile(path.Join(chartDir, "values.yaml"))
 	if err != nil {
@@ -167,7 +250,7 @@ func readValuesFile(filePath string) (map[string]interface{}, error) {
 }
 
 func buildRenderer(namespace string) (*action.Install, error) {
-	settings := cli.New()
+	settings := install.NewCLISettings(namespace)
 	actionConfig := new(action.Configuration)
 	noOpDebugLog := func(format string, v ...interface{}) {}
 

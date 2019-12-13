@@ -76,7 +76,9 @@ Meanwhile the following command rewrites the `/bar` to the `/api/pets` endpoint,
 ```shell script
 curl "$(glooctl proxy url)/bar"
 ```
+
 returns
+
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```

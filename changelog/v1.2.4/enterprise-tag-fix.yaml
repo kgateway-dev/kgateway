@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Readd version.EnterpriseTag for test overrides and future flag overrides.
+  issueLink: https://github.com/solo-io/gloo/issues/1861

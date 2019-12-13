@@ -31,11 +31,16 @@ Start by [installing]({{< versioned_link_path fromRoot="/installation/gateway/ku
 
 #### Deploy the Pet Store Application
 
+Turn on function discovery in the `default` namespace with:
+
+```shell script
+kubectl label namespace default discovery.solo.io/function_discovery=enabled
+```
 Next, deploy the Pet Store app to kubernetes:
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/sololabs/demos2/masteresources/petstore.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/feature-rc1/example/petstore/petstore.yaml
 ```
 
 ```console
@@ -120,24 +125,46 @@ The upstream was created in the `gloo-system` namespace rather than `default` be
 Let's take a closer look at the upstream that Gloo's Discovery service created:
 
 ```shell
+glooctl get upstream default-petstore-8080 --output kube-yaml
+```
+```yaml
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  labels:
+    app: petstore
+    discovered_by: kubernetesplugin
+  name: default-petstore-8080
+  namespace: gloo-system
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      app: petstore
+    serviceName: petstore
+    serviceNamespace: default
+    servicePort: 8080
+status:
+  reported_by: gloo
+  state: 1
+```
+
+By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is
+a swagger service. Gloo can discover this swagger spec, but by default Gloo's function discovery features are turned off to improve 
+performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
+```shell
+kubectl label namespace default  discovery.solo.io/function_discovery=enabled
+```
+
+Now fds will discovery the swagger spec.
+
+```shell script
 glooctl get upstream default-petstore-8080 --output yaml
 ```
 ```yaml
 ---
 discoveryMetadata: {}
-metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"service":"petstore"},"name":"petstore","namespace":"default"},"spec":{"ports":[{"port":8080,"protocol":"TCP"}],"selector":{"app":"petstore"}}}
-  labels:
-    discovered_by: kubernetesplugin
-    service: petstore
-  name: default-petstore-8080
-  namespace: gloo-system
-  resourceVersion: "268143"
-status:
-  reportedBy: gloo
-  state: Accepted
 kube:
   selector:
     app: petstore
@@ -151,7 +178,8 @@ kube:
       transformations:
         addPet:
           body:
-            text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":"{{ default(tag, "")}}"}'
+            text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
+              "{{ default(tag, "")}}"}'
           headers:
             :method:
               text: POST
@@ -184,14 +212,23 @@ kube:
             :method:
               text: GET
             :path:
-              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,"")}}
+              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit, "")}}
             content-length:
               text: "0"
             content-type: {}
             transfer-encoding: {}
-```
+metadata:
+  labels:
+    app: petstore
+    discovered_by: kubernetesplugin
+  name: default-petstore-8080
+  namespace: gloo-system
+status:
+  reportedBy: gloo
+  state: Accepted
 
-The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these to demonstrate function routing in the [next tutorial](../virtual_services/routes/route_destinations/single_upstreams/function_routing/).
+
+```
 
 #### Add a Routing Rule
 
@@ -216,14 +253,14 @@ glooctl add route \
 The initial **STATUS** of the petstore virtual service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `virtualservice` with `glooctl`.
 
 ```shell
-glooctl get virtualservice petstore
+glooctl get virtualservice
 ```
 
 ```console
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS   | LISTENERPLUGINS |          ROUTES           |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
-| petstore        |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
+| default         |              | *       | none | Accepted |                 | /all-pets -> gloo-system. |
 |                 |              |         |      |          |                 | .default-petstore-8080    |
 +-----------------+--------------+---------+------+----------+-----------------+---------------------------+
 ```
@@ -247,31 +284,32 @@ glooctl get virtualservice --output yaml
 
 {{< highlight yaml >}}
 ---
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
 metadata:
   name: default
   namespace: gloo-system
-  resourceVersion: "268264"
-status:
-  reportedBy: gateway
-  state: Accepted
-  subresourceStatuses:
-    '*v1.Proxy gloo-system gateway-proxy':
-      reportedBy: gloo
-      state: Accepted
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matcher:
-      exact: /all-pets
-    routeAction:
-      single:
-        upstream:
-          name: default-petstore-8080
-          namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      options:
         prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+status:
+  reported_by: gateway
+  state: 1
+  subresource_statuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reported_by: gloo
+      state: 1
 {{< /highlight >}}
     
 When a virtual service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
