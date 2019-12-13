@@ -27,9 +27,10 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   entrypoint: 'bash'
   args:
+    - "-c"
     - "ls"
     - "-latrh"
-  - '/gopath/src/github.com/solo-io/gloo/'
+    - '/gopath/src/github.com/solo-io/gloo/'
   # - '--git-dir'
   # - '/gopath/src/github.com/solo-io/gloo/.git'
   # - 'describe'
