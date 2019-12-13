@@ -15,6 +15,11 @@ steps:
   id: 'download-untar-dep-cache'
   waitFor: ['-']
 
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p ./gopath/pkg/mod && cd ./gopath/pkg/mod && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
+  id: 'untar-mod-cache'
+
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
