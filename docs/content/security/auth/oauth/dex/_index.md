@@ -113,10 +113,17 @@ EOF
 This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` 
 for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
 
-Using this configuration, we can deploy Dex to our cluster using Helm:
+Using this configuration, we can deploy Dex to our cluster using Helm.
+
+If `help repo list` doesn't list the `stable` repo, invoke:
 
 ```shell
-helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
+```
+
+And then install dex (helm 3 command follows):
+```shell
+helm install dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo
