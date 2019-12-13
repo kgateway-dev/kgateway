@@ -336,9 +336,13 @@ so here are the `base64`-encoded credentials for some test users:
 ##### No auth header
 To start with, let's send a request without any header:
 
-{{< highlight bash "hl_lines=11" >}}
+```shell script
 curl -v "$(glooctl proxy url)"/echo 
+```
 
+returns
+
+{{< highlight bash "hl_lines=9" >}}
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
 * Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
@@ -360,9 +364,13 @@ We can see that Gloo returned a `401` response.
 ##### Unknown user
 Now let's try the unknown user, which will produce the same result:
 
-{{< highlight bash "hl_lines=12" >}}
+```shell script
 curl -v -H "Authorization: Basic am9objpkb2U=" "$(glooctl proxy url)"/echo
+```
 
+returns
+
+{{< highlight bash "hl_lines=10" >}}
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
 * Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
@@ -384,9 +392,13 @@ curl -v -H "Authorization: Basic am9objpkb2U=" "$(glooctl proxy url)"/echo
 If we try to authenticate as a user that belongs to the "developers" group, Gloo will return a `403` response, 
 indicating that the user was successfully authenticated, but lacks the permissions to access the resource.
 
-{{< highlight bash "hl_lines=12" >}}
+```shell script
 curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$(glooctl proxy url)"/echo
+```
 
+returns
+
+{{< highlight bash "hl_lines=10" >}}
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
 * Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
@@ -407,9 +419,13 @@ curl -v -H "Authorization: Basic bWFyY286bWFyY29wd2Q=" "$(glooctl proxy url)"/ec
 ##### Manager user
 Finally, if we provide a user that belongs to the "managers" group, we will be able to access the upstream.
 
-{{< highlight bash "hl_lines=12 21" >}}
+```shell script
 curl -v -H "Authorization: Basic cmljazpyaWNrcHdk" "$(glooctl proxy url)"/echo
+```
 
+returns
+
+{{< highlight bash "hl_lines=10 19" >}}
 *   Trying 192.168.99.100...
 * TCP_NODELAY set
 * Connected to 192.168.99.100 (192.168.99.100) port 31940 (#0)
