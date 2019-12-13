@@ -56,7 +56,8 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
-			return GlooAlreadyInstalled(namespace)
+			fmt.Printf("Gloo has already been installed to namespace %s.\n", namespace)
+			return nil
 		}
 		if installerConfig.InstallCliArgs.CreateNamespace {
 			// Create the namespace if it doesn't exist. Helm3 no longer does this.
