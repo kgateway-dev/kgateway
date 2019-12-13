@@ -252,4 +252,5 @@ Cleanup the resources by running:
 kubectl delete ac -n gloo-system apikey-auth
 kubectl delete vs -n gloo-system auth-tutorial
 kubectl delete upstream -n gloo-system json-upstream
+kubectl delete secret -n gloo-system infra-apikey
 ```
