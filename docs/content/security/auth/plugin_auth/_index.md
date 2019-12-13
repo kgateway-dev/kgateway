@@ -143,7 +143,7 @@ global:
             repository: ext-auth-plugins
             registry: quay.io/solo-io
             pullPolicy: IfNotPresent
-            tag: 0.18.23
+            tag: 1.0.0-rc5 # change this to your GlooE installation version, or else plugin may be built with different libraries
 EOF
 {{< /highlight >}}
 
@@ -190,7 +190,7 @@ spec:
         gloo: extauth
     spec:
       containers:
-      - image: quay.io/solo-io/extauth-ee:0.20.6
+      - image: quay.io/solo-io/extauth-ee:1.0.0-rc5
         imagePullPolicy: IfNotPresent
         name: extauth
         resources: {}
@@ -198,7 +198,7 @@ spec:
         - mountPath: /auth-plugins
           name: auth-plugins
       initContainers:
-      - image: quay.io/solo-io/ext-auth-plugins:0.20.6
+      - image: quay.io/solo-io/ext-auth-plugins:1.0.0-rc5
         imagePullPolicy: IfNotPresent
         name: plugin-my-plugin
         volumeMounts:
