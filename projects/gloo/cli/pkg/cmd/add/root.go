@@ -18,7 +18,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Add.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts, opts.Add.Consul); err != nil {
 				return err
 			}
 			if err := prerun.HarmonizeDryRunAndOutputFormat(opts, cmd); err != nil {

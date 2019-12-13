@@ -19,8 +19,8 @@ const (
 	ContainerNameToCheck = "discovery"
 )
 
-func VersionMismatchWarning(opts *options.Options) error {
-	if !opts.Get.Consul.UseConsul {
+func VersionMismatchWarning(opts *options.Options, consul options.Consul) error {
+	if !consul.UseConsul {
 		return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
 	}
 	return nil
