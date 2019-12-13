@@ -428,21 +428,21 @@ export HELM_VALUES
 $(OUTPUT_DIR)/release-manifest-values.yaml:
 	@echo "$$HELM_VALUES" > $@
 
-install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-darwin-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
 ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-darwin-amd64 install gateway -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install gateway -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
 		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 endif
 
-install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-darwin-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
 ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-darwin-amd64 install knative -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install knative -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
 		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 endif
 
-install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-darwin-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
 ifeq ($(RELEASE),"true")
-	$(OUTPUT_DIR)/glooctl-darwin-amd64 install ingress -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install ingress -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
 		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
 endif
 
