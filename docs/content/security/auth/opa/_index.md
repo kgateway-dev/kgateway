@@ -264,7 +264,7 @@ spec:
             ref:
               name: petclinic
               namespace: default
-            port: 80
+            port: 8080
 ```
 
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
@@ -463,7 +463,7 @@ spec:
             ref:
               name: petclinic
               namespace: default
-            port: 80
+            port: 8080
     options:
       extauth:
         config_ref:
