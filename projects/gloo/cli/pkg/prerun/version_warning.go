@@ -20,10 +20,13 @@ const (
 )
 
 func VersionMismatchWarning(opts *options.Options, consul options.Consul) error {
-	if !consul.UseConsul {
-		return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
+	// Only Kubernetes provides client/server version information. Only check for a version
+	// mismatch if Kubernetes is enabled (i.e. Consul is not enabled)
+	if consul.UseConsul {
+		return nil
 	}
-	return nil
+
+	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output
