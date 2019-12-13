@@ -24,14 +24,14 @@ steps:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
-# - name: 'gcr.io/cloud-builders/git'
-#   args:
-#   - '--git-repo'
-#   - '/gopath/src/github.com/solo-io/gloo/.git'
-#   - 'describe'
-#   - '--tags'
-#   - '--dirty'
-#   - '--always'
+- name: 'gcr.io/cloud-builders/git'
+  args:
+  - '--git-repo'
+  - '/gopath/src/github.com/solo-io/gloo/.git'
+  - 'describe'
+  - '--tags'
+  - '--dirty'
+  - '--always'
 
 # # Run some basic checks on the repo
 # # 1) check formatting of go files
