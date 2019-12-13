@@ -1,0 +1,3 @@
+changelog:
+- type: FIX
+  description: Fix manifest rendering step during release builds.
