@@ -17,7 +17,7 @@ steps:
 
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p ./gopath/pkg/mod && cd ./gopath/pkg/mod && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
+  args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
   volumes: &vol
   - name: 'gopath'
     path: '/workspace/gopath/pkg/mod'
