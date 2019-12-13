@@ -25,13 +25,17 @@ steps:
     - 'GIT_SSH_CONFIG=FALSE'
   id: 'dep'
 - name: 'gcr.io/cloud-builders/git'
+  entrypoint: 'bash'
   args:
-  - '--git-dir'
-  - '/gopath/src/github.com/solo-io/gloo/.git'
-  - 'describe'
-  - '--tags'
-  - '--dirty'
-  - '--always'
+    - "ls"
+    - "-latrh"
+  - '/gopath/src/github.com/solo-io/gloo/'
+  # - '--git-dir'
+  # - '/gopath/src/github.com/solo-io/gloo/.git'
+  # - 'describe'
+  # - '--tags'
+  # - '--dirty'
+  # - '--always'
 
 # # Run some basic checks on the repo
 # # 1) check formatting of go files
