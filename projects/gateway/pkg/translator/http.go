@@ -28,7 +28,8 @@ type HttpTranslator struct{}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
-		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snap.Hash())
+		snapHash, _ := snap.Hash(nil)
+		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
 		return nil
 	}
 	var result []*gloov1.Listener

@@ -246,7 +246,9 @@ func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualSe
 		for i, existingVs := range snap.VirtualServices {
 			if vsRef == existingVs.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				if vs.Hash() == existingVs.Hash() {
+				vsHash, _ := vs.Hash(nil)
+				existingVsHash, _ := existingVs.Hash(nil)
+				if vsHash == existingVsHash {
 					return nil, nil, core.ResourceRef{}
 				}
 
@@ -322,7 +324,9 @@ func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (
 		for i, existingRt := range snap.RouteTables {
 			if rtRef == existingRt.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				if rt.Hash() == existingRt.Hash() {
+				rtHash, _ := rt.Hash(nil)
+				existingRtHash, _ := existingRt.Hash(nil)
+				if rtHash == existingRtHash {
 					return nil, nil, core.ResourceRef{}
 				}
 
@@ -400,7 +404,9 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyR
 		for i, existingGw := range snap.Gateways {
 			if gwRef == existingGw.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				if gw.Hash() == existingGw.Hash() {
+				gwHash, _ := gw.Hash(nil)
+				existingGwHash, _ := existingGw.Hash(nil)
+				if gwHash == existingGwHash {
 					return nil, nil, core.ResourceRef{}
 				}
 

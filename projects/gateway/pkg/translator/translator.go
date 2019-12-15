@@ -52,7 +52,8 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
 	if len(filteredGateways) == 0 {
-		logger.Infof("%v had no gateways", snap.Hash())
+		snapHash, _ := snap.Hash(nil)
+		logger.Infof("%v had no gateways", snapHash)
 		return nil, reports
 	}
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
