@@ -4,6 +4,8 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -23,33 +25,45 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 	}
 }
 
-func (s ApiSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashVirtualServices(),
-		s.hashRouteTables(),
-		s.hashGateways(),
-	)
+func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashVirtualServices(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashRouteTables(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashGateways(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s ApiSnapshot) hashVirtualServices() uint64 {
-	return hashutils.HashAll(s.VirtualServices.AsInterfaces()...)
+func (s ApiSnapshot) hashVirtualServices(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.VirtualServices.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashRouteTables() uint64 {
-	return hashutils.HashAll(s.RouteTables.AsInterfaces()...)
+func (s ApiSnapshot) hashRouteTables(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.RouteTables.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashGateways() uint64 {
-	return hashutils.HashAll(s.Gateways.AsInterfaces()...)
+func (s ApiSnapshot) hashGateways(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Gateways.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("virtualServices", s.hashVirtualServices()))
-	fields = append(fields, zap.Uint64("routeTables", s.hashRouteTables()))
-	fields = append(fields, zap.Uint64("gateways", s.hashGateways()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	VirtualServicesHash, _ := s.hashVirtualServices(hasher)
+	fields = append(fields, zap.Uint64("virtualServices", VirtualServicesHash))
+	RouteTablesHash, _ := s.hashRouteTables(hasher)
+	fields = append(fields, zap.Uint64("routeTables", RouteTablesHash))
+	GatewaysHash, _ := s.hashGateways(hasher)
+	fields = append(fields, zap.Uint64("gateways", GatewaysHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type ApiSnapshotStringer struct {
@@ -81,8 +95,9 @@ func (ss ApiSnapshotStringer) String() string {
 }
 
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return ApiSnapshotStringer{
-		Version:         s.Hash(),
+		Version:         snapshotHash,
 		VirtualServices: s.VirtualServices.NamespacesDotNames(),
 		RouteTables:     s.RouteTables.NamespacesDotNames(),
 		Gateways:        s.Gateways.NamespacesDotNames(),

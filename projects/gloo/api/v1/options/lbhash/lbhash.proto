@@ -8,6 +8,8 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 // Specifies the route’s hashing policy if the upstream cluster uses a hashing load balancer.
 // https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#envoy-api-msg-route-routeaction-hashpolicy

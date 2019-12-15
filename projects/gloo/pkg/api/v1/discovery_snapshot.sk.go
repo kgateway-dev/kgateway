@@ -4,6 +4,8 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
@@ -25,33 +27,45 @@ func (s DiscoverySnapshot) Clone() DiscoverySnapshot {
 	}
 }
 
-func (s DiscoverySnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashUpstreams(),
-		s.hashKubenamespaces(),
-		s.hashSecrets(),
-	)
+func (s DiscoverySnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashUpstreams(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashKubenamespaces(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashSecrets(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s DiscoverySnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
+func (s DiscoverySnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Upstreams.AsInterfaces()...)
 }
 
-func (s DiscoverySnapshot) hashKubenamespaces() uint64 {
-	return hashutils.HashAll(s.Kubenamespaces.AsInterfaces()...)
+func (s DiscoverySnapshot) hashKubenamespaces(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Kubenamespaces.AsInterfaces()...)
 }
 
-func (s DiscoverySnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
+func (s DiscoverySnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Secrets.AsInterfaces()...)
 }
 
 func (s DiscoverySnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
-	fields = append(fields, zap.Uint64("kubenamespaces", s.hashKubenamespaces()))
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	UpstreamsHash, _ := s.hashUpstreams(hasher)
+	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
+	KubenamespacesHash, _ := s.hashKubenamespaces(hasher)
+	fields = append(fields, zap.Uint64("kubenamespaces", KubenamespacesHash))
+	SecretsHash, _ := s.hashSecrets(hasher)
+	fields = append(fields, zap.Uint64("secrets", SecretsHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type DiscoverySnapshotStringer struct {
@@ -83,8 +97,9 @@ func (ss DiscoverySnapshotStringer) String() string {
 }
 
 func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return DiscoverySnapshotStringer{
-		Version:        s.Hash(),
+		Version:        snapshotHash,
 		Upstreams:      s.Upstreams.NamespacesDotNames(),
 		Kubenamespaces: s.Kubenamespaces.Names(),
 		Secrets:        s.Secrets.NamespacesDotNames(),

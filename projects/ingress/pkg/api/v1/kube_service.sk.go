@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -26,18 +25,6 @@ func NewKubeService(namespace, name string) *KubeService {
 
 func (r *KubeService) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
-}
-
-func (r *KubeService) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	return hashutils.HashAll(
-		metaCopy,
-		r.KubeServiceSpec,
-		r.KubeServiceStatus,
-	)
 }
 
 func (r *KubeService) GroupVersionKind() schema.GroupVersionKind {

@@ -8,8 +8,9 @@ option java_package = "io.envoyproxy.envoy.config.wasm.v2";
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config";
 
 import "envoy/api/v2/core/base.proto";
-
 import "validate/validate.proto";
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 // [#protodoc-title: Wasm service]
 

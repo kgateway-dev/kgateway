@@ -4,6 +4,8 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
@@ -19,21 +21,27 @@ func (s EdsSnapshot) Clone() EdsSnapshot {
 	}
 }
 
-func (s EdsSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashUpstreams(),
-	)
+func (s EdsSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashUpstreams(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s EdsSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
+func (s EdsSnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Upstreams.AsInterfaces()...)
 }
 
 func (s EdsSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	UpstreamsHash, _ := s.hashUpstreams(hasher)
+	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type EdsSnapshotStringer struct {
@@ -53,8 +61,9 @@ func (ss EdsSnapshotStringer) String() string {
 }
 
 func (s EdsSnapshot) Stringer() EdsSnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return EdsSnapshotStringer{
-		Version:   s.Hash(),
+		Version:   snapshotHash,
 		Upstreams: s.Upstreams.NamespacesDotNames(),
 	}
 }

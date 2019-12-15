@@ -5,6 +5,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/az
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 

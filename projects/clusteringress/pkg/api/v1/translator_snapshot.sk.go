@@ -4,6 +4,8 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -24,27 +26,36 @@ func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
 	}
 }
 
-func (s TranslatorSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashSecrets(),
-		s.hashClusteringresses(),
-	)
+func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashSecrets(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashClusteringresses(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s TranslatorSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
+func (s TranslatorSnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Secrets.AsInterfaces()...)
 }
 
-func (s TranslatorSnapshot) hashClusteringresses() uint64 {
-	return hashutils.HashAll(s.Clusteringresses.AsInterfaces()...)
+func (s TranslatorSnapshot) hashClusteringresses(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Clusteringresses.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-	fields = append(fields, zap.Uint64("clusteringresses", s.hashClusteringresses()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	SecretsHash, _ := s.hashSecrets(hasher)
+	fields = append(fields, zap.Uint64("secrets", SecretsHash))
+	ClusteringressesHash, _ := s.hashClusteringresses(hasher)
+	fields = append(fields, zap.Uint64("clusteringresses", ClusteringressesHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type TranslatorSnapshotStringer struct {
@@ -70,8 +81,9 @@ func (ss TranslatorSnapshotStringer) String() string {
 }
 
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return TranslatorSnapshotStringer{
-		Version:          s.Hash(),
+		Version:          snapshotHash,
 		Secrets:          s.Secrets.NamespacesDotNames(),
 		Clusteringresses: s.Clusteringresses.NamespacesDotNames(),
 	}

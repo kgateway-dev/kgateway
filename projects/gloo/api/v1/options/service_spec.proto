@@ -8,6 +8,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 // Describes APIs and application-level information for services
 // Gloo routes to. ServiceSpec is contained within the UpstreamSpec for certain types

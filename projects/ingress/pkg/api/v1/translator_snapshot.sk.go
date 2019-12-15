@@ -4,6 +4,8 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
 
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -25,33 +27,45 @@ func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
 	}
 }
 
-func (s TranslatorSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashSecrets(),
-		s.hashUpstreams(),
-		s.hashIngresses(),
-	)
+func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashSecrets(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashUpstreams(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashIngresses(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s TranslatorSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
+func (s TranslatorSnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Secrets.AsInterfaces()...)
 }
 
-func (s TranslatorSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
+func (s TranslatorSnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Upstreams.AsInterfaces()...)
 }
 
-func (s TranslatorSnapshot) hashIngresses() uint64 {
-	return hashutils.HashAll(s.Ingresses.AsInterfaces()...)
+func (s TranslatorSnapshot) hashIngresses(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Ingresses.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
-	fields = append(fields, zap.Uint64("ingresses", s.hashIngresses()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	SecretsHash, _ := s.hashSecrets(hasher)
+	fields = append(fields, zap.Uint64("secrets", SecretsHash))
+	UpstreamsHash, _ := s.hashUpstreams(hasher)
+	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
+	IngressesHash, _ := s.hashIngresses(hasher)
+	fields = append(fields, zap.Uint64("ingresses", IngressesHash))
+	snapshotHash, _ := s.Hash(hasher)
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type TranslatorSnapshotStringer struct {
@@ -83,8 +97,9 @@ func (ss TranslatorSnapshotStringer) String() string {
 }
 
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
+	snapshotHash, _ := s.Hash(nil)
 	return TranslatorSnapshotStringer{
-		Version:   s.Hash(),
+		Version:   snapshotHash,
 		Secrets:   s.Secrets.NamespacesDotNames(),
 		Upstreams: s.Upstreams.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),

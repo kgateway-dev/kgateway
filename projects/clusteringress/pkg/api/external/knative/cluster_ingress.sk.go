@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"hash"
 	"sort"
 
 	github_com_solo_io_gloo_projects_clusteringress_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
@@ -40,14 +41,12 @@ func (r *ClusterIngress) Clone() resources.Resource {
 	return &ClusterIngress{ClusterIngress: *r.ClusterIngress.Clone()}
 }
 
-func (r *ClusterIngress) Hash() uint64 {
+func (r *ClusterIngress) Hash(hasher hash.Hash64) (uint64, error) {
 	clone := r.ClusterIngress.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-
-	return hashutils.HashAll(clone)
+	return hashutils.HashAll(clone), nil
 }
 
 func (r *ClusterIngress) GroupVersionKind() schema.GroupVersionKind {

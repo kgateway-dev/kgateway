@@ -6,6 +6,8 @@ import "google/protobuf/struct.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";

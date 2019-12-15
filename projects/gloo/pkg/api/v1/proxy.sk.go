@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -30,17 +29,6 @@ func (r *Proxy) SetMetadata(meta core.Metadata) {
 
 func (r *Proxy) SetStatus(status core.Status) {
 	r.Status = status
-}
-
-func (r *Proxy) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	return hashutils.HashAll(
-		metaCopy,
-		r.Listeners,
-	)
 }
 
 func (r *Proxy) GroupVersionKind() schema.GroupVersionKind {

@@ -10,7 +10,9 @@ import (
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
 	"go.opencensus.io/stats"
+	"go.uber.org/zap"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -51,7 +53,10 @@ func (c *discoverySimpleEmitter) Snapshots(ctx context.Context) (<-chan *Discove
 		timer := time.NewTicker(time.Second * 1)
 		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}

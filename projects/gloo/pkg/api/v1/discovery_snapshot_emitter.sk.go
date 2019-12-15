@@ -11,11 +11,13 @@ import (
 	"go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
 	"go.opencensus.io/tag"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	skstats "github.com/solo-io/solo-kit/pkg/stats"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 )
 
@@ -253,9 +255,16 @@ func (c *discoveryEmitter) Snapshots(watchNamespaces []string, opts clients.Watc
 		snapshots <- &initialSnapshot
 
 		timer := time.NewTicker(time.Second * 1)
-		previousHash := currentSnapshot.Hash()
+		previousHash, err := currentSnapshot.Hash(nil)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+		}
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			// this should never happen, so panic if it does
+			if err != nil {
+				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}

@@ -8,6 +8,8 @@ import "google/protobuf/duration.proto";
 
 import "validate/validate.proto";
 import "gogoproto/gogo.proto";
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 option (gogoproto.equal_all) = true;
 

@@ -4764,40 +4764,6 @@
   {
     "discoveryMetadata": {}, 
     "kube": {
-      "serviceName": "helloworld-1-xvgfm", 
-      "serviceNamespace": "default", 
-      "servicePort": 80
-    }, 
-    "metadata": {
-      "annotations": {
-        "autoscaling.knative.dev/class": "kpa.autoscaling.knative.dev", 
-        "autoscaling.knative.dev/maxScale": "1", 
-        "autoscaling.knative.dev/minScale": "1", 
-        "serving.knative.dev/creator": "scott.weiss@solo.io"
-      }, 
-      "labels": {
-        "app": "helloworld-1-xvgfm", 
-        "discovered_by": "kubernetesplugin", 
-        "networking.internal.knative.dev/serverlessservice": "helloworld-1-xvgfm", 
-        "networking.internal.knative.dev/serviceType": "Public", 
-        "serving.knative.dev/configuration": "helloworld-1", 
-        "serving.knative.dev/configurationGeneration": "1", 
-        "serving.knative.dev/revision": "helloworld-1-xvgfm", 
-        "serving.knative.dev/revisionUID": "f4438b19-be86-11e9-bb8b-42010a8400f0", 
-        "serving.knative.dev/service": "helloworld-1"
-      }, 
-      "name": "default-helloworld-1-xvgfm-80", 
-      "namespace": "gloo-system", 
-      "resourceVersion": "2050"
-    }, 
-    "status": {
-      "reportedBy": "gloo", 
-      "state": "Accepted"
-    }
-  }, 
-  {
-    "discoveryMetadata": {}, 
-    "kube": {
       "selector": {
         "app": "helloworld-1-xvgfm", 
         "serving.knative.dev/configuration": "helloworld-1", 

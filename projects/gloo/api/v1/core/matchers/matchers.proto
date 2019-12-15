@@ -4,6 +4,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/match
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 // Parameters for matching routes to requests received by a Gloo-managed proxy
 message Matcher {

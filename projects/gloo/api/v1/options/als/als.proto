@@ -4,12 +4,13 @@ package als.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als";
 
 import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 import "google/protobuf/struct.proto";
-
-option (gogoproto.equal_all) = true;
 
 // Contains various settings for Envoy's access logging service.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/accesslog/v2/accesslog.proto#envoy-api-msg-config-filter-accesslog-v2-accesslog

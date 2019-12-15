@@ -8,8 +8,9 @@ option java_package = "io.envoyproxy.envoy.type";
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type";
 
 import "gogoproto/gogo.proto";
-
 option (gogoproto.equal_all) = true;
+import "ext/ext.proto";
+option (ext.hash_all) = true;
 
 // [#protodoc-title: Range]
 
