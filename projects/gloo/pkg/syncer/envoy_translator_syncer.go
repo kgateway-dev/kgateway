@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 
@@ -40,6 +39,8 @@ var (
 	}
 )
 
+const emptyVersionKey = "empty"
+
 func init() {
 	_ = view.Register(envoySnapshotOutView)
 }
@@ -72,27 +73,22 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
-
-	if len(snap.Proxies) == 0 {
-		for _, key := range s.xdsHasher.ValidKeys {
-			emptyResource := cache.Resources{
-				Version: time.Now().String(),
-				Items:   map[string]cache.Resource{},
+	if len(snap.Proxies) == 0 && len(s.xdsHasher.ValidKeys) > 0 { // Clean up the remaining envoy configs
+		for _, snapshotKey := range s.xdsHasher.ValidKeys {
+			emptySnapshot, err := s.clearProxyListeners(snapshotKey)
+			if err != nil {
+				return err
 			}
-			emptySnapshot := xds.NewSnapshotFromResources(
-				emptyResource,
-				emptyResource,
-				emptyResource,
-				emptyResource,
-			)
-			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
+			if err := s.xdsCache.SetSnapshot(snapshotKey, emptySnapshot); err != nil {
 				err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
 				logger.DPanicw("", zap.Error(err))
 				return err
 			}
 		}
 	}
+
+	// Set this after the len(snap.Proxies) check, so that we use the previous s.xdsHasher.ValidKeys value.
+	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
@@ -180,13 +176,35 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 	return http.ListenAndServe(":10010", r)
 }
 
+// Builds an xDS snapshot by removing from the previous snapshot:
+// - the route descriptors
+// - the listeners
+// The resulting snapshot will be checked for consistency before being returned.
+func (s *translatorSyncer) clearProxyListeners(snapshotKey string) (envoycache.Snapshot, error) {
+	// Get a copy of the last successful snapshot
+	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
+	if err != nil {
+		return nil, err
+	}
+	emptyResource := cache.Resources{
+		Version: emptyVersionKey,
+		Items:   nil,
+	}
+	emptySnapshot := xds.NewSnapshotFromResources(
+		previous.GetResources(xds.EndpointType),
+		previous.GetResources(xds.ClusterType),
+		emptyResource,
+		emptyResource,
+	)
+	return emptySnapshot, nil
+}
+
 // TODO(marco): should we update CDS resources as well?
 // Builds an xDS snapshot by combining:
 // - CDS/LDS/RDS information from the previous xDS snapshot
 // - EDS from the Gloo API snapshot translated curing this sync
 // The resulting snapshot will be checked for consistency before being returned.
 func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
-
 	// Get a copy of the last successful snapshot
 	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
 	if err != nil {
