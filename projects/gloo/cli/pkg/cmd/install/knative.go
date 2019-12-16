@@ -72,7 +72,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				}
 			}
 
-			if !opts.Install.Knative.SkipGlooInstall && !opts.Install.DryRun {
+			if !opts.Install.Knative.SkipGlooInstall {
 				// wait for knative apiservice (autoscaler metrics) to be healthy before attempting gloo installation
 				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
 				// we don't care about this if we're doing a dry run installation
