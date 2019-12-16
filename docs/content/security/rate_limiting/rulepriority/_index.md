@@ -62,7 +62,7 @@ rule with the highest weight will still be considered. (this can be a rule that 
 Install the petclinic application and create a virtual service that routes to it:
 ```bash
 kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 
 glooctl add route --name default --namespace gloo-system \
   --path-prefix / \
@@ -112,6 +112,6 @@ regardless of the provided number.
 ### Cleanup
 
 ```bash
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 kubectl delete vs default --namespace gloo-system
 ```
