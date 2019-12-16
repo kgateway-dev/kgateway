@@ -58,7 +58,7 @@ type Install struct {
 
 type InstallEnterprise struct {
 	LicenseKey string
-	Version    string
+	Release    string
 }
 
 type Knative struct {

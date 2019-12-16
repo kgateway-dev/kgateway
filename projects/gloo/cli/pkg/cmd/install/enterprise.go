@@ -24,8 +24,8 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 			extraValues := map[string]interface{}{
 				"license_key": opts.Install.Enterprise.LicenseKey,
 			}
-			if opts.Install.Enterprise.Version != "" {
-				version.EnterpriseTag = opts.Install.Enterprise.Version
+			if opts.Install.Enterprise.Release != "" {
+				version.EnterpriseTag = opts.Install.Enterprise.Release
 			}
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{

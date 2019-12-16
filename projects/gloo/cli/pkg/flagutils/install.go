@@ -20,7 +20,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.Enterprise.LicenseKey, "license-key", "", "License key to activate GlooE features")
-	set.StringVar(&install.Enterprise.Version, "version", "",
+	set.StringVar(&install.Enterprise.Release, "version", "",
 		"Version of gloo-ee to install (overrides the latest enterprise release)")
 }
 
