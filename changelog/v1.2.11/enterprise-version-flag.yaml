@@ -1,0 +1,11 @@
+changelog:
+  - type: BUGFIX
+    description: >
+      Allow users to specify which version of enterprise to install via glooctl with:
+      `glooctl install gateway enterprise --version 0.20.6`
+    issueLink: https://github.com/solo-io/gloo/issues/1863
+  - type: NON_USER_FACING
+    description: >
+      Move the gloo version information to the LoggingPrefixVals field of the SetupOpts
+      of each pod, instead of logging it by default. This allows us to log the enterprise
+      pod versions correctly.

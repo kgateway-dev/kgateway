@@ -15,6 +15,10 @@ const GlooEE = "gloo-ee"
 // The version of GlooE installed by the CLI.
 // Calculated from the latest gloo-ee version in the helm repo index
 func GetEnterpriseTag(stableOnly bool) (string, error) {
+	// If there was a flag override, use that
+	if EnterpriseTag != UndefinedVersion {
+		return EnterpriseTag, nil
+	}
 	fs := afero.NewOsFs()
 	tmpFile, err := afero.TempFile(fs, "", "")
 	if err != nil {
@@ -24,7 +28,8 @@ func GetEnterpriseTag(stableOnly bool) (string, error) {
 		return "", err
 	}
 	defer fs.Remove(tmpFile.Name())
-	return LatestVersionFromRepo(tmpFile.Name(), stableOnly)
+	EnterpriseTag, err = LatestVersionFromRepo(tmpFile.Name(), stableOnly)
+	return EnterpriseTag, err
 }
 
 func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {

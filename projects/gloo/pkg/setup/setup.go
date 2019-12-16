@@ -2,6 +2,7 @@ package setup
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/version"
 	"os"
 
 	"go.uber.org/zap"
@@ -34,6 +35,7 @@ func StartGlooInTest(customCtx context.Context) error {
 func startSetupLoop(ctx context.Context, usageReporter client.UsagePayloadReader) error {
 	return setuputils.Main(setuputils.SetupOpts{
 		LoggerName:    "gloo",
+		LoggingPrefixVals: []interface{}{"version", version.Version},
 		SetupFunc:     syncer.NewSetupFunc(),
 		ExitOnError:   true,
 		CustomCtx:     ctx,
