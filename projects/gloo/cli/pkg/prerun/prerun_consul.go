@@ -6,11 +6,8 @@ import (
 	"github.com/solo-io/go-utils/errors"
 )
 
-func EnableConsulClients(opts *options.Options, consul options.Consul) error {
-	if err := VersionMismatchWarning(opts, consul); err != nil {
-		return err
-	}
-
+func EnableConsulClients(opts *options.Options) error {
+	consul := opts.Top.Consul
 	if consul.UseConsul {
 		client, err := consul.Client()
 		if err != nil {

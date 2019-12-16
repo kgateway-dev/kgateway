@@ -37,7 +37,7 @@ func RootCmdWithEditOpts(opts *options.Options, editOpts *editOptions.EditOption
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts, editOpts.Edit.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -49,7 +49,6 @@ func RootCmdWithEditOpts(opts *options.Options, editOpts *editOptions.EditOption
 	// add resource version flag. this is not needed in interactive mode, as we can do an edit
 	// atomically in that case
 	addEditFlags(cmd.PersistentFlags(), editOpts)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &editOpts.Edit.Consul)
 
 	cmd.AddCommand(settings.RootCmd(editOpts, optionsFunc...))
 	cmd.AddCommand(route.RootCmd(editOpts, optionsFunc...))
