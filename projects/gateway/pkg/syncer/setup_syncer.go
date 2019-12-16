@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -89,43 +90,43 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	watchNamespaces := utils.ProcessWatchNamespaces(settings.WatchNamespaces, writeNamespace)
 
 	var validation *translator.ValidationOpts
-	// validationCfg := settings.GetGateway().GetValidation()
-	// if validationCfg != nil {
-	// 	alwaysAcceptResources := AcceptAllResourcesByDefault
-	//
-	// 	if alwaysAccept := validationCfg.AlwaysAccept; alwaysAccept != nil {
-	// 		alwaysAcceptResources = alwaysAccept.GetValue()
-	// 	}
-	//
-	// 	allowMissingLinks := AllowMissingLinks
-	//
-	// 	validation = &translator.ValidationOpts{
-	// 		ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
-	// 		ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
-	// 		ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
-	// 		ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
-	// 		IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
-	// 		AlwaysAcceptResources:        alwaysAcceptResources,
-	// 		AllowMissingLinks:            allowMissingLinks,
-	// 	}
-	// 	if validation.ProxyValidationServerAddress == "" {
-	// 		validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
-	// 	}
-	// 	if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
-	// 		validation.ProxyValidationServerAddress = overrideAddr
-	// 	}
-	// 	if validation.ValidatingWebhookCertPath == "" {
-	// 		validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
-	// 	}
-	// 	if validation.ValidatingWebhookKeyPath == "" {
-	// 		validation.ValidatingWebhookKeyPath = defaults.ValidationWebhookTlsKeyPath
-	// 	}
-	// } else {
-	// 	if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" {
-	// 		return errors.Errorf("VALIDATION_MUST_START was set to true, but no validation configuration was provided in the settings. "+
-	// 			"Ensure the v1.Settings %v contains the spec.gateway.validation config", settings.GetMetadata().Ref())
-	// 	}
-	// }
+	validationCfg := settings.GetGateway().GetValidation()
+	if validationCfg != nil {
+		alwaysAcceptResources := AcceptAllResourcesByDefault
+
+		if alwaysAccept := validationCfg.AlwaysAccept; alwaysAccept != nil {
+			alwaysAcceptResources = alwaysAccept.GetValue()
+		}
+
+		allowMissingLinks := AllowMissingLinks
+
+		validation = &translator.ValidationOpts{
+			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
+			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
+			ValidatingWebhookCertPath:    validationCfg.GetValidationWebhookTlsCert(),
+			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
+			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
+			AlwaysAcceptResources:        alwaysAcceptResources,
+			AllowMissingLinks:            allowMissingLinks,
+		}
+		if validation.ProxyValidationServerAddress == "" {
+			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
+		}
+		if overrideAddr := os.Getenv("PROXY_VALIDATION_ADDR"); overrideAddr != "" {
+			validation.ProxyValidationServerAddress = overrideAddr
+		}
+		if validation.ValidatingWebhookCertPath == "" {
+			validation.ValidatingWebhookCertPath = defaults.ValidationWebhookTlsCertPath
+		}
+		if validation.ValidatingWebhookKeyPath == "" {
+			validation.ValidatingWebhookKeyPath = defaults.ValidationWebhookTlsKeyPath
+		}
+	} else {
+		if validationMustStart := os.Getenv("VALIDATION_MUST_START"); validationMustStart != "" && validationMustStart != "false" {
+			return errors.Errorf("VALIDATION_MUST_START was set to true, but no validation configuration was provided in the settings. "+
+				"Ensure the v1.Settings %v contains the spec.gateway.validation config", settings.GetMetadata().Ref())
+		}
+	}
 
 	opts := translator.Opts{
 		WriteNamespace:  writeNamespace,
@@ -216,27 +217,27 @@ func RunGateway(opts translator.Opts) error {
 	// this tells Gateway that the validation snapshot has changed
 	notifications := make(<-chan struct{})
 
-	// if opts.Validation != nil {
-	// 	validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
-	// 		gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
-	// 	)
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
-	// 	}
-	//
-	// 	notificationStream, err := validationClient.NotifyOnResync(ctx, &validation.NotifyOnResyncRequest{})
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "failed to stream notifications from validation server.")
-	// 	}
-	//
-	// 	notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
-	// 	if err != nil {
-	// 		return errors.Wrapf(err, "failed to read notifications from stream")
-	// 	}
-	//
-	// 	ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
-	// 	allowMissingLinks = opts.Validation.AllowMissingLinks
-	// }
+	if opts.Validation != nil {
+		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
+			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
+		)
+		if err != nil {
+			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
+		}
+
+		notificationStream, err := validationClient.NotifyOnResync(ctx, &validation.NotifyOnResyncRequest{})
+		if err != nil {
+			return errors.Wrapf(err, "failed to stream notifications from validation server.")
+		}
+
+		notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read notifications from stream")
+		}
+
+		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
+		allowMissingLinks = opts.Validation.AllowMissingLinks
+	}
 
 	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, notifications)
 

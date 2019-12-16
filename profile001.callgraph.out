@@ -1,0 +1,2362 @@
+positions: instr line
+events: cpu(ms)
+
+ob=(1) /usr/local/bin/gloo
+fl=(1) /usr/local/go/src/runtime/sys_linux_amd64.s
+fn=(1) runtime.futex
+0x469093 536 200
+
+ob=(1)
+fl=(1)
+fn=(2) runtime.usleep
+-1430 131 60
+
+ob=(1)
+fl=(2) /usr/local/go/src/runtime/mgcmark.go
+fn=(3) runtime.scanobject
+-278708 1162 20
+
+ob=(1)
+fl=(1)
+fn=(1)
++280142 537 20
+
+ob=(1)
+fl=(3) /usr/local/go/src/runtime/iface.go
+fn=(4) runtime.(*itabTableType).find
+-389513 102 10
+
+ob=(1)
+fl=(3)
+fn=(5) runtime.convT64
++2928 355 10
+
+ob=(1)
+fl=(3)
+fn=(6) runtime.convTstring
++97 358 10
+
+ob=(1)
+fl=(4) /usr/local/go/src/runtime/malloc.go
+fn=(7) runtime.nextFreeFast
++8532 817 10
+
+ob=(1)
+fl=(4)
+fn=(8) runtime.mallocgc
++869 877 10
++265 931 10
++11 932 10
++1233 1020 10
+
+ob=(1)
+fl=(4)
+fn=(9) runtime.newobject
++1009 1151 10
+
+ob=(1)
+fl=(5) /usr/local/go/src/runtime/map.go
+fn=(10) runtime.mapassign
++8571 656 10
+
+ob=(1)
+fl=(6) /usr/local/go/src/runtime/mbarrier.go
+fn=(11) reflect.typedmemmove
++29792 177 10
+
+ob=(1)
+fl=(2)
+fn=(12) runtime.gcDrain
++54356 959 10
+
+ob=(1)
+fl=(7) /usr/local/go/src/runtime/mheap.go
+fn=(13) runtime.(*mspan).base
++19395 416 10
+
+ob=(1)
+fl=(7)
+fn=(14) runtime.makeSpanClass
++1855 657 10
+
+ob=(1)
+fl=(8) /usr/local/go/src/runtime/msize.go
+fn=(15) runtime.roundupsize
++22497 16 10
+
+ob=(1)
+fl=(9) /usr/local/go/src/runtime/proc.go
+fn=(16) runtime.casgstatus
++36579 797 10
+
+ob=(1)
+fl=(9)
+fn=(17) runtime.sysmon
++33415 4334 10
+
+ob=(1)
+fl=(9)
+fn=(18) runtime.pidleput
++5845 4703 10
+
+ob=(1)
+fl=(10) /usr/local/go/src/runtime/runtime1.go
+fn=(19) runtime.releasem
++14655 451 10
+
+ob=(1)
+fl=(11) /usr/local/go/src/runtime/string.go
+fn=(20) runtime.rawbyteslice
++48546 270 10
++69 271 10
+
+ob=(1)
+fl=(12) /usr/local/go/src/runtime/stubs.go
+fn=(21) runtime.add
++1835 12 10
+
+ob=(1)
+fl=(13) /usr/local/go/src/runtime/time.go
+fn=(22) runtime.timerproc
++15335 252 10
+
+ob=(1)
+fl=(14) /usr/local/go/src/runtime/timestub.go
+fn=(23) time.now
++1435 16 10
++22 17 10
+
+ob=(1)
+fl=(15) /usr/local/go/src/runtime/memclr_amd64.s
+fn=(24) runtime.memclrNoHeapPointers
++76693 122 10
++5 127 10
+
+ob=(1)
+fl=(16) /usr/local/go/src/reflect/type.go
+fn=(25) reflect.name.data
++564582 470 10
+
+ob=(1)
+fl=(16)
+fn=(26) reflect.(*rtype).typeOff
++4665 695 10
+
+ob=(1)
+fl=(16)
+fn=(27) reflect.StructTag.Lookup
++12832 1156 10
++119 1156 10
++7 1156 10
++4 1156 10
++359 1167 10
++29 1167 10
++698 1156 10
+
+ob=(1)
+fl=(16)
+fn=(28) reflect.(*structType).Field
++508 1202 10
+
+ob=(1)
+fl=(16)
+fn=(29) reflect.toType
++45107 2990 10
+
+ob=(1)
+fl=(17) /usr/local/go/src/reflect/value.go
+fn=(30) reflect.flag.kind
++4791 80 10
+
+ob=(1)
+fl=(17)
+fn=(31) reflect.NewAt
++51235 2361 10
+
+ob=(1)
+fl=(18) /usr/local/go/src/encoding/binary/binary.go
+fn=(32) encoding/binary.littleEndian.PutUint64
++280863 81 10
++26 83 10
+
+ob=(1)
+fl=(18)
+fn=(33) encoding/binary.Write
++9270 258 10
+
+ob=(1)
+fl=(19) /usr/local/go/src/encoding/json/decode.go
+fn=(34) encoding/json.(*decodeState).skip
++53771 324 10
+
+ob=(1)
+fl=(20) /usr/local/go/src/encoding/json/scanner.go
+fn=(35) encoding/json.stateInString
++96747 301 10
+
+ob=(1)
+fl=(21) /usr/local/go/src/io/ioutil/ioutil.go
+fn=(36) io/ioutil.readAll
++944897 18 10
+
+ob=(1)
+fl=(22) /usr/local/go/src/hash/fnv/fnv.go
+fn=(37) hash/fnv.(*sum64).Write
+0x1bc4b8c 121 10
++8 122 10
++24 123 10
+
+ob=(1)
+fl=(23) /workspace/gopath/pkg/mod/github.com/mitchellh/hashstructure@v1.0.0/hashstructure.go
+fn=(38) github.com/mitchellh/hashstructure.(*walker).visit
++4643 152 10
++418 159 10
++6765 280 10
+
+ob=(1)
+fl=(24) /workspace/gopath/pkg/mod/k8s.io/client-go@v0.0.0-20191016111102-bec269661e48/listers/core/v1/service.go
+fn=(39) k8s.io/client-go/listers/core/v1.(*serviceLister).Services
++1152044 57 10
+
+ob=(1)
+fl=(25) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/eds.go
+fn=(40) github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes.filterEndpoints
++4063527 208 10
+
+ob=(1)
+fl=(26) /usr/local/go/src/runtime/chan.go
+fn=(41) runtime.chansend1
+0x405214 127 0
+cfl=(26)
+cfn=(42) runtime.chansend
+calls=0 0x405669 193
+* * 10
+
+ob=(1)
+fl=(26)
+fn=(42)
++1109 193 0
+cfl=(26)
+cfn=(43) runtime.send
+calls=0 +1511 299
+* * 30
+
+ob=(1)
+fl=(26)
+fn=(43)
++402 299 0
+cfl=(9)
+cfn=(44) runtime.goready
+calls=0 +200466 314
+* * 40
+
+ob=(1)
+fl=(26)
+fn=(45) runtime.selectnbsend
++3256 615 0
+cfl=(26)
+cfn=(42)
+calls=0 -402 193
+* * 20
+
+ob=(1)
+fl=(3)
+fn=(46) runtime.getitab
++14183 54 0
+cfl=(3)
+cfn=(4)
+calls=0 +14930 97
+* * 10
+cfl=(3)
+cfn=(4)
+calls=0 +14939 102
+* * 10
+
+ob=(1)
+fl=(3)
+fn=(4)
++747 97 0
+cfl=(12)
+cfn=(21)
+calls=0 +293110 12
+* * 10
+
+ob=(1)
+fl=(3)
+fn=(5)
++2981 352 0
+cfl=(4)
+cfn=(8)
+calls=0 +12711 932
+* * 10
+
+ob=(1)
+fl=(3)
+fn=(6)
++128 362 0
+cfl=(4)
+cfn=(8)
+calls=0 +10923 1018
+* * 10
+
+ob=(1)
+fl=(3)
+fn=(47) runtime.convI2I
++778 433 0
+cfl=(3)
+cfn=(46)
+calls=0 -3856 54
+* * 20
+
+ob=(1)
+fl=(27) /usr/local/go/src/runtime/lock_futex.go
+fn=(48) runtime.notewakeup
++3040 136 0
+cfl=(28) /usr/local/go/src/runtime/os_linux.go
+cfn=(49) runtime.futexwakeup
+calls=0 +157815 56
+* * 170
+
+ob=(1)
+fl=(27)
+fn=(50) runtime.notesleep
++338 151 0
+cfl=(28)
+cfn=(51) runtime.futexsleep
+calls=0 +154609 44
+* * 30
+
+ob=(1)
+fl=(27)
+fn=(52) runtime.notetsleep_internal
++474 193 0
+cfl=(28)
+cfn=(51)
+calls=0 +154365 50
+* * 20
+
+ob=(1)
+fl=(27)
+fn=(53) runtime.notetsleep
++240 216 0
+cfl=(27)
+cfn=(52)
+calls=0 * 193
+* * 10
+
+ob=(1)
+fl=(27)
+fn=(54) runtime.notetsleepg
++115 227 0
+cfl=(9)
+cfn=(55) runtime.entersyscallblock
+calls=0 +199306 2924
+* * 40
++24 228 0
+cfl=(27)
+cfn=(52)
+calls=0 -355 193
+* * 10
++14 229 0
+cfl=(9)
+cfn=(56) runtime.exitsyscall
+calls=0 +199503 2963
+* * 40
+
+ob=(1)
+fl=(4)
+fn=(7)
++3571 829 0
+cfl=(7)
+cfn=(13)
+calls=0 +118935 416
+* * 10
+
+ob=(1)
+fl=(4)
+fn=(8)
++1225 996 0
+cfl=(4)
+cfn=(7)
+calls=0 -137 817
+* * 10
++723 991 0
+cfl=(10)
+cfn=(19)
+calls=0 +228985 451
+* * 10
++253 1018 0
+cfl=(7)
+cfn=(14)
+calls=0 +115271 657
+* * 10
++48 1020 0
+cfl=(4)
+cfn=(7)
+calls=0 -2201 829
+* * 10
+
+ob=(1)
+fl=(4)
+fn=(9)
++1010 1151 0
+cfl=(4)
+cfn=(8)
+calls=0 -1252 931
+* * 10
+cfl=(4)
+cfn=(8)
+calls=0 -1024 996
+* * 10
+
+ob=(1)
+fl=(4)
+fn=(57) reflect.unsafe_New
++96 1156 0
+cfl=(4)
+cfn=(8)
+calls=0 -1018 1020
+* * 10
+
+ob=(1)
+fl=(29) /usr/local/go/src/runtime/mgc.go
+fn=(58) runtime.gcBgMarkWorker
++76523 1891 0
+cfl=(30) /usr/local/go/src/runtime/asm_amd64.s
+cfn=(59) runtime.systemstack
+calls=0 +358574 370
+* * 30
+
+ob=(1)
+fl=(2)
+fn=(12)
++16188 948 0
+cfl=(2)
+cfn=(3)
+calls=0 +17799 1162
+* * 20
+
+ob=(1)
+fl=(31) /usr/local/go/src/runtime/mgcscavenge.go
+fn=(60) runtime.scavengeSleep
++6847 225 0
+cfl=(13)
+cfn=(61) time.startTimer
+calls=0 +197452 114
+* * 10
+
+ob=(1)
+fl=(31)
+fn=(62) runtime.bgscavenge
++849 358 0
+cfl=(31)
+cfn=(60)
+calls=0 * 225
+* * 10
+
+ob=(1)
+fl=(28)
+fn=(51)
++46071 44 0
+cfl=(1)
+cfn=(1)
+calls=0 +274057 537
+* * 20
+cfl=(1)
+cfn=(1)
+calls=0 +274053 536
+* * 10
++94 50 0
+cfl=(1)
+cfn=(1)
+calls=0 +227982 536
+* * 20
+
+ob=(1)
+fl=(28)
+fn=(49)
++72 56 0
+cfl=(1)
+cfn=(1)
+calls=0 +227888 536
+* * 170
+
+ob=(1)
+fl=(9)
+fn=(44)
++20176 314 0
+cfl=(30)
+cfn=(59)
+calls=0 +211930 370
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(63) runtime.ready
++4818 663 0
+cfl=(9)
+cfn=(16)
+calls=0 +6120 797
+* * 10
++112 666 0
+cfl=(9)
+cfn=(64) runtime.wakep
+calls=0 +11050 2050
+* * 30
+
+ob=(1)
+fl=(9)
+fn=(65) runtime.mstart
++3942 1167 0
+cfl=(9)
+cfn=(66) runtime.mstart1
+calls=0 +4195 1201
+* * 70
+
+ob=(1)
+fl=(9)
+fn=(66)
++253 1201 0
+cfl=(9)
+cfn=(17)
+calls=0 +30569 4296
+* * 60
+cfl=(9)
+cfn=(17)
+calls=0 +31347 4316
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(67) runtime.stopm
++5287 1928 0
+cfl=(27)
+cfn=(50)
+calls=0 -183738 151
+* * 30
+
+ob=(1)
+fl=(9)
+fn=(68) runtime.startm
++426 1984 0
+cfl=(27)
+cfn=(48)
+calls=0 -189363 136
+* * 110
+
+ob=(1)
+fl=(9)
+fn=(69) runtime.handoffp
++368 1996 0
+cfl=(9)
+cfn=(68)
+calls=0 * 1984
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(64)
++662 2050 0
+cfl=(9)
+cfn=(68)
+calls=0 -368 1984
+* * 70
+
+ob=(1)
+fl=(9)
+fn=(70) runtime.findrunnable
++1994 2302 0
+cfl=(9)
+cfn=(18)
+calls=0 +29512 4703
+* * 10
++259 2391 0
+cfl=(9)
+cfn=(67)
+calls=0 -3450 1928
+* * 30
+
+ob=(1)
+fl=(9)
+fn=(71) runtime.resetspinning
++2271 2430 0
+cfl=(9)
+cfn=(64)
+calls=0 -2253 2050
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(72) runtime.schedule
++1033 2531 0
+cfl=(9)
+cfn=(71)
+calls=0 * 2430
+* * 40
++30 2524 0
+cfl=(9)
+cfn=(70)
+calls=0 -3304 2391
+* * 30
+cfl=(9)
+cfn=(70)
+calls=0 -3563 2302
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(73) runtime.park_m
++973 2610 0
+cfl=(9)
+cfn=(72)
+calls=0 -30 2531
+* * 40
+cfl=(9)
+cfn=(72)
+calls=0 * 2524
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(74) runtime.reentersyscall
++2075 2826 0
+cfl=(30)
+cfn=(59)
+calls=0 +169326 370
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(75) runtime.entersyscall
++131 2859 0
+cfl=(9)
+cfn=(74)
+calls=0 * 2826
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(76) runtime.entersyscall_sysmon
++118 2866 0
+cfl=(27)
+cfn=(48)
+calls=0 -199585 136
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(55)
++655 2924 0
+cfl=(30)
+cfn=(59)
+calls=0 +167002 370
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(77) runtime.entersyscallblock_handoff
++133 2937 0
+cfl=(9)
+cfn=(69)
+calls=0 -10201 1996
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(56)
++203 2963 0
+cfl=(9)
+cfn=(78) runtime.exitsyscallfast
+calls=0 +1003 3052
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(78)
++800 3052 0
+cfl=(30)
+cfn=(59)
+calls=0 +166011 370
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(79) runtime.exitsyscallfast_pidle
++436 3100 0
+cfl=(27)
+cfn=(48)
+calls=0 -201494 136
+* * 40
+
+ob=(1)
+fl=(9)
+fn=(17)
++12462 4296 0
+cfl=(1)
+cfn=(2)
+calls=0 +179231 131
+* * 60
++778 4316 0
+cfl=(27)
+cfn=(53)
+calls=0 -213340 216
+* * 10
+
+ob=(1)
+fl=(32) /usr/local/go/src/runtime/select.go
+fn=(80) runtime.selectgo
++26109 477 0
+cfl=(26)
+cfn=(43)
+calls=0 -240283 299
+* * 10
+
+ob=(1)
+fl=(33) /usr/local/go/src/runtime/slice.go
+fn=(81) runtime.makeslice
++22907 49 0
+cfl=(4)
+cfn=(8)
+calls=0 -235771 877
+* * 10
+cfl=(4)
+cfn=(8)
+calls=0 -234555 991
+* * 10
+
+ob=(1)
+fl=(11)
+fn=(82) runtime.stringtoslicebyte
++17782 161 0
+cfl=(11)
+cfn=(20)
+calls=0 +19538 274
+* * 20
+cfl=(11)
+cfn=(20)
+calls=0 +19346 270
+* * 10
+cfl=(11)
+cfn=(20)
+calls=0 +19409 271
+* * 10
+cfl=(11)
+cfn=(20)
+calls=0 +19415 271
+* * 10
+cfl=(11)
+cfn=(20)
+calls=0 +19442 272
+* * 10
+
+ob=(1)
+fl=(11)
+fn=(20)
++1627 271 0
+cfl=(8)
+cfn=(15)
+calls=0 -137476 16
+* * 10
++33 272 0
+cfl=(4)
+cfn=(8)
+calls=0 -276570 1020
+* * 10
++96 274 0
+cfl=(15)
+cfn=(24)
+calls=0 +95293 122
+* * 10
+cfl=(15)
+cfn=(24)
+calls=0 +95298 127
+* * 10
+
+ob=(1)
+fl=(13)
+fn=(61)
++14570 114 0
+cfl=(13)
+cfn=(83) runtime.addtimer
+calls=0 +14887 134
+* * 10
+
+ob=(1)
+fl=(13)
+fn=(83)
++317 134 0
+cfl=(13)
+cfn=(84) runtime.(*timersBucket).addtimerLocked
+calls=0 +711 161
+* * 10
+
+ob=(1)
+fl=(13)
+fn=(84)
++394 161 0
+cfl=(27)
+cfn=(48)
+calls=0 -298611 136
+* * 10
+
+ob=(1)
+fl=(13)
+fn=(22)
++1199 297 0
+cfl=(34) /usr/local/go/src/time/sleep.go
+cfn=(85) time.sendTime
+calls=0 +305158 137
+* * 20
++673 311 0
+cfl=(27)
+cfn=(54)
+calls=0 -299037 227
+* * 40
+cfl=(27)
+cfn=(54)
+calls=0 -298999 229
+* * 40
+cfl=(27)
+cfn=(54)
+calls=0 -299013 228
+* * 10
+
+ob=(1)
+fl=(29)
+fn=(86) runtime.gcBgMarkWorker.func2
++53662 1904 0
+cfl=(2)
+cfn=(12)
+calls=0 -200035 948
+* * 20
++205 1925 0
+cfl=(2)
+cfn=(12)
+calls=0 -253794 959
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(87) runtime.goready.func1
++6955 315 0
+cfl=(9)
+cfn=(63)
+calls=0 -174863 666
+* * 30
+cfl=(9)
+cfn=(63)
+calls=0 -174975 663
+* * 10
+
+ob=(1)
+fl=(9)
+fn=(88) runtime.exitsyscallfast.func1
++1497 3053 0
+cfl=(9)
+cfn=(79)
+calls=0 -159769 3100
+* * 40
+
+ob=(1)
+fl=(30)
+fn=(89) runtime.mcall
++3370 318 0
+cfl=(9)
+cfn=(73)
+calls=0 -165817 2610
+* * 80
+
+ob=(1)
+fl=(30)
+fn=(59)
++139 370 0
+cfl=(9)
+cfn=(77)
+calls=0 -166075 2937
+* * 40
+cfl=(9)
+cfn=(87)
+calls=0 -4867 315
+* * 40
+cfl=(9)
+cfn=(88)
+calls=0 -3370 3053
+* * 40
+cfl=(29)
+cfn=(86)
+calls=0 -12027 1904
+* * 20
+cfl=(9)
+cfn=(76)
+calls=0 -166863 2866
+* * 10
+cfl=(29)
+cfn=(86)
+calls=0 -11822 1925
+* * 10
+
+ob=(1)
+fl=(35) /usr/local/go/src/syscall/syscall_unix.go
+fn=(90) syscall.Read
++151542 183 0
+cfl=(36) /usr/local/go/src/syscall/zsyscall_linux_amd64.go
+cfn=(91) syscall.read
+calls=0 +160051 732
+* * 10
+
+ob=(1)
+fl=(36)
+fn=(91)
++8509 732 0
+cfl=(37) /usr/local/go/src/syscall/asm_linux_amd64.s
+cfn=(92) syscall.Syscall
+calls=0 +17497 18
+* * 10
+
+ob=(1)
+fl=(37)
+fn=(92)
++8988 18 0
+cfl=(9)
+cfn=(75)
+calls=0 -327171 2859
+* * 10
+
+ob=(1)
+fl=(34)
+fn=(85)
++68419 137 0
+cfl=(26)
+cfn=(45)
+calls=0 -557601 615
+* * 20
+
+ob=(1)
+fl=(38) /usr/local/go/src/internal/poll/fd_unix.go
+fn=(93) internal/poll.(*FD).Read
++112175 165 0
+cfl=(35)
+cfn=(90)
+calls=0 -85916 183
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(94) reflect.name.nameLen
++227391 479 0
+cfl=(16)
+cfn=(25)
+calls=0 +227170 470
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(95) reflect.name.tagLen
++264 486 0
+cfl=(16)
+cfn=(94)
+calls=0 * 479
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(96) reflect.name.tag
++441 503 0
+cfl=(16)
+cfn=(95)
+calls=0 * 486
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(97) reflect.(*rtype).Field
++10821 928 0
+cfl=(16)
+cfn=(28)
+calls=0 +18399 1214
+* * 30
+cfl=(16)
+cfn=(28)
+calls=0 +18100 1196
+* * 10
+cfl=(16)
+cfn=(28)
+calls=0 +18295 1202
+* * 10
+cfl=(16)
+cfn=(28)
+calls=0 +18303 1202
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(98) reflect.StructTag.Get
++5271 1126 0
+cfl=(16)
+cfn=(27)
+calls=0 +5750 1156
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +5869 1156
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +5876 1156
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +5880 1156
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +6239 1167
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +6268 1167
+* * 10
+cfl=(16)
+cfn=(27)
+calls=0 +6966 1156
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(28)
++2008 1196 0
+cfl=(16)
+cfn=(29)
+calls=0 +47310 2990
+* * 10
++203 1202 0
+cfl=(16)
+cfn=(96)
+calls=0 -18100 503
+* * 10
++96 1214 0
+cfl=(4)
+cfn=(9)
+calls=0 -954702 1151
+* * 20
+cfl=(4)
+cfn=(9)
+calls=0 -954711 1151
+* * 10
+
+ob=(1)
+fl=(16)
+fn=(99) reflect.(*rtype).ptrTo
++6148 1389 0
+cfl=(16)
+cfn=(26)
+calls=0 -14660 695
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(100) reflect.packEface
++44109 119 0
+cfl=(6)
+cfn=(11)
+calls=0 -922592 177
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(101) reflect.Value.Interface
++21781 1003 0
+cfl=(17)
+cfn=(102) reflect.valueInterface
+calls=0 +22455 1033
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(102)
++674 1033 0
+cfl=(17)
+cfn=(100)
+calls=0 -21781 119
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(103) reflect.Value.Kind
++2502 1128 0
+cfl=(17)
+cfn=(30)
+calls=0 -22918 80
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(104) reflect.Value.MapKeys
++1835 1213 0
+cfl=(17)
+cfn=(105) reflect.copyVal
+calls=0 +3794 1296
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(105)
++1959 1296 0
+cfl=(4)
+cfn=(57)
+calls=0 0x40d9d7 1156
+* * 10
+
+ob=(1)
+fl=(17)
+fn=(31)
++22075 2364 0
+cfl=(16)
+cfn=(99)
+calls=0 -72860 1389
+* * 10
+
+ob=(1)
+fl=(39) /usr/local/go/src/bytes/buffer.go
+fn=(106) bytes.(*Buffer).ReadFrom
++234860 204 0
+cfl=(40) /usr/local/go/src/crypto/tls/conn.go
+cfn=(107) crypto/tls.(*atLeastReader).Read
+calls=0 0x73427a 780
+* * 10
+
+ob=(1)
+fl=(18)
+fn=(33)
++55167 257 0
+cfl=(33)
+cfn=(81)
+calls=0 0x44c20e 49
+* * 20
++391 342 0
+cfl=(22)
+cfn=(37)
+calls=0 0x1bc4b8c 121
+* * 10
+cfl=(22)
+cfn=(37)
+calls=0 0x1bc4bac 123
+* * 10
++4484 336 0
+cfl=(18)
+cfn=(32)
+calls=0 -9609 81
+* * 10
+cfl=(18)
+cfn=(32)
+calls=0 -9583 83
+* * 10
+
+ob=(1)
+fl=(19)
+fn=(108) encoding/json.Unmarshal
++43230 106 0
+cfl=(19)
+cfn=(109) encoding/json.(*decodeState).unmarshal
+calls=0 +45086 179
+* * 10
+
+ob=(1)
+fl=(19)
+fn=(109)
++1856 179 0
+cfl=(19)
+cfn=(110) encoding/json.(*decodeState).value
+calls=0 +8119 429
+* * 20
+
+ob=(1)
+fl=(19)
+fn=(34)
++3938 324 0
+cfl=(20)
+cfn=(35)
+calls=0 +100635 301
+* * 10
+
+ob=(1)
+fl=(19)
+fn=(110)
++2325 429 0
+cfl=(19)
+cfn=(111) encoding/json.(*decodeState).object
+calls=0 +11194 666
+* * 20
+cfl=(19)
+cfn=(111)
+calls=0 +17984 823
+* * 10
+
+ob=(1)
+fl=(19)
+fn=(111)
++8869 666 0
+cfl=(19)
+cfn=(34)
+calls=0 -2375 324
+* * 10
+cfl=(19)
+cfn=(34)
+calls=0 -2325 324
+* * 10
++6790 823 0
+cfl=(19)
+cfn=(110)
+calls=0 -8869 429
+* * 10
+
+ob=(1)
+fl=(41) /usr/local/go/src/encoding/json/stream.go
+fn=(112) encoding/json.(*Decoder).Decode
++86324 63 0
+cfl=(41)
+cfn=(113) encoding/json.(*Decoder).readValue
+calls=0 +88364 136
+* * 10
++422 73 0
+cfl=(19)
+cfn=(109)
+calls=0 -108246 179
+* * 10
+
+ob=(1)
+fl=(41)
+fn=(113)
++1618 136 0
+cfl=(41)
+cfn=(114) encoding/json.(*Decoder).refill
+calls=0 +2916 161
+* * 10
+
+ob=(1)
+fl=(41)
+fn=(114)
++1298 161 0
+cfl=(42) /usr/local/go/src/net/http/transport.go
+cfn=(115) net/http.(*bodyEOFSignal).Read
+calls=0 0x8756be 2568
+* * 10
+
+ob=(1)
+fl=(43) /usr/local/go/src/bufio/bufio.go
+fn=(116) bufio.(*Reader).fill
++721924 100 0
+cfl=(42)
+cfn=(117) net/http.(*persistConn).Read
+calls=0 0x86fffc 1744
+* * 10
+
+ob=(1)
+fl=(43)
+fn=(118) bufio.(*Reader).ReadSlice
++6832 359 0
+cfl=(43)
+cfn=(116)
+calls=0 * 100
+* * 10
+
+ob=(1)
+fl=(21)
+fn=(119) io/ioutil.ReadAll
++205800 45 0
+cfl=(21)
+cfn=(36)
+calls=0 +205192 18
+* * 10
+
+ob=(1)
+fl=(44) /usr/local/go/src/net/fd_unix.go
+fn=(120) net.(*netFD).Read
++235419 202 0
+cfl=(38)
+cfn=(93)
+calls=0 0x4ba846 165
+* * 10
+
+ob=(1)
+fl=(45) /usr/local/go/src/net/net.go
+fn=(121) net.(*conn).Read
++127545 184 0
+cfl=(44)
+cfn=(120)
+calls=0 * 202
+* * 10
+
+ob=(1)
+fl=(40)
+fn=(122) crypto/tls.(*Conn).readRecord
++489059 577 0
+cfl=(40)
+cfn=(123) crypto/tls.(*Conn).readRecordOrCCS
+calls=0 +489786 609
+* * 10
+
+ob=(1)
+fl=(40)
+fn=(123)
++727 609 0
+cfl=(40)
+cfn=(124) crypto/tls.(*Conn).readFromUntil
+calls=0 +10487 802
+* * 10
+
+ob=(1)
+fl=(40)
+fn=(107)
++8924 780 0
+cfl=(45)
+cfn=(121)
+calls=0 -489786 184
+* * 10
+
+ob=(1)
+fl=(40)
+fn=(124)
++836 802 0
+cfl=(39)
+cfn=(106)
+calls=0 0x548b6c 204
+* * 10
+
+ob=(1)
+fl=(40)
+fn=(125) crypto/tls.(*Conn).Read
++16110 1255 0
+cfl=(40)
+cfn=(122)
+calls=0 -10487 577
+* * 10
+
+ob=(1)
+fl=(46) /usr/local/go/src/net/http/internal/chunked.go
+fn=(126) net/http/internal.(*chunkedReader).beginChunk
++648231 48 0
+cfl=(46)
+cfn=(127) net/http/internal.readChunkLine
+calls=0 +650569 122
+* * 10
+
+ob=(1)
+fl=(46)
+fn=(128) net/http/internal.(*chunkedReader).Read
++1397 93 0
+cfl=(46)
+cfn=(126)
+calls=0 * 48
+* * 10
+
+ob=(1)
+fl=(46)
+fn=(127)
++941 122 0
+cfl=(43)
+cfn=(118)
+calls=0 0x62f8a8 359
+* * 10
+
+ob=(1)
+fl=(47) /usr/local/go/src/net/http/transfer.go
+fn=(129) net/http.(*body).Read
++569011 839 0
+cfl=(47)
+cfn=(130) net/http.(*body).readLocked
+calls=0 +569439 847
+* * 10
+
+ob=(1)
+fl=(47)
+fn=(130)
++428 847 0
+cfl=(46)
+cfn=(128)
+calls=0 -569952 93
+* * 10
+
+ob=(1)
+fl=(42)
+fn=(117)
++56744 1744 0
+cfl=(40)
+cfn=(125)
+calls=0 0x7384ac 1255
+* * 10
+
+ob=(1)
+fl=(42)
+fn=(115)
++22210 2568 0
+cfl=(47)
+cfn=(129)
+calls=0 -57172 839
+* * 10
+
+ob=(1)
+fl=(48) /workspace/gopath/pkg/mod/google.golang.org/grpc@v1.25.1/server.go
+fn=(131) google.golang.org/grpc.(*Server).processStreamingRPC
+0xa7473c 1211 0
+cfl=(49) /workspace/gopath/pkg/mod/github.com/envoyproxy/go-control-plane@v0.9.1/envoy/service/metrics/v2/metrics_service.pb.go
+cfn=(132) github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2._MetricsService_StreamMetrics_Handler
+calls=0 0xb1e68b 257
+* * 10
+
+ob=(1)
+fl=(48)
+fn=(133) google.golang.org/grpc.(*Server).handleStream
++4762 1291 0
+cfl=(48)
+cfn=(131)
+calls=0 * 1211
+* * 10
+
+ob=(1)
+fl=(48)
+fn=(134) google.golang.org/grpc.(*Server).serveStreams.func1.1
++79548 722 0
+cfl=(48)
+cfn=(133)
+calls=0 * 1291
+* * 10
+
+ob=(1)
+fl=(49)
+fn=(132)
++611833 257 0
+cfl=(50) /workspace/gopath/src/github.com/solo-io/gloo/projects/metrics/pkg/metricsservice/service.go
+cfn=(135) github.com/solo-io/gloo/projects/metrics/pkg/metricsservice.(*Server).StreamMetrics
+calls=0 0x1987ab6 60
+* * 10
+
+ob=(1)
+fl=(51) /workspace/gopath/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/clone.go
+fn=(136) github.com/gogo/protobuf/proto.Clone
++481797 52 0
+cfl=(51)
+cfn=(137) github.com/gogo/protobuf/proto.Merge
+calls=0 +483115 95
+* * 20
+
+ob=(1)
+fl=(51)
+fn=(137)
++1318 95 0
+cfl=(52) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/endpoint.pb.go
+cfn=(138) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*Endpoint).XXX_Merge
+calls=0 0x1f8103b 57
+* * 20
+
+ob=(1)
+fl=(53) /workspace/gopath/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/pointer_unsafe.go
+fn=(139) github.com/gogo/protobuf/proto.pointer.asPointerTo
++95801 282 0
+cfl=(17)
+cfn=(31)
+calls=0 0x50f5ca 2361
+* * 10
+cfl=(17)
+cfn=(31)
+calls=0 0x50f600 2364
+* * 10
+
+ob=(1)
+fl=(54) /workspace/gopath/pkg/mod/github.com/gogo/protobuf@v1.3.1/proto/table_merge.go
+fn=(140) github.com/gogo/protobuf/proto.(*InternalMessageInfo).Merge
++163121 50 0
+cfl=(54)
+cfn=(141) github.com/gogo/protobuf/proto.(*mergeInfo).merge
+calls=0 +166597 139
+* * 20
+
+ob=(1)
+fl=(54)
+fn=(141)
++1425 143 0
+cfl=(53)
+cfn=(139)
+calls=0 -163121 282
+* * 10
++2051 139 0
+cfl=(54)
+cfn=(142) github.com/gogo/protobuf/proto.(*mergeInfo).computeMergeInfo.func28
+calls=0 +210961 555
+* * 20
+cfl=(54)
+cfn=(143) github.com/gogo/protobuf/proto.(*mergeInfo).computeMergeInfo.func31
+calls=0 +212275 597
+* * 10
+
+ob=(1)
+fl=(54)
+fn=(142)
++208910 555 0
+cfl=(54)
+cfn=(141)
+calls=0 -2051 143
+* * 10
+cfl=(54)
+cfn=(141)
+calls=0 * 139
+* * 10
+
+ob=(1)
+fl=(54)
+fn=(143)
++1314 597 0
+cfl=(53)
+cfn=(139)
+calls=0 -375507 282
+* * 10
+
+ob=(1)
+fl=(55) /workspace/gopath/pkg/mod/k8s.io/apimachinery@v0.0.0-20191028221656-72ed19daf4bb/pkg/watch/streamwatcher.go
+fn=(144) k8s.io/apimachinery/pkg/watch.(*StreamWatcher).receive
++722314 104 0
+cfl=(56) /workspace/gopath/pkg/mod/k8s.io/client-go@v0.0.0-20191016111102-bec269661e48/rest/watch/decoder.go
+cfn=(145) k8s.io/client-go/rest/watch.(*Decoder).Decode
+calls=0 0xd64b84 49
+* * 20
+
+ob=(1)
+fl=(57) /workspace/gopath/pkg/mod/k8s.io/apimachinery@v0.0.0-20191028221656-72ed19daf4bb/pkg/runtime/serializer/streaming/streaming.go
+fn=(146) k8s.io/apimachinery/pkg/runtime/serializer/streaming.(*decoder).Decode
++704582 77 0
+cfl=(58) /workspace/gopath/pkg/mod/k8s.io/apimachinery@v0.0.0-20191028221656-72ed19daf4bb/pkg/util/framer/framer.go
+cfn=(147) k8s.io/apimachinery/pkg/util/framer.(*jsonFrameReader).Read
+calls=0 0xdeae07 150
+* * 20
+
+ob=(1)
+fl=(56)
+fn=(145)
++2512 49 0
+cfl=(57)
+cfn=(146)
+calls=0 * 77
+* * 20
+
+ob=(1)
+fl=(58)
+fn=(147)
++549507 150 0
+cfl=(41)
+cfn=(112)
+calls=0 0x57ccea 63
+* * 10
+cfl=(41)
+cfn=(112)
+calls=0 0x57ce90 73
+* * 10
+
+ob=(1)
+fl=(59) /workspace/gopath/pkg/mod/k8s.io/client-go@v0.0.0-20191016111102-bec269661e48/rest/request.go
+fn=(148) k8s.io/client-go/rest.(*Request).request
++237635 807 0
+cfl=(59)
+cfn=(149) k8s.io/client-go/rest.(*Request).request.func2
+calls=0 +269793 805
+* * 10
+
+ob=(1)
+fl=(59)
+fn=(150) k8s.io/client-go/rest.(*Request).Do
++1665 828 0
+cfl=(59)
+cfn=(148)
+calls=0 * 807
+* * 10
+
+ob=(1)
+fl=(59)
+fn=(151) k8s.io/client-go/rest.(*Request).transformResponse
++1003 861 0
+cfl=(21)
+cfn=(119)
+calls=0 0x661c90 45
+* * 10
+
+ob=(1)
+fl=(59)
+fn=(149)
++29490 805 0
+cfl=(59)
+cfn=(152) k8s.io/client-go/rest.(*Request).Do.func1
+calls=0 +29666 829
+* * 10
+
+ob=(1)
+fl=(59)
+fn=(152)
++176 829 0
+cfl=(59)
+cfn=(151)
+calls=0 -29490 861
+* * 10
+
+ob=(1)
+fl=(60) /workspace/gopath/pkg/mod/k8s.io/client-go@v0.0.0-20191016111102-bec269661e48/kubernetes/typed/core/v1/configmap.go
+fn=(153) k8s.io/client-go/kubernetes/typed/core/v1.(*configMaps).Get
+0x1823723 73 0
+cfl=(59)
+cfn=(150)
+calls=0 -30669 828
+* * 10
+
+ob=(1)
+fl=(61) /workspace/gopath/src/github.com/solo-io/gloo/projects/metrics/pkg/metricsservice/metrics_handler.go
+fn=(154) github.com/solo-io/gloo/projects/metrics/pkg/metricsservice.(*metricsHandler).HandleMetrics
++1453644 54 0
+cfl=(62) /workspace/gopath/src/github.com/solo-io/gloo/projects/metrics/pkg/metricsservice/storage_client.go
+cfn=(155) github.com/solo-io/gloo/projects/metrics/pkg/metricsservice.(*configMapStorageClient).GetUsage
+calls=0 +1461340 111
+* * 10
+
+ob=(1)
+fl=(50)
+fn=(135)
++5447 60 0
+cfl=(61)
+cfn=(154)
+calls=0 * 54
+* * 10
+
+ob=(1)
+fl=(62)
+fn=(155)
++2249 111 0
+cfl=(62)
+cfn=(156) github.com/solo-io/gloo/projects/metrics/pkg/metricsservice.(*configMapStorageClient).getExistingUsage
+calls=0 +2680 123
+* * 10
+
+ob=(1)
+fl=(62)
+fn=(156)
++431 123 0
+cfl=(60)
+cfn=(153)
+calls=0 -1461340 73
+* * 10
+
+ob=(1)
+fl=(63) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v1/resources/resource_interface.go
+fn=(157) github.com/solo-io/solo-kit/pkg/api/v1/resources.Clone
++2326924 420 0
+cfl=(51)
+cfn=(136)
+calls=0 0xb94090 52
+* * 20
+
+ob=(1)
+fl=(23)
+fn=(158) github.com/mitchellh/hashstructure.Hash
++21027 89 0
+cfl=(23)
+cfn=(38)
+calls=0 +29676 277
+* * 80
+cfl=(23)
+cfn=(38)
+calls=0 +27767 239
+* * 50
+cfl=(23)
+cfn=(38)
+calls=0 +29909 286
+* * 50
+cfl=(23)
+cfn=(38)
+calls=0 +25799 304
+* * 30
+cfl=(23)
+cfn=(38)
+calls=0 +29288 272
+* * 30
+cfl=(23)
+cfn=(38)
+calls=0 +30435 231
+* * 30
+cfl=(23)
+cfn=(38)
+calls=0 +26112 312
+* * 20
+cfl=(23)
+cfn=(38)
+calls=0 +27609 233
+* * 20
+cfl=(23)
+cfn=(38)
+calls=0 +29139 272
+* * 20
+cfl=(23)
+cfn=(38)
+calls=0 +22512 158
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 +22602 158
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 +22711 159
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 +29476 280
+* * 10
+
+ob=(1)
+fl=(23)
+fn=(38)
++512 116 0
+cfl=(17)
+cfn=(103)
+calls=0 0x5090f3 1128
+* * 10
++888 158 0
+cfl=(17)
+cfn=(101)
+calls=0 0x50848b 1003
+* * 10
++85 158 0
+cfl=(3)
+cfn=(47)
+calls=0 0x40ae34 433
+* * 20
++90 158 0
+cfl=(18)
+cfn=(33)
+calls=0 0x556472 342
+* * 10
++1093 188 0
+cfl=(17)
+cfn=(104)
+calls=0 0x50981e 1213
+* * 10
++2104 304 0
+cfl=(23)
+cfn=(38)
+calls=0 -2156 116
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 -1183 158
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 +4072 239
+* * 10
++313 312 0
+cfl=(23)
+cfn=(159) github.com/mitchellh/hashstructure.hashUpdateOrdered
+calls=0 +5616 336
+* * 20
++197 321 0
+cfl=(11)
+cfn=(82)
+calls=0 0x450784 161
+* * 50
++1300 233 0
+cfl=(16)
+cfn=(97)
+calls=0 0x4f4d8b 928
+* * 30
++158 239 0
+cfl=(16)
+cfn=(98)
+calls=0 0x4f6222 1126
+* * 70
++1372 272 0
+cfl=(3)
+cfn=(6)
+calls=0 0x40aadf 358
+* * 10
+cfl=(3)
+cfn=(6)
+calls=0 0x40ab2a 362
+* * 10
++149 272 0
+cfl=(23)
+cfn=(38)
+calls=0 -2830 321
+* * 40
+cfl=(23)
+cfn=(38)
+calls=0 -6846 152
+* * 10
++388 277 0
+cfl=(23)
+cfn=(38)
+calls=0 * 272
+* * 20
+cfl=(23)
+cfn=(38)
+calls=0 -6861 158
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 -5593 188
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 -2979 321
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 -1679 233
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 -1521 239
+* * 10
+cfl=(23)
+cfn=(38)
+calls=0 +621 286
+* * 10
++233 286 0
+cfl=(23)
+cfn=(159)
+calls=0 +1739 336
+* * 20
+cfl=(23)
+cfn=(159)
+calls=0 +1779 337
+* * 20
+cfl=(23)
+cfn=(159)
+calls=0 +1917 337
+* * 20
++526 231 0
+cfl=(16)
+cfn=(97)
+calls=0 0x4f4d8b 928
+* * 30
+
+ob=(1)
+fl=(23)
+fn=(159)
++980 336 0
+cfl=(18)
+cfn=(33)
+calls=0 0x5562eb 257
+* * 10
+cfl=(18)
+cfn=(33)
+calls=0 0x556339 258
+* * 10
+cfl=(18)
+cfn=(33)
+calls=0 0x556472 342
+* * 10
+cfl=(18)
+cfn=(33)
+calls=0 0x5575f6 336
+* * 10
++40 337 0
+cfl=(3)
+cfn=(5)
+calls=0 0x40aa7e 355
+* * 10
+cfl=(3)
+cfn=(5)
+calls=0 0x40aaaa 352
+* * 10
++138 337 0
+cfl=(18)
+cfn=(33)
+calls=0 0x5562eb 257
+* * 10
+cfl=(18)
+cfn=(33)
+calls=0 0x5575f6 336
+* * 10
+
+ob=(1)
+fl=(64) /workspace/gopath/pkg/mod/github.com/solo-io/go-utils@v0.11.0/hashutils/hash.go
+fn=(160) github.com/solo-io/go-utils/hashutils.HashAll
++2234 18 0
+cfl=(64)
+cfn=(161) github.com/solo-io/go-utils/hashutils.hashValue
+calls=0 +2769 25
+* * 370
+cfl=(64)
+cfn=(161)
+calls=0 +2850 27
+* * 330
++202 20 0
+cfl=(64)
+cfn=(161)
+calls=0 +616 27
+* * 40
+
+ob=(1)
+fl=(64)
+fn=(161)
++333 25 0
+cfl=(65) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/upstream.sk.go
+cfn=(162) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*Upstream).Hash
+calls=0 +4212707 40
+* * 260
+cfl=(66) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/endpoint.sk.go
+cfn=(163) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*Endpoint).Hash
+calls=0 +3903707 37
+* * 110
++81 27 0
+cfl=(23)
+cfn=(158)
+calls=0 -13335 89
+* * 370
+
+ob=(1)
+fl=(67) /workspace/gopath/pkg/mod/github.com/gogo/protobuf@v1.3.1/jsonpb/jsonpb.go
+fn=(164) github.com/gogo/protobuf/jsonpb.(*Unmarshaler).UnmarshalNext
++50142 772 0
+cfl=(67)
+cfn=(165) github.com/gogo/protobuf/jsonpb.(*Unmarshaler).unmarshalValue
+calls=0 +68703 1038
+* * 10
+
+ob=(1)
+fl=(67)
+fn=(166) github.com/gogo/protobuf/jsonpb.(*Unmarshaler).Unmarshal
++321 783 0
+cfl=(67)
+cfn=(164)
+calls=0 * 772
+* * 10
+
+ob=(1)
+fl=(67)
+fn=(167) github.com/gogo/protobuf/jsonpb.Unmarshal
++178 797 0
+cfl=(67)
+cfn=(166)
+calls=0 * 783
+* * 10
+
+ob=(1)
+fl=(67)
+fn=(165)
++18062 1038 0
+cfl=(19)
+cfn=(108)
+calls=0 0x561ed4 106
+* * 10
+
+ob=(1)
+fl=(68) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/utils/protoutils/marshal.go
+fn=(168) github.com/solo-io/solo-kit/pkg/utils/protoutils.UnmarshalBytes
++35290 28 0
+cfl=(67)
+cfn=(167)
+calls=0 -18062 797
+* * 10
+
+ob=(1)
+fl=(68)
+fn=(169) github.com/solo-io/solo-kit/pkg/utils/protoutils.UnmarshalMap
++5518 106 0
+cfl=(68)
+cfn=(168)
+calls=0 * 28
+* * 10
+
+ob=(1)
+fl=(69) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v1/clients/kube/cache/cache.go
+fn=(170) github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache.(*kubeCoreCaches).NamespacedServiceLister
++1816365 281 0
+cfl=(24)
+cfn=(39)
+calls=0 +1037566 57
+* * 10
+
+ob=(1)
+fl=(70) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v1/clients/common/common.go
+fn=(171) github.com/solo-io/solo-kit/pkg/api/v1/clients/common.KubeResourceWatch.func1
++9569 38 0
+cfl=(71) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v1/clients/configmap/resource_client.go
+cfn=(172) github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap.(*ResourceClient).List
+calls=0 +26330 142
+* * 10
+
+ob=(1)
+fl=(70)
+fn=(173) github.com/solo-io/solo-kit/pkg/api/v1/clients/common.KubeResourceWatch.func2
++1144 68 0
+cfl=(70)
+cfn=(171)
+calls=0 * 38
+* * 10
+
+ob=(1)
+fl=(71)
+fn=(172)
++15617 142 0
+cfl=(72) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube/configmapconverter.go
+cfn=(174) github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube.(*kubeConverter).FromKubeConfigMap
+calls=0 +3647236 25
+* * 10
+
+ob=(1)
+fl=(73) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v1/clients/memory/resource_client.go
+fn=(175) github.com/solo-io/solo-kit/pkg/api/v1/clients/memory.(*ResourceClient).List
++97586 195 0
+cfl=(63)
+cfn=(157)
+calls=0 -1986649 420
+* * 10
+
+ob=(1)
+fl=(73)
+fn=(176) github.com/solo-io/solo-kit/pkg/api/v1/clients/memory.(*ResourceClient).Watch.func1
++2481 210 0
+cfl=(73)
+cfn=(175)
+calls=0 * 195
+* * 10
+
+ob=(1)
+fl=(73)
+fn=(177) github.com/solo-io/solo-kit/pkg/api/v1/clients/memory.(*ResourceClient).Watch.func2
++821 229 0
+cfl=(73)
+cfn=(176)
+calls=0 * 210
+* * 10
+
+ob=(1)
+fl=(74) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/api_event_loop.sk.go
+fn=(178) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ApiSyncers.Sync
++1780712 28 0
+cfl=(75) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/syncer/translator_syncer.go
+cfn=(179) github.com/solo-io/gloo/projects/gloo/pkg/syncer.(*translatorSyncer).Sync
+calls=0 +9234082 58
+* * 40
+cfl=(76) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/validation/server.go
+cfn=(180) github.com/solo-io/gloo/projects/gloo/pkg/validation.(*validator).Sync
+calls=0 +3502227 78
+* * 10
+
+ob=(1)
+fl=(77) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/api_snapshot.sk.go
+fn=(181) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ApiSnapshot.Clone
++1945 27 0
+cfl=(66)
+cfn=(182) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.EndpointList.Clone
+calls=0 +73034 97
+* * 10
+
+ob=(1)
+fl=(77)
+fn=(183) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ApiSnapshot.Hash
++1027 39 0
+cfl=(77)
+cfn=(184) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ApiSnapshot.hashEndpoints
+calls=0 +2441 53
+* * 110
++260 43 0
+cfl=(77)
+cfn=(185) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ApiSnapshot.hashUpstreams
+calls=0 +2121 69
+* * 90
+
+ob=(1)
+fl=(77)
+fn=(184)
++1154 53 0
+cfl=(64)
+cfn=(160)
+calls=0 -3837654 18
+* * 110
+
+ob=(1)
+fl=(77)
+fn=(185)
++707 69 0
+cfl=(64)
+cfn=(160)
+calls=0 -3838808 18
+* * 90
+
+ob=(1)
+fl=(78) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/eds_snapshot.sk.go
+fn=(186) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.EdsSnapshot.Hash
++53276 24 0
+cfl=(78)
+cfn=(187) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.EdsSnapshot.hashUpstreams
+calls=0 +53572 29
+* * 90
+
+ob=(1)
+fl=(78)
+fn=(187)
++296 29 0
+cfl=(64)
+cfn=(160)
+calls=0 -3892791 18
+* * 90
+
+ob=(1)
+fl=(52)
+fn=(138)
++7679 57 0
+cfl=(54)
+cfn=(140)
+calls=0 0xbd3920 50
+* * 20
+
+ob=(1)
+fl=(66)
+fn=(163)
++3143 37 0
+cfl=(64)
+cfn=(160)
+calls=0 -3900766 18
+* * 100
+cfl=(64)
+cfn=(160)
+calls=0 -3900564 20
+* * 10
+
+ob=(1)
+fl=(66)
+fn=(182)
++3547 97 0
+cfl=(63)
+cfn=(157)
+calls=0 -3937736 420
+* * 10
+
+ob=(1)
+fl=(65)
+fn=(162)
++305453 40 0
+cfl=(64)
+cfn=(160)
+calls=0 -3907456 18
+* * 230
+cfl=(64)
+cfn=(160)
+calls=0 -3907254 20
+* * 30
+
+ob=(1)
+fl=(74)
+fn=(188) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*apiEventLoop).Run.func1
++23108 84 0
+cfl=(74)
+cfn=(178)
+calls=0 -378487 28
+* * 50
+
+ob=(1)
+fl=(79) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/api_snapshot_emitter.sk.go
+fn=(189) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*apiEmitter).Snapshots.func9.1
++7394 452 0
+cfl=(77)
+cfn=(183)
+calls=0 -398623 39
+* * 100
+cfl=(77)
+cfn=(183)
+calls=0 -398363 43
+* * 70
+
+ob=(1)
+fl=(79)
+fn=(190) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*apiEmitter).Snapshots.func9
++4089 479 0
+cfl=(79)
+cfn=(189)
+calls=0 * 452
+* * 170
+
+ob=(1)
+fl=(80) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/api/v1/eds_snapshot_emitter.sk.go
+fn=(191) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*edsEmitter).Snapshots.func3.1
++12819 186 0
+cfl=(78)
+cfn=(186)
+calls=0 -354709 24
+* * 90
+
+ob=(1)
+fl=(80)
+fn=(192) github.com/solo-io/gloo/projects/gloo/pkg/api/v1.(*edsEmitter).Snapshots.func3
++2385 207 0
+cfl=(80)
+cfn=(191)
+calls=0 * 186
+* * 90
+
+ob=(1)
+fl=(81) /workspace/gopath/pkg/mod/github.com/solo-io/solo-kit@v0.11.13/pkg/api/v2/reporter/reporter.go
+fn=(193) github.com/solo-io/solo-kit/pkg/api/v2/reporter.ResourceReports.Accept
++800876 26 0
+cfl=(5)
+cfn=(10)
+calls=0 0x40fae9 656
+* * 10
+
+ob=(1)
+fl=(25)
+fn=(194) github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes.(*edsWatcher).List
++142275 99 0
+cfl=(69)
+cfn=(170)
+calls=0 -3137088 281
+* * 10
++2873 121 0
+cfl=(25)
+cfn=(40)
+calls=0 +5365 208
+* * 10
+cfl=(25)
+cfn=(40)
+calls=0 +11045 266
+* * 10
+cfl=(25)
+cfn=(40)
+calls=0 +11127 266
+* * 10
+
+ob=(1)
+fl=(25)
+fn=(40)
++8172 266 0
+cfl=(11)
+cfn=(82)
+calls=0 0x450784 161
+* * 10
++82 266 0
+cfl=(22)
+cfn=(37)
+calls=0 -5233101 122
+* * 10
+
+ob=(1)
+fl=(25)
+fn=(195) github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes.(*edsWatcher).watch.func1
++20623 130 0
+cfl=(25)
+cfn=(194)
+calls=0 -8254 121
+* * 30
+cfl=(25)
+cfn=(194)
+calls=0 -11127 99
+* * 10
++519 138 0
+cfl=(32)
+cfn=(80)
+calls=0 0x446893 477
+* * 10
+
+ob=(1)
+fl=(25)
+fn=(196) github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes.(*edsWatcher).watch.func2
++635 157 0
+cfl=(25)
+cfn=(195)
+calls=0 -519 130
+* * 40
+cfl=(25)
+cfn=(195)
+calls=0 * 138
+* * 10
+
+ob=(1)
+fl=(82) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes/upstream_client.go
+fn=(197) github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes.transform.func1
++11089 71 0
+cfl=(26)
+cfn=(41)
+calls=0 0x405214 127
+* * 10
+
+ob=(1)
+fl=(83) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/upstreams/snapshot.go
+fn=(198) github.com/solo-io/gloo/projects/gloo/pkg/upstreams.(*hybridUpstreamSnapshot).hash
++11739 45 0
+cfl=(64)
+cfn=(160)
+calls=0 -5249848 18
+* * 80
+
+ob=(1)
+fl=(84) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/upstreams/hybrid_client.go
+fn=(199) github.com/solo-io/gloo/projects/gloo/pkg/upstreams.(*hybridUpstreamClient).Watch.func3.1
++565 149 0
+cfl=(83)
+cfn=(198)
+calls=0 * 45
+* * 80
+
+ob=(1)
+fl=(84)
+fn=(200) github.com/solo-io/gloo/projects/gloo/pkg/upstreams.(*hybridUpstreamClient).Watch.func3
++1525 184 0
+cfl=(84)
+cfn=(199)
+calls=0 * 149
+* * 80
+
+ob=(1)
+fl=(76)
+fn=(180)
++292260 78 0
+cfl=(77)
+cfn=(181)
+calls=0 -1427310 27
+* * 10
+
+ob=(1)
+fl=(72)
+fn=(174)
++28504 25 0
+cfl=(72)
+cfn=(201) github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube.(*kubeConverter).FromKubeConfigMapWithResource
+calls=0 +29017 33
+* * 10
+
+ob=(1)
+fl=(72)
+fn=(201)
++513 33 0
+cfl=(68)
+cfn=(169)
+calls=0 -5474314 106
+* * 10
+
+ob=(1)
+fl=(85) /workspace/gopath/src/github.com/solo-io/gloo/projects/gloo/pkg/syncer/envoy_translator_syncer.go
+fn=(202) github.com/solo-io/gloo/projects/gloo/pkg/syncer.(*translatorSyncer).syncEnvoy
++5666358 60 0
+cfl=(77)
+cfn=(183)
+calls=0 -1747300 43
+* * 20
+cfl=(77)
+cfn=(183)
+calls=0 -1747560 39
+* * 10
++698 69 0
+cfl=(81)
+cfn=(193)
+calls=0 -6187732 26
+* * 10
+
+ob=(1)
+fl=(75)
+fn=(179)
++35782 58 0
+cfl=(85)
+cfn=(202)
+calls=0 -698 60
+* * 30
+cfl=(85)
+cfn=(202)
+calls=0 * 69
+* * 10
