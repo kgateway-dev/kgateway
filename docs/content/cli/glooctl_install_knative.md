@@ -38,6 +38,7 @@ glooctl install knative [flags]
       --create-namespace           Create the namespace to install gloo into (default true)
   -d, --dry-run                    Dump the raw installation yaml instead of applying it to kubernetes
   -f, --file string                Install Gloo from this Helm chart archive file rather than from a release
+      --gloo-release string        Version of Gloo to install (e.g. 1.0.0, defaults to latest)
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
   -n, --namespace string           namespace to install gloo into (default "gloo-system")

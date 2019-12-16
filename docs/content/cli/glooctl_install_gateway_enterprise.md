@@ -17,9 +17,9 @@ glooctl install gateway enterprise [flags]
 ### Options
 
 ```
-  -h, --help                 help for enterprise
-      --license-key string   License key to activate GlooE features
-      --version string       Version of gloo-ee to install (overrides the latest enterprise release)
+      --enterprise-release string   Version of Gloo Enterprise to install (e.g. 0.20.6, defaults to latest)
+  -h, --help                        help for enterprise
+      --license-key string          License key to activate GlooE features
 ```
 
 ### Options inherited from parent commands
@@ -34,6 +34,7 @@ glooctl install gateway enterprise [flags]
       --create-namespace           Create the namespace to install gloo into (default true)
   -d, --dry-run                    Dump the raw installation yaml instead of applying it to kubernetes
   -f, --file string                Install Gloo from this Helm chart archive file rather than from a release
+      --gloo-release string        Version of Gloo to install (e.g. 1.0.0, defaults to latest)
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
   -n, --namespace string           namespace to install gloo into (default "gloo-system")
