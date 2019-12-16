@@ -13,7 +13,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
-	enterpriseTag, err := version.GetEnterpriseTag(false)
+	enterpriseTag, err := version.GetLatestEnterpriseTag(false)
 	if err != nil {
 		os.Exit(1)
 	}

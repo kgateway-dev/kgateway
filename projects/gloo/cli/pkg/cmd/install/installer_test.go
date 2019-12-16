@@ -111,6 +111,7 @@ rules:
 		installConfig := &options.Install{
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
+			HelmReleaseVersion: "v1.0.0",
 			CreateNamespace: true,
 		}
 
@@ -161,7 +162,6 @@ rules:
 	})
 
 	It("installs enterprise cleanly by default", func() {
-		version.EnterpriseTag = "v1.0.0"
 		defaultInstall(true,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{

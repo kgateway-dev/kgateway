@@ -71,7 +71,8 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
+	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, installerConfig.InstallCliArgs.HelmReleaseVersion,
+		installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
 	if err != nil {
 		return err
 	}
@@ -188,23 +189,35 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 }
 
 // The resulting URI can be either a URL or a local file path.
-func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, error) {
+func getChartUri(chartOverride, releaseVersionOverride string, withUi, enterprise bool) (string, error) {
 	var helmChartArchiveUri string
-	enterpriseTag, err := version.GetEnterpriseTag(true)
+	enterpriseTag, err := version.GetLatestEnterpriseTag(true)
 	if err != nil {
 		return "", err
 	}
 
 	if enterprise {
-		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
-	} else if withUi {
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
-	} else {
-		glooOsVersion, err := getGlooVersion(chartOverride)
-		if err != nil {
-			return "", err
+		if releaseVersionOverride != "" {
+			helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, releaseVersionOverride)
+		} else {
+			helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
 		}
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+	} else if withUi {
+		if releaseVersionOverride != "" {
+			helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, releaseVersionOverride)
+		} else {
+			helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
+		}
+	} else {
+		if releaseVersionOverride != "" {
+			helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, releaseVersionOverride)
+		} else {
+			glooOsVersion, err := getGlooVersionToInstall(chartOverride)
+			if err != nil {
+				return "", err
+			}
+			helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+		}
 	}
 
 	if chartOverride != "" {
@@ -217,7 +230,7 @@ func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, er
 	return helmChartArchiveUri, nil
 }
 
-func getGlooVersion(chartOverride string) (string, error) {
+func getGlooVersionToInstall(chartOverride string) (string, error) {
 	if !version.IsReleaseVersion() && chartOverride == "" {
 		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")

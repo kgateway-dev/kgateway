@@ -17,9 +17,7 @@ glooctl install gateway enterprise [flags]
 ### Options
 
 ```
-      --enterprise-release string   Version of Gloo Enterprise to install (e.g. 0.20.6, defaults to latest)
-  -h, --help                        help for enterprise
-      --license-key string          License key to activate GlooE features
+  -h, --help   help for enterprise
 ```
 
 ### Options inherited from parent commands
@@ -34,11 +32,12 @@ glooctl install gateway enterprise [flags]
       --create-namespace           Create the namespace to install gloo into (default true)
   -d, --dry-run                    Dump the raw installation yaml instead of applying it to kubernetes
   -f, --file string                Install Gloo from this Helm chart archive file rather than from a release
-      --gloo-release string        Version of Gloo to install (e.g. 1.0.0, defaults to latest)
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
+      --license-key string         License key to activate GlooE features
   -n, --namespace string           namespace to install gloo into (default "gloo-system")
       --release-name string        helm release name (default "gloo")
+      --release-version string     helm release version (e.g. 0.20.6, defaults to latest)
   -u, --upgrade                    Upgrade an existing v1 gateway installation to use v2 CRDs. Set this when upgrading from v0.17.x or earlier versions of gloo
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
       --values strings             List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)

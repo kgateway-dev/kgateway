@@ -7,18 +7,12 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-var EnterpriseTag = UndefinedVersion
-
 const EnterpriseHelmRepoIndex = "https://storage.googleapis.com/gloo-ee-helm/index.yaml"
 const GlooEE = "gloo-ee"
 
 // The version of GlooE installed by the CLI.
 // Calculated from the latest gloo-ee version in the helm repo index
-func GetEnterpriseTag(stableOnly bool) (string, error) {
-	// If there was a flag override, use that
-	if EnterpriseTag != UndefinedVersion {
-		return EnterpriseTag, nil
-	}
+func GetLatestEnterpriseTag(stableOnly bool) (string, error) {
 	fs := afero.NewOsFs()
 	tmpFile, err := afero.TempFile(fs, "", "")
 	if err != nil {
@@ -28,7 +22,6 @@ func GetEnterpriseTag(stableOnly bool) (string, error) {
 		return "", err
 	}
 	defer fs.Remove(tmpFile.Name())
-	EnterpriseTag, err = LatestVersionFromRepo(tmpFile.Name(), stableOnly)
 	return LatestVersionFromRepo(tmpFile.Name(), stableOnly)
 }
 

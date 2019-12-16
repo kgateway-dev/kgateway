@@ -1,9 +1,7 @@
 package install
 
 import (
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -22,10 +20,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			extraValues := map[string]interface{}{
-				"license_key": opts.Install.Enterprise.LicenseKey,
-			}
-			if opts.Install.Enterprise.Release != "" {
-				version.EnterpriseTag = opts.Install.Enterprise.Release
+				"license_key": opts.Install.LicenseKey,
 			}
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
@@ -41,7 +36,5 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 
-	pFlags := cmd.PersistentFlags()
-	flagutils.AddEnterpriseInstallFlags(pFlags, &opts.Install)
 	return cmd
 }

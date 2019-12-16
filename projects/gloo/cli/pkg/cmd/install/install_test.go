@@ -31,7 +31,7 @@ var _ = Describe("Install", func() {
 	})
 
 	const licenseKey = "--license-key=fake-license-key"
-	const overrideVersion = "v0.20.7"
+	const overrideVersion = "0.20.7"
 
 	It("shouldn't get errors for enterprise dry run", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
@@ -44,7 +44,7 @@ var _ = Describe("Install", func() {
 	})
 
 	It("shouldn't get errors when overriding enterprise version", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --version %s --dry-run %s", file, overrideVersion, licenseKey))
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --release-version %s --dry-run %s", file, overrideVersion, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

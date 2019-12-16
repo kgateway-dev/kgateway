@@ -1,7 +1,6 @@
 package install
 
 import (
-	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
@@ -16,9 +15,6 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		PreRun: setVerboseMode(opts),
 
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if opts.Install.Release != "" {
-				version.Version = opts.Install.Release
-			}
 			helmClient := DefaultHelmClient()
 			installer := NewInstaller(helmClient)
 			if err := installer.Install(&InstallerConfig{

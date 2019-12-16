@@ -48,18 +48,13 @@ type Install struct {
 	Upgrade                 bool
 	CreateNamespace         bool
 	Namespace               string
-	Release                 string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
+	HelmReleaseVersion      string
 	Knative                 Knative
-	Enterprise              InstallEnterprise
+	LicenseKey              string
 	WithUi                  bool
-}
-
-type InstallEnterprise struct {
-	LicenseKey string
-	Release    string
 }
 
 type Knative struct {
