@@ -10,7 +10,7 @@ import (
 func Main(customCtx context.Context) error {
 	return setuputils.Main(setuputils.SetupOpts{
 		LoggerName:  "ingress",
-		LoggingPrefixVals: []interface{}{"version", version.Version},
+		: []interface{}{"version", version.Version},
 		SetupFunc:   Setup,
 		ExitOnError: true,
 		CustomCtx:   customCtx,
