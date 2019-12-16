@@ -32,6 +32,7 @@ import (
 
 type SetupOpts struct {
 	LoggerName  string
+	Version     string
 	SetupFunc   SetupFunc
 	ExitOnError bool
 	CustomCtx   context.Context
@@ -59,7 +60,8 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	ctx = contextutils.WithLoggerValues(ctx, opts.LoggingPrefixVals...)
+	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
+	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	if opts.UsageReporter != nil {
 		go func() {

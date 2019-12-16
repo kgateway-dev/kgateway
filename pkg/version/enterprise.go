@@ -29,7 +29,7 @@ func GetEnterpriseTag(stableOnly bool) (string, error) {
 	}
 	defer fs.Remove(tmpFile.Name())
 	EnterpriseTag, err = LatestVersionFromRepo(tmpFile.Name(), stableOnly)
-	return EnterpriseTag, err
+	return LatestVersionFromRepo(tmpFile.Name(), stableOnly)
 }
 
 func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {
