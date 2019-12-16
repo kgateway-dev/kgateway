@@ -48,6 +48,7 @@ type Install struct {
 	Upgrade                 bool
 	CreateNamespace         bool
 	Namespace               string
+	Release                 string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string

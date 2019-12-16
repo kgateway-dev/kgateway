@@ -1,9 +1,14 @@
 changelog:
-  - type: FIX
+  - type: NEW_FEATURE
     description: >
       Allow users to specify which version of enterprise to install via glooctl with:
-      `glooctl install gateway enterprise --version 0.20.6`
+      `glooctl install gateway enterprise --release 0.20.6`
     issueLink: https://github.com/solo-io/gloo/issues/1863
+  - type: NEW_FEATURE
+    description: >
+      Allow users to specify which version of gloo to install via glooctl with:
+      `glooctl install gateway --release 0.20.6`
+    issueLink: https://github.com/solo-io/gloo/issues/1965
   - type: NON_USER_FACING
     description: >
       Move the gloo version information to the LoggingPrefixVals field of the SetupOpts
