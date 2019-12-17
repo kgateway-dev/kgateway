@@ -94,7 +94,7 @@ func DebugYaml(opts *options.Options, w io.Writer) error {
 func DumpYaml(fileToWrite, namespace string, kubeCli install.KubeCli) error {
 
 	var manifests []string
-	for _, kind := range installcmd.GlooSystemKinds {
+	for _, kind := range installcmd.GlooNamespacedKinds {
 		output, err := kubeCli.KubectlOut(nil, "get", kind, "-oyaml", "-n", namespace)
 		if err != nil {
 			return err
