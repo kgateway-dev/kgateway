@@ -1,11 +1,11 @@
 ---
 title: Routes
 weight: 10
-description: Routes are the primary building block of the virtual service. A route contains a single matcher and one of a single destination, or a list of weighted destinations.
+description: Routes are the primary building block of the virtual service. A route contains matchers and an upstream destination.
 ---
 
 
-Routes are the primary building block of the *Virtual Service*. A route contains a single matcher and either a single destination or a list of weighted destinations. 
+Routes are the primary building block of the *Virtual Service*. A route contains matchers and an upstream which could be a single destination, a list of weighted destinations, or an upstream group. 
 
 There are many types of **matchers**, including **Path Matching**, **Header Matching**, **Query Parameter Matching**, and **HTTP Method Matching**. Matchers can be combined in a single rule to further refine which requests will be matched against that rule.
 
