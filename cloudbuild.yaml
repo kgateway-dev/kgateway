@@ -31,17 +31,18 @@ steps:
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
+  # id: 'dep'
+  id: 'prepare-workspace'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:latest'
+  env:
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  dir: './gopath/src/github.com/solo-io/gloo'
+  entrypoint: ls
+  args:
+    - "-la"
+  waitFor: ['prepare-workspace']
   id: 'dep'
-  # id: 'prepare-workspace'
-# - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
-#   env:
-#   - 'PROJECT_ROOT=github.com/solo-io/gloo'
-#   - 'GOPATH=/workspace/gopath'
-#   dir: './gopath/src/github.com/solo-io/gloo'
-#   entrypoint: ls
-#   args: ['check-format']
-#   waitFor: ['prepare-workspace']
-#   id: 'dep'
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
