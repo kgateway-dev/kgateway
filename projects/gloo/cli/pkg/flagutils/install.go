@@ -20,10 +20,6 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
-func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
-	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
-}
-
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.10.0",
 		"Version of Knative Serving to install, when --install-knative is set to `true`. This version"+

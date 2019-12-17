@@ -12,7 +12,7 @@ const GlooEE = "gloo-ee"
 
 // The version of GlooE installed by the CLI.
 // Calculated from the latest gloo-ee version in the helm repo index
-func GetLatestEnterpriseTag(stableOnly bool) (string, error) {
+func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
 	fs := afero.NewOsFs()
 	tmpFile, err := afero.TempFile(fs, "", "")
 	if err != nil {

@@ -8,6 +8,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
@@ -15,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -190,38 +191,34 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 
 // The resulting URI can be either a URL or a local file path.
 func getChartUri(chartOverride, releaseVersionOverride string, withUi, enterprise bool) (string, error) {
+
+	if chartOverride != "" && releaseVersionOverride != "" {
+		return "", errors.Errorf("you may only provide one override value, detected two: %s and %s", chartOverride, releaseVersionOverride)
+	}
+
 	var helmChartArchiveUri string
-	enterpriseTag, err := version.GetLatestEnterpriseTag(true)
-	if err != nil {
-		return "", err
-	}
-
-	if enterprise {
-		if releaseVersionOverride != "" {
-			helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, releaseVersionOverride)
-		} else {
-			helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
-		}
-	} else if withUi {
-		if releaseVersionOverride != "" {
-			helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, releaseVersionOverride)
-		} else {
-			helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
-		}
-	} else {
-		if releaseVersionOverride != "" {
-			helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, releaseVersionOverride)
-		} else {
-			glooOsVersion, err := getGlooVersionToInstall(chartOverride)
-			if err != nil {
-				return "", err
-			}
-			helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
-		}
-	}
-
 	if chartOverride != "" {
 		helmChartArchiveUri = chartOverride
+	} else {
+		enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
+		if err != nil {
+			return "", err
+		}
+		if enterprise {
+			helmChartArchiveUri = chartUriWithVersion(GlooEHelmRepoTemplate, releaseVersionOverride, enterpriseVersion)
+		} else if withUi {
+			helmChartArchiveUri = chartUriWithVersion(constants.GlooWithUiHelmRepoTemplate, releaseVersionOverride, enterpriseVersion)
+		} else {
+			if releaseVersionOverride != "" {
+				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, releaseVersionOverride)
+			} else {
+				glooOsVersion, err := getGlooVersionToInstall(chartOverride)
+				if err != nil {
+					return "", err
+				}
+				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+			}
+		}
 	}
 
 	if path.Ext(helmChartArchiveUri) != ".tgz" && !strings.HasSuffix(helmChartArchiveUri, ".tar.gz") {
@@ -236,6 +233,14 @@ func getGlooVersionToInstall(chartOverride string) (string, error) {
 			"when running an unreleased version of glooctl")
 	}
 	return version.Version, nil
+}
+
+func chartUriWithVersion(template, releaseVersionOverride, latestVersion string) string {
+	if releaseVersionOverride != "" {
+		return fmt.Sprintf(template, releaseVersionOverride)
+	} else {
+		return fmt.Sprintf(template, latestVersion)
+	}
 }
 
 func preInstallMessage(installOpts *options.Install, enterprise bool) {
