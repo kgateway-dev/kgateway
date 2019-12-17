@@ -243,7 +243,7 @@ status:
   state: Accepted
 ```
 
-The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these endpoints to demonstrate function routing in the [next tutorial](../virtual_services/routes/route_destinations/single_upstreams/function_routing/).
+The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these endpoints to demonstrate function routing in the [next tutorial]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/" >}}).
 
 ---
 
