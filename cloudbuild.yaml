@@ -18,7 +18,7 @@ steps:
 # Run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
-- name: 'gcr.io/$PROJECT_ID/dep:0.1.5'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:latest'
   args: ['ensure']
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -27,15 +27,12 @@ steps:
 - name: 'gcr.io/cloud-builders/git'
   entrypoint: 'bash'
   args:
-    - "-c"
-    - |
-       ls -latrh /gopath/src/github.com/solo-io/gloo/
-  # - '--git-dir'
-  # - '/gopath/src/github.com/solo-io/gloo/.git'
-  # - 'describe'
-  # - '--tags'
-  # - '--dirty'
-  # - '--always'
+    - "--repo-owner"
+    - "solo-io"
+    - "--repo-name"
+    - gloo
+    - "--repo-sha"
+    - master
 
 # # Run some basic checks on the repo
 # # 1) check formatting of go files
