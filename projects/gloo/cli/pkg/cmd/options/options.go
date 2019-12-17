@@ -40,6 +40,7 @@ type Top struct {
 	ErrorsOnly             bool
 	DisableUsageStatistics bool
 	ConfigFilePath         string
+	Consul                 Consul // use consul as config backend
 }
 
 type Install struct {
@@ -88,21 +89,17 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
-	Consul   Consul // use consul as config backend
 }
 
 type Delete struct {
 	Selector InputMapStringString
 	All      bool
-	Consul   Consul // use consul as config backend
 }
 
 type Edit struct {
-	Consul Consul // use consul as config backend
 }
 
 type Route struct {
-	Consul Consul // use consul as config backend
 }
 
 type Consul struct {
@@ -123,9 +120,8 @@ type Create struct {
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
 	AuthConfig         InputAuthConfig
-	DryRun             bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul             Consul // use consul as config backend
-	Vault              Vault  // use vault as secrets backend
+	DryRun             bool  // print resource as a kubernetes style yaml and exit without writing to storage
+	Vault              Vault // use vault as secrets backend
 }
 
 type RouteMatchers struct {
@@ -139,8 +135,7 @@ type RouteMatchers struct {
 
 type Add struct {
 	Route  InputRoute
-	DryRun bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul Consul // use consul as config backend
+	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {
@@ -207,8 +202,7 @@ type RestDestinationSpec struct {
 }
 
 type Remove struct {
-	Route  RemoveRoute
-	Consul Consul // use consul as config backend
+	Route RemoveRoute
 }
 
 type RemoveRoute struct {

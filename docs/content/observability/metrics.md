@@ -50,7 +50,7 @@ helm install gloo/gloo --name gloo --namespace gloo-system -f stats-values.yaml
 or:
 
 ```shell script
-helm template gloo --namespace gloo-system --values stats-values.yaml  | k apply -f - -n gloo-system
+helm template gloo --namespace gloo-system --values stats-values.yaml  | kubectl apply -f - -n gloo-system
 ```
 {{% /tab %}}
 {{< tab name="Helm 3" codelang="shell">}}
@@ -62,7 +62,7 @@ Here's what the resulting `discovery` manifest would look like. Note the additio
 and the `START_STATS_SERVER` environment variable.
 
 {{< highlight yaml "hl_lines=18-21 32-33" >}}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:

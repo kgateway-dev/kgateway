@@ -38,7 +38,7 @@ First, install the petclinic application.
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 ```
 
 Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/security/auth" %}}) documentation on how to configure Gloo to authenticate users.

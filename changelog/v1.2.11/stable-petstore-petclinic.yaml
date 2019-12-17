@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update all petstore and petclinic references to equivalent, stable URLs.
+    issueLink: https://github.com/solo-io/gloo/issues/1916

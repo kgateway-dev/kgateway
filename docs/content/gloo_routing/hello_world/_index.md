@@ -39,8 +39,7 @@ kubectl label namespace default discovery.solo.io/function_discovery=enabled
 Next, deploy the Pet Store app to kubernetes:
 
 ```shell
-kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/feature-rc1/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ```console

@@ -1,3 +1,3 @@
 The auth configuration format shown on this page was introduced with **Gloo Enterprise**, release [**0.20.1**]({{ .Site.Data.Solo.DocsVersion }}/changelog/enterprise).
-If you are using an earlier version, please refer to [this page]({{ .Site.Data.Solo.DocsVersion }}/gloo_routing/virtual_services/security/configuration_format_history)
+If you are using an earlier version, please refer to [this page]({{ .Site.Data.Solo.DocsVersion }}/security/auth/configuration_format_history)
 to see which configuration formats are supported by each version.

@@ -43,7 +43,7 @@ Here is a look at a snippet of the `default` settings after a fresh install of G
 kubectl --namespace gloo-system get settings default --output yaml
 ```
 
-{{< highlight yaml "hl_lines=15-18" >}}
+{{< highlight yaml "hl_lines=13-16" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -56,22 +56,24 @@ metadata:
   ...
 spec:
   discoveryNamespace: gloo-system
-  extensions:
-    configs:
-      extauth:
-        extauthzServerRef:
-          name: extauth
-          namespace: gloo-system
-      rate-limit:
-        ratelimit_server_ref:
-          name: rate-limit
-          namespace: gloo-system
+  extauth:
+    extauthzServerRef:
+      name: extauth
+      namespace: gloo-system
   gateway:
     validation:
       alwaysAccept: true
       proxyValidationServerAddr: gloo:9988
   gloo:
     xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  ratelimitServer:
+    ratelimitServerRef:
+      name: rate-limit
+      namespace: gloo-system
+  refreshRate: 60s
   ...
 {{< /highlight >}}
 
@@ -110,10 +112,10 @@ Once an `AuthConfig` is created, it can be used to authenticate your `Virtual Se
 - on **Routes**, and
 - on **WeightedDestinations**.
 
-The configuration format is the same in all three cases. It must be specified under the relevant `plugins` attribute (`VirtualHostPlugins`, `RoutePlugins`, or `WeightedDestinationPlugins`) and can take one of two forms. The first is used to enable authentication and requires you to reference an existing `AuthConfig`. An example Virtual Host configuration of this kind is the following:
+The configuration format is the same in all three cases. It must be specified under the relevant `options` attribute (on Virtual Hosts, Routes, or Weighted Destinations) and can take one of two forms. The first is used to enable authentication and requires you to reference an existing `AuthConfig`. An example configuration of this kind follows:
 
 ```yaml
-virtualHostPlugins:
+options:
   extauth:
     config_ref:
       # references the example AuthConfig we defined earlier
@@ -121,12 +123,12 @@ virtualHostPlugins:
       namespace: gloo-system
 ```
 
-In the case of a route or weighted destination, the top attribute would be names `routePlugins` and `weightedDestinationPlugins`, respectively.
+In the case of a route or weighted destination, the top attribute would be named `options` as well.
 
 The second form is used to disable authentication explicitly:
 
 ```yaml
-virtualHostPlugins: #  use `routePlugins` or `weightedDestinationPlugins` for routes or weighted destinations respectively
+options:
   extauth:
     config_ref:
       disable: true
