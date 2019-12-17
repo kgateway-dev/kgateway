@@ -135,7 +135,7 @@ Install the pet clinic demo app and configure a route to that service in Gloo
 
 ```bash
 kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 
 glooctl add route --name default --namespace gloo-system \
   --path-prefix / \

@@ -43,15 +43,8 @@ Service to match all requests that:
 - contain a `Host` header with value `foo` and
 - have a path that starts with `/` (this will match all requests).
 
-{{< tabs >}}
-{{< tab name="kubectl" codelang="yaml">}}
-{{< readfile file="security/auth/basic_auth/test-no-auth-vs.yaml">}}
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-no-auth --namespace gloo-system --domains foo
-glooctl add route --name test-no-auth --path-prefix / --dest-name json-upstream
-{{< /tab >}}
-{{< /tabs >}} 
+Apply the following virtual service:
+{{< readfile file="security/auth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
 Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 
@@ -117,7 +110,7 @@ EOF
 
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
 
-{{< highlight shell "hl_lines=19-23" >}}
+{{< highlight shell "hl_lines=21-25" >}}
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
@@ -129,14 +122,16 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+        - prefix: /
         routeAction:
           single:
             upstream:
               name: json-upstream
               namespace: gloo-system
-    virtualHostPlugins:
+        options:
+          autoHostRewrite: true      
+    options:
       extauth:
         config_ref:
           name: basic-auth

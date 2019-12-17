@@ -41,8 +41,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -55,10 +55,10 @@ spec:
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
 reachable from you machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to `localhost:8080` you should see the following page (you might need to wait a 
+If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a 
 minute for the containers to start):
 
 ![Pet Clinic app homepage](./../petclinic-home.png)
@@ -143,8 +143,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -152,7 +152,7 @@ spec:
               name: petclinic
               namespace: default
             port: 80
-    virtualHostPlugins:
+    options:
       extauth:
         config_ref:
           name: google-oidc
@@ -164,7 +164,7 @@ Since we didn't register any URL, Google will only allow authentication with app
 security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:
 
 ```shell
-kubectl port-forward -n gloo-system deploy/gateway-proxy-v2 8080 &
+kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &
 portForwardPid=$! # Store the port-forward pid so we can kill the process later
 ```
 

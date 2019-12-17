@@ -19,8 +19,6 @@ import (
 )
 
 const (
-	webSocketUpgradeType = "websocket"
-
 	DefaultHttpStatPrefix = "http"
 )
 
@@ -35,9 +33,6 @@ func NewHttpConnectionManager(listener *v1.HttpListener, httpFilters []*envoyhtt
 		NormalizePath: &wrappers.BoolValue{
 			Value: true,
 		},
-		UpgradeConfigs: []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
-			UpgradeType: webSocketUpgradeType,
-		}},
 		RouteSpecifier: &envoyhttp.HttpConnectionManager_Rds{
 			Rds: &envoyhttp.Rds{
 				ConfigSource: &envoycore.ConfigSource{

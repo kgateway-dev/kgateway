@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: |
+      Adds the ability to configure WebSocket upgrades on the HTTP Connection Manager and/or as part of a route's options.
+    issueLink: https://github.com/solo-io/gloo/issues/1132

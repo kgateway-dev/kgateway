@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -24,6 +26,10 @@ var file, values1, values2 string
 
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
+
+	// Make sure we don't hit a real cluster during any of the tests in this suite
+	helpers.UseMemoryClients()
+
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	RootDir = filepath.Join(cwd, "../../../../../..")
