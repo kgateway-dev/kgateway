@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Remove `-upgrade` flag `glooctl install gateway`
+  issueLink: https://github.com/solo-io/gloo/issues/1982
