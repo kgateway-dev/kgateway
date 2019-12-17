@@ -219,7 +219,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 				return 0, err
 			}
 			return vs.Status.State, nil
-		}, "5s", "0.2s").Should(Equal(core.Status_Accepted))
+		}, "30s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// udpates every 30 seconds.
