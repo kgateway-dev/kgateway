@@ -293,7 +293,7 @@ var _ = Describe("Gateway", func() {
 						return 0
 					}
 					return response.StatusCode
-				}, time.Second, 200*time.Millisecond).Should(Equal(404))
+				}, 3*time.Second, 200*time.Millisecond).Should(Equal(404))
 			})
 
 			Context("ssl", func() {
