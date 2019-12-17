@@ -248,6 +248,54 @@ var _ = Describe("Gateway", func() {
 				}, time.Second, 200*time.Millisecond).Should(Equal(404))
 			})
 
+			It("should cleanup Envoy configuration when deleting a virtualservice results in 0 Proxy CRDs", func() {
+				up := tu.Upstream
+				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Create a regular request
+				request, err := http.NewRequest("GET", fmt.Sprintf("http://localhost:%d/", defaults.HttpPort), nil)
+				Expect(err).NotTo(HaveOccurred())
+				request = request.WithContext(ctx)
+
+				// Check that we can reach the upstream
+				client := &http.Client{}
+				Eventually(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, 20*time.Second, 500*time.Millisecond).Should(Equal(200))
+
+				// Delete the Virtual Service
+				err = testClients.VirtualServiceClient.Delete(writeNamespace, vs.GetMetadata().Name, clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Wait for proxy to be deleted
+				var proxyList gloov1.ProxyList
+				Eventually(func() bool {
+					proxyList, err = testClients.ProxyClient.List(writeNamespace, clients.ListOpts{})
+					if err != nil {
+						return false
+					}
+					return len(proxyList) == 0
+				}, "100s", "0.1s").Should(BeTrue())
+
+				// Add the header that we are explicitly excluding from the match
+				request.Header = map[string][]string{}
+
+				// We should get a 404
+				Consistently(func() int {
+					response, err := client.Do(request)
+					if err != nil {
+						return 0
+					}
+					return response.StatusCode
+				}, time.Second, 200*time.Millisecond).Should(Equal(404))
+			})
+
 			Context("ssl", func() {
 
 				TestUpstreamSslReachable := func() {
