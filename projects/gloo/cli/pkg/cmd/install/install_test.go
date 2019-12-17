@@ -18,11 +18,6 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("shouldn't get errors for gateway upgrade dry run", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --upgrade", file))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
 	It("shouldn't get errors for gateway dry run with multiple values", func() {
 		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --values %s,%s ", file, values1, values2))
 		Expect(err).NotTo(HaveOccurred())
@@ -34,11 +29,6 @@ var _ = Describe("Install", func() {
 
 	It("shouldn't get errors for enterprise dry run", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
-		Expect(err).NotTo(HaveOccurred())
-	})
-
-	It("shouldn't get errors for enterprise upgrade dry run", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run --upgrade", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
