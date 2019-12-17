@@ -23,7 +23,7 @@ steps:
     path: '/workspace/gopath/pkg/mod'
   id: 'untar-mod-cache'
 
-# Run dep to set up the project so it can be built and tested
+# TODO: during this step, run dep to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:latest'
@@ -39,28 +39,7 @@ steps:
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
-  # id: 'dep'
   id: 'prepare-workspace'
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:latest'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: ls
-  args:
-    - "-la"
-  waitFor: ['prepare-workspace']
-  id: 'dep'
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:latest'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: cat 
-  args:
-    - "projects/envoyinit/cmd/Dockerfile.envoyinit"
-  waitFor: ['prepare-workspace']
-  id: 'debug-cat-envoyinit'
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -76,7 +55,7 @@ steps:
   dir: './gopath/src/github.com/solo-io/gloo'
   entrypoint: make
   args: ['check-format']
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
   id: 'check-format'
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   entrypoint: 'bash'
@@ -87,7 +66,7 @@ steps:
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   volumes: *vol
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
   id: 'check-code-and-docs-gen'
 
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
@@ -101,7 +80,7 @@ steps:
     ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile.envoyinit|cut -d: -f2)
     gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'get-envoy'
 - name: gcr.io/cloud-builders/gcloud
@@ -113,14 +92,14 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
   id: 'setup-aws-creds'
 # Helm related setup
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: mkdir
   args: ['-p', './_output/helm']
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
   id: 'make-helm-dir'
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
   args: ['fetch-helm']
@@ -130,7 +109,7 @@ steps:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
   id: 'fetch-helm'
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
@@ -141,8 +120,8 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-zone'
-  # run after dep so it doesn't move our settings
-  waitFor: ['dep']
+  # run after deprepare-workspace it doesn't move our settings
+  waitFor: ['prepare-workspace']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
   env:
@@ -172,7 +151,7 @@ steps:
   args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
-  waitFor: ['dep']
+  waitFor: ['prepare-workspace']
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.17'
   args: ['docker']
   env:
@@ -182,7 +161,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['dep', 'check-code-and-docs-gen']
+  waitFor: ['prepare-workspace', 'check-code-and-docs-gen']
   volumes: *vol
   id: 'compile'
 
@@ -217,8 +196,8 @@ steps:
     - 'KUBECONFIG=/workspace/kube-e2e'
   args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
   id: 'get-credentials'
-  # wait for dep so our kube config is not moved.
-  waitFor: ['set-zone', 'dep']
+  # wait for prepare-workspace so our kube config is not moved.
+  waitFor: ['set-zone', 'prepare-workspace']
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
