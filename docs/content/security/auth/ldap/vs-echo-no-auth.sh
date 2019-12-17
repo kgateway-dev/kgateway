@@ -10,8 +10,8 @@
       domains:
         - '*'
       routes:
-        - matcher:
-            prefix: /echo
+        - matchers:
+          - prefix: /echo
           routeAction:
             single:
               kube:
@@ -19,4 +19,4 @@
                   name: http-echo
                   namespace: default
                 port: 5678
-    EOF
+EOF

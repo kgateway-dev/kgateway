@@ -611,7 +611,7 @@ Cool. Let's leave our controller running and watch it dynamically respond when w
 
 ```bash
 kubectl apply -f \
-  https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+  https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 See the service and pod:

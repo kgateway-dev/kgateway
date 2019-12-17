@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Don't attempt to reach the knative api server if the user is doing a dry-run installation.
+    issueLink: https://github.com/solo-io/gloo/issues/1951

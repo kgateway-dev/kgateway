@@ -1,6 +1,7 @@
 metadata:
   name: petstore
   namespace: gloo-system
+  resourceVersion: "3"
 static:
   hosts:
   - addr: petstore
@@ -46,8 +47,7 @@ static:
             :method:
               text: GET
             :path:
-              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
-                "")}}
+              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit, "")}}
             content-length:
               text: "0"
             content-type: {}

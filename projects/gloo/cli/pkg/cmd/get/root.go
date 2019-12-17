@@ -21,7 +21,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts, opts.Get.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -33,8 +33,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
-
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Get.Consul)
 
 	cmd.AddCommand(VirtualService(opts))
 	cmd.AddCommand(RouteTable(opts))

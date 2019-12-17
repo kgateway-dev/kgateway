@@ -46,7 +46,7 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts, opts.Create.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -71,7 +71,6 @@ func AuthConfigCreate(opts *options.Options, optionsFunc ...cliutils.OptionsFunc
 
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 	flagutils.AddAuthConfigFlags(pflags, &opts.Create.AuthConfig)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 

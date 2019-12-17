@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
@@ -19,10 +21,10 @@ const (
 	ContainerNameToCheck = "discovery"
 )
 
-func VersionMismatchWarning(opts *options.Options, consul options.Consul) error {
+func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 	// Only Kubernetes provides client/server version information. Only check for a version
 	// mismatch if Kubernetes is enabled (i.e. Consul is not enabled)
-	if consul.UseConsul {
+	if opts.Top.Consul.UseConsul {
 		return nil
 	}
 
