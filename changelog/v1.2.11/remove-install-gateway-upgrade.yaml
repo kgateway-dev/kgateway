@@ -1,4 +1,4 @@
 changelog:
 - type: FIX
-  description: Remove `-upgrade` flag `glooctl install gateway`
+  description: Remove `glooctl install gateway --upgrade` flag, since we have removed the v2 Gateway CRD.
   issueLink: https://github.com/solo-io/gloo/issues/1982
