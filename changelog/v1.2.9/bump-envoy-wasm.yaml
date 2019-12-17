@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Bump envoy-wasm to resolve issue for loading non-empty config for remote WASM extensions.
+    issueLink: https://github.com/solo-io/gloo/issues/1919

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
@@ -58,6 +59,16 @@ var _ = Describe("Plugin", func() {
 				Uri:     true,
 			},
 			PreserveExternalRequestId: true,
+
+			Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+				{
+					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+							Enabled: &types.BoolValue{Value: true},
+						},
+					},
+				},
+			},
 		}
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -115,6 +126,10 @@ var _ = Describe("Plugin", func() {
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
 		Expect(trace.OverallSampling.Value).To(Equal(100.0))
 
+		Expect(len(cfg.UpgradeConfigs)).To(Equal(1))
+		Expect(cfg.UpgradeConfigs[0].UpgradeType).To(Equal("websocket"))
+		Expect(cfg.UpgradeConfigs[0].Enabled.GetValue()).To(Equal(true))
+
 		Expect(cfg.ForwardClientCertDetails).To(Equal(envoyhttp.HttpConnectionManager_APPEND_FORWARD))
 
 		ccd := cfg.SetCurrentClientCertDetails
@@ -125,4 +140,41 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Uri).To(BeTrue())
 	})
 
+	It("enables websockets by default", func() {
+		hcms := &hcm.HttpConnectionManagerSettings{}
+
+		hl := &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: hcms,
+			},
+		}
+
+		in := &v1.Listener{
+			ListenerType: &v1.Listener_HttpListener{
+				HttpListener: hl,
+			},
+		}
+
+		filters := []*envoylistener.Filter{{
+			Name: util.HTTPConnectionManager,
+		}}
+
+		outl := &envoyapi.Listener{
+			FilterChains: []*envoylistener.FilterChain{{
+				Filters: filters,
+			}},
+		}
+
+		p := NewPlugin()
+
+		err := p.ProcessListener(plugins.Params{}, in, outl)
+		Expect(err).NotTo(HaveOccurred())
+
+		var cfg envoyhttp.HttpConnectionManager
+		err = translatorutil.ParseConfig(filters[0], &cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+		Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+	})
 })

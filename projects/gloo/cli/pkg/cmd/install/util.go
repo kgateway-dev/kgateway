@@ -1,48 +1,42 @@
 package install
 
-var (
-	// These will get cleaned up by uninstall always
-	GlooSystemKinds []string
-	// These will get cleaned up only if uninstall all is chosen
-	GlooRbacKinds []string
-	// These will get cleaned up by uninstall if delete-crds or all is chosen
-	GlooCrdNames []string
+import (
+	"fmt"
+	"strings"
+)
 
-	// Set up during pre-install (for OS gloo, namespace only)
-	GlooPreInstallKinds     []string
-	GlooInstallKinds        []string
-	GlooGatewayUpgradeKinds []string
-	ExpectedLabels          map[string]string
+var (
+	GlooNamespacedKinds    []string
+	GlooClusterScopedKinds []string
+	GlooCrdNames           []string
+
+	GlooComponentLabels map[string]string
 
 	KnativeCrdNames []string
 )
 
 func init() {
-	GlooPreInstallKinds = []string{"Namespace"}
 
-	GlooSystemKinds = []string{
+	GlooComponentLabels = map[string]string{
+		"app": "gloo",
+	}
+
+	GlooNamespacedKinds = []string{
 		"Deployment",
+		"DaemonSet",
 		"Service",
-		"ServiceAccount",
 		"ConfigMap",
+		"ServiceAccount",
+		"Role",
+		"RoleBinding",
 		"Job",
 	}
 
-	GlooRbacKinds = []string{
+	GlooClusterScopedKinds = []string{
 		"ClusterRole",
 		"ClusterRoleBinding",
-	}
-	GlooPreInstallKinds = append(GlooPreInstallKinds,
-		"ServiceAccount",
-		"Gateway",
-		"Job",
-		"Settings",
 		"ValidatingWebhookConfiguration",
-	)
-	GlooPreInstallKinds = append(GlooPreInstallKinds, GlooRbacKinds...)
-	GlooInstallKinds = GlooSystemKinds
-
-	GlooGatewayUpgradeKinds = append(GlooInstallKinds, "Job")
+	}
 
 	GlooCrdNames = []string{
 		"gateways.gateway.solo.io",
@@ -68,7 +62,12 @@ func init() {
 		"serverlessservices.networking.internal.knative.dev",
 	}
 
-	ExpectedLabels = map[string]string{
-		"app": "gloo",
+}
+
+func LabelsToFlagString(labelMap map[string]string) (labelString string) {
+	for k, v := range labelMap {
+		labelString += fmt.Sprintf("%s=%s,", k, v)
 	}
+	labelString = strings.TrimSuffix(labelString, ",")
+	return
 }

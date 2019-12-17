@@ -23,7 +23,7 @@ glooctl install gateway
 
 Install the petstore demo
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 Create a virtual service with routes for `/foo` and `/bar`
@@ -76,7 +76,9 @@ Meanwhile the following command rewrites the `/bar` to the `/api/pets` endpoint,
 ```shell script
 curl "$(glooctl proxy url)/bar"
 ```
+
 returns
+
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
@@ -178,5 +180,5 @@ returns
 
 ```shell script
 glooctl uninstall
-kubectl delete -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```

@@ -19,10 +19,10 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	editFlags := &editOptions.EditOptions{Options: opts}
-	return RootCmdWithEditOpts(editFlags, optionsFunc...)
+	return RootCmdWithEditOpts(opts, editFlags, optionsFunc...)
 }
 
-func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+func RootCmdWithEditOpts(opts *options.Options, editOpts *editOptions.EditOptions, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     constants.EDIT_COMMAND.Use,
 		Aliases: constants.EDIT_COMMAND.Aliases,
@@ -30,31 +30,30 @@ func RootCmdWithEditOpts(opts *editOptions.EditOptions, optionsFunc ...cliutils.
 		Long:    constants.EDIT_COMMAND.Long,
 
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			err := argsutils.MetadataArgsParse(opts.Options, args)
+			err := argsutils.MetadataArgsParse(editOpts.Options, args)
 			if err != nil {
 				return err
 			}
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Edit.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
 		},
 	}
-	flagutils.AddOutputFlag(cmd.PersistentFlags(), &opts.Top.Output)
-	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &opts.Metadata)
+	flagutils.AddOutputFlag(cmd.PersistentFlags(), &editOpts.Top.Output)
+	flagutils.AddMetadataFlags(cmd.PersistentFlags(), &editOpts.Metadata)
 
 	// add resource version flag. this is not needed in interactive mode, as we can do an edit
 	// atomically in that case
-	addEditFlags(cmd.PersistentFlags(), opts)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Edit.Consul)
+	addEditFlags(cmd.PersistentFlags(), editOpts)
 
-	cmd.AddCommand(settings.RootCmd(opts, optionsFunc...))
-	cmd.AddCommand(route.RootCmd(opts, optionsFunc...))
-	cmd.AddCommand(virtualservice.RootCmd(opts, optionsFunc...))
-	cmd.AddCommand(upstream.RootCmd(opts, optionsFunc...))
+	cmd.AddCommand(settings.RootCmd(editOpts, optionsFunc...))
+	cmd.AddCommand(route.RootCmd(editOpts, optionsFunc...))
+	cmd.AddCommand(virtualservice.RootCmd(editOpts, optionsFunc...))
+	cmd.AddCommand(upstream.RootCmd(editOpts, optionsFunc...))
 	return cmd
 }
 

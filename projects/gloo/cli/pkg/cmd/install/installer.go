@@ -165,7 +165,7 @@ func setCrdCreateToFalse(config *InstallerConfig) {
 func (i *installer) printReleaseManifest(release *release.Release) error {
 	// Print CRDs
 	for _, crdFile := range release.Chart.CRDs() {
-		_, _ = fmt.Fprintf(i.dryRunOutputWriter, "%s", string(crdFile.Data))
+		_, _ = fmt.Fprintln(i.dryRunOutputWriter, string(crdFile.Data))
 		_, _ = fmt.Fprintln(i.dryRunOutputWriter, "---")
 	}
 

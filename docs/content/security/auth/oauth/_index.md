@@ -82,10 +82,9 @@ metadata:
   namespace: gloo-system
 data:
   # The value is a base64 encoding of the following YAML:
-  # config:
-  #   client_secret: secretvalue
+  # client_secret: secretvalue
   # Gloo expects OAuth client secrets in this format.
-  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
+  oauth: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
 - `scopes`: scopes to request in addition to the `openid` scope.

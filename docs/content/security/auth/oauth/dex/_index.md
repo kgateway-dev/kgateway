@@ -49,8 +49,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -63,10 +63,10 @@ spec:
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
 reachable from your machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to `localhost:8080` you should see the following page (you might need to wait a 
+If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a 
 minute for the containers to start):
 
 ![Pet Clinic app homepage](./../petclinic-home.png)
@@ -113,10 +113,17 @@ EOF
 This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` 
 for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
 
-Using this configuration, we can deploy Dex to our cluster using Helm:
+Using this configuration, we can deploy Dex to our cluster using Helm.
+
+If `help repo list` doesn't list the `stable` repo, invoke:
 
 ```shell
-helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
+```
+
+And then install dex (helm 3 command follows):
+```shell
+helm install dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo
@@ -141,10 +148,9 @@ metadata:
   namespace: gloo-system
 data:
   # The value is a base64 encoding of the following YAML:
-  # config:
-  #   client_secret: secretvalue
+  # client_secret: secretvalue
   # Gloo expects OAuth client secrets in this format.
-  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
+  oauth: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
 <br>
@@ -195,8 +201,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -204,7 +210,7 @@ spec:
               name: petclinic
               namespace: default
             port: 80
-    virtualHostPlugins:
+    options:
       extauth:
         config_ref:
           name: oidc-dex
@@ -230,11 +236,11 @@ echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 
 1. Port-forward the Gloo Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid2=$! # Store the port-forward pid so we can kill the process later
 ```
 
-Now we are ready to test our complete setup! Open you browser and navigate to `localhost:8080`. You should see the 
+Now we are ready to test our complete setup! Open you browser and navigate to [http://localhost:8080](http://localhost:8080). You should see the 
 following login page:
 
 ![Dex login page](./dex-login.png)

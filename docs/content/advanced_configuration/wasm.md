@@ -43,12 +43,16 @@ gloo-6889d56b5c-f28gv           1/1     Running   0          45s
 ```
 
 Once all of the pods are up and running you are all ready to configure your first WASM filter.
-The API to configure the filter can be found [here]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk.md" >}}).
+The API to configure the filter can be found {{% protobuf name="wasm.options.gloo.solo.io.PluginSource" display="here"%}}.
 
 At the moment the config must live on the gateway level, this will change as the Envoy WASM api evolves. To configure a gateway
 to add a WASM filter, the gateway must be edited like so.
 
-`kubectl edit -n gloo-system gateways.gateway.solo.io gateway-proxy`
+```shell
+kubectl edit -n gloo-system gateways.gateway.solo.io gateway-proxy
+```
+
+and change the `httpGateway` object to the following:
 
 ```yaml
   httpGateway:

@@ -7,6 +7,7 @@ import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
 option (gogoproto.equal_all) = true;
 
@@ -54,4 +55,8 @@ message HttpConnectionManagerSettings {
     SetCurrentClientCertDetails set_current_client_cert_details = 19;
 
     bool preserve_external_request_id = 20;
+
+    // HttpConnectionManager configuration for protocol upgrade requests. 
+    // Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled.
+    repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
 }

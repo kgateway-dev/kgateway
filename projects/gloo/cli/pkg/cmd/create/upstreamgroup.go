@@ -4,7 +4,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	"github.com/solo-io/gloo/pkg/utils"
@@ -38,7 +37,7 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -59,7 +58,6 @@ func UpstreamGroup(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 		},
 	}
 	cliutils.ApplyOptions(cmd, optionsFunc)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 
 	flags := cmd.Flags()
 	flags.StringSliceVar(

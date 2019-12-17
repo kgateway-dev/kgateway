@@ -611,7 +611,7 @@ Cool. Let's leave our controller running and watch it dynamically respond when w
 
 ```bash
 kubectl apply -f \
-  https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+  https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 See the service and pod:
@@ -869,7 +869,11 @@ Using `curl`, we can connect to any service in our cluster by using the correct 
 
 ```bash
 curl $(glooctl proxy url -n default -p my-cool-proxy)/api/pets -H "Host: default-petstore-8080"
+```
 
+returns
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 

@@ -143,7 +143,7 @@ global:
             repository: ext-auth-plugins
             registry: quay.io/solo-io
             pullPolicy: IfNotPresent
-            tag: 0.18.23
+            tag: 1.0.0-rc5 # change this to your GlooE installation version, or else plugin may be built with different libraries
 EOF
 {{< /highlight >}}
 
@@ -190,7 +190,7 @@ spec:
         gloo: extauth
     spec:
       containers:
-      - image: quay.io/solo-io/extauth-ee:0.20.6
+      - image: quay.io/solo-io/extauth-ee:1.0.0-rc5
         imagePullPolicy: IfNotPresent
         name: extauth
         resources: {}
@@ -198,7 +198,7 @@ spec:
         - mountPath: /auth-plugins
           name: auth-plugins
       initContainers:
-      - image: quay.io/solo-io/ext-auth-plugins:0.20.6
+      - image: quay.io/solo-io/ext-auth-plugins:1.0.0-rc5
         imagePullPolicy: IfNotPresent
         name: plugin-my-plugin
         volumeMounts:
@@ -219,8 +219,10 @@ to the `extauth` server.
 Let's verify that the `extauth` server did successfully start by checking its logs.
 
 ```bash
-kc logs -n gloo-system deployment/extauth
-
+kubectl logs -n gloo-system deployment/extauth
+```
+returns
+```
 {"level":"info","ts":1573567317.1261566,"logger":"extauth","caller":"runner/run.go:86","msg":"Starting ext-auth server"}
 {"level":"info","ts":1573567317.1262844,"logger":"extauth","caller":"runner/run.go:105","msg":"extauth server running in [gRPC] mode, listening at [:8083]"}
 ```
@@ -229,7 +231,7 @@ kc logs -n gloo-system deployment/extauth
 Let's deploy a sample application that we will route requests to when testing our auth plugin:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ### Create a Virtual Service
@@ -246,8 +248,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -336,8 +338,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -345,7 +347,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       extauth:
         configRef:
           name: plugin-auth
@@ -354,9 +356,13 @@ spec:
 
 After `apply`-ing this Virtual Service, let's check the `extauth` logs again:
 
-{{< highlight yaml "hl_lines=5-6" >}}
-kc logs -n gloo-system deployment/extauth
+```shell script
+kubectl logs -n gloo-system deployment/extauth
+```
 
+returns
+
+{{< highlight yaml "hl_lines=3-4" >}}
 {"level":"info","ts":1573567317.1261566,"logger":"extauth","caller":"runner/run.go:86","msg":"Starting ext-auth server"}
 {"level":"info","ts":1573567317.1262844,"logger":"extauth","caller":"runner/run.go:105","msg":"extauth server running in [gRPC] mode, listening at [:8083]"}
 {"level":"info","ts":1573574476.3094413,"logger":"extauth","caller":"runner/run.go:160","msg":"got new config","config":[{"auth_config_ref_name":"gloo-system.plugin-auth","AuthConfig":null,"configs":[{"AuthConfig":{"plugin_auth":{"name":"RequiredHeader","plugin_file_name":"RequiredHeader.so","exported_symbol_name":"Plugin","config":{"fields":{"AllowedValues":{"Kind":{"ListValue":{"values":[{"Kind":{"StringValue":"foo"}},{"Kind":{"StringValue":"bar"}}]}}},"RequiredHeader":{"Kind":{"StringValue":"my-header"}}}}}}}]}]}
@@ -368,9 +374,13 @@ From the last two lines we can see that the Ext Auth server received the new con
 ## Test our configuration
 If we try to hit our route again, we should see a `403` response:
 
-{{< highlight shell "hl_lines=8" >}}
+```shell script
 curl -v $(glooctl proxy url)/api/pets
+```
 
+returns
+
+{{< highlight shell "hl_lines=6" >}}
 > GET /api/pets HTTP/1.1
 > Host: 192.168.99.100:30834
 > User-Agent: curl/7.54.0
@@ -387,9 +397,11 @@ If you recall the structure of our plugin, it will only allow request with a giv
 where that header has an expected value (in this case one of `foo` or `bar`). If we include a header with these 
 properties in our request, we will be able to hit our sample service:
 
-{{< highlight shell "hl_lines=9 16" >}}
+```shell script
 curl -v -H "my-header: foo" $(glooctl proxy url)/api/pets
+```
 
+{{< highlight shell "hl_lines=7 14" >}}
 > GET /api/pets HTTP/1.1
 > Host: 192.168.99.100:30834
 > User-Agent: curl/7.54.0
@@ -415,7 +427,7 @@ plugin.
 You can cleanup the resources created while following this guide by running:
 ```bash
 glooctl uninstall --all
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ## Next steps

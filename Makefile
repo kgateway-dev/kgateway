@@ -377,46 +377,24 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 #----------------------------------------------------------------------------------
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
-HELM_DIR := install/helm
-INSTALL_NAMESPACE ?= gloo-system
-
-.PHONY: manifest
-manifest: prepare-helm install/gloo-gateway.yaml install/gloo-ingress.yaml \
- 		install/gloo-knative.yaml update-helm-chart
+HELM_DIR := install/helm/gloo
 
 # Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
-.PHONY: prepare-helm
-prepare-helm: $(OUTPUT_DIR)/.helm-prepared
+.PHONY: generate-helm-files
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 $(OUTPUT_DIR)/.helm-prepared:
-	GO111MODULE=on go run install/helm/gloo/generate.go $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
 	touch $@
 
-update-helm-chart:
+package-chart: generate-helm-files
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
-HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
-
-MANIFEST_OUTPUT = > /dev/null
-ifneq ($(BUILD_ID),)
-MANIFEST_OUTPUT =
-endif
-
-install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,settings.integrations.knative.enabled=true | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) \
-		--set gateway.enabled=false,ingress.enabled=true| tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-.PHONY: render-yaml
-render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
 
 .PHONY: save-helm
 save-helm:
@@ -424,9 +402,49 @@ ifeq ($(RELEASE),"true")
 	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
 endif
 
-.PHONY: fetch-helm
-fetch-helm:
-	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
+#----------------------------------------------------------------------------------
+# Build the Gloo Manifests that are published as release assets
+#----------------------------------------------------------------------------------
+
+.PHONY: render-manifests
+render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml
+
+INSTALL_NAMESPACE ?= gloo-system
+
+MANIFEST_OUTPUT = > /dev/null
+ifneq ($(BUILD_ID),)
+MANIFEST_OUTPUT =
+endif
+
+define HELM_VALUES
+namespace:
+  create: true
+crds:
+  create: true
+endef
+
+# Export as a shell variable, make variables do not play well with multiple lines
+export HELM_VALUES
+$(OUTPUT_DIR)/release-manifest-values.yaml:
+	@echo "$$HELM_VALUES" > $@
+
+install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install gateway -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install knative -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install ingress -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
 
 #----------------------------------------------------------------------------------
 # Release
@@ -447,11 +465,11 @@ ASSETS_ONLY := false
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
-upload-github-release-assets: build-cli render-yaml
+upload-github-release-assets: build-cli render-manifests
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
 .PHONY: publish-docs
-publish-docs: prepare-helm
+publish-docs: generate-helm-files
 ifeq ($(RELEASE),"true")
 	cd docs && make docker-push-docs \
 		VERSION=$(VERSION) \
@@ -575,15 +593,15 @@ certgen-docker-test: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
+	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
 .PHONY: build-kind-chart
 build-kind-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run install/helm/gloo/generate.go $(VERSION)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
+	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
 
@@ -600,9 +618,9 @@ build-kind-chart:
 .PHONY: build-tagged-chart
 build-tagged-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run install/helm/gloo/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
 .PHONY: save-tagged-helm

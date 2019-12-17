@@ -129,7 +129,7 @@ the predefined regular expressions.
 Let's start by creating our typical petstore microservice:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 Apply the following virtual service to route to the Gloo-discovered petstore upstream:

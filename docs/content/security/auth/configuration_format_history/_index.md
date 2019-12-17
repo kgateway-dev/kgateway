@@ -6,19 +6,19 @@ description: Overview of the external auth configuration formats supported by ea
 
 #### GlooE versions >=0.20.1
 
-**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), simplified the external auth 
-configuration format. You can now specify the `extauth` configuration directly on the `Plugins` attribute of the 
-relevant resource:
+**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), simplified the
+external auth configuration format. You can now specify the `extauth` configuration directly on the `Options`/`Plugins`
+(Gloo 1.0+ vs Gloo 0.x respectively) attribute of the relevant resource:
 
 ```yaml
-virtualHostPlugins:
+options: # Pre Gloo 1.0, this was virtualHostPlugins, routePlugins, or weightedDestinationPlugins
   extauth:
     config_ref:
       name: basic-auth
       namespace: gloo-system
 ```
 
-Compare this to the old format:
+Compare this to the old format (not supported in Gloo 1.0+):
 
 ```yaml
 virtualHostPlugins:

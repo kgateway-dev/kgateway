@@ -10,8 +10,8 @@
       domains:
         - '*'
       routes:
-        - matcher:
-            prefix: /echo
+        - matchers:
+          - prefix: /echo
           routeAction:
             single:
               kube:
@@ -19,9 +19,9 @@
                   name: http-echo
                   namespace: default
                 port: 5678
-      virtualHostPlugins:
+      options:
         extauth:
           config_ref:
             name: ldap
             namespace: gloo-system
-    EOF
+EOF
