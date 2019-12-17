@@ -26,6 +26,8 @@ steps:
     - gloo
     - "--repo-sha"
     - master
+    - "--repo-output-dir"
+    - "/workspace/gopath/src/github.com/solo-io/gloo"
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
