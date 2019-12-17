@@ -248,7 +248,7 @@ var _ = Describe("Gateway", func() {
 				}, time.Second, 200*time.Millisecond).Should(Equal(404))
 			})
 
-			It("should cleanup Envoy configuration when deleting a virtualservice results in 0 Proxy CRDs", func() {
+			It("should cleanup Envoy configuration when deleting a virtual service results in 0 Proxy CRDs", func() {
 				up := tu.Upstream
 				vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
@@ -283,11 +283,11 @@ var _ = Describe("Gateway", func() {
 					return len(proxyList) == 0
 				}, "100s", "0.1s").Should(BeTrue())
 
-				// Add the header that we are explicitly excluding from the match
+				// Fix the header.
 				request.Header = map[string][]string{}
 
-				// We should get a 404
-				Consistently(func() int {
+				// We should get a 404 after envoy picks up the cleaned up config
+				Eventually(func() int {
 					response, err := client.Do(request)
 					if err != nil {
 						return 0
