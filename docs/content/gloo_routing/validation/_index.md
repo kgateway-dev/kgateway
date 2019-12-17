@@ -92,9 +92,6 @@ If writing Settings directly to Kubernetes, add the following to the `spec.gatew
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-weight: "5"
   labels:
     app: gloo
   name: default
