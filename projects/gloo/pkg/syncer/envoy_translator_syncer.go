@@ -73,7 +73,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	if len(snap.Proxies) == 0 && len(s.xdsHasher.ValidKeys) > 0 { // Clean up the remaining envoy configs
+	if len(snap.Proxies) == 0 { // Clean up the remaining envoy configs
 		for _, snapshotKey := range s.xdsHasher.ValidKeys {
 			emptySnapshot, err := s.clearProxyListeners(snapshotKey)
 			if err != nil {
@@ -81,7 +81,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			}
 			if err := s.xdsCache.SetSnapshot(snapshotKey, emptySnapshot); err != nil {
 				err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
-				logger.DPanicw("", zap.Error(err))
+				logger.Warnw("", zap.Error(err))
 				return err
 			}
 		}
