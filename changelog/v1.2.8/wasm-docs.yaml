@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Write a doc for wasm in gloo

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Return an error from the validation server if ValidateProxy is called before the first Sync has happened
+    issueLink: https://github.com/solo-io/gloo/issues/1873

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -241,7 +243,7 @@ func (t *translatorInstance) setAction(params plugins.RouteParams, routeReport *
 
 		// run the plugins for RouteActionPlugin
 		for _, plug := range t.plugins {
-			routePlugin, ok := plug.(plugins.RouteActionPlugin)
+			routeActionPlugin, ok := plug.(plugins.RouteActionPlugin)
 			if !ok || in.GetRouteAction() == nil || out.GetRoute() == nil {
 				continue
 			}
@@ -249,7 +251,7 @@ func (t *translatorInstance) setAction(params plugins.RouteParams, routeReport *
 				RouteParams: params,
 				Route:       in,
 			}
-			if err := routePlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
+			if err := routeActionPlugin.ProcessRouteAction(raParams, in.GetRouteAction(), out.GetRoute()); err != nil {
 				// same as above
 				if isWarningErr(err) {
 					continue
@@ -267,6 +269,24 @@ func (t *translatorInstance) setAction(params plugins.RouteParams, routeReport *
 				Status: action.DirectResponseAction.Status,
 				Body:   DataSourceFromString(action.DirectResponseAction.Body),
 			},
+		}
+
+		// DirectResponseAction supports header manipulation, so we want to process the corresponding plugin.
+		// See here: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-directresponseaction
+		for _, plug := range t.plugins {
+			routePlugin, ok := plug.(*headers.Plugin)
+			if !ok {
+				continue
+			}
+			if err := routePlugin.ProcessRoute(params, in, out); err != nil {
+				if isWarningErr(err) {
+					continue
+				}
+				validation.AppendRouteError(routeReport,
+					validationapi.RouteReport_Error_ProcessingError,
+					fmt.Sprintf("%T: %v", routePlugin, err.Error()),
+				)
+			}
 		}
 
 	case *v1.Route_RedirectAction:

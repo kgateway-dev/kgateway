@@ -4,7 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/gogo/protobuf/proto"
+	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -12,12 +17,7 @@ import (
 	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	"github.com/gogo/protobuf/proto"
-	"github.com/golang/mock/gomock"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -339,6 +339,7 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
@@ -756,6 +757,7 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
 	Context("when handling endpoints", func() {
 		var (
 			claConfiguration *envoyapi.ClusterLoadAssignment
@@ -1293,6 +1295,63 @@ var _ = Describe("Translator", func() {
 
 			translate()
 			Expect(hasVHost).To(BeTrue())
+		})
+
+	})
+
+	Context("Route option on direct response actions", func() {
+
+		BeforeEach(func() {
+			routes = []*v1.Route{{
+				Matchers: []*matchers.Matcher{matcher},
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &v1.DirectResponseAction{
+						Status: 405,
+						Body:   "Unsupported HTTP method",
+					},
+				},
+				Options: &v1.RouteOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						ResponseHeadersToAdd: []*headers.HeaderValueOption{{
+							Header: &headers.HeaderValue{
+								Key:   "client-id",
+								Value: "%REQ(client-id)%",
+							},
+							Append: &types.BoolValue{
+								Value: false,
+							},
+						}},
+					},
+				},
+			}}
+		})
+
+		It("should have the virtual host when processing route", func() {
+			translate()
+
+			// A route to the kube service has been configured
+			routes := snapshot.GetResources(xds.RouteType)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(ConsistOf(
+				&envoycore.HeaderValueOption{
+					Header: &envoycore.HeaderValue{
+						Key:   "client-id",
+						Value: "%REQ(client-id)%",
+					},
+					Append: &wrappers.BoolValue{
+						Value: false,
+					},
+				},
+			))
 		})
 
 	})

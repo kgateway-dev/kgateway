@@ -18,7 +18,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Add.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			if err := prerun.HarmonizeDryRunAndOutputFormat(opts, cmd); err != nil {
@@ -34,8 +34,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
 	flagutils.AddDryRunFlag(pflags, &opts.Add.DryRun)
-
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Add.Consul)
 
 	cmd.AddCommand(Route(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)

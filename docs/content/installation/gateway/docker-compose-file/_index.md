@@ -31,7 +31,7 @@ The deployment steps in this tutorial are for demonstration and learning on a lo
 Gloo without Kubernetes uses multiple pieces of software for deployment and functionality.
 
 - **Docker Compose**: The components of Gloo are deployed as containers running Gloo, Envoy, and the Gloo Gateway
-- **Glooctl**: Command line tool for installing and configuring Gloo
+- **File System**: The local filesystem of the machine is used to store configuration data
 
 ## Preparing for Installation
 
@@ -43,7 +43,6 @@ Installation on your local system requires the following applications to be inst
 
 - [Docker](https://docs.docker.com/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- [Glooctl](https://github.com/solo-io/gloo/releases)
 
 ### Download the Installation Files
 
@@ -52,7 +51,7 @@ This tutorial uses files stored on the [Gloo GitHub repository](https://github.c
 In order to install Gloo using Docker-Compose, let's clone the repository:
 
 ```
-git clone --branch v1.1.0 https://github.com/solo-io/gloo
+git clone --branch feature-rc1 https://github.com/solo-io/gloo
 cd gloo/install/docker-compose-file
 ```
 
@@ -88,37 +87,42 @@ The updated `data` directory structure should look like this:
 
 ```console
 ├── artifact
-│   └── artifacts
-│       └── gloo-system
+│   └── artifacts
+│       └── gloo-system
 ├── config
-│   ├── gateways
-│   │   └── gloo-system
-│   ├── proxies
-│   │   └── gloo-system
-│   ├── routetables
-│   │   └── gloo-system
-│   ├── upstreamgroups
-│   │   └── gloo-system
-│   ├── upstreams
-│   │   └── gloo-system
-│   │       └── petstore.yaml
-│   └── virtualservices
-│       └── gloo-system
-│           └── default.yaml
+│   ├── authconfigs
+│   │   └── gloo-system
+│   ├── gateways
+│   │   └── gloo-system
+│   ├── proxies
+│   │   └── gloo-system
+│   ├── routetables
+│   │   └── gloo-system
+│   ├── upstreamgroups
+│   │   └── gloo-system
+│   ├── upstreams
+│   │   └── gloo-system
+│   │       └── petstore.yaml
+│   └── virtualservices
+│       └── gloo-system
+│           └── default.yaml
 ├── envoy-config.yaml
 ├── gloo-system
-│   └── default.yaml
+│   ├── default.yaml
 └── secret
     └── secrets
         ├── default
         └── gloo-system
+
 ```
 
-The file `data/gloo-system/default.yaml` provides the initial configuration for each Gloo container, including where to store secrets, configs, and artifacts.
+* `data/gloo-system/default.yaml` provides the initial configuration for the Gloo and Gateway containers, including where to store secrets, configs, and artifacts.
 
-The file `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use as a target to route requests.
+* `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use as a target to route requests.
 
-The file `data/config/virtualservice/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
+* `data/config/virtualservice/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
+
+* `data/envoy-config.yaml` defines the configuration for the Envoy container.
 
 Now that we have the proper directory structure in place, we can deploy the containers.
 
@@ -145,9 +149,9 @@ The following ports will be exposed to the host machine:
 
 In addition to opening ports, there should be three new files in the `data` directory. 
 
-* `config/gateways/gloo-system/gateway-proxy-v2-ssl.yaml`
-* `config/gateways/gloo-system/gateway-proxy-v2.yaml`
-* `config/proxies/gloo-system/gateway-proxy-v2.yaml`
+* `config/gateways/gloo-system/gateway-proxy-ssl.yaml`
+* `config/gateways/gloo-system/gateway-proxy.yaml`
+* `config/proxies/gloo-system/gateway-proxy.yaml`
 
 The three files represent the configuration for the `gateway` and `gateway-proxy` containers.
 
@@ -168,6 +172,7 @@ cat data/config/upstreams/gloo-system/petstore.yaml
 metadata:
   name: petstore
   namespace: gloo-system
+  resourceVersion: "3"
 static:
   hosts:
   - addr: petstore
@@ -213,8 +218,7 @@ static:
             :method:
               text: GET
             :path:
-              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
-                "")}}
+              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit, "")}}
             content-length:
               text: "0"
             content-type: {}
@@ -234,12 +238,40 @@ cat data/config/virtualservices/gloo-system/default.yaml
 metadata:
   name: default
   namespace: gloo-system
+  resourceVersion: "2"
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
 virtualHost:
   domains:
   - '*'
   routes:
   - matchers:
-     - prefix: /petstore/findWithId
+    - exact: /petstore
+    options:
+      prefixRewrite: /api/pets
+    routeAction:
+      single:
+        upstream:
+          name: petstore
+          namespace: gloo-system
+  - matchers:
+    - prefix: /petstore/findPets
+    routeAction:
+      single:
+        destinationSpec:
+          rest:
+            functionName: findPets
+            parameters: {}
+        upstream:
+          name: petstore
+          namespace: gloo-system
+  - matchers:
+    - prefix: /petstore/findWithId
     routeAction:
       single:
         destinationSpec:
@@ -251,26 +283,6 @@ virtualHost:
         upstream:
           name: petstore
           namespace: gloo-system
-  - matchers:
-     - prefix: /petstore/findPets
-    routeAction:
-      single:
-        destinationSpec:
-          rest:
-            functionName: findPets
-            parameters: {}
-        upstream:
-          name: petstore
-          namespace: gloo-system
-  - matchers:
-     - prefix: /petstore
-    routeAction:
-      single:
-        upstream:
-          name: petstore
-          namespace: gloo-system
-    options:
-      prefixRewrite: /api/pets
 ```
 
 The default *Virtual Service* defines several possible routes to pass through to the Pet Store application. For instance, a request on the prefix `/petstore` would route that request to the `/api/pets` prefix on the Pet Store *Upstream*.

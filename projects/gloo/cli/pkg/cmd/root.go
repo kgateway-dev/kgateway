@@ -64,6 +64,7 @@ func GlooCli() *cobra.Command {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
 		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
+		flagutils.AddConsulConfigFlags(pflags, &opts.Top.Consul)
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(

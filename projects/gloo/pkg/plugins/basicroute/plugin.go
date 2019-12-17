@@ -5,9 +5,14 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
+)
+
+const (
+	webSocketUpgradeType = "websocket"
 )
 
 type Plugin struct{}
@@ -45,6 +50,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return err
 	}
 	if err := applyHostRewrite(in, out); err != nil {
+		return err
+	}
+	if err := applyUpgrades(in, out); err != nil {
 		return err
 	}
 
@@ -116,13 +124,46 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 			"had nil route", in.Action)
 	}
 	switch rewriteType := hostRewriteType.(type) {
-	default:
-		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
 	case *v1.RouteOptions_HostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
 	case *v1.RouteOptions_AutoHostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: gogoutils.BoolGogoToProto(rewriteType.AutoHostRewrite),
+		}
+	default:
+		return errors.Errorf("unimplemented host rewrite type: %T", rewriteType)
+	}
+
+	return nil
+}
+
+func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
+	upgrades := in.GetOptions().GetUpgrades()
+	if upgrades == nil {
+		return nil
+	}
+
+	routeAction, ok := out.Action.(*envoyroute.Route_Route)
+	if !ok {
+		return errors.Errorf("upgrades are only available for Route Actions")
+	}
+
+	if routeAction.Route == nil {
+		return errors.Errorf("internal error: route %v specified a prefix, but output Envoy object "+
+			"had nil route", in.Action)
+	}
+
+	routeAction.Route.UpgradeConfigs = make([]*envoyroute.RouteAction_UpgradeConfig, len(upgrades))
+
+	for i, config := range upgrades {
+		switch upgradeType := config.GetUpgradeType().(type) {
+		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
+			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
+				UpgradeType: webSocketUpgradeType,
+				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().Enabled),
+			}
+		default:
+			return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
 		}
 	}
 

@@ -1,15 +1,30 @@
 steps:
-- name: 'gcr.io/$PROJECT_ID/dep'
-  args: ['ensure']
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-
-- name: 'gcr.io/$PROJECT_ID/go-make'
+- name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
-  args: ['-c', 'tar -zvcf gloo-dep.tar.gz ./gopath/pkg/dep']
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
   env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
+  volumes: &vol
+  - name: 'gopath'
+    path: '/go/pkg'
+  id: 'untar-mod-cache'
+
+- name: 'golang:1.13'
+  args: ['go', 'mod', 'download']
+  volumes: *vol
+  id: 'download'
+
+- name: 'golang:1.13'
+  args: ['go', 'mod', 'tidy']
+  volumes: *vol
+  id: 'tidy'
+
+- name: 'golang:1.13'
+  entrypoint: 'bash'
+  volumes: *vol
+  args: ['-c', ' cd /go/pkg && tar -zvcf gloo-mod.tar.gz mod']
+  id: 'tar-cache'
 
 - name: gcr.io/cloud-builders/gsutil
-  args: ['cp', 'gloo-dep.tar.gz', 'gs://solo-public-cache/gloo']
+  args: ['cp', '/go/pkg/gloo-mod.tar.gz', 'gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz']
+  volumes: *vol
+  id: 'upload-cache'

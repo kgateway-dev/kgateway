@@ -8,9 +8,14 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+)
+
+const (
+	webSocketUpgradeType = "websocket"
 )
 
 func NewPlugin() *Plugin {
@@ -69,7 +74,9 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 
 				// first apply the core HCM settings, if any
 				if hcmSettings != nil {
-					copyCoreHcmSettings(&cfg, hcmSettings)
+					if err := copyCoreHcmSettings(&cfg, hcmSettings); err != nil {
+						return err
+					}
 				}
 
 				// then allow any HCM plugins to make their changes, with respect to any changes the core plugin made
@@ -90,7 +97,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	return nil
 }
 
-func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) {
+func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.HttpConnectionManagerSettings) error {
 	cfg.UseRemoteAddress = gogoutils.BoolGogoToProto(hcmSettings.UseRemoteAddress)
 	cfg.XffNumTrustedHops = hcmSettings.XffNumTrustedHops
 	cfg.SkipXffAppend = hcmSettings.SkipXffAppend
@@ -104,7 +111,7 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 	cfg.DrainTimeout = gogoutils.DurationStdToProto(hcmSettings.DrainTimeout)
 	cfg.DelayedCloseTimeout = gogoutils.DurationStdToProto(hcmSettings.DelayedCloseTimeout)
 	cfg.ServerName = hcmSettings.ServerName
-	cfg.ForwardClientCertDetails = envoyhttp.HttpConnectionManager_ForwardClientCertDetails(hcmSettings.ForwardClientCertDetails)
+	cfg.PreserveExternalRequestId = hcmSettings.PreserveExternalRequestId
 
 	if hcmSettings.AcceptHttp_10 {
 		cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{
@@ -112,6 +119,39 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			DefaultHostForHttp_10: hcmSettings.DefaultHostForHttp_10,
 		}
 	}
+
+	// allowed upgrades
+	protocolUpgrades := hcmSettings.GetUpgrades()
+
+	webSocketUpgradeSpecified := false
+
+	if protocolUpgrades != nil {
+		cfg.UpgradeConfigs = make([]*envoyhttp.HttpConnectionManager_UpgradeConfig, len(protocolUpgrades))
+
+		for i, config := range protocolUpgrades {
+			switch upgradeType := config.UpgradeType.(type) {
+			case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
+				cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
+					UpgradeType: webSocketUpgradeType,
+					Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().GetEnabled()),
+				}
+
+				webSocketUpgradeSpecified = true
+			default:
+				return errors.Errorf("unimplemented upgrade type: %T", upgradeType)
+			}
+		}
+	}
+
+	// enable websockets by default if no websocket upgrade was specified
+	if !webSocketUpgradeSpecified {
+		cfg.UpgradeConfigs = append(cfg.UpgradeConfigs, &envoyhttp.HttpConnectionManager_UpgradeConfig{
+			UpgradeType: webSocketUpgradeType,
+		})
+	}
+
+	// client certificate forwarding
+	cfg.ForwardClientCertDetails = envoyhttp.HttpConnectionManager_ForwardClientCertDetails(hcmSettings.ForwardClientCertDetails)
 
 	shouldConfigureClientCertDetails := (hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_APPEND_FORWARD ||
 		hcmSettings.ForwardClientCertDetails == hcm.HttpConnectionManagerSettings_SANITIZE_SET) &&
@@ -126,6 +166,8 @@ func copyCoreHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSettings *hcm.
 			Uri:     hcmSettings.SetCurrentClientCertDetails.Uri,
 		}
 	}
+
+	return nil
 }
 
 var (

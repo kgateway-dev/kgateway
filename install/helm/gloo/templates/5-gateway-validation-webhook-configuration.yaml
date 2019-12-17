@@ -10,20 +10,20 @@ metadata:
     "helm.sh/hook": pre-install,pre-upgrade
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 webhooks:
-  - name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
-    clientConfig:
-      service:
-        name: gateway
-        namespace: {{ .Release.Namespace }}
-        path: "/validation"
-      caBundle: "" # update manually or use certgen job
-    rules:
-      - operations: [ "CREATE", "UPDATE", "DELETE" ]
-        apiGroups: ["gateway.solo.io"]
-        apiVersions: ["v1"]
-        resources: ["*"]
+- name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+  clientConfig:
+    service:
+      name: gateway
+      namespace: {{ .Release.Namespace }}
+      path: "/validation"
+    caBundle: "" # update manually or use certgen job
+  rules:
+  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["*"]
 {{- if .Values.gateway.validation.failurePolicy }}
-    failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }}
 
 ---
@@ -56,7 +56,7 @@ webhooks:
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["*"]
-        {{- if .Values.gateway.validation.failurePolicy }}
+{{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
-        {{- end }}
+{{- end }}
 {{- end }}

@@ -20,16 +20,15 @@ Let's deploy a sample application which will simulate a canary deployment. We wi
 [http-echo](https://github.com/hashicorp/http-echo) application, which listens for HTTP requests 
 and echoes back a configurable string. We will deploy:
  
-1. a pod that responds with the string "primary" to simulate the primary deployment, 
+1. a pod that responds with the string "primary" to simulate the primary deployment
+1. a pod that responds with the string "canary" to simulate the canary deployment
+1. a service to route to them
+
+With the following commands, respectively:
+
 ```shell
 kubectl run --generator=run-pod/v1 --labels stage=primary,app=echoapp primary-pod --image=hashicorp/http-echo -- -text=primary -listen=:8080
-```
-1. a pod that responds with the string "canary" to simulate the canary deployment, and 
-```shell
 kubectl run --generator=run-pod/v1 --labels stage=canary,app=echoapp canary-pod --image=hashicorp/http-echo -- -text=canary -listen=:8080
-```
-1. a service to route to them.
-```shell
 kubectl create service clusterip echoapp --tcp=80:8080
 ```
 
@@ -111,8 +110,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
         headers:
         - name: x-company
           value: solo.io
@@ -124,8 +123,8 @@ spec:
           subset:
             values:
               stage: canary
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
@@ -134,7 +133,7 @@ spec:
           subset:
             values:
               stage: primary
-    virtualHostPlugins:
+    options:
       jwt:
         providers:
           solo:

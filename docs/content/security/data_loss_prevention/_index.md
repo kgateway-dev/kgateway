@@ -6,8 +6,8 @@ description: Data Loss Prevention (DLP) is a method of ensuring that sensitive d
 
 {{% notice note %}}
 DLP is a feature of **Gloo Enterprise v1.0.0+**. Gloo Enterprise release candidate v1.0.0-rc1 was the first version to
-support this feature. v1.0.0-rc2 contained some minor fixes to the Gloo-provided regular expressions. 
-This guide is written for v1.0.0-rc2+.
+support this feature. v1.0.0-rc2 contained some minor fixes to the Gloo-provided regular expressions.
+This guide is written for v1.0.0-rc4+.
 {{% /notice %}}
 
 ### Understanding DLP
@@ -99,9 +99,9 @@ spec:
           upstream:
             name: json-upstream
             namespace: gloo-system
-      routePlugins:
+      options:
         autoHostRewrite: true
-    virtualHostPlugins:
+    options:
       dlp:
         actions:
         - actionType: SSN
@@ -129,7 +129,7 @@ the predefined regular expressions.
 Let's start by creating our typical petstore microservice:
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 Apply the following virtual service to route to the Gloo-discovered petstore upstream:
@@ -183,7 +183,7 @@ spec:
           upstream:
             name: default-petstore-8080
             namespace: gloo-system
-    virtualHostPlugins:
+    options:
       dlp:
         actions:
         - customAction:
