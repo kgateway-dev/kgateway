@@ -164,8 +164,10 @@ Run the following curl from the routing tutorial doc.
 ```bash
 curl $(glooctl proxy url)/sample-route-1
 ```
+
 returns
-```
+
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 

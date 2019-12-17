@@ -41,10 +41,6 @@ To see how prefix matching is configured, let's create a virtual service and rou
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/matching_rules/path_matching/prefix_vs.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell" >}}
-glooctl create vs --name test-prefix --namespace gloo-system --domains foo
-glooctl add route --name test-prefix --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}}
 
 Since we are using the `foo` domain, if we make a curl request and don't provide the `Host` header, it will 404. 

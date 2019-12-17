@@ -198,8 +198,6 @@ func RunGateway(opts translator.Opts) error {
 		}
 	}
 
-	emitter := v1.NewApiEmitter(virtualServiceClient, routeTableClient, gatewayClient)
-
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 	writeErrs := make(chan error)
 
@@ -213,6 +211,12 @@ func RunGateway(opts translator.Opts) error {
 		ignoreProxyValidationFailure bool
 		allowMissingLinks            bool
 	)
+
+	// construct the channel that resyncs the API Translator loop
+	// when the validation server sends a notification.
+	// this tells Gateway that the validation snapshot has changed
+	notifications := make(<-chan struct{})
+
 	if opts.Validation != nil {
 		validationClient, err = gatewayvalidation.NewConnectionRefreshingValidationClient(
 			gatewayvalidation.RetryOnUnavailableClientConstructor(ctx, opts.Validation.ProxyValidationServerAddress),
@@ -221,9 +225,21 @@ func RunGateway(opts translator.Opts) error {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
 		}
 
+		notificationStream, err := validationClient.NotifyOnResync(ctx, &validation.NotifyOnResyncRequest{})
+		if err != nil {
+			return errors.Wrapf(err, "failed to stream notifications from validation server.")
+		}
+
+		notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read notifications from stream")
+		}
+
 		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
 		allowMissingLinks = opts.Validation.AllowMissingLinks
 	}
+
+	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, notifications)
 
 	validationSyncer := gatewayvalidation.NewValidator(gatewayvalidation.NewValidatorConfig(
 		txlator,

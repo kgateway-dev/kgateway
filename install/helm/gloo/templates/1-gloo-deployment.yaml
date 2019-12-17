@@ -67,6 +67,9 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
+        - containerPort: 9979
+          name: wasm-cache
+          protocol: TCP
         volumeMounts:
         - name: labels-volume
           mountPath: /etc/gloo
@@ -84,6 +87,10 @@ spec:
           - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
+        {{- if .Values.global.wasm.enabled }}
+          - name: WASM_ENABLED
+            value: "true"
+        {{- end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}

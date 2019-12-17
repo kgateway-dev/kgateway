@@ -2,7 +2,7 @@
 gloo:
   xdsBindAddr: 0.0.0.0:9977
 consul:
-  address: 172.17.0.1:8500
+  address: consul:8500
   serviceDiscovery: {}
 consulKvSource: {}
 consulKvArtifactSource: {}
@@ -12,5 +12,5 @@ metadata:
   namespace: gloo-system
 refreshRate: 15s
 vaultSecretSource:
-  address: http://172.17.0.1:8200
+  address: http://vault:8200
   token: root

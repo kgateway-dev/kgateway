@@ -1,3 +1,4 @@
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -8,10 +9,13 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+        - prefix: /
         routeAction:
           single:
             upstream:
               name: json-upstream
               namespace: gloo-system
+        options:
+          autoHostRewrite: true
+```

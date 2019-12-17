@@ -47,7 +47,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Create.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -112,7 +112,6 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 				"with a static upstream. Requests routed to a static upstream will be round-robin load balanced across each host.",
 		),
 	)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Create.Consul)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

@@ -33,10 +33,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name update-response-code --namespace gloo-system 
-glooctl add route --name update-response-code --path-prefix / --dest-name postman-echo
+      options:
+        autoHostRewrite: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -99,7 +97,7 @@ attribute is present; otherwise, the original status code should be preserved.
 #### Update Virtual Service
 To implement this behavior, we need to add the following to our Virtual Service definition:
 
-{{< highlight yaml "hl_lines=18-33" >}}
+{{< highlight yaml "hl_lines=20-35" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -117,6 +115,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
+      options:
+        autoHostRewrite: true
     options:
       transformations:
         responseTransformation:

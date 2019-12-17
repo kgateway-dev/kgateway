@@ -8,6 +8,11 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
+	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	v1 "k8s.io/api/apps/v1"
+	"sigs.k8s.io/yaml"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
@@ -451,6 +456,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			var (
 				validVsName   = "i-am-valid"
 				invalidVsName = "i-am-invalid"
+				petstoreName  = "petstore"
 			)
 			BeforeEach(func() {
 
@@ -490,8 +496,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			})
 			AfterEach(func() {
 				UpdateAlwaysAcceptSetting(false)
-				virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
-				virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
+				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
+				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
+				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, petstoreName, clients.DeleteOpts{})
+				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(petstoreName, nil)
+				_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(petstoreName, nil)
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -566,6 +575,75 @@ var _ = Describe("Kube2e: gateway", func() {
 					ConnectionTimeout: 1, // this is important, as sometimes curl hangs
 					WithoutStats:      true,
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+			})
+
+			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+
+				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
+
+				// disable FDS for the petstore, create it without functions
+				petstoreSvc.Labels[syncer.FdsLabelKey] = "disabled"
+
+				petstoreSvc, err := kubeClient.CoreV1().Services(petstoreSvc.Namespace).Create(petstoreSvc)
+				Expect(err).NotTo(HaveOccurred())
+				petstoreDeployment, err = kubeClient.AppsV1().Deployments(petstoreDeployment.Namespace).Create(petstoreDeployment)
+				Expect(err).NotTo(HaveOccurred())
+
+				upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, petstoreName, 8080)
+
+				// the vs will be invalid
+				vsWithFunctionRoute := withName(petstoreName, withDomains([]string{"petstore.com"},
+					getVirtualService(&gloov1.Destination{
+						DestinationType: &gloov1.Destination_Upstream{
+							Upstream: &core.ResourceRef{
+								Namespace: testHelper.InstallNamespace,
+								Name:      upstreamName,
+							},
+						},
+						DestinationSpec: &gloov1.DestinationSpec{
+							DestinationType: &gloov1.DestinationSpec_Rest{
+								Rest: &gloorest.DestinationSpec{
+									FunctionName: "findPetById",
+								},
+							},
+						},
+					}, nil)))
+
+				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute,
+					clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// the VS should be rejected
+				// the err message should be that the rest spec is missing
+				var reason string
+				Eventually(func() (core.Status_State, error) {
+					vs, err := virtualServiceClient.Read(testHelper.InstallNamespace, petstoreName, clients.ReadOpts{})
+					if err != nil {
+						return 0, err
+					}
+					reason = vs.Status.Reason
+					return vs.Status.State, nil
+				}).Should(Equal(core.Status_Rejected))
+
+				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
+
+				// enable fds on the upstream
+				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "disabled"
+
+				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				// the VS should get accepted
+				Eventually(func() (core.Status_State, error) {
+					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+					if err != nil {
+						return 0, err
+					}
+					return vs.Status.State, nil
+				}).Should(Equal(core.Status_Accepted))
 			})
 		})
 
@@ -1384,4 +1462,67 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 func addPrefixRewrite(route *gatewayv1.Route, rewrite string) *gatewayv1.Route {
 	route.Options = &gloov1.RouteOptions{PrefixRewrite: &types.StringValue{Value: rewrite}}
 	return route
+}
+
+func petstore(namespace string) (*v1.Deployment, *corev1.Service) {
+	deployment := fmt.Sprintf(`
+##########################
+#                        #
+#        Example         #
+#        Service         #
+#                        #
+#                        #
+##########################
+# petstore service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: petstore
+  name: petstore
+  namespace: %s
+spec:
+  selector:
+    matchLabels:
+      app: petstore
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: petstore
+    spec:
+      containers:
+      - image: soloio/petstore-example:latest
+        name: petstore
+        ports:
+        - containerPort: 8080
+          name: http
+`, namespace)
+
+	var dep v1.Deployment
+	err := yaml.Unmarshal([]byte(deployment), &dep)
+	Expect(err).NotTo(HaveOccurred())
+
+	service := fmt.Sprintf(`
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petstore
+  namespace: %s
+  labels:
+    service: petstore
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    app: petstore
+`, namespace)
+
+	var svc corev1.Service
+	err = yaml.Unmarshal([]byte(service), &svc)
+	Expect(err).NotTo(HaveOccurred())
+
+	return &dep, &svc
 }

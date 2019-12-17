@@ -78,10 +78,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-access-logs --namespace gloo-system 
-glooctl add route --name test-access-logs --path-prefix / --dest-name postman-echo
+      options:
+        autoHostRewrite: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -204,7 +202,7 @@ For the above dynamic metadata to be available, we need to update our Virtual Se
 to add a transformation that extracts the value of the `POD_NAME` environment variable and the value of the `url` 
 response attribute and uses them to populate the corresponding metadata attributes.
 
-{{< highlight yaml "hl_lines=18-33" >}}
+{{< highlight yaml "hl_lines=20-35" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -222,6 +220,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
+      options:
+        autoHostRewrite: true
     options:
       transformations:
         # Apply a transformation to the response

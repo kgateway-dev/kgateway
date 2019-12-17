@@ -24,6 +24,10 @@ func (s *mockValidationService) ValidateProxy(context.Context, *validation.Proxy
 	return res, s.err
 }
 
+func (s *mockValidationService) NotifyOnResync(*validation.NotifyOnResyncRequest, validation.ProxyValidationService_NotifyOnResyncServer) error {
+	panic("implement me")
+}
+
 func makeListener(errToReturn error, addr string) (string, func()) {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -93,6 +97,10 @@ var _ = Describe("RetryOnUnavailableClientConstructor", func() {
 type mockWrappedValidationClient struct {
 	name string
 	err  error
+}
+
+func (c *mockWrappedValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	return nil, nil
 }
 
 func (c *mockWrappedValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
