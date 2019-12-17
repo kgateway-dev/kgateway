@@ -29,9 +29,7 @@ steps:
   args:
     - "-c"
     - |
-       ls
-       -latrh
-       /gopath/src/github.com/solo-io/gloo/
+       ls -latrh /gopath/src/github.com/solo-io/gloo/
   # - '--git-dir'
   # - '/gopath/src/github.com/solo-io/gloo/.git'
   # - 'describe'
