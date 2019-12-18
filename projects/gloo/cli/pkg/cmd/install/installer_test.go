@@ -111,7 +111,7 @@ rules:
 		installConfig := &options.Install{
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
-			ReleaseVersion:  "test",
+			Version:         "test",
 			CreateNamespace: true,
 		}
 

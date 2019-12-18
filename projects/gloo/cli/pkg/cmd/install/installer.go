@@ -72,7 +72,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, version.StripV(installerConfig.InstallCliArgs.ReleaseVersion),
+	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, version.StripV(installerConfig.InstallCliArgs.Version),
 		installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
 	if err != nil {
 		return err

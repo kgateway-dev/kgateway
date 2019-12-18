@@ -50,7 +50,7 @@ type Install struct {
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
-	ReleaseVersion          string
+	Version                 string
 	Knative                 Knative
 	LicenseKey              string
 	WithUi                  bool
