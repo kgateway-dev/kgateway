@@ -29,14 +29,14 @@ var _ = Describe("Install", func() {
 	})
 
 	It("shouldn't get errors when overriding release version", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --release-version %s --dry-run", overrideVersion))
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --version %s --dry-run", overrideVersion))
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("shouldn't allow both --file and --release-version flags", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --release-version %s ", file, overrideVersion))
+	It("shouldn't allow both --file and --version flags", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run --version %s ", file, overrideVersion))
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("you may not specify both a chart with -f and a release version with --release-version. Received: %s and %s", file, overrideVersion)))
+		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", file, overrideVersion)))
 	})
 
 	It("shouldn't get errors for enterprise dry run", func() {
@@ -50,7 +50,7 @@ var _ = Describe("Install", func() {
 	})
 
 	It("shouldn't get errors when overriding enterprise version", func() {
-		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --release-version %s --dry-run %s", overrideVersion, licenseKey))
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --version %s --dry-run %s", overrideVersion, licenseKey))
 		Expect(err).NotTo(HaveOccurred())
 	})
 

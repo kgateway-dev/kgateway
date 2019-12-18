@@ -190,10 +190,10 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 }
 
 // The resulting URI can be either a URL or a local file path.
-func getChartUri(chartOverride, releaseVersionOverride string, withUi, enterprise bool) (string, error) {
+func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool) (string, error) {
 
-	if chartOverride != "" && releaseVersionOverride != "" {
-		return "", errors.Errorf("you may not specify both a chart with -f and a release version with --release-version. Received: %s and %s", chartOverride, releaseVersionOverride)
+	if chartOverride != "" && versionOverride != "" {
+		return "", errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
 	}
 
 	var helmChartArchiveUri string
@@ -205,12 +205,12 @@ func getChartUri(chartOverride, releaseVersionOverride string, withUi, enterpris
 			return "", err
 		}
 		if enterprise {
-			helmChartArchiveUri = chartUriWithVersion(GlooEHelmRepoTemplate, releaseVersionOverride, enterpriseVersion)
+			helmChartArchiveUri = chartUriWithVersion(GlooEHelmRepoTemplate, versionOverride, enterpriseVersion)
 		} else if withUi {
-			helmChartArchiveUri = chartUriWithVersion(constants.GlooWithUiHelmRepoTemplate, releaseVersionOverride, enterpriseVersion)
+			helmChartArchiveUri = chartUriWithVersion(constants.GlooWithUiHelmRepoTemplate, versionOverride, enterpriseVersion)
 		} else {
-			if releaseVersionOverride != "" {
-				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, releaseVersionOverride)
+			if versionOverride != "" {
+				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, versionOverride)
 			} else {
 				glooOsVersion, err := getGlooVersionToInstall(chartOverride)
 				if err != nil {
