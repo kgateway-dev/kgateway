@@ -1,15 +1,13 @@
 steps:
-
-# - name: 'gcr.io/cloud-builders/wget'
-#   entrypoint: ./ci/spell.sh
-#   args: ['check']
-#   waitFor: ['-']
-#   env:
-#   - 'LSCOMMAND=find * -path gopath -prune -o -print'
-#   id: 'check-spelling'
-# Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-# This step should populate the cache
-
+- name: 'gcr.io/cloud-builders/wget'
+  entrypoint: ./ci/spell.sh
+  args: ['check']
+  waitFor: ['-']
+  env:
+  - 'LSCOMMAND=find * -path gopath -prune -o -print'
+  id: 'check-spelling'
+# You can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
+# This step populates the cache
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args: ['-c', 'mkdir -p ./gopath/pkg && cd ./gopath/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
