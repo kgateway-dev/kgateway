@@ -1,7 +1,7 @@
 ---
 menuTitle: Configuring TLS
 title: Configuring Downstream and Upstream TLS
-weight: 11
+weight: 30
 description: Configure Gloo to serve and terminate TLS to downstream clients, as well as initiate upstream connections using upstream TLS.
 ---
 

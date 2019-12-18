@@ -25,9 +25,9 @@ var _ = Describe("Install", func() {
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
-		glooOsVersion          = "v1.0.0"
-		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
-		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-v1.0.0.tgz"
+		glooOsVersion          = "test"
+		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-test.tgz"
+		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-test.tgz"
 		testCrdContent         = "test-crd-content"
 		testHookContent        = `
 kind: ClusterRoleBinding
@@ -111,7 +111,7 @@ rules:
 		installConfig := &options.Install{
 			Namespace:          defaults.GlooSystem,
 			HelmReleaseName:    constants.GlooReleaseName,
-			HelmReleaseVersion: "v1.0.0",
+			HelmReleaseVersion: "test",
 			CreateNamespace:    true,
 		}
 
