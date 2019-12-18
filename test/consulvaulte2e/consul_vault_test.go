@@ -98,6 +98,9 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			RootKey: bootstrap.DefaultRootKey,
 			Consul:  consulClient,
 		}
+
+		writeGateways(writeNamespace, consulResources)
+
 		vaultResources = &factory.VaultSecretClientFactory{
 			Vault:   vaultClient,
 			RootKey: bootstrap.DefaultRootKey,
@@ -214,12 +217,12 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 
 		// Wait for vs and gw to be accepted
 		Eventually(func() (core.Status_State, error) {
-			vs, err := vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+			readVs, err := vsClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return 0, err
 			}
-			return vs.Status.State, nil
-		}, "30s", "0.2s").Should(Equal(core.Status_Accepted))
+			return readVs.Status.State, nil
+		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		// Wait for the proxy to be accepted. this can take up to 40 seconds, as the vault snapshot
 		// udpates every 30 seconds.
@@ -255,7 +258,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 				return 0, err
 			}
 			return proxy.Status.State, nil
-		}, "15s", "0.2s").Should(Equal(core.Status_Accepted))
+		}, "60s", "0.2s").Should(Equal(core.Status_Accepted))
 
 		v1helpers.ExpectHttpOK(nil, nil, defaults.HttpPort,
 			`[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
@@ -373,4 +376,17 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 		return nil, err
 	}
 	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
+}
+
+func writeGateways(writeNamespace string, consulResources factory.ResourceClientFactory) {
+	gatewayClient, err := v1.NewGatewayClient(consulResources)
+	Expect(err).NotTo(HaveOccurred(), "Should be able to build the gateway client")
+
+	defaultGateway := gatewaydefaults.DefaultGateway(writeNamespace)
+	defaultSslGateway := gatewaydefaults.DefaultSslGateway(writeNamespace)
+
+	_, err = gatewayClient.Write(defaultGateway, clients.WriteOpts{})
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write the non-ssl default gateway")
+	_, err = gatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
+	Expect(err).NotTo(HaveOccurred(), "Should be able to write the ssl default gateway")
 }
