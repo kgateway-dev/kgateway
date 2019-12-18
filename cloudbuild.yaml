@@ -8,12 +8,7 @@ steps:
 #   - 'LSCOMMAND=find * -path gopath -prune -o -print'
 #   id: 'check-spelling'
 # Can create a dep cache by running 'gcloud builds submit . --config=cloudbuild-cache.yaml'
-# These two steps should populate the cache
-# - name: gcr.io/cloud-builders/gsutil
-#   entrypoint: 'bash'
-#   args: ['-c', 'mkdir -p ./gopath/pkg/dep && gsutil cat gs://solo-public-cache/gloo/gloo-dep.tar.gz | tar -xzf -']
-#   id: 'download-untar-dep-cache'
-#   waitFor: ['-']
+# This step should populate the cache
 
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
