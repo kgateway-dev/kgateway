@@ -137,7 +137,7 @@ rules:
 		dryRunOutputBuffer := new(bytes.Buffer)
 
 		mockKubectl := installutil.NewMockKubectl([]string{
-			"create namespace " + defaults.GlooSystem,
+			"get namespace " + defaults.GlooSystem,
 		}, []string{})
 		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
