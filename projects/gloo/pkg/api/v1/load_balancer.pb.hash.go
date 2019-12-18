@@ -4,37 +4,20 @@
 package v1
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Hash function
@@ -47,9 +30,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetHealthyPanicThreshold()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetHealthyPanicThreshold()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -63,9 +44,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetUpdateMergeWindow()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetUpdateMergeWindow()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -83,9 +62,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *LoadBalancerConfig_RoundRobin_:
 
-		if h, ok := interface{}(m.GetRoundRobin()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRoundRobin()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -101,9 +78,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *LoadBalancerConfig_LeastRequest_:
 
-		if h, ok := interface{}(m.GetLeastRequest()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetLeastRequest()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -119,9 +94,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *LoadBalancerConfig_Random_:
 
-		if h, ok := interface{}(m.GetRandom()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRandom()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -137,9 +110,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *LoadBalancerConfig_RingHash_:
 
-		if h, ok := interface{}(m.GetRingHash()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRingHash()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -155,9 +126,7 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *LoadBalancerConfig_Maglev_:
 
-		if h, ok := interface{}(m.GetMaglev()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetMaglev()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -251,9 +220,7 @@ func (m *LoadBalancerConfig_RingHash) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetRingHashConfig()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRingHashConfig()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

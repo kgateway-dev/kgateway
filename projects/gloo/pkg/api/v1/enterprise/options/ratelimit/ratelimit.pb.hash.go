@@ -4,37 +4,20 @@
 package ratelimit
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Hash function
@@ -55,9 +38,7 @@ func (m *Descriptor) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRateLimit()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRateLimit()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -73,9 +54,7 @@ func (m *Descriptor) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetDescriptors() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -137,9 +116,7 @@ func (m *IngressRateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetAuthorizedLimits()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetAuthorizedLimits()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -153,9 +130,7 @@ func (m *IngressRateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAnonymousLimits()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetAnonymousLimits()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -182,9 +157,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetRatelimitServerRef()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRatelimitServerRef()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -198,9 +171,7 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRequestTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRequestTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -239,9 +210,7 @@ func (m *ServiceSettings) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetDescriptors() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -272,9 +241,7 @@ func (m *RateLimitActions) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetActions() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -305,9 +272,7 @@ func (m *RateLimitVhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRateLimits() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -343,9 +308,7 @@ func (m *RateLimitRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRateLimits() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -378,9 +341,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_SourceCluster_:
 
-		if h, ok := interface{}(m.GetSourceCluster()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSourceCluster()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -396,9 +357,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_DestinationCluster_:
 
-		if h, ok := interface{}(m.GetDestinationCluster()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetDestinationCluster()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -414,9 +373,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_RequestHeaders_:
 
-		if h, ok := interface{}(m.GetRequestHeaders()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRequestHeaders()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -432,9 +389,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_RemoteAddress_:
 
-		if h, ok := interface{}(m.GetRemoteAddress()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRemoteAddress()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -450,9 +405,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_GenericKey_:
 
-		if h, ok := interface{}(m.GetGenericKey()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetGenericKey()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -468,9 +421,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Action_HeaderValueMatch_:
 
-		if h, ok := interface{}(m.GetHeaderValueMatch()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetHeaderValueMatch()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -547,9 +498,7 @@ func (m *HeaderMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *HeaderMatcher_RangeMatch:
 
-		if h, ok := interface{}(m.GetRangeMatch()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRangeMatch()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -605,9 +554,7 @@ func (m *QueryParameterMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRegex()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRegex()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -712,9 +659,7 @@ func (m *Action_HeaderValueMatch) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetExpectMatch()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetExpectMatch()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -730,9 +675,7 @@ func (m *Action_HeaderValueMatch) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetHeaders() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}

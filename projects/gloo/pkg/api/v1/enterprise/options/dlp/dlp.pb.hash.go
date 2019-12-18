@@ -4,37 +4,20 @@
 package dlp
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Hash function
@@ -49,9 +32,7 @@ func (m *FilterConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetDlpRules() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -80,9 +61,7 @@ func (m *DlpRule) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetMatcher()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMatcher()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -98,9 +77,7 @@ func (m *DlpRule) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetActions() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -131,9 +108,7 @@ func (m *Config) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetActions() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -167,9 +142,7 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetCustomAction()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetCustomAction()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -217,9 +190,7 @@ func (m *CustomAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetPercent()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetPercent()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

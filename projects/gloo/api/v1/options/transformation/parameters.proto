@@ -7,8 +7,8 @@ import "google/protobuf/wrappers.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 message Parameters {
     // headers that will be used to extract data for processing output templates

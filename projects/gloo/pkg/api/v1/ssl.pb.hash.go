@@ -4,37 +4,20 @@
 package v1
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 )
 
 // Hash function
@@ -63,9 +46,7 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetParameters()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetParameters()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -83,9 +64,7 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *SslConfig_SecretRef:
 
-		if h, ok := interface{}(m.GetSecretRef()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSecretRef()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -101,9 +80,7 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *SslConfig_SslFiles:
 
-		if h, ok := interface{}(m.GetSslFiles()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSslFiles()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -119,9 +96,7 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *SslConfig_Sds:
 
-		if h, ok := interface{}(m.GetSds()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSds()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -187,9 +162,7 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetParameters()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetParameters()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -207,9 +180,7 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *UpstreamSslConfig_SecretRef:
 
-		if h, ok := interface{}(m.GetSecretRef()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSecretRef()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -225,9 +196,7 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *UpstreamSslConfig_SslFiles:
 
-		if h, ok := interface{}(m.GetSslFiles()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSslFiles()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -243,9 +212,7 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *UpstreamSslConfig_Sds:
 
-		if h, ok := interface{}(m.GetSds()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSds()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -278,9 +245,7 @@ func (m *SDSConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetCallCredentials()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetCallCredentials()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -315,9 +280,7 @@ func (m *CallCredentials) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetFileCredentialSource()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetFileCredentialSource()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}

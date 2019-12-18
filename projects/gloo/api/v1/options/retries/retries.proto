@@ -7,8 +7,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/re
 import "google/protobuf/duration.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Retry Policy applied at the Route and/or Virtual Hosts levels.
 message RetryPolicy {

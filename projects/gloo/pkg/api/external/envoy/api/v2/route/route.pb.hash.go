@@ -4,39 +4,22 @@
 package route
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
-	"net"
-	"net/mail"
-	"net/url"
-	"regexp"
-	"strings"
-	"time"
-	"unicode/utf8"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
 // ensure the imports are used
 var (
-	_ = bytes.MinRead
 	_ = errors.New("")
 	_ = fmt.Print
-	_ = utf8.UTFMax
-	_ = (*regexp.Regexp)(nil)
-	_ = (*strings.Reader)(nil)
-	_ = net.IPv4len
-	_ = time.Duration(0)
-	_ = (*url.URL)(nil)
-	_ = (*mail.Address)(nil)
-	_ = ptypes.DynamicAny{}
 
 	_ = core.RoutingPriority(0)
 
@@ -67,9 +50,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRoutes() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -92,9 +73,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetVirtualClusters() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -112,9 +91,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRateLimits() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -132,9 +109,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRequestHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -160,9 +135,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetResponseHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -186,9 +159,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetCors()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetCors()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -208,9 +179,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -243,9 +212,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetTypedPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -277,9 +244,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRetryPolicy()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRetryPolicy()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -293,9 +258,7 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetHedgePolicy()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetHedgePolicy()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -326,14 +289,12 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetMatch()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(&m.Match).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetMatch(), nil); err != nil {
+		if val, err := hashstructure.Hash(&m.Match, nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -342,9 +303,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(&m.Metadata).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMetadata()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -358,9 +317,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetDecorator()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetDecorator()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -380,9 +337,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -415,9 +370,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		for k, v := range m.GetTypedPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -446,9 +399,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRequestHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -474,9 +425,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetResponseHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -500,9 +449,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetTracing()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetTracing()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -520,9 +467,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Route_Route:
 
-		if h, ok := interface{}(m.GetRoute()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRoute()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -538,9 +483,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Route_Redirect:
 
-		if h, ok := interface{}(m.GetRedirect()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRedirect()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -556,9 +499,7 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *Route_DirectResponse:
 
-		if h, ok := interface{}(m.GetDirectResponse()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetDirectResponse()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -589,9 +530,7 @@ func (m *WeightedCluster) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetClusters() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -607,9 +546,7 @@ func (m *WeightedCluster) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetTotalWeight()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetTotalWeight()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -640,9 +577,7 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetCaseSensitive()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetCaseSensitive()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -656,9 +591,7 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRuntimeFraction()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRuntimeFraction()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -674,9 +607,7 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetHeaders() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -694,9 +625,7 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetQueryParameters() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -712,9 +641,7 @@ func (m *RouteMatch) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetGrpc()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetGrpc()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -795,9 +722,7 @@ func (m *CorsPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetAllowCredentials()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetAllowCredentials()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -811,9 +736,7 @@ func (m *CorsPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetShadowEnabled()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetShadowEnabled()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -831,9 +754,7 @@ func (m *CorsPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *CorsPolicy_Enabled:
 
-		if h, ok := interface{}(m.GetEnabled()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -849,9 +770,7 @@ func (m *CorsPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *CorsPolicy_FilterEnabled:
 
-		if h, ok := interface{}(m.GetFilterEnabled()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetFilterEnabled()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -885,9 +804,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetMetadataMatch()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMetadataMatch()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -905,9 +822,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -921,9 +836,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetIdleTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetIdleTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -937,9 +850,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRetryPolicy()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRetryPolicy()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -953,9 +864,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRequestMirrorPolicy()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRequestMirrorPolicy()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -976,9 +885,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRateLimits() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -994,9 +901,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetIncludeVhRateLimits()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetIncludeVhRateLimits()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1012,9 +917,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetHashPolicy() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1030,9 +933,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetCors()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetCors()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1046,9 +947,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMaxGrpcTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMaxGrpcTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1062,9 +961,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetGrpcTimeoutOffset()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetGrpcTimeoutOffset()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1080,9 +977,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetUpgradeConfigs() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1103,9 +998,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetHedgePolicy()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetHedgePolicy()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1135,9 +1028,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RouteAction_WeightedClusters:
 
-		if h, ok := interface{}(m.GetWeightedClusters()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetWeightedClusters()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1163,9 +1054,7 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RouteAction_AutoHostRewrite:
 
-		if h, ok := interface{}(m.GetAutoHostRewrite()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetAutoHostRewrite()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1204,9 +1093,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetNumRetries()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetNumRetries()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1220,9 +1107,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetPerTryTimeout()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetPerTryTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1236,9 +1121,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRetryPriority()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRetryPriority()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1254,9 +1137,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetRetryHostPredicate() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1282,9 +1163,7 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRetryBackOff()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRetryBackOff()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1311,9 +1190,7 @@ func (m *HedgePolicy) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetInitialRequests()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetInitialRequests()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1327,9 +1204,7 @@ func (m *HedgePolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetAdditionalRequestChance()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetAdditionalRequestChance()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1431,9 +1306,7 @@ func (m *DirectResponseAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetBody()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetBody()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1477,9 +1350,7 @@ func (m *Tracing) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetClientSampling()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetClientSampling()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1493,9 +1364,7 @@ func (m *Tracing) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetRandomSampling()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRandomSampling()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1509,9 +1378,7 @@ func (m *Tracing) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetOverallSampling()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetOverallSampling()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1564,9 +1431,7 @@ func (m *RateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetStage()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetStage()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1586,9 +1451,7 @@ func (m *RateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 
 	for _, v := range m.GetActions() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1642,9 +1505,7 @@ func (m *HeaderMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *HeaderMatcher_RangeMatch:
 
-		if h, ok := interface{}(m.GetRangeMatch()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRangeMatch()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1700,9 +1561,7 @@ func (m *QueryParameterMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRegex()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRegex()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1733,9 +1592,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetWeight()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetWeight()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1749,9 +1606,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 		}
 	}
 
-	if h, ok := interface{}(m.GetMetadataMatch()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMetadataMatch()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1767,9 +1622,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 
 	for _, v := range m.GetRequestHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1795,9 +1648,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 
 	for _, v := range m.GetResponseHeadersToAdd() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1827,9 +1678,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 		for k, v := range m.GetPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -1862,9 +1711,7 @@ func (m *WeightedCluster_ClusterWeight) Hash(hasher hash.Hash64) (uint64, error)
 		for k, v := range m.GetTypedPerFilterConfig() {
 			innerHash.Reset()
 
-			if h, ok := interface{}(v).(interface {
-				Hash(innerHash hash.Hash64) (uint64, error)
-			}); ok {
+			if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 				if _, err = h.Hash(innerHash); err != nil {
 					return 0, err
 				}
@@ -1924,9 +1771,7 @@ func (m *RouteAction_RequestMirrorPolicy) Hash(hasher hash.Hash64) (uint64, erro
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetRuntimeFraction()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetRuntimeFraction()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -1962,9 +1807,7 @@ func (m *RouteAction_HashPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RouteAction_HashPolicy_Header_:
 
-		if h, ok := interface{}(m.GetHeader()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1980,9 +1823,7 @@ func (m *RouteAction_HashPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RouteAction_HashPolicy_Cookie_:
 
-		if h, ok := interface{}(m.GetCookie()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetCookie()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -1998,9 +1839,7 @@ func (m *RouteAction_HashPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RouteAction_HashPolicy_ConnectionProperties_:
 
-		if h, ok := interface{}(m.GetConnectionProperties()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetConnectionProperties()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2033,9 +1872,7 @@ func (m *RouteAction_UpgradeConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetEnabled()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetEnabled()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -2083,9 +1920,7 @@ func (m *RouteAction_HashPolicy_Cookie) Hash(hasher hash.Hash64) (uint64, error)
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetTtl()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetTtl()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -2142,9 +1977,7 @@ func (m *RetryPolicy_RetryPriority) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RetryPolicy_RetryPriority_Config:
 
-		if h, ok := interface{}(m.GetConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2160,9 +1993,7 @@ func (m *RetryPolicy_RetryPriority) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RetryPolicy_RetryPriority_TypedConfig:
 
-		if h, ok := interface{}(m.GetTypedConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetTypedConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2199,9 +2030,7 @@ func (m *RetryPolicy_RetryHostPredicate) Hash(hasher hash.Hash64) (uint64, error
 
 	case *RetryPolicy_RetryHostPredicate_Config:
 
-		if h, ok := interface{}(m.GetConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2217,9 +2046,7 @@ func (m *RetryPolicy_RetryHostPredicate) Hash(hasher hash.Hash64) (uint64, error
 
 	case *RetryPolicy_RetryHostPredicate_TypedConfig:
 
-		if h, ok := interface{}(m.GetTypedConfig()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetTypedConfig()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2248,9 +2075,7 @@ func (m *RetryPolicy_RetryBackOff) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if h, ok := interface{}(m.GetBaseInterval()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetBaseInterval()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -2264,9 +2089,7 @@ func (m *RetryPolicy_RetryBackOff) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetMaxInterval()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetMaxInterval()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -2297,9 +2120,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_SourceCluster_:
 
-		if h, ok := interface{}(m.GetSourceCluster()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetSourceCluster()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2315,9 +2136,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_DestinationCluster_:
 
-		if h, ok := interface{}(m.GetDestinationCluster()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetDestinationCluster()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2333,9 +2152,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_RequestHeaders_:
 
-		if h, ok := interface{}(m.GetRequestHeaders()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRequestHeaders()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2351,9 +2168,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_RemoteAddress_:
 
-		if h, ok := interface{}(m.GetRemoteAddress()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetRemoteAddress()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2369,9 +2184,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_GenericKey_:
 
-		if h, ok := interface{}(m.GetGenericKey()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetGenericKey()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2387,9 +2200,7 @@ func (m *RateLimit_Action) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *RateLimit_Action_HeaderValueMatch_:
 
-		if h, ok := interface{}(m.GetHeaderValueMatch()).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(m.GetHeaderValueMatch()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
@@ -2496,9 +2307,7 @@ func (m *RateLimit_Action_HeaderValueMatch) Hash(hasher hash.Hash64) (uint64, er
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetExpectMatch()).(interface {
-		Hash(hasher hash.Hash64) (uint64, error)
-	}); ok {
+	if h, ok := interface{}(m.GetExpectMatch()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
@@ -2514,9 +2323,7 @@ func (m *RateLimit_Action_HeaderValueMatch) Hash(hasher hash.Hash64) (uint64, er
 
 	for _, v := range m.GetHeaders() {
 
-		if h, ok := interface{}(v).(interface {
-			Hash(hasher hash.Hash64) (uint64, error)
-		}); ok {
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}

@@ -9,8 +9,8 @@ import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 

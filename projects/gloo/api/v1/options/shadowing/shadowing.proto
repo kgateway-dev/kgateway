@@ -10,8 +10,8 @@ import "google/protobuf/duration.proto";
 import "github.com/solo-io/solo-kit/api/v1/ref.proto";
 
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Specifies traffic shadowing configuration for the associated route.
 // If set, Envoy will send a portion of the route's traffic to the shadowed upstream. This can be a useful way to

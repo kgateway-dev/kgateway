@@ -8,8 +8,8 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
 message CorsPolicy {

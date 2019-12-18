@@ -8,8 +8,8 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Contains various settings for Envoy's tcp proxy filter.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/v1.10.0/api-v2/config/filter/network/tcp_proxy/v2/tcp_proxy.proto#envoy-api-msg-config-filter-network-tcp-proxy-v2-tcpproxy

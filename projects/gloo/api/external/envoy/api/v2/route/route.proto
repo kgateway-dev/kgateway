@@ -21,8 +21,8 @@ import "validate/validate.proto";
 import "gogoproto/gogo.proto";
 
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // [#protodoc-title: HTTP route]
 // * Routing :ref:`architecture overview <arch_overview_http_routing>`
@@ -55,7 +55,7 @@ message VirtualHost {
     //   The longest wildcards match first.
     //   Only a single virtual host in the entire route configuration can match on ``*``. A domain
     //   must be unique across all virtual hosts or the config will fail to load.
-    repeated string domains = 2 [(validate.rules).repeated .min_items = 1];
+    repeated string domains = 2 [(validate.rules).repeated.min_items = 1];
 
     // The list of routes that will be matched, in order, for incoming requests.
     // The first route that matches will be used.

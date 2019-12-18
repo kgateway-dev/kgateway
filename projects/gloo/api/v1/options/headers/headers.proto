@@ -6,8 +6,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/he
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-import "ext/ext.proto";
-option (ext.hash_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 import "google/protobuf/wrappers.proto";
 
