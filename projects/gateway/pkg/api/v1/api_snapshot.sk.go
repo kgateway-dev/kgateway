@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -56,13 +58,25 @@ func (s ApiSnapshot) hashGateways(hasher hash.Hash64) (uint64, error) {
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	VirtualServicesHash, _ := s.hashVirtualServices(hasher)
+	VirtualServicesHash, err := s.hashVirtualServices(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("virtualServices", VirtualServicesHash))
-	RouteTablesHash, _ := s.hashRouteTables(hasher)
+	RouteTablesHash, err := s.hashRouteTables(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("routeTables", RouteTablesHash))
-	GatewaysHash, _ := s.hashGateways(hasher)
+	GatewaysHash, err := s.hashGateways(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("gateways", GatewaysHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -95,7 +109,10 @@ func (ss ApiSnapshotStringer) String() string {
 }
 
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return ApiSnapshotStringer{
 		Version:         snapshotHash,
 		VirtualServices: s.VirtualServices.NamespacesDotNames(),

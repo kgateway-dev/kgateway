@@ -29,8 +29,9 @@ func NewDiscoverySyncer(disc *discovery.UpstreamDiscovery, refreshRate time.Dura
 func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v upstreams)", snap.Hash(), len(snap.Upstreams))
-	defer logger.Infof("end sync %v", snap.Hash())
+	snapHash, _ := snap.Hash(nil)
+	logger.Infof("begin sync %v (%v upstreams)", snapHash, len(snap.Upstreams))
+	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway

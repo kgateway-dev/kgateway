@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -38,9 +40,15 @@ func (s SetupSnapshot) hashSettings(hasher hash.Hash64) (uint64, error) {
 func (s SetupSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	SettingsHash, _ := s.hashSettings(hasher)
+	SettingsHash, err := s.hashSettings(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("settings", SettingsHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -61,7 +69,10 @@ func (ss SetupSnapshotStringer) String() string {
 }
 
 func (s SetupSnapshot) Stringer() SetupSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return SetupSnapshotStringer{
 		Version:  snapshotHash,
 		Settings: s.Settings.NamespacesDotNames(),

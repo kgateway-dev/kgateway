@@ -6,13 +6,12 @@ package lbhash
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-	time "time"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/gogo/protobuf/types"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

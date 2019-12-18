@@ -9,6 +9,9 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+
+	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used

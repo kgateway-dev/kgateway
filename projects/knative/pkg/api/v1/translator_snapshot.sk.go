@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	github_com_solo_io_gloo_projects_knative_pkg_api_external_knative "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -50,11 +52,20 @@ func (s TranslatorSnapshot) hashIngresses(hasher hash.Hash64) (uint64, error) {
 func (s TranslatorSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	SecretsHash, _ := s.hashSecrets(hasher)
+	SecretsHash, err := s.hashSecrets(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("secrets", SecretsHash))
-	IngressesHash, _ := s.hashIngresses(hasher)
+	IngressesHash, err := s.hashIngresses(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("ingresses", IngressesHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -81,7 +92,10 @@ func (ss TranslatorSnapshotStringer) String() string {
 }
 
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return TranslatorSnapshotStringer{
 		Version:   snapshotHash,
 		Secrets:   s.Secrets.NamespacesDotNames(),

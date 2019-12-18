@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"hash"
 	"hash/fnv"
+	"log"
 
 	github_com_solo_io_solo_kit_pkg_api_v1_resources_common_kubernetes "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -58,13 +60,25 @@ func (s DiscoverySnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
 func (s DiscoverySnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	UpstreamsHash, _ := s.hashUpstreams(hasher)
+	UpstreamsHash, err := s.hashUpstreams(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
-	KubenamespacesHash, _ := s.hashKubenamespaces(hasher)
+	KubenamespacesHash, err := s.hashKubenamespaces(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("kubenamespaces", KubenamespacesHash))
-	SecretsHash, _ := s.hashSecrets(hasher)
+	SecretsHash, err := s.hashSecrets(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	fields = append(fields, zap.Uint64("secrets", SecretsHash))
-	snapshotHash, _ := s.Hash(hasher)
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
@@ -97,7 +111,10 @@ func (ss DiscoverySnapshotStringer) String() string {
 }
 
 func (s DiscoverySnapshot) Stringer() DiscoverySnapshotStringer {
-	snapshotHash, _ := s.Hash(nil)
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return DiscoverySnapshotStringer{
 		Version:        snapshotHash,
 		Upstreams:      s.Upstreams.NamespacesDotNames(),

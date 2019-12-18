@@ -6,12 +6,11 @@ package transformation
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

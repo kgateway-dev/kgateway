@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("Fault Injection", func() {
+var _ = FDescribe("Fault Injection", func() {
 
 	var (
 		testClients services.TestClients
@@ -60,7 +60,7 @@ var _ = Describe("Fault Injection", func() {
 					return err
 				}
 				return nil
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 		}
 
 		setupUpstream := func() {

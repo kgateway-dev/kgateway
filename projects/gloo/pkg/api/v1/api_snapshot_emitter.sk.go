@@ -451,13 +451,13 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		timer := time.NewTicker(time.Second * 1)
 		previousHash, err := currentSnapshot.Hash(nil)
 		if err != nil {
-			contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 		}
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			// this should never happen, so panic if it does
 			if err != nil {
-				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if previousHash == currentHash {
 				return

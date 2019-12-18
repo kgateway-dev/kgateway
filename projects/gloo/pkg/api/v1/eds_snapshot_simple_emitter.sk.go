@@ -53,7 +53,7 @@ func (c *edsSimpleEmitter) Snapshots(ctx context.Context) (<-chan *EdsSnapshot, 
 		sync := func() {
 			currentHash, err := currentSnapshot.Hash(nil)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if previousHash == currentHash {
 				return

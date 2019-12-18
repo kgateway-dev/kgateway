@@ -3,7 +3,9 @@
 package v1alpha1
 
 import (
+	"encoding/binary"
 	"hash"
+	"hash/fnv"
 	"sort"
 
 	github_com_solo_io_gloo_projects_knative_api_external_knative "github.com/solo-io/gloo/projects/knative/api/external/knative"
@@ -42,11 +44,18 @@ func (r *Ingress) Clone() resources.Resource {
 }
 
 func (r *Ingress) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.Ingress.Clone()
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-	return hashutils.HashAll(clone), nil
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 func (r *Ingress) GroupVersionKind() schema.GroupVersionKind {
