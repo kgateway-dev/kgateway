@@ -192,7 +192,7 @@ func (s *translatorSyncer) clearProxyListeners(snapshotKey string) (envoycache.S
 	}
 	emptySnapshot := xds.NewSnapshotFromResources(
 		previous.GetResources(xds.EndpointType),
-		previous.GetResources(xds.ClusterType),
+		emptyResource,
 		emptyResource,
 		emptyResource,
 	)
