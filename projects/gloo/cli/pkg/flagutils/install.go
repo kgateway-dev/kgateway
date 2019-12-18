@@ -12,7 +12,7 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVarP(&install.HelmChartOverride, "file", "f", "", "Install Gloo from this Helm chart archive file rather than from a release")
 	set.StringSliceVarP(&install.HelmChartValueFileNames, "values", "", []string{}, "List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
 	set.StringVar(&install.HelmReleaseName, "release-name", constants.GlooReleaseName, "helm release name")
-	set.StringVar(&install.HelmReleaseVersion, "release-version", "", "helm release version (e.g. 0.20.6, defaults to latest)")
+	set.StringVar(&install.ReleaseVersion, "release-version", "", "release version to install (e.g. 0.20.6, defaults to latest)")
 	set.BoolVar(&install.CreateNamespace, "create-namespace", true, "Create the namespace to install gloo into")
 	set.StringVarP(&install.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")

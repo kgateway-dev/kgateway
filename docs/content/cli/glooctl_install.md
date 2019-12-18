@@ -20,7 +20,7 @@ choose which version of Gloo to install.
       --license-key string       License key to activate GlooE features
   -n, --namespace string         namespace to install gloo into (default "gloo-system")
       --release-name string      helm release name (default "gloo")
-      --release-version string   helm release version (e.g. 0.20.6, defaults to latest)
+      --release-version string   release version to install (e.g. 0.20.6, defaults to latest)
       --values strings           List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
   -v, --verbose                  If true, output from kubectl commands will print to stdout/stderr
       --with-admin-console       install gloo and a read-only version of its admin console

@@ -109,10 +109,10 @@ rules:
 
 	defaultInstall := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string) {
 		installConfig := &options.Install{
-			Namespace:          defaults.GlooSystem,
-			HelmReleaseName:    constants.GlooReleaseName,
-			HelmReleaseVersion: "test",
-			CreateNamespace:    true,
+			Namespace:       defaults.GlooSystem,
+			HelmReleaseName: constants.GlooReleaseName,
+			ReleaseVersion:  "test",
+			CreateNamespace: true,
 		}
 
 		helmEnv := &cli.EnvSettings{
