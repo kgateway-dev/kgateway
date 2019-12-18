@@ -11,46 +11,49 @@ import (
 )
 
 var _ = Describe("Upgradeconfig", func() {
-
-	It("should not error on empty list", func() {
-		err := ValidateHCMUpgradeConfigs(nil)
-		Expect(err).NotTo(HaveOccurred())
+	Context("HCM", func() {
+		It("should not error on empty list", func() {
+			err := ValidateHCMUpgradeConfigs(nil)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should allow websocket upgrade", func() {
+			configs := []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
+				UpgradeType: WebSocketUpgradeType,
+			}}
+			err := ValidateHCMUpgradeConfigs(configs)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should not allow double websocket upgrade", func() {
+			configs := []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
+				UpgradeType: WebSocketUpgradeType,
+			}, {
+				UpgradeType: WebSocketUpgradeType,
+			}}
+			err := ValidateHCMUpgradeConfigs(configs)
+			Expect(err).To(HaveOccurred())
+		})
 	})
-	It("should not error on empty list", func() {
-		err := ValidateRouteUpgradeConfigs(nil)
-		Expect(err).NotTo(HaveOccurred())
-	})
-	It("should allow websocket upgrade", func() {
-		configs := []*envoyroute.RouteAction_UpgradeConfig{{
-			UpgradeType: WebSocketUpgradeType,
-		}}
-		err := ValidateRouteUpgradeConfigs(configs)
-		Expect(err).NotTo(HaveOccurred())
-	})
-	It("should allow websocket upgrade", func() {
-		configs := []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
-			UpgradeType: WebSocketUpgradeType,
-		}}
-		err := ValidateHCMUpgradeConfigs(configs)
-		Expect(err).NotTo(HaveOccurred())
-	})
-	It("should not allow route double websocket upgrade", func() {
-		configs := []*envoyroute.RouteAction_UpgradeConfig{{
-			UpgradeType: WebSocketUpgradeType,
-		}, {
-			UpgradeType: WebSocketUpgradeType,
-		}}
-		err := ValidateRouteUpgradeConfigs(configs)
-		Expect(err).To(HaveOccurred())
-	})
-	It("should not allow route double websocket upgrade", func() {
-		configs := []*envoyhttp.HttpConnectionManager_UpgradeConfig{{
-			UpgradeType: WebSocketUpgradeType,
-		}, {
-			UpgradeType: WebSocketUpgradeType,
-		}}
-		err := ValidateHCMUpgradeConfigs(configs)
-		Expect(err).To(HaveOccurred())
+	Context("Route", func() {
+		It("should not error on empty list", func() {
+			err := ValidateRouteUpgradeConfigs(nil)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should allow websocket upgrade", func() {
+			configs := []*envoyroute.RouteAction_UpgradeConfig{{
+				UpgradeType: WebSocketUpgradeType,
+			}}
+			err := ValidateRouteUpgradeConfigs(configs)
+			Expect(err).NotTo(HaveOccurred())
+		})
+		It("should not allow double websocket upgrade", func() {
+			configs := []*envoyroute.RouteAction_UpgradeConfig{{
+				UpgradeType: WebSocketUpgradeType,
+			}, {
+				UpgradeType: WebSocketUpgradeType,
+			}}
+			err := ValidateRouteUpgradeConfigs(configs)
+			Expect(err).To(HaveOccurred())
+		})
 	})
 
 })
