@@ -15,15 +15,17 @@ The documentation for Gloo is meant to be conversational and engaging. It should
 
 * **Bold UI elements** - When referring to a specific UI element such as a **button** or **form field**, the reference should be in **bold**. This clues the reader in on the fact that you're talking about the **OK** button and not just telling them that they're OK.
 
-* **Code formatting for code and files** - When a snippet of code appears in your document, or you refer to a filename or directory path, those items should use the `in-line code` format. If your code snippet is more than a few words long, then it should be placed in a code block instead.
+* **Code formatting for code and files** - When a snippet of code appears in your document, or you refer to a filename or directory path, those items should use the `in-line code` format. Code snippets that are more than a few words long should be placed in a code block instead.
 
 * **Expand acronyms on first use** - When a document has an acronym, even if it is a common one, expand it out when it is first used. For instance, *AWS* should be expanded to *Amazon Web Services (AWS)* the first time it is used on a page. For less common acronyms, it may make sense to expand its first use in each major section of the document to avoid confusion for readers who may be skimming.
 
 * **Use shorter paragraphs** - No single paragraph should be longer than four or five sentences. Each paragraph should encapsulate a new concept or idea. Single-line paragraphs can be a powerful tool to highlight a key concept or thought.
 
-* **Short, clear sentences** - If your sentence seems to run on for multiple lines or has more than one comma, then it's probably best to break it up.
+* **Short, clear sentences** - Sentences that run on for multiple lines or have more than one comma should be broken up into multiple sentences.
 
-* **Use subheadings** - Split the document up into as many sub-sections as makes sense. Readers will often skim a document for the information that is relevant to them. Each heading server as a marker for the reader to check-in before moving to the next section. Make sure the title of each heading is descriptive and succinct.
+* **Use everyday words** - While you may have memorized the thesaurus, now is not the time to prove it. Vocabulary should be accessible to an average adult reader. Keep things accurate and technical, but not obtuse or obscure.
+
+* **Use subheadings** - Split the document up into as many sub-sections as makes sense. Readers will often skim a document for information that is relevant to them. Each heading serves as a marker for the reader to check-in before moving to the next section. Make sure the title of each heading is descriptive and succinct.
 
 * **Multiple documents are okay** - We're not killing trees here, and creating a new document is not that difficult. If you find you've got more than three major sections or you are delving into a fourth-level for subheadings, then it's probably time to split the document into multiple docs.
 
@@ -39,7 +41,7 @@ The documentation for Gloo is meant to be conversational and engaging. It should
 
 ## Document naming and structure
 
-The docs use Hugo to generate the static website, which makes the structure and naming of the directories holding the content important. The structure of the current docs can be found on the [Gloo GitHub repository](https://github.com/solo-io/gloo). Here is a representation of content directory as of this writing.
+The docs use Hugo to generate the static website, which makes the structure and naming of the directories holding the content important. The structure of the current docs can be found on the [Gloo GitHub repository](https://github.com/solo-io/gloo). Here is a representation of `content` directory as of this writing.
 
 ```bash
 ├───advanced_configuration # Menu item in the navigation bar
@@ -69,7 +71,7 @@ The docs use Hugo to generate the static website, which makes the structure and 
 
 Each directory appears as a menu item on the navigation bar. The page that loads when the menu item is clicked will be the `_index.md` file in that directory. Additional files in that directory will appear based on the value assigned to the `title` field in the header of the document. The order of the files is controlled by the value assigned to the `weight` field in the header of the document.
 
-To create a new menu item, simply create a directory at the root of the content directory or in the sub-directory where you want the menu item to appear. Then add an `_index.md` file to that directory and populate it with content. The `weight` value in the `_index.md` file determines the order in which the menu item will appear among the parent items. For instance, the `_index.md` file found in the `introduction` directory has a `weight` value of `10`. This places the Introduction menu item at the top of the navigation bar. The `weight` value for additional files in a directory determine their order within the expanded menu item in the navigation pane. More information can be found on the [Hugo website](https://gohugo.io/templates/lists/) if you really want to do a deep dive.
+To create a new menu item, simply create a directory at the root of the content directory or in the sub-directory where you want the menu item to appear. Then add an `_index.md` file to that directory and populate it with content. The `weight` value in the `_index.md` file determines the order in which the menu item will appear among the parent items. For instance, the `_index.md` file found in the `introduction` directory has a `weight` value of `10`. This places the **Introduction** menu item at the top of the navigation bar. The `weight` value for additional files in a directory determine their order within the expanded menu item in the navigation pane. More information can be found on the [Hugo website](https://gohugo.io/templates/lists/) if you really want to do a deep dive.
 
 ## Next Steps
 

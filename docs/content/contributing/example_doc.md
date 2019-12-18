@@ -16,7 +16,7 @@ description: The coolest document you'll never read because it doesn't really ex
 ---
 ```
 
-The **title** field will be the title that appears at the top of the document. The **menuTitle** field will be used in the menu structure if the doc is a root document (_index.md) of a section. The **weight** is an integer that determines the document's placement in the menu order. Lower weights will be at the top, with the next higher weight following after it. The **description** field should be a short description of the document. The description will show up when a list of child documents is generated on a parent page.
+The **title** field will be the title that appears at the top of the document. The **menuTitle** field will be used in the menu structure if the doc is a root document (`_index.md`) of a section. The **weight** is an integer that determines the document's placement in the menu order. Lower weights will be at the top, with the next higher weight following after it. The **description** field should be a short description of the document. The description will show up when a list of child documents is generated on a parent page.
 
 After a short introduction explaining the purpose of this particular document, we move into the first section.
 

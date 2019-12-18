@@ -15,7 +15,7 @@ Hi! So you'd like to help us out with the Gloo documentation. That is awesome! B
 
 ## Background
 
-The Gloo docs live in the `docs/content` directory of the Gloo GitHub repository. The docs are written in markdown and rendered to a static site using [Hugo](https://gohugo.io/). The docs make use of *shortcodes* from Hugo and some custom shortcodes that are part of a solo-io theme stored in [this repository](https://github.com/solo-io/hugo-theme-soloio). Shortcodes are a way to render custom HTML on a page without injecting that HTML directly into markdown.
+The Gloo docs live in the `docs/content` directory of the Gloo GitHub repository. The docs are written in Markdown and rendered to a static site using [Hugo](https://gohugo.io/). The docs make use of *shortcodes* from Hugo and some custom shortcodes that are part of a solo-io theme stored in [this repository](https://github.com/solo-io/hugo-theme-soloio). Shortcodes are a way to render custom HTML on a page without injecting that HTML directly into Markdown.
 
 The docs website can be rendered locally for updates and testing by using Hugo and `make`. There are some software prerequisites that need to be fulfilled in order to render and view the site successfully. More information can be found in the **[Install prerequisite software]({{< versioned_link_path fromRoot="/contributing/editing_locally/#install-prerequisite-software" >}})** section of the Editing Locally guide.
 
@@ -25,7 +25,7 @@ For minor changes and edits, it is not necessary to clone the repository and ren
 
 ## Log an issue
 
-The simplest way to get involved with docs is by submitting an issue when you see something that needs to be changed. It could be a grammatical error, an unclear statement, or a suggestion for a new document or example. If you see something that you would like to see amended or improved, head on over to the Gloo GitHub repository and follow the [steps in the Quickstart](#log-an-issue-on-the-main-gloo-repository) for logging an issue.
+The simplest way to get involved with docs is by submitting an issue when you see something that needs to be changed. It could be a grammatical error, an unclear statement, or a suggestion for a new document or example. If you see something that should be amended or improved, head on over to the Gloo GitHub repository and follow the [steps in the Quickstart](#log-an-issue-on-the-main-gloo-repository) for logging an issue.
 
 ---
 
@@ -38,7 +38,7 @@ While it is possible to clone the entire Gloo repository, make changes to the do
 3. Make the update and commit it
 4. Create a pull request to merge the change
 
-Once the PR has been submitted, someone from Solo.io will review the change and either approve it or ask for more information. See below for an example of creating and submitting a change.
+Once the PR has been submitted, someone from solo.io will review the change and either approve it or ask for more information. See below for an example of creating and submitting a change.
 
 ### Log an issue on the main Gloo repository  
 
@@ -61,7 +61,7 @@ After a few moments the fork will complete and you will be taken to the page wit
 
 ### Make the update and commit it
 
-In this step you will make the actual change to the document that has the issue. From the forked repository, select the branch you want to make changes to. The current branch being used to generate the Gloo docs is `feature-rc1`. The files that make up the docs website are in `docs/content`, and the directory structure follows the menu structure of the docs site.
+In this step you will make the actual change to the document that has an issue. From the forked repository, select the branch you want to make changes to. The current branch being used to generate the Gloo docs is `feature-rc1`. The files that make up the docs website are in `docs/content`, and the directory structure follows the menu structure of the docs site.
 
 * Select the correct branch to edit (`feature-rc1`)
 * Find the file you want to edit and click the **pencil** icon
@@ -84,7 +84,7 @@ Now that the change has been committed to your fork of the Gloo repository, it's
 * Click on **Create pull request**
 * Celebrate! You're awesome for helping.
 
-Once the PR is submitted, someone from Solo.io will review the change and either approve it or ask for more information.
+Once the PR is submitted, someone from solo.io will review the change and either approve it or ask for more information.
 
 ---
 
@@ -96,5 +96,5 @@ While making minor edits and fixes works well on GitHub directly, more involved 
 
 - Check out the [style guide]({{< versioned_link_path fromRoot="/contributing/style_guide/" >}})
 - Find [existing open](https://github.com/solo-io/gloo/labels/Area%3A%20Docs) issues
-- Participate in the [community Slack(https://slack.solo.io/)]!
+- Participate in the [community Slack](https://slack.solo.io/)!
 
