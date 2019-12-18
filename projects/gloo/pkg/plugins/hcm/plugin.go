@@ -2,23 +2,20 @@ package hcm
 
 import (
 	"context"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-)
-
-const (
-	webSocketUpgradeType = "websocket"
 )
 
 func NewPlugin() *Plugin {
@@ -130,7 +127,7 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		switch upgradeType := config.UpgradeType.(type) {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			cfg.UpgradeConfigs[i] = &envoyhttp.HttpConnectionManager_UpgradeConfig{
-				UpgradeType: webSocketUpgradeType,
+				UpgradeType: upgradeconfig.WebSocketUpgradeType,
 				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().GetEnabled()),
 			}
 
@@ -143,11 +140,11 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	// enable websockets by default if no websocket upgrade was specified
 	if !webSocketUpgradeSpecified {
 		cfg.UpgradeConfigs = append(cfg.UpgradeConfigs, &envoyhttp.HttpConnectionManager_UpgradeConfig{
-			UpgradeType: webSocketUpgradeType,
+			UpgradeType: upgradeconfig.WebSocketUpgradeType,
 		})
 	}
 
-	if err := validateUpgradeConfigs(cfg.UpgradeConfigs); err != nil {
+	if err := upgradeconfig.ValidateHCMUpgradeConfigs(cfg.UpgradeConfigs); err != nil {
 		return err
 	}
 
@@ -169,19 +166,6 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	}
 
 	return nil
-}
-
-func validateUpgradeConfigs(upgradeConfigs []*envoyhttp.HttpConnectionManager_UpgradeConfig) error {
-	uniqConfigs := map[string]bool{}
-	var multiErr *multierror.Error
-
-	for _, config := range upgradeConfigs {
-		if _, ok := uniqConfigs[config.UpgradeType]; ok {
-			multiErr = multierror.Append(multiErr, errors.Errorf("upgrade config %s is not unique", config.UpgradeType))
-		}
-		uniqConfigs[config.UpgradeType] = true
-	}
-	return multiErr.ErrorOrNil()
 }
 
 var (
