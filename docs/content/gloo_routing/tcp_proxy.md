@@ -1,6 +1,6 @@
 ---
 title: TCP Proxy
-weight: 40
+weight: 50
 description: In this tutorial, we'll take a look at using gloo as a TCP proxy.
 ---
 

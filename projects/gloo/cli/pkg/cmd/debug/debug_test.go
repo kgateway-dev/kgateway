@@ -56,7 +56,7 @@ var _ = Describe("Debug", func() {
 		var (
 			kubeCli        *install.MockKubectl
 			expectedOutput []string
-			importantKinds = append(append([]string{}, installcmd.GlooSystemKinds...), installcmd.GlooCrdNames...)
+			importantKinds = append(append([]string{}, installcmd.GlooNamespacedKinds...), installcmd.GlooCrdNames...)
 		)
 
 		BeforeEach(func() {

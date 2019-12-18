@@ -4,6 +4,7 @@ weight: 10
 description: Match requests to routes based on the context path
 ---
 
+
 There are three options to do HTTP path matching. You can specify only one of the following three options within any given
 route matcher spec:
 
@@ -11,9 +12,15 @@ route matcher spec:
 * [`exact`](#exact) - match if request path matches specified path exactly.
 * [`regex`](#regex) - match if the specified regular expression matches. 
 
+---
+
 ## Setup
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
+
+If you have not yet deployed Gloo, you can start by following the directions contained within the guide [Installing Gloo Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+
+---
 
 Let's create a simple upstream for testing called `json-upstream`, that routes to a static site:
 

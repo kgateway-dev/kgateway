@@ -49,34 +49,56 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 	namespace := cliArgs.Uninstall.Namespace
 	releaseName := cliArgs.Uninstall.HelmReleaseName
-	if releaseExists, err := u.helmClient.ReleaseExists(namespace, releaseName); err != nil {
-		return err
-	} else if !releaseExists {
-		_, _ = fmt.Fprintf(u.output, "No Gloo installation found in namespace %s\n", namespace)
-		if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
-			u.deleteNamespace(cliArgs.Uninstall.Namespace)
-		}
-		return nil
-	}
 
-	uninstallAction, err := u.helmClient.NewUninstall(namespace)
+	// Check whether Helm release object exists
+	releaseExists, err := u.helmClient.ReleaseExists(namespace, releaseName)
 	if err != nil {
 		return err
 	}
 
+	_, _ = fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
 	var crdNames []string
+	if releaseExists {
 
-	// need to run this first, as it depends on the release still being present
-	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
-		crdNames, err = u.findCrdNamesForRelease(namespace, releaseName)
+		// If the release object exists, then we want to delegate the uninstall to the Helm libraries.
+		uninstallAction, err := u.helmClient.NewUninstall(namespace)
 		if err != nil {
 			return err
 		}
-	}
 
-	_, _ = fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
-	if _, err = uninstallAction.Run(releaseName); err != nil {
-		return err
+		// Helm never deletes CRDs, so we collect the CRD names to delete them ourselves if need be.
+		// We need to run this first, as it depends on the release still being present.
+		crdNames, err = u.findCrdNamesForRelease(namespace)
+		if err != nil {
+			return err
+		}
+
+		if _, err = uninstallAction.Run(releaseName); err != nil {
+			return err
+		}
+
+	} else {
+
+		// The release object does not exist, so it is not possible to exactly tell which resources are part of
+		// the originals installation. We take a best effort approach.
+
+		crdNames = GlooCrdNames
+
+		glooLabels := LabelsToFlagString(GlooComponentLabels)
+		for _, kind := range GlooNamespacedKinds {
+			if err := u.kubeCli.Kubectl(nil, "delete", kind, "-n", namespace, "-l", glooLabels); err != nil {
+				return err
+			}
+		}
+
+		// If the `--all` flag was provided, also delete the cluster-scoped resources.
+		if cliArgs.Uninstall.DeleteAll {
+			for _, kind := range GlooClusterScopedKinds {
+				if err := u.kubeCli.Kubectl(nil, "delete", kind, "-l", glooLabels); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	u.uninstallKnativeIfNecessary()
@@ -95,7 +117,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 	return nil
 }
 
-func (u *uninstaller) findCrdNamesForRelease(namespace, releaseName string) (crdNames []string, err error) {
+func (u *uninstaller) findCrdNamesForRelease(namespace string) (crdNames []string, err error) {
 	lister, err := u.helmClient.ReleaseList(namespace)
 	if err != nil {
 		return nil, err
@@ -142,11 +164,11 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 }
 
 func (u *uninstaller) deleteNamespace(namespace string) {
-	fmt.Printf("Removing namespace %s... ", namespace)
+	_, _ = fmt.Fprintf(u.output, "Removing namespace %s... ", namespace)
 	if err := u.kubeCli.Kubectl(nil, "delete", "namespace", namespace); err != nil {
-		fmt.Printf("\nUnable to delete namespace %s. Continuing...\n", namespace)
+		_, _ = fmt.Fprintf(u.output, "\nUnable to delete namespace %s. Continuing...\n", namespace)
 	} else {
-		fmt.Printf("Done.\n")
+		_, _ = fmt.Fprintf(u.output, "Done.\n")
 	}
 }
 
