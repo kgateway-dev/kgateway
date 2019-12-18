@@ -99,7 +99,10 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 			Consul:  consulClient,
 		}
 
-		writeGateways(writeNamespace, consulResources)
+		gatewayClient, err := v1.NewGatewayClient(consulResources)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to build the gateway client")
+		err = helpers.WriteDefaultGateways(writeNamespace, gatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
 		vaultResources = &factory.VaultSecretClientFactory{
 			Vault:   vaultClient,
@@ -376,17 +379,4 @@ func writeSettings(settingsDir string, glooPort, validationPort int, writeNamesp
 		return nil, err
 	}
 	return settings, ioutil.WriteFile(filepath.Join(settingsDir, writeNamespace, "default.yaml"), yam, 0644)
-}
-
-func writeGateways(writeNamespace string, consulResources factory.ResourceClientFactory) {
-	gatewayClient, err := v1.NewGatewayClient(consulResources)
-	Expect(err).NotTo(HaveOccurred(), "Should be able to build the gateway client")
-
-	defaultGateway := gatewaydefaults.DefaultGateway(writeNamespace)
-	defaultSslGateway := gatewaydefaults.DefaultSslGateway(writeNamespace)
-
-	_, err = gatewayClient.Write(defaultGateway, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write the non-ssl default gateway")
-	_, err = gatewayClient.Write(defaultSslGateway, clients.WriteOpts{})
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write the ssl default gateway")
 }
