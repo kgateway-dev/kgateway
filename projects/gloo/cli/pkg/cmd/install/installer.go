@@ -193,7 +193,7 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 func getChartUri(chartOverride, releaseVersionOverride string, withUi, enterprise bool) (string, error) {
 
 	if chartOverride != "" && releaseVersionOverride != "" {
-		return "", errors.Errorf("you may only provide one override value, detected two: %s and %s", chartOverride, releaseVersionOverride)
+		return "", errors.Errorf("you may not specify both a chart with -f and a release version with --release-version. Received: %s and %s", chartOverride, releaseVersionOverride)
 	}
 
 	var helmChartArchiveUri string
