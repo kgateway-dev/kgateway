@@ -134,12 +134,15 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 }
 
 func (i *installer) createNamespace(namespace string) {
-	fmt.Printf("Creating namespace %s... ", namespace)
-	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
-		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
-	} else {
-		fmt.Printf("Done.\n")
+	if err := i.kubeCli.Kubectl(nil, "get", "namespace", namespace); err != nil {
+		fmt.Printf("Creating namespace %s... ", namespace)
+		if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
+			fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+		} else {
+			fmt.Printf("Done.\n")
+		}
 	}
+
 }
 
 func setCrdCreateToFalse(config *InstallerConfig) {
@@ -244,9 +247,9 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 		return
 	}
 	if enterprise {
-		fmt.Println("Gloo Enterprise was successfully installed!")
+		fmt.Println("\nGloo Enterprise was successfully installed!")
 	} else {
-		fmt.Println("Gloo was successfully installed!")
+		fmt.Println("\nGloo was successfully installed!")
 	}
 
 }
