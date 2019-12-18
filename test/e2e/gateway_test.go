@@ -55,11 +55,13 @@ var _ = Describe("Gateway", func() {
 			}
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+			err := gloohelpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 
 			// wait for the two gateways to be created.
 			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
-			}, "10s", "0.1s").Should(HaveLen(2))
+			}, "10s", "0.1s").Should(HaveLen(2), "Gateways should be present")
 		})
 
 		AfterEach(func() {
