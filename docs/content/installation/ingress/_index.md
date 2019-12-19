@@ -35,17 +35,18 @@ As a first step, you have to add the Gloo repository to the list of known chart 
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 ```
 
-The Gloo chart archive contains the necessary value files for the Ingress deployment option. Run the
-following command to download and extract the archive to the current directory:
-
-```shell
-helm fetch --untar=true --untardir=. gloo/gloo
+Create a `values-ingress.yaml` file with the following overrides:
+```yaml
+gateway:
+  enabled: false
+ingress:
+  enabled: true
 ```
 
 Finally, install Gloo using the following command:
 
 ```shell
-helm install gloo --namespace gloo-system -f gloo/values-ingress.yaml
+helm install gloo --namespace gloo-system -f values-ingress.yaml
 ```
 
 Gloo can be installed to a namespace of your choosing with the `--namespace` flag.
