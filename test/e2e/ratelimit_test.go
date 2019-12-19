@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/solo-io/gloo/test/helpers"
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/solo-io/gloo/test/helpers"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2"
 	. "github.com/onsi/ginkgo"
