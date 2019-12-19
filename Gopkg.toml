@@ -40,8 +40,7 @@ ignored = [
 
 [[constraint]]
   name = "github.com/solo-io/solo-kit"
-  branch = "gen-hash"
-#  version = "0.11.13"
+  version = "0.11.14"
 
 [[override]]
   name = "github.com/evanphx/json-patch"
