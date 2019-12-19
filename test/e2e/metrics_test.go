@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
@@ -95,6 +96,9 @@ var _ = Describe("Gateway", func() {
 
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
+
+				err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 			})
 
 			AfterEach(func() {
