@@ -4,8 +4,8 @@ weight: 7
 description: Guidelines and best practices for developing and configuring Go plugins to extend Gloo's ext auth server
 ---
 
-In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth" %}}) we showed how 
-easy it is to extend Gloo with custom authentication logic using Go plugins. That guide uses a 
+In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/security/auth/plugin_auth" %}}) 
+we showed how easy it is to extend Gloo with custom authentication logic using Go plugins. That guide uses a 
 [plugin](https://github.com/solo-io/ext-auth-plugin-examples/tree/master/plugins/required_header) that has already been 
 built and published, and primarily focuses on giving an overview of the plugin development workflow.
 
@@ -42,13 +42,13 @@ We recommend that you fork the example repository and use it as a starting point
 {{% /notice %}}
 
 ### Development workflow overview
-In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#development-workflow-overview" %}}) 
+In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#development-workflow-overview" %}}) 
 we gave a high-level description of the steps required to extend Gloo with your own plugins:
 
 1. Write a plugin and publish it as a `docker image` which, when run, copies the compiled plugin file to a 
 predefined directory.
 2. Configure Gloo to load the plugin by running the image as an `initContainer` on the `extauth` deployment. This can be 
-done by installing Gloo with [dedicated value overrides]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#installation" %}}) 
+done by installing Gloo with [dedicated value overrides]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#installation" %}}) 
 or by modifying the Gloo installation manifest manually.
 3. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or 
 routes.
@@ -82,7 +82,7 @@ The object returned by the `NewConfigInstance` function **MUST** be a pointer ty
 {{% /notice %}}
 
 Let's see an example to understand this better. If the `AuthConfig` for your plugin looks like this 
-(see [this section]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#create-an-authconfig-resource" %}}) 
+(see [this section]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#create-an-authconfig-resource" %}}) 
 of the documentation for an explanation of the fields below):
 
 {{< highlight shell "hl_lines=8-16" >}}
@@ -203,7 +203,7 @@ plugin_auth:
     config: {}
 {{< /highlight >}}
 
-See the [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#secure-the-virtual-service" %}}) 
+See the [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#secure-the-virtual-service" %}}) 
 for more information about the structure of this piece of configuration. 
 
 ### Build helper tools
@@ -418,8 +418,8 @@ accomplish this in different ways, but the preferred one (and the reason why we 
 with a `copy` entry point) is by running the plugin container(s) as `initContainer`(s) and mounting a volume shared with 
 the `extauth` deployment.
 
-In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth" %}}) we saw how to do 
-this [using glooctl]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#installation" %}}). 
+In the [**Plugin Auth** guide]({{% versioned_link_path fromRoot="/security/auth/plugin_auth" %}}) we saw how to do 
+this [using glooctl]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#installation" %}}). 
 Here we will see how to accomplish the same result by editing the raw Gloo Enterprise YAML manifest.
 
 Let's start with a basic version of the `extauth` deployment. Note that we are omitting many attributes for brevity.
@@ -496,7 +496,7 @@ Currently, Gloo expects to find the plugin files in the `/auth-plugins` director
 {{% /notice %}}
 
 ### Configuring Virtual Services to use your plugins
-The [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/plugin_auth#secure-the-virtual-service" %}}) 
+The [*Plugin Auth* guide]({{% versioned_link_path fromRoot="/security/auth/plugin_auth#secure-the-virtual-service" %}}) 
 contains a thorough explanation of how to update Virtual Service to use your plugins to authenticate requests. 
 
 ## Multi-step AuthConfigs
@@ -528,10 +528,10 @@ denied it. No steps after the failing one will be executed.
 {{% notice note %}}
 Some of the external auth schemes that Gloo provides out-of-the-box take advantage of this feature. 
 To see an example of this, see the appendix to the 
-[**Open Policy Agent** Authorization guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/opa" %}}), where we 
+[**Open Policy Agent** Authorization guide]({{% versioned_link_path fromRoot="/security/auth/opa" %}}), where we 
 use an OPA step to enforce a policy on a 
-[**JSON Web Token**]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/jwt" %}}) produced by a 
-previous [**OIDC**]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/security/oauth" %}}) step.
+[**JSON Web Token**]({{% versioned_link_path fromRoot="/security/auth/jwt" %}}) produced by a 
+previous [**OIDC**]({{% versioned_link_path fromRoot="/security/auth/oauth" %}}) step.
 {{% /notice %}}
 
 ### Header propagation
