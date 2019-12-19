@@ -1,5 +1,8 @@
 {{- if .Values.gateway.enabled }}
+{{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- $statsContext := dict "Deployment" $spec "GlobalContext" $global }}
+{{- $statsEnabled := (include "gloo.statsServerEnabled" $statsContext) -}}
 ---
 # config_map
 apiVersion: v1
@@ -27,10 +30,10 @@ data:
             envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966}
     static_resources:
 
-{{- if or ($spec.stats) ($spec.readConfig) }}
+{{- if or (eq "true" $statsEnabled) ($spec.readConfig) }}
       listeners:
 {{- end }} # if or ($spec.stats) ($spec.readConfig)
-{{- if $spec.stats }}
+{{- if (eq "true" $statsEnabled) }}
         - name: prometheus_listener
           address:
             socket_address:
@@ -67,7 +70,7 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}} # if $spec.stats
+{{- end}} # if (eq "true" $statsEnabled)
 {{- if $spec.readConfig }}
         - name: read_config_listener
           address:
@@ -180,7 +183,7 @@ data:
 {{- end}} # if $spec.tracing.cluster
 {{- end}} # if $spec.tracing
 
-{{- if or ($spec.stats) ($spec.readConfig) }}
+{{- if or (eq "true" $statsEnabled) ($spec.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
@@ -194,7 +197,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if or ($spec.stats) ($spec.readConfig)
+{{- end}} # if or (eq "true" $statsEnabled) ($spec.readConfig)
 
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.provider }}
