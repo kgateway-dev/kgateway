@@ -48,6 +48,7 @@ require (
 	github.com/k0kubun/pp v2.3.0+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
+	github.com/lyft/protoc-gen-star v0.4.14 // indirect
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/mitchellh/reflectwalk v1.0.1 // indirect
@@ -89,6 +90,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/code-generator v0.0.0
 	k8s.io/helm v2.16.1+incompatible
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.16.2
@@ -103,6 +105,7 @@ replace (
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
+	github.com/solo-io/solo-kit => /Users/eitanya/src/solo-io/solo-kit
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191204090712-e0e829f17bab
 	k8s.io/apimachinery => k8s.io/apimachinery v0.0.0-20191028221656-72ed19daf4bb
 	k8s.io/apiserver => k8s.io/apiserver v0.0.0-20191109104512-b243870e034b
