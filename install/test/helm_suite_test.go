@@ -52,7 +52,7 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	// generate the values.yaml and Chart.yaml files
-	MustMake(".", "-C", "../../", "generate-helm-files")
+	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })
 
 type renderTestCase struct {

@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Update helm values docgen to be part of codegen step so we don't get unrelated helm values docs diffs in future PRs.
+    issueLink: https://github.com/solo-io/gloo/issues/1643
