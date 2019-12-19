@@ -17,5 +17,5 @@ limitations under the License.
 package tools
 
 import (
-	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	_ "github.com/solo-io/protoc-gen-ext"
 )

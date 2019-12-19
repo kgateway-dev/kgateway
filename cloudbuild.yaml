@@ -34,6 +34,7 @@ steps:
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
 
+
 # Run some basic checks on the repo
 # 1) check formatting of go files
 # 2) ensure that make generated-code produces a clean diff
@@ -255,3 +256,5 @@ timeout: 5400s
 tags: ['gloo']
 options:
   machineType: 'N1_HIGHCPU_32'
+  env:
+  - "GO111MODULE=on"

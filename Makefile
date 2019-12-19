@@ -62,16 +62,16 @@ init:
 
 .PHONY: update-deps
 update-deps: vendor
-
-	go get -u golang.org/x/tools/cmd/goimports
-	go get -u github.com/gogo/protobuf/gogoproto
-	go get -u github.com/gogo/protobuf/protoc-gen-gogo
+	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	mkdir -p $$GOPATH/src/github.com/envoyproxy
 	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
 	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
-	go get -u github.com/cratonica/2goarray
-	go get -v -u github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	GO111MODULE=off go get -u github.com/cratonica/2goarray
+	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 .PHONY: pin-repos
 pin-repos:
@@ -102,7 +102,6 @@ clean:
 #----------------------------------------------------------------------------------
 .PHONY: vendor
 vendor:
-	rm -rf vendor
 	go mod vendor
 
 .PHONY: generated-code
@@ -116,7 +115,7 @@ $(OUTPUT_DIR)/.generated-code:
 	find . -name *.sk.md | xargs rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	GO111MODULE=on go run generate.go
-	goimports -w $(SUBDIRS)
+	goimports -w $(shell find -E .  -regex ".*\.*((sk|pb.hash).go)")
 	GO111MODULE=on go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
