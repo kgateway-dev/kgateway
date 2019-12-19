@@ -115,7 +115,7 @@ $(OUTPUT_DIR)/.generated-code:
 	find . -name *.sk.md | xargs rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	GO111MODULE=on go run generate.go
-	goimports -w $(shell find -E .  -regex ".*\.*((sk|pb.hash).go)")
+	goimports -w $(shell find * | grep -v vendor |  grep  ".*\.*\(\(sk\|pb\|hash\).go\)")
 	GO111MODULE=on go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)

@@ -5,7 +5,7 @@ steps:
   args: ['check']
   waitFor: ['-']
   env:
-  - 'LSCOMMAND=find * -type d  \( -path vendor -o -path docs/site -o -path docs/themes  \) -prune -o  -print'
+  - 'LSCOMMAND=find * -type f | grep -v vendor | grep -v docs/themes | grep -v docs/site'
   id: 'check-spelling'
 
 - name: gcr.io/cloud-builders/gsutil
