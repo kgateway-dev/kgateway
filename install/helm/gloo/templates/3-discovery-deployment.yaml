@@ -1,4 +1,6 @@
 {{- if .Values.discovery.enabled }}
+{{- $statsContext := dict "Deployment" .Values.discovery.deployment "GlobalContext" .Values.global }}
+{{- $statsEnabled := (include "gloo.statsServerEnabled" $statsContext) -}}
 {{- $image := .Values.discovery.deployment.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.discovery.deployment.image .Values.global.image }}
@@ -20,7 +22,7 @@ spec:
     metadata:
       labels:
         gloo: discovery
-      {{- if .Values.discovery.deployment.stats }}
+      {{- if eq "true" $statsEnabled }}
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -51,7 +53,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if .Values.discovery.deployment.stats }}
+        {{- if eq "true" $statsEnabled }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}

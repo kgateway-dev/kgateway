@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
@@ -164,6 +165,42 @@ var _ = Describe("Helm Test", func() {
 					return !nonNamespacedKinds.Has(resource.GetKind())
 				}).ExpectAll(func(resource *unstructured.Unstructured) {
 					Expect(resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
+				})
+			})
+
+			FIt("should be able to configure a stats server on all relevant deployments", func() {
+				prepareMakefile(namespace, helmValues{})
+
+				promAnnotations := map[string]string{
+					"prometheus.io/path": "/metrics",
+					"prometheus.io/port": "9091",
+					"prometheus.io/scrape": "true",
+				}
+
+				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+					return resource.GetKind() == "Deployment"
+				}).ExpectAll(func(deployment *unstructured.Unstructured) {
+					deploymentAnnotations := deployment.GetAnnotations()
+					for annotation, value := range promAnnotations {
+						Expect(deploymentAnnotations[annotation]).To(Equal(value))
+					}
+
+					deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+					Expect(err).NotTo(HaveOccurred(), "Should be able to convert from unstructured")
+					structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+					Expect(ok).To(BeTrue(), "Should be able to cast to a structured deployment")
+
+					for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+						foundExpected := false
+						for _, envVar := range container.Env {
+							if envVar.Name == "START_STATS_SERVER" {
+								foundExpected = true
+								Expect(envVar.Value).To(Equal("true"), "The START_STATS_SERVER env var should be set to 'true'")
+							}
+						}
+
+						Expect(foundExpected).To(BeTrue(), "Should have found the START_STATS_SERVER env var")
+					}
 				})
 			})
 
