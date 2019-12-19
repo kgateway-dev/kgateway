@@ -16,10 +16,8 @@ steps:
     path: '/workspace/gopath/pkg/mod'
   id: 'untar-mod-cache'
 
-# TODO: during this step, run dep to set up the project so it can be built and tested
-# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-# All steps after this must set GOPATH
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:mkdev1'
+# All steps after this must set GOPATH (TODO: remove this constraint from the other cloudbuilders which had used the value as a "workspace initialized" flag when using dep)
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1
   args:
     - "--repo-owner"
     - "solo-io"
@@ -32,7 +30,7 @@ steps:
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'GIT_SSH_CONFIG=FALSE'
-  id: 'prepare-workspace'
+  id: '-prepareworkspace'
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -113,7 +111,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-zone'
-  # run after deprepare-workspace it doesn't move our settings
+  # run after prepare-workspace so it doesn't move our settings
   waitFor: ['prepare-workspace']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.1.17'
