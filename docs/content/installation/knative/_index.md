@@ -43,23 +43,30 @@ apply to the cluster instead of installing them.
 This is the recommended method for installing Gloo to your production environment as it offers rich customization to
 the Gloo control plane and the proxies Gloo manages.
 
+Note that we are using Helm 3 here. You can check which version of helm you are using by running `helm version`.
+
 As a first step, you have to add the Gloo repository to the list of known chart repositories:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 ```
 
-The Gloo chart archive contains the necessary value files for the Knative deployment option. Run the
-following command to download and extract the archive to the current directory:
+Copy the following into a `knative-values.yaml` file in the current directory:
 
 ```shell
-helm fetch --untar=true --untardir=. gloo/gloo
+gateway:
+  enabled: false
+settings:
+  integrations:
+    knative:
+      enabled: true
+      version: 0.10.0
 ```
 
 Finally, install Gloo using the following command:
 
 ```shell
-helm install gloo --namespace gloo-system -f gloo/values-knative.yaml
+helm install gloo gloo/gloo --namespace gloo-system -f knative-values.yaml
 ```
 
 Gloo can be installed to a namespace of your choosing with the `--namespace` flag.

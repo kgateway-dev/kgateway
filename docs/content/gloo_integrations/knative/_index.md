@@ -63,7 +63,7 @@ run `glooctl proxy url --name knative-external-proxy`
      `{service-name}.{namespace}.example.com`. You can discover the appropriate *Host* header by checking the URL Knative has assigned to the `helloworld-go` service created above.
   
      ```
-     $ kubectl get ksvc helloworld-go -n default  --output=custom-columns=NAME:.metadata.name,URL:.status.url
+     kubectl get ksvc helloworld-go -n default  --output=custom-columns=NAME:.metadata.name,URL:.status.url
      ```
   
      ```     NAME            URL
@@ -75,7 +75,7 @@ run `glooctl proxy url --name knative-external-proxy`
      using the `Host` and URL of the Gloo Gateway from above:
   
      ```
-     $ curl -H "Host: helloworld-go.default.example.com" $(glooctl proxy url --name knative-external-proxy)
+     curl -H "Host: helloworld-go.default.example.com" $(glooctl proxy url --name knative-external-proxy)
      ```
   
      ```
