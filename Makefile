@@ -61,7 +61,8 @@ init:
 	git config core.hooksPath .githooks
 
 .PHONY: update-deps
-update-deps:
+update-deps: vendor
+
 	go get -u golang.org/x/tools/cmd/goimports
 	go get -u github.com/gogo/protobuf/gogoproto
 	go get -u github.com/gogo/protobuf/protoc-gen-gogo
@@ -99,6 +100,10 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
+.PHONY: vendor
+vendor:
+	rm -rf vendor
+	go mod vendor
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
@@ -110,6 +115,8 @@ SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	find . -name *.sk.md | xargs rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	GO111MODULE=on go run generate.go
+	goimports -w $(SUBDIRS)
 	GO111MODULE=on go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
