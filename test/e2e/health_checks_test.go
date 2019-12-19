@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -64,6 +66,8 @@ var _ = Describe("Health Checks", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
+		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 	})
 
 	AfterEach(func() {
