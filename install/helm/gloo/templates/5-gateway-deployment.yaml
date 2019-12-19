@@ -1,6 +1,5 @@
 {{- $image := .Values.gateway.deployment.image }}
-{{- $statsContext := dict "Deployment" .Values.discovery.deployment "GlobalContext" .Values.global }}
-{{- $statsEnabled := (include "gloo.statsServerEnabled" $statsContext) -}}
+{{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
 {{- end }}
@@ -22,7 +21,7 @@ spec:
     metadata:
       labels:
         gloo: gateway
-      {{- if eq "true" $statsEnabled }}
+      {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -61,7 +60,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if eq "true" $statsEnabled }}
+        {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
