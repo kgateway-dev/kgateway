@@ -46,7 +46,8 @@ ingress:
 Finally, install Gloo using the following command:
 
 ```shell
-helm install gloo --namespace gloo-system -f values-ingress.yaml
+kubectl create namespace gloo-system
+helm install gloo gloo/gloo --namespace gloo-system -f values-ingress.yaml
 ```
 
 Gloo can be installed to a namespace of your choosing with the `--namespace` flag.
