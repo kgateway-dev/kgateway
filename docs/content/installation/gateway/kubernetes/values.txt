@@ -33,7 +33,7 @@
 |gloo.deployment.image.pullSecret|string||image pull policy for the container |
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
-|gloo.deployment.stats|bool|true|enable prometheus stats|
+|gloo.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gloo.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
@@ -48,7 +48,7 @@
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |discovery.deployment.image.pullPolicy|string||image pull policy for the container|
 |discovery.deployment.image.pullSecret|string||image pull policy for the container |
-|discovery.deployment.stats|bool|true|enable prometheus stats|
+|discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
@@ -68,7 +68,7 @@
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gateway.deployment.image.pullPolicy|string||image pull policy for the container|
 |gateway.deployment.image.pullSecret|string||image pull policy for the container |
-|gateway.deployment.stats|bool|true|enable prometheus stats|
+|gateway.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gateway.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.replicas|int|1|number of instances to deploy|
@@ -137,7 +137,7 @@
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
-|gatewayProxies.NAME.stats|bool||enable prometheus stats|
+|gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
@@ -188,7 +188,7 @@
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
-|gatewayProxies.gatewayProxy.stats|bool|true|enable prometheus stats|
+|gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
@@ -242,3 +242,4 @@
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
 |global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
+|global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|

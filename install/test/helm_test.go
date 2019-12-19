@@ -4,9 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
+
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/stretchr/testify/assert"
-	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"k8s.io/apimachinery/pkg/util/sets"
