@@ -1,8 +1,0 @@
-changelog:
-- type: FIX
-  description: >
-      If a virtual service being deleted results in 0 proxies, we need to manually remove all the 
-      listeners and route descriptors in all of our envoy configs.
-  issueLink: https://github.com/solo-io/gloo/issues/1245
-
-
