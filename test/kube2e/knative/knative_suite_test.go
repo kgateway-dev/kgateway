@@ -7,10 +7,6 @@ import (
 	"testing"
 	"time"
 
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/avast/retry-go"
