@@ -244,7 +244,7 @@ dependencies. This is why we also publish the output of `go list -m all` in the 
 previous section.
 When you develop your plugins, we suggest that you use Go Modules for dependency management. This way you will be able 
 to take advantage of a script we provide for comparing the dependencies of your plugin with the Gloo ones. 
-It located at `scripts/compare_dependencies.go` and can be invoked via the following `make` command:
+It is located at `scripts/compare_dependencies.go` and can be invoked via the following `make` command:
 
 ```bash
 GLOOE_VERSION=desired_version make compare-deps
