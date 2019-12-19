@@ -64,12 +64,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 
-	// Create namespace
-	_, err = clienthelpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: testHelper.InstallNamespace},
-	})
-	Expect(err).NotTo(HaveOccurred())
-
 	// Install Gloo
 	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
