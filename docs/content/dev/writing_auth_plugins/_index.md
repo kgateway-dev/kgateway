@@ -288,6 +288,12 @@ go.uber.org/zap v1.13.0
 
 If you are using a different dependency management tool (e.g. [dep](https://github.com/golang/dep)), you should still 
 be able to use the information in the Gloo `dependencies` file to verify that the dependencies match.
+
+{{% notice note %}}
+Please see [this section](https://github.com/solo-io/ext-auth-plugin-examples#compare-deps) of the README in the examples 
+repository for more information about the dependency comparison script and a description of the different kinds of 
+mismatches that can occur.
+{{% /notice %}}
   
 #### Verify compatibility script
 As part of each Gloo Enterprise release, we ship a script to verify whether your plugin can be loaded by that version of 
