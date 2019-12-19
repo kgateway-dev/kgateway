@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = FDescribe("Fault Injection", func() {
+var _ = Describe("Fault Injection", func() {
 
 	var (
 		testClients services.TestClients
