@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/solo-io/gloo/test/helpers"
 	"net"
 	"net/http"
 	"strings"
@@ -113,6 +114,9 @@ var _ = Describe("Rate Limit", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 			_, err := testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+
+			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
 			err = envoyInstance.Run(testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
