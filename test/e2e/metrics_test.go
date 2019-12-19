@@ -65,6 +65,9 @@ var _ = Describe("Gateway", func() {
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
+			err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
 			// wait for the two gateways to be created.
 			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
@@ -96,9 +99,6 @@ var _ = Describe("Gateway", func() {
 
 				_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
-
-				err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-				Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 			})
 
 			AfterEach(func() {
