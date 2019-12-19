@@ -37,10 +37,11 @@ func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressCli
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
+	snapHash, _ := snap.Hash(nil)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v ingresses)", snap.Hash(),
+	logger.Infof("begin sync %v (%v ingresses)", snapHash,
 		len(snap.Ingresses))
-	defer logger.Infof("end sync %v", snap.Hash())
+	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
@@ -51,7 +52,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	proxy, err := translateProxy(s.writeNamespace, snap, s.requireIngressClass)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"ingress proxy will not be updated.", snap.Hash(), err)
+			"ingress proxy will not be updated.", snapHash, err)
 		return err
 	}
 
