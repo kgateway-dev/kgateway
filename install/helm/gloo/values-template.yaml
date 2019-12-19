@@ -33,8 +33,6 @@ gloo:
     validationPort: 9988
     replicas: 1
     runAsUser: 10101
-    stats:
-      enabled: true
 discovery:
   enabled: true
   fdsMode: WHITELIST
