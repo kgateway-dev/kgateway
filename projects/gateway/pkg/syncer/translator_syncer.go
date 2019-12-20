@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	"go.uber.org/zap"
@@ -52,7 +53,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Debugw("begin sync", zap.Any("snapshot", snap.Stringer()))
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snapHash,
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
 	defer logger.Infof("end sync %v", snapHash)

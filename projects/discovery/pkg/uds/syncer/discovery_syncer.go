@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	"time"
@@ -29,7 +30,7 @@ func NewDiscoverySyncer(disc *discovery.UpstreamDiscovery, refreshRate time.Dura
 func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v upstreams)", snapHash, len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snapHash)
 

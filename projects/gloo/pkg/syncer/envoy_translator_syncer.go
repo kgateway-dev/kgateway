@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/gorilla/mux"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -55,7 +56,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	s.latestSnap = snap
 	ctx = contextutils.WithLogger(ctx, "envoyTranslatorSyncer")
 	logger := contextutils.LoggerFrom(ctx)
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v proxies, %v upstreams, %v endpoints, %v secrets, %v artifacts, %v auth configs)", snapHash,
 		len(snap.Proxies), len(snap.Upstreams), len(snap.Endpoints), len(snap.Secrets), len(snap.Artifacts), len(snap.AuthConfigs))
 	defer logger.Infof("end sync %v", snapHash)

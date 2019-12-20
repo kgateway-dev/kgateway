@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -30,7 +31,7 @@ func NewEdsSyncer(disc *EndpointDiscovery, discOpts Opts, refreshRate time.Durat
 func (s *syncer) Sync(ctx context.Context, snap *v1.EdsSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "syncer")
 	logger := contextutils.LoggerFrom(ctx)
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v upstreams)", snapHash, len(snap.Upstreams))
 	defer logger.Infof("end sync %v", snapHash)
 

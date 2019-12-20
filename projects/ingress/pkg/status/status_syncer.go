@@ -6,6 +6,7 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/gogo/protobuf/proto"
@@ -33,7 +34,7 @@ func NewSyncer(ingressClient v1.IngressClient) v1.StatusSyncer {
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
 func (s *statusSyncer) Sync(ctx context.Context, snap *v1.StatusSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "statusSyncer")
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v ingresses, %v services)", snapHash,
 		len(snap.Ingresses), len(snap.Services))

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	"golang.org/x/sync/errgroup"
@@ -52,7 +53,7 @@ const (
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v knative ingresses, %v secrets)", snapHash,
 		len(snap.Ingresses),

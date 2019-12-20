@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -43,7 +44,7 @@ func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClie
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
-	snapHash, _ := snap.Hash(nil)
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
 	logger.Infof("begin sync %v (%v cluster ingresses, %v secrets)", snapHash,
 		len(snap.Clusteringresses),

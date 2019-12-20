@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/errors"
 
@@ -28,7 +29,7 @@ type HttpTranslator struct{}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
-		snapHash, _ := snap.Hash(nil)
+		snapHash := hashutils.MustHash(snap)
 		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
 		return nil
 	}
