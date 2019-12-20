@@ -11,7 +11,7 @@ Gloo Gateway can be used as an Ingress/Gateway for the Nomad platform. This guid
 
 You can see a demonstration of Gloo using Consul, Nomad, and Vault in this YouTube video.
 
-{{< youtube id="7Mk5r9P4kb0" >}}
+<iframe src="https://www.youtube.com/embed/7Mk5r9P4kb0" frameborder="0" width="560" height="315" allowfullscreen></iframe>
 
 ---
 
