@@ -280,10 +280,13 @@ go.uber.org/zap v1.13.0
 
 For convenience, in case of failure the script also outputs a file named `suggestions`, which contains an entry for 
 every mismatched dependency; you can use these entries to update your `go.mod` file. Given the example above, the 
-`suggestion` file would contain one line:
+`suggestion` file would look like this:
 
 ```
-go.uber.org/zap v1.13.0
+require (
+	// Add the following entries to the 'require' section of your go.mod file:
+	go.uber.org/zap v1.13.0
+)
 ```
 
 If you are using a different dependency management tool (e.g. [dep](https://github.com/golang/dep)), you should still 
