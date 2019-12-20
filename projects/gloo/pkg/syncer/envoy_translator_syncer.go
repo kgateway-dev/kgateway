@@ -39,11 +39,25 @@ var (
 	}
 )
 
-const emptyVersionKey = "empty"
-
 func init() {
 	_ = view.Register(envoySnapshotOutView)
 }
+
+// empty resources to give to envoy when a proxy was deleted
+const emptyVersionKey = "empty"
+
+var (
+	emptyResource = cache.Resources{
+		Version: emptyVersionKey,
+		Items:   map[string]envoycache.Resource{},
+	}
+	emptySnapshot = xds.NewSnapshotFromResources(
+		emptyResource,
+		emptyResource,
+		emptyResource,
+		emptyResource,
+	)
+)
 
 func measureResource(ctx context.Context, resource string, len int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
@@ -73,22 +87,24 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	if len(snap.Proxies) == 0 { // Clean up the remaining envoy configs
-		for _, snapshotKey := range s.xdsHasher.ValidKeys {
-			emptySnapshot, err := s.clearProxyListeners(snapshotKey)
-			if err != nil {
-				return err
+	validKeys := xds.GetKeysFromProxies(snap.Proxies)
+
+	// preserve keys from the current list of proxies, set previous snapshots to empty snapshot
+	for _, key := range s.xdsCache.GetStatusKeys() {
+		var isValidKey bool
+		for _, valid := range validKeys {
+			if key == valid || key == xds.FallbackNodeKey {
+				isValidKey = true
 			}
-			if err := s.xdsCache.SetSnapshot(snapshotKey, emptySnapshot); err != nil {
-				err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
-				logger.Warnw("", zap.Error(err))
+		}
+		// if the key is not present in the list of current proxies, set it to empty snapshot
+		if !isValidKey {
+			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
 				return err
 			}
 		}
 	}
 
-	// Set this after the len(snap.Proxies) check, so that we use the previous s.xdsHasher.ValidKeys value.
-	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
 		if ctxWithTags, err := tag.New(proxyCtx, tag.Insert(syncerstats.ProxyNameKey, proxy.Metadata.Ref().Key())); err == nil {
@@ -174,29 +190,6 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 		_, _ = fmt.Fprintf(w, log.Sprintf("%v", s.latestSnap))
 	})
 	return http.ListenAndServe(":10010", r)
-}
-
-// Builds an xDS snapshot by removing from the previous snapshot:
-// - the route descriptors
-// - the listeners
-// The resulting snapshot will be checked for consistency before being returned.
-func (s *translatorSyncer) clearProxyListeners(snapshotKey string) (envoycache.Snapshot, error) {
-	// Get a copy of the last successful snapshot
-	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
-	if err != nil {
-		return nil, err
-	}
-	emptyResource := cache.Resources{
-		Version: emptyVersionKey,
-		Items:   nil,
-	}
-	emptySnapshot := xds.NewSnapshotFromResources(
-		previous.GetResources(xds.EndpointType),
-		emptyResource,
-		emptyResource,
-		emptyResource,
-	)
-	return emptySnapshot, nil
 }
 
 // TODO(marco): should we update CDS resources as well?
