@@ -361,8 +361,6 @@ message GlooOptions {
 message GatewayOptions {
     // Address of the `gloo` config validation server. Defaults to `gloo:9988`
     string validation_server_addr = 1;
-    // Disable auto generation of default gateways from gateway pod
-    bool disable_auto_gen_gateways = 2;
 
     // options for configuring admission control / validation
     message ValidationOptions {
@@ -388,7 +386,7 @@ message GatewayOptions {
         google.protobuf.BoolValue always_accept = 6;
     }
 
-    // If provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+    // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
     // of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
     ValidationOptions validation = 3;
 

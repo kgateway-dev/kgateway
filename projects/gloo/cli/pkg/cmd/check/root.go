@@ -326,7 +326,7 @@ func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
 
 func checkGateways(namespaces []string) (bool, error) {
 	fmt.Printf("Checking gateways... ")
-	client := helpers.MustGatewayV2Client()
+	client := helpers.MustGatewayClient()
 	for _, ns := range namespaces {
 		gateways, err := client.List(ns, clients.ListOpts{})
 		if err != nil {
