@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Reduce permissions needed to run glooctl in cluster by removing cross-namespace calls from install command.
+    issueLink: https://github.com/solo-io/gloo/issues/1765 
