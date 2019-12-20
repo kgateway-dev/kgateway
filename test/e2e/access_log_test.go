@@ -8,8 +8,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/fgrosse/zaptest"
@@ -21,11 +19,13 @@ import (
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
@@ -63,6 +63,9 @@ var _ = Describe("Access Log", func() {
 			}
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+
+			err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 
 			// wait for the two gateways to be created.
 			Eventually(func() (gatewayv1.GatewayList, error) {

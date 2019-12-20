@@ -113,12 +113,6 @@ var _ = Describe("Helm Test", func() {
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
-			globalLabels    = map[string]string{}
-			setGlobalLabels = func(testLabels map[string]string) {
-				for k, v := range globalLabels {
-					testLabels[k] = v
-				}
-			}
 			selector         map[string]string
 			testManifest     TestManifest
 			statsAnnotations map[string]string
@@ -175,7 +169,6 @@ var _ = Describe("Helm Test", func() {
 						"gloo":             "gateway-proxy",
 						"gateway-proxy-id": "gateway-proxy",
 					}
-					setGlobalLabels(labels)
 					selector = map[string]string{
 						"gateway-proxy":    "live",
 						"gateway-proxy-id": "gateway-proxy",
@@ -259,7 +252,6 @@ var _ = Describe("Helm Test", func() {
 						svc.Spec.Type = ""
 						svc.Spec.Ports[0].TargetPort = intstr.FromInt(8083)
 						svc.Spec.Selector = cloneMap(labels)
-						setGlobalLabels(svc.ObjectMeta.Labels)
 
 						deploymentBuilder := &ResourceBuilder{
 							Namespace:  namespace,
@@ -278,7 +270,6 @@ var _ = Describe("Helm Test", func() {
 						dep := deploymentBuilder.GetDeploymentAppsv1()
 						dep.Spec.Template.ObjectMeta.Labels = cloneMap(labels)
 						dep.Spec.Selector.MatchLabels = cloneMap(labels)
-						setGlobalLabels(dep.ObjectMeta.Labels)
 						dep.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 							{Name: "http", ContainerPort: 8083, Protocol: "TCP"},
 						}
@@ -295,7 +286,6 @@ var _ = Describe("Helm Test", func() {
 							"app":              "gloo",
 							"gateway-proxy-id": "gateway-proxy",
 						}
-						setGlobalLabels(labels)
 						proxySpec["envoy.yaml"] = confWithAccessLogger
 						cmRb := ResourceBuilder{
 							Namespace: namespace,
@@ -381,7 +371,6 @@ var _ = Describe("Helm Test", func() {
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
-						setGlobalLabels(serviceLabels)
 						rb := ResourceBuilder{
 							Namespace: namespace,
 							Name:      "gateway-proxy",
@@ -780,8 +769,6 @@ metadata:
     app: gloo
   name: default
   namespace: ` + namespace + `
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
  discovery:
    fdsMode: WHITELIST
@@ -1056,7 +1043,6 @@ metadata:
 							"gloo": "gloo",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
@@ -1200,7 +1186,6 @@ metadata:
 							"gloo": "gateway",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "gateway",
 						}
@@ -1317,7 +1302,6 @@ metadata:
 							"gloo": "discovery",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "discovery",
 						}
@@ -1412,10 +1396,6 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
-				BeforeEach(func() {
-					setGlobalLabels(labels)
-				})
-
 				Describe("gateway proxy - tracing config", func() {
 					It("has a proxy without tracing", func() {
 						prepareMakefile(namespace, helmValues{
@@ -1495,7 +1475,6 @@ metadata:
 					deploymentLabels := map[string]string{
 						"app": "gloo", "gloo": "gloo",
 					}
-					setGlobalLabels(deploymentLabels)
 					selectors := map[string]string{
 						"gloo": "gloo",
 					}
@@ -1592,7 +1571,6 @@ metadata:
 					ingressDeploymentLabels := map[string]string{
 						"app": "gloo", "gloo": "ingress",
 					}
-					setGlobalLabels(ingressDeploymentLabels)
 					ingressSelector := map[string]string{
 						"gloo": "ingress",
 					}

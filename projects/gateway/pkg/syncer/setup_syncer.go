@@ -140,7 +140,6 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			RefreshRate: refreshRate,
 		},
 		DevMode:                       true,
-		DisableAutoGenGateways:        settings.GetGateway().GetDisableAutoGenGateways(),
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
 		Validation:                    validation,
 	}
@@ -183,19 +182,6 @@ func RunGateway(opts translator.Opts) error {
 	}
 	if err := proxyClient.Register(); err != nil {
 		return err
-	}
-
-	// The helm install should have created these, but go ahead and try again just in case
-	// installing through helm lets these be configurable.
-	// Added new setting to disable these gateways from ever being generated
-	if !opts.DisableAutoGenGateways {
-		for _, gw := range []*v1.Gateway{defaults.DefaultGateway(opts.WriteNamespace), defaults.DefaultSslGateway(opts.WriteNamespace)} {
-			if _, err := gatewayClient.Write(gw, clients.WriteOpts{
-				Ctx: ctx,
-			}); err != nil && !errors.IsExist(err) {
-				return err
-			}
-		}
 	}
 
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
