@@ -12,7 +12,9 @@ You can view the complete code written in this section here: [example-proxy-cont
 
 ## Dependencies
 
-*tested with go version 1.13.5*
+{{% notice note %}}
+tested with go version 1.13.5
+{{% /notice %}}
 
 The first step will be initializing a new go module. This should be done in a new directory.
 The command to initialize an empty go module is:
