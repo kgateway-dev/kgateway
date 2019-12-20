@@ -180,8 +180,8 @@ func (*mockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
 	panic("implement me")
 }
 
-func (*mockXdsCache) GetStatusKeys() []string {
-	panic("implement me")
+func (c *mockXdsCache) GetStatusKeys() []string {
+	return []string{}
 }
 
 func (c *mockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) error {
