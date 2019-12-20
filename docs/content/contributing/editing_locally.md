@@ -54,7 +54,7 @@ Before you clone the Gloo repository to your local filesystem, you should set yo
 The next step is to create the target folder structure that you will clone the repository into. This is necessary for Go to find the required dependencies when you run `dep` later in the process. The folder structure should be `$GOPATH/src/github.com/solo-io/`. You can create the necessary folder structure by running the following command:
 
 ```bash
-mkdir -p $GOPATH/src/github.com/solo-io
+mkdir -p $GOPATH/src/github.com/solo-io/gloo
 mkdir -p $GOPATH/src/github.com/solo-io/solo-projects/changelog
 ```
 
