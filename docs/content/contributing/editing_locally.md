@@ -17,8 +17,6 @@ You're going to need some software to make all this magic happen:
 
 * **Go** - Golang is a programming language created by Google. You can find the [installation process](https://golang.org/doc/install) for Go on their website.
 
-* **Dep** - Dep is a dependency checker for Golang. It is required for the initial build of the website. You can find the [installation process](https://golang.github.io/dep/docs/installation.html) for Dep on their website.
-
 * **Git** - Git is a source control management tool. It is required to clone the Gloo repository and submit changes. You can find the [installation process](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) for Git on their website.
 
 * **Make** - make is part of a standard development toolset bundled on most Linux distributions and macOS. You may need to install it using the package manager for your version of Linux. For instance, on Ubuntu you will need to run `sudo apt install build-essential`.
@@ -26,8 +24,7 @@ You're going to need some software to make all this magic happen:
 For each software component you should install the most recent version. This document was written and tested with the following versions on Ubuntu 18.04:
 
 * Hugo - 0.59.1
-* Go - 1.10.4
-* Dep - 0.5.4
+* Go - 1.13.5
 * Git - 2.17.1
 * Make - 4.1
 
@@ -58,6 +55,7 @@ The next step is to create the target folder structure that you will clone the r
 
 ```bash
 mkdir -p $GOPATH/src/github.com/solo-io
+mkdir -p $GOPATH/src/github.com/solo-io/solo-projects/changelog
 ```
 
 With the proper folder structure in place, it is time to clone your GitHub repo. Navigate to the destination folder path.
@@ -69,19 +67,6 @@ cd $GOPATH/src/github.com/solo-io
 Then run `git clone https://github.com/your-account/gloo.git` substituting `your-account` for your actual account on GitHub. You can also get the correct `.git` link by clicking on the **Clone or download** button on your fork of the Gloo repository.
 
 You now have the repository cloned on your local filesystem, including the `docs` folder that contains all of the documentation for Gloo.
-
-### Prepare to run a local instance of the site
-
-The site generation process uses `make` with a `Makefile` to generate the site using Hugo. The `Makefile` has Go dependencies that need to be resolved. You will use `dep` to take care of this. Navigate to the `gloo` directory and run `dep ensure` as shown below.
-
-```bash
-cd $GOPATH/src/github.com/solo-io/gloo
-dep ensure -v
-```
-
-And go get a cup of coffee or take a walk around the block. This is going to take anywhere from 10-15 minutes depending on your internet connection and the speed of your system.  The good news is that you probably won't ever have to run `dep ensure` again on your machine, unless you start working on the Gloo code.
-
-Once the process completes, you are ready to run the site locally and start making changes.
 
 ---
 
@@ -96,7 +81,7 @@ cd $GOPATH/src/github.com/solo-io/gloo/docs
 make serve-site -B
 ```
 
-That command will render the site using Hugo and launch a local version of the site running on port 1313. You should see output similar to this:
+That command will download any Go dependencies and render the site using Hugo and launch a local version of the site running on port 1313. You should see output similar to this:
 
 ```console
 Environment: "development"
