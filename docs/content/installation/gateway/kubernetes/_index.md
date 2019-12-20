@@ -43,7 +43,7 @@ may not be correct if you install by directly applying the dry run manifests, e.
 {{% notice warning %}}
 
 ##### Helm 2 Compatibility
-* Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.0.0 and later requires explicitly setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
+* Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.2.0 and later requires explicitly setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
 * Helm 2 **IS NOT** compatible with the open source Gloo chart in Gloo versions v1.2.0 through v1.2.2.
 * However, Helm 2 **IS** compatible with all stable versions of the Gloo Enterprise chart.
 * `glooctl` prior to v1.2.0 cannot be used to install open source Gloo v1.2.0 and later or Gloo Enterprise v1.0.0 and later. 
