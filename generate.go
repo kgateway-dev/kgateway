@@ -7,6 +7,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
 )
 
+//go:generate go run generate.go
+
 func main() {
 	err := version.CheckVersions()
 	if err != nil {

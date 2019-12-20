@@ -4,16 +4,25 @@
 package healthcheck
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"hash"
 	"hash/fnv"
+
+	"github.com/mitchellh/hashstructure"
+	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
 )
 
 // ensure the imports are used
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = new(hash.Hash64)
+	_ = fnv.New64
+	_ = hashstructure.Hash
+	_ = new(safe_hasher.SafeHasher)
 )
 
 // Hash function

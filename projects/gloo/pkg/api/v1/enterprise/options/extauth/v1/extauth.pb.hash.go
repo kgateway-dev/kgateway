@@ -18,6 +18,11 @@ import (
 var (
 	_ = errors.New("")
 	_ = fmt.Print
+	_ = binary.LittleEndian
+	_ = new(hash.Hash64)
+	_ = fnv.New64
+	_ = hashstructure.Hash
+	_ = new(safe_hasher.SafeHasher)
 )
 
 // Hash function
