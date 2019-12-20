@@ -9,6 +9,10 @@ Gloo Gateway can be used as an Ingress/Gateway for the Nomad platform. This guid
 
 [HashiCorp Nomad](https://www.nomadproject.io/) is a popular workload scheduler that can be used in place of, or in combination with Kubernetes as a way of running long-lived processes on a cluster of hosts. Nomad supports native integration with Consul and Vault, making configuration, service discovery, and credential management easy for application developers.
 
+You can see a demonstration of Gloo using Consul, Nomad, and Vault in this YouTube video.
+
+<iframe src="https://www.youtube.com/embed/7Mk5r9P4kb0" frameborder="0" width="560" height="315" allowfullscreen></iframe>
+
 ---
 
 ## Architecture
