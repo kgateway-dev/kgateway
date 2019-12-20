@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/avast/retry-go"
-
+	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
@@ -246,9 +246,7 @@ func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualSe
 		for i, existingVs := range snap.VirtualServices {
 			if vsRef == existingVs.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				vsHash, _ := vs.Hash(nil)
-				existingVsHash, _ := existingVs.Hash(nil)
-				if vsHash == existingVsHash {
+				if equal, ok := hashutils.HashableEqual(vs, existingVs); equal && ok {
 					return nil, nil, core.ResourceRef{}
 				}
 
@@ -324,9 +322,7 @@ func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (
 		for i, existingRt := range snap.RouteTables {
 			if rtRef == existingRt.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				rtHash, _ := rt.Hash(nil)
-				existingRtHash, _ := existingRt.Hash(nil)
-				if rtHash == existingRtHash {
+				if equal, ok := hashutils.HashableEqual(rt, existingRt); equal && ok {
 					return nil, nil, core.ResourceRef{}
 				}
 
@@ -404,9 +400,7 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyR
 		for i, existingGw := range snap.Gateways {
 			if gwRef == existingGw.GetMetadata().Ref() {
 				// check that the hash has changed; ignore irrelevant update such as status
-				gwHash, _ := gw.Hash(nil)
-				existingGwHash, _ := existingGw.Hash(nil)
-				if gwHash == existingGwHash {
+				if equal, ok := hashutils.HashableEqual(gw, existingGw); equal && ok {
 					return nil, nil, core.ResourceRef{}
 				}
 

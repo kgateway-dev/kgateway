@@ -144,8 +144,8 @@ var _ = Describe("Validator", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
 						DelegateAction: &core.ResourceRef{
-							Name:      "test",
-							Namespace: "namespace",
+							Name:      "invalid",
+							Namespace: "name",
 						},
 					},
 				}
@@ -257,8 +257,8 @@ var _ = Describe("Validator", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
 						DelegateAction: &core.ResourceRef{
-							Name:      "test",
-							Namespace: "namespace",
+							Name:      "invalid",
+							Namespace: "name",
 						},
 					},
 				}
