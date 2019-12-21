@@ -8,6 +8,8 @@ import "gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Describes APIs and application-level information for services
 // Gloo routes to. ServiceSpec is contained within the UpstreamSpec for certain types

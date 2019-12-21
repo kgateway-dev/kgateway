@@ -3,6 +3,9 @@
 package v1alpha1
 
 import (
+	"encoding/binary"
+	"hash"
+	"hash/fnv"
 	"sort"
 
 	github_com_solo_io_gloo_projects_clusteringress_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
@@ -40,14 +43,19 @@ func (r *ClusterIngress) Clone() resources.Resource {
 	return &ClusterIngress{ClusterIngress: *r.ClusterIngress.Clone()}
 }
 
-func (r *ClusterIngress) Hash() uint64 {
+func (r *ClusterIngress) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
 	clone := r.ClusterIngress.Clone()
-
 	resources.UpdateMetadata(clone, func(meta *core.Metadata) {
 		meta.ResourceVersion = ""
 	})
-
-	return hashutils.HashAll(clone)
+	err := binary.Write(hasher, binary.LittleEndian, hashutils.HashAll(clone))
+	if err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
 func (r *ClusterIngress) GroupVersionKind() schema.GroupVersionKind {

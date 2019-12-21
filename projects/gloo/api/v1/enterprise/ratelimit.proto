@@ -9,6 +9,8 @@ import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 /*

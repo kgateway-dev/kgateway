@@ -4,6 +4,8 @@ option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
@@ -126,11 +128,11 @@ message VirtualService {
     // Display only, optional descriptive name.
     // Unlike metadata.name, DisplayName can be any string
     // and can be changed after creating the resource.
-    string display_name = 3 [(core.solo.io.skip_hashing) = true];
+    string display_name = 3 [(extproto.skip_hashing) = true];
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];

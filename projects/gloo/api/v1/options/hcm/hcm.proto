@@ -10,6 +10,8 @@ import "gloo/projects/gloo/api/v1/options/tracing/tracing.proto";
 import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Contains various settings for Envoy's http connection manager.
 // See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man
