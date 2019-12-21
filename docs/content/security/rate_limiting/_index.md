@@ -29,8 +29,6 @@ Update the highlighted portion to point to your rate limit server:
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
   labels:
     app: gloo
     gloo: settings

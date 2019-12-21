@@ -276,15 +276,15 @@ func ProxyClient() (v1.ProxyClient, error) {
 	return proxyClient, nil
 }
 
-func MustGatewayV2Client() gatewayv1.GatewayClient {
-	client, err := GatewayV2Client()
+func MustGatewayClient() gatewayv1.GatewayClient {
+	client, err := GatewayClient()
 	if err != nil {
 		log.Fatalf("failed to create gateway v2 client: %v", err)
 	}
 	return client
 }
 
-func GatewayV2Client() (gatewayv1.GatewayClient, error) {
+func GatewayClient() (gatewayv1.GatewayClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
 		return gatewayv1.NewGatewayClient(customFactory)

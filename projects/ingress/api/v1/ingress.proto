@@ -23,3 +23,4 @@ message Ingress{
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
+git
