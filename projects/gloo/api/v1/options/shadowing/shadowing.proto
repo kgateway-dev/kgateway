@@ -7,7 +7,7 @@ import "gogoproto/gogo.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/ref.proto";
 
 option (gogoproto.equal_all) = true;
 

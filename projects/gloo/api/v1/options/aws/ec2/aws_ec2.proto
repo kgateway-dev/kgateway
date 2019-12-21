@@ -6,7 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aw
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/ref.proto";
 
 // Upstream Spec for AWS Lambda Upstreams
 // AWS Upstreams represent a collection of Lambda Functions for a particular AWS Account (IAM Role or User account)

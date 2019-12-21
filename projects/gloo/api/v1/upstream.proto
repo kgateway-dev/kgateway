@@ -6,24 +6,24 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/static/static.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/pipe/pipe.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "gloo/projects/gloo/api/v1/ssl.proto";
+import "gloo/projects/gloo/api/v1/circuit_breaker.proto";
+import "gloo/projects/gloo/api/v1/load_balancer.proto";
+import "gloo/projects/gloo/api/v1/connection.proto";
+import "gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto";
+import "solo-kit/api/v1/status.proto";
+import "gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto";
+import "solo-kit/api/v1/solo-kit.proto";
+import "gloo/projects/gloo/api/v1/options/static/static.proto";
+import "gloo/projects/gloo/api/v1/options/pipe/pipe.proto";
+import "gloo/projects/gloo/api/v1/options/kubernetes/kubernetes.proto";
+import "gloo/projects/gloo/api/v1/options/aws/aws.proto";
+import "gloo/projects/gloo/api/v1/options/azure/azure.proto";
+import "gloo/projects/gloo/api/v1/options/consul/consul.proto";
+import "gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "gloo/projects/gloo/api/v1/options.proto";
 
 /*
  * Upstreams represent destination for routing HTTP requests. Upstreams can be compared to

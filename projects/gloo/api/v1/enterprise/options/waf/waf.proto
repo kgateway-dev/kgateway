@@ -1,7 +1,7 @@
 syntax = "proto3";
 package waf.options.gloo.solo.io;
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf";
 

@@ -6,7 +6,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/pi
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
+import "gloo/projects/gloo/api/v1/options/service_spec.proto";
 
 // Pipe upstreams are used to route request to services listening at a Unix Domain Socket.
 // Pipe upstreams can be used to proxy any kind of service, and therefore contain a ServiceSpec

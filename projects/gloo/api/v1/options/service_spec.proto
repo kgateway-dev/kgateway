@@ -4,8 +4,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options";
 
 import "gogoproto/gogo.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/rest/rest.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
+import "gloo/projects/gloo/api/v1/options/rest/rest.proto";
+import "gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 
 option (gogoproto.equal_all) = true;
 

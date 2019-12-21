@@ -2,7 +2,7 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
+import "gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";

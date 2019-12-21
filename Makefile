@@ -77,9 +77,6 @@ update-deps: vendor
 	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
-.PHONY: pin-repos
-pin-repos:
-	GO111MODULE=on go run ci/pin_repos/pin_repos.go
 
 .PHONY: check-format
 check-format:

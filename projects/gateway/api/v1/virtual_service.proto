@@ -5,16 +5,16 @@ option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options.proto";
+import "gloo/projects/gloo/api/v1/ssl.proto";
+import "gloo/projects/gloo/api/v1/proxy.proto";
+import "gloo/projects/gloo/api/v1/options.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
 /*
 *
