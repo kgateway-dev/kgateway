@@ -122,7 +122,7 @@ var _ = Describe("wasm plugin", func() {
 		}))
 	})
 	Context("filter stage transformations", func() {
-		testCases := []struct{
+		testCases := []struct {
 			wasmFilterStage *wasm.FilterStage
 			glooFilterStage plugins.FilterStage
 		}{
@@ -134,198 +134,198 @@ var _ = Describe("wasm plugin", func() {
 			// Fault stage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_FaultStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_FaultStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.FaultStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_FaultStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_FaultStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.FaultStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_FaultStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_FaultStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.FaultStage),
 			},
 			// Cors stage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_CorsStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_CorsStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.CorsStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_CorsStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_CorsStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.CorsStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_CorsStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_CorsStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.CorsStage),
 			},
 			// Waf stage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_WafStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_WafStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.WafStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_WafStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_WafStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.WafStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_WafStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_WafStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.WafStage),
 			},
 			// AuthNstage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthNStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_AuthNStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.AuthNStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthNStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_AuthNStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.AuthNStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthNStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_AuthNStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.AuthNStage),
 			},
 			// AuthZStage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthZStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_AuthZStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.AuthZStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthZStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_AuthZStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.AuthZStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AuthZStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_AuthZStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.AuthZStage),
 			},
 			// RateLimit Stage
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RateLimitStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_RateLimitStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.RateLimitStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RateLimitStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_RateLimitStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.RateLimitStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RateLimitStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_RateLimitStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.RateLimitStage),
 			},
 			// Accepted
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AcceptedStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_AcceptedStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.AcceptedStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AcceptedStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_AcceptedStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.AcceptedStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_AcceptedStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_AcceptedStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.AcceptedStage),
 			},
 			// OutAuth
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_OutAuthStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_OutAuthStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.OutAuthStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_OutAuthStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_OutAuthStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.OutAuthStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_OutAuthStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_OutAuthStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.OutAuthStage),
 			},
 			// Route
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RouteStage,
-					Predicate:            wasm.FilterStage_During,
+					Stage:     wasm.FilterStage_RouteStage,
+					Predicate: wasm.FilterStage_During,
 				},
 				glooFilterStage: plugins.DuringStage(plugins.RouteStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RouteStage,
-					Predicate:            wasm.FilterStage_Before,
+					Stage:     wasm.FilterStage_RouteStage,
+					Predicate: wasm.FilterStage_Before,
 				},
 				glooFilterStage: plugins.BeforeStage(plugins.RouteStage),
 			},
 			{
 				wasmFilterStage: &wasm.FilterStage{
-					Stage:                wasm.FilterStage_RouteStage,
-					Predicate:            wasm.FilterStage_After,
+					Stage:     wasm.FilterStage_RouteStage,
+					Predicate: wasm.FilterStage_After,
 				},
 				glooFilterStage: plugins.AfterStage(plugins.RouteStage),
 			},

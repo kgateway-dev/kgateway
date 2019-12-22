@@ -26,8 +26,6 @@ const (
 	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
 	WasmEnabled      = "WASM_ENABLED"
-
-
 )
 
 var (
@@ -35,10 +33,10 @@ var (
 	imageCache = defaults.NewDefaultCache()
 
 	defaultPluginPredicate = plugins.AcceptedStage
-	defaultPluginStage = plugins.BeforeStage(defaultPluginPredicate)
+	defaultPluginStage     = plugins.BeforeStage(defaultPluginPredicate)
 )
 
-type Plugin struct {}
+type Plugin struct{}
 
 func NewPlugin() *Plugin {
 	once.Do(func() {
