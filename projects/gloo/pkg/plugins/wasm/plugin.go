@@ -158,9 +158,11 @@ func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugi
 }
 
 func TransformWasmFilterStage(filterStage *wasm.FilterStage) plugins.FilterStage {
+	if filterStage == nil {
+		return defaultPluginStage
+	}
 
 	var resultStage plugins.WellKnownFilterStage
-
 	switch filterStage.GetStage() {
 	case wasm.FilterStage_FaultStage:
 		resultStage = plugins.FaultStage
@@ -180,8 +182,6 @@ func TransformWasmFilterStage(filterStage *wasm.FilterStage) plugins.FilterStage
 		resultStage = plugins.OutAuthStage
 	case wasm.FilterStage_RouteStage:
 		resultStage = plugins.RouteStage
-	default:
-		return defaultPluginStage
 	}
 
 	var result plugins.FilterStage
@@ -192,8 +192,6 @@ func TransformWasmFilterStage(filterStage *wasm.FilterStage) plugins.FilterStage
 		result = plugins.BeforeStage(resultStage)
 	case wasm.FilterStage_After:
 		result = plugins.AfterStage(resultStage)
-	default:
-		result = plugins.DuringStage(resultStage)
 	}
 	return result
 }
