@@ -27,7 +27,8 @@ func main() {
 		},
 		CustomImports: []string{
 			"vendor/github.com/solo-io",
-			// "vendor/github.com/solo-io/solo-kit/",
+			"vendor/github.com/solo-io/api/external",
+			"vendor/github.com/envoyproxy/protoc-gen-validate",
 		},
 		RelativeRoot:  "",
 		CompileProtos: true,
@@ -38,7 +39,12 @@ func main() {
 				ApiDir:  "api",
 			},
 		},
-		PreRunFuncs: []cmd.RunFunc{protodep.PreRunProtoVendor(".", []string{"github.com/solo-io/solo-kit"})},
+		PreRunFuncs: []cmd.RunFunc{
+			protodep.PreRunProtoVendor(".", []string{
+				"github.com/solo-io/solo-kit",
+				// "github.com/envoyproxy/protoc-gen-validate",
+			}),
+		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)

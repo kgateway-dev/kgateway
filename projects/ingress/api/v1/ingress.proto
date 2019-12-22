@@ -13,7 +13,7 @@ option (extproto.hash_all) = true;
 /*
 A simple wrapper for a Kubernetes Ingress Object.
 */
-message Ingress{
+message Ingress {
 
     option (core.solo.io.resource).short_name = "ig";
     option (core.solo.io.resource).plural_name = "ingresses";
@@ -25,4 +25,3 @@ message Ingress{
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 }
-git
