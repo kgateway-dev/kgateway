@@ -44,7 +44,11 @@ var _ = Describe("wasm plugin", func() {
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Wasm: &wasm.PluginSource{
-					Image: image,
+					Filters: []*wasm.WasmFilter{
+						{
+							Image: image,
+						},
+					},
 				},
 			},
 		}
@@ -63,7 +67,13 @@ var _ = Describe("wasm plugin", func() {
 		image := "image"
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				Wasm: &wasm.PluginSource{},
+				Wasm: &wasm.PluginSource{
+					Filters: []*wasm.WasmFilter{
+						{
+							Image: image,
+						},
+					},
+				},
 			},
 		}
 
@@ -76,14 +86,17 @@ var _ = Describe("wasm plugin", func() {
 	It("will return the proper config", func() {
 		sha := "test-sha"
 		image := "image"
+		wasmFilter := &wasm.WasmFilter{
+			Image:  image,
+			Config: "test-config",
+			Name:   "test",
+			RootId: "test-root",
+			VmType: wasm.WasmFilter_V8,
+		}
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
 				Wasm: &wasm.PluginSource{
-					Image:  image,
-					Config: "test-config",
-					Name:   "test",
-					RootId: "test-root",
-					VmType: wasm.PluginSource_V8,
+					Filters: []*wasm.WasmFilter{wasmFilter},
 				},
 			},
 		}
@@ -95,9 +108,9 @@ var _ = Describe("wasm plugin", func() {
 		typedConfig := f[0].HttpFilter.GetConfig()
 		var pc config.WasmService
 		Expect(protoutils.UnmarshalStruct(typedConfig, &pc)).NotTo(HaveOccurred())
-		Expect(pc.Config.RootId).To(Equal(hl.Options.Wasm.RootId))
-		Expect(pc.Config.Name).To(Equal(hl.Options.Wasm.Name))
-		Expect(pc.Config.Configuration).To(Equal(hl.Options.Wasm.Config))
+		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
+		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
+		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
 		Expect(pc.Config.VmConfig.VmId).To(Equal(VmId))
 		Expect(pc.Config.VmConfig.Runtime).To(Equal(V8Runtime))
 		remote := pc.Config.VmConfig.Code.GetRemote()
