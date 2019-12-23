@@ -60,7 +60,7 @@ var _ = Describe("Fault Injection", func() {
 					return err
 				}
 				return nil
-			}, "10s", ".1s").Should(BeNil())
+			}, "20s", ".1s").Should(BeNil())
 		}
 
 		setupUpstream := func() {

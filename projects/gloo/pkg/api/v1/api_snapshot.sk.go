@@ -4,9 +4,13 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"log"
 
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -33,57 +37,113 @@ func (s ApiSnapshot) Clone() ApiSnapshot {
 	}
 }
 
-func (s ApiSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashArtifacts(),
-		s.hashEndpoints(),
-		s.hashProxies(),
-		s.hashUpstreamGroups(),
-		s.hashSecrets(),
-		s.hashUpstreams(),
-		s.hashAuthConfigs(),
-	)
+func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashArtifacts(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashEndpoints(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashProxies(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashUpstreamGroups(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashSecrets(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashUpstreams(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashAuthConfigs(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s ApiSnapshot) hashArtifacts() uint64 {
-	return hashutils.HashAll(s.Artifacts.AsInterfaces()...)
+func (s ApiSnapshot) hashArtifacts(hasher hash.Hash64) (uint64, error) {
+	clonedList := s.Artifacts.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashEndpoints() uint64 {
-	return hashutils.HashAll(s.Endpoints.AsInterfaces()...)
+func (s ApiSnapshot) hashEndpoints(hasher hash.Hash64) (uint64, error) {
+	clonedList := s.Endpoints.Clone()
+	for _, v := range clonedList {
+		v.Metadata.Annotations = nil
+	}
+	return hashutils.HashAllSafe(hasher, clonedList.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashProxies() uint64 {
-	return hashutils.HashAll(s.Proxies.AsInterfaces()...)
+func (s ApiSnapshot) hashProxies(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Proxies.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashUpstreamGroups() uint64 {
-	return hashutils.HashAll(s.UpstreamGroups.AsInterfaces()...)
+func (s ApiSnapshot) hashUpstreamGroups(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.UpstreamGroups.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
+func (s ApiSnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Secrets.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashUpstreams() uint64 {
-	return hashutils.HashAll(s.Upstreams.AsInterfaces()...)
+func (s ApiSnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Upstreams.AsInterfaces()...)
 }
 
-func (s ApiSnapshot) hashAuthConfigs() uint64 {
-	return hashutils.HashAll(s.AuthConfigs.AsInterfaces()...)
+func (s ApiSnapshot) hashAuthConfigs(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.AuthConfigs.AsInterfaces()...)
 }
 
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("artifacts", s.hashArtifacts()))
-	fields = append(fields, zap.Uint64("endpoints", s.hashEndpoints()))
-	fields = append(fields, zap.Uint64("proxies", s.hashProxies()))
-	fields = append(fields, zap.Uint64("upstreamGroups", s.hashUpstreamGroups()))
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-	fields = append(fields, zap.Uint64("upstreams", s.hashUpstreams()))
-	fields = append(fields, zap.Uint64("authConfigs", s.hashAuthConfigs()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	ArtifactsHash, err := s.hashArtifacts(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("artifacts", ArtifactsHash))
+	EndpointsHash, err := s.hashEndpoints(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("endpoints", EndpointsHash))
+	ProxiesHash, err := s.hashProxies(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("proxies", ProxiesHash))
+	UpstreamGroupsHash, err := s.hashUpstreamGroups(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("upstreamGroups", UpstreamGroupsHash))
+	SecretsHash, err := s.hashSecrets(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("secrets", SecretsHash))
+	UpstreamsHash, err := s.hashUpstreams(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
+	AuthConfigsHash, err := s.hashAuthConfigs(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("authConfigs", AuthConfigsHash))
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type ApiSnapshotStringer struct {
@@ -139,8 +199,12 @@ func (ss ApiSnapshotStringer) String() string {
 }
 
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return ApiSnapshotStringer{
-		Version:        s.Hash(),
+		Version:        snapshotHash,
 		Artifacts:      s.Artifacts.NamespacesDotNames(),
 		Endpoints:      s.Endpoints.NamespacesDotNames(),
 		Proxies:        s.Proxies.NamespacesDotNames(),

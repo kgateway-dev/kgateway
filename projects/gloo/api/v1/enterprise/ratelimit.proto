@@ -9,6 +9,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimi
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 /*

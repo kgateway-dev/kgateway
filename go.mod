@@ -9,14 +9,10 @@ require (
 	github.com/Masterminds/semver/v3 v3.0.1
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
-	github.com/armon/go-metrics v0.0.0-20190430140413-ec5e00d3c878 // indirect
 	github.com/avast/retry-go v2.4.3+incompatible
-	github.com/aws/aws-sdk-go v1.25.44
+	github.com/aws/aws-sdk-go v1.26.2
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
-	github.com/docker/docker v1.13.1 // indirect
-	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -34,15 +30,11 @@ require (
 	github.com/gophercloud/gophercloud v0.6.0 // indirect
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
-	github.com/hashicorp/consul/api v1.1.0
-	github.com/hashicorp/go-msgpack v0.5.5 // indirect
+	github.com/hashicorp/consul/api v1.3.0
 	github.com/hashicorp/go-multierror v1.0.0
-	github.com/hashicorp/go-uuid v1.0.1
-	github.com/hashicorp/memberlist v0.1.4 // indirect
-	github.com/hashicorp/vault/api v1.0.5-0.20190730042357-746c0b111519
+	github.com/hashicorp/go-uuid v1.0.2-0.20191001231223-f32f5fe8d6a8
+	github.com/hashicorp/vault/api v1.0.5-0.20191108163347-bdd38fca2cff
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c
-	github.com/ilackarms/protoc-gen-doc v1.0.0 // indirect
-	github.com/ilackarms/protokit v0.0.0-20181231193355-ee2393f3bbf0 // indirect
 	github.com/inconshreveable/go-update v0.0.0-20160112193335-8152e7eb6ccf
 	github.com/jhump/protoreflect v1.5.0
 	github.com/k0kubun/pp v2.3.0+incompatible
@@ -50,7 +42,6 @@ require (
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/mitchellh/reflectwalk v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.3
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
@@ -60,14 +51,13 @@ require (
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/prometheus/tsdb v0.10.0 // indirect
-	github.com/pseudomuto/protoc-gen-doc v1.0.0 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.11.7
 	github.com/solo-io/protoc-gen-ext v0.0.4
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.11.13
+	github.com/solo-io/solo-kit v0.11.16
 	github.com/solo-io/wasme v0.0.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
