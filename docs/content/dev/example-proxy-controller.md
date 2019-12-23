@@ -355,7 +355,7 @@ func main() {
 
 Great! Here's what our completed main file should look like:
 
-
+{{% expand "Click to see the full main file" %}}
 ```go
 package main
 
@@ -563,42 +563,31 @@ func must(err error) {
 	}
 }
 
-
 ```
+{{% /expand %}}
 
 ### Run
 
-In order to run this file, you'll need to pull the dependencies into your local workspace. `go get -v ./...` from your 
-working dir, or `dep init` (if you're comfortable using [`dep`](https://github.com/golang/dep)) should work fine.
-
-```bash
-dep init -v
-
-# or
-
-go get -v ./..
-
-```
-
 While it's possible to package this application in a Docker container and deploy it as a pod inside of Kubernetes, let's 
-just try running it locally. [Make sure you have Gloo installed](/installation) in your cluster so 
+just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}}) in your cluster so 
 that Discovery will create some Upstreams for us.
 
 Once that's done, to see our code in action, simply run `go run main.go` !
 
 ```bash
 go run main.go
-
+```
+```
 2019/02/11 11:27:30 wrote proxy object: listeners:<name:"my-amazing-listener" bind_address:"::" bind_port:8080 http_listener:<virtual_hosts:<name:"default-kubernetes-443" domains:"default-kubernetes-443" routes:<matcher:<prefix:"/" > route_action:<single:<upstream:<name:"default-kubernetes-443" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gateway-proxy-8080" domains:"gloo-system-gateway-proxy-8080" routes:<matcher:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gateway-proxy-8080" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gloo-9977" domains:"gloo-system-gloo-9977" routes:<matcher:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gloo-9977" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-kube-dns-53" domains:"kube-system-kube-dns-53" routes:<matcher:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-kube-dns-53" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-tiller-deploy-44134" domains:"kube-system-tiller-deploy-44134" routes:<matcher:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-tiller-deploy-44134" namespace:"gloo-system" > > > > > > > status:<> metadata:<name:"my-cool-proxy" namespace:"gloo-system" resource_version:"455073" > 
-
 ```
 
 Neat! Our proxy got created. We can view it with `kubectl`:
 
 ```bash
 kubectl get proxy -n gloo-system -o yaml
+```
 
-
+```yaml
 apiVersion: v1
 items:
 - apiVersion: gloo.solo.io/v1
@@ -763,15 +752,16 @@ metadata:
 Cool. Let's leave our controller running and watch it dynamically respond when we add a service to our cluster:
 
 ```bash
-kubectl apply -f \
-  https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 See the service and pod:
 
 ```bash
 kubectl get pod -n default && kubectl get svc -n default
+```
 
+```
 NAME                      READY     STATUS    RESTARTS   AGE
 petstore-6fd84bc9-zdskz   1/1       Running   0          5s
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
@@ -784,7 +774,9 @@ The upstream that was created:
 
 ```bash
 kubectl get upstream
+```
 
+```
 NAME                              AGE
 default-kubernetes-443            2m
 default-petstore-8080             46s # <- this one's new
@@ -798,7 +790,9 @@ And check that our proxy object was updated:
 
 ```bash
 kubectl get proxy -n gloo-system -o yaml
+```
 
+```yaml
 apiVersion: v1
 items:
 - apiVersion: gloo.solo.io/v1
@@ -999,7 +993,9 @@ If all went well, we should see our pod starting successfully in `default` (or w
 
 ```bash
 kubectl get pod -n default
+```
 
+```
 NAME                             READY     STATUS    RESTARTS   AGE
 my-cool-proxy-7bcb58c87d-h4292   1/1       Running   0          3s
 petstore-6fd84bc9-zdskz          1/1       Running   0          48m
@@ -1011,7 +1007,9 @@ If you have `glooctl` installed, we can grab the HTTP endpoint of the proxy with
 
 ```bash
 glooctl proxy url -n default -p my-cool-proxy
+```
 
+```
 http://192.168.99.150:30751
 ```
 
@@ -1031,7 +1029,9 @@ Try any `Host` header for any upstream name:
 
 ```bash
 kubectl get upstream
+```
 
+```
 NAME                              AGE
 default-kubernetes-443            55m
 default-my-cool-proxy-8080        5m
