@@ -145,9 +145,9 @@ Consul keys adhere to the following format:
 Where:
 
 - `root key`: is the `rootKey` configured in the Settings `consulKvSource`. Defaults to `gloo`
-- `resource group`: is the API group/proto package in which resources of the given type are contained. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource group `gloo.solo.io`.
-- `group version`: is the API group version/go package in which resources of the given type are contained. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource group version `v1`.
-- `resource kind`: is the full name of the resource type. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource kind `Upstream`.
+- `resource group`: is the API group/proto package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource group `gloo.solo.io`.
+- `group version`: is the API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource group version `v1`.
+- `resource kind`: is the full name of the resource type. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource kind `Upstream`.
 - `resource namespace`: is the namespace in which the resource should live. this should match the `metadata.namespace` of the resource YAML.
 - `resource name`: is the name of the given resource. this should match the `metadata.name` of the resource YAML, and should be unique for all resources of a type within a given namespace.
 
