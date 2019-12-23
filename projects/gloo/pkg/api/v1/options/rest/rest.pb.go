@@ -8,10 +8,10 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	transformation1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 )
 

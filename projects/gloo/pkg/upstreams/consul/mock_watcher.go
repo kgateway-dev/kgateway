@@ -10,6 +10,7 @@ import (
 
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hashicorp/consul/api"
+	consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 )
 
 // MockConsulWatcher is a mock of ConsulWatcher interface
@@ -99,10 +100,10 @@ func (mr *MockConsulWatcherMockRecorder) Connect(service, tag, q interface{}) *g
 }
 
 // WatchServices mocks base method
-func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error) {
+func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*consul.ServiceMeta, <-chan error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchServices", ctx, dataCenters)
-	ret0, _ := ret[0].(<-chan []*ServiceMeta)
+	ret0, _ := ret[0].(<-chan []*consul.ServiceMeta)
 	ret1, _ := ret[1].(<-chan error)
 	return ret0, ret1
 }

@@ -43,7 +43,7 @@ func main() {
 			protodep.PreRunProtoVendor(".", []string{
 				"github.com/solo-io/solo-kit",
 				// "github.com/envoyproxy/protoc-gen-validate",
-			}),
+			}, []string{"api/**/*.proto", protodep.SoloKitMatchPattern}),
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

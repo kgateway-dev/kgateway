@@ -9,9 +9,9 @@ import (
 	math "math"
 	time "time"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

@@ -9,11 +9,11 @@ import (
 	math "math"
 	time "time"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	protocol_upgrade "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 )
 

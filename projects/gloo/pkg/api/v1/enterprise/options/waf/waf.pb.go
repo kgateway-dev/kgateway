@@ -8,9 +8,9 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	waf "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/waf"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 )
 

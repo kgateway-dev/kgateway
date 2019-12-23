@@ -8,12 +8,12 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	rbac "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

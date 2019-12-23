@@ -8,6 +8,7 @@ import (
 	fmt "fmt"
 	math "math"
 
+	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	cluster "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	core1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
@@ -18,7 +19,6 @@ import (
 	kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	pipe "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/pipe"
 	static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	_ "github.com/solo-io/protoc-gen-ext/ext/gogoproto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
