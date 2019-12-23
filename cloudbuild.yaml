@@ -51,7 +51,6 @@ steps:
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
   env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
   waitFor: ['prepare-workspace']

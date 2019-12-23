@@ -70,9 +70,6 @@ update-deps: vendor
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	mkdir -p $$GOPATH/src/github.com/envoyproxy
-	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
-	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
 	GO111MODULE=off go get -u github.com/cratonica/2goarray
 	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
@@ -113,7 +110,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	find . -name *.sk.md | xargs rm
+	find * -type f | grep .sk.md | xargs rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	GO111MODULE=on go run generate.go
 	goimports -w $(shell find * | grep -v vendor |  grep  ".*\.*\(\(sk\|pb\|hash\).go\)")
