@@ -60,6 +60,10 @@ endif
 init:
 	git config core.hooksPath .githooks
 
+.PHONY: fmt-changed
+fmt-changed:
+	git diff --name-only | grep '.*.go$$' | xargs goimports -w
+
 .PHONY: update-deps
 update-deps:
 	go get -u golang.org/x/tools/cmd/goimports

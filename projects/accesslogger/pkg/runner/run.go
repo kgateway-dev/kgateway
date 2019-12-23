@@ -28,11 +28,9 @@ func Run() {
 	ctx := contextutils.WithLogger(context.Background(), "access_log")
 
 	if clientSettings.DebugPort != 0 {
-
-		debugPort := fmt.Sprintf("%d", clientSettings.DebugPort)
 		// TODO(yuval-k): we need to start the stats server before calling contextutils
 		// need to think of a better way to express this dependency, or preferably, fix it.
-		stats.StartStatsServerWithPort(debugPort)
+		stats.StartStatsServerWithPort(stats.StartupOptions{Port: clientSettings.DebugPort})
 	}
 
 	opts := loggingservice.Options{
