@@ -31,6 +31,14 @@ func (r *VirtualService) SetStatus(status core.Status) {
 	r.Status = status
 }
 
+func (r *VirtualService) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
+}
+
 func (r *VirtualService) GroupVersionKind() schema.GroupVersionKind {
 	return VirtualServiceGVK
 }

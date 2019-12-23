@@ -1808,6 +1808,8 @@ github.com/solo-io/solo-kit v0.11.14 h1:S5hQxoMflt2FcfOgvFeZycBo/Mg137J7vb9hPrEA
 github.com/solo-io/solo-kit v0.11.14/go.mod h1:9w7Dr/FR7IlOKSv4ke2s6ndEKBy/eTC0DIcndKNj45Q=
 github.com/solo-io/solo-kit v0.11.15 h1:cRaB3GzgToOxfuFq3E4EHVcK/HAk5dHfpUjWl6jBZp4=
 github.com/solo-io/solo-kit v0.11.15/go.mod h1:9w7Dr/FR7IlOKSv4ke2s6ndEKBy/eTC0DIcndKNj45Q=
+github.com/solo-io/solo-kit v0.11.16 h1:na9Q2NM3KbM4KWE+j/Pe5U5Zkxb68ANINgtv3SEQU8s=
+github.com/solo-io/solo-kit v0.11.16/go.mod h1:9w7Dr/FR7IlOKSv4ke2s6ndEKBy/eTC0DIcndKNj45Q=
 github.com/solo-io/wasme v0.0.1 h1:SjYWzJZ2IGVGTI0WS1/Gv2I74FLvibieLgyl6+TYciU=
 github.com/solo-io/wasme v0.0.1/go.mod h1:Zb85GQMTyx7NEyEINCUiofKE9KZLjQVF6obvHOHBQE8=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
