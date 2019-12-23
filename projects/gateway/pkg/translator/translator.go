@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
@@ -52,7 +53,8 @@ func (t *translator) Translate(ctx context.Context, proxyName, namespace string,
 	reports.Accept(snap.VirtualServices.AsInputResources()...)
 	reports.Accept(snap.RouteTables.AsInputResources()...)
 	if len(filteredGateways) == 0 {
-		logger.Infof("%v had no gateways", snap.Hash())
+		snapHash := hashutils.MustHash(snap)
+		logger.Infof("%v had no gateways", snapHash)
 		return nil, reports
 	}
 	validateGateways(filteredGateways, snap.VirtualServices, reports)
