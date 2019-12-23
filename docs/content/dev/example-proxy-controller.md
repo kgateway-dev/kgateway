@@ -25,6 +25,7 @@ go mod init <your module name here>
 Once the module has been initialized add the following dependencies to your go.mod file. Kubernetes dependency management
 with go.mod can be fairly difficult, this should be all you need to get access to their types, as well as ours.
 
+{{% expand "Click to see the full go.mod file that should be used for this project" %}}
 ```go
 module <your module name here>
 
@@ -73,6 +74,12 @@ replace (
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
 ```
+{{% /expand %}}
+
+The basis of this `go.mod` file is from the [`Gloo go.mod file`](https://github.com/solo-io/gloo/blob/master/go.mod)
+
+
+
 
 Now that the dependencies are complete (for now), we can move on to the interesting part: writing the controller!
 
