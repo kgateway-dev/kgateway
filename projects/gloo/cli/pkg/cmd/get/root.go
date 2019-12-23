@@ -30,7 +30,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			client := helpers.MustKubeClient()
 			_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 			if err != nil {
-				return errors.New("Gloo namespace does not exist. Did you install it in another namespace & forgot to add '-n NAMESPACE' flag?")
+				return errors.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
 			}
 			return nil
 		},
