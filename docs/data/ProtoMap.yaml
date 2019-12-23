@@ -920,6 +920,12 @@ apis:
   waf.options.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings
     package: waf.options.gloo.solo.io
+  wasm.options.gloo.solo.io.FilterStage:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#FilterStage
+    package: wasm.options.gloo.solo.io
   wasm.options.gloo.solo.io.PluginSource:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#PluginSource
+    package: wasm.options.gloo.solo.io
+  wasm.options.gloo.solo.io.WasmFilter:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#WasmFilter
     package: wasm.options.gloo.solo.io
