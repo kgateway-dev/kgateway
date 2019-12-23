@@ -16,7 +16,7 @@ This document describes how to write configuration YAML to Consul's Key-Value st
 ## Configuring Gloo using custom Settings
 
 When Gloo boots, it attempts to read a 
-[{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
+{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
 preconfigured location. By default, Gloo will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings`
 Custom Resource in namespace `gloo-system`, named `default`. 
 
@@ -58,7 +58,8 @@ metadata:
   namespace: gloo-system
 
 # bind address for gloo's configuration server
-bindAddr: 0.0.0.0:9977
+gloo:
+  xdsBindAddr: 0.0.0.0:9977
 
 # connection options for consul
 consul:
@@ -156,7 +157,7 @@ The paths for Gloo's API objects are as follows:
 | ----- | ---- | 
 | {{< protobuf name="gloo.solo.io.Upstream">}} | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
 | {{< protobuf name="gateway.solo.io.VirtualService">}} | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
-| {{< protobuf name="gateway.solo.io.v2.Gateway">}} | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
+| {{< protobuf name="gateway.solo.io.Gateway">}} | `gloo/gateway.solo.io/v1/Gateway/<namespace>/<name>`  |
 | {{< protobuf name="gloo.solo.io.Proxy">}} | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
 
 To store a Gloo resource in Consul, one can use `curl` or the `consul` CLI:
@@ -187,6 +188,6 @@ consul kv put gloo/gateway.solo.io/v1/VirtualService/gloo-system/default @virtua
 
 Stored resources can be viewed via the consul UI:
 
-![Consul UI](/img/consul_virtual_service.png "Consul Virtual Service")
+![Consul UI]({{% versioned_link_path fromRoot="/img/consul_virtual_service.png" %}} "Consul Virtual Service")
 
 This can be useful for modifying configuration, or viewing the status reported by Gloo.
