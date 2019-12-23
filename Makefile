@@ -486,29 +486,6 @@ ifeq ($(RELEASE),"true")
 		RELEASE=$(RELEASE)
 endif
 
-## START Temporary targets while master/v0.20.x branch is supported
-# Whenever a new Gloo release is made from the master/v0.20.x branch,
-# run `GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=v0-20-<PARTICULAR_VERSION> make publish-v-20-docs -B`
-# to manually to produce a docs image with the following properties:
-# - api, cli, changelog content from master/v0.20.x
-# - docs content, hosting config from feature-rc1
-.PHONY: publish-v-20-docs
-publish-v-20-docs: gather-v-20-docs publish-docs
-
-OLD_DOCS_TEMP_DIR := "old_docs_temp_dir"
-.PHONY: gather-v-20-docs
-gather-v-20-docs:
-	# want the changelog files to reflect master
-	git checkout master -- changelog/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-	mkdir -p $(OLD_DOCS_TEMP_DIR)
-	cd $(OLD_DOCS_TEMP_DIR) && git clone git@github.com:solo-io/solo-docs.git
-	rm docs/content/cli/glooctl*
-	cp $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/cli/glooctl* docs/content/cli/
-	rm -rf docs/content/api/
-	cp -r $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/api/ docs/content/api/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-## END Temporary targets while master/v0.20.x branch is supported
 
 #----------------------------------------------------------------------------------
 # Docker
