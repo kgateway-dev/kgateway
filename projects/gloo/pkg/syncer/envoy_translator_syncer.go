@@ -87,18 +87,19 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	validKeys := xds.GetKeysFromProxies(snap.Proxies)
+	allKeys := map[string]bool{
+		xds.FallbackNodeKey: true,
+	}
+	for _, key := range s.xdsCache.GetStatusKeys() {
+		allKeys[key] = false
+	}
+	for _, key := range xds.GetKeysFromProxies(snap.Proxies) {
+		allKeys[key] = true
+	}
 
 	// preserve keys from the current list of proxies, set previous snapshots to empty snapshot
-	for _, key := range s.xdsCache.GetStatusKeys() {
-		var isValidKey bool
-		for _, valid := range validKeys {
-			if key == valid || key == xds.FallbackNodeKey {
-				isValidKey = true
-			}
-		}
-		// if the key is not present in the list of current proxies, set it to empty snapshot
-		if !isValidKey {
+	for key, valid := range allKeys {
+		if !valid {
 			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
 				return err
 			}
