@@ -13,6 +13,7 @@ import (
 )
 
 var EmptyGetError = errors.New("please provide a subcommand")
+var UnsetNamespaceError = errors.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
@@ -30,7 +31,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			client := helpers.MustKubeClient()
 			_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 			if err != nil {
-				return errors.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
+				return UnsetNamespaceError
 			}
 			return nil
 		},

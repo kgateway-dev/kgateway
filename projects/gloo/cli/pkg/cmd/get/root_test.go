@@ -31,4 +31,14 @@ var _ = Describe("Root", func() {
 			Expect(err.Error()).To(Equal(get.EmptyGetError.Error()))
 		})
 	})
+
+	Context("Unset Gloo namespace", func() {
+		It("should give clear error message", func() {
+			err := helpers.MustKubeClient().CoreV1().Namespaces().Delete(defaults.GlooSystem, &metav1.DeleteOptions{})
+			Expect(err).NotTo(HaveOccurred())
+			_, err = testutils.GlooctlOut("get upstreams")
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(Equal(get.UnsetNamespaceError))
+		})
+	})
 })
