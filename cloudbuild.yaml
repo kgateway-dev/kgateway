@@ -75,12 +75,13 @@ steps:
   args:
   - kms
   - decrypt
-  - --ciphertext-file=./gopath/src/github.com/solo-io/gloo/ci/aws_credentials.enc
+  - --ciphertext-file=./ci/aws_credentials.enc
   - --plaintext-file=/workspace/aws_credentials
   - --location=global
   - --keyring=build
   - --key=build-key
   waitFor: ['prepare-workspace']
+  dir: *dir
   id: 'setup-aws-creds'
 # Helm related setup
 - name: gcr.io/cloud-builders/gsutil

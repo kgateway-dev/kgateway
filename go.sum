@@ -842,6 +842,7 @@ github.com/solo-io/protoc-gen-ext v0.0.6 h1:C1P10kUrFUWDLcdYC+3GQI7GLZS+1a+Psu0M
 github.com/solo-io/protoc-gen-ext v0.0.6/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4tPthhnYko=
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
+github.com/solo-io/solo-kit v0.11.15-0.20191223204758-baa2147f7b3e/go.mod h1:NroRM4aTtqxDkm1H4cOC2ZyqLUIALqIwFZQkrCCzU3c=
 github.com/solo-io/wasme v0.0.1 h1:SjYWzJZ2IGVGTI0WS1/Gv2I74FLvibieLgyl6+TYciU=
 github.com/solo-io/wasme v0.0.1/go.mod h1:Zb85GQMTyx7NEyEINCUiofKE9KZLjQVF6obvHOHBQE8=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72 h1:qLC7fQah7D6K1B0ujays3HV9gkFtllcxhzImRR7ArPQ=
