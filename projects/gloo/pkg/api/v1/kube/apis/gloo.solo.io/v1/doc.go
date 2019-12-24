@@ -4,7 +4,7 @@
 
 /* go:generate command for Kubernetes code-generator currently disabled, run the following manually (or uncomment and remove the minus):
 
-- //go:generate $GOPATH/src/k8s.io/code-generator/generate-groups.sh all "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/client" "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/kube/apis" gloo.solo.io:v1
+- //go:generate sh ../../../hack/update-codegen.sh
 
 */
 

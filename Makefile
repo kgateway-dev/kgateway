@@ -54,6 +54,7 @@ endif
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
+PROTOC_GEN_EXT_DIR := $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext)
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -66,7 +67,7 @@ fmt-changed:
 
 .PHONY: update-deps
 update-deps: vendor
-	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+	$(shell cd ${PROTOC_GEN_EXT_DIR}; make install)
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
@@ -100,7 +101,7 @@ clean:
 #----------------------------------------------------------------------------------
 .PHONY: vendor
 vendor:
-	go mod vendor
+	go mod download
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files

@@ -40,10 +40,7 @@ func main() {
 			},
 		},
 		PreRunFuncs: []cmd.RunFunc{
-			protodep.PreRunProtoVendor(".", []string{
-				"github.com/solo-io/solo-kit",
-				// "github.com/envoyproxy/protoc-gen-validate",
-			}, []string{"api/**/*.proto", protodep.SoloKitMatchPattern}),
+			protodep.PreRunProtoVendor(".", protodep.DefaultMatchOptions),
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

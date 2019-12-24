@@ -11,42 +11,6 @@ apis:
   als.options.gloo.solo.io.GrpcService:
     relativepath: api/gloo/projects/gloo/api/v1/options/als/als.proto.sk/#GrpcService
     package: als.options.gloo.solo.io
-  apiserver.api.v1.DeleteRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#DeleteRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.DeleteResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#DeleteResponse
-    package: apiserver.api.v1
-  apiserver.api.v1.ListRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#ListRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.ListResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#ListResponse
-    package: apiserver.api.v1
-  apiserver.api.v1.ReadRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#ReadRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.ReadResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#ReadResponse
-    package: apiserver.api.v1
-  apiserver.api.v1.RegisterRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#RegisterRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.RegisterResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#RegisterResponse
-    package: apiserver.api.v1
-  apiserver.api.v1.WatchRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#WatchRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.WatchResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#WatchResponse
-    package: apiserver.api.v1
-  apiserver.api.v1.WriteRequest:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#WriteRequest
-    package: apiserver.api.v1
-  apiserver.api.v1.WriteResponse:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/pkg/api/v1/apiserver/api_server.proto.sk/#WriteResponse
-    package: apiserver.api.v1
   aws.options.gloo.solo.io.DestinationSpec:
     relativepath: api/gloo/projects/gloo/api/v1/options/aws/aws.proto.sk/#DestinationSpec
     package: aws.options.gloo.solo.io
@@ -917,24 +881,6 @@ apis:
   tcp.options.gloo.solo.io.TcpProxySettings:
     relativepath: api/gloo/projects/gloo/api/v1/options/tcp/tcp.proto.sk/#TcpProxySettings
     package: tcp.options.gloo.solo.io
-  testing.solo.io.AnotherMockResource:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk/#AnotherMockResource
-    package: testing.solo.io
-  testing.solo.io.ClusterResource:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v1/more_mock_resources.proto.sk/#ClusterResource
-    package: testing.solo.io
-  testing.solo.io.FakeResource:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v1alpha1/mock_resources.proto.sk/#FakeResource
-    package: testing.solo.io
-  testing.solo.io.FrequentlyChangingAnnotationsResource:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v2alpha1/mock_resources.proto.sk/#FrequentlyChangingAnnotationsResource
-    package: testing.solo.io
-  testing.solo.io.MockResource:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v2alpha1/mock_resources.proto.sk/#MockResource
-    package: testing.solo.io
-  testing.solo.io.MockXdsResourceConfig:
-    relativepath: api/vendor/github.com/solo-io/solo-kit/test/mocks/api/v1/mock_resources.proto.sk/#MockXdsResourceConfig
-    package: testing.solo.io
   tracing.options.gloo.solo.io.ListenerTracingSettings:
     relativepath: api/gloo/projects/gloo/api/v1/options/tracing/tracing.proto.sk/#ListenerTracingSettings
     package: tracing.options.gloo.solo.io
