@@ -24,13 +24,13 @@ func main() {
 		SkipGeneratedTests: true,
 		SkipDirs: []string{
 			"docs",
+			"test",
+			"projects/gloo/api/grpc",
 		},
 		CustomImports: []string{
 			"vendor/github.com/solo-io",
-			"vendor/github.com/solo-io/api/external",
-			"vendor/github.com/envoyproxy/protoc-gen-validate",
 		},
-		RelativeRoot:  "",
+		RelativeRoot:  ".",
 		CompileProtos: true,
 		GenDocs: &cmd.DocsOptions{
 			Output: options.Hugo,
@@ -40,7 +40,12 @@ func main() {
 			},
 		},
 		PreRunFuncs: []cmd.RunFunc{
-			protodep.PreRunProtoVendor(".", protodep.DefaultMatchOptions),
+			protodep.PreRunProtoVendor(".",
+				protodep.Options{
+					MatchOptions:  protodep.DefaultMatchOptions,
+					LocalMatchers: []string{"projects/**/*.proto", "projects/" + protodep.SoloKitMatchPattern},
+				},
+			),
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
