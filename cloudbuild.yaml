@@ -16,7 +16,7 @@ steps:
 # TODO: during this step, prepare-workspace to set up the project so it can be built and tested
 # Dep modifies workspace so that the code is moved into the PROJECT_ROOT
 # All steps after this must set GOPATH
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
   args:
   - "--repo-owner"
   - "solo-io"
@@ -233,8 +233,6 @@ timeout: 5400s
 tags: ['gloo']
 options:
   machineType: 'N1_HIGHCPU_32'
-  env:
-  - "GO111MODULE=on"
   volumes:
   - name: 'gopath'
     path: '/go'
