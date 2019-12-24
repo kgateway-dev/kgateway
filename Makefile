@@ -54,7 +54,6 @@ endif
 #----------------------------------------------------------------------------------
 # Repo setup
 #----------------------------------------------------------------------------------
-PROTOC_GEN_EXT_DIR := $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext)
 
 # https://www.viget.com/articles/two-ways-to-share-git-hooks-with-your-team/
 .PHONY: init
@@ -65,9 +64,17 @@ init:
 fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs goimports -w
 
+
+# must be a seperate target so that make waits for it to complete before moving on
+.PHONY: mod-download
+mod-download:
+	go mod download
+
+
 .PHONY: update-deps
-update-deps: vendor
-	$(shell cd ${PROTOC_GEN_EXT_DIR}; make install)
+update-deps: mod-download
+	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
+	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
@@ -99,9 +106,6 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
-.PHONY: vendor
-vendor:
-	go mod download
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
