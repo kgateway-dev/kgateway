@@ -6,11 +6,10 @@ package wasm
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -24,43 +23,118 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-type PluginSource_VmType int32
+// represents the different types of WASM VMs available with which envoy can run
+// the WASM filter module
+type WasmFilter_VmType int32
 
 const (
-	PluginSource_V8   PluginSource_VmType = 0
-	PluginSource_WAVM PluginSource_VmType = 1
+	WasmFilter_V8   WasmFilter_VmType = 0
+	WasmFilter_WAVM WasmFilter_VmType = 1
 )
 
-var PluginSource_VmType_name = map[int32]string{
+var WasmFilter_VmType_name = map[int32]string{
 	0: "V8",
 	1: "WAVM",
 }
 
-var PluginSource_VmType_value = map[string]int32{
+var WasmFilter_VmType_value = map[string]int32{
 	"V8":   0,
 	"WAVM": 1,
 }
 
-func (x PluginSource_VmType) String() string {
-	return proto.EnumName(PluginSource_VmType_name, int32(x))
+func (x WasmFilter_VmType) String() string {
+	return proto.EnumName(WasmFilter_VmType_name, int32(x))
 }
 
-func (PluginSource_VmType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_f9e4bff80cc6c271, []int{0, 0}
+func (WasmFilter_VmType) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_f9e4bff80cc6c271, []int{1, 0}
 }
 
+// list of filter stages which can be selected for a WASM filter
+type FilterStage_Stage int32
+
+const (
+	FilterStage_FaultStage     FilterStage_Stage = 0
+	FilterStage_CorsStage      FilterStage_Stage = 1
+	FilterStage_WafStage       FilterStage_Stage = 2
+	FilterStage_AuthNStage     FilterStage_Stage = 3
+	FilterStage_AuthZStage     FilterStage_Stage = 4
+	FilterStage_RateLimitStage FilterStage_Stage = 5
+	FilterStage_AcceptedStage  FilterStage_Stage = 6
+	FilterStage_OutAuthStage   FilterStage_Stage = 7
+	FilterStage_RouteStage     FilterStage_Stage = 8
+)
+
+var FilterStage_Stage_name = map[int32]string{
+	0: "FaultStage",
+	1: "CorsStage",
+	2: "WafStage",
+	3: "AuthNStage",
+	4: "AuthZStage",
+	5: "RateLimitStage",
+	6: "AcceptedStage",
+	7: "OutAuthStage",
+	8: "RouteStage",
+}
+
+var FilterStage_Stage_value = map[string]int32{
+	"FaultStage":     0,
+	"CorsStage":      1,
+	"WafStage":       2,
+	"AuthNStage":     3,
+	"AuthZStage":     4,
+	"RateLimitStage": 5,
+	"AcceptedStage":  6,
+	"OutAuthStage":   7,
+	"RouteStage":     8,
+}
+
+func (x FilterStage_Stage) String() string {
+	return proto.EnumName(FilterStage_Stage_name, int32(x))
+}
+
+func (FilterStage_Stage) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_f9e4bff80cc6c271, []int{2, 0}
+}
+
+// During is the 0th member so that it is the default, even though
+// the reading order can be a little confusing
+type FilterStage_Predicate int32
+
+const (
+	FilterStage_During FilterStage_Predicate = 0
+	FilterStage_Before FilterStage_Predicate = 1
+	FilterStage_After  FilterStage_Predicate = 2
+)
+
+var FilterStage_Predicate_name = map[int32]string{
+	0: "During",
+	1: "Before",
+	2: "After",
+}
+
+var FilterStage_Predicate_value = map[string]int32{
+	"During": 0,
+	"Before": 1,
+	"After":  2,
+}
+
+func (x FilterStage_Predicate) String() string {
+	return proto.EnumName(FilterStage_Predicate_name, int32(x))
+}
+
+func (FilterStage_Predicate) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_f9e4bff80cc6c271, []int{2, 1}
+}
+
+//
+//Options config for WASM filters
 type PluginSource struct {
-	// name of image which houses the compiled wasm filter
-	Image string `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
-	// string of the config sent to the wasm filter
-	// Currently has to be json or will crash
-	Config               string              `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
-	Name                 string              `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
-	RootId               string              `protobuf:"bytes,6,opt,name=root_id,json=rootId,proto3" json:"root_id,omitempty"`
-	VmType               PluginSource_VmType `protobuf:"varint,7,opt,name=vm_type,json=vmType,proto3,enum=wasm.options.gloo.solo.io.PluginSource_VmType" json:"vm_type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
-	XXX_unrecognized     []byte              `json:"-"`
-	XXX_sizecache        int32               `json:"-"`
+	// list of WASM filters to be added into the filter chain
+	Filters              []*WasmFilter `protobuf:"bytes,1,rep,name=filters,proto3" json:"filters,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *PluginSource) Reset()         { *m = PluginSource{} }
@@ -87,44 +161,157 @@ func (m *PluginSource) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_PluginSource proto.InternalMessageInfo
 
-func (m *PluginSource) GetImage() string {
+func (m *PluginSource) GetFilters() []*WasmFilter {
+	if m != nil {
+		return m.Filters
+	}
+	return nil
+}
+
+//
+//This message defines a single Envoy WASM filter to be placed into the filter chain
+type WasmFilter struct {
+	// name of image which houses the compiled wasm filter
+	Image string `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	// string of the config sent to the wasm filter
+	// currently has to be json or will crash
+	// TODO: update to proto.Any or proto.Struct? and then turn into json
+	Config string `protobuf:"bytes,3,opt,name=config,proto3" json:"config,omitempty"`
+	// the stage in the filter chain where this filter should be placed
+	FilterStage *FilterStage `protobuf:"bytes,4,opt,name=filter_stage,json=filterStage,proto3" json:"filter_stage,omitempty"`
+	// the name of the filter, used for logging
+	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	// the root_id of the filter which should be run, if this value is incorrect, or
+	// empty the filter will crash
+	RootId string `protobuf:"bytes,6,opt,name=root_id,json=rootId,proto3" json:"root_id,omitempty"`
+	// selected VM type
+	VmType               WasmFilter_VmType `protobuf:"varint,7,opt,name=vm_type,json=vmType,proto3,enum=wasm.options.gloo.solo.io.WasmFilter_VmType" json:"vm_type,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *WasmFilter) Reset()         { *m = WasmFilter{} }
+func (m *WasmFilter) String() string { return proto.CompactTextString(m) }
+func (*WasmFilter) ProtoMessage()    {}
+func (*WasmFilter) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f9e4bff80cc6c271, []int{1}
+}
+func (m *WasmFilter) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_WasmFilter.Unmarshal(m, b)
+}
+func (m *WasmFilter) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_WasmFilter.Marshal(b, m, deterministic)
+}
+func (m *WasmFilter) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WasmFilter.Merge(m, src)
+}
+func (m *WasmFilter) XXX_Size() int {
+	return xxx_messageInfo_WasmFilter.Size(m)
+}
+func (m *WasmFilter) XXX_DiscardUnknown() {
+	xxx_messageInfo_WasmFilter.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_WasmFilter proto.InternalMessageInfo
+
+func (m *WasmFilter) GetImage() string {
 	if m != nil {
 		return m.Image
 	}
 	return ""
 }
 
-func (m *PluginSource) GetConfig() string {
+func (m *WasmFilter) GetConfig() string {
 	if m != nil {
 		return m.Config
 	}
 	return ""
 }
 
-func (m *PluginSource) GetName() string {
+func (m *WasmFilter) GetFilterStage() *FilterStage {
+	if m != nil {
+		return m.FilterStage
+	}
+	return nil
+}
+
+func (m *WasmFilter) GetName() string {
 	if m != nil {
 		return m.Name
 	}
 	return ""
 }
 
-func (m *PluginSource) GetRootId() string {
+func (m *WasmFilter) GetRootId() string {
 	if m != nil {
 		return m.RootId
 	}
 	return ""
 }
 
-func (m *PluginSource) GetVmType() PluginSource_VmType {
+func (m *WasmFilter) GetVmType() WasmFilter_VmType {
 	if m != nil {
 		return m.VmType
 	}
-	return PluginSource_V8
+	return WasmFilter_V8
+}
+
+type FilterStage struct {
+	// stage of the filter chain in which the selected filter should be added
+	Stage FilterStage_Stage `protobuf:"varint,1,opt,name=stage,proto3,enum=wasm.options.gloo.solo.io.FilterStage_Stage" json:"stage,omitempty"`
+	// How this filter should be placed relative to the stage
+	Predicate            FilterStage_Predicate `protobuf:"varint,2,opt,name=predicate,proto3,enum=wasm.options.gloo.solo.io.FilterStage_Predicate" json:"predicate,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
+	XXX_unrecognized     []byte                `json:"-"`
+	XXX_sizecache        int32                 `json:"-"`
+}
+
+func (m *FilterStage) Reset()         { *m = FilterStage{} }
+func (m *FilterStage) String() string { return proto.CompactTextString(m) }
+func (*FilterStage) ProtoMessage()    {}
+func (*FilterStage) Descriptor() ([]byte, []int) {
+	return fileDescriptor_f9e4bff80cc6c271, []int{2}
+}
+func (m *FilterStage) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_FilterStage.Unmarshal(m, b)
+}
+func (m *FilterStage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_FilterStage.Marshal(b, m, deterministic)
+}
+func (m *FilterStage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_FilterStage.Merge(m, src)
+}
+func (m *FilterStage) XXX_Size() int {
+	return xxx_messageInfo_FilterStage.Size(m)
+}
+func (m *FilterStage) XXX_DiscardUnknown() {
+	xxx_messageInfo_FilterStage.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_FilterStage proto.InternalMessageInfo
+
+func (m *FilterStage) GetStage() FilterStage_Stage {
+	if m != nil {
+		return m.Stage
+	}
+	return FilterStage_FaultStage
+}
+
+func (m *FilterStage) GetPredicate() FilterStage_Predicate {
+	if m != nil {
+		return m.Predicate
+	}
+	return FilterStage_During
 }
 
 func init() {
-	proto.RegisterEnum("wasm.options.gloo.solo.io.PluginSource_VmType", PluginSource_VmType_name, PluginSource_VmType_value)
+	proto.RegisterEnum("wasm.options.gloo.solo.io.WasmFilter_VmType", WasmFilter_VmType_name, WasmFilter_VmType_value)
+	proto.RegisterEnum("wasm.options.gloo.solo.io.FilterStage_Stage", FilterStage_Stage_name, FilterStage_Stage_value)
+	proto.RegisterEnum("wasm.options.gloo.solo.io.FilterStage_Predicate", FilterStage_Predicate_name, FilterStage_Predicate_value)
 	proto.RegisterType((*PluginSource)(nil), "wasm.options.gloo.solo.io.PluginSource")
+	proto.RegisterType((*WasmFilter)(nil), "wasm.options.gloo.solo.io.WasmFilter")
+	proto.RegisterType((*FilterStage)(nil), "wasm.options.gloo.solo.io.FilterStage")
 }
 
 func init() {
@@ -132,26 +319,40 @@ func init() {
 }
 
 var fileDescriptor_f9e4bff80cc6c271 = []byte{
-	// 293 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x90, 0x31, 0x4e, 0xc3, 0x30,
-	0x18, 0x85, 0x71, 0x49, 0x1d, 0xb0, 0x10, 0xaa, 0xac, 0x0a, 0x42, 0x06, 0x54, 0x75, 0xea, 0x00,
-	0xb6, 0x80, 0x85, 0x85, 0x01, 0x96, 0x8a, 0x01, 0x09, 0x15, 0x14, 0x24, 0x96, 0x2a, 0x4d, 0x8d,
-	0x31, 0xc4, 0xf9, 0xad, 0xc4, 0x09, 0xed, 0x8d, 0x38, 0x02, 0xa7, 0xe0, 0x10, 0xdc, 0x81, 0x1d,
-	0xc5, 0xee, 0x00, 0x12, 0x5d, 0xec, 0xf7, 0x3e, 0xff, 0xcf, 0xb2, 0x1f, 0x39, 0x32, 0x25, 0xbc,
-	0x88, 0xcc, 0x56, 0x5c, 0xe6, 0x00, 0x3c, 0x35, 0x8a, 0x37, 0x27, 0x1c, 0x8c, 0x55, 0x50, 0x54,
-	0xfc, 0x2d, 0xad, 0xb4, 0x5b, 0x98, 0x29, 0xc1, 0x02, 0x3d, 0x70, 0x7a, 0x75, 0xca, 0xda, 0x04,
-	0xab, 0x20, 0x07, 0xa6, 0x20, 0xee, 0x4b, 0x90, 0xe0, 0xa6, 0x78, 0xab, 0x7c, 0x20, 0xa6, 0x62,
-	0x61, 0x3d, 0x14, 0x0b, 0xeb, 0xd9, 0xf0, 0x13, 0x91, 0x9d, 0xdb, 0xbc, 0x96, 0xaa, 0xb8, 0x83,
-	0xba, 0xcc, 0x04, 0xed, 0x93, 0xae, 0xd2, 0xa9, 0x14, 0x51, 0x67, 0x80, 0x46, 0xdb, 0x13, 0x6f,
-	0xe8, 0x1e, 0xc1, 0x19, 0x14, 0x4f, 0x4a, 0x46, 0x9b, 0x0e, 0xaf, 0x1c, 0xa5, 0x24, 0x28, 0x52,
-	0x2d, 0xa2, 0xae, 0xa3, 0x4e, 0xd3, 0x7d, 0x12, 0x96, 0x00, 0x76, 0xaa, 0xe6, 0x11, 0xf6, 0xc3,
-	0xad, 0xbd, 0x9e, 0xd3, 0x31, 0x09, 0x1b, 0x3d, 0xb5, 0x4b, 0x23, 0xa2, 0x70, 0x80, 0x46, 0xbb,
-	0xa7, 0x8c, 0xad, 0xfd, 0x02, 0xfb, 0xfd, 0x28, 0x96, 0xe8, 0xfb, 0xa5, 0x11, 0x13, 0xdc, 0xb8,
-	0x7d, 0x18, 0x13, 0xec, 0x09, 0xc5, 0xa4, 0x93, 0x9c, 0xf7, 0x36, 0xe8, 0x16, 0x09, 0x1e, 0x2e,
-	0x93, 0x9b, 0x1e, 0xba, 0x1a, 0x7f, 0x7c, 0x07, 0xe8, 0xfd, 0xeb, 0x10, 0x3d, 0x5e, 0x48, 0x65,
-	0x9f, 0xeb, 0x19, 0xcb, 0x40, 0xf3, 0xf6, 0xd6, 0x63, 0x05, 0xbe, 0xd7, 0xbf, 0x2d, 0x9b, 0x57,
-	0xf9, 0x5f, 0xd3, 0x33, 0xec, 0x0a, 0x3a, 0xfb, 0x09, 0x00, 0x00, 0xff, 0xff, 0xaf, 0x90, 0xc5,
-	0x4b, 0x95, 0x01, 0x00, 0x00,
+	// 516 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0xcb, 0x6e, 0xd3, 0x50,
+	0x10, 0x86, 0x6b, 0x27, 0x76, 0x92, 0x49, 0x1a, 0x99, 0x51, 0x05, 0x26, 0x0b, 0x14, 0x59, 0x02,
+	0x65, 0x51, 0x6c, 0x08, 0x1b, 0x36, 0x08, 0x25, 0x40, 0x51, 0x25, 0x68, 0x2b, 0x17, 0x25, 0x52,
+	0x37, 0x91, 0xeb, 0x1c, 0xbb, 0x07, 0xe2, 0x8c, 0x65, 0x1f, 0x87, 0xf6, 0x41, 0x58, 0xb2, 0xe7,
+	0x11, 0x78, 0x1e, 0xde, 0x80, 0x05, 0x7b, 0x64, 0x4f, 0x42, 0x8a, 0xc4, 0xa5, 0x9b, 0x64, 0xbe,
+	0xdf, 0xf3, 0xcf, 0xe5, 0x48, 0x03, 0xfb, 0x69, 0x46, 0xef, 0x45, 0xa8, 0x72, 0x2f, 0x5e, 0x10,
+	0x79, 0x41, 0x2a, 0xbd, 0xd5, 0x63, 0x8f, 0x52, 0x25, 0x69, 0x99, 0x7b, 0x1f, 0x83, 0x3c, 0xa9,
+	0x7e, 0xdc, 0x34, 0x23, 0x45, 0x78, 0xb7, 0x8a, 0xd7, 0x5f, 0xdd, 0xd2, 0xe1, 0xe6, 0xb4, 0x20,
+	0x57, 0x52, 0x6f, 0x2f, 0xa6, 0x98, 0xaa, 0x2c, 0xaf, 0x8c, 0xd8, 0xd0, 0x43, 0x71, 0xa9, 0x58,
+	0x14, 0x97, 0x8a, 0x35, 0xe7, 0x18, 0x3a, 0x27, 0x8b, 0x22, 0x96, 0xcb, 0x53, 0x2a, 0xb2, 0x50,
+	0xe0, 0x73, 0x68, 0x44, 0x72, 0xa1, 0x44, 0x96, 0xdb, 0x5a, 0xbf, 0x36, 0x68, 0x0f, 0xef, 0xbb,
+	0x7f, 0x6d, 0xe3, 0x4e, 0x83, 0x3c, 0x39, 0xa8, 0xb2, 0xfd, 0x8d, 0xcb, 0xf9, 0xa4, 0x03, 0x6c,
+	0x75, 0xdc, 0x03, 0x43, 0x26, 0x41, 0x2c, 0x6c, 0xbd, 0xaf, 0x0d, 0x5a, 0x3e, 0x03, 0xde, 0x06,
+	0x33, 0xa4, 0x65, 0x24, 0x63, 0xbb, 0x56, 0xc9, 0x6b, 0xc2, 0x43, 0xe8, 0x70, 0x9d, 0x59, 0xae,
+	0x4a, 0x53, 0xbd, 0xaf, 0x0d, 0xda, 0xc3, 0x07, 0xff, 0x18, 0x81, 0xdb, 0x9c, 0x96, 0xd9, 0x7e,
+	0x3b, 0xda, 0x02, 0x22, 0xd4, 0x97, 0x41, 0x22, 0x6c, 0xa3, 0x6a, 0x50, 0xc5, 0x78, 0x07, 0x1a,
+	0x19, 0x91, 0x9a, 0xc9, 0xb9, 0x6d, 0x72, 0xdf, 0x12, 0x0f, 0xe7, 0xf8, 0x0a, 0x1a, 0xab, 0x64,
+	0xa6, 0xae, 0x52, 0x61, 0x37, 0xfa, 0xda, 0xa0, 0x3b, 0xdc, 0xbf, 0xd1, 0xd6, 0xee, 0x24, 0x79,
+	0x77, 0x95, 0x0a, 0xdf, 0x5c, 0x55, 0xff, 0x4e, 0x0f, 0x4c, 0x56, 0xd0, 0x04, 0x7d, 0xf2, 0xd4,
+	0xda, 0xc1, 0x26, 0xd4, 0xa7, 0xa3, 0xc9, 0x5b, 0x4b, 0x73, 0xbe, 0xeb, 0xd0, 0xbe, 0x36, 0x2c,
+	0x8e, 0xc1, 0xe0, 0x1d, 0xb5, 0xff, 0x36, 0xbc, 0x66, 0x73, 0x79, 0x53, 0xb6, 0xe2, 0x11, 0xb4,
+	0xd2, 0x4c, 0xcc, 0x65, 0x18, 0x28, 0x7e, 0xe0, 0xee, 0xf0, 0xd1, 0x0d, 0xeb, 0x9c, 0x6c, 0x7c,
+	0xfe, 0xb6, 0x84, 0xf3, 0x59, 0x03, 0x83, 0xa7, 0xeb, 0x02, 0x1c, 0x04, 0xc5, 0x42, 0x55, 0x64,
+	0xed, 0xe0, 0x2e, 0xb4, 0x5e, 0x50, 0x96, 0x33, 0x6a, 0xd8, 0x81, 0xe6, 0x34, 0x88, 0x98, 0xf4,
+	0x32, 0x79, 0x54, 0xa8, 0x8b, 0x23, 0xe6, 0xda, 0x86, 0xcf, 0x98, 0xeb, 0x88, 0xd0, 0xf5, 0x03,
+	0x25, 0xde, 0xc8, 0x44, 0xae, 0x0b, 0x1a, 0x78, 0x0b, 0x76, 0x47, 0x61, 0x28, 0x52, 0x25, 0xe6,
+	0x2c, 0x99, 0x68, 0x41, 0xe7, 0xb8, 0x50, 0xa5, 0x93, 0x95, 0x46, 0x59, 0xc8, 0xa7, 0x42, 0x09,
+	0xe6, 0xa6, 0xe3, 0x42, 0xeb, 0xd7, 0xdc, 0x08, 0x60, 0xbe, 0x2c, 0x32, 0xb9, 0x8c, 0xad, 0x9d,
+	0x32, 0x1e, 0x8b, 0x88, 0xb2, 0x72, 0xb6, 0x16, 0x18, 0xa3, 0x48, 0x89, 0xcc, 0xd2, 0xc7, 0xaf,
+	0xbf, 0xfe, 0xa8, 0x6b, 0x5f, 0xbe, 0xdd, 0xd3, 0xce, 0x9e, 0xc5, 0x52, 0x5d, 0x14, 0xe7, 0x6e,
+	0x48, 0x89, 0x57, 0x3e, 0xc7, 0x43, 0x49, 0x7c, 0x63, 0xbf, 0x5f, 0x5c, 0xfa, 0x21, 0xfe, 0xd3,
+	0xd5, 0x9d, 0x9b, 0xd5, 0xb1, 0x3c, 0xf9, 0x19, 0x00, 0x00, 0xff, 0xff, 0x7c, 0xdf, 0xe0, 0x18,
+	0xa1, 0x03, 0x00, 0x00,
 }
 
 func (this *PluginSource) Equal(that interface{}) bool {
@@ -173,10 +374,45 @@ func (this *PluginSource) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
+	if len(this.Filters) != len(that1.Filters) {
+		return false
+	}
+	for i := range this.Filters {
+		if !this.Filters[i].Equal(that1.Filters[i]) {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *WasmFilter) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*WasmFilter)
+	if !ok {
+		that2, ok := that.(WasmFilter)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
 	if this.Image != that1.Image {
 		return false
 	}
 	if this.Config != that1.Config {
+		return false
+	}
+	if !this.FilterStage.Equal(that1.FilterStage) {
 		return false
 	}
 	if this.Name != that1.Name {
@@ -186,6 +422,36 @@ func (this *PluginSource) Equal(that interface{}) bool {
 		return false
 	}
 	if this.VmType != that1.VmType {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *FilterStage) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*FilterStage)
+	if !ok {
+		that2, ok := that.(FilterStage)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Stage != that1.Stage {
+		return false
+	}
+	if this.Predicate != that1.Predicate {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {

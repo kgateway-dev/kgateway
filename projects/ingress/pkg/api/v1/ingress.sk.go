@@ -27,6 +27,14 @@ func (r *Ingress) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
 }
 
+func (r *Ingress) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
+}
+
 func (r *Ingress) GroupVersionKind() schema.GroupVersionKind {
 	return IngressGVK
 }

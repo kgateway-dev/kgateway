@@ -11,7 +11,6 @@ import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
 import "solo-kit/api/v1/ref.proto";
 import "solo-kit/api/v1/solo-kit.proto";
-
 import "gloo/projects/gloo/api/v1/ssl.proto";
 import "gloo/projects/gloo/api/v1/proxy.proto";
 import "gloo/projects/gloo/api/v1/options.proto";

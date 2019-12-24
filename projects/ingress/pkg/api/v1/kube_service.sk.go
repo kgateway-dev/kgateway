@@ -27,6 +27,14 @@ func (r *KubeService) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
 }
 
+func (r *KubeService) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
+}
+
 func (r *KubeService) GroupVersionKind() schema.GroupVersionKind {
 	return KubeServiceGVK
 }

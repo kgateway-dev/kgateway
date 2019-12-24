@@ -5,6 +5,7 @@ steps:
   args: ['check']
   waitFor: ['-']
   env:
+  # The LSCOMMAND is the env var which tells the spell script how to search for the files it needs to fix.
   - 'LSCOMMAND=find * -type f | grep -v vendor | grep -v docs/themes | grep -v docs/site'
   id: 'check-spelling'
 

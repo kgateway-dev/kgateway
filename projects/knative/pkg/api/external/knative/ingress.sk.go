@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
+	"log"
 	"sort"
 
 	github_com_solo_io_gloo_projects_knative_api_external_knative "github.com/solo-io/gloo/projects/knative/api/external/knative"
@@ -56,6 +57,14 @@ func (r *Ingress) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
+}
+
+func (r *Ingress) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *Ingress) GroupVersionKind() schema.GroupVersionKind {

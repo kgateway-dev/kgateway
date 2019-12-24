@@ -31,6 +31,14 @@ func (r *RouteTable) SetStatus(status core.Status) {
 	r.Status = status
 }
 
+func (r *RouteTable) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
+}
+
 func (r *RouteTable) GroupVersionKind() schema.GroupVersionKind {
 	return RouteTableGVK
 }
