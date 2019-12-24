@@ -5,9 +5,10 @@ package jwt
 
 import (
 	fmt "fmt"
+	math "math"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/gogo/protobuf/proto"
-	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
