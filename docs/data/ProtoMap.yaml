@@ -888,73 +888,73 @@ apis:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto.sk/#Parameters
     package: transformation.options.gloo.solo.io
   validate.AnyRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#AnyRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#AnyRules
     package: validate
   validate.BoolRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#BoolRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#BoolRules
     package: validate
   validate.BytesRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#BytesRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#BytesRules
     package: validate
   validate.DoubleRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#DoubleRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#DoubleRules
     package: validate
   validate.DurationRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#DurationRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#DurationRules
     package: validate
   validate.EnumRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#EnumRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#EnumRules
     package: validate
   validate.FieldRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#FieldRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#FieldRules
     package: validate
   validate.Fixed32Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#Fixed32Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#Fixed32Rules
     package: validate
   validate.Fixed64Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#Fixed64Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#Fixed64Rules
     package: validate
   validate.FloatRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#FloatRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#FloatRules
     package: validate
   validate.Int32Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#Int32Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#Int32Rules
     package: validate
   validate.Int64Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#Int64Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#Int64Rules
     package: validate
   validate.MapRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#MapRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#MapRules
     package: validate
   validate.MessageRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#MessageRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#MessageRules
     package: validate
   validate.RepeatedRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#RepeatedRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#RepeatedRules
     package: validate
   validate.SFixed32Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#SFixed32Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#SFixed32Rules
     package: validate
   validate.SFixed64Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#SFixed64Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#SFixed64Rules
     package: validate
   validate.SInt32Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#SInt32Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#SInt32Rules
     package: validate
   validate.SInt64Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#SInt64Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#SInt64Rules
     package: validate
   validate.StringRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#StringRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#StringRules
     package: validate
   validate.TimestampRules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#TimestampRules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#TimestampRules
     package: validate
   validate.UInt32Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#UInt32Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#UInt32Rules
     package: validate
   validate.UInt64Rules:
-    relativepath: api/github.com/solo-io/solo-kit/api/external/validate/validate.proto.sk/#UInt64Rules
+    relativepath: api/github.com/envoyproxy/protoc-gen-validate/validate/validate.proto.sk/#UInt64Rules
     package: validate
   waf.options.gloo.solo.io.CoreRuleSet:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#CoreRuleSet

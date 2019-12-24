@@ -29,6 +29,7 @@ func main() {
 		},
 		CustomImports: []string{
 			"vendor/github.com/solo-io",
+			"vendor/github.com/envoyproxy/protoc-gen-validate",
 		},
 		RelativeRoot:  ".",
 		CompileProtos: true,
