@@ -42,6 +42,7 @@ func oidcSurvey(input *options.OIDCAuth) error {
 	if err != nil {
 		return err
 	}
+	// TODO(awang) add issuer url params
 	err = cliutil.GetStringInputDefault("What path (relative to your app url) should we use as a callback from the issuer?", &input.CallbackPath, "/oidc-gloo-callback")
 	if err != nil {
 		return err

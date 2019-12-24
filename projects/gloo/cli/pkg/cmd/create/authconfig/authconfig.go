@@ -130,6 +130,7 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 					ClientId:        oidc.ClientId,
 					ClientSecretRef: oidc.ClientSecretRef,
 					IssuerUrl:       oidc.IssuerUrl,
+					IssuerUrlParams: oidc.IssuerUrlParams,
 					Scopes:          oidc.Scopes,
 				},
 			},
