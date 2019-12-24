@@ -15,9 +15,10 @@ const (
 )
 
 func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot) (*gloov1.Proxy, error) {
-	ingresses := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
+	ingresses := make(map[*core.Metadata]knativev1alpha1.IngressSpec)
 	for _, ing := range snap.Clusteringresses {
-		ingresses[ing.GetMetadata().Ref()] = ing.Spec
+		meta := ing.GetMetadata()
+		ingresses[&meta] = ing.Spec
 	}
 	return translator.TranslateProxyFromSpecs(ctx, proxyName, namespace, ingresses, snap.Secrets)
 }

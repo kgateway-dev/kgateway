@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support Manual configuration of SSL for Knative Services. Using the annotations  and , users can manually configure Gloo to serve TLS for their Knative Services
+    issueLink: https://github.com/solo-io/gloo/issues/2048
