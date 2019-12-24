@@ -4,7 +4,7 @@
 
 /* go:generate command for Kubernetes code-generator currently disabled, run the following manually (or uncomment and remove the minus):
 
-- //go:generate sh ../../../hack/update-codegen.sh
+- //go:generate bash ../../../hack/update-codegen.sh
 
 */
 
