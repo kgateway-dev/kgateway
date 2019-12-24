@@ -81,9 +81,10 @@ type Integrations struct {
 }
 
 type Knative struct {
-	Enabled *bool         `json:"enabled" desc:"enabled knative components"`
-	Version *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
-	Proxy   *KnativeProxy `json:"proxy,omitempty"`
+	Enabled             *bool         `json:"enabled" desc:"enabled knative components"`
+	Version             *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Proxy               *KnativeProxy `json:"proxy,omitempty"`
+	RequireIngressClass *bool         `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'. This can be configured via the "`
 }
 
 type KnativeProxy struct {
