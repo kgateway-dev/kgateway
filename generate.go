@@ -41,10 +41,10 @@ func main() {
 			},
 		},
 		PreRunFuncs: []cmd.RunFunc{
-			protodep.PreRunProtoVendor(".",
+			cmd.PreRunProtoVendor(".",
 				protodep.Options{
 					MatchOptions:  protodep.DefaultMatchOptions,
-					LocalMatchers: []string{"projects/**/*.proto", "projects/" + protodep.SoloKitMatchPattern},
+					LocalMatchers: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
 				},
 			),
 		},
