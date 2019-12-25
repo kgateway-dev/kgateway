@@ -136,7 +136,12 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 			sslConfigs = append(sslConfigs, &gloov1.SslConfig{
 				SniDomains: tls.Hosts,
 				SslSecrets: &gloov1.SslConfig_SecretRef{
-					SecretRef: &core.ResourceRef{Namespace: tls.SecretNamespace, Name: tls.SecretName},
+					// pass secret through to gloo,
+					// allow Gloo to perform secret validation
+					SecretRef: &core.ResourceRef{
+						Namespace: tls.SecretNamespace,
+						Name:      tls.SecretName,
+					},
 				},
 			})
 		}
