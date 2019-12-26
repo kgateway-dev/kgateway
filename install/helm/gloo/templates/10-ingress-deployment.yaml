@@ -44,7 +44,7 @@ spec:
           value: "true"
 {{- else }}
 
-  {{- if or (.Values.ingress.requireIngressClass .Values.settings.integrations.knative.requireIngressClass) }}
+  {{- if or .Values.ingress.requireIngressClass .Values.settings.integrations.knative.requireIngressClass }}
         - name: "REQUIRE_INGRESS_CLASS"
           value: "true"
   {{- end }}
