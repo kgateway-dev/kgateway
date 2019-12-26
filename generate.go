@@ -18,14 +18,11 @@ func main() {
 			"projects/gloo/api/grpc",
 		},
 		SkipGeneratedTests: true,
+		// helps to cut down on time spent searching for imports, not strictly necessary
 		SkipDirs: []string{
 			"docs",
 			"test",
 			"projects/gloo/api/grpc",
-		},
-		CustomImports: []string{
-			"vendor/github.com/solo-io",
-			"vendor/github.com/envoyproxy/protoc-gen-validate",
 		},
 		RelativeRoot:  ".",
 		CompileProtos: true,
@@ -36,15 +33,11 @@ func main() {
 				ApiDir:  "api",
 			},
 		},
-		PreRunFuncs: []cmd.RunFunc{
-			cmd.PreRunProtoVendor(".",
-				&protodep.Config{
-					Local: &protodep.Local{
-						Patterns: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
-					},
-					Imports: protodep.DefaultMatchOptions,
-				},
-			),
+		ProtoDepConfig: &protodep.Config{
+			Local: &protodep.Local{
+				Patterns: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
+			},
+			Imports: protodep.DefaultMatchOptions,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
