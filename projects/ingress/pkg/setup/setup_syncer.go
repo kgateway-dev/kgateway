@@ -157,10 +157,6 @@ func RunIngress(opts Opts) error {
 	if err != nil {
 		return errors.Wrapf(err, "getting kube config")
 	}
-	secretClient, err := gloov1.NewSecretClient(opts.Secrets)
-	if err != nil {
-		return err
-	}
 
 	proxyClient, err := gloov1.NewProxyClient(opts.Proxies)
 	if err != nil {
@@ -255,7 +251,7 @@ func RunIngress(opts Opts) error {
 			}
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
-			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(secretClient, ingressClient)
+			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,
