@@ -180,7 +180,7 @@ For example, on a fresh deployment, your first request will be handled by node 1
 Your second request will by handled by node 2, and also return a count of 1.
 After you enable session affinity, repeat requests will return a strictly increasing count response.
 
-The source code for the session affinity app is available [here](../../../docs/examples/session-affinity).
+The source code for the session affinity app is available [here](https://github.com/solo-io/gloo/blob/v1.2.12/docs/examples/session-affinity/main.go).
 The core logic is shown below.
 
 {{< highlight golang "hl_lines=24-29" >}}
