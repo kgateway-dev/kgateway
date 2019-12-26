@@ -63,7 +63,7 @@ func sslConfigFromAnnotations(annotations map[string]string, namespace string) *
 	}
 }
 
-func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
+func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (*gloov1.Proxy, error) {
 	// use map of *core.Metadata to support both Ingress and ClusterIngress,
 	// which share the same Spec type
 	ingressSpecsByRef := make(map[*core.Metadata]knativev1alpha1.IngressSpec)
@@ -133,20 +133,30 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 				continue
 			}
 
+			secretNamespace := tls.SecretNamespace
+			if secretNamespace == "" {
+				// default to namespace shared with ingress
+				secretNamespace = ing.Namespace
+			}
+
 			sslConfigs = append(sslConfigs, &gloov1.SslConfig{
 				SniDomains: tls.Hosts,
 				SslSecrets: &gloov1.SslConfig_SecretRef{
 					// pass secret through to gloo,
 					// allow Gloo to perform secret validation
 					SecretRef: &core.ResourceRef{
-						Namespace: tls.SecretNamespace,
+						Namespace: secretNamespace,
 						Name:      tls.SecretName,
 					},
 				},
 			})
 		}
 
+		// use tls if spec contains tls, or user sets with annotations
+		useTls := len(spec.TLS) > 0
+
 		if customSsl := sslConfigFromAnnotations(ing.Annotations, ing.Namespace); customSsl != nil {
+			useTls = true
 			sslConfigs = append(sslConfigs, customSsl)
 		}
 
@@ -201,7 +211,6 @@ func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1al
 				routes = append(routes, route)
 
 			}
-			useTls := len(spec.TLS) > 0
 
 			var hosts []string
 			for _, host := range expandHosts(rule.Hosts) {
