@@ -1,4 +1,6 @@
 changelog:
   - type: NEW_FEATURE
-    description: Support Manual configuration of SSL for Knative Services. Using the annotations  and , users can manually configure Gloo to serve TLS for their Knative Services
+    description: Support Manual configuration of SSL for Knative Services. Using the annotations `gloo.networking.knative.dev/ssl.sni_domains` and `gloo.networking.knative.dev/ssl.secret_name`, users can manually configure Gloo to serve TLS for their Knative Services
     issueLink: https://github.com/solo-io/gloo/issues/2048
+  - type: NON_USER_FACING
+    description: Remove unused dependency of ingress/knative controller on kube secrets. RBAC for the controller has been updated accordingly.
