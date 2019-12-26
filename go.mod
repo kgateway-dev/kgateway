@@ -41,7 +41,7 @@ require (
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/olekukonko/tablewriter v0.0.3
+	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.10.3
 	github.com/onsi/gomega v1.7.1
 	github.com/opencontainers/go-digest v1.0.0-rc1
@@ -92,7 +92,6 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	github.com/solo-io/go-utils => /Users/eitanya/src/go-utils
 	github.com/solo-io/solo-kit => /Users/eitanya/src/solo-io/solo-kit
 	k8s.io/api => k8s.io/api v0.0.0-20191004120104-195af9ec3521
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.0.0-20191204090712-e0e829f17bab

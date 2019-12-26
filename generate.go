@@ -10,10 +10,6 @@ import (
 //go:generate go run generate.go
 
 func main() {
-	// err := version.CheckVersions()
-	// if err != nil {
-	// 	log.Fatalf("generate failed!: %s", err.Error())
-	// }
 	log.Printf("starting generate")
 
 	generateOptions := cmd.GenerateOptions{
@@ -42,9 +38,11 @@ func main() {
 		},
 		PreRunFuncs: []cmd.RunFunc{
 			cmd.PreRunProtoVendor(".",
-				protodep.Options{
-					MatchOptions:  protodep.DefaultMatchOptions,
-					LocalMatchers: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
+				&protodep.Config{
+					Local: &protodep.Local{
+						Patterns: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
+					},
+					Imports: protodep.DefaultMatchOptions,
 				},
 			),
 		},
