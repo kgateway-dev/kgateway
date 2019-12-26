@@ -227,7 +227,7 @@ func App() error {
 
 The following command will create our DaemonSet and a matching Service.
 
-```
+```yaml
 cat << EOF | kubectl apply -f -
 apiVersion: apps/v1
 kind: DaemonSet
