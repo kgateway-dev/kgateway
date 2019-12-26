@@ -204,8 +204,8 @@ message OAuth {
   // ".well-known/openid-configuration"
   string issuer_url = 3;
 
-  // The url parameters to apply to the call to the identity provider.
-  map<string, string> issuer_url_params = 7;
+  // The query parameters to apply to the call to the identity provider.
+  map<string, string> issuer_query_params = 7;
 
   // we to redirect after successful auth, if we can't determine the original
   // url this should be your publicly available app url.
@@ -312,8 +312,8 @@ message ExtAuthConfig {
     // ".well-known/openid-configuration"
     string issuer_url = 3;
 
-    // The url parameters to apply to the call to the identity provider.
-    map<string, string> issuer_url_params = 7;
+    // The query parameters to apply to the call to the identity provider.
+    map<string, string> issuer_query_params = 7;
 
     // we to redirect after successful auth, if we can't determine the original
     // url this should be your publicly available app url.

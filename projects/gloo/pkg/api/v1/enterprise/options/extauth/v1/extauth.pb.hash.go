@@ -437,7 +437,7 @@ func (m *OAuth) Hash(hasher hash.Hash64) (uint64, error) {
 	{
 		var result uint64
 		innerHash := fnv.New64()
-		for k, v := range m.GetIssuerUrlParams() {
+		for k, v := range m.GetIssuerQueryParams() {
 			innerHash.Reset()
 
 			if _, err = innerHash.Write([]byte(v)); err != nil {
@@ -1013,7 +1013,7 @@ func (m *ExtAuthConfig_OAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	{
 		var result uint64
 		innerHash := fnv.New64()
-		for k, v := range m.GetIssuerUrlParams() {
+		for k, v := range m.GetIssuerQueryParams() {
 			innerHash.Reset()
 
 			if _, err = innerHash.Write([]byte(v)); err != nil {

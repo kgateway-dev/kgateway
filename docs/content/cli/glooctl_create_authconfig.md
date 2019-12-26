@@ -29,6 +29,7 @@ glooctl create authconfig [flags]
       --oidc-auth-client-id string                 client id as registered with id provider
       --oidc-auth-client-secret-name string        name of the 'client secret' secret
       --oidc-auth-client-secret-namespace string   namespace of the 'client secret' secret
+      --oidc-auth-issuer-params stringToString     url parameters to send to the issuer (default [])
       --oidc-auth-issuer-url string                the url of the issuer
       --oidc-scope strings                         scopes to request in addition to 'openid'. optional.
       --opa-module-ref strings                     namespace.name references to a config map containing OPA modules
