@@ -47,7 +47,7 @@ func sslConfigFromAnnotations(annotations map[string]string, namespace string) *
 
 	secretNamespace, ok := annotations[sslAnnotationKeySecretNamespace]
 	if !ok {
-		secretName = namespace
+		secretNamespace = namespace
 	}
 
 	sniDomains := strings.Split(annotations[sslAnnotationKeySniDomains], ",")

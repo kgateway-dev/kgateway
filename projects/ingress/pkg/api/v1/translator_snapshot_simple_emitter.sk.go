@@ -90,8 +90,6 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 				currentSnapshot = TranslatorSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *gloo_solo_io.Secret:
-						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *gloo_solo_io.Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
 					case *Ingress:

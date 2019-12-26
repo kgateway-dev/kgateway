@@ -10,7 +10,7 @@ metadata:
         gloo: rbac
 rules:
 - apiGroups: [""]
-  resources: ["pods", "services", "secrets", "endpoints", "configmaps"]
+  resources: ["pods", "services", "endpoints", "configmaps"]
   verbs: ["*"]
 - apiGroups: [""]
   resources: ["namespaces"]

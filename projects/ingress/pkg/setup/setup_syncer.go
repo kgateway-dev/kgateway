@@ -184,7 +184,7 @@ func RunIngress(opts Opts) error {
 		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
 		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
 
-		translatorEmitter := v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
+		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, ingressClient)
 		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs, opts.RequireIngressClass)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
@@ -229,7 +229,7 @@ func RunIngress(opts Opts) error {
 			}
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
-			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
+			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
