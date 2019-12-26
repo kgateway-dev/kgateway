@@ -15,7 +15,7 @@ import (
 )
 
 func main() {
-	stats.StartStatsServer()
+	stats.ConditionallyStartStatsServer()
 	if err := run(); err != nil {
 		log.Fatalf("err in main: %v", err.Error())
 	}
