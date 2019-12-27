@@ -9,8 +9,7 @@
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
-{{- $statsContext := dict "Deployment" $spec "GlobalContext" $global }}
-{{- $statsEnabled := (include "gloo.statsServerEnabled" $statsContext) -}}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats -}}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -49,7 +48,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if eq "true" $statsEnabled }}
+{{- if $statsConfig.enabled }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
