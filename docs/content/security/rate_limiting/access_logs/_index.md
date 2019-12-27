@@ -9,7 +9,7 @@ In this tutorial we will see how to use
 of rate-limit offending requests.
 
 ### Setup
-Setup virtual service and settings to match rule priority [example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
+Let's start by setting up the virtual service and settings resources to match the rule priority [example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
 
 Let's also update the default `Gateway` resource to enable access logging:
 
