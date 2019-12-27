@@ -4,7 +4,11 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"log"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -21,27 +25,45 @@ func (s StatusSnapshot) Clone() StatusSnapshot {
 	}
 }
 
-func (s StatusSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashServices(),
-		s.hashIngresses(),
-	)
+func (s StatusSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashServices(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashIngresses(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s StatusSnapshot) hashServices() uint64 {
-	return hashutils.HashAll(s.Services.AsInterfaces()...)
+func (s StatusSnapshot) hashServices(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Services.AsInterfaces()...)
 }
 
-func (s StatusSnapshot) hashIngresses() uint64 {
-	return hashutils.HashAll(s.Ingresses.AsInterfaces()...)
+func (s StatusSnapshot) hashIngresses(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Ingresses.AsInterfaces()...)
 }
 
 func (s StatusSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("services", s.hashServices()))
-	fields = append(fields, zap.Uint64("ingresses", s.hashIngresses()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	ServicesHash, err := s.hashServices(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("services", ServicesHash))
+	IngressesHash, err := s.hashIngresses(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("ingresses", IngressesHash))
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type StatusSnapshotStringer struct {
@@ -67,8 +89,12 @@ func (ss StatusSnapshotStringer) String() string {
 }
 
 func (s StatusSnapshot) Stringer() StatusSnapshotStringer {
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return StatusSnapshotStringer{
-		Version:   s.Hash(),
+		Version:   snapshotHash,
 		Services:  s.Services.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}

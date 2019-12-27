@@ -7,14 +7,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
@@ -65,6 +65,8 @@ var _ = Describe("GRPC Plugin", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
+		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to create the default gateways")
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 

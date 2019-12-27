@@ -3,10 +3,11 @@ package install_test
 import (
 	"bytes"
 
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	installutil "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/mocks"
@@ -21,7 +22,6 @@ import (
 var _ = Describe("Install", func() {
 	var (
 		mockHelmClient       *mocks.MockHelmClient
-		mockKubectl          *installutil.MockKubectl
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
@@ -136,16 +136,12 @@ rules:
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 
-		mockKubectl := installutil.NewMockKubectl([]string{
-			"create namespace " + defaults.GlooSystem,
-		}, []string{})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
+		installer := install.NewInstallerWithWriter(mockHelmClient, fake.NewSimpleClientset().CoreV1().Namespaces(), dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Enterprise:     enterprise,
 		})
 
-		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
 	}
@@ -201,14 +197,12 @@ rules:
 			Return(chart, nil)
 
 		dryRunOutputBuffer := new(bytes.Buffer)
-		mockKubectl = installutil.NewMockKubectl([]string{}, []string{})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
+		installer := install.NewInstallerWithWriter(mockHelmClient, fake.NewSimpleClientset().CoreV1().Namespaces(), dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 		})
 
-		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 
 		dryRunOutput := dryRunOutputBuffer.String()

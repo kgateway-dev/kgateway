@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	"golang.org/x/sync/errgroup"
@@ -29,9 +30,10 @@ type translatorSyncer struct {
 	proxyClient          gloov1.ProxyClient
 	proxyReconciler      gloov1.ProxyReconciler
 	ingressClient        knativeclient.IngressesGetter
+	requireIngressClass  bool
 }
 
-func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		externalProxyAddress: externalProxyAddress,
 		internalProxyAddress: internalProxyAddress,
@@ -40,6 +42,7 @@ func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string
 		proxyClient:          proxyClient,
 		ingressClient:        ingressClient,
 		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		requireIngressClass:  requireIngressClass,
 	}
 }
 
@@ -48,16 +51,27 @@ const (
 	internalProxyName = "knative-internal-proxy"
 )
 
-// TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
+// enforce ingress class if requirement is set
+func (s *translatorSyncer) shouldProcess(ingress *v1alpha1.Ingress) bool {
+	if !s.requireIngressClass {
+		return true
+	}
+	if len(ingress.Annotations) == 0 {
+		return false
+	}
+	return ingress.Annotations[ingressClassAnnotation] == glooIngressClass
+}
+
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v knative ingresses, %v secrets)", snap.Hash(),
+	logger.Infof("begin sync %v (%v knative ingresses, %v secrets)", snapHash,
 		len(snap.Ingresses),
 		len(snap.Secrets),
 	)
-	defer logger.Infof("end sync %v", snap.Hash())
+	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
@@ -69,6 +83,10 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	var externalIngresses, internalIngresses v1alpha1.IngressList
 
 	for _, ing := range snap.Ingresses {
+		if !s.shouldProcess(ing) {
+			continue
+		}
+
 		if ing.IsPublic() {
 			externalIngresses = append(externalIngresses, ing)
 		} else {
@@ -79,14 +97,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	externalProxy, err := translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses, snap.Secrets)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"knative ingress externalProxy will not be updated.", snap.Hash(), err)
+			"knative ingress externalProxy will not be updated.", snapHash, err)
 		return err
 	}
 
 	internalProxy, err := translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses, snap.Secrets)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"knative ingress externalProxy will not be updated.", snap.Hash(), err)
+			"knative ingress externalProxy will not be updated.", snapHash, err)
 		return err
 	}
 

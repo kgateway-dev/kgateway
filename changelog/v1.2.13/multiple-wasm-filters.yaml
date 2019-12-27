@@ -1,0 +1,7 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Add support for multiple envoy wasm filters, as well as specifying placement of said filters within the chain.
+  issueLink:  https://github.com/solo-io/gloo/issues/1956
+
+
