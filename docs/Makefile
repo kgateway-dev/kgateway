@@ -63,7 +63,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it

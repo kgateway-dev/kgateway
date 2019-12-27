@@ -263,6 +263,7 @@ func RunIngress(opts Opts) error {
 				proxyClient,
 				knative.NetworkingV1alpha1(),
 				writeErrs,
+				opts.RequireIngressClass,
 			)
 			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
 			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)

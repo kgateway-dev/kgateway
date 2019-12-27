@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil/install"
@@ -83,12 +80,6 @@ func StartTestHelper() {
 
 	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
 	defer cleanupFunc()
-
-	// Create namespace
-	_, err = clienthelpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{Name: testHelper.InstallNamespace},
-	})
-	Expect(err).NotTo(HaveOccurred())
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
 	Expect(err).NotTo(HaveOccurred())

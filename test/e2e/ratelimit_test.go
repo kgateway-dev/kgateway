@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -113,6 +115,9 @@ var _ = Describe("Rate Limit", func() {
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 			_, err := testClients.UpstreamClient.Write(rlserver, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
+
+			err = helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write the default gateways")
 
 			err = envoyInstance.Run(testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())

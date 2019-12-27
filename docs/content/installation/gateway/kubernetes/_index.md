@@ -27,6 +27,11 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install gateway
 ```
 
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/glooctl-gateway-install.mp4" %}} type="video/mp4">
+</video>
+
+
 {{% notice note %}}
 You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
 Note that a proper Gloo installation depends on Helm Chart Hooks (https://helm.sh/docs/topics/charts_hooks/), so the behavior of your installation
@@ -38,12 +43,10 @@ may not be correct if you install by directly applying the dry run manifests, e.
 {{% notice warning %}}
 
 ##### Helm 2 Compatibility
-* Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.0.0 and later requires explicitly
-setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
+* Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.2.0 and later requires explicitly setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
 * Helm 2 **IS NOT** compatible with the open source Gloo chart in Gloo versions v1.2.0 through v1.2.2.
 * However, Helm 2 **IS** compatible with all stable versions of the Gloo Enterprise chart.
-* `glooctl` prior to v1.2.0 cannot be used to install open source Gloo v1.2.0 and later or Gloo
-Enterprise v1.0.0 and later. 
+* `glooctl` prior to v1.2.0 cannot be used to install open source Gloo v1.2.0 and later or Gloo Enterprise v1.0.0 and later. 
 {{% /notice %}}
 
 As a first step, you have to add the Gloo repository to the list of known chart repositories, as well as prepare the installation namespace:
@@ -58,8 +61,7 @@ For an installation with all the default values, use one of the following comman
 
 {{< tabs >}}
 {{% tab name="Helm 2" %}}
-There are two options for installing with Helm 2. Note that in Gloo including and later than v1.2.3, you will
-have to explicitly set `crds.create=true`, as that is how we are managing compatibility between Helm 2 and 3.
+There are two options for installing with Helm 2. Note that in Gloo including and later than v1.2.3, you will have to explicitly set `crds.create=true`, as that is how we are managing compatibility between Helm 2 and 3.
 
 You may use `helm install`:
 
@@ -126,6 +128,10 @@ To verify that your installation was successful, check that the Gloo pods and se
 kubectl get all -n gloo-system
 ```
 
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/kubectl-get-all.mp4" %}} type="video/mp4">
+</video>
+
 ```noop
 NAME                                READY     STATUS    RESTARTS   AGE
 pod/discovery-f7548d984-slddk       1/1       Running   0          5m
@@ -162,11 +168,14 @@ It's so hard to say goodbye. Actually, in this case it's not.
 
 ### Uninstall with `glooctl`
 
-To uninstall Gloo and all related components, simply run the following.
+To uninstall Gloo simply run the following.
 
 ```shell
 glooctl uninstall
 ```
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/glooctl-uninstall.mp4" %}} type="video/mp4">
+</video>
 
 If you installed Gloo to a different namespace, you will have to specify that namespace using the `-n` option:
 
@@ -177,13 +186,7 @@ glooctl uninstall -n my-namespace
 The gloo-system namespace and Custom Resource Definitions created by the `glooctl install` command will not be removed. Those can also be deleted by running the following commands. Proceed with caution and only remove the CRDs if there are no more instances of Gloo Gateway in the cluster.
 
 ```shell
-kubectl delete namespace gloo-system
-crds=$(kubectl get crds -o json | jq .items[].metadata.name -r | grep solo.io)
-for n in $crds
-do
-  echo "Removing $n from CRDs"
-  kubectl delete customresourcedefinition $n
-done
+glooctl uninstall --all
 ```
 
 ---

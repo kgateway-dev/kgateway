@@ -12,8 +12,9 @@ import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
 import "gogoproto/gogo.proto";
-
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // [#protodoc-title: Outlier detection]
 
