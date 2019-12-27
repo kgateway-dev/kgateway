@@ -107,7 +107,7 @@ You should see an output similar like this:
 }
 ```
 
-Now let's take a look at the Gateway logs to verify whether the request has been logged:
+Now let's take a look at the Envoy logs to verify whether the request has been logged:
 
 ```shell
 # Print only log lines starting with {" (our access logs are formatted as JSON)
