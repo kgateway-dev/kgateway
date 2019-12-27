@@ -133,6 +133,10 @@ A common access logs workflow is to write them to a file on a persistent volume 
 data. An ETL job can parse the access logs to allow admins to drill down into fine-grained information about requests
 that contributed toward rate-limits.
 
+Another common workflow is to write the logs to `stdout` and have a logging agent aggregate the data and send it to a
+backend (e.g. elasticsearch, splunk, etc.). Other common logging architectures can be seen in the kubernetes
+[logging docs](https://kubernetes.io/docs/concepts/cluster-administration/logging/).
+
 ### Dumb Sample Python "ETL" job
 
 First, copy the logs to your local machine:
