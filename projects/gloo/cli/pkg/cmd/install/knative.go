@@ -46,6 +46,27 @@ const (
 	yamlJoiner = "\n---\n"
 )
 
+func waitKnativeApiserviceReady() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	for {
+		stdout, err := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+		if err != nil {
+			contextutils.CliLogErrorw(ctx, "error getting apiserverice", "err", err)
+		}
+		if !strings.Contains(stdout, "False") {
+			// knative apiservice is ready, we can attempt gloo installation now!
+			break
+		}
+		if ctx.Err() != nil {
+			return errors.Errorf("timed out waiting for knative apiservice to be ready: %v", ctx.Err())
+		}
+		contextutils.CliLogInfow(ctx, "apiservice not ready", "out", stdout)
+		time.Sleep(1 * time.Second)
+	}
+	return nil
+}
+
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "knative",
@@ -77,18 +98,8 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
 				// we don't care about this if we're doing a dry run installation
 				if !opts.Install.DryRun {
-					ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-					defer cancel()
-					for {
-						stdout, _ := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
-						if len(stdout) > 0 && !strings.Contains(stdout, "False") {
-							// knative apiservice is ready, we can attempt gloo installation now!
-							break
-						}
-						if ctx.Err() != nil {
-							return errors.New("timed out waiting for knative apiservice to be ready")
-						}
-						time.Sleep(1 * time.Second)
+					if err := waitKnativeApiserviceReady(); err != nil {
+						return err
 					}
 				}
 
@@ -154,8 +165,14 @@ func installKnativeServing(opts *options.Options) error {
 	}
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
+
 	if err := install.KubectlApply([]byte(manifests)); err != nil {
-		return errors.Wrapf(err, "installing knative resources with kubectl apply")
+		// may need to retry the apply once in order to work around webhook race issue
+		// https://github.com/knative/serving/issues/6353
+		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
+		if err := install.KubectlApply([]byte(manifests)); err != nil {
+			return errors.Wrapf(err, "installing knative resources with kubectl apply")
+		}
 	}
 	// label the knative-serving namespace as belonging to us
 	if err := install.Kubectl(nil, "annotate", "namespace",
