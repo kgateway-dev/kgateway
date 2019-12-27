@@ -82,7 +82,7 @@ kubectl logs -n gloo-system deployment/gateway-proxy | grep '^{' | jq
 You should see all three requests made, in order. Note that the third request got rate-limited, and has `RL` for a
 response flag:
 
-{{< highlight json "hl_lines=30-30" >}}
+{{< highlight json "hl_lines=30" >}}
 {
   "number": "311",
   "clientDuration": "31",
