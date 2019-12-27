@@ -61,7 +61,6 @@ func waitKnativeApiserviceReady() error {
 		if ctx.Err() != nil {
 			return errors.Errorf("timed out waiting for knative apiservice to be ready: %v", ctx.Err())
 		}
-		contextutils.CliLogInfow(ctx, "apiservice not ready", "out", stdout)
 		time.Sleep(1 * time.Second)
 	}
 	return nil
@@ -170,8 +169,8 @@ func installKnativeServing(opts *options.Options) error {
 		// may need to retry the apply once in order to work around webhook race issue
 		// https://github.com/knative/serving/issues/6353
 		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
-		if err := install.KubectlApply([]byte(manifests)); err != nil {
-			return errors.Wrapf(err, "installing knative resources with kubectl apply")
+		if err2 := install.KubectlApply([]byte(manifests)); err2 != nil {
+			return errors.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
 		}
 	}
 	// label the knative-serving namespace as belonging to us
