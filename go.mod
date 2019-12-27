@@ -72,14 +72,14 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.5.0
-	github.com/stretchr/testify v1.4.0
 	go.opencensus.io v0.22.2
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/crypto v0.0.0-20191227163750-53104e6ec876 // indirect
 	golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	golang.org/x/sys v0.0.0-20191210023423-ac6580df4449 // indirect
-	golang.org/x/tools v0.0.0-20191212051200-825cb0626375 // indirect
+	golang.org/x/sys v0.0.0-20191224085550-c709ea063b76 // indirect
+	golang.org/x/tools v0.0.0-20191227053925-7b8e75db28f4 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1

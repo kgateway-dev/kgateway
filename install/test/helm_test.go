@@ -6,10 +6,8 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/solo-io/go-utils/installutils/kuberesource"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
+	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gogo/protobuf/proto"
@@ -244,7 +242,7 @@ var _ = Describe("Helm Test", func() {
 								Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 							}
 						} else {
-							assert.Fail(GinkgoT(), fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
+							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
 						}
 					})
 				})
