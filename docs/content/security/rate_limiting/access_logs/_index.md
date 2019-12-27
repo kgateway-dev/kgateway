@@ -183,7 +183,7 @@ python access_log_parser.py
 ```
 
 {{% notice note %}}
-Note: on a mac you can try `/usr/bin/python` instead to resolve `ImportError: No module named matplotlib.pyplot`.
+Note: on macOS you can try `/usr/bin/python` instead to resolve `ImportError: No module named matplotlib.pyplot`.
 Otherwise, use pip to install the library `pip install matplotlib`
 {{% /notice %}}
 
