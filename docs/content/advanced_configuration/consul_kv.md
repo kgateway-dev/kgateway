@@ -49,7 +49,7 @@ The full list of options for Gloo Settings, including the ability to set auth/TL
 
 Here is provided an example Settings so Gloo will read config from Consul Key-Value store:
 
-{{< highlight yaml "hl_lines=11-16" >}}
+{{< highlight yaml "hl_lines=12-17" >}}
 # metadata of the Settings resource contained in this file
 # name should always be set to default
 # namespace should be "gloo-system" or the value of the --namespace used to start Gloo
