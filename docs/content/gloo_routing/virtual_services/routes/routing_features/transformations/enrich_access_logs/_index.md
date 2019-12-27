@@ -228,10 +228,10 @@ spec:
         responseTransformation:
           transformationTemplate:
             dynamicMetadataValues:
-            # Set a dynamic metadata entry named "pod"
+            # Set a dynamic metadata entry named "pod_name"
             - key: 'pod_name'
               value:
-                # The POD_NAME env is set by default on the gateway-proxy-v2 pods
+                # The POD_NAME env is set by default on the gateway-proxy pods
                 text: '{{ env("POD_NAME") }}'
             # Set a dynamic metadata entry using an request body attribute
             - key: 'endpoint_url'
@@ -262,7 +262,7 @@ You should see an entry like the following:
   "protocol": "HTTP/1.1",
   "requestId": "57c71e10-5a03-407a-9a57-cd63dd50fd39",
   "endpoint_url": "\"https://postman-echo.com/get\"",
-  "pod_name": "\"gateway-proxy-v2-f46b58f89-5fkmd\"",
+  "pod_name": "\"gateway-proxy-f46b58f89-5fkmd\"",
   "clientDuration": "85",
   "httpMethod": "GET",
   "upstreamName": "postman-echo_gloo-system",
