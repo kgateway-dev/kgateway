@@ -25,7 +25,7 @@ kubectl --namespace gloo-system edit settings default
 ```
 
 Update the highlighted portion to point to your rate limit server:
-{{< highlight yaml "hl_lines=26-32" >}}
+{{< highlight yaml "hl_lines=24-30" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -61,7 +61,7 @@ spec:
 
 {{% notice note %}}
 Setting the value `rate_limit_before_auth` to true will cause the rate limiting filter to run before the Ext Auth filter.
-This necessarily means the loss of Ext Auth-aware rate limiting features, like providing different rate limits for authenticated
+This necessarily means the loss of extauth-aware rate limiting features, like providing different rate limits for authenticated
 vs non-authenticated users.
 {{% /notice %}}
 
