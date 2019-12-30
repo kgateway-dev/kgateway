@@ -28,7 +28,7 @@ var _ = Describe("Root", func() {
 			// Ignore the output message since it changes whenever we add flags and it is tested via the cobra lib.
 			_, err := testutils.GlooctlOut("get")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal(get.EmptyGetError.Error()))
+			Expect(err).To(MatchError(get.EmptyGetError))
 		})
 	})
 
@@ -38,7 +38,7 @@ var _ = Describe("Root", func() {
 			Expect(err).NotTo(HaveOccurred())
 			_, err = testutils.GlooctlOut("get upstreams")
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(get.UnsetNamespaceError))
+			Expect(err).To(MatchError(get.UnsetNamespaceError))
 		})
 	})
 })
