@@ -226,15 +226,11 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 		} else if withUi {
 			helmChartArchiveUri = chartUriWithVersion(constants.GlooWithUiHelmRepoTemplate, versionOverride, enterpriseVersion)
 		} else {
-			if versionOverride != "" {
-				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, versionOverride)
-			} else {
-				glooOsVersion, err := getGlooVersionToInstall(chartOverride)
-				if err != nil {
-					return "", err
-				}
-				helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+			glooOsVersion, err := getGlooVersionToInstall(chartOverride)
+			if err != nil {
+				return "", err
 			}
+			helmChartArchiveUri = chartUriWithVersion(constants.GlooHelmRepoTemplate, versionOverride, glooOsVersion)
 		}
 	}
 
