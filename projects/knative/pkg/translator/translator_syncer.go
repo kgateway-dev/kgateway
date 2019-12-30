@@ -67,9 +67,8 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v knative ingresses, %v secrets)", snapHash,
+	logger.Infof("begin sync %v (%v knative ingresses)", snapHash,
 		len(snap.Ingresses),
-		len(snap.Secrets),
 	)
 	defer logger.Infof("end sync %v", snapHash)
 
@@ -94,14 +93,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		}
 	}
 
-	externalProxy, err := translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses, snap.Secrets)
+	externalProxy, err := translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress externalProxy will not be updated.", snapHash, err)
 		return err
 	}
 
-	internalProxy, err := translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses, snap.Secrets)
+	internalProxy, err := translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress externalProxy will not be updated.", snapHash, err)

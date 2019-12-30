@@ -23,7 +23,7 @@ Possible use cases include:
 
 #### Configuration
 
-The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Loggins is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
+The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Logging is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
 
 Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. 
 The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.options.gloo.solo.io.AccessLog">}}.
@@ -42,9 +42,9 @@ These are mutually exclusive for a given Access Logging configuration, but any n
 The documentation on envoy formatting directives can be found [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries)
 
 {{% notice note %}}
-See [**this guide**]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}}) 
+See [**this guide**]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}})
 to see how to include custom attributes in your access logs by leveraging Gloo's 
-[**transformation API**]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations" >}}).
+[**transformation API**]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations" >}}).
 {{% /notice %}}
 
 ##### String formatted
@@ -150,9 +150,9 @@ kubectl get pods -n gloo-system
 NAME                                              READY   STATUS    RESTARTS   AGE
 api-server-5c46c77c9-9724f                        3/3     Running   0          2m49s
 discovery-56dcb649c8-4m9d4                        1/1     Running   0          2m49s
-gateway-proxy-59c46d569-lwhbh                  1/1     Running   0          2m49s
-gateway-proxy-access-logger-6bb9f97fb8-8v8h8   1/1     Running   0          2m49s
-gateway-58c58fcd46-vccmt                       1/1     Running   0          2m49s
+gateway-proxy-59c46d569-lwhbh                     1/1     Running   0          2m49s
+gateway-proxy-access-logger-6bb9f97fb8-8v8h8      1/1     Running   0          2m49s
+gateway-58c58fcd46-vccmt                          1/1     Running   0          2m49s
 gloo-7975c97546-ssh26                             1/1     Running   0          2m49s
 ```
 The output should be similar to the above, minus the generated section of the names.
@@ -175,9 +175,11 @@ Once this command has been run successfully let's go check the access logs to se
 
 ```bash
 kubectl get logs -n gloo-system deployments/gateway-proxy-access-logger | grep /api/pets
+```
+```json
 {"level":"info","ts":"2019-09-09T17:56:52.669Z","logger":"access_log","caller":"runner/run.go:50","msg":"received http request","logger_name":"test","node_id":"gateway-proxy-59c46d569-kmjhb.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"&Struct{Fields:map[string]*Value{role: &Value{Kind:&Value_StringValue{StringValue:gloo-system~gateway-proxy,},XXX_unrecognized:[],},},XXX_unrecognized:[],}","protocol_version":"HTTP11","request_path":"/api/pets","request_method":"GET","response_status":"&UInt32Value{Value:200,XXX_unrecognized:[],}"}
 ```
 
 If all went well this command should yield all of the requests whose request path includes `/api/pets`. This particular implementation is very simplistic, meant more for demonstration than anything.
-However, the server code which was used to build this access logging service can be found [here](https://github.com/solo-io/gloo/tree/master/projects/accesslogger/pkg/loggingservice) 
+However, the server code which was used to build this access logging service can be found [here](https://github.com/solo-io/gloo/blob/v1.2.12/projects/accesslogger/pkg/loggingservice/server.go)
 and is easily extendable to fit any needs. To run a different access logger than the one provided simply replace the image object in the helm configuration, and the service will be replaced by a custom image.

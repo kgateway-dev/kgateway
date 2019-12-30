@@ -23,7 +23,6 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
-        stats: true
   # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
   watchNamespaces: []
 gloo:
@@ -33,7 +32,6 @@ gloo:
     xdsPort: 9977
     validationPort: 9988
     replicas: 1
-    stats: true
     runAsUser: 10101
 discovery:
   enabled: true
@@ -42,7 +40,6 @@ discovery:
     image:
       repository: discovery
     replicas: 1
-    stats: true
     runAsUser: 10101
 gateway:
   enabled: true
@@ -56,7 +53,6 @@ gateway:
     image:
       repository: gateway
     replicas: 1
-    stats: true
     runAsUser: 10101
   certGenJob:
     enabled: true
@@ -69,7 +65,6 @@ gateway:
 gatewayProxies:
   gatewayProxy:
     gatewaySettings: {}
-    stats: true
     kind:
       deployment:
         replicas: 1
@@ -111,7 +106,6 @@ ingressProxy:
     httpPort: 80
     httpsPort: 443
     replicas: 1
-    stats: true
   configMap:
     data:
   tracing:
@@ -121,3 +115,5 @@ global:
     pullPolicy: IfNotPresent
   glooRbac:
     create: true
+  glooStats:
+    enabled: true

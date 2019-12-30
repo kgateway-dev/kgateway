@@ -252,7 +252,7 @@ dynamicMetadataValues:
 The `metadataNamespace` is optional. It defaults to the namespace of the Gloo transformation filter name, i.e. `io.solo.transformation`.
 
 A common use case for this attribute is to define custom data to be included in your access logs. See the 
-[dedicated tutorial]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}}) 
+[dedicated tutorial]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}})
 for an example of how this can be achieved.
 
 ##### advancedTemplates

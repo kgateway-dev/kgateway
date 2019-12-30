@@ -8,10 +8,6 @@
   "resource_groups": {
     "translator.knative.gloo.solo.io": [
       {
-        "name": "Secret",
-        "package": "gloo.solo.io"
-      },
-      {
         "name": "Ingress",
         "package": "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
       }

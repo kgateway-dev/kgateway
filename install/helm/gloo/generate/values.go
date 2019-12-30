@@ -28,6 +28,11 @@ type Global struct {
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
 	Wasm       Wasm        `json:"wasm"`
+	GlooStats  Stats       `json:"glooStats" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+}
+
+type Stats struct {
+	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
 }
 
 type Namespace struct {
@@ -120,7 +125,7 @@ type GlooDeployment struct {
 	Image                  *Image  `json:"image,omitempty"`
 	XdsPort                int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	ValidationPort         int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats                  bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats                  *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	FloatingUserId         bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser              float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	ExternalTrafficPolicy  string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
@@ -136,7 +141,7 @@ type Discovery struct {
 
 type DiscoveryDeployment struct {
 	Image          *Image  `json:"image,omitempty"`
-	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
 	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
@@ -165,7 +170,7 @@ type GatewayValidation struct {
 
 type GatewayDeployment struct {
 	Image          *Image  `json:"image,omitempty"`
-	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
 	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
@@ -195,7 +200,7 @@ type GatewayProxy struct {
 	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
 	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
 	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
-	Stats                     bool                         `json:"stats" desc:"enable prometheus stats"`
+	Stats                     *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 }
 
