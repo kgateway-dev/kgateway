@@ -43,7 +43,7 @@ Note: The secret must live in the same namespace as the service.
 
 ## Configuring Upstream SSL Using Files Mounted to the Proxy
 
-To certs mounted to the proxy pod (named `gateway-proxy-v2` by default) for Upstream TLS, set the annotations of your service like so:
+To certs mounted to the proxy pod (named `gateway-proxy` by default) for Upstream TLS, set the annotations of your service like so:
 
 {{< highlight yaml "hl_lines=4-7" >}}
 apiVersion: v1
@@ -68,7 +68,7 @@ spec:
 
 
 {{% notice note %}}
-Note: The certificates must be mounted to the proxy pod (named `gateway-proxy-v2` by default) with the paths specified in the annotations.
+Note: The certificates must be mounted to the proxy pod (named `gateway-proxy` by default) with the paths specified in the annotations.
 {{% /notice %}}
 
 

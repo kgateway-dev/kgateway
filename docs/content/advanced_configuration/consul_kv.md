@@ -16,7 +16,7 @@ This document describes how to write configuration YAML to Consul's Key-Value st
 ## Configuring Gloo using custom Settings
 
 When Gloo boots, it attempts to read a 
-[{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
+{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
 preconfigured location. By default, Gloo will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings`
 Custom Resource in namespace `gloo-system`, named `default`. 
 
@@ -49,7 +49,7 @@ The full list of options for Gloo Settings, including the ability to set auth/TL
 
 Here is provided an example Settings so Gloo will read config from Consul Key-Value store:
 
-{{< highlight yaml "hl_lines=11-16" >}}
+{{< highlight yaml "hl_lines=12-17" >}}
 # metadata of the Settings resource contained in this file
 # name should always be set to default
 # namespace should be "gloo-system" or the value of the --namespace used to start Gloo
@@ -58,7 +58,8 @@ metadata:
   namespace: gloo-system
 
 # bind address for gloo's configuration server
-bindAddr: 0.0.0.0:9977
+gloo:
+  xdsBindAddr: 0.0.0.0:9977
 
 # connection options for consul
 consul:
@@ -144,9 +145,9 @@ Consul keys adhere to the following format:
 Where:
 
 - `root key`: is the `rootKey` configured in the Settings `consulKvSource`. Defaults to `gloo`
-- `resource group`: is the API group/proto package in which resources of the given type are contained. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource group `gloo.solo.io`.
-- `group version`: is the API group version/go package in which resources of the given type are contained. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource group version `v1`.
-- `resource kind`: is the full name of the resource type. For example, [Gloo Upstreams]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk.md" >}}) have the resource kind `Upstream`.
+- `resource group`: is the API group/proto package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource group `gloo.solo.io`.
+- `group version`: is the API group version/go package in which resources of the given type are contained. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource group version `v1`.
+- `resource kind`: is the full name of the resource type. For example, {{< protobuf name="gloo.solo.io.Upstream" display="Gloo Upstreams">}} have the resource kind `Upstream`.
 - `resource namespace`: is the namespace in which the resource should live. this should match the `metadata.namespace` of the resource YAML.
 - `resource name`: is the name of the given resource. this should match the `metadata.name` of the resource YAML, and should be unique for all resources of a type within a given namespace.
 
@@ -156,7 +157,7 @@ The paths for Gloo's API objects are as follows:
 | ----- | ---- | 
 | {{< protobuf name="gloo.solo.io.Upstream">}} | `gloo/gloo.solo.io/v1/Upstream/<namespace>/<name>`  |
 | {{< protobuf name="gateway.solo.io.VirtualService">}} | `gloo/gateway.solo.io/v1/VirtualService/<namespace>/<name>`  |
-| {{< protobuf name="gateway.solo.io.v2.Gateway">}} | `gloo/gateway.solo.io.v2/v2/Gateway/<namespace>/<name>`  |
+| {{< protobuf name="gateway.solo.io.Gateway">}} | `gloo/gateway.solo.io/v1/Gateway/<namespace>/<name>`  |
 | {{< protobuf name="gloo.solo.io.Proxy">}} | `gloo/gloo.solo.io/v1/Proxy/<namespace>/<name>`  |
 
 To store a Gloo resource in Consul, one can use `curl` or the `consul` CLI:
@@ -187,6 +188,6 @@ consul kv put gloo/gateway.solo.io/v1/VirtualService/gloo-system/default @virtua
 
 Stored resources can be viewed via the consul UI:
 
-![Consul UI](/img/consul_virtual_service.png "Consul Virtual Service")
+![Consul UI]({{% versioned_link_path fromRoot="/img/consul_virtual_service.png" %}} "Consul Virtual Service")
 
 This can be useful for modifying configuration, or viewing the status reported by Gloo.

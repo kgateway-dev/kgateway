@@ -57,12 +57,11 @@ cache.
 `alwaysApply` set to `true` will always be considered for rate limiting, regardless of the rule's weight. The matching
 rule with the highest weight will still be considered. (this can be a rule that also has `alwaysApply` set to `true`)
 
-# Test the Example
+## Test the Example
 
 Install the petclinic application and create a virtual service that routes to it:
 ```bash
-kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 
 glooctl add route --name default --namespace gloo-system \
   --path-prefix / \
@@ -88,19 +87,19 @@ And paste the example config:
 {{< readfile file="security/rate_limiting/rulepriority/serverconfig.yaml" markdown="true">}}
 
 Run the following three times; you should get HTTP 429 Too Many Requests on the third request.
-```shell script
+```shell
 curl -H "x-type: Messenger" -H "x-number: 311" --head $(glooctl proxy url)
 ```
 
 Run the following two times; you should get HTTP 429 Too Many Requests on the second request.
-```shell script
+```shell
 curl -H "x-type: Whatsapp" -H "x-number: 311" --head $(glooctl proxy url)
 ```
 
 By changing the number we can match the more specific rule that has a higher priority.
 
 Run the following a couple times; you shouldn't get rate-limited:
-```shell script
+```shell
 curl -H "x-type: Whatsapp" -H "x-number: 411" --head $(glooctl proxy url)
 ```
 
@@ -111,7 +110,7 @@ regardless of the provided number.
 
 ### Cleanup
 
-```bash
+```shell
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 kubectl delete vs default --namespace gloo-system
 ```
