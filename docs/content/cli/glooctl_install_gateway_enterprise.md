@@ -17,7 +17,8 @@ glooctl install gateway enterprise [flags]
 ### Options
 
 ```
-  -h, --help   help for enterprise
+  -h, --help                 help for enterprise
+      --license-key string   License key to activate GlooE features
 ```
 
 ### Options inherited from parent commands
@@ -34,13 +35,12 @@ glooctl install gateway enterprise [flags]
   -f, --file string                Install Gloo from this Helm chart archive file rather than from a release
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
-      --license-key string         License key to activate GlooE features
   -n, --namespace string           namespace to install gloo into (default "gloo-system")
       --release-name string        helm release name (default "gloo")
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
       --values strings             List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
   -v, --verbose                    If true, output from kubectl commands will print to stdout/stderr
-      --version string             version to install (e.g. 0.20.6, defaults to latest)
+      --version string             version to install (e.g. 1.2.0, defaults to latest)
       --with-admin-console         install gloo and a read-only version of its admin console
 ```
 
