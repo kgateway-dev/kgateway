@@ -30,6 +30,12 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+var (
+	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
+		return errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
+	}
+)
+
 type Installer interface {
 	Install(installerConfig *InstallerConfig) error
 }
@@ -210,28 +216,38 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool) (string, error) {
 
 	if chartOverride != "" && versionOverride != "" {
-		return "", errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
+		return "", ChartAndReleaseFlagErr(chartOverride, versionOverride)
 	}
 
-	var helmChartArchiveUri string
-	if chartOverride != "" {
-		helmChartArchiveUri = chartOverride
+	var helmChartRepoTemplate, helmChartVersion string
+	if enterprise {
+		helmChartRepoTemplate = GlooEHelmRepoTemplate
+	} else if withUi {
+		helmChartRepoTemplate = constants.GlooWithUiHelmRepoTemplate
 	} else {
+		helmChartRepoTemplate = constants.GlooHelmRepoTemplate
+	}
+
+	if versionOverride != "" {
+		helmChartVersion = versionOverride
+	} else if enterprise || withUi {
 		enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 		if err != nil {
 			return "", err
 		}
-		if enterprise {
-			helmChartArchiveUri = chartUriWithVersion(GlooEHelmRepoTemplate, versionOverride, enterpriseVersion)
-		} else if withUi {
-			helmChartArchiveUri = chartUriWithVersion(constants.GlooWithUiHelmRepoTemplate, versionOverride, enterpriseVersion)
-		} else {
-			glooOsVersion, err := getGlooVersionToInstall(chartOverride)
-			if err != nil {
-				return "", err
-			}
-			helmChartArchiveUri = chartUriWithVersion(constants.GlooHelmRepoTemplate, versionOverride, glooOsVersion)
+		helmChartVersion = enterpriseVersion
+	} else {
+		glooOsVersion, err := getGlooVersionToInstall(chartOverride)
+		if err != nil {
+			return "", err
 		}
+		helmChartVersion = glooOsVersion
+	}
+
+	helmChartArchiveUri := fmt.Sprintf(helmChartRepoTemplate, helmChartVersion)
+
+	if chartOverride != "" {
+		helmChartArchiveUri = chartOverride
 	}
 
 	if path.Ext(helmChartArchiveUri) != ".tgz" && !strings.HasSuffix(helmChartArchiveUri, ".tar.gz") {
