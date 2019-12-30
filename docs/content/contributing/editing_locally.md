@@ -45,28 +45,13 @@ In this step you will fork the Gloo repository into your own account. This step 
 
 After a few moments the fork will complete and you will be taken to the page with your fork of the Gloo repository. This is the repository you will clone locally.
 
-### Set the `GOPATH` variable
-
-Before you clone the Gloo repository to your local filesystem, you should set your `GOPATH` environment variable to include the location where you will clone the repository. The way in which you set the `GOPATH` variable will depend on the operating system you are using. Directions for setting the environment variable can be found on [Golang's GitHub wiki](https://github.com/golang/go/wiki/SettingGOPATH).
-
 ### Set up the folder structure
 
-The next step is to create the target folder structure that you will clone the repository into. This is necessary for Go to find the required dependencies when you run `dep` later in the process. The folder structure should be `$GOPATH/src/github.com/solo-io/`. You can create the necessary folder structure by running the following command:
+Run `git clone https://github.com/your-account/gloo.git` substituting `your-account` for your actual account on GitHub. You can also get the correct `.git` link by clicking on the **Clone or download** button on your fork of the Gloo repository.
 
-```bash
-mkdir -p $GOPATH/src/github.com/solo-io/gloo
-mkdir -p $GOPATH/src/github.com/solo-io/solo-projects/changelog
-```
+Now move into the root of the Gloo repository and run `TAGGED_VERSION=nonempty make download-glooe-changelog -B` to download the latest Gloo Enterprise changelogs, which are used to generate the changelog in the site.
 
-With the proper folder structure in place, it is time to clone your GitHub repo. Navigate to the destination folder path.
-
-```bash
-cd $GOPATH/src/github.com/solo-io
-```
-
-Then run `git clone https://github.com/your-account/gloo.git` substituting `your-account` for your actual account on GitHub. You can also get the correct `.git` link by clicking on the **Clone or download** button on your fork of the Gloo repository.
-
-You now have the repository cloned on your local filesystem, including the `docs` folder that contains all of the documentation for Gloo.
+You now have the repository cloned on your local filesystem, including the `docs` folder that contains all of the documentation for Gloo, as well as the latest Gloo Enterprise changelogs saved into `../solo-projects/changelog`.
 
 ---
 
