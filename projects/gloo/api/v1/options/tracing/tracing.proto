@@ -8,6 +8,8 @@ import "google/protobuf/wrappers.proto";
 import "google/protobuf/duration.proto";
 
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // Contains settings for configuring Envoy's tracing capabilities at the listener level.
 // See here for additional information on Envoy's tracing capabilities: https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html

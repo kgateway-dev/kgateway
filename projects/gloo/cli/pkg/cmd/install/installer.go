@@ -10,7 +10,11 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
@@ -38,14 +42,15 @@ type InstallerConfig struct {
 }
 
 func NewInstaller(helmClient HelmClient) Installer {
-	return NewInstallerWithWriter(helmClient, &install.CmdKubectl{}, os.Stdout)
+	client := helpers.MustKubeClient()
+	return NewInstallerWithWriter(helmClient, client.CoreV1().Namespaces(), os.Stdout)
 }
 
 // visible for testing
-func NewInstallerWithWriter(helmClient HelmClient, kubeCli install.KubeCli, outputWriter io.Writer) Installer {
+func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInterface, outputWriter io.Writer) Installer {
 	return &installer{
 		helmClient:         helmClient,
-		kubeCli:            kubeCli,
+		kubeNsClient:       kubeNsClient,
 		dryRunOutputWriter: outputWriter,
 	}
 }
@@ -138,12 +143,22 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 }
 
 func (i *installer) createNamespace(namespace string) {
-	fmt.Printf("Creating namespace %s... ", namespace)
-	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
-		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+	_, err := i.kubeNsClient.Get(namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		fmt.Printf("Creating namespace %s... ", namespace)
+		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}); err != nil {
+			fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+		} else {
+			fmt.Printf("Done.\n")
+		}
 	} else {
-		fmt.Printf("Done.\n")
+		fmt.Printf("\nUnable to check if namespace %s exists. Continuing...\n", namespace)
 	}
+
 }
 
 func setCrdCreateToFalse(config *InstallerConfig) {
@@ -260,15 +275,15 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 		return
 	}
 	if enterprise {
-		fmt.Println("Gloo Enterprise was successfully installed!")
+		fmt.Println("\nGloo Enterprise was successfully installed!")
 	} else {
-		fmt.Println("Gloo was successfully installed!")
+		fmt.Println("\nGloo was successfully installed!")
 	}
 
 }
 
 type installer struct {
 	helmClient         HelmClient
-	kubeCli            install.KubeCli
+	kubeNsClient       v1.NamespaceInterface
 	dryRunOutputWriter io.Writer
 }

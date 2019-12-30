@@ -273,7 +273,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			}
 			return '-'
 		}, addr.Address)
-		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum(nil))
+		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum64())
 		pod, _ := getPodForIp(addr.Address, addr.PodName, addr.PodNamespace, pods)
 		ep := createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, pod)
 		endpoints = append(endpoints, ep)

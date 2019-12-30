@@ -143,9 +143,6 @@ var _ = Describe("Translate", func() {
 			Expect(err).NotTo(HaveOccurred())
 			ingressResTls2, err := ingresstype.FromKube(ingressTls2)
 			Expect(err).NotTo(HaveOccurred())
-			secret := &gloov1.Secret{
-				Metadata: core.Metadata{Name: secretName, Namespace: namespace},
-			}
 			us := &gloov1.Upstream{
 				Metadata: core.Metadata{
 					Namespace: namespace,
@@ -180,7 +177,6 @@ var _ = Describe("Translate", func() {
 			}
 			snap := &v1.TranslatorSnapshot{
 				Ingresses: v1.IngressList{ingressRes, ingressResTls, ingressResTls2},
-				Secrets:   gloov1.SecretList{secret},
 				Upstreams: gloov1.UpstreamList{us, usSubset},
 			}
 			proxy, errs := translateProxy(namespace, snap, requireIngressClass)
@@ -345,16 +341,8 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-
-		secret1 := &gloov1.Secret{
-			Metadata: core.Metadata{Name: "amoeba-api-ingress-secret", Namespace: "amoeba-dev"},
-		}
-		secret2 := &gloov1.Secret{
-			Metadata: core.Metadata{Name: "amoeba-ui-ingress-secret", Namespace: "amoeba-dev"},
-		}
 		snap := &v1.TranslatorSnapshot{
 			Ingresses: ingresses,
-			Secrets:   gloov1.SecretList{secret1, secret2},
 			Upstreams: gloov1.UpstreamList{us1, us2},
 		}
 

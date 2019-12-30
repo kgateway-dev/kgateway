@@ -25,20 +25,24 @@ const (
 	WavmRuntime      = "envoy.wasm.runtime.wavm"
 	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
-
-	WasmEnabled = "WASM_ENABLED"
+	WasmEnabled      = "WASM_ENABLED"
 )
 
 var (
 	once       sync.Once
 	imageCache = defaults.NewDefaultCache()
+
+	defaultPluginPredicate = plugins.AcceptedStage
+	defaultPluginStage     = plugins.BeforeStage(defaultPluginPredicate)
 )
 
-type Plugin struct {
-}
+type Plugin struct{}
 
 func NewPlugin() *Plugin {
 	once.Do(func() {
+		// TODO(EItanya): move this into a setup loop, rather than living in the filter
+		// It makes sense that it should only start under certain circumstances, but starting
+		// a web server from a plugin feels like an anti-pattern
 		if os.Getenv(WasmEnabled) != "" {
 			go http.ListenAndServe(":9979", imageCache)
 		}
@@ -58,31 +62,31 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error) {
+func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpFilter, error) {
 
-	cachedPlugin, err := p.ensurePluginInCache(pc)
+	cachedPlugin, err := p.ensurePluginInCache(wasmFilter)
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.verifyConfiguration(cachedPlugin.Schema, pc.Config)
+	err = p.verifyConfiguration(cachedPlugin.Schema, wasmFilter.Config)
 	if err != nil {
 		return nil, err
 	}
 
 	var runtime string
-	switch pc.GetVmType() {
-	case wasm.PluginSource_V8:
+	switch wasmFilter.GetVmType() {
+	case wasm.WasmFilter_V8:
 		runtime = V8Runtime
-	case wasm.PluginSource_WAVM:
+	case wasm.WasmFilter_WAVM:
 		runtime = WavmRuntime
 	}
 
 	filterCfg := &config.WasmService{
 		Config: &config.PluginConfig{
-			Name:          pc.Name,
-			RootId:        pc.RootId,
-			Configuration: pc.Config,
+			Name:          wasmFilter.Name,
+			RootId:        wasmFilter.RootId,
+			Configuration: wasmFilter.Config,
 			VmConfig: &config.VmConfig{
 				VmId:    VmId,
 				Runtime: runtime,
@@ -106,8 +110,8 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 		},
 	}
 
-	// TODO: allow customizing the stage
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, filterCfg, plugins.DuringStage(plugins.AcceptedStage))
+	pluginStage := TransformWasmFilterStage(wasmFilter.GetFilterStage())
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, filterCfg, pluginStage)
 	if err != nil {
 		return nil, err
 	}
@@ -115,9 +119,9 @@ func (p *Plugin) plugin(pc *wasm.PluginSource) (*plugins.StagedHttpFilter, error
 	return &stagedFilter, nil
 }
 
-func (p *Plugin) ensurePluginInCache(pc *wasm.PluginSource) (*CachedPlugin, error) {
+func (p *Plugin) ensurePluginInCache(filter *wasm.WasmFilter) (*CachedPlugin, error) {
 
-	digest, err := imageCache.Add(context.TODO(), pc.Image)
+	digest, err := imageCache.Add(context.TODO(), filter.Image)
 	if err != nil {
 		return nil, err
 	}
@@ -138,11 +142,54 @@ func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugi
 	}
 	wasm := l.GetOptions().GetWasm()
 	if wasm != nil {
-		stagedPlugin, err := p.plugin(wasm)
-		if err != nil {
-			return nil, err
+		var result []plugins.StagedHttpFilter
+		for _, wasmFilter := range wasm.GetFilters() {
+			stagedPlugin, err := p.ensureFilter(wasmFilter)
+			if err != nil {
+				return nil, err
+			}
+			result = append(result, *stagedPlugin)
 		}
-		return []plugins.StagedHttpFilter{*stagedPlugin}, nil
+		return result, nil
 	}
 	return nil, nil
+}
+
+func TransformWasmFilterStage(filterStage *wasm.FilterStage) plugins.FilterStage {
+	if filterStage == nil {
+		return defaultPluginStage
+	}
+
+	var resultStage plugins.WellKnownFilterStage
+	switch filterStage.GetStage() {
+	case wasm.FilterStage_FaultStage:
+		resultStage = plugins.FaultStage
+	case wasm.FilterStage_CorsStage:
+		resultStage = plugins.CorsStage
+	case wasm.FilterStage_WafStage:
+		resultStage = plugins.WafStage
+	case wasm.FilterStage_AuthNStage:
+		resultStage = plugins.AuthNStage
+	case wasm.FilterStage_AuthZStage:
+		resultStage = plugins.AuthZStage
+	case wasm.FilterStage_RateLimitStage:
+		resultStage = plugins.RateLimitStage
+	case wasm.FilterStage_AcceptedStage:
+		resultStage = plugins.AcceptedStage
+	case wasm.FilterStage_OutAuthStage:
+		resultStage = plugins.OutAuthStage
+	case wasm.FilterStage_RouteStage:
+		resultStage = plugins.RouteStage
+	}
+
+	var result plugins.FilterStage
+	switch filterStage.GetPredicate() {
+	case wasm.FilterStage_During:
+		result = plugins.DuringStage(resultStage)
+	case wasm.FilterStage_Before:
+		result = plugins.BeforeStage(resultStage)
+	case wasm.FilterStage_After:
+		result = plugins.AfterStage(resultStage)
+	}
+	return result
 }

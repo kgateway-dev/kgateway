@@ -84,8 +84,10 @@ EOF
 
 To check that the gateway has been created properly run:
 ```bash
-$ kubectl get gateways.gateway.solo.io -A
+kubectl get gateways.gateway.solo.io -A
+```
 
+```
 NAMESPACE     NAME          AGE
 gloo-system   gateway       26h
 gloo-system   gateway-ssl   26h
@@ -96,9 +98,11 @@ gloo-system   tcp           5s
 The above gateway will be read in by Gloo, which will combine it with the other gateways into a Proxy resource.
 To make sure that the configuration has been translated properly run:
 
-{{< highlight yaml "hl_lines=22-29" >}}
-$ kubectl get proxies.gloo.solo.io -n gloo-system -oyaml
+```shell script
+kubectl get proxies.gloo.solo.io -n gloo-system -oyaml
+```
 
+{{< highlight yaml "hl_lines=19-26" >}}
 apiVersion: v1
 items:
 - apiVersion: gloo.solo.io/v1
@@ -187,7 +191,9 @@ The next and final step is routing to the service.
 This step assumes you are running on a local minikube instance.
 ```bash
 curl -v telnet://$(minikube ip):30197
+```
 
+```
 * Rebuilt URL to: telnet://192.168.64.13:30197/
 *   Trying 192.168.64.13...
 * TCP_NODELAY set

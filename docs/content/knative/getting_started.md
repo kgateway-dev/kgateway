@@ -1,7 +1,7 @@
 ---
-title: Knative with Gloo
-description: Connect to Knative Serverless Apps with Gloo.
-weight: 90
+title: Getting Started with Knative
+description: Deploy and invoke a Hello-World container with Knative and Gloo.
+weight: 10
 ---
 
 For the purpose of running Knative, Gloo can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
@@ -23,7 +23,7 @@ run `glooctl proxy url --name knative-external-proxy`
 
 ### What you'll need
 - [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
+- Kubernetes v1.14+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a great way to get a cluster up quickly.
 - [Docker](https://www.docker.com) installed and running on your local machine, and a Docker Hub account configured (we'll use it for a container registry).
 
 ### Steps

@@ -65,16 +65,17 @@ fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs goimports -w
 
 .PHONY: update-deps
-update-deps:
-	go get -u golang.org/x/tools/cmd/goimports
-	go get -u github.com/gogo/protobuf/gogoproto
-	go get -u github.com/gogo/protobuf/protoc-gen-gogo
+update-deps: vendor
+	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	mkdir -p $$GOPATH/src/github.com/envoyproxy
 	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
 	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
-	go get -u github.com/cratonica/2goarray
-	go get -v -u github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	GO111MODULE=off go get -u github.com/cratonica/2goarray
+	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 .PHONY: pin-repos
 pin-repos:
@@ -103,6 +104,9 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
+.PHONY: vendor
+vendor:
+	go mod vendor
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
@@ -482,29 +486,6 @@ ifeq ($(RELEASE),"true")
 		RELEASE=$(RELEASE)
 endif
 
-## START Temporary targets while master/v0.20.x branch is supported
-# Whenever a new Gloo release is made from the master/v0.20.x branch,
-# run `GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=v0-20-<PARTICULAR_VERSION> make publish-v-20-docs -B`
-# to manually to produce a docs image with the following properties:
-# - api, cli, changelog content from master/v0.20.x
-# - docs content, hosting config from feature-rc1
-.PHONY: publish-v-20-docs
-publish-v-20-docs: gather-v-20-docs publish-docs
-
-OLD_DOCS_TEMP_DIR := "old_docs_temp_dir"
-.PHONY: gather-v-20-docs
-gather-v-20-docs:
-	# want the changelog files to reflect master
-	git checkout master -- changelog/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-	mkdir -p $(OLD_DOCS_TEMP_DIR)
-	cd $(OLD_DOCS_TEMP_DIR) && git clone git@github.com:solo-io/solo-docs.git
-	rm docs/content/cli/glooctl*
-	cp $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/cli/glooctl* docs/content/cli/
-	rm -rf docs/content/api/
-	cp -r $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/api/ docs/content/api/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-## END Temporary targets while master/v0.20.x branch is supported
 
 #----------------------------------------------------------------------------------
 # Docker

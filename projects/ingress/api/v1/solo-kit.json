@@ -4,10 +4,6 @@
   "resource_groups": {
     "translator.ingress.solo.io": [
       {
-        "name": "Secret",
-        "package": "gloo.solo.io"
-      },
-      {
         "name": "Upstream",
         "package": "gloo.solo.io"
       },

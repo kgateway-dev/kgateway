@@ -6,6 +6,7 @@ import (
 
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -176,7 +177,7 @@ func (p *PrefixRewrite) String() string {
 
 func (p *PrefixRewrite) Set(s string) error {
 	if p == nil {
-		p = &PrefixRewrite{}
+		return errors.New("nil pointer")
 	}
 	p.Value = &s
 	return nil
