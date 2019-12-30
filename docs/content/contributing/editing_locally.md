@@ -59,10 +59,9 @@ You now have the repository cloned on your local filesystem, including the `docs
 
 In the previous sections you installed the necessary tools and downloaded the content to build the site. Now it's time to get that site running.
 
-Navigate to the `docs` folder and run `make` to start up the site.
+Navigate to the `docs` folder from the Gloo repo root and run `make` to start up the site.
 
 ```bash
-cd $GOPATH/src/github.com/solo-io/gloo/docs
 make serve-site -B
 ```
 
