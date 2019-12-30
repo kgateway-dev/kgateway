@@ -24,6 +24,7 @@ import (
 
 type SetupOpts struct {
 	LoggerName  string
+	// logged as the version of Gloo currently executing
 	Version     string
 	SetupFunc   SetupFunc
 	ExitOnError bool
