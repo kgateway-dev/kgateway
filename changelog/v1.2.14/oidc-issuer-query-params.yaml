@@ -6,23 +6,23 @@ changelog:
     is a map of string to string, e.g. (
     ```
     apiVersion: enterprise.gloo.solo.io/v1
-kind: AuthConfig
-metadata:
-  name: google-oidc
-  namespace: gloo-system
-spec:
-  configs:
-  - oauth:
-      app_url: http://localhost:8080
-      callback_path: /callback
-      client_id: $CLIENT_ID
-      client_secret_ref:
-        name: google
-        namespace: gloo-system
-      issuer_url: https://accounts.google.com
-      issuer_query_params:
-        key1 : value1
-        key2 : value2
+    kind: AuthConfig
+    metadata:
+      name: google-oidc
+      namespace: gloo-system
+    spec:
+      configs:
+      - oauth:
+          app_url: http://localhost:8080
+          callback_path: /callback
+          client_id: $CLIENT_ID
+          client_secret_ref:
+            name: google
+            namespace: gloo-system
+          issuer_url: https://accounts.google.com
+          issuer_query_params:
+            key1 : value1
+            key2 : value2
     ```
     )
     These additional issuer query parameters will be appended to the Issuer's URL request for an OAUTH OIDC authorization request
