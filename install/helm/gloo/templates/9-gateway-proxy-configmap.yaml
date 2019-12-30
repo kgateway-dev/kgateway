@@ -1,5 +1,7 @@
 {{- if .Values.gateway.enabled }}
+{{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats -}}
 ---
 # config_map
 apiVersion: v1
@@ -11,7 +13,6 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
-    installationId: {{ include "gloo.installationId" $ }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
@@ -28,10 +29,10 @@ data:
             envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966}
     static_resources:
 
-{{- if or ($spec.stats) ($spec.readConfig) }}
+{{- if or $statsConfig.enabled ($spec.readConfig) }}
       listeners:
 {{- end }} # if or ($spec.stats) ($spec.readConfig)
-{{- if $spec.stats }}
+{{- if $statsConfig.enabled }}
         - name: prometheus_listener
           address:
             socket_address:
@@ -68,7 +69,7 @@ data:
                     http_filters:
                       - name: envoy.router
                         config: {}
-{{- end}} # if $spec.stats
+{{- end}} # if $statsConfig.enabled
 {{- if $spec.readConfig }}
         - name: read_config_listener
           address:
@@ -131,6 +132,21 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+      - name: wasm-cache
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: wasm-cache
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
+                    port_value: 9979
+        upstream_connection_options:
+          tcp_keepalive: {}
+        type: STRICT_DNS
+        respect_dns_ttl: true
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966
         alt_stat_name: metrics_cluster
         connect_timeout: 5.000s
@@ -166,7 +182,7 @@ data:
 {{- end}} # if $spec.tracing.cluster
 {{- end}} # if $spec.tracing
 
-{{- if or ($spec.stats) ($spec.readConfig) }}
+{{- if or $statsConfig.enabled ($spec.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s
         type: STATIC
@@ -180,7 +196,7 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 19000
-{{- end}} # if or ($spec.stats) ($spec.readConfig)
+{{- end}} # if or $statsConfig.enabled ($spec.readConfig)
 
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.provider }}

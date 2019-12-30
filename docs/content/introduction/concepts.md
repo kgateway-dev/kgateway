@@ -45,12 +45,8 @@ A single gateway definition looks like the following:
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-weight: "5"
   labels:
     app: gloo
-    installationId: mJJVFfg3zbihCY9msXdM
   name: gateway-proxy-ssl
   namespace: gloo-system
 spec:

@@ -7,14 +7,14 @@ weight: 10
 ## Installing the Gloo Gateway on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
 
 Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 {{% notice note %}}
-To install Gloo Enterprise you need a License Key. If you don't have one, go to **https://solo.io/glooe-trial** and
+To install Gloo Enterprise you need a License Key. If you don't have one, go to [**https://solo.io/gloo**](https://www.solo.io/products/gloo/#enterprise-trial) and
 request a trial now. Once you request a trial, an e-mail will be sent to you with your unique License Key that you will
 need as part of installing Gloo.
 {{% /notice %}}
@@ -26,7 +26,7 @@ your unique key.
 {{% /notice %}}
 
 Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community
-[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/cluster_setup" >}}) instructions.
+[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup" >}}) instructions.
 
 
 ### Installing on Kubernetes with `glooctl`

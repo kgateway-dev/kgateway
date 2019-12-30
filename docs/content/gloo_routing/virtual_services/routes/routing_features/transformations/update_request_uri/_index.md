@@ -30,10 +30,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name update-request-path --namespace gloo-system 
-glooctl add route --name update-request-path --path-prefix / --dest-name postman-echo
+      options:
+        autoHostRewrite: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -68,7 +66,7 @@ the HTTP method of the request as well.
 
 To do this, we need to add the following to our Virtual Service definition:
 
-{{< highlight yaml "hl_lines=18-42" >}}
+{{< highlight yaml "hl_lines=20-44" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -86,6 +84,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
+      options:
+        autoHostRewrite: true
     options:
       transformations:
         requestTransformation:

@@ -15,10 +15,13 @@ weight: 5
 - [Node](#node)
 - [Metadata](#metadata)
 - [RuntimeUInt32](#runtimeuint32)
+- [RuntimeFeatureFlag](#runtimefeatureflag)
 - [HeaderValue](#headervalue)
 - [HeaderValueOption](#headervalueoption)
 - [HeaderMap](#headermap)
 - [DataSource](#datasource)
+- [RemoteDataSource](#remotedatasource)
+- [AsyncDataSource](#asyncdatasource)
 - [TransportSocket](#transportsocket)
 - [SocketOption](#socketoption)
 - [SocketState](#socketstate)
@@ -33,6 +36,7 @@ weight: 5
 
 	- [RoutingPriority](#routingpriority)
 	- [RequestMethod](#requestmethod)
+	- [TrafficDirection](#trafficdirection)
 
 
 
@@ -151,6 +155,26 @@ Runtime derived uint32 with a default when not specified.
 
 
 ---
+### RuntimeFeatureFlag
+
+ 
+Runtime derived bool with a default when not specified.
+
+```yaml
+"defaultValue": .google.protobuf.BoolValue
+"runtimeKey": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `defaultValue` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default value if runtime value is not available. |  |
+| `runtimeKey` | `string` | Runtime key to get value for comparison. This value is used if defined. The boolean value must be represented via its `canonical JSON encoding <https://developers.google.com/protocol-buffers/docs/proto3#json>`_. |  |
+
+
+
+
+---
 ### HeaderValue
 
  
@@ -226,6 +250,46 @@ Data source consisting of either a file or an inline value.
 | `filename` | `string` | Local filesystem data source. Only one of `filename`, or `inlineString` can be set. |  |
 | `inlineBytes` | `bytes` | Bytes inlined in the configuration. Only one of `inlineBytes`, or `inlineString` can be set. |  |
 | `inlineString` | `string` | String inlined in the configuration. Only one of `inlineString`, or `inlineBytes` can be set. |  |
+
+
+
+
+---
+### RemoteDataSource
+
+ 
+The message specifies how to fetch data from remote and how to verify it.
+
+```yaml
+"httpUri": .envoy.api.v2.core.HttpUri
+"sha256": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `httpUri` | [.envoy.api.v2.core.HttpUri](../http_uri.proto.sk/#httpuri) | The HTTP URI to fetch the remote data. |  |
+| `sha256` | `string` | SHA256 string for verifying data. |  |
+
+
+
+
+---
+### AsyncDataSource
+
+ 
+Async data source which support async data fetch.
+
+```yaml
+"local": .envoy.api.v2.core.DataSource
+"remote": .envoy.api.v2.core.RemoteDataSource
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `local` | [.envoy.api.v2.core.DataSource](../base.proto.sk/#datasource) | Local async data source. Only one of `local` or `remote` can be set. |  |
+| `remote` | [.envoy.api.v2.core.RemoteDataSource](../base.proto.sk/#remotedatasource) | Remote async data source. Only one of `remote` or `local` can be set. |  |
 
 
 
@@ -367,6 +431,17 @@ Description: HTTP request method.
 | CONNECT |  |
 | OPTIONS |  |
 | TRACE |  |
+| PATCH |  |
+  
+### TrafficDirection
+
+Description: Identifies the direction of the traffic relative to the local Envoy.
+
+| Name | Description |
+| ----- | ----------- | 
+| UNSPECIFIED | Default option is unspecified. |
+| INBOUND | The transport is used for incoming traffic. |
+| OUTBOUND | The transport is used for outgoing traffic. |
 
 
 <!-- Start of HubSpot Embed Code -->

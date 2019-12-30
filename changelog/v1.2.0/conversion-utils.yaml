@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/1793
+    description: Add gogoutils conversion code for RouteMatch for use in enterprise code.
+    resolvesIssue: false

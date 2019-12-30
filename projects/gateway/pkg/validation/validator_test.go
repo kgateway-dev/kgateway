@@ -143,7 +143,10 @@ var _ = Describe("Validator", func() {
 			It("rejects the rt", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
-						DelegateAction: nil,
+						DelegateAction: &core.ResourceRef{
+							Name:      "invalid",
+							Namespace: "name",
+						},
 					},
 				}
 
@@ -253,7 +256,10 @@ var _ = Describe("Validator", func() {
 			It("rejects the vs", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
-						DelegateAction: nil,
+						DelegateAction: &core.ResourceRef{
+							Name:      "invalid",
+							Namespace: "name",
+						},
 					},
 				}
 
@@ -371,6 +377,10 @@ var _ = Describe("Validator", func() {
 
 type mockValidationClient struct {
 	validateProxy func(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error)
+}
+
+func (c *mockValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	return nil, nil
 }
 
 func (c *mockValidationClient) ValidateProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {

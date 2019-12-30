@@ -1,11 +1,11 @@
 ---
-menuTitle: Validation
+menuTitle: Configuration Validation
 title: Config Reporting & Validation
-weight: 11
+weight: 60
 description: (Kubernetes Only) Gloo can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
-# Motivation
+## Motivation
 
 When configuring an API gateway or edge proxy, invalid configuration can quickly lead to bugs, service outages, and 
 security vulnerabilities. 
@@ -13,7 +13,7 @@ security vulnerabilities.
 This document explains features in Gloo designed to prevent invalid configuration from propagating to the 
 data plane (the Gateway Proxies).
 
-# How Gloo Validates Configuration
+## How Gloo Validates Configuration
 
 Validation in Gloo is comprised of a two step process:
 
@@ -27,7 +27,7 @@ not be updated until the errors are resolved.
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the {{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateway resource">}}.
+  the {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resource">}}.
 
 {{% notice note %}}
 
@@ -35,7 +35,7 @@ The proxy that *Gateways* and their *Virtual Services* will be applied to can be
 
 {{% /notice %}}
 
-# Warnings and Errors
+## Warnings and Errors
 
 Gloo processes an admitted config resource, it can report one of three status types on the resource:
 
@@ -45,7 +45,7 @@ Gloo processes an admitted config resource, it can report one of three status ty
 
 When a resource is in *Rejected* or *Warning* state, its configuration is not propagated to the proxy.
 
-# Using the Validating Webhook
+## Using the Validating Webhook
 
 Admission Validation provides a safeguard to ensure Gloo does not halt processing of configuration. If a resource 
 would be written or modified in such a way to cause Gloo to report an error, it is instead rejected by the Kubernetes 
@@ -53,7 +53,7 @@ API Server before it is written to persistent storage.
 
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
-{{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateways">}}, 
+{{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
 {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
@@ -71,7 +71,7 @@ To enable "strict" admission control (rejection of resources with invalid config
 When strict admission control is enabled, any resource that would produce a `Rejected` status will be rejected on admission.
 Resources that would produce a `Warning` status are still admitted.
 
-# Enabling Strict Validation Webhook 
+## Enabling Strict Validation Webhook 
  
  
 By default, the Validation Webhook only logs the validation result, but always admits resources with valid YAML (even if the 
@@ -92,9 +92,6 @@ If writing Settings directly to Kubernetes, add the following to the `spec.gatew
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-weight: "5"
   labels:
     app: gloo
   name: default

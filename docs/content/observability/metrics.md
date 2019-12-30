@@ -18,23 +18,51 @@ Once you have [enabled](#enabling-pod-metrics) your metrics, you can take a look
 
 #### Helm Chart Options
 
-The first way is via the helm chart. All deployment objects in the helm templates accept an argument `stats` which
+The first way is via the Helm chart. All deployment resources in the chart accept an argument `stats` which
 when set to true, start a stats server on the given pod.
 
 For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats=true`.
 
-```shell
-helm install gloo/gloo \
-  --name gloo \
-  --namespace gloo-system \
-  --set discovery.deployment.stats=true
+For example, to add stats to the Gloo `discovery` pod, first write your values file. Run:
+
+```shell script
+echo "crds:
+  create: true # see our installation guide- only required if you are using Helm 2
+discovery:
+  deployment:
+    stats: true
+" > stats-values.yaml
 ```
+
+Then install using one of the following methods:
+
+{{< tabs >}}
+{{< tab name="glooctl" codelang="shell" >}}
+glooctl install gateway --values stats-values.yaml
+{{< /tab >}}
+{{% tab name="Helm 2" %}}
+Either:
+
+```shell script
+helm install gloo/gloo --name gloo --namespace gloo-system -f stats-values.yaml
+```
+
+or:
+
+```shell script
+helm template gloo --namespace gloo-system --values stats-values.yaml  | kubectl apply -f - -n gloo-system
+```
+{{% /tab %}}
+{{< tab name="Helm 3" codelang="shell">}}
+helm install gloo gloo/gloo --namespace gloo-system -f stats-values.yaml
+{{< /tab >}}
+{{< /tabs >}}
 
 Here's what the resulting `discovery` manifest would look like. Note the additions of the `prometheus.io` annotations,
 and the `START_STATS_SERVER` environment variable.
 
 {{< highlight yaml "hl_lines=18-21 32-33" >}}
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:

@@ -1,0 +1,23 @@
+```yaml
+descriptors:
+  # Rule 1, limit all Messenger requests to 2/min
+  - key: type
+    value: Messenger
+    rateLimit:
+      requestsPerUnit: 2
+      unit: MINUTE
+  # Rule 2, limit all Whatsapp requests to 1/min
+  - key: type
+    value: Whatsapp
+    rateLimit:
+      requestsPerUnit: 1
+      unit: MINUTE
+    descriptors:
+      # Rule 3, limit all Whatsapp requests to number '411' to 100/min
+      - key: number
+        rateLimit:
+          requestsPerUnit: 100
+          unit: MINUTE
+        value: "411"
+        weight: 1 # Rule 3 takes priority over other rules
+```

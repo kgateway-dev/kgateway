@@ -1,9 +1,8 @@
 ---
 menuTitle: Delegation
 title: Delegating with Route Tables
-weight: 10
+weight: 20
 description: Virtual Services can delegate ownership of configuration to Route Tables, top-level API objects which specify routes for a given domain and path prefix.
-
 ---
 
 

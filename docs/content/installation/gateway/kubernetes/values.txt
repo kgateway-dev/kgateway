@@ -1,30 +1,32 @@
 |Option|Type|Default Value|Description|
 |------|----|-----------|-------------|
 |namespace.create|bool|false|create the installation namespace|
-|crds.create|bool|true|create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)|
+|crds.create|bool|false||
 |settings.watchNamespaces[]|string||whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces|
 |settings.writeNamespace|string||namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery.|
 |settings.integrations.knative.enabled|bool|false|enabled knative components|
-|settings.integrations.knative.version|string||the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
-|settings.integrations.knative.proxy.image.tag|string||tag for the container|
-|settings.integrations.knative.proxy.image.repository|string||image name (repository) for the container.|
+|settings.integrations.knative.version|string|0.10.0|the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress|
+|settings.integrations.knative.proxy.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|settings.integrations.knative.proxy.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |settings.integrations.knative.proxy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |settings.integrations.knative.proxy.image.pullPolicy|string||image pull policy for the container|
 |settings.integrations.knative.proxy.image.pullSecret|string||image pull policy for the container |
-|settings.integrations.knative.proxy.httpPort|int||HTTP port for the proxy|
-|settings.integrations.knative.proxy.httpsPort|int||HTTPS port for the proxy|
+|settings.integrations.knative.proxy.httpPort|int|80|HTTP port for the proxy|
+|settings.integrations.knative.proxy.httpsPort|int|443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
-|settings.integrations.knative.proxy.replicas|int||number of instances to deploy|
+|settings.integrations.knative.proxy.replicas|int|1|number of instances to deploy|
 |settings.integrations.knative.proxy.resources.limits.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool|false|Enable to use install namespace as WatchNamespace and WriteNamespace|
 |settings.invalidConfigPolicy.replaceInvalidRoutes|bool|false|Rather than pausing configuration updates, in the event of an invalid Route defined on a virtual service or route table, Gloo will serve the route with a predefined direct response action. This allows valid routes to be updated when other routes are invalid.|
 |settings.invalidConfigPolicy.invalidRouteResponseCode|int64|404|the response code for the direct response|
 |settings.invalidConfigPolicy.invalidRouteResponseBody|string|Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.|the response body for the direct response|
+|settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -32,7 +34,7 @@
 |gloo.deployment.image.pullSecret|string||image pull policy for the container |
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
-|gloo.deployment.stats|bool|true|enable prometheus stats|
+|gloo.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gloo.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
@@ -47,7 +49,7 @@
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |discovery.deployment.image.pullPolicy|string||image pull policy for the container|
 |discovery.deployment.image.pullSecret|string||image pull policy for the container |
-|discovery.deployment.stats|bool|true|enable prometheus stats|
+|discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
@@ -55,7 +57,7 @@
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
-|discovery.fdsMode|string||mode for function discovery (blacklist or whitelist). See more info in the settings docs|
+|discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo API Gateway validation hook (default true)|
@@ -67,7 +69,7 @@
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gateway.deployment.image.pullPolicy|string||image pull policy for the container|
 |gateway.deployment.image.pullSecret|string||image pull policy for the container |
-|gateway.deployment.stats|bool|true|enable prometheus stats|
+|gateway.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gateway.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.replicas|int|1|number of instances to deploy|
@@ -86,8 +88,7 @@
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
-|gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway CRDs from all watched namespaces rather than just the namespace of the Gateway controller|
-|gatewayProxies.NAME.kind.deployment.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
+|gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.NAME.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -126,19 +127,19 @@
 |gatewayProxies.NAME.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
 |gatewayProxies.NAME.service.externalTrafficPolicy|string|||
+|gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
 |gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.NAME.envoyArgs[]|string||envoy container args|
+|gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
-|gatewayProxies.NAME.stats|bool||enable prometheus stats|
+|gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
-|gatewayProxies.gatewayProxy.kind.deployment.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -177,40 +178,41 @@
 |gatewayProxies.gatewayProxy.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
 |gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||
+|gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
 |gatewayProxies.gatewayProxy.gatewaySettings.disableGeneratedGateways|bool|false|set to true to disable the gateway generation for a gateway proxy|
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
-|gatewayProxies.gatewayProxy.envoyArgs[]|string||envoy container args|
+|gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
-|gatewayProxies.gatewayProxy.stats|bool|true|enable prometheus stats|
+|gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
 |ingress.enabled|bool|false||
-|ingress.deployment.image.tag|string||tag for the container|
-|ingress.deployment.image.repository|string||image name (repository) for the container.|
+|ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
 |ingress.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |ingress.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingress.deployment.image.pullSecret|string||image pull policy for the container |
-|ingress.deployment.replicas|int||number of instances to deploy|
+|ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.resources.limits.memory|string||amount of memory|
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''|
-|ingressProxy.deployment.image.tag|string||tag for the container|
-|ingressProxy.deployment.image.repository|string||image name (repository) for the container.|
+|ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |ingressProxy.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |ingressProxy.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingressProxy.deployment.image.pullSecret|string||image pull policy for the container |
-|ingressProxy.deployment.httpPort|int||HTTP port for the ingress container|
-|ingressProxy.deployment.httpsPort|int||HTTPS port for the ingress container|
+|ingressProxy.deployment.httpPort|int|80|HTTP port for the ingress container|
+|ingressProxy.deployment.httpsPort|int|443|HTTPS port for the ingress container|
 |ingressProxy.deployment.extraPorts[]|interface|||
 |ingressProxy.deployment.extraAnnotations.NAME|string|||
-|ingressProxy.deployment.replicas|int||number of instances to deploy|
+|ingressProxy.deployment.replicas|int|1|number of instances to deploy|
 |ingressProxy.deployment.resources.limits.memory|string||amount of memory|
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
@@ -240,4 +242,5 @@
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
-|global.glooInstallationId|string||If not user-defined, will default to a random string. Used to track all the resources created in one installation to assist with uninstalling|
+|global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
+|global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|

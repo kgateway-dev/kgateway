@@ -78,10 +78,8 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-access-logs --namespace gloo-system 
-glooctl add route --name test-access-logs --path-prefix / --dest-name postman-echo
+      options:
+        autoHostRewrite: true
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -109,7 +107,7 @@ You should see an output similar like this:
 }
 ```
 
-Now let's take a look at the Gateway logs to verify whether the request has been logged:
+Now let's take a look at the Envoy logs to verify whether the request has been logged:
 
 ```shell
 # Print only log lines starting with {" (our access logs are formatted as JSON)
@@ -204,7 +202,7 @@ For the above dynamic metadata to be available, we need to update our Virtual Se
 to add a transformation that extracts the value of the `POD_NAME` environment variable and the value of the `url` 
 response attribute and uses them to populate the corresponding metadata attributes.
 
-{{< highlight yaml "hl_lines=18-33" >}}
+{{< highlight yaml "hl_lines=20-35" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -222,16 +220,18 @@ spec:
           upstream:
             name: postman-echo
             namespace: gloo-system
+      options:
+        autoHostRewrite: true
     options:
       transformations:
         # Apply a transformation to the response
         responseTransformation:
           transformationTemplate:
             dynamicMetadataValues:
-            # Set a dynamic metadata entry named "pod"
+            # Set a dynamic metadata entry named "pod_name"
             - key: 'pod_name'
               value:
-                # The POD_NAME env is set by default on the gateway-proxy-v2 pods
+                # The POD_NAME env is set by default on the gateway-proxy pods
                 text: '{{ env("POD_NAME") }}'
             # Set a dynamic metadata entry using an request body attribute
             - key: 'endpoint_url'
@@ -262,7 +262,7 @@ You should see an entry like the following:
   "protocol": "HTTP/1.1",
   "requestId": "57c71e10-5a03-407a-9a57-cd63dd50fd39",
   "endpoint_url": "\"https://postman-echo.com/get\"",
-  "pod_name": "\"gateway-proxy-v2-f46b58f89-5fkmd\"",
+  "pod_name": "\"gateway-proxy-f46b58f89-5fkmd\"",
   "clientDuration": "85",
   "httpMethod": "GET",
   "upstreamName": "postman-echo_gloo-system",

@@ -1,4 +1,5 @@
 {{- $image := .Values.gloo.deployment.image }}
+{{- $statsConfig := coalesce .Values.gloo.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gloo.deployment.image .Values.global.image }}
 {{- end }}
@@ -8,7 +9,6 @@ metadata:
   labels:
     app: gloo
     gloo: gloo
-    installationId: {{ include "gloo.installationId" . }}
   name: gloo
   namespace: {{ .Release.Namespace }}
 spec:
@@ -20,7 +20,7 @@ spec:
     metadata:
       labels:
         gloo: gloo
-      {{- if .Values.gloo.deployment.stats }}
+      {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -68,6 +68,9 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
+        - containerPort: 9979
+          name: wasm-cache
+          protocol: TCP
         volumeMounts:
         - name: labels-volume
           mountPath: /etc/gloo
@@ -77,7 +80,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if .Values.gloo.deployment.stats }}
+        {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
@@ -85,6 +88,10 @@ spec:
           - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
+        {{- if .Values.global.wasm.enabled }}
+          - name: WASM_ENABLED
+            value: "true"
+        {{- end }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}

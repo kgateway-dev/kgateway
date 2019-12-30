@@ -5,7 +5,7 @@ weight: 75
 description: Set up Gloo to route to TLS-encrypted services by using annotations on the Kubernetes Service object.
 ---
 
-# Motivation
+## Motivation
 
 Gloo can auto-discover SSL configuration for [upstream TLS connections]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls">}}) using annotations on the Kubernetes Service.
 
@@ -13,7 +13,7 @@ This can be used as a convenient alternative to the {{% protobuf display="Upstre
 
 This document explains the options for configuring SSL using service annotations. For a step-by-step guide illustrating Upstream SSL in Gloo, see [the Upstream SSL Guide]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls">}})
 
-# Configuring Upstream SSL Using Kubernetes Secrets
+## Configuring Upstream SSL Using Kubernetes Secrets
 
 To use a Kubernetes TLS secret for Upstream TLS, set the annotations of your service like so:
 
@@ -41,9 +41,9 @@ spec:
 Note: The secret must live in the same namespace as the service.
 {{% /notice %}}
 
-# Configuring Upstream SSL Using Files Mounted to the Proxy
+## Configuring Upstream SSL Using Files Mounted to the Proxy
 
-To certs mounted to the proxy pod (named `gateway-proxy-v2` by default) for Upstream TLS, set the annotations of your service like so:
+To certs mounted to the proxy pod (named `gateway-proxy` by default) for Upstream TLS, set the annotations of your service like so:
 
 {{< highlight yaml "hl_lines=4-7" >}}
 apiVersion: v1
@@ -68,11 +68,11 @@ spec:
 
 
 {{% notice note %}}
-Note: The certificates must be mounted to the proxy pod (named `gateway-proxy-v2` by default) with the paths specified in the annotations.
+Note: The certificates must be mounted to the proxy pod (named `gateway-proxy` by default) with the paths specified in the annotations.
 {{% /notice %}}
 
 
-# Configuring Upstream SSL for a Specific Port on a Service
+## Configuring Upstream SSL for a Specific Port on a Service
 
 A service may have more than one port, where only a specific port is serving SSL.
 

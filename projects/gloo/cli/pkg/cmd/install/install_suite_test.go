@@ -3,14 +3,15 @@ package install_test
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+
 	"testing"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
-
-	gotestutils "github.com/solo-io/go-utils/testutils"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	gotestutils "github.com/solo-io/go-utils/testutils"
 )
 
 func TestInstall(t *testing.T) {
@@ -25,6 +26,10 @@ var file, values1, values2 string
 
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
+
+	// Make sure we don't hit a real cluster during any of the tests in this suite
+	helpers.UseMemoryClients()
+
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 	RootDir = filepath.Join(cwd, "../../../../../..")
@@ -49,7 +54,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = f.WriteString(`
 settings:
-  writeNamespace: test-namespace`)
+ writeNamespace: test-namespace`)
 	Expect(err).NotTo(HaveOccurred())
 	f.Close()
 
@@ -57,7 +62,7 @@ settings:
 	Expect(err).NotTo(HaveOccurred())
 	_, err = f2.WriteString(`
 settings:
-  writeNamespace: test-namespace-2`)
+ writeNamespace: test-namespace-2`)
 	Expect(err).NotTo(HaveOccurred())
 	f2.Close()
 })

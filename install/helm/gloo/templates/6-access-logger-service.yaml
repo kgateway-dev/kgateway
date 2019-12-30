@@ -6,7 +6,6 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-proxy-access-logger
-    installationId: {{ include "gloo.installationId" . }}
   name: gateway-proxy-access-logger
   namespace: {{ $.Release.Namespace }}
 spec:

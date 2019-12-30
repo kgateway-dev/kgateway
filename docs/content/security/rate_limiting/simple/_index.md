@@ -12,7 +12,7 @@ For a more fine grained approach, take a look at using Gloo with [Envoy's native
 
 ## Rate Limit
 
-Rate limits are defined on the virtual service specification as [`spec.virtualHost.virtualHostPlugins.extensions.configs.rate-limit`]({{% protobuf name="ratelimit.options.gloo.solo.io.IngressRateLimit" %}}). There is a full example later in this document that shows the rate limit configuration in context.
+Rate limits are defined on the virtual service specification as `spec.virtualHost.options.ratelimitBasic` with the following {{% protobuf name="ratelimit.options.gloo.solo.io.IngressRateLimit" display="format"%}}. There is a full example later in this document that shows the rate limit configuration in context.
 
 ```yaml
 rate-limit:
@@ -38,14 +38,14 @@ First, install the petclinic application.
 
 ```shell
 kubectl apply \
-  --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+  --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 ```
 
 Refer to the [Gloo external authentication]({{% versioned_link_path fromRoot="/security/auth" %}}) documentation on how to configure Gloo to authenticate users.
 
 In this example, we restrict authorized users to 200 requests per minute and anonymous users to 1000 requests per hour.
 
-{{< highlight yaml "hl_lines=22-28" >}}
+{{< highlight yaml "hl_lines=20-26" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -57,31 +57,29 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 1000
-              unit: HOUR
-            authorized_limits:
-              requests_per_unit: 200
-              unit: MINUTE
-        # extauth:
-        #   oauth:
-        #     # your OAuth settings here to authorize users
+    options:
+      ratelimitBasic:
+        anonymous_limits:
+          requests_per_unit: 1000
+          unit: HOUR
+        authorized_limits:
+          requests_per_unit: 200
+          unit: MINUTE
+    # extauth:
+    #   oauth:
+    #     # your OAuth settings here to authorize users
 {{< /highlight >}}
 
 You can also just set rate limits for just anonymous users (rate limit by remote address) or just authorized users (rate limit by user id). For example, to rate limit for anonymous users, you would configure the `anonymous_limits` section like as follows.
 
-{{< highlight yaml "hl_lines=23-26" >}}
+{{< highlight yaml "hl_lines=20-23" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -93,18 +91,16 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
             name: default-petclinic-8080
             namespace: gloo-system
-    virtualHostPlugins:
-      extensions:
-        configs:
-          rate-limit:
-            anonymous_limits:
-              requests_per_unit: 1000
-              unit: HOUR
+    options:
+      ratelimitBasic:
+        anonymous_limits:
+          requests_per_unit: 1000
+          unit: HOUR
 {{< /highlight >}}

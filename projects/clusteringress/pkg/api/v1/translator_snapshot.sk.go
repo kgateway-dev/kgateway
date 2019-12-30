@@ -4,62 +4,63 @@ package v1
 
 import (
 	"fmt"
+	"hash"
+	"hash/fnv"
+	"log"
 
 	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
-	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
+	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
 
 type TranslatorSnapshot struct {
-	Secrets          gloo_solo_io.SecretList
 	Clusteringresses github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
 	return TranslatorSnapshot{
-		Secrets:          s.Secrets.Clone(),
 		Clusteringresses: s.Clusteringresses.Clone(),
 	}
 }
 
-func (s TranslatorSnapshot) Hash() uint64 {
-	return hashutils.HashAll(
-		s.hashSecrets(),
-		s.hashClusteringresses(),
-	)
+func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	if _, err := s.hashClusteringresses(hasher); err != nil {
+		return 0, err
+	}
+	return hasher.Sum64(), nil
 }
 
-func (s TranslatorSnapshot) hashSecrets() uint64 {
-	return hashutils.HashAll(s.Secrets.AsInterfaces()...)
-}
-
-func (s TranslatorSnapshot) hashClusteringresses() uint64 {
-	return hashutils.HashAll(s.Clusteringresses.AsInterfaces()...)
+func (s TranslatorSnapshot) hashClusteringresses(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Clusteringresses.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
-	fields = append(fields, zap.Uint64("secrets", s.hashSecrets()))
-	fields = append(fields, zap.Uint64("clusteringresses", s.hashClusteringresses()))
-
-	return append(fields, zap.Uint64("snapshotHash", s.Hash()))
+	hasher := fnv.New64()
+	ClusteringressesHash, err := s.hashClusteringresses(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("clusteringresses", ClusteringressesHash))
+	snapshotHash, err := s.Hash(hasher)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
+	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
 
 type TranslatorSnapshotStringer struct {
 	Version          uint64
-	Secrets          []string
 	Clusteringresses []string
 }
 
 func (ss TranslatorSnapshotStringer) String() string {
 	s := fmt.Sprintf("TranslatorSnapshot %v\n", ss.Version)
-
-	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
-	for _, name := range ss.Secrets {
-		s += fmt.Sprintf("    %v\n", name)
-	}
 
 	s += fmt.Sprintf("  Clusteringresses %v\n", len(ss.Clusteringresses))
 	for _, name := range ss.Clusteringresses {
@@ -70,9 +71,12 @@ func (ss TranslatorSnapshotStringer) String() string {
 }
 
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
+	snapshotHash, err := s.Hash(nil)
+	if err != nil {
+		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+	}
 	return TranslatorSnapshotStringer{
-		Version:          s.Hash(),
-		Secrets:          s.Secrets.NamespacesDotNames(),
+		Version:          snapshotHash,
 		Clusteringresses: s.Clusteringresses.NamespacesDotNames(),
 	}
 }

@@ -5,15 +5,11 @@ kind: Settings
 metadata:
   labels:
     app: gloo
-    installationId: {{ include "gloo.installationId" . }}
   name: default
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5"
 spec:
   gloo:
-    xdsBindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
+    xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
 {{- if .Values.settings.invalidConfigPolicy }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}

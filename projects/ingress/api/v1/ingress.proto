@@ -6,6 +6,9 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "google/protobuf/any.proto";
 
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
 import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
 import "github.com/solo-io/solo-kit/api/v1/status.proto";
 import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
@@ -19,7 +22,7 @@ message Ingress{
     // a raw byte representation of the kubernetes ingress this resource wraps
     google.protobuf.Any kube_ingress_spec = 1;
     // a raw byte representation of the ingress status of the kubernetes ingress object
-    google.protobuf.Any kube_ingress_status = 2 [(core.solo.io.skip_hashing) = true];
+    google.protobuf.Any kube_ingress_status = 2 [(extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];

@@ -43,6 +43,9 @@ In this guide we are going to:
 
 Let's get started!
 
+## Prereqs
+1. Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+
 ## Deploy the demo gRPC store
 
 Create a deployment and a service:
@@ -114,62 +117,62 @@ spec:
        - methods:
          - GET
          prefix: /items/
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: GetItem
-               package: solo.examples.v1
-               parameters:
-                 path: /items/{name}
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: GetItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
-         methods:
+       - methods:
          - DELETE
          prefix: /items/
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: DeleteItem
-               package: solo.examples.v1
-               parameters:
-                 path: /items/{name}
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: DeleteItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
        - methods:
          - GET
          exact: /items
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: ListItems
-               package: solo.examples.v1
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: ListItems
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
     - matchers:
        - methods:
          - POST
          exact: /items
-       routeAction:
-         single:
-           destinationSpec:
-             grpc:
-               function: CreateItem
-               package: solo.examples.v1
-               service: StoreService
-           upstream:
-             name: default-grpcstore-demo-80
-             namespace: gloo-system
+      routeAction:
+       single:
+         destinationSpec:
+           grpc:
+             function: CreateItem
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
 EOF
 ```
 

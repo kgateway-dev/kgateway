@@ -15,6 +15,8 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/syncer"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
@@ -100,6 +102,75 @@ var _ = Describe("SetupSyncer", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 		})
+		Context("Extensions tests", func() {
+			var (
+				plugin1 = &dummyPlugin{}
+				plugin2 = &dummyPlugin{}
+
+				opts = bootstrap.Opts{}
+			)
+			It("should return plugins", func() {
+				registryPlugins := func(opts bootstrap.Opts) []plugins.Plugin { return nil }
+
+				extensions := Extensions{
+					PluginExtensions: []plugins.Plugin{
+						plugin1,
+						plugin2,
+					},
+				}
+
+				pluginFuncs := GetPluginsWithExtensionsAndRegistry(opts, registryPlugins, extensions)
+				plugins := pluginFuncs()
+				Expect(plugins).To(ContainElement(plugin1))
+				Expect(plugins).To(ContainElement(plugin2))
+			})
+
+			It("should return plugins when funcs are used", func() {
+				registryPlugins := func(opts bootstrap.Opts) []plugins.Plugin { return nil }
+				extensions := Extensions{
+					PluginExtensionsFuncs: []func() plugins.Plugin{
+						func() plugins.Plugin { return plugin1 },
+						func() plugins.Plugin { return plugin2 },
+					},
+				}
+
+				pluginFuncs := GetPluginsWithExtensionsAndRegistry(opts, registryPlugins, extensions)
+				plugins := pluginFuncs()
+				Expect(plugins).To(HaveLen(2))
+				Expect(plugins).To(ContainElement(plugin1))
+				Expect(plugins).To(ContainElement(plugin2))
+			})
+
+			It("should return plugins and registry", func() {
+				registryPlugins := func(opts bootstrap.Opts) []plugins.Plugin { return []plugins.Plugin{plugin1} }
+				extensions := Extensions{
+					PluginExtensions: []plugins.Plugin{
+						plugin2,
+					},
+				}
+
+				pluginFuncs := GetPluginsWithExtensionsAndRegistry(opts, registryPlugins, extensions)
+				plugins := pluginFuncs()
+				Expect(plugins).To(HaveLen(2))
+				Expect(plugins).To(ContainElement(plugin1))
+				Expect(plugins).To(ContainElement(plugin2))
+			})
+
+			It("should return plugin funcss and registry", func() {
+				registryPlugins := func(opts bootstrap.Opts) []plugins.Plugin { return []plugins.Plugin{plugin1} }
+				extensions := Extensions{
+					PluginExtensionsFuncs: []func() plugins.Plugin{
+						func() plugins.Plugin { return plugin2 },
+					},
+				}
+
+				pluginFuncs := GetPluginsWithExtensionsAndRegistry(opts, registryPlugins, extensions)
+				plugins := pluginFuncs()
+				Expect(plugins).To(HaveLen(2))
+				Expect(plugins).To(ContainElement(plugin1))
+				Expect(plugins).To(ContainElement(plugin2))
+			})
+		})
 
 		Context("Kube tests", func() {
 			var (
@@ -150,3 +221,7 @@ func getRandomAddr() string {
 	listener.Close()
 	return addr
 }
+
+type dummyPlugin struct{}
+
+func (*dummyPlugin) Init(params plugins.InitParams) error { return nil }

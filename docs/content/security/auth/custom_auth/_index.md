@@ -23,7 +23,7 @@ the Envoy spec for an [external authorization server](https://github.com/envoypr
 Let's start by creating the sample `petstore` application:
 
 ```shell
-kubectl apply --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 We can now add a route to the sample application by running the following command:
@@ -41,8 +41,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
@@ -130,8 +130,9 @@ kubectl --namespace gloo-system delete pod -l app=sample-auth
 To use our custom auth server, we need to edit the Gloo Settings resource. Run the following command to edit the settings:
 
 ```shell script
-kubectl --namespace gloo-system edit settings default`) to point to your auth server.
-```            
+kubectl --namespace gloo-system edit settings default
+```
+
 
 We need to add the following `extauth` attribute:
 
@@ -228,12 +229,12 @@ spec:
   virtualHost:
     domains:
     - '*'
-    virtualHostPlugins:
+    options:
       extauth:
         customAuth: {}
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:

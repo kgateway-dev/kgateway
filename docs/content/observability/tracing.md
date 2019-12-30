@@ -4,7 +4,7 @@ weight: 4
 description: Configure Gloo for tracing
 ---
 
-# Tracing
+## Tracing
 
 Gloo makes it easy to implement tracing on your system through [Envoy's tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html).
 
@@ -41,7 +41,7 @@ Note: some tracing providers, such as Zipkin, require a `collector_cluster` (the
 
 {{< highlight yaml "hl_lines=3-23" >}}
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     tracing:
       provider:
         name: envoy.zipkin
@@ -145,7 +145,7 @@ If both means are used, the header's value will override the routes's value.
 You can set a route descriptor with `kubectl edit virtualservice -n gloo-system [name-of-vs]`.
 Edit your virtual service as shown below.
 
-{{< highlight yaml "hl_lines=17-19" >}}
+{{< highlight yaml "hl_lines=17-18" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata: # collapsed for brevity
@@ -161,10 +161,9 @@ spec:
           upstream:
             name: my-upstream
             namespace: gloo-system
-      routePlugins:
+      options:
         tracing:
           routeDescriptor: my-route-from-abc-jan-01
-        prefixRewrite:
-          prefixRewrite: /
+        prefixRewrite: /
 status: # collapsed for brevity
 {{< /highlight >}}

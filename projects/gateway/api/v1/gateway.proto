@@ -4,6 +4,8 @@ option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 import "google/protobuf/wrappers.proto";
@@ -39,7 +41,7 @@ message Gateway {
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
@@ -78,23 +80,33 @@ message Gateway {
 }
 
 message HttpGateway {
-    // names of the the virtual services, which contain the actual routes for the gateway
-    // if the list is empty, all virtual services in the same namespace as this gateway will apply (with accordance to tls flag above).
+    // Names & namespace refs of the the virtual services which contain the actual routes for the gateway.
+    // If the list is empty, all virtual services in the same namespace as this gateway will apply,
+    // with accordance to `ssl` flag on `Gateway` above.
+    // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
-    // Select virtual services by their label. This will apply only to virtual services
-    // in the same namespace as the gateway resource.
-    // only one of `virtualServices` or `virtualServiceSelector` should be provided
-    map<string, string> virtual_service_selector = 2 ;
+    // Select virtual services by their label. This will apply only to virtual services in the same namespace
+    // as the gateway resource, unless `virtual_service_namespaces` is provided below.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    map<string, string> virtual_service_selector = 2;
 
-    // http gateway configuration
+    // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
+    // via `virtual_service_selector` on the `HttpGateway` object.
+    // By default, virtual services only match if they are in the same namespace as the Gateway itself, to better
+    // support multi-tenant models and prevent potentially problematic virtual service merging with duplicate domains.
+
+    // Expand the search by providing a list of valid search namespaces here, or search all namespaces by setting '*'
+    repeated string virtual_service_namespaces = 3;
+
+    // HTTP Gateway configuration
     gloo.solo.io.HttpListenerOptions options = 8;
-
 }
 
 message TcpGateway {
     // TCP hosts that the gateway can route to
     repeated gloo.solo.io.TcpHost tcp_hosts = 1;
-    // tcp gateway configuration
+    // TCP Gateway configuration
     gloo.solo.io.TcpListenerOptions options = 8;
 }

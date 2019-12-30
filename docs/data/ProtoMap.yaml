@@ -128,6 +128,9 @@ apis:
   envoy.api.v2.cluster.OutlierDetection:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/cluster/outlier_detection.proto.sk/#OutlierDetection
     package: envoy.api.v2.cluster
+  envoy.api.v2.core.AsyncDataSource:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#AsyncDataSource
+    package: envoy.api.v2.core
   envoy.api.v2.core.ControlPlane:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#ControlPlane
     package: envoy.api.v2.core
@@ -146,6 +149,9 @@ apis:
   envoy.api.v2.core.HealthCheck:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/core/health_check.proto.sk/#HealthCheck
     package: envoy.api.v2.core
+  envoy.api.v2.core.HttpUri:
+    relativepath: api/envoy/api/v2/core/http_uri.proto.sk/#HttpUri
+    package: envoy.api.v2.core
   envoy.api.v2.core.Locality:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#Locality
     package: envoy.api.v2.core
@@ -154,6 +160,12 @@ apis:
     package: envoy.api.v2.core
   envoy.api.v2.core.Node:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#Node
+    package: envoy.api.v2.core
+  envoy.api.v2.core.RemoteDataSource:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#RemoteDataSource
+    package: envoy.api.v2.core
+  envoy.api.v2.core.RuntimeFeatureFlag:
+    relativepath: api/envoy/api/v2/core/base.proto.sk/#RuntimeFeatureFlag
     package: envoy.api.v2.core
   envoy.api.v2.core.RuntimeFractionalPercent:
     relativepath: api/envoy/api/v2/core/base.proto.sk/#RuntimeFractionalPercent
@@ -287,6 +299,15 @@ apis:
   envoy.config.filter.http.transformation_ee.v2.TransformationRule:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation_ee/transformation.proto.sk/#TransformationRule
     package: envoy.config.filter.http.transformation_ee.v2
+  envoy.config.wasm.v2.PluginConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#PluginConfig
+    package: envoy.config.wasm.v2
+  envoy.config.wasm.v2.VmConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#VmConfig
+    package: envoy.config.wasm.v2
+  envoy.config.wasm.v2.WasmService:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#WasmService
+    package: envoy.config.wasm.v2
   envoy.type.DoubleRange:
     relativepath: api/envoy/type/range.proto.sk/#DoubleRange
     package: envoy.type
@@ -409,6 +430,12 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.MultiDestination:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
+    package: gloo.solo.io
+  gloo.solo.io.NotifyOnResyncRequest:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncRequest
+    package: gloo.solo.io
+  gloo.solo.io.NotifyOnResyncResponse:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/grpc/validation/proxy_validation.proto.sk/#NotifyOnResyncResponse
     package: gloo.solo.io
   gloo.solo.io.Proxy:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Proxy
@@ -722,6 +749,9 @@ apis:
   pipe.options.gloo.solo.io.UpstreamSpec:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/pipe/pipe.proto.sk/#UpstreamSpec
     package: pipe.options.gloo.solo.io
+  protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto.sk/#ProtocolUpgradeConfig
+    package: protocol_upgrade.options.gloo.solo.io
   ratelimit.options.gloo.solo.io.Action:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#Action
     package: ratelimit.options.gloo.solo.io
@@ -890,3 +920,12 @@ apis:
   waf.options.gloo.solo.io.Settings:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/waf/waf.proto.sk/#Settings
     package: waf.options.gloo.solo.io
+  wasm.options.gloo.solo.io.FilterStage:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#FilterStage
+    package: wasm.options.gloo.solo.io
+  wasm.options.gloo.solo.io.PluginSource:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#PluginSource
+    package: wasm.options.gloo.solo.io
+  wasm.options.gloo.solo.io.WasmFilter:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto.sk/#WasmFilter
+    package: wasm.options.gloo.solo.io

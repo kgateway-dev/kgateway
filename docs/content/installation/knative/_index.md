@@ -20,7 +20,7 @@ Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/in
 ## Installing the Gloo Knative Ingress on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
@@ -43,23 +43,35 @@ apply to the cluster instead of installing them.
 This is the recommended method for installing Gloo to your production environment as it offers rich customization to
 the Gloo control plane and the proxies Gloo manages.
 
-As a first step, you have to add the Gloo repository to the list of known chart repositories:
+First, make sure you have knative installed. If you do not, you can install knative components without Gloo using
+`glooctl`:
+
+```shell script
+glooctl install knative -g
+```
+
+Now let's install Gloo. If needed, add the Gloo repository to the list of known chart repositories:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 ```
 
-The Gloo chart archive contains the necessary value files for the Knative deployment option. Run the
-following command to download and extract the archive to the current directory:
-
-```shell
-helm fetch --untar=true --untardir=. gloo/gloo
+Create a `values-knative.yaml` file with the following overrides:
+```yaml
+gateway:
+  enabled: false
+settings:
+  integrations:
+    knative:
+      enabled: true
+      version: {{ . }}  # put installed knative version here!
 ```
 
 Finally, install Gloo using the following command:
 
 ```shell
-helm install gloo --namespace gloo-system -f gloo/values-knative.yaml
+kubectl create namespace gloo-system
+helm install gloo gloo/gloo --namespace gloo-system -f values-knative.yaml
 ```
 
 Gloo can be installed to a namespace of your choosing with the `--namespace` flag.

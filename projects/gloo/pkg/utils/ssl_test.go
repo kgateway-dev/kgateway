@@ -3,8 +3,8 @@ package utils
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	"github.com/gogo/protobuf/types"
+	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -286,7 +286,7 @@ var _ = Describe("Ssl", func() {
 			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
 			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
 			var credConfig v2alpha.FileBasedMetadataConfig
-			types.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
+			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
 
 			Expect(credConfig).To(BeEquivalentTo(v2alpha.FileBasedMetadataConfig{
 				SecretData: &envoycore.DataSource{

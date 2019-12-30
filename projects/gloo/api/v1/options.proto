@@ -6,6 +6,8 @@ import "google/protobuf/struct.proto";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/cors/cors.proto";
@@ -23,8 +25,10 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/options/stats/stats.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/headers/headers.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/aws/aws.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
+import "github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
 import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 
@@ -74,6 +78,10 @@ message HttpListenerOptions {
     waf.options.gloo.solo.io.Settings waf = 5;
     // Enterprise-only: Config for data loss prevention
     dlp.options.gloo.solo.io.FilterConfig dlp = 6;
+    // Wasm filter config [very-experimental!]
+    // Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true
+    // These require a special nightly version of envoy which is not deployed by default
+    wasm.options.gloo.solo.io.PluginSource wasm = 7;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -171,6 +179,8 @@ message RouteOptions {
     // Gloo configures Envoy with the first available RouteActionHashConfig among the following ordered list of providers:
     // - route, upstream, virtual service
     lbhash.options.gloo.solo.io.RouteActionHashConfig lb_hash = 12;
+    // Route configuration for protocol upgrade requests.
+    repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 13;
     // Enterprise-only: Partial config for GlooE rate-limiting based on Envoy's rate-limit service;

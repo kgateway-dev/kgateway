@@ -8,6 +8,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/errors"
 
@@ -28,7 +29,8 @@ type HttpTranslator struct{}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
-		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snap.Hash())
+		snapHash := hashutils.MustHash(snap)
+		contextutils.LoggerFrom(ctx).Debugf("%v had no virtual services", snapHash)
 		return nil
 	}
 	var result []*gloov1.Listener
@@ -166,21 +168,17 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 
 	if len(httpGateway.VirtualServiceSelector) > 0 {
 		// select virtual services by the label selector
-		// must be in the same namespace as the Gateway
 		selector := labels.SelectorFromSet(httpGateway.VirtualServiceSelector)
 
 		vsLabels := labels.Set(virtualService.Metadata.Labels)
 
-		// must match both labels and namespace
-		return virtualService.Metadata.Namespace == gateway.Metadata.Namespace && selector.Matches(vsLabels)
+		return virtualServiceNamespaceValidForGateway(gateway, virtualService) && selector.Matches(vsLabels)
 	}
 	// use individual refs to collect virtual services
 	virtualServiceRefs := httpGateway.VirtualServices
 
 	if len(virtualServiceRefs) == 0 {
-		// accept only virtual services in the same namespace as the gateway
-		// https://github.com/solo-io/gloo/issues/1142
-		return gateway.Metadata.Namespace == virtualService.Metadata.Namespace
+		return virtualServiceNamespaceValidForGateway(gateway, virtualService)
 	}
 
 	vsRef := virtualService.Metadata.Ref()
@@ -191,6 +189,27 @@ func GatewayContainsVirtualService(gateway *v1.Gateway, virtualService *v1.Virtu
 		}
 	}
 
+	return false
+}
+
+func virtualServiceNamespaceValidForGateway(gateway *v1.Gateway, virtualService *v1.VirtualService) bool {
+	httpGateway := gateway.GetHttpGateway()
+	if httpGateway == nil {
+		return false
+	}
+
+	// by default, virtual services live in the same namespace as the referencing gateway
+	virtualServiceNamespaces := []string{gateway.Metadata.Namespace}
+
+	if len(httpGateway.VirtualServiceNamespaces) > 0 {
+		virtualServiceNamespaces = httpGateway.VirtualServiceNamespaces
+	}
+
+	for _, ns := range virtualServiceNamespaces {
+		if ns == "*" || virtualService.Metadata.Namespace == ns {
+			return true
+		}
+	}
 	return false
 }
 

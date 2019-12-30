@@ -46,7 +46,7 @@ for detailed information about how authentication is configured on Virtual Servi
 Let's deploy a sample application that we will route requests to during this guide:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 ### Creating a Virtual Service
@@ -63,8 +63,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -171,8 +171,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
@@ -180,7 +180,7 @@ spec:
               name: petstore
               namespace: default
             port: 8080
-    virtualHostPlugins:
+    options:
       extauth:
         config_ref:
           name: opa
@@ -195,22 +195,16 @@ inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "security/a
 Paths that don't start with `/api/pets` are not authorized (should return 403):
 ```
 curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/
-
-403
 ```
 
 Not allowed to delete `pets/1` (should return 403):
 ```
 curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/pets/1 -X DELETE
-
-403
 ```
 
 Allowed to delete `pets/2` (should return 204):
 ```
 curl -s -w "%{http_code}\n" $(glooctl proxy url)/api/pets/2 -X DELETE
-
-204
 ```
 
 #### Cleanup
@@ -219,7 +213,7 @@ You can clean up the resources created in this guide by running:
 ```
 kubectl delete vs -n gloo-system petstore
 kubectl delete ac -n gloo-system opa
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 rm policy.rego
 ```
 
@@ -245,7 +239,7 @@ minikube start --docker-opt="default-ulimit=nofile=102400:102400"
 Let's deploy a sample web application that we will use to demonstrate these features:
 
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 ```
 
 ### Create a Virtual Service
@@ -262,24 +256,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
             ref:
               name: petclinic
               namespace: default
-            port: 80
+            port: 8080
 ```
 
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
 reachable from you machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to `localhost:8080` you should see the following page:
+If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page:
 
 ![Pet Clinic app homepage](petclinic-home.png)
 
@@ -332,10 +326,17 @@ EOF
 
 This configures Dex with two static users. Notice the **client secret** with value `secretvalue`.
 
-Using this configuration, we can deploy Dex to our cluster using Helm:
+Using this configuration, we can deploy Dex to our cluster using Helm.
+
+If `help repo list` doesn't list the `stable` repo, invoke:
 
 ```shell
-helm install --name dex --namespace gloo-system stable/dex -f dex-values.yaml
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
+```
+
+And then install dex (helm 3 command follows):
+```shell
+helm install dex --namespace gloo-system stable/dex -f dex-values.yaml
 ```
 
 #### Make the client secret accessible to Gloo
@@ -360,10 +361,9 @@ metadata:
   namespace: gloo-system
 data:
   # The value is a base64 encoding of the following YAML:
-  # config:
-  #   client_secret: secretvalue
+  # client_secret: secretvalue
   # Gloo expected OAuth client secrets in this format.
-  extension: Y29uZmlnOgogIGNsaWVudF9zZWNyZXQ6IHNlY3JldHZhbHVlCg==
+  oauth: Y2xpZW50U2VjcmV0OiBzZWNyZXR2YWx1ZQo=
 {{< /tab >}}
 {{< /tabs >}} 
 <br>
@@ -462,16 +462,16 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           kube:
             ref:
               name: petclinic
               namespace: default
-            port: 80
-    virtualHostPlugins:
+            port: 8080
+    options:
       extauth:
         config_ref:
           name: jwt-opa
@@ -497,12 +497,12 @@ echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 
 1. Port-forward the Gloo Gateway Proxy service so that it is reachable from you machine at `localhost:8080`:
 ```
-kubectl -n gloo-system port-forward svc/gateway-proxy-v2 8080:80 &
+kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid2=$!
 ```
 
-Now we are ready to test our complete setup! Open you browser and navigate to `localhost:8080`. You should see the 
-following login page:
+Now we are ready to test our complete setup! Open you browser and navigate to
+[http://localhost:8080](http://localhost:8080). You should see the following login page:
 
 ![Dex login page](./dex-login.png)
 
@@ -526,6 +526,6 @@ kubectl delete -n gloo-system secret oauth dex-grpc-ca  dex-grpc-client-tls  dex
 kubectl delete virtualservice -n gloo-system petclinic
 kubectl delete authconfig -n gloo-system jwt-opa
 kubectl delete -n gloo-system configmap allow-jwt
-kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 rm check-jwt.rego dex-values.yaml
 ```

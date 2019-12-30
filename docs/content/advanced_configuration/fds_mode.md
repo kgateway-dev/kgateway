@@ -31,9 +31,9 @@ services we choose.
 
 FDS can run in one of 3 modes:
 
-* `BLACKLIST`: The most liberal FDS polling policy. Using this mode, FDS will poll any service unless its namespace or the service itself is explicitly blacklisted. *`BLACKLIST` is the default mode for FDS*.
-* `WHITELIST`: A more restricted FDS polling policy. Using this mode, FDS will poll only those services who either live in an explicitly whitelisted namespace, or themselves are are explicitly whitelisted.
-* `DISABLED`: FDS will not run. Upsrteam Discovery (UDS) will still run as normal.
+* `BLACKLIST`: The most liberal FDS polling policy. Using this mode, FDS will poll any service unless its namespace or the service itself is explicitly blacklisted.
+* `WHITELIST`: A more restricted FDS polling policy. Using this mode, FDS will poll only those services who either live in an explicitly whitelisted namespace, or themselves are are explicitly whitelisted. *`WHITELIST` is the default mode for FDS*.
+* `DISABLED`: FDS will not run. **Upstream Discovery Service** (UDS) will still run as normal.
 
 Setting the `fdsMode` can be done either via the Helm Chart, or by directly modifying the `default` `gloo.solo.io/v1.Settings` custom resource in Gloo's installation namespace (`gloo-system`).
 
@@ -46,14 +46,14 @@ settings:
 
 discovery:
   # set to either WHITELIST, BLACKLIST, or DISABLED
-  # BLACKLIST is the default value
-  fdsMode: WHITELIST 
+  # WHITELIST is the default value
+  fdsMode: BLACKLIST
 ```
 
 Or add the following CLI flags to `helm install|template` commands:
 
 ```bash
-helm install|template ... --set settings.create=true --set discovery.fdsMode=WHITELIST
+helm install|template ... --set settings.create=true --set discovery.fdsMode=BLACKLIST
 ```
 
 ### Settings `fdsMode` by editing the `gloo.solo.io/v1.Settings` custom resource:
@@ -84,7 +84,7 @@ spec:
   # add the following lines
   discovery:
     # set to either WHITELIST, BLACKLIST, or DISABLED
-    # BLACKLIST is the default value
+    # WHITELIST is the default value
     fdsMode: WHITELIST
 {{< /highlight >}}
 

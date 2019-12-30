@@ -8,12 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"knative.dev/serving/pkg/apis/networking"
+
+	"knative.dev/pkg/network"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	v1 "k8s.io/api/core/v1"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
-	"knative.dev/serving/pkg/network"
-
 	"github.com/solo-io/go-utils/contextutils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
@@ -27,21 +29,61 @@ import (
 )
 
 const (
-	bindPortHttp  = 80
-	bindPortHttps = 443
+	ingressClassAnnotation = networking.IngressClassAnnotationKey
+	glooIngressClass       = "gloo.ingress.networking.knative.dev"
 )
 
-func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
-	ingressSpecsByRef := make(map[core.ResourceRef]knativev1alpha1.IngressSpec)
-	for _, ing := range ingresses {
-		ingressSpecsByRef[ing.GetMetadata().Ref()] = ing.Spec
+const (
+	bindPortHttp  = 80
+	bindPortHttps = 443
+
+	// a comma-separated list of sni domains
+	sslAnnotationKeySniDomains = "gloo.networking.knative.dev/ssl.sni_domains"
+	// the name of the secret containing tls certs
+	sslAnnotationKeySecretName = "gloo.networking.knative.dev/ssl.secret_name"
+	// the namespace of the secret containing tls certs
+	// defaults to the ingress' namespace
+	sslAnnotationKeySecretNamespace = "gloo.networking.knative.dev/ssl.secret_namespace"
+)
+
+func sslConfigFromAnnotations(annotations map[string]string, namespace string) *gloov1.SslConfig {
+	secretName, ok := annotations[sslAnnotationKeySecretName]
+	if !ok {
+		return nil
 	}
-	return TranslateProxyFromSpecs(ctx, proxyName, proxyNamespace, ingressSpecsByRef, secrets)
+
+	secretNamespace, ok := annotations[sslAnnotationKeySecretNamespace]
+	if !ok {
+		secretNamespace = namespace
+	}
+
+	sniDomains := strings.Split(annotations[sslAnnotationKeySniDomains], ",")
+
+	return &gloov1.SslConfig{
+		SslSecrets: &gloov1.SslConfig_SecretRef{
+			SecretRef: &core.ResourceRef{
+				Name:      secretName,
+				Namespace: secretNamespace,
+			},
+		},
+		SniDomains: sniDomains,
+	}
+}
+
+func translateProxy(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (*gloov1.Proxy, error) {
+	// use map of *core.Metadata to support both Ingress and ClusterIngress,
+	// which share the same Spec type
+	ingressSpecsByRef := make(map[*core.Metadata]knativev1alpha1.IngressSpec)
+	for _, ing := range ingresses {
+		meta := ing.GetMetadata()
+		ingressSpecsByRef[&meta] = ing.Spec
+	}
+	return TranslateProxyFromSpecs(ctx, proxyName, proxyNamespace, ingressSpecsByRef)
 }
 
 // made public to be shared with the (soon to be deprecated) clusteringress controller
-func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace string, ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) (*gloov1.Proxy, error) {
-	virtualHostsHttp, virtualHostsHttps, sslConfigs, err := routingConfig(ctx, ingresses, secrets)
+func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace string, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) (*gloov1.Proxy, error) {
+	virtualHostsHttp, virtualHostsHttps, sslConfigs, err := routingConfig(ctx, ingresses)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
 	}
@@ -80,19 +122,13 @@ func TranslateProxyFromSpecs(ctx context.Context, proxyName, proxyNamespace stri
 	}, nil
 }
 
-func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1alpha1.IngressSpec, secrets gloov1.SecretList) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*gloov1.SslConfig, error) {
+func routingConfig(ctx context.Context, ingresses map[*core.Metadata]knativev1alpha1.IngressSpec) ([]*gloov1.VirtualHost, []*gloov1.VirtualHost, []*gloov1.SslConfig, error) {
 
 	var virtualHostsHttp, virtualHostsHttps []*gloov1.VirtualHost
 	var sslConfigs []*gloov1.SslConfig
 	for ing, spec := range ingresses {
 
 		for _, tls := range spec.TLS {
-			secret, err := secrets.Find(tls.SecretNamespace, tls.SecretName)
-			if err != nil {
-				return nil, nil, nil, errors.Wrapf(err, "invalid secret for knative ingress %v", ing.Name)
-			}
-
-			ref := secret.Metadata.Ref()
 
 			if tls.ServerCertificate != "" && tls.ServerCertificate != v1.TLSCertKey {
 				contextutils.LoggerFrom(ctx).Warn("Custom ServerCertificate filenames are not currently supported by Gloo")
@@ -104,12 +140,31 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				continue
 			}
 
+			secretNamespace := tls.SecretNamespace
+			if secretNamespace == "" {
+				// default to namespace shared with ingress
+				secretNamespace = ing.Namespace
+			}
+
 			sslConfigs = append(sslConfigs, &gloov1.SslConfig{
 				SniDomains: tls.Hosts,
 				SslSecrets: &gloov1.SslConfig_SecretRef{
-					SecretRef: &ref,
+					// pass secret through to gloo,
+					// allow Gloo to perform secret validation
+					SecretRef: &core.ResourceRef{
+						Namespace: secretNamespace,
+						Name:      tls.SecretName,
+					},
 				},
 			})
+		}
+
+		// use tls if spec contains tls, or user sets with annotations
+		useTls := len(spec.TLS) > 0
+
+		if customSsl := sslConfigFromAnnotations(ing.Annotations, ing.Namespace); customSsl != nil {
+			useTls = true
+			sslConfigs = append(sslConfigs, customSsl)
 		}
 
 		for i, rule := range spec.Rules {
@@ -163,7 +218,6 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 				routes = append(routes, route)
 
 			}
-			useTls := len(spec.TLS) > 0
 
 			var hosts []string
 			for _, host := range expandHosts(rule.Hosts) {
@@ -176,7 +230,7 @@ func routingConfig(ctx context.Context, ingresses map[core.ResourceRef]knativev1
 			}
 
 			vh := &gloov1.VirtualHost{
-				Name:    ing.Key() + "-" + strconv.Itoa(i),
+				Name:    ing.Ref().Key() + "-" + strconv.Itoa(i),
 				Domains: hosts,
 				Routes:  routes,
 			}

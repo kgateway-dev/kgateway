@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/1838
+    description: >
+      The template for the settings resource needs to be a Helm pre-install hook to prevent races during install.
+      The hook annotation was accidentally removed with the `1.2.0` release; this change adds it back.

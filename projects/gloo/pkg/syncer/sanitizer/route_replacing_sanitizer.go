@@ -4,11 +4,12 @@ import (
 	"context"
 	"sort"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
@@ -17,7 +18,7 @@ import (
 	"go.uber.org/zap"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -66,16 +67,16 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*Route
 
 func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*envoyapi.Listener, *envoyapi.Cluster, error) {
 	hcmConfig := &v2.HttpConnectionManager{
-		CodecType:  v2.AUTO,
+		CodecType:  v2.HttpConnectionManager_AUTO,
 		StatPrefix: fallbackListenerName,
 		RouteSpecifier: &v2.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoyapi.RouteConfiguration{
 				Name: "fallback_routes",
-				VirtualHosts: []envoyroute.VirtualHost{{
+				VirtualHosts: []*envoyroute.VirtualHost{{
 					Name:    "fallback_virtualhost",
 					Domains: []string{"*"},
-					Routes: []envoyroute.Route{{
-						Match: envoyroute.RouteMatch{
+					Routes: []*envoyroute.Route{{
+						Match: &envoyroute.RouteMatch{
 							PathSpecifier: &envoyroute.RouteMatch_Prefix{
 								Prefix: "/",
 							},
@@ -99,22 +100,22 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 		}},
 	}
 
-	typedHcmConfig, err := types.MarshalAny(hcmConfig)
+	typedHcmConfig, err := ptypes.MarshalAny(hcmConfig)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	fallbackListener := &envoyapi.Listener{
 		Name: fallbackListenerName,
-		Address: core.Address{
+		Address: &core.Address{
 			Address: &core.Address_Pipe{
 				Pipe: &core.Pipe{
 					Path: fallbackListenerSocket,
 				},
 			},
 		},
-		FilterChains: []listener.FilterChain{{
-			Filters: []listener.Filter{{
+		FilterChains: []*listener.FilterChain{{
+			Filters: []*listener.Filter{{
 				Name: util.HTTPConnectionManager,
 				ConfigType: &listener.Filter_TypedConfig{
 					TypedConfig: typedHcmConfig,
@@ -125,11 +126,11 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 
 	fallbackCluster := &envoyapi.Cluster{
 		Name:           fallbackClusterName,
-		ConnectTimeout: translator.ClusterConnectionTimeout,
+		ConnectTimeout: gogoutils.DurationStdToProto(&translator.ClusterConnectionTimeout),
 		LoadAssignment: &envoyapi.ClusterLoadAssignment{
 			ClusterName: fallbackClusterName,
-			Endpoints: []endpoint.LocalityLbEndpoints{{
-				LbEndpoints: []endpoint.LbEndpoint{{
+			Endpoints: []*endpoint.LocalityLbEndpoints{{
+				LbEndpoints: []*endpoint.LbEndpoint{{
 					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 						Endpoint: &endpoint.Endpoint{
 							Address: &core.Address{

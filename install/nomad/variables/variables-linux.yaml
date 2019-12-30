@@ -21,7 +21,7 @@ gloo:
   image:
     registry: quay.io/solo-io
     repository: gloo
-    tag: 0.18.23
+    tag: 1.2.4
   cpuLimit: 1000
   memLimit: 500
   bandwidthLimit: 10
@@ -32,7 +32,7 @@ discovery:
   image:
     registry: quay.io/solo-io
     repository: discovery
-    tag: 0.18.23
+    tag: 1.2.4
   cpuLimit: 500
   memLimit: 500
   bandwidthLimit: 10
@@ -41,7 +41,7 @@ gateway:
   image:
     registry: quay.io/solo-io
     repository: gateway
-    tag: 0.18.23
+    tag: 1.2.4
   cpuLimit: 250
   memLimit: 250
   bandwidthLimit: 5
@@ -50,7 +50,7 @@ gatewayProxy:
   image:
     registry: quay.io/solo-io
     repository: gloo-envoy-wrapper
-    tag: 0.18.23
+    tag: 1.2.4
   cpuLimit: 500
   memLimit: 500
   bandwidthLimit: 100

@@ -5,6 +5,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 option (gogoproto.equal_all) = true;
 

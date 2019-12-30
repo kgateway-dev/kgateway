@@ -3,10 +3,14 @@ package basicroute_test
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
+
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -15,7 +19,6 @@ import (
 
 var _ = Describe("prefix rewrite", func() {
 	It("works", func() {
-
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
 			PrefixRewrite: "/",
@@ -80,7 +83,7 @@ var _ = Describe("timeout", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.Timeout).NotTo(BeNil())
-		Expect(*routeAction.Timeout).To(Equal(t))
+		Expect(routeAction.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
 	})
 })
 
@@ -100,10 +103,10 @@ var _ = Describe("retries", func() {
 		}
 		expectedRetryPolicy = &envoyroute.RetryPolicy{
 			RetryOn: "if at first you don't succeed",
-			NumRetries: &types.UInt32Value{
+			NumRetries: &wrappers.UInt32Value{
 				Value: 5,
 			},
-			PerTryTimeout: &t,
+			PerTryTimeout: gogoutils.DurationStdToProto(&t),
 		}
 
 		plugin = NewPlugin()
@@ -190,7 +193,7 @@ var _ = Describe("host rewrite", func() {
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
 			HostRewriteSpecifier: &envoyroute.RouteAction_AutoHostRewrite{
-				AutoHostRewrite: &types.BoolValue{
+				AutoHostRewrite: &wrappers.BoolValue{
 					Value: false,
 				},
 			},
@@ -211,5 +214,72 @@ var _ = Describe("host rewrite", func() {
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(routeAction.GetAutoHostRewrite().GetValue()).To(Equal(true))
+	})
+})
+
+var _ = Describe("upgrades", func() {
+	It("works", func() {
+		p := NewPlugin()
+
+		routeAction := &envoyroute.RouteAction{}
+
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
+					},
+				},
+			},
+		}, out)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(1))
+		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(Equal(true))
+	})
+	It("fails on double config", func() {
+		p := NewPlugin()
+
+		routeAction := &envoyroute.RouteAction{}
+
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
+					},
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
+					},
+				},
+			},
+		}, out)
+
+		Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
 	})
 })

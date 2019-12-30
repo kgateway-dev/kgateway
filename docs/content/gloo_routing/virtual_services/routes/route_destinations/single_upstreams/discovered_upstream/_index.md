@@ -16,8 +16,7 @@ Let's deploy a simple example application called `petstore`:
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
-kubectl apply \
-      --filename https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 {{< /tab >}}
 {{< /tabs >}}
 
@@ -32,7 +31,7 @@ the name and namespace of the service, and the port.
 We can do this using `glooctl`: 
 
 ```shell
-glooctl get upstream -n gloo-system default-petstore-8080 -oyaml
+glooctl get upstream -n gloo-system default-petstore-8080
 ```
 
 ```shell

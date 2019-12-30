@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Quick fix for regression on FDS with non-kube upstreams. 
+    issueLink: https://github.com/solo-io/gloo/issues/1844
+    resolvesIssue: false

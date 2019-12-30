@@ -1,7 +1,10 @@
+// +build ignore
+
 package docs_demo
 
 // package main
 
+// all the import's we'll need for this controller
 import (
 	"context"
 	"log"
@@ -9,12 +12,12 @@ import (
 	"time"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	// import for GKE
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -24,7 +27,7 @@ func main() {
 	// root context for the whole thing
 	ctx := context.Background()
 
-	// initialize Gloo API clients, built on top of CRDs
+	// initialize Gloo API clients
 	upstreamClient, proxyClient := initGlooClients(ctx)
 
 	// start a watch on upstreams. we'll use this as our trigger
@@ -41,46 +44,10 @@ func main() {
 			must(err)
 		// process a new upstream list
 		case newUpstreamList := <-upstreamWatch:
+			// we received a new list of upstreams from our watch,
 			resync(ctx, newUpstreamList, proxyClient)
 		}
 	}
-}
-
-func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
-	// root rest config
-	restConfig, err := kubeutils.GetConfig(
-		os.Getenv("KUBERNETES_MASTER_URL"),
-		os.Getenv("KUBECONFIG"))
-	must(err)
-
-	// wrapper for kubernetes shared informer factory
-	cache := kube.NewKubeCache(ctx)
-
-	// initialize the CRD client for Gloo Upstreams
-	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.UpstreamCrd,
-		Cfg:         restConfig,
-		SharedCache: cache,
-	})
-	must(err)
-
-	// registering the client registers the type with the client cache
-	err = upstreamClient.Register()
-	must(err)
-
-	// initialize the CRD client for Gloo Proxies
-	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
-		Crd:         v1.ProxyCrd,
-		Cfg:         restConfig,
-		SharedCache: cache,
-	})
-	must(err)
-
-	// registering the client registers the type with the client cache
-	err = proxyClient.Register()
-	must(err)
-
-	return upstreamClient, proxyClient
 }
 
 // we received a new list of upstreams! regenerate the desired proxy
@@ -120,6 +87,43 @@ func resync(ctx context.Context, upstreams v1.UpstreamList, client v1.ProxyClien
 	log.Printf("wrote proxy object: %+v\n", written)
 }
 
+func initGlooClients(ctx context.Context) (v1.UpstreamClient, v1.ProxyClient) {
+	// root rest config
+	restConfig, err := kubeutils.GetConfig(
+		os.Getenv("KUBERNETES_MASTER_URL"),
+		os.Getenv("KUBECONFIG"))
+	must(err)
+
+	// wrapper for kubernetes shared informer factory
+	cache := kube.NewKubeCache(ctx)
+
+	// initialize the CRD client for Gloo Upstreams
+	upstreamClient, err := v1.NewUpstreamClient(&factory.KubeResourceClientFactory{
+		Crd:         v1.UpstreamCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
+	})
+	must(err)
+
+	// registering the client registers the type with the client cache
+	err = upstreamClient.Register()
+	must(err)
+
+	// initialize the CRD client for Gloo Proxies
+	proxyClient, err := v1.NewProxyClient(&factory.KubeResourceClientFactory{
+		Crd:         v1.ProxyCrd,
+		Cfg:         restConfig,
+		SharedCache: cache,
+	})
+	must(err)
+
+	// registering the client registers the type with the client cache
+	err = proxyClient.Register()
+	must(err)
+
+	return upstreamClient, proxyClient
+}
+
 // in this function we'll generate an opinionated
 // proxy object with a routes for each of our upstreams
 func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
@@ -131,12 +135,7 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 	var virtualHosts []*v1.VirtualHost
 
 	for _, upstream := range upstreams {
-
-		// check that the upstream is in the 'Accepted' state
-		if upstream.Status.State != core.Status_Accepted {
-			continue
-		}
-
+		upstreamRef := upstream.Metadata.Ref()
 		// create a virtual host for each upstream
 		vHostForUpstream := &v1.VirtualHost{
 			// logical name of the virtual host, should be unique across vhosts
@@ -151,9 +150,11 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 			// and send it to the upstream for this domain
 			Routes: []*v1.Route{{
 				// use a basic catch-all matcher
-				Matcher: &matchers.Matcher{
-					PathSpecifier: &matchers.Matcher_Prefix{
-						Prefix: "/",
+				Matchers: []*matchers.Matcher{
+					&matchers.Matcher{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/",
+						},
 					},
 				},
 
@@ -163,8 +164,10 @@ func makeDesiredProxy(upstreams v1.UpstreamList) *v1.Proxy {
 						Destination: &v1.RouteAction_Single{
 							// single destination
 							Single: &v1.Destination{
-								// a "reference" to the upstream, which is a Namespace/Name tuple
-								Upstream: upstream.Metadata.Ref(),
+								DestinationType: &v1.Destination_Upstream{
+									// a "reference" to the upstream, which is a Namespace/Name tuple
+									Upstream: &upstreamRef,
+								},
 							},
 						},
 					},

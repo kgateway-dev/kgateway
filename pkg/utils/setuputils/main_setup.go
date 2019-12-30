@@ -3,40 +3,35 @@ package setuputils
 import (
 	"context"
 	"flag"
-	"fmt"
 	"sync"
 	"time"
 
-	"github.com/solo-io/reporting-client/pkg/signature"
-
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/usage"
 	"github.com/solo-io/gloo/pkg/version"
-	"github.com/solo-io/reporting-client/pkg/client"
-
-	"go.uber.org/zap"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/reporting-client/pkg/client"
+	"github.com/solo-io/reporting-client/pkg/signature"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/errors"
+	"go.uber.org/zap"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 type SetupOpts struct {
-	LoggingPrefix string
-	SetupFunc     SetupFunc
-	ExitOnError   bool
-	CustomCtx     context.Context
+	LoggerName  string
+	SetupFunc   SetupFunc
+	ExitOnError bool
+	CustomCtx   context.Context
 
-	// optional- if present, report usage with the payload this discovers
+	// optional - if present, add these values in each JSON log line in the gloo pod.
+	// By default, we already log the gloo version.
+	LoggingPrefixVals []interface{}
+	// optional - if present, report usage with the payload this discovers
 	// should really only provide it in very intentional places- in the gloo pod, and in glooctl
 	// otherwise, we'll provide redundant copies of the usage data
 	UsageReporter client.UsagePayloadReader
@@ -45,7 +40,6 @@ type SetupOpts struct {
 var once sync.Once
 
 func Main(opts SetupOpts) error {
-	loggingPrefix := opts.LoggingPrefix
 
 	// prevent panic if multiple flag.Parse called concurrently
 	once.Do(func() {
@@ -56,12 +50,14 @@ func Main(opts SetupOpts) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	ctx = contextutils.WithLogger(ctx, loggingPrefix)
+	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
+	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals...)
+	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	if opts.UsageReporter != nil {
 		go func() {
 			signatureManager := signature.NewSignatureManager()
-			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggingPrefix, signatureManager)
+			errs := StartReportingUsage(opts.CustomCtx, opts.UsageReporter, opts.LoggerName, signatureManager)
 			for err := range errs {
 				contextutils.LoggerFrom(ctx).Warnw("Error while reporting usage", zap.Error(err))
 			}
@@ -73,10 +69,6 @@ func Main(opts SetupOpts) error {
 		return err
 	}
 	if err := settingsClient.Register(); err != nil {
-		return err
-	}
-
-	if err := writeDefaultSettings(setupNamespace, setupName, settingsClient); err != nil {
 		return err
 	}
 
@@ -117,32 +109,6 @@ func kubeOrFileSettingsClient(ctx context.Context, setupNamespace, settingsDir s
 		NamespaceWhitelist: []string{setupNamespace},
 		SkipCrdCreation:    settingsutil.GetSkipCrdCreation(),
 	})
-}
-
-// TODO(ilackarms): remove this or move it to a test package, only use settings watch for production gloo
-func writeDefaultSettings(defaultNamespace, name string, cli v1.SettingsClient) error {
-	settings := &v1.Settings{
-		ConfigSource: &v1.Settings_KubernetesConfigSource{
-			KubernetesConfigSource: &v1.Settings_KubernetesCrds{},
-		},
-		ArtifactSource: &v1.Settings_KubernetesArtifactSource{
-			KubernetesArtifactSource: &v1.Settings_KubernetesConfigmaps{},
-		},
-		SecretSource: &v1.Settings_KubernetesSecretSource{
-			KubernetesSecretSource: &v1.Settings_KubernetesSecrets{},
-		},
-		Gloo: &v1.GlooOptions{
-			XdsBindAddr: fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort),
-		},
-		RefreshRate:        types.DurationProto(time.Minute),
-		DevMode:            true,
-		DiscoveryNamespace: defaultNamespace,
-		Metadata:           core.Metadata{Namespace: defaultNamespace, Name: name},
-	}
-	if _, err := cli.Write(settings, clients.WriteOpts{}); err != nil && !errors.IsExist(err) {
-		return errors.Wrapf(err, "failed to create default settings")
-	}
-	return nil
 }
 
 // does not block the current goroutine

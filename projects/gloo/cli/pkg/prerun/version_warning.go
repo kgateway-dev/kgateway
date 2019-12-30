@@ -4,19 +4,35 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/spf13/cobra"
+
+	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
-	version2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	versiondiscovery "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/versionutils"
-	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"strings"
 )
 
+const (
+	ContainerNameToCheck = "discovery"
+)
+
 func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
-	return WarnOnMismatch(os.Args[0], version.NewKube(opts.Metadata.Namespace), &defaultLogger{})
+	// Only Kubernetes provides client/server version information. Only check for a version
+	// mismatch if Kubernetes is enabled (i.e. Consul is not enabled)
+	if opts.Top.Consul.UseConsul {
+		return nil
+	}
+	nsToCheck := opts.Metadata.Namespace
+	if opts.Install.Namespace != "" {
+		nsToCheck = opts.Install.Namespace
+	}
+
+	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(nsToCheck), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output
@@ -29,16 +45,18 @@ type defaultLogger struct {
 }
 
 func (d *defaultLogger) Printf(format string, args ...interface{}) {
-	fmt.Printf(format, args...)
+	// important that this remains writing to stderr, as we don't want this output to interfere with things like $(glooctl proxy url)
+	fmt.Fprintf(os.Stderr, format, args...)
 }
 
 func (d *defaultLogger) Println(str string) {
-	fmt.Println(str)
+	// important that this remains writing to stderr, as we don't want this output to interfere with things like $(glooctl proxy url)
+	fmt.Fprintln(os.Stderr, str)
 }
 
 // visible for testing
-func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) error {
-	clientServerVersions, err := version.GetClientServerVersions(sv)
+func WarnOnMismatch(binaryName string, sv versioncmd.ServerVersion, logger Logger) error {
+	clientServerVersions, err := versioncmd.GetClientServerVersions(sv)
 	if err != nil {
 		warnOnError(err, logger)
 		return nil
@@ -57,32 +75,25 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 		return nil
 	}
 
-	containerMetadatas, err := buildContainerMetadata(clientServerVersions.Server)
+	openSourceVersions, err := getOpenSourceVersions(clientServerVersions.Server)
 	if err != nil {
 		warnOnError(err, logger)
 		return nil
 	}
 
-	var minorVersionMismatches []*ContainerVersion
-	var majorVersionMismatches []*ContainerVersion
-	for _, containerMetadata := range containerMetadatas {
-		if containerMetadata.Version.Major == glooctlVersion.Major && containerMetadata.Version.Minor != glooctlVersion.Minor {
-			minorVersionMismatches = append(minorVersionMismatches, containerMetadata)
+	var minorVersionMismatches []*versionutils.Version
+	var majorVersionMismatches []*versionutils.Version
+	for _, openSourceVersion := range openSourceVersions {
+		if openSourceVersion.Major == glooctlVersion.Major && openSourceVersion.Minor != glooctlVersion.Minor {
+			minorVersionMismatches = append(minorVersionMismatches, openSourceVersion)
 		}
-		if containerMetadata.Version.Major != glooctlVersion.Major {
-			majorVersionMismatches = append(majorVersionMismatches, containerMetadata)
+		if openSourceVersion.Major != glooctlVersion.Major {
+			majorVersionMismatches = append(majorVersionMismatches, openSourceVersion)
 		}
 	}
 
 	if len(minorVersionMismatches) > 0 || len(majorVersionMismatches) > 0 {
 		logger.Println("----------")
-		if len(minorVersionMismatches) > 0 {
-			logger.Println(BuildVersionMismatchMessage(minorVersionMismatches, glooctlVersionStr, "minor"))
-		}
-		if len(majorVersionMismatches) > 0 {
-			logger.Println(BuildVersionMismatchMessage(majorVersionMismatches, glooctlVersionStr, "major"))
-		}
-		logger.Println("")
 		logger.Println(BuildSuggestedUpgradeCommand(binaryName, append(minorVersionMismatches, majorVersionMismatches...)))
 		logger.Println("----------\n")
 	}
@@ -91,22 +102,13 @@ func WarnOnMismatch(binaryName string, sv version.ServerVersion, logger Logger) 
 }
 
 // visible for testing
-func BuildVersionMismatchMessage(mismatches []*ContainerVersion, glooctlVersion, mismatchKind string) string {
-	var containersToReport []string
-	for _, mismatch := range mismatches {
-		containersToReport = append(containersToReport, fmt.Sprintf("%s@%s", mismatch.ContainerName, mismatch.Version.String()))
-	}
-	return fmt.Sprintf("WARNING: glooctl@%s has a different %s version than the following server containers: %s", glooctlVersion, mismatchKind, strings.Join(containersToReport, ", "))
-}
-
-// visible for testing
-func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*ContainerVersion) string {
+func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*versionutils.Version) string {
 	versions := sets.NewString()
 	for _, mismatch := range mismatches {
-		versions.Insert(mismatch.Version.String())
+		versions.Insert(mismatch.String())
 	}
 
-	message := ""
+	message := fmt.Sprintf("glooctl binary version (%s) differs from server components (%v) by at least a minor version.\n", linkedversion.Version, strings.Join(versions.List(), ","))
 
 	if versions.Len() > 1 {
 		message += "Multiple server versions found. Consider running any of:"
@@ -133,11 +135,12 @@ type ContainerVersion struct {
 	Version       *versionutils.Version
 }
 
-func buildContainerMetadata(podVersions []*version2.ServerVersion) ([]*ContainerVersion, error) {
-	var versions []*ContainerVersion
+// return an array of open source gloo versions found in the cluster
+// this is determined by looking at all the versions of discovery that we can find
+func getOpenSourceVersions(podVersions []*versiondiscovery.ServerVersion) (versions []*versionutils.Version, err error) {
 	for _, podVersion := range podVersions {
 		switch podVersion.VersionType.(type) {
-		case *version2.ServerVersion_Kubernetes:
+		case *versiondiscovery.ServerVersion_Kubernetes:
 			for _, container := range podVersion.GetKubernetes().Containers {
 				containerVersion, err := versionutils.ParseVersion("v" + container.Tag)
 				if err != nil {
@@ -147,10 +150,9 @@ func buildContainerMetadata(podVersions []*version2.ServerVersion) ([]*Container
 					continue
 				}
 
-				versions = append(versions, &ContainerVersion{
-					ContainerName: container.Name,
-					Version:       containerVersion,
-				})
+				if container.Name == ContainerNameToCheck {
+					versions = append(versions, containerVersion)
+				}
 			}
 		default:
 			return nil, errors.Errorf("Unhandled server version type: %v", podVersion.VersionType)

@@ -8,10 +8,6 @@ metadata:
   labels:
     app: gloo
     gloo: rbac
-    installationId: {{ include "gloo.installationId" . }}
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: default

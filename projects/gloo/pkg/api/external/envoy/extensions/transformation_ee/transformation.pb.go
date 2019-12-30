@@ -7,10 +7,10 @@ import (
 	fmt "fmt"
 	math "math"
 
-	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/gogo/protobuf/proto"
+	route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
+	_type "github.com/solo-io/solo-kit/pkg/api/external/envoy/type"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

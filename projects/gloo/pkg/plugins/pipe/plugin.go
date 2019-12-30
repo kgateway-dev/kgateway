@@ -37,11 +37,11 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 		ClusterName: out.Name,
-		Endpoints:   []envoyendpoint.LocalityLbEndpoints{{}},
+		Endpoints:   []*envoyendpoint.LocalityLbEndpoints{{}},
 	}
 
 	out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
-		envoyendpoint.LbEndpoint{
+		&envoyendpoint.LbEndpoint{
 			HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoyendpoint.Endpoint{
 					Address: &envoycore.Address{

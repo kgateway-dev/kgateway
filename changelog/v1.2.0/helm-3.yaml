@@ -1,0 +1,86 @@
+changelog:
+- type: NEW_FEATURE
+  description: The Gloo Helm chart is now compatible with [Helm 3](https://helm.sh/blog/helm-3-released/).
+  issueLink: https://github.com/solo-io/gloo/issues/1732
+- type: NEW_FEATURE
+  description: >
+    Refactor `glooctl` to make it compatible with the new Helm 3 chart format. `glooctl` now uses the new Helm 3
+    libraries and delegates the `install` and `uninstall` operations to the corresponding Helm functions to provide
+    consistent behavior across different installation flows; for example, it is now possible to install Gloo using
+    `glooctl` and uninstall it using Helm, or vice-versa
+  issueLink: https://github.com/solo-io/gloo/issues/1732
+- type: HELM
+  description: >
+    Added `hook-delete-policy` to clean up the validation webhook certificate generation job after it has successfully
+    completed.
+  issueLink: https://github.com/solo-io/gloo/issues/1732
+- type: NEW_FEATURE
+  description: >
+    Deprecated the `installConfig.installationId` Helm value to track the resources that belong to a Gloo installation.
+    Helm keeps track of resources by storing release information in a Kubernetes Secret in the namespace Gloo was
+    installed in (this is the default with Helm 3 and can be changed via the `HELM_DRIVER` environment variable).
+    `glooctl install` and `glooctl uninstall` now take the same approach (under the hood the two commands now delegate
+    to their counterparts in the Helm 3 libraries).
+  issueLink: https://github.com/solo-io/gloo/issues/1635
+- type: NON_USER_FACING
+  description: Refactored Helm chart unit tests to avoid running `make manifest` out-process for each spec.
+  issueLink: https://github.com/solo-io/gloo/issues/1269
+- type: NEW_FEATURE
+  description: >
+    Helm users can now easily install Gloo in `ingress` or `knative` mode by using value overrides. The Gloo Helm chart
+    now packages a single values file instead of creating variants for `ingress` and `knative`. The values specific to
+    those two installation modes have been merged into the default `values.yaml`, where they will be ignored when those
+    two features are disabled (which is the default). To produce the manifests specific to the `ingress` and `knative`
+    installations, users can now just disable the gateway and enable the desired component via Helm value overrides.
+  issueLink: https://github.com/solo-io/gloo/issues/1732
+- type: NON_USER_FACING
+  description: >
+    Minimized the use of hooks in the Helm chart. Resources created as hooks are not managed as part of a release by Helm
+    (see [here](https://helm.sh/docs/topics/charts_hooks/#hook-resources-are-not-managed-with-corresponding-releases))
+    and should therefore be used only when strictly necessary.
+    Not being considered part of a release, hooks will not be cleaned up when running `helm uninstall`. The documented
+    ways to get around this will not work for us though: we can't use `hook-delete-policy` since we have multiple hooks
+    that depend on each other (RBAC resources needed by the job), and we cannot write a job to clean them up, as this
+    this second job would in turn need dedicated RBAC resources, which need to be cleaned up, and so on.
+    To be able to clean up the hook resources related to the `certgen` Job, which are needed only temporarily during the
+    pre-install(upgrade) phase, we redefine them as `post-install(upgrade)` hooks with a `hook-delete-policy`. This way
+    Helm will reapply and immediately delete them after the installation (upgrade) completes.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: knative
+  dependencyRepo: serving
+  dependencyTag: v0.10.0
+  description: Updated `knative/serving` to version 0.10.0.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.11.0
+  description: Update go-util to version v0.11.0.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: reporting-client
+  dependencyTag: v0.1.2
+  description: Update reporting-client to version v0.1.2.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: api
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: client-go
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: kubectl
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apimachinery
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiextensions-apiserver
+  dependencyTag: kubernetes-1.16.2
+- type: DEPENDENCY_BUMP
+  dependencyOwner: k8s.io
+  dependencyRepo: apiserver
+  dependencyTag: kubernetes-1.16.2

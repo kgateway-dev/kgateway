@@ -33,10 +33,6 @@ Let's create a virtual service with an http method match on `POST`:
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/matching_rules/http_method_matching/test-post-vs.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-post --namespace gloo-system --domains foo
-glooctl add route --name test-post --method POST  --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}} 
 
 Let's POST to that route and make sure it works:
@@ -69,10 +65,6 @@ Now let's create a virtual service that matches on GET:
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/matching_rules/http_method_matching/test-get-vs.yaml">}}
-{{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-get --namespace gloo-system --domains foo
-glooctl add route --name test-get --method GET  --path-prefix / --dest-name json-upstream
 {{< /tab >}}
 {{< /tabs >}} 
 

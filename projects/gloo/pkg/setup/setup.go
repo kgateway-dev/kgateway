@@ -33,7 +33,7 @@ func StartGlooInTest(customCtx context.Context) error {
 
 func startSetupLoop(ctx context.Context, usageReporter client.UsagePayloadReader) error {
 	return setuputils.Main(setuputils.SetupOpts{
-		LoggingPrefix: "gloo",
+		LoggerName:    "gloo",
 		SetupFunc:     syncer.NewSetupFunc(),
 		ExitOnError:   true,
 		CustomCtx:     ctx,

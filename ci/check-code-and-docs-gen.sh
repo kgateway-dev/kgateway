@@ -9,6 +9,9 @@ if [ ! -f .gitignore ]; then
 fi
 
 git init
+git config user.name "bot"
+git config user.email "bot@solo.io"
+
 git add .
 git commit -m "set up dummy repo for diffing" -q --allow-empty
 

@@ -5,6 +5,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/ku
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
 import "github.com/solo-io/gloo/projects/gloo/api/v1/options/subset_spec.proto";

@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: >
+    `glooctl uninstall` now respects all the CLI options when Gloo was not installed via `glooctl install` or `helm install`.
+  issueLink: https://github.com/solo-io/gloo/issues/1938

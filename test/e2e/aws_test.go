@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/helpers"
+
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/solo-io/gloo/pkg/utils"
@@ -125,7 +127,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			return string(body), nil
-		}, "10s", "1s").Should(ContainSubstring(substring))
+		}, "20s", "1s").Should(ContainSubstring(substring))
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(envoyPort, "SOLO.IO")
@@ -138,7 +140,9 @@ var _ = Describe("AWS Lambda", func() {
 
 		testClients = services.RunGateway(ctx, false)
 
-		var err error
+		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 

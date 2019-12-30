@@ -5,7 +5,7 @@ package envoy.api.v2.core;
 option java_outer_classname = "HealthCheckProto";
 option java_multiple_files = true;
 option java_package = "io.envoyproxy.envoy.api.v2.core";
-option go_package = "github.com/envoyproxy/go-control-plane/envoy/api/v2/core";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core";
 
 import "envoy/api/v2/core/base.proto";
 import "envoy/type/range.proto";
@@ -19,6 +19,8 @@ import "validate/validate.proto";
 import "gogoproto/gogo.proto";
 
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 // [#protodoc-title: Health check]
 // * Health checking :ref:`architecture overview <arch_overview_health_checking>`.
@@ -169,6 +171,7 @@ message HealthCheck {
         string authority = 2;
     }
 
+
     // Custom health check.
     message CustomHealthCheck {
         // The registered name of the custom health checker.
@@ -182,6 +185,7 @@ message HealthCheck {
             google.protobuf.Any typed_config = 3;
         }
     }
+
 
     oneof health_checker {
         option (validate.required) = true;

@@ -6,6 +6,7 @@ import (
 
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/go-utils/errors"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -40,14 +41,16 @@ type Top struct {
 	ErrorsOnly             bool
 	DisableUsageStatistics bool
 	ConfigFilePath         string
+	Consul                 Consul // use consul as config backend
 }
 
 type Install struct {
 	DryRun                  bool
-	Upgrade                 bool
+	CreateNamespace         bool
 	Namespace               string
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
+	HelmReleaseName         string
 	Knative                 Knative
 	LicenseKey              string
 	WithUi                  bool
@@ -57,8 +60,6 @@ type Knative struct {
 	InstallKnativeVersion         string `json:"version"`
 	InstallKnative                bool   `json:"-"`
 	SkipGlooInstall               bool   `json:"-"`
-	InstallKnativeBuild           bool   `json:"build"`
-	InstallKnativeBuildVersion    string `json:"buildVersion"`
 	InstallKnativeMonitoring      bool   `json:"monitoring"`
 	InstallKnativeEventing        bool   `json:"eventing"`
 	InstallKnativeEventingVersion string `json:"eventingVersion"`
@@ -66,10 +67,10 @@ type Knative struct {
 
 type Uninstall struct {
 	Namespace       string
+	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
-	Force           bool
 }
 
 type Proxy struct {
@@ -88,21 +89,17 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
-	Consul   Consul // use consul as config backend
 }
 
 type Delete struct {
 	Selector InputMapStringString
 	All      bool
-	Consul   Consul // use consul as config backend
 }
 
 type Edit struct {
-	Consul Consul // use consul as config backend
 }
 
 type Route struct {
-	Consul Consul // use consul as config backend
 }
 
 type Consul struct {
@@ -123,9 +120,8 @@ type Create struct {
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
 	AuthConfig         InputAuthConfig
-	DryRun             bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul             Consul // use consul as config backend
-	Vault              Vault  // use vault as secrets backend
+	DryRun             bool  // print resource as a kubernetes style yaml and exit without writing to storage
+	Vault              Vault // use vault as secrets backend
 }
 
 type RouteMatchers struct {
@@ -139,8 +135,7 @@ type RouteMatchers struct {
 
 type Add struct {
 	Route  InputRoute
-	DryRun bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul Consul // use consul as config backend
+	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {
@@ -181,7 +176,7 @@ func (p *PrefixRewrite) String() string {
 
 func (p *PrefixRewrite) Set(s string) error {
 	if p == nil {
-		p = &PrefixRewrite{}
+		return errors.New("nil pointer")
 	}
 	p.Value = &s
 	return nil
@@ -207,8 +202,7 @@ type RestDestinationSpec struct {
 }
 
 type Remove struct {
-	Route  RemoveRoute
-	Consul Consul // use consul as config backend
+	Route RemoveRoute
 }
 
 type RemoveRoute struct {

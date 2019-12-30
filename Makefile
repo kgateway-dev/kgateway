@@ -17,10 +17,11 @@ ifeq ($(TAGGED_VERSION),)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-GLOOE_VERSION ?= 0.20.4
 
-LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION) -X github.com/solo-io/gloo/pkg/version.EnterpriseTag=$(GLOOE_VERSION)"
+LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
+
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
@@ -59,21 +60,26 @@ endif
 init:
 	git config core.hooksPath .githooks
 
+.PHONY: fmt-changed
+fmt-changed:
+	git diff --name-only | grep '.*.go$$' | xargs goimports -w
+
 .PHONY: update-deps
-update-deps:
-	go get -u golang.org/x/tools/cmd/goimports
-	go get -u github.com/gogo/protobuf/gogoproto
-	go get -u github.com/gogo/protobuf/protoc-gen-gogo
+update-deps: vendor
+	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
+	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
+	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
 	mkdir -p $$GOPATH/src/github.com/envoyproxy
 	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
 	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
-	go get -u github.com/cratonica/2goarray
-	go get -v -u github.com/golang/mock/gomock
-	go install github.com/golang/mock/mockgen
+	GO111MODULE=off go get -u github.com/cratonica/2goarray
+	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
+	GO111MODULE=off go install github.com/golang/mock/mockgen
 
 .PHONY: pin-repos
 pin-repos:
-	go run pin_repos.go
+	GO111MODULE=on go run ci/pin_repos/pin_repos.go
 
 .PHONY: check-format
 check-format:
@@ -98,9 +104,12 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
+.PHONY: vendor
+vendor:
+	go mod vendor
 
 .PHONY: generated-code
-generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses
+generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
 
 # Note: currently we generate CLI docs, but don't push them to the consolidated docs repo (gloo-docs). Instead, the
 # Glooctl enterprise docs are pushed from the private repo.
@@ -108,8 +117,8 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	find . -name *.sk.md | xargs rm
-	rm docs/content/cli/glooctl*; go run projects/gloo/cli/cmd/docs/main.go
-	go generate ./...
+	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	GO111MODULE=on go generate ./...
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
@@ -119,7 +128,7 @@ $(OUTPUT_DIR)/.generated-code:
 .PHONY: verify-enterprise-protos
 verify-enterprise-protos:
 	@echo Verifying validity of generated enterprise files...
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build projects/gloo/pkg/api/v1/enterprise/verify.go
 
 #----------------------------------------------------------------------------------
 # Generate mocks
@@ -159,16 +168,16 @@ generate-client-mocks:
 CLI_DIR=projects/gloo/cli
 
 $(OUTPUT_DIR)/glooctl: $(SOURCES)
-	go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	GO111MODULE=on go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-linux-amd64: $(SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-darwin-amd64: $(SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=darwin go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 $(OUTPUT_DIR)/glooctl-windows-amd64.exe: $(SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=windows go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CLI_DIR)/cmd/main.go
 
 
 .PHONY: glooctl
@@ -191,7 +200,7 @@ GATEWAY_DIR=projects/gateway
 GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
 
 .PHONY: gateway
@@ -213,7 +222,7 @@ INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
 
 
 .PHONY: ingress
@@ -235,7 +244,7 @@ ACCESS_LOG_DIR=projects/accesslogger
 ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 
 $(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
 
 .PHONY: access-logger
@@ -257,7 +266,7 @@ DISCOVERY_DIR=projects/discovery
 DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 
 .PHONY: discovery
@@ -279,7 +288,7 @@ GLOO_DIR=projects/gloo
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
 
 .PHONY: gloo
@@ -295,20 +304,20 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		$(call get_test_tag,gloo)
 
 #----------------------------------------------------------------------------------
-# Envoy init
+# Envoy init (BASE)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 
 $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
 
-$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile
+$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
@@ -316,6 +325,29 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) \
 		$(call get_test_tag,gloo-envoy-wrapper)
+
+#----------------------------------------------------------------------------------
+# Envoy init (WASM)
+#----------------------------------------------------------------------------------
+
+ENVOY_WASM_DIR=projects/envoyinit/cmd
+ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
+
+$(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
+
+.PHONY: envoywasm
+envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
+
+
+$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
+	cp $< $@
+
+.PHONY: gloo-envoy-wasm-wrapper-docker
+gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
+		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) \
+		$(call get_test_tag,gloo-envoy-wasm-wrapper)
 
 
 #----------------------------------------------------------------------------------
@@ -326,7 +358,7 @@ CERTGEN_DIR=jobs/certgen/cmd
 CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
 
 $(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
-	CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
 certgen: $(OUTPUT_DIR)/certgen-linux-amd64
@@ -353,43 +385,24 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 #----------------------------------------------------------------------------------
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
-HELM_DIR := install/helm
-INSTALL_NAMESPACE ?= gloo-system
+HELM_DIR := install/helm/gloo
 
-.PHONY: manifest
-manifest: prepare-helm install/gloo-gateway.yaml install/gloo-knative.yaml update-helm-chart
-
-# creates Chart.yaml, values.yaml, values-knative.yaml, values-ingress.yaml. See install/helm/gloo/README.md for more info.
-.PHONY: prepare-helm
-prepare-helm: $(OUTPUT_DIR)/.helm-prepared
+# Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
+.PHONY: generate-helm-files
+generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 $(OUTPUT_DIR)/.helm-prepared:
-	go run install/helm/gloo/generate.go $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
 	touch $@
 
-update-helm-chart:
+package-chart: generate-helm-files
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
-HELMFLAGS ?= --namespace $(INSTALL_NAMESPACE) --set namespace.create=true
-
-MANIFEST_OUTPUT = > /dev/null
-ifneq ($(BUILD_ID),)
-MANIFEST_OUTPUT =
-endif
-
-install/gloo-gateway.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-install/gloo-knative.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-knative.yaml | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-install/gloo-ingress.yaml: prepare-helm
-	helm template install/helm/gloo $(HELMFLAGS) --values install/helm/gloo/values-ingress.yaml | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
-
-.PHONY: render-yaml
-render-yaml: install/gloo-gateway.yaml install/gloo-knative.yaml install/gloo-ingress.yaml
+.PHONY: fetch-helm
+fetch-helm:
+	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
 
 .PHONY: save-helm
 save-helm:
@@ -397,31 +410,74 @@ ifeq ($(RELEASE),"true")
 	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
 endif
 
-.PHONY: fetch-helm
-fetch-helm:
-	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
+#----------------------------------------------------------------------------------
+# Build the Gloo Manifests that are published as release assets
+#----------------------------------------------------------------------------------
+
+.PHONY: render-manifests
+render-manifests: install/gloo-gateway.yaml install/gloo-ingress.yaml install/gloo-knative.yaml
+
+INSTALL_NAMESPACE ?= gloo-system
+
+MANIFEST_OUTPUT = > /dev/null
+ifneq ($(BUILD_ID),)
+MANIFEST_OUTPUT =
+endif
+
+define HELM_VALUES
+namespace:
+  create: true
+crds:
+  create: true
+endef
+
+# Export as a shell variable, make variables do not play well with multiple lines
+export HELM_VALUES
+$(OUTPUT_DIR)/release-manifest-values.yaml:
+	@echo "$$HELM_VALUES" > $@
+
+install/gloo-gateway.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install gateway -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-knative.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install knative -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
+
+install/gloo-ingress.yaml: $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/release-manifest-values.yaml package-chart
+ifeq ($(RELEASE),"true")
+	$(OUTPUT_DIR)/glooctl-linux-amd64 install ingress -n $(INSTALL_NAMESPACE) -f $(HELM_SYNC_DIR)/charts/gloo-$(VERSION).tgz \
+		--values $(OUTPUT_DIR)/release-manifest-values.yaml --dry-run | tee $@ $(OUTPUT_YAML) $(MANIFEST_OUTPUT)
+endif
 
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
 GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
 
+$(OUTPUT_DIR)/gloo-enterprise-version:
+	GO111MODULE=on go run hack/find_latest_enterprise_version.go
+
 .PHONY: download-glooe-changelog
-download-glooe-changelog:
+download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
 ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
-	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(GLOOE_VERSION)/* '../solo-projects/changelog'
+	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
 ASSETS_ONLY := false
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
-upload-github-release-assets: build-cli render-yaml
-	go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
+upload-github-release-assets: build-cli render-manifests
+	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
 
 .PHONY: publish-docs
-publish-docs: prepare-helm
+publish-docs: generate-helm-files
 ifeq ($(RELEASE),"true")
 	cd docs && make docker-push-docs \
 		VERSION=$(VERSION) \
@@ -430,29 +486,6 @@ ifeq ($(RELEASE),"true")
 		RELEASE=$(RELEASE)
 endif
 
-## START Temporary targets while master/v0.20.x branch is supported
-# Whenever a new Gloo release is made from the master/v0.20.x branch,
-# run `GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=v0-20-<PARTICULAR_VERSION> make publish-v-20-docs -B`
-# to manually to produce a docs image with the following properties:
-# - api, cli, changelog content from master/v0.20.x
-# - docs content, hosting config from feature-rc1
-.PHONY: publish-v-20-docs
-publish-v-20-docs: gather-v-20-docs publish-docs
-
-OLD_DOCS_TEMP_DIR := "old_docs_temp_dir"
-.PHONY: gather-v-20-docs
-gather-v-20-docs:
-	# want the changelog files to reflect master
-	git checkout master -- changelog/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-	mkdir -p $(OLD_DOCS_TEMP_DIR)
-	cd $(OLD_DOCS_TEMP_DIR) && git clone git@github.com:solo-io/solo-docs.git
-	rm docs/content/cli/glooctl*
-	cp $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/cli/glooctl* docs/content/cli/
-	rm -rf docs/content/api/
-	cp -r $(OLD_DOCS_TEMP_DIR)/solo-docs/gloo/docs/api/ docs/content/api/
-	rm -rf $(OLD_DOCS_TEMP_DIR)
-## END Temporary targets while master/v0.20.x branch is supported
 
 #----------------------------------------------------------------------------------
 # Docker
@@ -468,7 +501,9 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: discovery-docker gateway-docker gloo-docker gloo-envoy-wrapper-docker certgen-docker ingress-docker access-logger-docker
+docker: discovery-docker gateway-docker gloo-docker \
+ 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
+ 		certgen-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -481,6 +516,7 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
 	docker push quay.io/solo-io/gloo:$(VERSION) && \
 	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/certgen:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 endif
@@ -509,10 +545,12 @@ push-kind-images: docker
 # The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
 
 .PHONY: build-test-assets
-build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 .PHONY: build-kind-assets
-build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 $(OUTPUT_DIR)/glooctl-darwin-amd64
+build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+ 	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
 
@@ -540,15 +578,15 @@ certgen-docker-test: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
+	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
 .PHONY: build-kind-chart
 build-kind-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(VERSION)
-	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)/gloo
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
+	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
 
@@ -565,9 +603,9 @@ build-kind-chart:
 .PHONY: build-tagged-chart
 build-tagged-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	go run install/helm/gloo/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)/gloo
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
 
 .PHONY: save-tagged-helm
@@ -584,4 +622,5 @@ fetch-tagged-helm:
 #----------------------------------------------------------------------------------
 .PHONY: update-licenses
 update-licenses:
-	cd hack/utils/oss_compliance && go run main.go
+# TODO(helm3): fix after we completely drop toml parsing in favor of go modules
+#	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go

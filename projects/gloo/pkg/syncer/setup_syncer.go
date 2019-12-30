@@ -302,12 +302,32 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	PluginExtensions []plugins.Plugin
-	SyncerExtensions []TranslatorSyncerExtensionFactory
-	XdsCallbacks     xdsserver.Callbacks
+	// Deprecated. Use PluginExtensionsFuncs instead.
+	PluginExtensions      []plugins.Plugin
+	PluginExtensionsFuncs []func() plugins.Plugin
+	SyncerExtensions      []TranslatorSyncerExtensionFactory
+	XdsCallbacks          xdsserver.Callbacks
 
 	// optional custom handler for envoy usage metrics that get pushed to the gloo pod
 	MetricsHandler metricsservice.MetricsHandler
+}
+
+func GetPluginsWithExtensionsAndRegistry(opts bootstrap.Opts, registryPlugins func(opts bootstrap.Opts) []plugins.Plugin, extensions Extensions) func() []plugins.Plugin {
+	pluginfuncs := extensions.PluginExtensionsFuncs
+	for _, p := range extensions.PluginExtensions {
+		p := p
+		pluginfuncs = append(pluginfuncs, func() plugins.Plugin { return p })
+	}
+	return func() []plugins.Plugin {
+		plugins := registryPlugins(opts)
+		for _, pluginExtension := range pluginfuncs {
+			plugins = append(plugins, pluginExtension())
+		}
+		return plugins
+	}
+}
+func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func() []plugins.Plugin {
+	return GetPluginsWithExtensionsAndRegistry(opts, registry.Plugins, extensions)
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -382,11 +402,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
-
-	getPlugins := func() []plugins.Plugin {
-		return registry.Plugins(opts, extensions.PluginExtensions...)
-	}
-
+	getPlugins := GetPluginsWithExtensions(opts, extensions)
 	var discoveryPlugins []discovery.DiscoveryPlugin
 	for _, plug := range getPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
@@ -531,7 +547,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		if extensions.MetricsHandler == nil {
 			handler, err = metricsservice.NewConfigMapBackedDefaultHandler(opts.WatchOpts.Ctx)
 			if err != nil {
-				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Fatalw("Error starting metrics watcher", zap.Error(err))
+				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorw("Error starting metrics watcher", zap.Error(err))
+				return
 			}
 		} else {
 			handler = extensions.MetricsHandler

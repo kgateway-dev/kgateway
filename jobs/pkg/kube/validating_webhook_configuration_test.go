@@ -25,7 +25,7 @@ var _ = Describe("ValidatingWebhookConfiguration", func() {
 
 		expectedVwc, err := kube.AdmissionregistrationV1beta1().ValidatingWebhookConfigurations().Create(&v1beta1.ValidatingWebhookConfiguration{
 			ObjectMeta: metav1.ObjectMeta{Name: vwcName},
-			Webhooks: []v1beta1.Webhook{
+			Webhooks: []v1beta1.ValidatingWebhook{
 				{Name: "ignored"},
 				{
 					Name: "foo",

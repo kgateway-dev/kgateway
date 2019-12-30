@@ -9,6 +9,7 @@
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats -}}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -21,7 +22,6 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
-    installationId: {{ include "gloo.installationId" $ }}
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
@@ -48,7 +48,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if $spec.stats }}
+{{- if $statsConfig.enabled }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
@@ -68,7 +68,7 @@ spec:
 {{- end}}
     spec:
 {{- if $spec.kind.deployment }}
-{{- if $spec.kind.deployment.antiAffinity }}
+{{- if $spec.antiAffinity }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -102,7 +102,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if not $global.wasm.enabled }}
         image: {{ template "gloo.image" $image }}
+        {{- else }}
+        image: "{{ $image.registry }}/gloo-envoy-wasm-wrapper:{{ $image.tag }}"
+        {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: {{ $name | kebabcase }}
         securityContext:
