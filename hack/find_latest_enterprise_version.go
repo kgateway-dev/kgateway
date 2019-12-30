@@ -13,10 +13,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer f.Close()
-	enterpriseTag, err := version.GetLatestEnterpriseVersion(false)
+	enterpriseVersion, err := version.GetLatestEnterpriseVersion(false)
 	if err != nil {
 		os.Exit(1)
 	}
-	f.WriteString(enterpriseTag)
+	f.WriteString(enterpriseVersion)
 	f.Sync()
 }
