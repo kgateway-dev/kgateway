@@ -746,7 +746,10 @@
 [[projects]]
   digest = "1:f92fd6e98da2322ddd7f60b9fd647b11bb67c6ab01dfdfb59f8f5ded2e7522d6"
   name = "github.com/golang/mock"
-  packages = ["gomock"]
+  packages = [
+    "gomock",
+    "mockgen/model",
+  ]
   pruneopts = "UT"
   revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
   version = "1.3.1"
@@ -1658,7 +1661,7 @@
   revision = "171e4740d00f71bdc66de3aea93a1b8606f1c1a0"
 
 [[projects]]
-  digest = "1:19fe561085bef5a18bdd917fcb2d55bd552f28ba65d6b1dd9766117d375a01a8"
+  digest = "1:4c12e45652c8834542b6edeac1f13f373243b357b5d71a2bc281704131760593"
   name = "github.com/solo-io/go-utils"
   packages = [
     "certutils",
@@ -1699,8 +1702,19 @@
     "vfsutils",
   ]
   pruneopts = "UT"
-  revision = "01471632103fbbd9302f9d876d8c81db331081ee"
-  version = "v0.11.0"
+  revision = "f608560ec7751f786a0c902167cb046a9e431397"
+  version = "v0.11.7"
+
+[[projects]]
+  digest = "1:58948f05e3ef5eddc9c334f2a8eaa2abf2fe3f2a39dd2d0c7a0574874401492b"
+  name = "github.com/solo-io/protoc-gen-ext"
+  packages = [
+    "extproto",
+    "pkg/hasher",
+  ]
+  pruneopts = "UT"
+  revision = "1a24aaf46919946df1c65ddc9ab4aff86f530b82"
+  version = "v0.0.6"
 
 [[projects]]
   digest = "1:3f4ac0fb4306bc49eb2111c4898bfb6e98e1ca7805a0b8c7692ebc41ad5dadc3"
@@ -1715,7 +1729,7 @@
   version = "v0.1.2"
 
 [[projects]]
-  digest = "1:e501317a58a4e3b5bd510932e9a9c855714623cfc98144b09f7aa93a02d44431"
+  digest = "1:d3ac93af321367583ff22878fdc43cc50eba474936ddf29afafb0d795b1339f8"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1786,8 +1800,25 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "d556dcb3dbbaecdd7b483beaa612a322d3a45bb7"
-  version = "v0.11.13"
+  revision = "6f2c5d2fd22bf267af62308daa41d7389317b781"
+  version = "v0.11.16"
+
+[[projects]]
+  digest = "1:7a9de87a6acc3189ca35c1101fedc5d3d00a047bdf3ae4d0c0f589f3dd1759ce"
+  name = "github.com/solo-io/wasme"
+  packages = [
+    "pkg/auth/store",
+    "pkg/cache",
+    "pkg/config",
+    "pkg/consts",
+    "pkg/defaults",
+    "pkg/model",
+    "pkg/pull",
+    "pkg/resolver",
+  ]
+  pruneopts = "UT"
+  revision = "7594a1b3ad3f0daf9df77f852d1002781dd40b19"
+  version = "v0.0.9"
 
 [[projects]]
   digest = "1:bb495ec276ab82d3dd08504bbc0594a65de8c3b22c6f2aaa92d05b73fbf3a82e"
@@ -2030,6 +2061,19 @@
   ]
   pruneopts = "UT"
   revision = "fdd1cda4f05fd1fd86124f0ef9ce31a0b72c8448"
+
+[[projects]]
+  branch = "master"
+  digest = "1:1ec79de2c381494b56be9cb968899e77818957301fe9302ddecb6d6ad5f62748"
+  name = "golang.org/x/mod"
+  packages = [
+    "internal/lazyregexp",
+    "modfile",
+    "module",
+    "semver",
+  ]
+  pruneopts = "UT"
+  revision = "331c550502dddccec70ff032beba72756bb428f2"
 
 [[projects]]
   digest = "1:1b6e369fbcea4e377fbea25aa05bb4a36dbaa24c3796023df40ae77c48ad8853"
@@ -3174,6 +3218,7 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
+    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
@@ -3209,6 +3254,7 @@
     "github.com/onsi/gomega/gexec",
     "github.com/onsi/gomega/gstruct",
     "github.com/onsi/gomega/types",
+    "github.com/opencontainers/go-digest",
     "github.com/pkg/errors",
     "github.com/prometheus/client_golang/api",
     "github.com/prometheus/client_golang/api/prometheus/v1",
@@ -3282,6 +3328,7 @@
     "github.com/solo-io/solo-kit/pkg/utils/protoutils",
     "github.com/solo-io/solo-kit/test/helpers",
     "github.com/solo-io/solo-kit/test/setup",
+    "github.com/solo-io/wasme/pkg/defaults",
     "github.com/spf13/afero",
     "github.com/spf13/cobra",
     "github.com/spf13/pflag",
@@ -3294,6 +3341,7 @@
     "go.uber.org/multierr",
     "go.uber.org/zap",
     "go.uber.org/zap/zapcore",
+    "golang.org/x/mod/modfile",
     "golang.org/x/oauth2/google",
     "golang.org/x/sync/errgroup",
     "google.golang.org/api/compute/v1",
