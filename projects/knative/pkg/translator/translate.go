@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"knative.dev/serving/pkg/apis/networking"
+
 	"knative.dev/pkg/network"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -24,6 +26,11 @@ import (
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
+)
+
+const (
+	ingressClassAnnotation = networking.IngressClassAnnotationKey
+	glooIngressClass       = "gloo.ingress.networking.knative.dev"
 )
 
 const (

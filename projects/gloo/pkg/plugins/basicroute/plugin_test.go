@@ -19,7 +19,6 @@ import (
 
 var _ = Describe("prefix rewrite", func() {
 	It("works", func() {
-
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
 			PrefixRewrite: "/",
@@ -248,5 +247,39 @@ var _ = Describe("upgrades", func() {
 		Expect(len(routeAction.GetUpgradeConfigs())).To(Equal(1))
 		Expect(routeAction.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
 		Expect(routeAction.GetUpgradeConfigs()[0].Enabled.Value).To(Equal(true))
+	})
+	It("fails on double config", func() {
+		p := NewPlugin()
+
+		routeAction := &envoyroute.RouteAction{}
+
+		out := &envoyroute.Route{
+			Action: &envoyroute.Route_Route{
+				Route: routeAction,
+			},
+		}
+
+		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
+			Options: &v1.RouteOptions{
+				Upgrades: []*protocol_upgrade.ProtocolUpgradeConfig{
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
+					},
+					{
+						UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+							Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+								Enabled: &types.BoolValue{Value: true},
+							},
+						},
+					},
+				},
+			},
+		}, out)
+
+		Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
 	})
 })

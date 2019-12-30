@@ -140,41 +140,94 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Uri).To(BeTrue())
 	})
 
-	It("enables websockets by default", func() {
-		hcms := &hcm.HttpConnectionManagerSettings{}
+	Context("upgrades", func() {
 
-		hl := &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
-				HttpConnectionManagerSettings: hcms,
-			},
-		}
+		var (
+			hcms    *hcm.HttpConnectionManagerSettings
+			hl      *v1.HttpListener
+			in      *v1.Listener
+			outl    *envoyapi.Listener
+			filters []*envoylistener.Filter
+			p       *Plugin
+		)
 
-		in := &v1.Listener{
-			ListenerType: &v1.Listener_HttpListener{
-				HttpListener: hl,
-			},
-		}
+		BeforeEach(func() {
+			hcms = &hcm.HttpConnectionManagerSettings{}
 
-		filters := []*envoylistener.Filter{{
-			Name: util.HTTPConnectionManager,
-		}}
+			hl = &v1.HttpListener{
+				Options: &v1.HttpListenerOptions{
+					HttpConnectionManagerSettings: hcms,
+				},
+			}
 
-		outl := &envoyapi.Listener{
-			FilterChains: []*envoylistener.FilterChain{{
-				Filters: filters,
-			}},
-		}
+			in = &v1.Listener{
+				ListenerType: &v1.Listener_HttpListener{
+					HttpListener: hl,
+				},
+			}
 
-		p := NewPlugin()
+			filters = []*envoylistener.Filter{{
+				Name: util.HTTPConnectionManager,
+			}}
 
-		err := p.ProcessListener(plugins.Params{}, in, outl)
-		Expect(err).NotTo(HaveOccurred())
+			outl = &envoyapi.Listener{
+				FilterChains: []*envoylistener.FilterChain{{
+					Filters: filters,
+				}},
+			}
 
-		var cfg envoyhttp.HttpConnectionManager
-		err = translatorutil.ParseConfig(filters[0], &cfg)
-		Expect(err).NotTo(HaveOccurred())
+			p = NewPlugin()
+		})
 
-		Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
-		Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+		It("enables websockets by default", func() {
+
+			err := p.ProcessListener(plugins.Params{}, in, outl)
+			Expect(err).NotTo(HaveOccurred())
+
+			var cfg envoyhttp.HttpConnectionManager
+			err = translatorutil.ParseConfig(filters[0], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+			Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+		})
+
+		It("enables websockets by default with no settings", func() {
+			hl.Options = nil
+
+			err := p.ProcessListener(plugins.Params{}, in, outl)
+			Expect(err).NotTo(HaveOccurred())
+
+			var cfg envoyhttp.HttpConnectionManager
+			err = translatorutil.ParseConfig(filters[0], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
+			Expect(cfg.GetUpgradeConfigs()[0].UpgradeType).To(Equal("websocket"))
+		})
+
+		It("should error when there's a duplicate upgrade config", func() {
+			hcms.Upgrades = []*protocol_upgrade.ProtocolUpgradeConfig{
+				{
+					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+							Enabled: &types.BoolValue{Value: true},
+						},
+					},
+				},
+				{
+					UpgradeType: &protocol_upgrade.ProtocolUpgradeConfig_Websocket{
+						Websocket: &protocol_upgrade.ProtocolUpgradeConfig_ProtocolUpgradeSpec{
+							Enabled: &types.BoolValue{Value: true},
+						},
+					},
+				},
+			}
+
+			err := p.ProcessListener(plugins.Params{}, in, outl)
+			Expect(err).To(MatchError(ContainSubstring("upgrade config websocket is not unique")))
+
+		})
+
 	})
 })

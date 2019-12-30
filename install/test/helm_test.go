@@ -7,6 +7,7 @@ import (
 	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
+	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gogo/protobuf/proto"
@@ -113,12 +114,6 @@ var _ = Describe("Helm Test", func() {
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
-			globalLabels    = map[string]string{}
-			setGlobalLabels = func(testLabels map[string]string) {
-				for k, v := range globalLabels {
-					testLabels[k] = v
-				}
-			}
 			selector         map[string]string
 			testManifest     TestManifest
 			statsAnnotations map[string]string
@@ -167,6 +162,86 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
+			Context("stats server settings", func() {
+				var (
+					normalPromAnnotations = map[string]string{
+						"prometheus.io/path":   "/metrics",
+						"prometheus.io/port":   "9091",
+						"prometheus.io/scrape": "true",
+					}
+
+					gatewayProxyDeploymentPromAnnotations = map[string]string{
+						"prometheus.io/path":   "/metrics",
+						"prometheus.io/port":   "8081",
+						"prometheus.io/scrape": "true",
+					}
+				)
+
+				It("should be able to configure a stats server by default on all relevant deployments", func() {
+					prepareMakefile(namespace, helmValues{})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						promAnnotations := normalPromAnnotations
+						if structuredDeployment.GetName() == "gateway-proxy" {
+							promAnnotations = gatewayProxyDeploymentPromAnnotations
+						}
+
+						deploymentAnnotations := structuredDeployment.Spec.Template.ObjectMeta.Annotations
+						for annotation, value := range promAnnotations {
+							Expect(deploymentAnnotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+						}
+
+						if structuredDeployment.GetName() != "gateway-proxy" {
+							for _, container := range structuredDeployment.Spec.Template.Spec.Containers {
+								foundExpected := false
+								for _, envVar := range container.Env {
+									if envVar.Name == "START_STATS_SERVER" {
+										foundExpected = true
+										Expect(envVar.Value).To(Equal("true"), fmt.Sprintf("Should have the START_STATS_SERVER env var set to 'true' on deployment %+v", deployment))
+									}
+								}
+
+								Expect(foundExpected).To(BeTrue(), fmt.Sprintf("Should have found the START_STATS_SERVER env var on deployment %+v", deployment))
+							}
+						}
+					})
+				})
+
+				It("should be able to override global defaults", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
+					})
+
+					// assert that discovery has stats enabled and gloo has stats disabled
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment" &&
+							(resource.GetName() == "gloo" || resource.GetName() == "discovery")
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						if structuredDeployment.GetName() == "gloo" {
+							Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+						} else if structuredDeployment.GetName() == "discovery" {
+							for annotation, value := range normalPromAnnotations {
+								Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+							}
+						} else {
+							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
+						}
+					})
+				})
+			})
+
 			Context("gateway", func() {
 				var labels map[string]string
 				BeforeEach(func() {
@@ -175,7 +250,6 @@ var _ = Describe("Helm Test", func() {
 						"gloo":             "gateway-proxy",
 						"gateway-proxy-id": "gateway-proxy",
 					}
-					setGlobalLabels(labels)
 					selector = map[string]string{
 						"gateway-proxy":    "live",
 						"gateway-proxy-id": "gateway-proxy",
@@ -259,7 +333,6 @@ var _ = Describe("Helm Test", func() {
 						svc.Spec.Type = ""
 						svc.Spec.Ports[0].TargetPort = intstr.FromInt(8083)
 						svc.Spec.Selector = cloneMap(labels)
-						setGlobalLabels(svc.ObjectMeta.Labels)
 
 						deploymentBuilder := &ResourceBuilder{
 							Namespace:  namespace,
@@ -278,7 +351,6 @@ var _ = Describe("Helm Test", func() {
 						dep := deploymentBuilder.GetDeploymentAppsv1()
 						dep.Spec.Template.ObjectMeta.Labels = cloneMap(labels)
 						dep.Spec.Selector.MatchLabels = cloneMap(labels)
-						setGlobalLabels(dep.ObjectMeta.Labels)
 						dep.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 							{Name: "http", ContainerPort: 8083, Protocol: "TCP"},
 						}
@@ -295,7 +367,6 @@ var _ = Describe("Helm Test", func() {
 							"app":              "gloo",
 							"gateway-proxy-id": "gateway-proxy",
 						}
-						setGlobalLabels(labels)
 						proxySpec["envoy.yaml"] = confWithAccessLogger
 						cmRb := ResourceBuilder{
 							Namespace: namespace,
@@ -381,7 +452,6 @@ var _ = Describe("Helm Test", func() {
 							"gloo":             "gateway-proxy",
 							"gateway-proxy-id": "gateway-proxy",
 						}
-						setGlobalLabels(serviceLabels)
 						rb := ResourceBuilder{
 							Namespace: namespace,
 							Name:      "gateway-proxy",
@@ -780,8 +850,6 @@ metadata:
     app: gloo
   name: default
   namespace: ` + namespace + `
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
  discovery:
    fdsMode: WHITELIST
@@ -1056,7 +1124,6 @@ metadata:
 							"gloo": "gloo",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "gloo",
 						}
@@ -1200,7 +1267,6 @@ metadata:
 							"gloo": "gateway",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "gateway",
 						}
@@ -1317,7 +1383,6 @@ metadata:
 							"gloo": "discovery",
 							"app":  "gloo",
 						}
-						setGlobalLabels(labels)
 						selector = map[string]string{
 							"gloo": "discovery",
 						}
@@ -1412,10 +1477,6 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
-				BeforeEach(func() {
-					setGlobalLabels(labels)
-				})
-
 				Describe("gateway proxy - tracing config", func() {
 					It("has a proxy without tracing", func() {
 						prepareMakefile(namespace, helmValues{
@@ -1495,7 +1556,6 @@ metadata:
 					deploymentLabels := map[string]string{
 						"app": "gloo", "gloo": "gloo",
 					}
-					setGlobalLabels(deploymentLabels)
 					selectors := map[string]string{
 						"gloo": "gloo",
 					}
@@ -1592,7 +1652,6 @@ metadata:
 					ingressDeploymentLabels := map[string]string{
 						"app": "gloo", "gloo": "ingress",
 					}
-					setGlobalLabels(ingressDeploymentLabels)
 					ingressSelector := map[string]string{
 						"gloo": "ingress",
 					}

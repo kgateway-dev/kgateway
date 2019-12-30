@@ -27,8 +27,12 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 	if opts.Top.Consul.UseConsul {
 		return nil
 	}
+	nsToCheck := opts.Metadata.Namespace
+	if opts.Install.Namespace != "" {
+		nsToCheck = opts.Install.Namespace
+	}
 
-	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(opts.Metadata.Namespace), &defaultLogger{})
+	return WarnOnMismatch(os.Args[0], versioncmd.NewKube(nsToCheck), &defaultLogger{})
 }
 
 // use this logger interface, so that in the unit test we can accumulate lines that were output

@@ -8,11 +8,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	"github.com/solo-io/solo-kit/pkg/errors"
-)
-
-const (
-	webSocketUpgradeType = "websocket"
 )
 
 type Plugin struct{}
@@ -159,7 +156,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 		switch upgradeType := config.GetUpgradeType().(type) {
 		case *protocol_upgrade.ProtocolUpgradeConfig_Websocket:
 			routeAction.Route.UpgradeConfigs[i] = &envoyroute.RouteAction_UpgradeConfig{
-				UpgradeType: webSocketUpgradeType,
+				UpgradeType: upgradeconfig.WebSocketUpgradeType,
 				Enabled:     gogoutils.BoolGogoToProto(config.GetWebsocket().Enabled),
 			}
 		default:
@@ -167,7 +164,7 @@ func applyUpgrades(in *v1.Route, out *envoyroute.Route) error {
 		}
 	}
 
-	return nil
+	return upgradeconfig.ValidateRouteUpgradeConfigs(routeAction.Route.UpgradeConfigs)
 }
 
 func applyRetriesVhost(in *v1.VirtualHost, out *envoyroute.VirtualHost) error {

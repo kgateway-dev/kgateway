@@ -286,7 +286,7 @@ kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/api/
 ```
 {{< highlight shell "hl_lines=6 12" >}}
 > GET /api/pets/1 HTTP/1.1
-> Host: gateway-proxy-v2.gloo-system
+> Host: gateway-proxy.gloo-system
 > User-Agent: curl/7.65.3
 > Accept: */*
 >
@@ -306,7 +306,7 @@ kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/api/
 ```
 {{< highlight shell "hl_lines=7" >}}
 > GET /api/pets/1 HTTP/1.1
-> Host: gateway-proxy-v2.gloo-system
+> Host: gateway-proxy.gloo-system
 > User-Agent: curl/7.65.3
 > Accept: */*
 > Authorization: Bearer <this is the JWT>
@@ -327,7 +327,7 @@ kubectl exec test-pod -- bash -c 'curl -sv -X POST http://gateway-proxy.gloo-sys
 ```
 {{< highlight shell "hl_lines=7 13" >}}
 > POST /api/pets/1 HTTP/1.1
-> Host: gateway-proxy-v2.gloo-system
+> Host: gateway-proxy.gloo-system
 > User-Agent: curl/7.65.3
 > Accept: */*
 > Authorization: Bearer <this is the JWT>
@@ -348,7 +348,7 @@ kubectl exec test-pod -- bash -c 'curl -sv http://gateway-proxy.gloo-system/foo/
 ```
 {{< highlight shell "hl_lines=7 13" >}}
 > GET /foo/ HTTP/1.1
-> Host: gateway-proxy-v2.gloo-system
+> Host: gateway-proxy.gloo-system
 > User-Agent: curl/7.65.3
 > Accept: */*
 > Authorization: Bearer <this is the JWT>

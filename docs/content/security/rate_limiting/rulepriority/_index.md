@@ -57,7 +57,7 @@ cache.
 `alwaysApply` set to `true` will always be considered for rate limiting, regardless of the rule's weight. The matching
 rule with the highest weight will still be considered. (this can be a rule that also has `alwaysApply` set to `true`)
 
-# Test the Example
+## Test the Example
 
 Install the petclinic application and create a virtual service that routes to it:
 ```bash

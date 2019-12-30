@@ -167,7 +167,7 @@ func installKnativeServing(opts *options.Options) error {
 	return nil
 }
 
-// if knative is present but was not installed by us, the resturn values will be true, nil, nil
+// if knative is present but was not installed by us, the return values will be true, nil, nil
 func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *options.Knative, error) {
 	var kc kubernetes.Interface
 	if len(kubeclient) > 0 {

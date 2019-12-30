@@ -1,6 +1,6 @@
 ---
 title: Canary Release
-weight: 5
+weight: 30
 description: Reducing the risk of making changes with canary release
 ---
 
