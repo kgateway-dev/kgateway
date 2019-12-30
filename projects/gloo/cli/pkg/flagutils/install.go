@@ -15,11 +15,11 @@ func AddInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.Version, "version", "", "version to install (e.g. 1.2.0, defaults to latest)")
 	set.BoolVar(&install.CreateNamespace, "create-namespace", true, "Create the namespace to install gloo into")
 	set.StringVarP(&install.Namespace, "namespace", "n", defaults.GlooSystem, "namespace to install gloo into")
+	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
-	set.BoolVar(&install.WithUi, "with-admin-console", false, "install gloo and a read-only version of its admin console")
 }
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
