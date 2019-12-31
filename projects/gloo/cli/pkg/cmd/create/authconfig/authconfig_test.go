@@ -227,6 +227,10 @@ var _ = Describe("AuthConfig", func() {
 				c.SendLine("http://app.example.com")
 				c.ExpectString("What is your issuer url?")
 				c.SendLine("https://accounts.google.com")
+				c.ExpectString("provide any query params to add to the issuer request in key=value form (empty to finish)")
+				c.SendLine("key=value")
+				c.ExpectString("provide any query params to add to the issuer request in key=value form (empty to finish)")
+				c.SendLine("")
 				c.ExpectString("What path (relative to your app url) should we use as a callback from the issuer?")
 				c.SendLine("/auth-callback")
 				c.ExpectString("What is your client id?")
@@ -263,10 +267,11 @@ var _ = Describe("AuthConfig", func() {
 						Name:      "secret-name",
 						Namespace: "gloo-system",
 					},
-					CallbackPath: "/auth-callback",
-					IssuerUrl:    "https://accounts.google.com",
-					AppUrl:       "http://app.example.com",
-					Scopes:       []string{"scope1"},
+					CallbackPath:      "/auth-callback",
+					IssuerUrl:         "https://accounts.google.com",
+					IssuerQueryParams: map[string]string{"key": "value"},
+					AppUrl:            "http://app.example.com",
+					Scopes:            []string{"scope1"},
 				}
 				Expect(*oidc).To(Equal(expected))
 
