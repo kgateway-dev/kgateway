@@ -1,10 +1,11 @@
 package main
 
 import (
+	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
-	"github.com/solo-io/solo-kit/pkg/protodep"
+	"github.com/solo-io/solo-kit/pkg/code-generator/sk_anyvendor"
 )
 
 //go:generate go run generate.go
@@ -33,11 +34,11 @@ func main() {
 				ApiDir:  "api",
 			},
 		},
-		ProtoDepConfig: &protodep.Config{
-			Local: &protodep.Local{
-				Patterns: []string{"projects/**/*.proto", protodep.SoloKitMatchPattern},
+		ProtoDepConfig: &anyvendor.Config{
+			Local: &anyvendor.Local{
+				Patterns: []string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
 			},
-			Imports: protodep.DefaultMatchOptions,
+			Imports: sk_anyvendor.DefaultMatchOptions,
 		},
 	}
 	if err := cmd.Generate(generateOptions); err != nil {

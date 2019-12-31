@@ -20,7 +20,7 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-openapi/swag v0.19.5
 	github.com/go-swagger/go-swagger v0.21.0
-	github.com/gogo/googleapis v1.3.0
+	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
@@ -42,8 +42,8 @@ require (
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
-	github.com/onsi/ginkgo v1.10.3
-	github.com/onsi/gomega v1.7.1
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.8.1
 	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1
