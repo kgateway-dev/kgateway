@@ -14,6 +14,8 @@ weight: 5
 - [VirtualService](#virtualservice) **Top-Level Resource**
 - [VirtualHost](#virtualhost)
 - [Route](#route)
+- [DelegateAction](#delegateaction)
+- [Selector](#selector)
   
 
 
@@ -186,7 +188,7 @@ a top-level `RouteTable` resource.
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
-"delegateAction": .core.solo.io.ResourceRef
+"delegateAction": .gateway.solo.io.DelegateAction
 "options": .gloo.solo.io.RouteOptions
 
 ```
@@ -197,8 +199,52 @@ a top-level `RouteTable` resource.
 | `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `delegateAction` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | delegate routing actions for the given matcher to a RouteTable the delegateAction config is simply the `name` and `namespace` of the delegated `RouteTable` resource. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
+| `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
 | `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |  |
+
+
+
+
+---
+### DelegateAction
+
+ 
+DelegateActions are used to delegate routing decisions to Route Tables.
+
+```yaml
+"name": string
+"namespace": string
+"single": .core.solo.io.ResourceRef
+"selector": .gateway.solo.io.Selector
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: please use the `single` field. |  |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: please use the `single` field. |  |
+| `single` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `single` or `selector` can be set. |  |
+| `selector` | [.gateway.solo.io.Selector](../virtual_service.proto.sk/#selector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `single` can be set. |  |
+
+
+
+
+---
+### Selector
+
+ 
+Select route tables for delegation by namespace, labels, or both.
+
+```yaml
+"namespace": string
+"labels": map<string, string>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `namespace` | `string` | Delegate to Route Tables in this namespace. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
+| `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
 
 
 

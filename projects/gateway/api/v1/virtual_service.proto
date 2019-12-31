@@ -202,13 +202,45 @@ message Route {
         // Return an arbitrary HTTP response directly, without proxying.
         gloo.solo.io.DirectResponseAction direct_response_action = 4;
 
-        // delegate routing actions for the given matcher to a RouteTable
-        // the delegateAction config is simply the `name` and `namespace` of the delegated `RouteTable` resource
-        core.solo.io.ResourceRef delegate_action = 5;
+        // Delegate routing actions for the given matcher to one or more RouteTables.
+        DelegateAction delegate_action = 5;
     }
 
     // Route Options extend the behavior of routes.
     // Route options include configuration such as retries, rate limiting, and request/response transformation.
     // RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
     gloo.solo.io.RouteOptions options = 6;
+}
+
+// DelegateActions are used to delegate routing decisions to Route Tables.
+message DelegateAction {
+
+    // The name of the Route Table to delegate to.
+    // Deprecated: please use the `single` field.
+    string name = 1 [deprecated = true];
+
+    // The namespace of the Route Table to delegate to.
+    // Deprecated: please use the `single` field.
+    string namespace = 2 [deprecated = true];
+
+    oneof type {
+        // Delegate to the Route Table resource with the given `name` and `namespace.
+        core.solo.io.ResourceRef single = 3;
+
+        // Delegate to the Route Tables that match the given selector.
+        Selector selector = 4;
+    }
+}
+
+// Select route tables for delegation by namespace, labels, or both.
+message Selector {
+
+    // Delegate to Route Tables in this namespace. If omitted, Gloo will only select Route Tables in the same namespace
+    // as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to
+    // select Route Tables in all namespaces watched by Gloo.
+    string namespace = 1;
+
+    // Delegate to Route Tables whose labels match the ones specified here.
+    map<string, string> labels = 2;
+
 }
