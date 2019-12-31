@@ -19,7 +19,7 @@ func addVirtualServiceFlagsOIDC(set *pflag.FlagSet, oidc *options.OIDCAuth) {
 	set.StringVar(&oidc.ClientSecretRef.Name, "oidc-auth-client-secret-name", "", "name of the 'client secret' secret")
 	set.StringVar(&oidc.ClientSecretRef.Namespace, "oidc-auth-client-secret-namespace", "", "namespace of the 'client secret' secret")
 	set.StringVar(&oidc.IssuerUrl, "oidc-auth-issuer-url", "", "the url of the issuer")
-	set.StringToStringVar(&oidc.IssuerQueryParams, "oidc-auth-issuer-params", nil, "url parameters to send to the issuer")
+	set.StringToStringVar(&oidc.IssuerQueryParams, "oidc-auth-issuer-query-params", nil, "additional static query parameters to send to the issuer")
 	set.StringVar(&oidc.AppUrl, "oidc-auth-app-url", "", "the public url of your app")
 	set.StringVar(&oidc.CallbackPath, "oidc-auth-callback-path", "/oidc-gloo-callback", "the callback path. relative to the app url.")
 	set.StringSliceVar(&oidc.Scopes, "oidc-scope", nil, "scopes to request in addition to 'openid'. optional.")

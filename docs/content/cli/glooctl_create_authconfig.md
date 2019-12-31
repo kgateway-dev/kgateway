@@ -17,23 +17,23 @@ glooctl create authconfig [flags]
 ### Options
 
 ```
-      --apikey-label-selector strings              apikey label selector to identify valid apikeys for this virtual service; a comma-separated list of labels (key=value)
-      --apikey-secret-name string                  name to search for in provided namespace for an individual apikey secret
-      --apikey-secret-namespace string             namespace to search for an individual apikey secret
-      --enable-apikey-auth                         enable apikey auth features for this virtual service
-      --enable-oidc-auth                           enable oidc auth features for this virtual service
-      --enable-opa-auth                            enable opa auth features for this virtual service
-  -h, --help                                       help for authconfig
-      --oidc-auth-app-url string                   the public url of your app
-      --oidc-auth-callback-path string             the callback path. relative to the app url. (default "/oidc-gloo-callback")
-      --oidc-auth-client-id string                 client id as registered with id provider
-      --oidc-auth-client-secret-name string        name of the 'client secret' secret
-      --oidc-auth-client-secret-namespace string   namespace of the 'client secret' secret
-      --oidc-auth-issuer-params stringToString     url parameters to send to the issuer (default [])
-      --oidc-auth-issuer-url string                the url of the issuer
-      --oidc-scope strings                         scopes to request in addition to 'openid'. optional.
-      --opa-module-ref strings                     namespace.name references to a config map containing OPA modules
-      --opa-query string                           The OPA query to evaluate on a request
+      --apikey-label-selector strings                  apikey label selector to identify valid apikeys for this virtual service; a comma-separated list of labels (key=value)
+      --apikey-secret-name string                      name to search for in provided namespace for an individual apikey secret
+      --apikey-secret-namespace string                 namespace to search for an individual apikey secret
+      --enable-apikey-auth                             enable apikey auth features for this virtual service
+      --enable-oidc-auth                               enable oidc auth features for this virtual service
+      --enable-opa-auth                                enable opa auth features for this virtual service
+  -h, --help                                           help for authconfig
+      --oidc-auth-app-url string                       the public url of your app
+      --oidc-auth-callback-path string                 the callback path. relative to the app url. (default "/oidc-gloo-callback")
+      --oidc-auth-client-id string                     client id as registered with id provider
+      --oidc-auth-client-secret-name string            name of the 'client secret' secret
+      --oidc-auth-client-secret-namespace string       namespace of the 'client secret' secret
+      --oidc-auth-issuer-query-params stringToString   additional static query parameters to send to the issuer (default [])
+      --oidc-auth-issuer-url string                    the url of the issuer
+      --oidc-scope strings                             scopes to request in addition to 'openid'. optional.
+      --opa-module-ref strings                         namespace.name references to a config map containing OPA modules
+      --opa-query string                               The OPA query to evaluate on a request
 ```
 
 ### Options inherited from parent commands
