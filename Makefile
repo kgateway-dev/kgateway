@@ -11,9 +11,7 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
-	# TAGGED_VERSION := $(shell git describe --tags)
-	# This doesn't work in CI, need to find another way...
-	TAGGED_VERSION := vdev
+	TAGGED_VERSION := $(shell describe --tags --dirty --always)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
@@ -510,7 +508,6 @@ docker: discovery-docker gateway-docker gloo-docker \
 # to be used for local testing.
 # docker-push is intended to be run by CI
 docker-push: $(DOCKER_IMAGES)
-ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/gateway:$(VERSION) && \
 	docker push quay.io/solo-io/ingress:$(VERSION) && \
 	docker push quay.io/solo-io/discovery:$(VERSION) && \
@@ -519,7 +516,6 @@ ifeq ($(RELEASE),"true")
 	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/certgen:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
-endif
 
 push-kind-images: docker
 	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
