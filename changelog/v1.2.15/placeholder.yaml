@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      GlooE depends on Gloo v1.2.12. We released [v1.2.13](https://github.com/solo-io/gloo/releases/tag/v1.2.13) and
+      [v1.2.14](https://github.com/solo-io/gloo/releases/tag/v1.2.14) off of master (with new features) instead this
+      branch, `v1.2.x`, which was incorrect.
+
+      To account for this, we skip `v1.2.13` and `v1.2.14` tags on this branch. This file exists to ensure that the
+      next release tag is `v1.2.15`, which is the successor for `v1.2.12`, which Gloo Enterprise 1.2.0 tracks.

@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      GlooE depends on Gloo v1.2.12. We released [v1.2.13](https://github.com/solo-io/gloo/releases/tag/v1.2.13) off of
+      master (with new features) instead this branch, `v1.2.x`, which was incorrect.
+
+      To account for this, we will skip this tag on this branch, and the next valid 1.2.x tag should come from this
+      branch.
+
+      v1.2.13 was marked as a pre-release.
