@@ -1,10 +1,10 @@
 changelog:
 - type: NEW_FEATURE
   description: >
-    Add a new flag to the `glooctl create authconfig` command: --oidc-auth-issuer-params, which takes in a string to string map (e.g. a=b,c=d).
-    Add a new field to the AuthConfig CRD, to the OAuth config type, called issuer_query_params. This
-    is a map of string to string, e.g. (
-    ```
+    Add a new flag to the `glooctl create authconfig` command: --oidc-auth-issuer-query-params, which takes in a string
+    to string map (e.g. a=b,c=d). Add a new field to the AuthConfig CRD, to the OAuth config type, called
+    `issuer_query_params`. This is a map of string to string, e.g. (
+    ```yaml
     apiVersion: enterprise.gloo.solo.io/v1
     kind: AuthConfig
     metadata:
@@ -25,6 +25,6 @@ changelog:
             key2 : value2
     ```
     )
-    These additional issuer query parameters will be appended to the Issuer's URL request for an OAUTH OIDC authorization request
-    in the form &key=value.
+    These additional issuer query parameters will be appended to the Issuer's URL request for an OAUTH OIDC
+    authorization request.
   issueLink: https://github.com/solo-io/gloo/issues/2030
