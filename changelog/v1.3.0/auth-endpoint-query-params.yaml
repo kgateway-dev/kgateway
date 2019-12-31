@@ -1,9 +1,13 @@
-changelog:
+ changelog:
 - type: NEW_FEATURE
   description: >
-    Add a new flag to the `glooctl create authconfig` command: `--auth-endpoint-query-params`, which takes in a string
-    to string map (e.g. a=b,c=d). Add a new field to the AuthConfig CRD, to the OAuth config type, called
-    `auth_endpoint_query_params`. This is a map of string to string, e.g. (
+    Add a new `auth_endpoint_query_params` field to the `AuthConfig` CRD. When using the Gloo Enterprise OAuth feature,
+    this allows you to append additional query parameters to the request that Gloo sends to the OIDC authorization
+    endpoint to initiate the authorization code flow. This can be useful to integrate Gloo with some identity providers
+    that require custom parameters to the authorization endpoint.
+
+    The new field is a map, where each key-value pair will result in an additional query parameter:
+
     ```yaml
     apiVersion: enterprise.gloo.solo.io/v1
     kind: AuthConfig
@@ -24,7 +28,7 @@ changelog:
             key1 : value1
             key2 : value2
     ```
-    )
-    These additional issuer query parameters will be appended to the Issuer's URL request for an OAuth OIDC
-    authorization request.
+
+    We also added a new `--auth-endpoint-query-params` flag to the `glooctl create authconfig` command; the flag takes
+    in a comma-separated list of key value pairs (e.g. a=b,c=d).
   issueLink: https://github.com/solo-io/gloo/issues/2030
