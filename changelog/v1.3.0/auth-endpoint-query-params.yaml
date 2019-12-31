@@ -4,7 +4,7 @@
     Add a new `auth_endpoint_query_params` field to the `AuthConfig` CRD. When using the Gloo Enterprise OAuth feature,
     this allows you to append additional query parameters to the request that Gloo sends to the OIDC authorization
     endpoint to initiate the authorization code flow. This can be useful to integrate Gloo with some identity providers
-    that require custom parameters to the authorization endpoint.
+    that require custom parameters to be sent to the authorization endpoint.
 
     The new field is a map, where each key-value pair will result in an additional query parameter:
 
