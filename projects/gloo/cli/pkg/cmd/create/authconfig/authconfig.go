@@ -125,13 +125,13 @@ func authFromOpts(ac *extauth.AuthConfig, input options.InputAuthConfig) error {
 		oauthConf := &extauth.AuthConfig_Config{
 			AuthConfig: &extauth.AuthConfig_Config_Oauth{
 				Oauth: &extauth.OAuth{
-					AppUrl:            oidc.AppUrl,
-					CallbackPath:      oidc.CallbackPath,
-					ClientId:          oidc.ClientId,
-					ClientSecretRef:   oidc.ClientSecretRef,
-					IssuerUrl:         oidc.IssuerUrl,
-					IssuerQueryParams: oidc.IssuerQueryParams,
-					Scopes:            oidc.Scopes,
+					AppUrl:                  oidc.AppUrl,
+					CallbackPath:            oidc.CallbackPath,
+					ClientId:                oidc.ClientId,
+					ClientSecretRef:         oidc.ClientSecretRef,
+					IssuerUrl:               oidc.IssuerUrl,
+					AuthEndpointQueryParams: oidc.AuthEndpointQueryParams,
+					Scopes:                  oidc.Scopes,
 				},
 			},
 		}
