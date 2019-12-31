@@ -11,7 +11,7 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
-	TAGGED_VERSION := $(shell describe --tags --dirty --always)
+	TAGGED_VERSION := $(shell git describe --tags --dirty --always)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
