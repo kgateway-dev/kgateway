@@ -1,4 +1,4 @@
- changelog:
+changelog:
 - type: NEW_FEATURE
   description: >
     Add a new `auth_endpoint_query_params` field to the `AuthConfig` CRD. When using the Gloo Enterprise OAuth feature,
