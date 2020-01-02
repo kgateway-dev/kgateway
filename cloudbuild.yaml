@@ -129,7 +129,7 @@ steps:
   - 'HELM_HOME=/root/.helm'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=10', '--noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone', 'get-test-credentials']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-test-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
@@ -153,6 +153,11 @@ steps:
   waitFor: ['prepare-workspace', 'check-code-and-docs-gen']
   id: 'compile'
 
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-b']
+  id: 'set-regression-zone'
+  # run after dep so it doesn't move our settings
+  waitFor: ['prepare-workspace']
 # Run regression tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['build-test-assets']
@@ -173,15 +178,16 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
-  waitFor: ['build-test-assets', 'set-zone']
+  waitFor: ['build-test-assets', 'set-regression-zone']
   id: 'regression-tests'
+
 - name: gcr.io/cloud-builders/gcloud
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
   args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  id: 'get-credentials'
+  id: 'get-regression-credentials'
   # wait for dep so our kube config is not moved.
-  waitFor: ['set-zone', 'prepare-workspace']
+  waitFor: ['set-regression-zone', 'prepare-workspace']
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
@@ -192,7 +198,7 @@ steps:
     - 'CLUSTER_LOCK_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
-  waitFor: ['build-test-assets', 'get-credentials']
+  waitFor: ['build-test-assets', 'get-regression-credentials']
   id: 'regression-tests-cluster-lock'
 
 # 1) Run make targets to push docker images
