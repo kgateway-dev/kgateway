@@ -278,17 +278,20 @@ func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.ID = id
 	ei.Role = "default~proxy"
 
-	return ei.runWithPort(context.Background(), 8081)
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), 8081)
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
 	ei.Role = "default~proxy"
 
-	return ei.runWithPort(context.Background(), uint32(port))
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), uint32(port))
 }
 func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 	ei.Role = role
-	return ei.runWithPort(context.Background(), uint32(port))
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), uint32(port))
 }
 
 type EnvoyInstanceConfig interface {
