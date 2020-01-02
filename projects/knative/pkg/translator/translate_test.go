@@ -141,17 +141,10 @@ var _ = Describe("Translate", func() {
 		}
 		ingressRes := &v1alpha12.Ingress{Ingress: knative.Ingress(*ingress)}
 		ingressResTls := &v1alpha12.Ingress{Ingress: knative.Ingress(*ingressTls)}
-		secret := &gloov1.Secret{
-			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{},
-			},
-		}
 		snap := &v1.TranslatorSnapshot{
 			Ingresses: v1alpha12.IngressList{ingressRes, ingressResTls},
-			Secrets:   gloov1.SecretList{secret},
 		}
-		proxy, errs := translateProxy(context.TODO(), "test", namespace, snap.Ingresses, snap.Secrets)
+		proxy, errs := translateProxy(context.TODO(), "test", namespace, snap.Ingresses)
 		Expect(errs).NotTo(HaveOccurred())
 		Expect(proxy.Listeners).To(HaveLen(2))
 		Expect(proxy.Listeners[0].Name).To(Equal("http"))
@@ -388,8 +381,63 @@ var _ = Describe("Translate", func() {
 				Namespace: "example",
 			},
 		}
-
 		Expect(proxy).To(Equal(expected))
+	})
+
+	It("renders proxies on ssl config based on annotations", func() {
+		namespace := "example"
+		serviceName := "peteszah-service"
+		serviceNamespace := "peteszah-service-namespace"
+		servicePort := int32(80)
+		secretName := "areallygreatsecret"
+		secretNamespace := "areallygreatnamespace"
+		annotations := map[string]string{
+			sslAnnotationKeySniDomains:      "domain.com,domain.io",
+			sslAnnotationKeySecretName:      secretName,
+			sslAnnotationKeySecretNamespace: secretNamespace,
+		}
+		ingress := &v1alpha12.Ingress{Ingress: knative.Ingress{
+
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "with-ssl-annotations",
+				Namespace:   namespace,
+				Annotations: annotations,
+			},
+			Spec: v1alpha1.IngressSpec{
+				Rules: []v1alpha1.IngressRule{
+					{
+						Hosts: []string{"domain.com"},
+						HTTP: &v1alpha1.HTTPIngressRuleValue{
+							Paths: []v1alpha1.HTTPIngressPath{
+								{
+									Path: "/",
+									Splits: []v1alpha1.IngressBackendSplit{
+										{
+											IngressBackend: v1alpha1.IngressBackend{
+												ServiceName:      serviceName,
+												ServiceNamespace: serviceNamespace,
+												ServicePort: intstr.IntOrString{
+													Type:   intstr.Int,
+													IntVal: servicePort,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}}
+		proxy, errs := translateProxy(context.TODO(), "test", namespace, v1alpha12.IngressList{ingress})
+		Expect(errs).NotTo(HaveOccurred())
+		Expect(proxy.Listeners).To(HaveLen(1))
+		Expect(proxy.Listeners[0].Name).To(Equal("https"))
+		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(443)))
+		Expect(proxy.Listeners[0].SslConfigurations).To(HaveLen(1))
+		Expect(proxy.Listeners[0].SslConfigurations[0].SslSecrets).To(Equal(&gloov1.SslConfig_SecretRef{SecretRef: &core.ResourceRef{Name: secretName, Namespace: secretNamespace}}))
+		Expect(proxy.Listeners[0].SslConfigurations[0].SniDomains).To(Equal([]string{"domain.com", "domain.io"}))
 	})
 })
 

@@ -141,15 +141,8 @@ var _ = Describe("Translate", func() {
 		}
 		ingressRes := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingress)}
 		ingressResTls := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingressTls)}
-		secret := &gloov1.Secret{
-			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{},
-			},
-		}
 		snap := &v1.TranslatorSnapshot{
 			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
-			Secrets:          gloov1.SecretList{secret},
 		}
 		proxy, errs := translateProxy(context.TODO(), namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())

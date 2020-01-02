@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add ratelimit access log tutorial to drill into request characteristics contributing to rate-limit rule breaches
+    issueLink: https://github.com/solo-io/gloo/issues/1867
+    resolvesIssue: false

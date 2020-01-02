@@ -51,6 +51,7 @@ type Install struct {
 	HelmChartOverride       string
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
+	Version                 string
 	Knative                 Knative
 	LicenseKey              string
 	WithUi                  bool
@@ -375,7 +376,7 @@ type ApiKeyAuth struct {
 }
 
 type OIDCSettings struct {
-	ExtAtuhServerUpstreamRef core.ResourceRef
+	ExtAuthServerUpstreamRef core.ResourceRef
 }
 
 type OpaAuth struct {

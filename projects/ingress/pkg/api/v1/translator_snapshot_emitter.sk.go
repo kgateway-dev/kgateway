@@ -82,18 +82,16 @@ type TranslatorSnapshotEmitter interface {
 type TranslatorEmitter interface {
 	TranslatorSnapshotEmitter
 	Register() error
-	Secret() gloo_solo_io.SecretClient
 	Upstream() gloo_solo_io.UpstreamClient
 	Ingress() IngressClient
 }
 
-func NewTranslatorEmitter(secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient) TranslatorEmitter {
-	return NewTranslatorEmitterWithEmit(secretClient, upstreamClient, ingressClient, make(chan struct{}))
+func NewTranslatorEmitter(upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient) TranslatorEmitter {
+	return NewTranslatorEmitterWithEmit(upstreamClient, ingressClient, make(chan struct{}))
 }
 
-func NewTranslatorEmitterWithEmit(secretClient gloo_solo_io.SecretClient, upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient, emit <-chan struct{}) TranslatorEmitter {
+func NewTranslatorEmitterWithEmit(upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient, emit <-chan struct{}) TranslatorEmitter {
 	return &translatorEmitter{
-		secret:    secretClient,
 		upstream:  upstreamClient,
 		ingress:   ingressClient,
 		forceEmit: emit,
@@ -102,15 +100,11 @@ func NewTranslatorEmitterWithEmit(secretClient gloo_solo_io.SecretClient, upstre
 
 type translatorEmitter struct {
 	forceEmit <-chan struct{}
-	secret    gloo_solo_io.SecretClient
 	upstream  gloo_solo_io.UpstreamClient
 	ingress   IngressClient
 }
 
 func (c *translatorEmitter) Register() error {
-	if err := c.secret.Register(); err != nil {
-		return err
-	}
 	if err := c.upstream.Register(); err != nil {
 		return err
 	}
@@ -118,10 +112,6 @@ func (c *translatorEmitter) Register() error {
 		return err
 	}
 	return nil
-}
-
-func (c *translatorEmitter) Secret() gloo_solo_io.SecretClient {
-	return c.secret
 }
 
 func (c *translatorEmitter) Upstream() gloo_solo_io.UpstreamClient {
@@ -148,14 +138,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	errs := make(chan error)
 	var done sync.WaitGroup
 	ctx := opts.Ctx
-	/* Create channel for Secret */
-	type secretListWithNamespace struct {
-		list      gloo_solo_io.SecretList
-		namespace string
-	}
-	secretChan := make(chan secretListWithNamespace)
-
-	var initialSecretList gloo_solo_io.SecretList
 	/* Create channel for Upstream */
 	type upstreamListWithNamespace struct {
 		list      gloo_solo_io.UpstreamList
@@ -176,24 +158,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	currentSnapshot := TranslatorSnapshot{}
 
 	for _, namespace := range watchNamespaces {
-		/* Setup namespaced watch for Secret */
-		{
-			secrets, err := c.secret.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "initial Secret list")
-			}
-			initialSecretList = append(initialSecretList, secrets...)
-		}
-		secretNamespacesChan, secretErrs, err := c.secret.Watch(namespace, opts)
-		if err != nil {
-			return nil, nil, errors.Wrapf(err, "starting Secret watch")
-		}
-
-		done.Add(1)
-		go func(namespace string) {
-			defer done.Done()
-			errutils.AggregateErrs(ctx, errs, secretErrs, namespace+"-secrets")
-		}(namespace)
 		/* Setup namespaced watch for Upstream */
 		{
 			upstreams, err := c.upstream.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
@@ -237,12 +201,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				select {
 				case <-ctx.Done():
 					return
-				case secretList := <-secretNamespacesChan:
-					select {
-					case <-ctx.Done():
-						return
-					case secretChan <- secretListWithNamespace{list: secretList, namespace: namespace}:
-					}
 				case upstreamList := <-upstreamNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -259,8 +217,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			}
 		}(namespace)
 	}
-	/* Initialize snapshot for Secrets */
-	currentSnapshot.Secrets = initialSecretList.Sort()
 	/* Initialize snapshot for Upstreams */
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
 	/* Initialize snapshot for Ingresses */
@@ -296,7 +252,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 				stats.Record(ctx, mTranslatorSnapshotMissed.M(1))
 			}
 		}
-		secretsByNamespace := make(map[string]gloo_solo_io.SecretList)
 		upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
 		ingressesByNamespace := make(map[string]IngressList)
 
@@ -314,25 +269,6 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			case <-c.forceEmit:
 				sentSnapshot := currentSnapshot.Clone()
 				snapshots <- &sentSnapshot
-			case secretNamespacedList := <-secretChan:
-				record()
-
-				namespace := secretNamespacedList.namespace
-
-				skstats.IncrementResourceCount(
-					ctx,
-					namespace,
-					"secret",
-					mTranslatorResourcesIn,
-				)
-
-				// merge lists by namespace
-				secretsByNamespace[namespace] = secretNamespacedList.list
-				var secretList gloo_solo_io.SecretList
-				for _, secrets := range secretsByNamespace {
-					secretList = append(secretList, secrets...)
-				}
-				currentSnapshot.Secrets = secretList.Sort()
 			case upstreamNamespacedList := <-upstreamChan:
 				record()
 

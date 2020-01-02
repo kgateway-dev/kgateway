@@ -23,7 +23,9 @@ import (
 )
 
 type SetupOpts struct {
-	LoggerName  string
+	LoggerName string
+	// logged as the version of Gloo currently executing
+	Version     string
 	SetupFunc   SetupFunc
 	ExitOnError bool
 	CustomCtx   context.Context
@@ -51,7 +53,7 @@ func Main(opts SetupOpts) error {
 		ctx = context.Background()
 	}
 	ctx = contextutils.WithLogger(ctx, opts.LoggerName)
-	loggingContext := append([]interface{}{"version", version.Version}, opts.LoggingPrefixVals...)
+	loggingContext := append([]interface{}{"version", opts.Version}, opts.LoggingPrefixVals...)
 	ctx = contextutils.WithLoggerValues(ctx, loggingContext...)
 
 	if opts.UsageReporter != nil {

@@ -1,0 +1,34 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Add a new `auth_endpoint_query_params` field to the `AuthConfig` CRD. When using the Gloo Enterprise OAuth feature,
+    this allows you to append additional query parameters to the request that Gloo sends to the OIDC authorization
+    endpoint to initiate the authorization code flow. This can be useful to integrate Gloo with some identity providers
+    that require custom parameters to be sent to the authorization endpoint.
+
+    The new field is a map, where each key-value pair will result in an additional query parameter:
+
+    ```yaml
+    apiVersion: enterprise.gloo.solo.io/v1
+    kind: AuthConfig
+    metadata:
+      name: google-oidc
+      namespace: gloo-system
+    spec:
+      configs:
+      - oauth:
+          app_url: http://localhost:8080
+          callback_path: /callback
+          client_id: $CLIENT_ID
+          client_secret_ref:
+            name: google
+            namespace: gloo-system
+          issuer_url: https://accounts.google.com
+          auth_endpoint_query_params:
+            key1 : value1
+            key2 : value2
+    ```
+
+    We also added a new `--auth-endpoint-query-params` flag to the `glooctl create authconfig` command; the flag takes
+    in a comma-separated list of key value pairs (e.g. a=b,c=d).
+  issueLink: https://github.com/solo-io/gloo/issues/2030
