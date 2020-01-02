@@ -8,18 +8,20 @@ description: Configuring Gloo to ship telemetry/metrics to Prometheus
 
 All Gloo pods ship with optional [Prometheus](https://prometheus.io/) monitoring capabilities.
 
-This functionality is turned off by default, and can be turned on a couple of different ways: through [Helm chart install
+This functionality is turned on by default, and can be turned off a couple of different ways: through [Helm chart install
 options]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-the-gloo-gateway-on-kubernetes" >}}); and through environment variables.
 
-Once you have [enabled](#enabling-pod-metrics) your metrics, you can take a look at the
-[Help strings](#metrics-context) we publish to see what kind of metrics are available.
+You can take a look at the [Help strings](#metrics-context) we publish to see what kind of metrics are available.
 
-### Enabling Pod Metrics
+### Toggling Pod Metrics
 
 #### Helm Chart Options
 
-The first way is via the Helm chart. All deployment resources in the chart accept an argument `stats` which
-when set to true, start a stats server on the given pod.
+The first way is via the Helm chart. A global settings value for enabling metrics and debug endpoints on all pods part
+of the Gloo installation can be toggled using `global.glooStats.enabled` (default `true`). 
+
+In addition, all deployment resources in the chart accept an argument `stats` which when set, override any default
+value inherited from `global.glooStats.enabled`.
 
 For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats=true`.
 
