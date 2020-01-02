@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Update patch release branch to use assets-only release style.
+    issueLink: https://github.com/solo-io/gloo/issues/2084
+    resolvesIssue: false
