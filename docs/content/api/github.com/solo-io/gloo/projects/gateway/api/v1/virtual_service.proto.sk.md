@@ -179,9 +179,9 @@ When a request matches on a route, the route can perform one of the following ac
 - *Route* the request to a destination
 - Reply with a *Direct Response*
 - Send a *Redirect* response to the client
-- *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
+- *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
-a top-level `RouteTable` resource.
+top-level `RouteTable` resources.
 
 ```yaml
 "matchers": []matchers.core.gloo.solo.io.Matcher
@@ -214,17 +214,17 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 ```yaml
 "name": string
 "namespace": string
-"single": .core.solo.io.ResourceRef
+"ref": .core.solo.io.ResourceRef
 "selector": .gateway.solo.io.Selector
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | The name of the Route Table to delegate to. Deprecated: please use the `single` field. |  |
-| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: please use the `single` field. |  |
-| `single` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `single` or `selector` can be set. |  |
-| `selector` | [.gateway.solo.io.Selector](../virtual_service.proto.sk/#selector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `single` can be set. |  |
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
+| `selector` | [.gateway.solo.io.Selector](../virtual_service.proto.sk/#selector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
 
 
 
@@ -236,14 +236,14 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 Select route tables for delegation by namespace, labels, or both.
 
 ```yaml
-"namespace": string
+"namespaces": []string
 "labels": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `namespace` | `string` | Delegate to Route Tables in this namespace. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
+| `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
 | `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
 
 

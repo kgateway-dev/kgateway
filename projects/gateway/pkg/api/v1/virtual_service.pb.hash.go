@@ -266,14 +266,14 @@ func (m *DelegateAction) Hash(hasher hash.Hash64) (uint64, error) {
 
 	switch m.Type.(type) {
 
-	case *DelegateAction_Single:
+	case *DelegateAction_Ref:
 
-		if h, ok := interface{}(m.GetSingle()).(safe_hasher.SafeHasher); ok {
+		if h, ok := interface{}(m.GetRef()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSingle(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetRef(), nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -313,8 +313,12 @@ func (m *Selector) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	var err error
 
-	if _, err = hasher.Write([]byte(m.GetNamespace())); err != nil {
-		return 0, err
+	for _, v := range m.GetNamespaces() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
 	}
 
 	{
