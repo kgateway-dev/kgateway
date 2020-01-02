@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.45.1 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver/v3 v3.0.1
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
