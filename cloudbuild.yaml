@@ -106,10 +106,14 @@ steps:
   id: 'grab-ginkgo-container'
 
 - name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-zone'
+  args: ['config', 'set', 'compute/zone', 'us-central1-b']
+  id: 'set-test-zone'
   # run after dep so it doesn't move our settings
   waitFor: ['prepare-workspace']
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'gloo-test']
+  id: 'get-test-credentials'
+  waitFor: ['set-test-zone']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
@@ -125,7 +129,7 @@ steps:
   - 'HELM_HOME=/root/.helm'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=10', '--noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
