@@ -23,7 +23,7 @@ of the Gloo installation can be toggled using `global.glooStats.enabled` (defaul
 In addition, all deployment resources in the chart accept an argument `stats` which when set, override any default
 value inherited from `global.glooStats.enabled`.
 
-For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats=true`.
+For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats.enabled=true`.
 
 For example, to add stats to the Gloo `discovery` pod, first write your values file. Run:
 
@@ -32,7 +32,8 @@ echo "crds:
   create: true # see our installation guide- only required if you are using Helm 2
 discovery:
   deployment:
-    stats: true
+    stats:
+      enabled: true
 " > stats-values.yaml
 ```
 
