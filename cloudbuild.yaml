@@ -155,7 +155,7 @@ steps:
   args: ['config', 'set', 'compute/zone', 'us-central1-b']
   id: 'set-regression-zone'
   # run after dep so it doesn't move our settings
-  waitFor: ['prepare-workspace']
+  waitFor: ['test']
 # Run regression tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['build-test-assets']
