@@ -124,7 +124,7 @@ spec:
 {{< /highlight >}}
 
 {{% notice info %}}
-The Envoy rate limiter uses a plugin extension name of `envoy-rate-limit`. The Gloo simpler rate limiter uses a plugin extension of `rate-limit`.
+The Envoy rate limiter uses an option with name `ratelimit`. The simpler Gloo rate limiter uses an option with name `ratelimitBasic`.
 {{% /notice %}}
 
 This virtual service sets up a default (virtual service level) rate limit action that maps header `x-account-id` to descriptor key `account_id` and `x-plan` to key `plan`. Any requests matching route prefix `/service/service2` use this rate limit action. Requests matching prefix `/service/service` route use a different rate limiting action that maps header `x-plan-other` to key `plan`. Note the route also has an `includeVhRateLimits: <boolean>` configuration that defaults to `false`. If `true`, any specified Virtual Service level rate limit actions would be added to (OR'd) the routes list of actions. Each rate limit action is matched to descriptors independently.
@@ -180,7 +180,7 @@ descriptors:
 
 The `glooctl` tool merges those descriptors into the Gloo Settings manifest as follows:
 
-{{< highlight yaml "hl_lines=26-32" >}}
+{{< highlight yaml "hl_lines=24-30" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:

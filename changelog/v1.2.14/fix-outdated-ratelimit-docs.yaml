@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Fix some syntax highlighting and 1.0-related API changes in rate limiting docs.
+    issueLink: https://github.com/solo-io/gloo/issues/2065

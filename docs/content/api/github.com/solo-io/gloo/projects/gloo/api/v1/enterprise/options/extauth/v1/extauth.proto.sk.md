@@ -336,6 +336,7 @@ This is used with custom auth servers.
 "clientId": string
 "clientSecretRef": .core.solo.io.ResourceRef
 "issuerUrl": string
+"authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
 "scopes": []string
@@ -347,6 +348,7 @@ This is used with custom auth servers.
 | `clientId` | `string` | your client id as registered with the issuer. |  |
 | `clientSecretRef` | [.core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | your client secret as registered with the issuer. |  |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |  |
+| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
@@ -510,6 +512,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 "clientId": string
 "clientSecret": string
 "issuerUrl": string
+"authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
 "scopes": []string
@@ -521,6 +524,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 | `clientId` | `string` | your client id as registered with the issuer. |  |
 | `clientSecret` | `string` | your client secret as registered with the issuer. |  |
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |  |
+| `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |

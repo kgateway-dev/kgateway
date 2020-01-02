@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"time"
 
-	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	github_com_solo_io_gloo_projects_knative_pkg_api_external_knative "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 
 	"go.opencensus.io/stats"
@@ -91,8 +90,6 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 				currentSnapshot = TranslatorSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *gloo_solo_io.Secret:
-						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *github_com_solo_io_gloo_projects_knative_pkg_api_external_knative.Ingress:
 						currentSnapshot.Ingresses = append(currentSnapshot.Ingresses, typed)
 					default:

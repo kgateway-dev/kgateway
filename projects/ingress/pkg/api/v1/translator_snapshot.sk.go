@@ -16,14 +16,12 @@ import (
 )
 
 type TranslatorSnapshot struct {
-	Secrets   gloo_solo_io.SecretList
 	Upstreams gloo_solo_io.UpstreamList
 	Ingresses IngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
 	return TranslatorSnapshot{
-		Secrets:   s.Secrets.Clone(),
 		Upstreams: s.Upstreams.Clone(),
 		Ingresses: s.Ingresses.Clone(),
 	}
@@ -33,9 +31,6 @@ func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	if _, err := s.hashSecrets(hasher); err != nil {
-		return 0, err
-	}
 	if _, err := s.hashUpstreams(hasher); err != nil {
 		return 0, err
 	}
@@ -43,10 +38,6 @@ func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
-}
-
-func (s TranslatorSnapshot) hashSecrets(hasher hash.Hash64) (uint64, error) {
-	return hashutils.HashAllSafe(hasher, s.Secrets.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
@@ -60,11 +51,6 @@ func (s TranslatorSnapshot) hashIngresses(hasher hash.Hash64) (uint64, error) {
 func (s TranslatorSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
-	SecretsHash, err := s.hashSecrets(hasher)
-	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
-	}
-	fields = append(fields, zap.Uint64("secrets", SecretsHash))
 	UpstreamsHash, err := s.hashUpstreams(hasher)
 	if err != nil {
 		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
@@ -84,18 +70,12 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 
 type TranslatorSnapshotStringer struct {
 	Version   uint64
-	Secrets   []string
 	Upstreams []string
 	Ingresses []string
 }
 
 func (ss TranslatorSnapshotStringer) String() string {
 	s := fmt.Sprintf("TranslatorSnapshot %v\n", ss.Version)
-
-	s += fmt.Sprintf("  Secrets %v\n", len(ss.Secrets))
-	for _, name := range ss.Secrets {
-		s += fmt.Sprintf("    %v\n", name)
-	}
 
 	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
 	for _, name := range ss.Upstreams {
@@ -117,7 +97,6 @@ func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 	}
 	return TranslatorSnapshotStringer{
 		Version:   snapshotHash,
-		Secrets:   s.Secrets.NamespacesDotNames(),
 		Upstreams: s.Upstreams.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
