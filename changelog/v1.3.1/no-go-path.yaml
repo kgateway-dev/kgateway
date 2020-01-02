@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Make Gloo fully compatible with go.mod, and outside of the GOPATH
+  issueLink: https://github.com/solo-io/gloo/issues/835
