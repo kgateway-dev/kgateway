@@ -1770,6 +1770,8 @@ github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0
 github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
 github.com/solo-io/solo-kit v0.11.17-0.20200102191008-12b123429d16 h1:y8Y8qy7+RhJo4+Jswsg/IB0HVVOpKZTQ47p+uUs+7GI=
 github.com/solo-io/solo-kit v0.11.17-0.20200102191008-12b123429d16/go.mod h1:DDP0oG/gpuZdRVicvYzzhtWvWULA5vjhVyOUqI06/RA=
+github.com/solo-io/solo-kit v0.12.0 h1:EnIoMAGcsLcrG+sB3PjuaWxjFj5pLiE2INaEuhPto6M=
+github.com/solo-io/solo-kit v0.12.0/go.mod h1:DDP0oG/gpuZdRVicvYzzhtWvWULA5vjhVyOUqI06/RA=
 github.com/solo-io/wasme v0.0.1 h1:SjYWzJZ2IGVGTI0WS1/Gv2I74FLvibieLgyl6+TYciU=
 github.com/solo-io/wasme v0.0.1/go.mod h1:Zb85GQMTyx7NEyEINCUiofKE9KZLjQVF6obvHOHBQE8=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=
