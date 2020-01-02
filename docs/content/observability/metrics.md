@@ -21,7 +21,7 @@ The first way is via the Helm chart. A global settings value for enabling metric
 of the Gloo installation can be toggled using `global.glooStats.enabled` (default `true`). 
 
 In addition, all deployment resources in the chart accept an argument `stats` which when set, override any default
-value inherited from `global.glooStats.enabled`.
+value inherited from `global.glooStats`.
 
 For example, to add stats to the Gloo `gateway`, when installing with Helm add  `--set discovery.deployment.stats.enabled=true`.
 
