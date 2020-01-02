@@ -111,7 +111,7 @@ steps:
   # run after dep so it doesn't move our settings
   waitFor: ['prepare-workspace']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', ' test-cluster-roles']
+  args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
   id: 'get-test-credentials'
   waitFor: ['set-test-zone']
 
@@ -180,8 +180,6 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
-    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
     - 'RUN_KUBE2E_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
@@ -193,8 +191,6 @@ steps:
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
-    - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
     - 'RUN_KUBE2E_TESTS=1'
     - 'CLUSTER_LOCK_TESTS=1'
   dir: *dir
