@@ -111,7 +111,7 @@ steps:
   # run after dep so it doesn't move our settings
   waitFor: ['prepare-workspace']
 - name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'gloo-test']
+  args: ['container', 'clusters', 'get-credentials', ' test-cluster-roles']
   id: 'get-test-credentials'
   waitFor: ['set-test-zone']
 
@@ -120,8 +120,6 @@ steps:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
-  - 'CLOUDSDK_COMPUTE_ZONE=us-central1-a'
-  - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   - 'RUN_KUBE_TESTS=1'
   - 'RUN_CONSUL_TESTS=1'
   - 'RUN_VAULT_TESTS=1'
@@ -170,6 +168,15 @@ steps:
   dir: *dir
   waitFor: ['compile', 'docker-login', 'test']
   id: 'build-test-assets'
+
+- name: gcr.io/cloud-builders/gcloud
+  env:
+  - 'KUBECONFIG=/workspace/kube-e2e'
+  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  id: 'get-regression-credentials'
+  # wait for dep so our kube config is not moved.
+  waitFor: ['set-regression-zone', 'prepare-workspace']
+
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
     - 'PROJECT_ROOT=github.com/solo-io/gloo'
@@ -181,13 +188,7 @@ steps:
   waitFor: ['build-test-assets', 'set-regression-zone']
   id: 'regression-tests'
 
-- name: gcr.io/cloud-builders/gcloud
-  env:
-    - 'KUBECONFIG=/workspace/kube-e2e'
-  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  id: 'get-regression-credentials'
-  # wait for dep so our kube config is not moved.
-  waitFor: ['set-regression-zone', 'prepare-workspace']
+
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
