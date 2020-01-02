@@ -371,9 +371,11 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 
 	// missing refs should only result in a warning
 	// this allows resources to be applied asynchronously
-	routeTable, err := rv.tables.Find(delegate.Strings())
+	// TODO(marco): handle selector
+	routeTableRef := core.ResourceRef{Namespace: delegate.Namespace, Name: delegate.Name}
+	routeTable, err := rv.tables.Find(routeTableRef.Strings())
 	if err != nil {
-		reports.AddWarning(routingResource, routeTableMissingWarning(*delegate))
+		reports.AddWarning(routingResource, routeTableMissingWarning(routeTableRef))
 		return nil, nil
 	}
 

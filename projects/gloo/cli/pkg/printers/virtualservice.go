@@ -236,8 +236,9 @@ func destinationString(route *v1.Route) string {
 	case *v1.Route_RedirectAction:
 		return action.RedirectAction.HostRedirect
 	case *v1.Route_DelegateAction:
-		return fmt.Sprintf("%s (route table)", action.DelegateAction.GetSingle().Key())
-
+		if delegateSingle := action.DelegateAction.GetRef(); delegateSingle != nil {
+			return fmt.Sprintf("%s (route table)", delegateSingle.Key())
+		}
 	}
 	return ""
 }

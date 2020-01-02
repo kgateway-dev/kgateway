@@ -43,7 +43,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		// set delegate of previous to what we appended
 		ref := routeTables[i].Metadata.Ref()
 		routeTables[i-1].Routes[0].Action = &v1.Route_DelegateAction{
-			DelegateAction: &ref,
+			DelegateAction: &v1.DelegateAction{
+				Type: &v1.DelegateAction_Ref{
+					Ref: &ref,
+				},
+			},
 		}
 	}
 
@@ -65,7 +69,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 	leafRef := leaf.Metadata.Ref()
 
 	routeTables[lengthOfChain-1].Routes[0].Action = &v1.Route_DelegateAction{
-		DelegateAction: &leafRef,
+		DelegateAction: &v1.DelegateAction{
+			Type: &v1.DelegateAction_Ref{
+				Ref: &leafRef,
+			},
+		},
 	}
 
 	routeTables = append(routeTables, leaf)
@@ -79,7 +87,11 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 			},
 		}},
 		Action: &v1.Route_DelegateAction{
-			DelegateAction: &ref,
+			DelegateAction: &v1.DelegateAction{
+				Type: &v1.DelegateAction_Ref{
+					Ref: &ref,
+				},
+			},
 		},
 	}}
 

@@ -488,7 +488,8 @@ func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.Virtu
 
 func routesContainRefs(list []*v1.Route, refs refSet) bool {
 	for _, r := range list {
-		delegate := r.GetDelegateAction()
+		// TODO(marco): handle selector
+		delegate := r.GetDelegateAction().GetRef()
 		if delegate == nil {
 			continue
 		}

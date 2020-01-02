@@ -207,7 +207,11 @@ func GatewaySnapshotWithDelegates(us core.ResourceRef, namespace string) *gwv1.A
 	vsRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_DelegateAction{
-				DelegateAction: utils.ResourceRefPtr(rt.Metadata.Ref()),
+				DelegateAction: &gwv1.DelegateAction{
+					Type: &gwv1.DelegateAction_Ref{
+						Ref: utils.ResourceRefPtr(rt.Metadata.Ref()),
+					},
+				},
 			},
 		},
 	}
@@ -244,7 +248,11 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 	rtRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_DelegateAction{
-				DelegateAction: utils.ResourceRefPtr(rtLeaf.Metadata.Ref()),
+				DelegateAction: &gwv1.DelegateAction{
+					Type: &gwv1.DelegateAction_Ref{
+						Ref: utils.ResourceRefPtr(rtLeaf.Metadata.Ref()),
+					},
+				},
 			},
 		},
 	}
@@ -257,7 +265,11 @@ func GatewaySnapshotWithMultiDelegates(us core.ResourceRef, namespace string) *g
 	vsRoutes := []*gwv1.Route{
 		{
 			Action: &gwv1.Route_DelegateAction{
-				DelegateAction: utils.ResourceRefPtr(rt.Metadata.Ref()),
+				DelegateAction: &gwv1.DelegateAction{
+					Type: &gwv1.DelegateAction_Ref{
+						Ref: utils.ResourceRefPtr(rt.Metadata.Ref()),
+					},
+				},
 			},
 		},
 	}
