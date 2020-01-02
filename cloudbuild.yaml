@@ -106,7 +106,7 @@ steps:
   id: 'grab-ginkgo-container'
 
 - name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-b']
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-test-zone'
   # run after dep so it doesn't move our settings
   waitFor: ['prepare-workspace']
