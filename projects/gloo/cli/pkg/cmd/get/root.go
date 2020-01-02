@@ -28,10 +28,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 
-			client := helpers.MustKubeClient()
-			_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
-			if err != nil {
-				return UnsetNamespaceError
+			if !opts.Top.Consul.UseConsul {
+				client := helpers.MustKubeClient()
+				_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
+				if err != nil {
+					return UnsetNamespaceError
+				}
 			}
 			return nil
 		},
