@@ -106,9 +106,6 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
-.PHONY: vendor
-vendor:
-	go mod vendor
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
@@ -118,7 +115,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	rm -rf vendor
+	go build ./...
 	find * -type f | grep .sk.md | xargs rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	GO111MODULE=on go generate ./...

@@ -43,7 +43,7 @@ steps:
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  dir: &dir './gloo'
+  dir: &dir '/workspace/gloo'
   entrypoint: make
   args: ['check-format']
   waitFor: ['prepare-workspace']

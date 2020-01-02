@@ -40,4 +40,5 @@ func main() {
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
 	}
+	log.Printf("finished generating code")
 }
