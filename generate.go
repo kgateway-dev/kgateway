@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/solo-io/anyvendor/anyvendor"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/code-generator/cmd"
 	"github.com/solo-io/solo-kit/pkg/code-generator/docgen/options"
@@ -34,12 +33,9 @@ func main() {
 				ApiDir:  "api",
 			},
 		},
-		ProtoDepConfig: &anyvendor.Config{
-			Local: &anyvendor.Local{
-				Patterns: []string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
-			},
-			Imports: sk_anyvendor.DefaultMatchOptions,
-		},
+		ExternalImports: sk_anyvendor.CreateDefaultMatchOptions(
+			[]string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
+		),
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)
