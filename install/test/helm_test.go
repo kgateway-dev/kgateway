@@ -1604,7 +1604,7 @@ metadata:
 											}},
 											Name: "gloo",
 											// Note: this was NOT overwritten
-											Image: fmt.Sprintf("quay.io/solo-io/gloo:%v",version),
+											Image: fmt.Sprintf("quay.io/solo-io/gloo:%v", version),
 											Ports: glooPorts,
 											Env: []v1.EnvVar{
 												{
