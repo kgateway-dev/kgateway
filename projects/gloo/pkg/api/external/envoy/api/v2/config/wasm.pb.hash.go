@@ -34,6 +34,9 @@ func (m *VmConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("envoy.config.wasm.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config.VmConfig")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetVmId())); err != nil {
 		return 0, err
@@ -78,6 +81,9 @@ func (m *PluginConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("envoy.config.wasm.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config.PluginConfig")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -117,6 +123,9 @@ func (m *WasmService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("envoy.config.wasm.v2.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config.WasmService")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {

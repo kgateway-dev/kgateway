@@ -4,7 +4,7 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise
 
 import "envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 
 
 import "gogoproto/gogo.proto";

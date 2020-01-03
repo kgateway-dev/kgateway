@@ -34,6 +34,9 @@ func (m *Ingress) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("ingress.solo.io.github.com/solo-io/gloo/projects/ingress/pkg/api/v1.Ingress")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetKubeIngressSpec()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {

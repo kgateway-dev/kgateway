@@ -3,12 +3,10 @@ package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
 import "google/protobuf/wrappers.proto";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
-
-option (gogoproto.equal_all) = true;
-
 
 
 // SslConfig contains the options necessary to configure a virtual host or listener to use TLS

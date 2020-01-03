@@ -34,6 +34,9 @@ func (m *SubsetSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options.SubsetSpec")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetSelectors() {
 
@@ -65,6 +68,9 @@ func (m *Selector) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options.Selector")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetKeys() {
 

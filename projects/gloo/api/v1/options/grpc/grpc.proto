@@ -8,7 +8,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
+import "gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
 
 // Service spec describing GRPC upstreams. This will usually be filled
 // automatically via function discovery (if the upstream supports reflection).

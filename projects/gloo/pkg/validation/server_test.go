@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	"google.golang.org/grpc"
 
 	"github.com/solo-io/gloo/test/samples"
@@ -20,8 +21,6 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
 	"github.com/golang/mock/gomock"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
@@ -54,7 +53,7 @@ var _ = Describe("Validation Server", func() {
 			Settings:      settings,
 			Secrets:       memoryClientFactory,
 			Upstreams:     memoryClientFactory,
-			ConsulWatcher: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 		}
 		registeredPlugins = registry.Plugins(opts)
 
