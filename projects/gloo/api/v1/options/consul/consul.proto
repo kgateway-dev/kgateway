@@ -8,7 +8,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/options/service_spec.proto";
+import "gloo/projects/gloo/api/v1/options/service_spec.proto";
 
 // Upstream Spec for Consul Upstreams
 // consul Upstreams represent a set of one or more addressable pods for a consul Service

@@ -6,16 +6,14 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "google/protobuf/any.proto";
 
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
-
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 /*
 A simple wrapper for a Kubernetes Ingress Object.
 */
-message Ingress{
+message Ingress {
 
     option (core.solo.io.resource).short_name = "ig";
     option (core.solo.io.resource).plural_name = "ingresses";
