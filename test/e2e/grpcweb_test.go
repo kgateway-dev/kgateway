@@ -136,8 +136,16 @@ var _ = Describe("Grpc Web", func() {
 
 					req.Header.Set("content-type", "application/grpc-web-text")
 
-					_, err = http.DefaultClient.Do(req)
-					Expect(err).NotTo(HaveOccurred())
+					Eventually(func() error {
+						resp, err := http.DefaultClient.Do(req)
+						if err != nil {
+							return err
+						}
+						if resp.StatusCode != http.StatusOK {
+							return fmt.Errorf("not ok")
+						}
+						return nil
+					}, 10*time.Second, time.Second/10).Should(Not(HaveOccurred()))
 
 					var entry *envoy_data_accesslog_v2.HTTPAccessLogEntry
 					Eventually(msgChan, time.Second).Should(Receive(&entry))
