@@ -3,10 +3,11 @@ package install_test
 import (
 	"bytes"
 
+	"k8s.io/client-go/kubernetes/fake"
+
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	installutil "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/mocks"
@@ -16,18 +17,18 @@ import (
 	helmchart "helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Install", func() {
 	var (
 		mockHelmClient       *mocks.MockHelmClient
-		mockKubectl          *installutil.MockKubectl
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
 
-		glooOsVersion          = "v1.0.0"
-		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-v1.0.0.tgz"
-		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-v1.0.0.tgz"
+		glooOsVersion          = "test"
+		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-test.tgz"
+		glooEnterpriseChartUri = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-test.tgz"
 		testCrdContent         = "test-crd-content"
 		testHookContent        = `
 kind: ClusterRoleBinding
@@ -111,6 +112,7 @@ rules:
 		installConfig := &options.Install{
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
+			Version:         "test",
 			CreateNamespace: true,
 		}
 
@@ -136,18 +138,18 @@ rules:
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 
-		mockKubectl := installutil.NewMockKubectl([]string{
-			"create namespace " + defaults.GlooSystem,
-		}, []string{})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
+		kubeNsClient := fake.NewSimpleClientset().CoreV1().Namespaces()
+		installer := install.NewInstallerWithWriter(mockHelmClient, kubeNsClient, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Enterprise:     enterprise,
 		})
-
-		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
+
+		// Check that namespace was created
+		_, err = kubeNsClient.Get(installConfig.Namespace, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	It("installs cleanly by default", func() {
@@ -161,7 +163,6 @@ rules:
 	})
 
 	It("installs enterprise cleanly by default", func() {
-		version.EnterpriseTag = "v1.0.0"
 		defaultInstall(true,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
@@ -200,15 +201,14 @@ rules:
 			DownloadChart(glooOsChartUri).
 			Return(chart, nil)
 
+		kubeNsClient := fake.NewSimpleClientset().CoreV1().Namespaces()
 		dryRunOutputBuffer := new(bytes.Buffer)
-		mockKubectl = installutil.NewMockKubectl([]string{}, []string{})
-		installer := install.NewInstallerWithWriter(mockHelmClient, mockKubectl, dryRunOutputBuffer)
+		installer := install.NewInstallerWithWriter(mockHelmClient, kubeNsClient, dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 		})
 
-		Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 
 		dryRunOutput := dryRunOutputBuffer.String()
@@ -216,5 +216,9 @@ rules:
 		Expect(dryRunOutput).To(ContainSubstring(testCrdContent), "Should output CRD definitions")
 		Expect(dryRunOutput).NotTo(ContainSubstring(constants.HookCleanupResourceAnnotation), "Should not output cleanup hooks")
 		Expect(dryRunOutput).To(ContainSubstring("helm.sh/hook"), "Should output non-cleanup hooks")
+
+		// Make sure that namespace was not created
+		_, err = kubeNsClient.Get(installConfig.Namespace, metav1.GetOptions{})
+		Expect(err).To(HaveOccurred())
 	})
 })

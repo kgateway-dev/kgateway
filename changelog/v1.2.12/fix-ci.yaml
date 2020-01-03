@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Fix CI after helm values docsgen PR broke build. (PR: https://github.com/solo-io/gloo/pull/1993)
+    issueLink: https://github.com/solo-io/gloo/issues/1643

@@ -42,6 +42,14 @@ func oidcSurvey(input *options.OIDCAuth) error {
 	if err != nil {
 		return err
 	}
+
+	var authEndpointQueryParams options.InputMapStringString
+	err = cliutil.GetStringSliceInput("provide any query params to add to the authorization request in key=value form (empty to finish)", &authEndpointQueryParams.Entries)
+	if err != nil {
+		return err
+	}
+	input.AuthEndpointQueryParams = authEndpointQueryParams.MustMap()
+
 	err = cliutil.GetStringInputDefault("What path (relative to your app url) should we use as a callback from the issuer?", &input.CallbackPath, "/oidc-gloo-callback")
 	if err != nil {
 		return err

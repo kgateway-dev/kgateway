@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -91,7 +92,7 @@ var _ = Describe("Translator", func() {
 			Settings:      settings,
 			Secrets:       memoryClientFactory,
 			Upstreams:     memoryClientFactory,
-			ConsulWatcher: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
 		}
 		registeredPlugins = registry.Plugins(opts)
 

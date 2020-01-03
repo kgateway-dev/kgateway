@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:generate mockgen -destination ./mock_watcher.go -source watcher.go -package consul -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
+//go:generate mockgen -destination ./mocks/mock_watcher.go -source watcher.go -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
 
 type ServiceMeta struct {
 	Name        string

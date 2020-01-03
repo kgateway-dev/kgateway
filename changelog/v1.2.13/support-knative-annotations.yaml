@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support Knative Ingress Class Annotations. If env var REQUIRE_INGRESS_CLASS=true on the Knative Ingress Controller, only ingresses with the annotation 'networking.knative.dev/ingress.class=gloo.ingress.networking.knative.dev' will be processed. Set Helm value Values.settings.integrations.knative.requireIngressClass=true to enable with Helm.
+    issueLink: https://github.com/solo-io/gloo/issues/2040

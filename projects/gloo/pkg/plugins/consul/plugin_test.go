@@ -7,19 +7,19 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )
 
 var _ = Describe("Resolve", func() {
 	var (
 		ctrl              *gomock.Controller
-		consulWatcherMock *consul.MockConsulWatcher
+		consulWatcherMock *mock_consul.MockConsulWatcher
 	)
 
 	BeforeEach(func() {
 		ctrl = gomock.NewController(T)
 
-		consulWatcherMock = consul.NewMockConsulWatcher(ctrl)
+		consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 
 	})
 

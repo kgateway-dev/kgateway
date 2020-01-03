@@ -1,7 +1,7 @@
 ---
-menuTitle: Validation
+menuTitle: Configuration Validation
 title: Config Reporting & Validation
-weight: 11
+weight: 60
 description: (Kubernetes Only) Gloo can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
@@ -27,7 +27,7 @@ not be updated until the errors are resolved.
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the {{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateway resource">}}.
+  the {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resource">}}.
 
 {{% notice note %}}
 
@@ -53,7 +53,7 @@ API Server before it is written to persistent storage.
 
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
-{{< protobuf name="gateway.solo.io.v2.Gateway" display="Gateways">}}, 
+{{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
 {{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
@@ -92,9 +92,6 @@ If writing Settings directly to Kubernetes, add the following to the `spec.gatew
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
-  annotations:
-    helm.sh/hook: pre-install
-    helm.sh/hook-weight: "5"
   labels:
     app: gloo
   name: default

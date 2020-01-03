@@ -1,12 +1,14 @@
 syntax = "proto3";
 package waf.options.gloo.solo.io;
 
-import "github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 message Settings {
     // Disable waf on this resource (if omitted defaults to false).

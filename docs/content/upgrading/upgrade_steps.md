@@ -279,7 +279,7 @@ quay.io/solo-io/gloo:1.2.1
 ##### Helm 2
 
 {{% notice warning %}}
-Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.0.0 and later requires explicitly
+Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.2.0 and later requires explicitly
 setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
 {{% /notice %}}
 

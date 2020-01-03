@@ -30,25 +30,25 @@ site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/e0c50784a92fb7f61c635ff9a6e3a010f636f550
 	git -C themes/hugo-theme-soloio checkout e0c50784a92fb7f61c635ff9a6e3a010f636f550
-	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
-	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
 .PHONY: site-test
 site-test: site-common
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	cat site/index.json | jq "." > /dev/null
 
 .PHONY: site-release
 site-release: site-common
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
 	cat site/index.json | jq "." > /dev/null
 	mv site site-latest
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
 	hugo --config docs.toml
 	mv site site-versioned
 
@@ -63,7 +63,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap/zapcore"
 
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -43,12 +44,12 @@ func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClie
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v cluster ingresses, %v secrets)", snap.Hash(),
+	logger.Infof("begin sync %v (%v cluster ingresses )", snapHash,
 		len(snap.Clusteringresses),
-		len(snap.Secrets),
 	)
-	defer logger.Infof("end sync %v", snap.Hash())
+	defer logger.Infof("end sync %v", snapHash)
 
 	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
@@ -59,7 +60,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"knative ingress proxy will not be updated.", snap.Hash(), err)
+			"knative ingress proxy will not be updated.", snapHash, err)
 		return err
 	}
 

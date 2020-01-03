@@ -144,17 +144,16 @@ func generateChangelogMd(opts *options, args []string) error {
 	}
 	target := args[0]
 
-	var repoRootPath, repo, changelogDirPath string
+	changelogDirPath := changelogutils.ChangelogDirectory
+	var repoRootPath, repo string
 	switch target {
 	case glooDocGen:
 		repoRootPath = ".."
 		repo = "gloo"
-		changelogDirPath = "../changelog"
 	case glooEDocGen:
 		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
 		repoRootPath = "../../solo-projects"
 		repo = "solo-projects"
-		changelogDirPath = "../../solo-projects/changelog"
 	default:
 		return InvalidInputError(target)
 	}

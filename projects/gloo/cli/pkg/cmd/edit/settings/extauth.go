@@ -59,11 +59,11 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 	if extAuthSettings.ExtauthzServerRef == nil {
 		extAuthSettings.ExtauthzServerRef = new(core.ResourceRef)
 	}
-	if optsExt.ExtAtuhServerUpstreamRef.Name != "" {
-		extAuthSettings.ExtauthzServerRef.Name = optsExt.ExtAtuhServerUpstreamRef.Name
+	if optsExt.ExtAuthServerUpstreamRef.Name != "" {
+		extAuthSettings.ExtauthzServerRef.Name = optsExt.ExtAuthServerUpstreamRef.Name
 	}
-	if optsExt.ExtAtuhServerUpstreamRef.Namespace != "" {
-		extAuthSettings.ExtauthzServerRef.Namespace = optsExt.ExtAtuhServerUpstreamRef.Namespace
+	if optsExt.ExtAuthServerUpstreamRef.Namespace != "" {
+		extAuthSettings.ExtauthzServerRef.Namespace = optsExt.ExtAuthServerUpstreamRef.Namespace
 	}
 
 	if settings.Extauth == nil {

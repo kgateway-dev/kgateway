@@ -6,6 +6,6 @@ import (
 )
 
 func AddConfigFlagsOIDCSettings(set *pflag.FlagSet, oidc *options.OIDCSettings) {
-	set.StringVar(&oidc.ExtAtuhServerUpstreamRef.Name, "extauth-server-name", "", "name of the ext auth server upstream")
-	set.StringVar(&oidc.ExtAtuhServerUpstreamRef.Namespace, "extauth-server-namespace", "", "namespace of the ext auth server upstream")
+	set.StringVar(&oidc.ExtAuthServerUpstreamRef.Name, "extauth-server-name", "", "name of the ext auth server upstream")
+	set.StringVar(&oidc.ExtAuthServerUpstreamRef.Namespace, "extauth-server-namespace", "", "namespace of the ext auth server upstream")
 }

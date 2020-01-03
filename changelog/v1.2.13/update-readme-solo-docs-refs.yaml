@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Fix some readme links and update old refs to deprecated solo-docs repo.
+    issueLink: https://github.com/solo-io/gloo/issues/2050

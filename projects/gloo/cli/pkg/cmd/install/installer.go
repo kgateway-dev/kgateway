@@ -8,14 +8,19 @@ import (
 	"path"
 	"strings"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/solo-io/gloo/pkg/cliutil/helm"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/go-utils/errors"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
@@ -23,6 +28,12 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
+)
+
+var (
+	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
+		return errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
+	}
 )
 
 type Installer interface {
@@ -37,14 +48,15 @@ type InstallerConfig struct {
 }
 
 func NewInstaller(helmClient HelmClient) Installer {
-	return NewInstallerWithWriter(helmClient, &install.CmdKubectl{}, os.Stdout)
+	client := helpers.MustKubeClient()
+	return NewInstallerWithWriter(helmClient, client.CoreV1().Namespaces(), os.Stdout)
 }
 
 // visible for testing
-func NewInstallerWithWriter(helmClient HelmClient, kubeCli install.KubeCli, outputWriter io.Writer) Installer {
+func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInterface, outputWriter io.Writer) Installer {
 	return &installer{
 		helmClient:         helmClient,
-		kubeCli:            kubeCli,
+		kubeNsClient:       kubeNsClient,
 		dryRunOutputWriter: outputWriter,
 	}
 }
@@ -71,7 +83,10 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride, installerConfig.InstallCliArgs.WithUi, installerConfig.Enterprise)
+	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride,
+		strings.TrimPrefix(installerConfig.InstallCliArgs.Version, "v"),
+		installerConfig.InstallCliArgs.WithUi,
+		installerConfig.Enterprise)
 	if err != nil {
 		return err
 	}
@@ -134,12 +149,22 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 }
 
 func (i *installer) createNamespace(namespace string) {
-	fmt.Printf("Creating namespace %s... ", namespace)
-	if err := i.kubeCli.Kubectl(nil, "create", "namespace", namespace); err != nil {
-		fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+	_, err := i.kubeNsClient.Get(namespace, metav1.GetOptions{})
+	if apierrors.IsNotFound(err) {
+		fmt.Printf("Creating namespace %s... ", namespace)
+		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: namespace,
+			},
+		}); err != nil {
+			fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
+		} else {
+			fmt.Printf("Done.\n")
+		}
 	} else {
-		fmt.Printf("Done.\n")
+		fmt.Printf("\nUnable to check if namespace %s exists. Continuing...\n", namespace)
 	}
+
 }
 
 func setCrdCreateToFalse(config *InstallerConfig) {
@@ -188,28 +213,38 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 }
 
 // The resulting URI can be either a URL or a local file path.
-func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, error) {
-	var helmChartArchiveUri string
-	enterpriseTag, err := version.GetEnterpriseTag(true)
-	if err != nil {
-		return "", err
-	}
-	// Overrides
-	if version.EnterpriseTag != version.UndefinedVersion {
-		enterpriseTag = version.EnterpriseTag
+func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool) (string, error) {
+
+	if chartOverride != "" && versionOverride != "" {
+		return "", ChartAndReleaseFlagErr(chartOverride, versionOverride)
 	}
 
+	var helmChartRepoTemplate, helmChartVersion string
 	if enterprise {
-		helmChartArchiveUri = fmt.Sprintf(GlooEHelmRepoTemplate, enterpriseTag)
+		helmChartRepoTemplate = GlooEHelmRepoTemplate
 	} else if withUi {
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooWithUiHelmRepoTemplate, enterpriseTag)
+		helmChartRepoTemplate = constants.GlooWithUiHelmRepoTemplate
 	} else {
-		glooOsVersion, err := getGlooVersion(chartOverride)
+		helmChartRepoTemplate = constants.GlooHelmRepoTemplate
+	}
+
+	if versionOverride != "" {
+		helmChartVersion = versionOverride
+	} else if enterprise || withUi {
+		enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 		if err != nil {
 			return "", err
 		}
-		helmChartArchiveUri = fmt.Sprintf(constants.GlooHelmRepoTemplate, glooOsVersion)
+		helmChartVersion = enterpriseVersion
+	} else {
+		glooOsVersion, err := getDefaultGlooInstallVersion(chartOverride)
+		if err != nil {
+			return "", err
+		}
+		helmChartVersion = glooOsVersion
 	}
+
+	helmChartArchiveUri := fmt.Sprintf(helmChartRepoTemplate, helmChartVersion)
 
 	if chartOverride != "" {
 		helmChartArchiveUri = chartOverride
@@ -221,7 +256,7 @@ func getChartUri(chartOverride string, withUi bool, enterprise bool) (string, er
 	return helmChartArchiveUri, nil
 }
 
-func getGlooVersion(chartOverride string) (string, error) {
+func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	if !version.IsReleaseVersion() && chartOverride == "" {
 		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
@@ -244,15 +279,15 @@ func postInstallMessage(installOpts *options.Install, enterprise bool) {
 		return
 	}
 	if enterprise {
-		fmt.Println("Gloo Enterprise was successfully installed!")
+		fmt.Println("\nGloo Enterprise was successfully installed!")
 	} else {
-		fmt.Println("Gloo was successfully installed!")
+		fmt.Println("\nGloo was successfully installed!")
 	}
 
 }
 
 type installer struct {
 	helmClient         HelmClient
-	kubeCli            install.KubeCli
+	kubeNsClient       v1.NamespaceInterface
 	dryRunOutputWriter io.Writer
 }
