@@ -76,4 +76,7 @@ var _ = AfterSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
+	// Restore the helm docs to their make generated-code format
+	err = testutils.Make(RootDir, "generate-helm-files TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing -B")
+	Expect(err).NotTo(HaveOccurred())
 })
