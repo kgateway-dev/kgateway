@@ -29,8 +29,8 @@ func main() {
 	maxGlooEVersion := &versionutils.Version{
 		Major:            localVersion.Major,
 		Minor:            localVersion.Minor,
-		Patch:            math.MaxInt8,
-		ReleaseCandidate: math.MaxInt8,
+		Patch:            math.MaxInt32,
+		ReleaseCandidate: math.MaxInt32,
 	}
 
 	os.Mkdir("./_output", 0755)

@@ -1,6 +1,7 @@
 package version
 
 import (
+	"math"
 	"strings"
 
 	"github.com/Masterminds/semver/v3"
@@ -17,7 +18,12 @@ const GlooEE = "gloo-ee"
 // The version of GlooE installed by the CLI.
 // Calculated from the largest semver gloo-ee version in the helm repo index
 func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
-	return GetLatestEnterpriseVersionWithMaxVersion(stableOnly, &versionutils.Zero)
+	return GetLatestEnterpriseVersionWithMaxVersion(stableOnly, &versionutils.Version{
+		Major:            math.MaxInt32,
+		Minor:            math.MaxInt32,
+		Patch:            math.MaxInt32,
+		ReleaseCandidate: math.MaxInt32,
+	})
 }
 
 // Calculated from the largest gloo-ee version in the helm repo index with version constraints
@@ -35,7 +41,12 @@ func GetLatestEnterpriseVersionWithMaxVersion(stableOnly bool, maxVersion *versi
 }
 
 func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {
-	return LatestVersionFromRepoWithMaxVersion(file, stableOnly, &versionutils.Zero)
+	return LatestVersionFromRepoWithMaxVersion(file, stableOnly, &versionutils.Version{
+		Major:            math.MaxInt32,
+		Minor:            math.MaxInt32,
+		Patch:            math.MaxInt32,
+		ReleaseCandidate: math.MaxInt32,
+	})
 }
 
 func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersion *versionutils.Version) (string, error) {
