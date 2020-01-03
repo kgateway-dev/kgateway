@@ -48,8 +48,8 @@ import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 *     - '*.mydomain.com'
 *     - 'mydomain.com'
 *     routes:
-*     - matcher:
-*         prefix: '/'
+*     - matchers:
+*       - prefix: '/'
 *       # delegate all traffic to the `shared-routes` RouteTable
 *       delegateAction:
 *         name: 'shared-routes'
@@ -70,8 +70,8 @@ import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 *     - '*.mydomain.com'
 *     - 'mydomain.com'
 *     routes:
-*     - matcher:
-*         prefix: '/'
+*     - matchers:
+*       - prefix: '/'
 *       # delegate all traffic to the `shared-routes` RouteTable
 *       delegateAction:
 *         name: 'shared-routes'
@@ -92,8 +92,8 @@ import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 *   namespace: 'usernamespace'
 * spec:
 *   routes:
-*     - matcher:
-*         prefix: '/some-route'
+*     - matchers:
+*       - prefix: '/some-route'
 *       routeAction:
 *         single:
 *           upstream:

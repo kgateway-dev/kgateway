@@ -87,8 +87,8 @@ spec:
               name: basic-auth # Default auth config for this virtual host and all its child resources
               namespace: gloo-system
     routes:
-    - matcher:
-        prefix: /super-secret
+    - matchers:
+      - prefix: /super-secret
       routeAction:
         single:
           upstream:
@@ -100,8 +100,8 @@ spec:
             extauth:
               name: admin-auth # More specific config overwrites the parent default
               namespace: gloo-system
-    - matcher:
-        prefix: /public
+    - matchers:
+      - prefix: /public
       routeAction:
         single:
           upstream:
@@ -112,8 +112,8 @@ spec:
           configs:
             extauth:
               disable: true # Disable auth for this route
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       routeAction:
         single:
           upstream:
@@ -146,8 +146,8 @@ spec:
     domains:
       - 'foo's
     routes:
-      - matcher:
-          prefix: /authenticated
+      - matchers:
+        - prefix: /authenticated
         routeAction:
           single:
             upstream:
@@ -188,8 +188,8 @@ spec:
     domains:
       - 'foo's
     routes:
-      - matcher:
-          prefix: /authenticated
+      - matchers:
+        - prefix: /authenticated
         routeAction:
           single:
             upstream:
@@ -221,15 +221,15 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /authenticated
+      - matchers:
+        - prefix: /authenticated
         routeAction:
           single:
             upstream:
               name: my-upstream
               namespace: gloo-system
-      - matcher:
-          prefix: /skip-auth
+      - matchers:
+        - prefix: /skip-auth
         routeAction:
           single:
             upstream:

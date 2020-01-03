@@ -44,8 +44,8 @@ spec:
     domains:
     - docs.solo.io
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       redirectAction:
         hostRedirect: docs.solo.io
         httpsRedirect: true
@@ -67,6 +67,6 @@ spec:
     domains:
     - 'docs.solo.io'
     routes:
-    - matcher:
+    - matchers:
 # (put the https routes here)
 {{< /highlight >}}

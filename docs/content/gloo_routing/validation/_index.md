@@ -111,7 +111,6 @@ spec:
 
 Once these are applied to the cluster, we can test that validation is enabled:
 
-
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -123,7 +122,8 @@ spec:
   virtualHost:
     routes:
       # this route is missing a path specifier and will be rejected
-      - matcher: {}
+      - matchers:
+        - prefix: /
         routeAction:
           single:
             upstream:
