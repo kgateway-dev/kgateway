@@ -45,8 +45,7 @@ install with static manifests or helm. For this example we will use the short ve
 ```shell
 kubectl create namespace cert-manager
 kubectl label namespace cert-manager certmanager.k8s.io/disable-validation=true
-kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/00-crds.yaml
-kubectl apply -f https://raw.githubusercontent.com/jetstack/cert-manager/release-0.6/deploy/manifests/cert-manager.yaml --validate=false
+kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v0.12.0/cert-manager.yaml
 ```
 
 ## Add a Service
@@ -59,7 +58,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/p
 # Create an issuer
 
 ## Configure access
-We'll need to allow cert manager access to configure dns records in aws. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the acceess requirements for 
+We'll need to allow cert manager access to configure dns records in aws. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the acceess requirements for
 cert-manager.
 Once you have configured access, we will need to add the access keys as a kubernetes secret, so that
 cert manager can access them:
@@ -73,22 +72,22 @@ Create a cluster issuer for let's encrypt with route53.
 
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: ClusterIssuer
 metadata:
-  name: letsencrypt-dns-prod
+  name: letsencrypt-staging
+  namespace: gloo-system
 spec:
   acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
     email: yuval@solo.io
     privateKeySecretRef:
-      name: letsencrypt-dns-prod
-    dns01:
-      providers:
-      - name: route53
+      name: letsencrypt-staging
+    solvers:
+    - dns01:
         route53:
           region: us-east-1
-          accessKeyID: $(kubectl -n cert-manager get secret us-east-1 -o=jsonpath='{.data.access_key_id}'|base64 -d)
+          accessKeyID: $(kubectl -n cert-manager get secret us-west-2 -o=jsonpath='{.data.access_key_id}'|base64 -d)
           secretAccessKeySecretRef:
             name: us-east-1
             key: secret_access_key
@@ -98,7 +97,7 @@ EOF
 Wait until the cluster issuer is in ready state:
 
 ```
-kubectl get clusterissuer letsencrypt-dns-prod -o jsonpath='{.status.conditions[0].type}{"\n"}'
+kubectl get clusterissuer letsencrypt-staging -o jsonpath='{.status.conditions[0].type}{"\n"}'
 Ready
 ```
 
@@ -106,7 +105,7 @@ Ready
 Create the certificate for the gloo ingress:
 ```shell
 cat << EOF | kubectl apply -f -
-apiVersion: certmanager.k8s.io/v1alpha1
+apiVersion: cert-manager.io/v1alpha2
 kind: Certificate
 metadata:
   name: gloo-ingress
@@ -122,14 +121,14 @@ spec:
       domains:
       - test.solo.io
   issuerRef:
-    name: letsencrypt-dns-prod
+    name: letsencrypt-staging
     kind: ClusterIssuer
 EOF
 ```
 
 Thats it! Wait a bit and you will see the secret created:
 ```shell
-kubectl -ngloo-system  get secret 
+kubectl -ngloo-system  get secret
 NAME                  TYPE                                  DATA      AGE
 gloo-ingress-secret   kubernetes.io/tls                     2         3h
 ...
