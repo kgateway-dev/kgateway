@@ -130,8 +130,7 @@ The second form is used to disable authentication explicitly:
 ```yaml
 options:
   extauth:
-    config_ref:
-      disable: true
+    disable: true
 ```
 
 #### Inheritance Rules
