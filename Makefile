@@ -62,7 +62,7 @@ init:
 
 .PHONY: fmt-changed
 fmt-changed:
-	git diff --name-only | grep '.*.go$$' | xargs goimports -w
+	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
 
 .PHONY: update-deps
 update-deps: vendor
@@ -116,7 +116,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	find . -name *.sk.md | xargs rm
+	find . -name *.sk.md | xargs --no-run-if-empty rm
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	GO111MODULE=on go generate ./...
 	gofmt -w $(SUBDIRS)
