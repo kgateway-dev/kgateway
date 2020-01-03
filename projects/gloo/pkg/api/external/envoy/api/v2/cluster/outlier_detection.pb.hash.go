@@ -34,6 +34,9 @@ func (m *OutlierDetection) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("envoy.api.v2.cluster.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster.OutlierDetection")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetConsecutive_5Xx()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {

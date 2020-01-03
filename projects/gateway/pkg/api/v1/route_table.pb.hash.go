@@ -34,6 +34,9 @@ func (m *RouteTable) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.RouteTable")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetRoutes() {
 

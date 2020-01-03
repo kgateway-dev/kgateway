@@ -34,6 +34,9 @@ func (m *Proxy) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Proxy")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetListeners() {
 
@@ -79,6 +82,9 @@ func (m *Listener) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Listener")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -201,6 +207,9 @@ func (m *TcpListener) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.TcpListener")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetTcpHosts() {
 
@@ -250,6 +259,9 @@ func (m *TcpHost) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.TcpHost")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -295,6 +307,9 @@ func (m *HttpListener) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.HttpListener")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetVirtualHosts() {
 
@@ -344,6 +359,9 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.VirtualHost")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -415,6 +433,9 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Route")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetMatchers() {
 
@@ -526,6 +547,9 @@ func (m *RouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.RouteAction")); err != nil {
+		return 0, err
+	}
 
 	switch m.Destination.(type) {
 
@@ -591,6 +615,9 @@ func (m *Destination) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Destination")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetDestinationSpec()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -684,6 +711,9 @@ func (m *KubernetesServiceDestination) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.KubernetesServiceDestination")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(&m.Ref).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -716,6 +746,9 @@ func (m *ConsulServiceDestination) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ConsulServiceDestination")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
 		return 0, err
@@ -749,6 +782,9 @@ func (m *UpstreamGroup) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.UpstreamGroup")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetDestinations() {
 
@@ -794,6 +830,9 @@ func (m *MultiDestination) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.MultiDestination")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetDestinations() {
 
@@ -825,6 +864,9 @@ func (m *WeightedDestination) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.WeightedDestination")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetDestination()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -871,6 +913,9 @@ func (m *RedirectAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.RedirectAction")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetHostRedirect())); err != nil {
 		return 0, err
@@ -919,6 +964,9 @@ func (m *DirectResponseAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.DirectResponseAction")); err != nil {
+		return 0, err
+	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetStatus())
 	if err != nil {

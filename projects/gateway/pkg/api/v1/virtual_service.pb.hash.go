@@ -34,6 +34,9 @@ func (m *VirtualService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.VirtualService")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetVirtualHost()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -89,6 +92,9 @@ func (m *VirtualHost) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.VirtualHost")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetDomains() {
 
@@ -142,6 +148,9 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.Route")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetMatchers() {
 

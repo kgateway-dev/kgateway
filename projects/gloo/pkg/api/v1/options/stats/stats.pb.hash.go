@@ -34,6 +34,9 @@ func (m *Stats) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("stats.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats.Stats")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetVirtualClusters() {
 
@@ -65,6 +68,9 @@ func (m *VirtualCluster) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("stats.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats.VirtualCluster")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
