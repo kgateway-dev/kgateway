@@ -27,7 +27,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 		p.disabled = maybeDisabled.GetValue()
 	} else {
 		// default to true if not specified
-		p.disabled = true
+		p.disabled = false
 	}
 	return nil
 }

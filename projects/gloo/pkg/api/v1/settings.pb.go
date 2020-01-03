@@ -1158,7 +1158,7 @@ type GlooOptions struct {
 	// Default policy for grpc-web.
 	// set to true if you do not wash grpc-web to be automatically enabled.
 	// set to false if you wish grpc-web enabled unless disabled on the listener level.
-	// Defaults to `true`, but that may change in a future release.
+	// If not specified, defaults to `false`.
 	DisableGrpcWeb       *types.BoolValue `protobuf:"bytes,8,opt,name=disable_grpc_web,json=disableGrpcWeb,proto3" json:"disable_grpc_web,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`

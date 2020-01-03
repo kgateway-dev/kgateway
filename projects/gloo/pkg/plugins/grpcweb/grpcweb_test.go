@@ -16,7 +16,13 @@ import (
 
 var _ = Describe("Grpcweb", func() {
 	var (
-		initParams plugins.InitParams
+		initParams     plugins.InitParams
+		expectedFilter = []plugins.StagedHttpFilter{
+			{
+				HttpFilter: &envoyhttp.HttpFilter{Name: util.GRPCWeb},
+				Stage:      plugins.AfterStage(plugins.AuthZStage),
+			},
+		}
 	)
 	BeforeEach(func() {
 		settings := &v1.Settings{
@@ -58,13 +64,7 @@ var _ = Describe("Grpcweb", func() {
 			f, err := p.HttpFilters(plugins.Params{}, hl)
 			Expect(err).NotTo(HaveOccurred())
 
-			exptected := []plugins.StagedHttpFilter{
-				{
-					HttpFilter: &envoyhttp.HttpFilter{Name: util.GRPCWeb},
-					Stage:      plugins.AfterStage(plugins.AuthZStage),
-				},
-			}
-			Expect(f).To(BeEquivalentTo(exptected))
+			Expect(f).To(BeEquivalentTo(expectedFilter))
 		})
 	})
 
@@ -83,7 +83,7 @@ var _ = Describe("Grpcweb", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(f).To(BeNil())
 		})
-		It("should not filter if default by settings", func() {
+		It("should filter if default by settings", func() {
 			initParams.Settings.Gloo.DisableGrpcWeb = nil
 
 			hl := &v1.HttpListener{
@@ -94,7 +94,7 @@ var _ = Describe("Grpcweb", func() {
 			p.Init(initParams)
 			f, err := p.HttpFilters(plugins.Params{}, hl)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(f).To(BeNil())
+			Expect(f).To(BeEquivalentTo(expectedFilter))
 		})
 		It("should filter when enabled in listener", func() {
 			hl := &v1.HttpListener{
@@ -110,13 +110,7 @@ var _ = Describe("Grpcweb", func() {
 			f, err := p.HttpFilters(plugins.Params{}, hl)
 			Expect(err).NotTo(HaveOccurred())
 
-			exptected := []plugins.StagedHttpFilter{
-				{
-					HttpFilter: &envoyhttp.HttpFilter{Name: util.GRPCWeb},
-					Stage:      plugins.AfterStage(plugins.AuthZStage),
-				},
-			}
-			Expect(f).To(BeEquivalentTo(exptected))
+			Expect(f).To(BeEquivalentTo(expectedFilter))
 		})
 	})
 
