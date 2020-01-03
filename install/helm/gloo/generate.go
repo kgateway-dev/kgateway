@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	glooVersion "github.com/solo-io/gloo/pkg/version"
+
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
@@ -60,7 +62,7 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 	}
 
 	// customize config as needed for dev builds
-	if version == devVersionTag {
+	if !glooVersion.IsReleaseVersion() {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always

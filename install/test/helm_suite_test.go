@@ -7,6 +7,8 @@ import (
 	"path"
 	"testing"
 
+	glooVersion "github.com/solo-io/gloo/pkg/version"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"helm.sh/helm/v3/pkg/release"
@@ -37,8 +39,9 @@ import (
 
 func TestHelm(t *testing.T) {
 	version = os.Getenv("TAGGED_VERSION")
-	if version == "" {
-		version = "dev"
+	if !glooVersion.IsReleaseVersion() {
+		// remove the "v" prefix
+		version = glooVersion.VersionFromGitDescribe()[1:]
 		pullPolicy = v1.PullAlways
 	} else {
 		version = version[1:]
