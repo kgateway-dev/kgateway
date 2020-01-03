@@ -34,6 +34,9 @@ func (m *HttpConnectionManagerSettings) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm.HttpConnectionManagerSettings")); err != nil {
+		return 0, err
+	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetSkipXffAppend())
 	if err != nil {
@@ -247,6 +250,9 @@ func (m *HttpConnectionManagerSettings_SetCurrentClientCertDetails) Hash(hasher 
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("hcm.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm.HttpConnectionManagerSettings_SetCurrentClientCertDetails")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetSubject()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
