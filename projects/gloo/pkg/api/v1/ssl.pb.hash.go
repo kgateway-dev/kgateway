@@ -34,9 +34,6 @@ func (m *SslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.SslConfig")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetSniDomains() {
 
@@ -132,9 +129,6 @@ func (m *SSLFiles) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.SSLFiles")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetTlsCert())); err != nil {
 		return 0, err
@@ -160,9 +154,6 @@ func (m *UpstreamSslConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.UpstreamSslConfig")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetSni())); err != nil {
 		return 0, err
@@ -254,9 +245,6 @@ func (m *SDSConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.SDSConfig")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetTargetUri())); err != nil {
 		return 0, err
@@ -296,9 +284,6 @@ func (m *CallCredentials) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.CallCredentials")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetFileCredentialSource()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -326,9 +311,6 @@ func (m *SslParameters) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.SslParameters")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetMinimumProtocolVersion())
 	if err != nil {
@@ -368,9 +350,6 @@ func (m *CallCredentials_FileCredentialSource) Hash(hasher hash.Hash64) (uint64,
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.CallCredentials_FileCredentialSource")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetTokenFileName())); err != nil {
 		return 0, err

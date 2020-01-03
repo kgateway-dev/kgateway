@@ -34,9 +34,6 @@ func (m *RetryPolicy) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("retries.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries.RetryPolicy")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetRetryOn())); err != nil {
 		return 0, err

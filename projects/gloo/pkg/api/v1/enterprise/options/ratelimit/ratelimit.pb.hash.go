@@ -34,9 +34,6 @@ func (m *Descriptor) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Descriptor")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err
@@ -100,9 +97,6 @@ func (m *RateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.RateLimit")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetUnit())
 	if err != nil {
@@ -126,9 +120,6 @@ func (m *IngressRateLimit) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.IngressRateLimit")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetAuthorizedLimits()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -170,9 +161,6 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Settings")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetRatelimitServerRef()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -224,9 +212,6 @@ func (m *ServiceSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.ServiceSettings")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetDescriptors() {
 
@@ -258,9 +243,6 @@ func (m *RateLimitActions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.RateLimitActions")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetActions() {
 
@@ -292,9 +274,6 @@ func (m *RateLimitVhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.RateLimitVhostExtension")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetRateLimits() {
 
@@ -326,9 +305,6 @@ func (m *RateLimitRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.RateLimitRouteExtension")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetIncludeVhRateLimits())
 	if err != nil {
@@ -365,9 +341,6 @@ func (m *Action) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action")); err != nil {
-		return 0, err
-	}
 
 	switch m.ActionSpecifier.(type) {
 
@@ -481,9 +454,6 @@ func (m *Int64Range) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Int64Range")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetStart())
 	if err != nil {
@@ -507,9 +477,6 @@ func (m *HeaderMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.HeaderMatcher")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -583,9 +550,6 @@ func (m *QueryParameterMatcher) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.QueryParameterMatcher")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err
@@ -620,10 +584,6 @@ func (m *Action_SourceCluster) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_SourceCluster")); err != nil {
-		return 0, err
-	}
 
 	return hasher.Sum64(), nil
 }
@@ -635,10 +595,6 @@ func (m *Action_DestinationCluster) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	if hasher == nil {
 		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_DestinationCluster")); err != nil {
-		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -653,9 +609,6 @@ func (m *Action_RequestHeaders) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_RequestHeaders")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetHeaderName())); err != nil {
 		return 0, err
@@ -676,10 +629,6 @@ func (m *Action_RemoteAddress) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_RemoteAddress")); err != nil {
-		return 0, err
-	}
 
 	return hasher.Sum64(), nil
 }
@@ -693,9 +642,6 @@ func (m *Action_GenericKey) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_GenericKey")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetDescriptorValue())); err != nil {
 		return 0, err
@@ -713,9 +659,6 @@ func (m *Action_HeaderValueMatch) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.Action_HeaderValueMatch")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetDescriptorValue())); err != nil {
 		return 0, err

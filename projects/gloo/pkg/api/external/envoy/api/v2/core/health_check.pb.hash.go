@@ -34,9 +34,6 @@ func (m *HealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -286,9 +283,6 @@ func (m *HealthCheck_Payload) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_Payload")); err != nil {
-		return 0, err
-	}
 
 	switch m.Payload.(type) {
 
@@ -312,9 +306,6 @@ func (m *HealthCheck_HttpHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_HttpHealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetHost())); err != nil {
 		return 0, err
@@ -389,9 +380,6 @@ func (m *HealthCheck_TcpHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_TcpHealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetSend()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -437,9 +425,6 @@ func (m *HealthCheck_RedisHealthCheck) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_RedisHealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err
@@ -457,9 +442,6 @@ func (m *HealthCheck_GrpcHealthCheck) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_GrpcHealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
 		return 0, err
@@ -481,9 +463,6 @@ func (m *HealthCheck_CustomHealthCheck) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("envoy.api.v2.core.github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core.HealthCheck_CustomHealthCheck")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
 		return 0, err

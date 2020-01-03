@@ -34,9 +34,6 @@ func (m *ConnectionConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ConnectionConfig")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetMaxRequestsPerConnection())
 	if err != nil {
@@ -83,9 +80,6 @@ func (m *ConnectionConfig_TcpKeepAlive) Hash(hasher hash.Hash64) (uint64, error)
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ConnectionConfig_TcpKeepAlive")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetKeepaliveProbes())
 	if err != nil {

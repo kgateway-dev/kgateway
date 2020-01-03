@@ -34,9 +34,6 @@ func (m *HeaderManipulation) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers.HeaderManipulation")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetRequestHeadersToAdd() {
 
@@ -102,9 +99,6 @@ func (m *HeaderValueOption) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers.HeaderValueOption")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetHeader()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -146,9 +140,6 @@ func (m *HeaderValue) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("headers.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers.HeaderValue")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetKey())); err != nil {
 		return 0, err

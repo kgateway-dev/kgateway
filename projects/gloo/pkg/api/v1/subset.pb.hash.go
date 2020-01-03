@@ -34,9 +34,6 @@ func (m *Subset) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Subset")); err != nil {
-		return 0, err
-	}
 
 	{
 		var result uint64

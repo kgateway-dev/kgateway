@@ -34,9 +34,6 @@ func (m *Gateway) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.Gateway")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetSsl())
 	if err != nil {
@@ -150,9 +147,6 @@ func (m *HttpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.HttpGateway")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetVirtualServices() {
 
@@ -229,9 +223,6 @@ func (m *TcpGateway) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gateway.solo.io.github.com/solo-io/gloo/projects/gateway/pkg/api/v1.TcpGateway")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetTcpHosts() {
 

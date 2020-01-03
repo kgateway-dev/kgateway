@@ -34,9 +34,6 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.Settings")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetRequireRbac())
 	if err != nil {
@@ -55,9 +52,6 @@ func (m *ExtensionSettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.ExtensionSettings")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetDisable())
 	if err != nil {
@@ -109,9 +103,6 @@ func (m *Policy) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.Policy")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetPrincipals() {
 
@@ -157,9 +148,6 @@ func (m *Principal) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.Principal")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetJwtPrincipal()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -187,9 +175,6 @@ func (m *JWTPrincipal) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.JWTPrincipal")); err != nil {
-		return 0, err
-	}
 
 	{
 		var result uint64
@@ -230,9 +215,6 @@ func (m *Permissions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("rbac.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/rbac.Permissions")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetPathPrefix())); err != nil {
 		return 0, err

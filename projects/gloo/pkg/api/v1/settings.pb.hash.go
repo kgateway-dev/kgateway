@@ -34,9 +34,6 @@ func (m *Settings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetDiscoveryNamespace())); err != nil {
 		return 0, err
@@ -410,9 +407,6 @@ func (m *GlooOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GlooOptions")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetXdsBindAddr())); err != nil {
 		return 0, err
@@ -509,9 +503,6 @@ func (m *GatewayOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GatewayOptions")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetValidationServerAddr())); err != nil {
 		return 0, err
@@ -547,10 +538,6 @@ func (m *Settings_KubernetesCrds) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KubernetesCrds")); err != nil {
-		return 0, err
-	}
 
 	return hasher.Sum64(), nil
 }
@@ -562,10 +549,6 @@ func (m *Settings_KubernetesSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	if hasher == nil {
 		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KubernetesSecrets")); err != nil {
-		return 0, err
 	}
 
 	return hasher.Sum64(), nil
@@ -580,9 +563,6 @@ func (m *Settings_VaultSecrets) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_VaultSecrets")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetToken())); err != nil {
 		return 0, err
@@ -642,9 +622,6 @@ func (m *Settings_ConsulKv) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_ConsulKv")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetRootKey())); err != nil {
 		return 0, err
@@ -661,10 +638,6 @@ func (m *Settings_KubernetesConfigmaps) Hash(hasher hash.Hash64) (uint64, error)
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
-	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KubernetesConfigmaps")); err != nil {
-		return 0, err
-	}
 
 	return hasher.Sum64(), nil
 }
@@ -678,9 +651,6 @@ func (m *Settings_Directory) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_Directory")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetDirectory())); err != nil {
 		return 0, err
@@ -698,9 +668,6 @@ func (m *Settings_KnativeOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KnativeOptions")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetClusterIngressProxyAddress())); err != nil {
 		return 0, err
@@ -726,9 +693,6 @@ func (m *Settings_DiscoveryOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_DiscoveryOptions")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetFdsMode())
 	if err != nil {
@@ -747,9 +711,6 @@ func (m *Settings_ConsulConfiguration) Hash(hasher hash.Hash64) (uint64, error) 
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_ConsulConfiguration")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetAddress())); err != nil {
 		return 0, err
@@ -841,9 +802,6 @@ func (m *Settings_KubernetesConfiguration) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KubernetesConfiguration")); err != nil {
-		return 0, err
-	}
 
 	if h, ok := interface{}(m.GetRateLimits()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -871,9 +829,6 @@ func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) Hash(hasher hash.
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_ConsulConfiguration_ServiceDiscoveryOptions")); err != nil {
-		return 0, err
-	}
 
 	for _, v := range m.GetDataCenters() {
 
@@ -895,9 +850,6 @@ func (m *Settings_KubernetesConfiguration_RateLimits) Hash(hasher hash.Hash64) (
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Settings_KubernetesConfiguration_RateLimits")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetQPS())
 	if err != nil {
@@ -921,9 +873,6 @@ func (m *GlooOptions_AWSOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GlooOptions_AWSOptions")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetEnableCredentialsDiscovey())
 	if err != nil {
@@ -942,9 +891,6 @@ func (m *GlooOptions_InvalidConfigPolicy) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GlooOptions_InvalidConfigPolicy")); err != nil {
-		return 0, err
-	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetReplaceInvalidRoutes())
 	if err != nil {
@@ -972,9 +918,6 @@ func (m *GatewayOptions_ValidationOptions) Hash(hasher hash.Hash64) (uint64, err
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.GatewayOptions_ValidationOptions")); err != nil {
-		return 0, err
-	}
 
 	if _, err = hasher.Write([]byte(m.GetProxyValidationServerAddr())); err != nil {
 		return 0, err
