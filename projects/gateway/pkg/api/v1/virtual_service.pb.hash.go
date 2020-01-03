@@ -264,7 +264,7 @@ func (m *DelegateAction) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	switch m.Type.(type) {
+	switch m.DelegationType.(type) {
 
 	case *DelegateAction_Ref:
 
@@ -304,7 +304,7 @@ func (m *DelegateAction) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *Selector) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *RouteTableSelector) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}

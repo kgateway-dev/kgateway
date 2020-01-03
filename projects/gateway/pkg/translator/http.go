@@ -377,7 +377,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 			Name:      delegate.Name,
 		}
 	} else {
-		switch selectorType := delegate.GetType().(type) {
+		switch selectorType := delegate.GetDelegationType().(type) {
 		case *v1.DelegateAction_Selector:
 			// TODO(marco): handle selector
 			return nil, errors.New("delegate action selectors are not implemented yet!")

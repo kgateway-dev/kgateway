@@ -44,7 +44,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		ref := routeTables[i].Metadata.Ref()
 		routeTables[i-1].Routes[0].Action = &v1.Route_DelegateAction{
 			DelegateAction: &v1.DelegateAction{
-				Type: &v1.DelegateAction_Ref{
+				DelegationType: &v1.DelegateAction_Ref{
 					Ref: &ref,
 				},
 			},
@@ -70,7 +70,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 
 	routeTables[lengthOfChain-1].Routes[0].Action = &v1.Route_DelegateAction{
 		DelegateAction: &v1.DelegateAction{
-			Type: &v1.DelegateAction_Ref{
+			DelegationType: &v1.DelegateAction_Ref{
 				Ref: &leafRef,
 			},
 		},
@@ -88,7 +88,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		}},
 		Action: &v1.Route_DelegateAction{
 			DelegateAction: &v1.DelegateAction{
-				Type: &v1.DelegateAction_Ref{
+				DelegationType: &v1.DelegateAction_Ref{
 					Ref: &ref,
 				},
 			},

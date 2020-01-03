@@ -191,7 +191,7 @@ var _ = Describe("Translator", func() {
 			badRoute := &v1.Route{
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &v1.DelegateAction{
-						Type: &v1.DelegateAction_Ref{
+						DelegationType: &v1.DelegateAction_Ref{
 							Ref: &core.ResourceRef{
 								Name:      "don't",
 								Namespace: "exist",
@@ -661,7 +661,7 @@ var _ = Describe("Translator", func() {
 											}},
 											Action: &v1.Route_DelegateAction{
 												DelegateAction: &v1.DelegateAction{
-													Type: &v1.DelegateAction_Ref{
+													DelegationType: &v1.DelegateAction_Ref{
 														Ref: &core.ResourceRef{
 															Name:      "delegate-1",
 															Namespace: ns,
@@ -687,7 +687,7 @@ var _ = Describe("Translator", func() {
 											}},
 											Action: &v1.Route_DelegateAction{
 												DelegateAction: &v1.DelegateAction{
-													Type: &v1.DelegateAction_Ref{
+													DelegationType: &v1.DelegateAction_Ref{
 														Ref: &core.ResourceRef{
 															Name:      "delegate-2",
 															Namespace: ns,
@@ -736,7 +736,7 @@ var _ = Describe("Translator", func() {
 										}},
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &v1.DelegateAction{
-												Type: &v1.DelegateAction_Ref{
+												DelegationType: &v1.DelegateAction_Ref{
 													Ref: &core.ResourceRef{
 														Name:      "delegate-3",
 														Namespace: ns,
@@ -1011,7 +1011,7 @@ var _ = Describe("Translator", func() {
 										{
 											Action: &v1.Route_DelegateAction{
 												DelegateAction: &v1.DelegateAction{
-													Type: &v1.DelegateAction_Ref{
+													DelegationType: &v1.DelegateAction_Ref{
 														Ref: &core.ResourceRef{
 															Name:      "delegate-1",
 															Namespace: ns,
@@ -1034,7 +1034,7 @@ var _ = Describe("Translator", func() {
 									{
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &v1.DelegateAction{
-												Type: &v1.DelegateAction_Ref{
+												DelegationType: &v1.DelegateAction_Ref{
 													Ref: &core.ResourceRef{
 														Name:      "delegate-2",
 														Namespace: ns,
@@ -1054,7 +1054,7 @@ var _ = Describe("Translator", func() {
 									{
 										Action: &v1.Route_DelegateAction{
 											DelegateAction: &v1.DelegateAction{
-												Type: &v1.DelegateAction_Ref{
+												DelegationType: &v1.DelegateAction_Ref{
 													Ref: &core.ResourceRef{
 														Name:      "delegate-1",
 														Namespace: ns,

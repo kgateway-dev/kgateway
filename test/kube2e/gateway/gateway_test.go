@@ -1452,7 +1452,7 @@ func getRouteWithDelegate(delegate string, path string) *gatewayv1.Route {
 		}},
 		Action: &gatewayv1.Route_DelegateAction{
 			DelegateAction: &gatewayv1.DelegateAction{
-				Type: &gatewayv1.DelegateAction_Ref{
+				DelegationType: &gatewayv1.DelegateAction_Ref{
 					Ref: &core.ResourceRef{
 						Namespace: testHelper.InstallNamespace,
 						Name:      delegate,

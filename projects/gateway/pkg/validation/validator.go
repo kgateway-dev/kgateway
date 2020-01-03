@@ -502,7 +502,7 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 				Name:      delegate.Name,
 			}
 		} else {
-			switch selectorType := delegate.GetType().(type) {
+			switch selectorType := delegate.GetDelegationType().(type) {
 			case *v1.DelegateAction_Selector:
 				// TODO(marco): handle selector
 				break

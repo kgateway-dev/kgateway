@@ -27,7 +27,7 @@ var _ = Describe("route merge util", func() {
 						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "any",
 									},
@@ -46,7 +46,7 @@ var _ = Describe("route merge util", func() {
 						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "any",
 									},
@@ -66,7 +66,7 @@ var _ = Describe("route merge util", func() {
 						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "any",
 									},
@@ -86,7 +86,7 @@ var _ = Describe("route merge util", func() {
 						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "any",
 									},
@@ -106,7 +106,7 @@ var _ = Describe("route merge util", func() {
 						}},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "any",
 									},
@@ -132,7 +132,7 @@ var _ = Describe("route merge util", func() {
 						},
 						Action: &v1.Route_DelegateAction{
 							DelegateAction: &v1.DelegateAction{
-								Type: &v1.DelegateAction_Ref{
+								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
 										Name: "foo",
 									},
@@ -162,7 +162,7 @@ var _ = Describe("route merge util", func() {
 				}},
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &v1.DelegateAction{
-						Type: &v1.DelegateAction_Ref{
+						DelegationType: &v1.DelegateAction_Ref{
 							Ref: &ref,
 						},
 					},
@@ -192,7 +192,7 @@ var _ = Describe("route merge util", func() {
 				Matchers: []*matchers.Matcher{{}}, // empty struct in list of size one should default to '/'
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &v1.DelegateAction{
-						Type: &v1.DelegateAction_Ref{
+						DelegationType: &v1.DelegateAction_Ref{
 							Ref: &ref,
 						},
 					},
@@ -228,7 +228,7 @@ var _ = Describe("route merge util", func() {
 				}},
 				Action: &v1.Route_DelegateAction{
 					DelegateAction: &v1.DelegateAction{
-						Type: &v1.DelegateAction_Ref{
+						DelegationType: &v1.DelegateAction_Ref{
 							Ref: &ref,
 						},
 					},

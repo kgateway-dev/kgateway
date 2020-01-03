@@ -78,7 +78,7 @@ func addRoute(opts *options.Options) error {
 	if opts.Add.Route.Destination.Delegate.Single.Name != "" {
 		v1Route.Action = &gatewayv1.Route_DelegateAction{
 			DelegateAction: &gatewayv1.DelegateAction{
-				Type: &gatewayv1.DelegateAction_Ref{
+				DelegationType: &gatewayv1.DelegateAction_Ref{
 					Ref: &opts.Add.Route.Destination.Delegate.Single,
 				},
 			},

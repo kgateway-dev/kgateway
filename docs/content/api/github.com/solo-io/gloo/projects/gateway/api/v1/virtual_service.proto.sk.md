@@ -15,7 +15,7 @@ weight: 5
 - [VirtualHost](#virtualhost)
 - [Route](#route)
 - [DelegateAction](#delegateaction)
-- [Selector](#selector)
+- [RouteTableSelector](#routetableselector)
   
 
 
@@ -215,7 +215,7 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 "name": string
 "namespace": string
 "ref": .core.solo.io.ResourceRef
-"selector": .gateway.solo.io.Selector
+"selector": .gateway.solo.io.RouteTableSelector
 
 ```
 
@@ -224,13 +224,13 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 | `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
 | `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
-| `selector` | [.gateway.solo.io.Selector](../virtual_service.proto.sk/#selector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
+| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
 
 
 
 
 ---
-### Selector
+### RouteTableSelector
 
  
 Select route tables for delegation by namespace, labels, or both.
