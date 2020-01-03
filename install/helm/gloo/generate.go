@@ -19,8 +19,6 @@ var (
 	docsOutput     = "docs/content/installation/gateway/kubernetes/values.txt"
 	chartTemplate  = "install/helm/gloo/Chart-template.yaml"
 	chartOutput    = "install/helm/gloo/Chart.yaml"
-	// For non-release builds, the string "dev" is used as the version
-	devVersionTag = "dev"
 	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.
 	// Provide an example to clarify format (1.2.3, not v1.2.3).
 	helmDocsVersionText = "<release_version, ex: 1.2.3>"

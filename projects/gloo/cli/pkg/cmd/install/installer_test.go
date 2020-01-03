@@ -174,6 +174,7 @@ rules:
 			Namespace:       defaults.GlooSystem,
 			HelmReleaseName: constants.GlooReleaseName,
 			DryRun:          true,
+			Version:         glooOsVersion,
 		}
 
 		helmEnv := &cli.EnvSettings{
