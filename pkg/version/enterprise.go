@@ -55,7 +55,11 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 		return "", err
 	}
 
-	ind.SortEntries()
+	// we can't depend on ind.SortEntries() because this doesn't properly sort rc releases
+	// e.g., it would sort 1.0.0-rc1, 1.0.0-rc10, 1.0.0-rc2, ... 1.0.0-rc9, which is incorrect
+	// instead, we use our version comparison logic to get the largest tag
+	largestVersion := &versionutils.Zero
+	var largestTag string
 	if chartVersions, ok := ind.Entries[GlooEE]; ok && len(chartVersions) > 0 {
 		for _, chartVersion := range chartVersions {
 
@@ -73,12 +77,22 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 				continue
 			}
 			versionConstraintSatisfied, err := maxVersion.IsGreaterThanOrEqualTo(version)
-			if err == nil && versionConstraintSatisfied {
-				return chartVersion.Version, nil
+			if err != nil || !versionConstraintSatisfied {
+				continue
+			}
+
+			isLargest, err := version.IsGreaterThanOrEqualTo(largestVersion)
+			if err == nil && isLargest {
+				largestVersion = version
+				largestTag = chartVersion.Version
 			}
 
 		}
 	}
 
-	return "", errors.Errorf("Couldn't find any %s versions in index file %s", GlooEE, file)
+	if largestTag == "" {
+		return "", errors.Errorf("Couldn't find any %s versions in index file %s", GlooEE, file)
+	}
+
+	return largestTag, nil
 }
