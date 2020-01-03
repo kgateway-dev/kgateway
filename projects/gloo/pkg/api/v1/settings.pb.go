@@ -1153,10 +1153,15 @@ type GlooOptions struct {
 	// Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them.
 	// If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
 	// in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
-	DisableKubernetesDestinations bool     `protobuf:"varint,7,opt,name=disable_kubernetes_destinations,json=disableKubernetesDestinations,proto3" json:"disable_kubernetes_destinations,omitempty"`
-	XXX_NoUnkeyedLiteral          struct{} `json:"-"`
-	XXX_unrecognized              []byte   `json:"-"`
-	XXX_sizecache                 int32    `json:"-"`
+	DisableKubernetesDestinations bool `protobuf:"varint,7,opt,name=disable_kubernetes_destinations,json=disableKubernetesDestinations,proto3" json:"disable_kubernetes_destinations,omitempty"`
+	// Default policy for grpc-web.
+	// set to true if you do not wash grpc-web to be automatically enabled.
+	// set to false if you wish grpc-web enabled unless disabled on the listener level.
+	// If not specified, defaults to `false`.
+	DisableGrpcWeb       *types.BoolValue `protobuf:"bytes,8,opt,name=disable_grpc_web,json=disableGrpcWeb,proto3" json:"disable_grpc_web,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
 func (m *GlooOptions) Reset()         { *m = GlooOptions{} }
@@ -1230,6 +1235,13 @@ func (m *GlooOptions) GetDisableKubernetesDestinations() bool {
 		return m.DisableKubernetesDestinations
 	}
 	return false
+}
+
+func (m *GlooOptions) GetDisableGrpcWeb() *types.BoolValue {
+	if m != nil {
+		return m.DisableGrpcWeb
+	}
+	return nil
 }
 
 type GlooOptions_AWSOptions struct {
@@ -2402,6 +2414,9 @@ func (this *GlooOptions) Equal(that interface{}) bool {
 		return false
 	}
 	if this.DisableKubernetesDestinations != that1.DisableKubernetesDestinations {
+		return false
+	}
+	if !this.DisableGrpcWeb.Equal(that1.DisableGrpcWeb) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
