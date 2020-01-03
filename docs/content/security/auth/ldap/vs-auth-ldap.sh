@@ -21,7 +21,7 @@
                 port: 5678
       options:
         extauth:
-          config_ref:
+          configRef:
             name: ldap
             namespace: gloo-system
 EOF

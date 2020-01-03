@@ -117,7 +117,7 @@ The configuration format is the same in all three cases. It must be specified un
 ```yaml
 options:
   extauth:
-    config_ref:
+    configRef:
       # references the example AuthConfig we defined earlier
       name: basic-auth
       namespace: gloo-system

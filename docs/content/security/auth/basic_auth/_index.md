@@ -133,7 +133,7 @@ spec:
           autoHostRewrite: true      
     options:
       extauth:
-        config_ref:
+        configRef:
           name: basic-auth
           namespace: gloo-system
 EOF

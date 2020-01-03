@@ -13,7 +13,7 @@ external auth configuration format. You can now specify the `extauth` configurat
 ```yaml
 options: # Pre Gloo 1.0, this was virtualHostPlugins, routePlugins, or weightedDestinationPlugins
   extauth:
-    config_ref:
+    configRef:
       name: basic-auth
       namespace: gloo-system
 ```
@@ -25,7 +25,7 @@ virtualHostPlugins:
   extensions:
     configs:
       extauth:
-        config_ref:
+        configRef:
           name: basic-auth
           namespace: gloo-system
 ```
@@ -83,7 +83,7 @@ spec:
       extensions:
         configs:
           extauth:
-            config_ref:
+            configRef:
               name: basic-auth # Default auth config for this virtual host and all its child resources
               namespace: gloo-system
     routes:
