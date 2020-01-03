@@ -208,35 +208,6 @@ steps:
   waitFor: ['build-test-assets', 'get-credentials']
   id: 'regression-tests-cluster-lock'
 
-# purpose: find out why repo is dirty
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1'
-  dir: "/workspace/gopath/src/github.com/solo-io/gloo/"
-  entrypoint: "git"
-  args:
-  - "status"
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GIT_SSH_CONFIG=FALSE'
-  id: 'debug-git-status'
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1'
-  dir: "/workspace/gopath/src/github.com/solo-io/gloo/"
-  entrypoint: "git"
-  args:
-  - "dif"
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GIT_SSH_CONFIG=FALSE'
-  id: 'debug-git-diff'
-# purpose: make repo clean
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.1'
-  dir: "/workspace/gopath/src/github.com/solo-io/gloo/"
-  entrypoint: "git"
-  args:
-  - "checkout"
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GIT_SSH_CONFIG=FALSE'
-  id: 'debug-git-checkout'
 # 1) Run make targets to push docker images
 - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
   args: ['docker-push']

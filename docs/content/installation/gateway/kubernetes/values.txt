@@ -235,8 +235,8 @@
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
-|global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|
-|global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
+|global.image.registry|string|gcr.io/|image prefix/registry e.g. (quay.io/solo-io)|
+|global.image.pullPolicy|string|Always|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
