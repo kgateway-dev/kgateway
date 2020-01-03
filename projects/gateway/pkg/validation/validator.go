@@ -496,6 +496,7 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 
 		var routeTableRef *core.ResourceRef
 		// handle deprecated route table resource reference format
+		// TODO: remove when we remove the deprecated fields from the API
 		if delegate.Namespace != "" || delegate.Name != "" {
 			routeTableRef = &core.ResourceRef{
 				Namespace: delegate.Namespace,

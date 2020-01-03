@@ -426,8 +426,6 @@ type DelegateAction struct {
 	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
 	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
 	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"` // Deprecated: Do not use.
-	// TODO(marco): these fields are currently ignored, wire them up
-	//
 	// Types that are valid to be assigned to DelegationType:
 	//	*DelegateAction_Ref
 	//	*DelegateAction_Selector

@@ -223,12 +223,12 @@ message DelegateAction {
     // and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
     string namespace = 2 [deprecated = true];
 
-    // TODO(marco): these fields are currently ignored, wire them up
     oneof delegation_type {
         // Delegate to the Route Table resource with the given `name` and `namespace.
         core.solo.io.ResourceRef ref = 3;
 
         // Delegate to the Route Tables that match the given selector.
+        // TODO: route table selectors are currently not implemented
         RouteTableSelector selector = 4;
     }
 }
