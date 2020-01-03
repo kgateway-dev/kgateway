@@ -1056,7 +1056,7 @@ var _ = Describe("Translator", func() {
 											DelegateAction: &v1.DelegateAction{
 												Type: &v1.DelegateAction_Ref{
 													Ref: &core.ResourceRef{
-														Name:      "delegate-3",
+														Name:      "delegate-1",
 														Namespace: ns,
 													},
 												},

@@ -369,10 +369,25 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		return nil, err
 	}
 
+	var routeTableRef core.ResourceRef
+	// handle deprecated route table resource reference format
+	if delegate.Namespace != "" || delegate.Name != "" {
+		routeTableRef = core.ResourceRef{
+			Namespace: delegate.Namespace,
+			Name:      delegate.Name,
+		}
+	} else {
+		switch selectorType := delegate.GetType().(type) {
+		case *v1.DelegateAction_Selector:
+			// TODO(marco): handle selector
+			return nil, errors.New("delegate action selectors are not implemented yet!")
+		case *v1.DelegateAction_Ref:
+			routeTableRef = *selectorType.Ref
+		}
+	}
+
 	// missing refs should only result in a warning
 	// this allows resources to be applied asynchronously
-	// TODO(marco): handle selector
-	routeTableRef := core.ResourceRef{Namespace: delegate.Namespace, Name: delegate.Name}
 	routeTable, err := rv.tables.Find(routeTableRef.Strings())
 	if err != nil {
 		reports.AddWarning(routingResource, routeTableMissingWarning(routeTableRef))

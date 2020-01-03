@@ -488,12 +488,34 @@ func virtualServicesForRouteTable(rt *v1.RouteTable, allVirtualServices v1.Virtu
 
 func routesContainRefs(list []*v1.Route, refs refSet) bool {
 	for _, r := range list {
-		// TODO(marco): handle selector
-		delegate := r.GetDelegateAction().GetRef()
+
+		delegate := r.GetDelegateAction()
 		if delegate == nil {
 			continue
 		}
-		if _, ok := refs[*delegate]; ok {
+
+		var routeTableRef *core.ResourceRef
+		// handle deprecated route table resource reference format
+		if delegate.Namespace != "" || delegate.Name != "" {
+			routeTableRef = &core.ResourceRef{
+				Namespace: delegate.Namespace,
+				Name:      delegate.Name,
+			}
+		} else {
+			switch selectorType := delegate.GetType().(type) {
+			case *v1.DelegateAction_Selector:
+				// TODO(marco): handle selector
+				break
+			case *v1.DelegateAction_Ref:
+				routeTableRef = selectorType.Ref
+			}
+		}
+
+		if routeTableRef == nil {
+			continue
+		}
+
+		if _, ok := refs[*routeTableRef]; ok {
 			return true
 		}
 	}
