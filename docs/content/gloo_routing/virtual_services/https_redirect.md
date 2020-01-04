@@ -7,7 +7,7 @@ description: Route HTTP traffic to HTTPS services
 To help users or old services find your https endpoints, it is a common practice to redirect http traffic to https endpoints.
 With Gloo, this is a simple matter of creating an auxiliary http virtual service that routes to your full
 {{% protobuf
-display="https virtual service" 
+display="https virtual service"
 name="gateway.solo.io.VirtualService"
 %}}
 
@@ -27,7 +27,7 @@ display="sslConfig"
 - The domain listed in the auxiliary VS matches that of the main VS.
 - The auxiliary VS has a single route which matches all traffic and applies a
 {{% protobuf
-display="redirectAction" 
+display="redirectAction"
 name="gloo.solo.io.RedirectAction"
 %}} with `httpsRedirect: true` specified.
 
@@ -44,8 +44,8 @@ spec:
     domains:
     - docs.solo.io
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+      - prefix: /
       redirectAction:
         hostRedirect: docs.solo.io
         httpsRedirect: true
@@ -67,6 +67,6 @@ spec:
     domains:
     - 'docs.solo.io'
     routes:
-    - matcher:
+    - matchers:
 # (put the https routes here)
 {{< /highlight >}}

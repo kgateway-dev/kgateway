@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: >
+    Update doc to use route matchers instead of old, invalid matcher
+  issueLink: https://github.com/solo-io/gloo/issues/2078
