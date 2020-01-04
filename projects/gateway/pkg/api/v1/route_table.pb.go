@@ -77,13 +77,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     domains:
 //     - 'any.com'
 //     routes:
-//     - matcher:
-//         prefix: '/a' # delegate ownership of routes for `any.com/a`
+//     - matchers:
+//       - prefix: '/a' # delegate ownership of routes for `any.com/a`
 //       delegateAction:
 //         name: 'a-routes'
 //         namespace: 'a'
-//     - matcher:
-//         prefix: '/b' # delegate ownership of routes for `any.com/b`
+//     - matchers:
+//       - prefix: '/b' # delegate ownership of routes for `any.com/b`
 //       delegateAction:
 //         name: 'b-routes'
 //         namespace: 'b'
@@ -100,16 +100,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'a'
 // spec:
 //   routes:
-//     - matcher:
+//     - matchers:
 //         # the path matchers in this RouteTable must begin with the prefix `/a/`
-//         prefix: '/a/1'
+//       - prefix: '/a/1'
 //       routeAction:
 //         single:
 //           upstream:
 //             name: 'foo-upstream'
 //
-//     - matcher:
-//         prefix: '/a/2'
+//     - matchers:
+//       - prefix: '/a/2'
 //       routeAction:
 //         single:
 //           upstream:
@@ -126,15 +126,15 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'b'
 // spec:
 //   routes:
-//     - matcher:
+//     - matchers:
 //         # the path matchers in this RouteTable must begin with the prefix `/b/`
-//         regex: '/b/3'
+//       - regex: '/b/3'
 //       routeAction:
 //         single:
 //           upstream:
 //             name: 'bar-upstream'
-//     - matcher:
-//         prefix: '/b/c/'
+//     - matchers:
+//       - prefix: '/b/c/'
 //       # routes in the RouteTable can perform any action, including a delegateAction
 //       delegateAction:
 //         name: 'c-routes'
@@ -153,8 +153,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'c'
 // spec:
 //   routes:
-//     - matcher:
-//         exact: '/b/c/4'
+//     - matchers:
+//       - exact: '/b/c/4'
 //       routeAction:
 //         single:
 //           upstream:

@@ -58,8 +58,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
 //         name: 'shared-routes'
@@ -80,8 +80,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
 //         name: 'shared-routes'
@@ -102,8 +102,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'usernamespace'
 // spec:
 //   routes:
-//     - matcher:
-//         prefix: '/some-route'
+//     - matchers:
+//       - prefix: '/some-route'
 //       routeAction:
 //         single:
 //           upstream:

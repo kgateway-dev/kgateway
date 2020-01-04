@@ -57,8 +57,8 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
         name: 'shared-routes'
@@ -79,8 +79,8 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
         name: 'shared-routes'
@@ -101,8 +101,8 @@ metadata:
   namespace: 'usernamespace'
 spec:
   routes:
-    - matcher:
-        prefix: '/some-route'
+    - matchers:
+      - prefix: '/some-route'
       routeAction:
         single:
           upstream:
