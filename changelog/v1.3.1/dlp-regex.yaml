@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: >
+    Correct regex in DLP doc
+  issueLink: https://github.com/solo-io/gloo/issues/2122
