@@ -14,6 +14,8 @@ weight: 5
 - [VirtualService](#virtualservice) **Top-Level Resource**
 - [VirtualHost](#virtualhost)
 - [Route](#route)
+- [DelegateAction](#delegateaction)
+- [RouteTableSelector](#routetableselector)
   
 
 
@@ -177,16 +179,16 @@ When a request matches on a route, the route can perform one of the following ac
 - *Route* the request to a destination
 - Reply with a *Direct Response*
 - Send a *Redirect* response to the client
-- *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
+- *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
-a top-level `RouteTable` resource.
+top-level `RouteTable` resources.
 
 ```yaml
 "matchers": []matchers.core.gloo.solo.io.Matcher
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
-"delegateAction": .core.solo.io.ResourceRef
+"delegateAction": .gateway.solo.io.DelegateAction
 "options": .gloo.solo.io.RouteOptions
 
 ```
@@ -197,8 +199,52 @@ a top-level `RouteTable` resource.
 | `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
 | `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `delegateAction` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | delegate routing actions for the given matcher to a RouteTable the delegateAction config is simply the `name` and `namespace` of the delegated `RouteTable` resource. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
+| `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
 | `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |  |
+
+
+
+
+---
+### DelegateAction
+
+ 
+DelegateActions are used to delegate routing decisions to Route Tables.
+
+```yaml
+"name": string
+"namespace": string
+"ref": .core.solo.io.ResourceRef
+"selector": .gateway.solo.io.RouteTableSelector
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
+| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. TODO: route table selectors are currently not implemented. Only one of `selector` or `ref` can be set. |  |
+
+
+
+
+---
+### RouteTableSelector
+
+ 
+Select route tables for delegation by namespace, labels, or both.
+
+```yaml
+"namespaces": []string
+"labels": map<string, string>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
+| `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
 
 
 

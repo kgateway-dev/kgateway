@@ -27,9 +27,10 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.StringVarP(&route.Destination.Upstream.Namespace, "dest-namespace", "s", defaults.GlooSystem,
 		"namespace of the destination upstream for this route")
 
-	set.StringVar(&route.Destination.Delegate.Name, "delegate-name", "",
+	// TODO(marco): add delegate selector
+	set.StringVar(&route.Destination.Delegate.Single.Name, "delegate-name", "",
 		"name of the delegated RouteTable for this route")
-	set.StringVar(&route.Destination.Delegate.Namespace, "delegate-namespace", defaults.GlooSystem,
+	set.StringVar(&route.Destination.Delegate.Single.Namespace, "delegate-namespace", defaults.GlooSystem,
 		"namespace of the delegated RouteTable for this route")
 
 	set.StringVarP(&route.UpstreamGroup.Name, "upstream-group-name", "", "",
