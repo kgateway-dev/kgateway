@@ -358,7 +358,7 @@ message GlooOptions {
     // Default policy for grpc-web.
     // set to true if you do not wash grpc-web to be automatically enabled.
     // set to false if you wish grpc-web enabled unless disabled on the listener level.
-    // If not specified, defaults to `false`.
+    // If not specified, defaults to `true`. This may change in a future release.
     google.protobuf.BoolValue disable_grpc_web = 8;
 }
 

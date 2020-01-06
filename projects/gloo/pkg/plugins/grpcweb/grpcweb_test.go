@@ -83,7 +83,7 @@ var _ = Describe("Grpcweb", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(f).To(BeNil())
 		})
-		It("should filter if default by settings", func() {
+		It("should not filter if default by settings", func() {
 			initParams.Settings.Gloo.DisableGrpcWeb = nil
 
 			hl := &v1.HttpListener{
@@ -94,7 +94,7 @@ var _ = Describe("Grpcweb", func() {
 			p.Init(initParams)
 			f, err := p.HttpFilters(plugins.Params{}, hl)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(f).To(BeEquivalentTo(expectedFilter))
+			Expect(f).To(BeNil())
 		})
 		It("should filter when enabled in listener", func() {
 			hl := &v1.HttpListener{
