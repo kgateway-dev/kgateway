@@ -91,7 +91,8 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 	}
 
 	if largestTag == "" {
-		return "", errors.Errorf("Couldn't find any %s versions in index file %s", GlooEE, file)
+		return "", errors.Errorf("Couldn't find any %s versions in index file %s that satisfies constraints: [stable]: %v, [maxVersion]: %v",
+			GlooEE, file, stableOnly, maxVersion)
 	}
 
 	return largestTag, nil
