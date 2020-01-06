@@ -1,8 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Fix changelog download on LTS support branches. Gloo's release cycle keeps the major and minor versions of open-
-      source and closed-source in sync. Gloo needs to generate changelogs for patch releases using older versions of
-      the Gloo Enterprise changelog. This PR adds logic to cap the maximum version of Gloo Enterprise used in
-      changelog generation, which gets pushed into our docs images.
-    issueLink: https://github.com/solo-io/gloo/issues/2073
