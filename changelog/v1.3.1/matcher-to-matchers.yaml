@@ -1,4 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  description: Fix occurrences of `matcher` (singluar) in the docs.
-  issueLink: https://github.com/solo-io/gloo/issues/2078
