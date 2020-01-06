@@ -12,7 +12,9 @@ import (
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_web"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
@@ -39,6 +41,18 @@ var _ = Describe("Grpc Web", func() {
 			}
 			tc.Before()
 			tc.EnsureDefaultGateways()
+
+			defaultGateway := gwdefaults.DefaultGateway(tc.WriteNamespace)
+			// wait for default gateway to be created
+			gateway, err := tc.TestClients.GatewayClient.Read(tc.WriteNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			gateway.GetHttpGateway().Options = &gloov1.HttpListenerOptions{
+				GrpcWeb: &grpc_web.GrpcWeb{
+					Disable: false,
+				},
+			}
+			tc.TestClients.GatewayClient.Write(gateway, clients.WriteOpts{OverwriteExisting: true})
+
 		})
 		AfterEach(tc.After)
 
