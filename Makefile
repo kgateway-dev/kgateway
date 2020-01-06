@@ -18,6 +18,14 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+DEFAULT_BRANCH := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+
+ON_DEFAULT_BRANCH := false
+ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
+    ON_DEFAULT_BRANCH = true
+endif
+
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -469,12 +477,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := false
-
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
 upload-github-release-assets: build-cli render-manifests
-	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
+	GO111MODULE=on go run ci/upload_github_release_assets.go $(ON_DEFAULT_BRANCH)
 
 .PHONY: publish-docs
 publish-docs: generate-helm-files
