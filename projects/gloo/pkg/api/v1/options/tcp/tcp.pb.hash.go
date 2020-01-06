@@ -34,6 +34,9 @@ func (m *TcpProxySettings) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("tcp.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp.TcpProxySettings")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetMaxConnectAttempts()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {

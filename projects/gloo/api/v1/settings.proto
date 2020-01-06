@@ -7,15 +7,15 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
+import "gloo/projects/gloo/api/v1/extensions.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
+import "gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -355,6 +355,13 @@ message GlooOptions {
     // If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
     // in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
     bool disable_kubernetes_destinations = 7;
+
+
+    // Default policy for grpc-web.
+    // set to true if you do not wash grpc-web to be automatically enabled.
+    // set to false if you wish grpc-web enabled unless disabled on the listener level.
+    // If not specified, defaults to `false`.
+    google.protobuf.BoolValue disable_grpc_web = 8;
 }
 
 // Settings specific to the Gateway controller

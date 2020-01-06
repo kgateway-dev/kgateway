@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	"github.com/solo-io/go-utils/errors"
 
 	"github.com/golang/mock/gomock"
@@ -28,7 +29,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		svcClient        skkube.ServiceClient
 		baseUsClient     v1.UpstreamClient
-		mockConsulClient *consul.MockConsulClient
+		mockConsulClient *mock_consul.MockConsulClient
 
 		hybridClient v1.UpstreamClient
 
@@ -69,7 +70,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		svcClient, err = skkube.NewServiceClient(inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		mockConsulClient = consul.NewMockConsulClient(ctrl)
+		mockConsulClient = mock_consul.NewMockConsulClient(ctrl)
 		mockConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
 		mockConsulClient.EXPECT().Services(gomock.Any()).Return(
 			map[string][]string{"svc-1": {}},

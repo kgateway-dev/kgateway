@@ -17,6 +17,7 @@ import (
 	helmchart "helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/cli"
 	"helm.sh/helm/v3/pkg/release"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Install", func() {
@@ -137,14 +138,18 @@ rules:
 
 		dryRunOutputBuffer := new(bytes.Buffer)
 
-		installer := install.NewInstallerWithWriter(mockHelmClient, fake.NewSimpleClientset().CoreV1().Namespaces(), dryRunOutputBuffer)
+		kubeNsClient := fake.NewSimpleClientset().CoreV1().Namespaces()
+		installer := install.NewInstallerWithWriter(mockHelmClient, kubeNsClient, dryRunOutputBuffer)
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
 			Enterprise:     enterprise,
 		})
-
 		Expect(err).NotTo(HaveOccurred(), "No error should result from the installation")
 		Expect(dryRunOutputBuffer.String()).To(BeEmpty())
+
+		// Check that namespace was created
+		_, err = kubeNsClient.Get(installConfig.Namespace, metav1.GetOptions{})
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	It("installs cleanly by default", func() {
@@ -196,8 +201,9 @@ rules:
 			DownloadChart(glooOsChartUri).
 			Return(chart, nil)
 
+		kubeNsClient := fake.NewSimpleClientset().CoreV1().Namespaces()
 		dryRunOutputBuffer := new(bytes.Buffer)
-		installer := install.NewInstallerWithWriter(mockHelmClient, fake.NewSimpleClientset().CoreV1().Namespaces(), dryRunOutputBuffer)
+		installer := install.NewInstallerWithWriter(mockHelmClient, kubeNsClient, dryRunOutputBuffer)
 
 		err := installer.Install(&install.InstallerConfig{
 			InstallCliArgs: installConfig,
@@ -210,5 +216,9 @@ rules:
 		Expect(dryRunOutput).To(ContainSubstring(testCrdContent), "Should output CRD definitions")
 		Expect(dryRunOutput).NotTo(ContainSubstring(constants.HookCleanupResourceAnnotation), "Should not output cleanup hooks")
 		Expect(dryRunOutput).To(ContainSubstring("helm.sh/hook"), "Should output non-cleanup hooks")
+
+		// Make sure that namespace was not created
+		_, err = kubeNsClient.Get(installConfig.Namespace, metav1.GetOptions{})
+		Expect(err).To(HaveOccurred())
 	})
 })

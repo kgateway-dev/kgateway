@@ -143,9 +143,13 @@ var _ = Describe("Validator", func() {
 			It("rejects the rt", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
-						DelegateAction: &core.ResourceRef{
-							Name:      "invalid",
-							Namespace: "name",
+						DelegateAction: &gatewayv1.DelegateAction{
+							DelegationType: &gatewayv1.DelegateAction_Ref{
+								Ref: &core.ResourceRef{
+									Name:      "invalid",
+									Namespace: "name",
+								},
+							},
 						},
 					},
 				}
@@ -256,9 +260,14 @@ var _ = Describe("Validator", func() {
 			It("rejects the vs", func() {
 				badRoute := &gatewayv1.Route{
 					Action: &gatewayv1.Route_DelegateAction{
-						DelegateAction: &core.ResourceRef{
-							Name:      "invalid",
-							Namespace: "name",
+
+						DelegateAction: &gatewayv1.DelegateAction{
+							DelegationType: &gatewayv1.DelegateAction_Ref{
+								Ref: &core.ResourceRef{
+									Name:      "invalid",
+									Namespace: "name",
+								},
+							},
 						},
 					},
 				}

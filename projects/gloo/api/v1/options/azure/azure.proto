@@ -8,7 +8,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/ref.proto";
 
 // Upstream Spec for Azure Functions Upstreams
 // Azure Upstreams represent a collection of Azure Functions for a particular Azure Account

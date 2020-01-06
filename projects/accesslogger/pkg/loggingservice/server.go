@@ -28,11 +28,11 @@ func (s *Server) StreamAccessLogs(srv envoyals.AccessLogService_StreamAccessLogs
 
 	ctx := contextutils.WithLoggerValues(
 		s.opts.Ctx,
-		zap.String("logger_name", msg.Identifier.GetLogName()),
-		zap.String("node_id", msg.Identifier.Node.GetId()),
-		zap.String("node_cluster", msg.Identifier.Node.GetCluster()),
-		zap.Any("node_locality", msg.Identifier.Node.GetLocality()),
-		zap.Any("node_metadata", msg.Identifier.Node.GetMetadata()),
+		zap.String("logger_name", msg.GetIdentifier().GetLogName()),
+		zap.String("node_id", msg.GetIdentifier().GetNode().GetId()),
+		zap.String("node_cluster", msg.GetIdentifier().GetNode().GetCluster()),
+		zap.Any("node_locality", msg.GetIdentifier().GetNode().GetLocality()),
+		zap.Any("node_metadata", msg.GetIdentifier().GetNode().GetMetadata()),
 	)
 	contextutils.LoggerFrom(ctx).Info("received access log message")
 

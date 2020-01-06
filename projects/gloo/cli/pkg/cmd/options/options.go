@@ -152,7 +152,7 @@ type InputRoute struct {
 
 type Destination struct {
 	Upstream        core.ResourceRef
-	Delegate        core.ResourceRef
+	Delegate        Delegate
 	DestinationSpec DestinationSpec
 }
 
@@ -190,6 +190,16 @@ func (p *PrefixRewrite) Type() string {
 type DestinationSpec struct {
 	Aws  AwsDestinationSpec
 	Rest RestDestinationSpec
+}
+
+type DelegateSelector struct {
+	Labels     map[string]string
+	Namespaces []string
+}
+
+type Delegate struct {
+	Single   core.ResourceRef
+	Selector DelegateSelector
 }
 
 type AwsDestinationSpec struct {

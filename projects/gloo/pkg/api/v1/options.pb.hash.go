@@ -34,6 +34,9 @@ func (m *ListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.ListenerOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetAccessLoggingService()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -75,6 +78,9 @@ func (m *HttpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.HttpListenerOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetGrpcWeb()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -186,6 +192,9 @@ func (m *TcpListenerOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.TcpListenerOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetTcpProxySettings()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -213,6 +222,9 @@ func (m *VirtualHostOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.VirtualHostOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetExtensions()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -408,6 +420,9 @@ func (m *RouteOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.RouteOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetTransformations()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -717,6 +732,9 @@ func (m *DestinationSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.DestinationSpec")); err != nil {
+		return 0, err
+	}
 
 	switch m.DestinationType.(type) {
 
@@ -798,6 +816,9 @@ func (m *WeightedDestinationOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.WeightedDestinationOptions")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetHeaderManipulation()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {

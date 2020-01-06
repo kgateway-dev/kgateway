@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/go-utils/errors"
 )
 
-//go:generate mockgen -destination=./mock_consul_client.go -source consul_client.go -package consul
+//go:generate mockgen -destination=./mocks/mock_consul_client.go -source consul_client.go
 
 var ForbiddenDataCenterErr = func(dataCenter string) error {
 	return errors.Errorf("not allowed to query data center [%s]. "+

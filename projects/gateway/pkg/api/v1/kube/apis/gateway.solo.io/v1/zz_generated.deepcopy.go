@@ -56,7 +56,7 @@ func (in *Gateway) DeepCopyObject() runtime.Object {
 func (in *GatewayList) DeepCopyInto(out *GatewayList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Gateway, len(*in))
@@ -117,7 +117,7 @@ func (in *RouteTable) DeepCopyObject() runtime.Object {
 func (in *RouteTableList) DeepCopyInto(out *RouteTableList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]RouteTable, len(*in))
@@ -178,7 +178,7 @@ func (in *VirtualService) DeepCopyObject() runtime.Object {
 func (in *VirtualServiceList) DeepCopyInto(out *VirtualServiceList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]VirtualService, len(*in))

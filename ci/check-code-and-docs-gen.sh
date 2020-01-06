@@ -8,19 +8,7 @@ if [ ! -f .gitignore ]; then
   echo "_output" > .gitignore
 fi
 
-git init
-git config user.name "bot"
-git config user.email "bot@solo.io"
-
-git add .
-git commit -m "set up dummy repo for diffing" -q --allow-empty
-
-git clone https://github.com/solo-io/solo-kit /workspace/gopath/src/github.com/solo-io/solo-kit
-
 make update-deps
-make pin-repos
-
-PATH=/workspace/gopath/bin:$PATH
 
 set +e
 

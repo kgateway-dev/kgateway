@@ -55,7 +55,7 @@ func (in *Artifact) DeepCopyObject() runtime.Object {
 func (in *ArtifactList) DeepCopyInto(out *ArtifactList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Artifact, len(*in))
@@ -115,7 +115,7 @@ func (in *Endpoint) DeepCopyObject() runtime.Object {
 func (in *EndpointList) DeepCopyInto(out *EndpointList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Endpoint, len(*in))
@@ -176,7 +176,7 @@ func (in *Proxy) DeepCopyObject() runtime.Object {
 func (in *ProxyList) DeepCopyInto(out *ProxyList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Proxy, len(*in))
@@ -236,7 +236,7 @@ func (in *Secret) DeepCopyObject() runtime.Object {
 func (in *SecretList) DeepCopyInto(out *SecretList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Secret, len(*in))
@@ -297,7 +297,7 @@ func (in *Settings) DeepCopyObject() runtime.Object {
 func (in *SettingsList) DeepCopyInto(out *SettingsList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Settings, len(*in))
@@ -386,7 +386,7 @@ func (in *UpstreamGroup) DeepCopyObject() runtime.Object {
 func (in *UpstreamGroupList) DeepCopyInto(out *UpstreamGroupList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]UpstreamGroup, len(*in))
@@ -419,7 +419,7 @@ func (in *UpstreamGroupList) DeepCopyObject() runtime.Object {
 func (in *UpstreamList) DeepCopyInto(out *UpstreamList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]Upstream, len(*in))

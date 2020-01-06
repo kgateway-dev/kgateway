@@ -212,7 +212,7 @@ spec:
             port: 80
     options:
       extauth:
-        config_ref:
+        configRef:
           name: oidc-dex
           namespace: gloo-system
 {{< /highlight >}}

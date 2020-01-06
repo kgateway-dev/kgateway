@@ -2,9 +2,8 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version";
 
-import "github.com/solo-io/solo-kit/api/external/validate/validate.proto";
+import "validate/validate.proto";
 import "gogoproto/gogo.proto";
-
 option (gogoproto.equal_all) = true;
 
 // type of gloo server instance

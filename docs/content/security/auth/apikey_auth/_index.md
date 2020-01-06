@@ -189,7 +189,7 @@ spec:
           autoHostRewrite: true
     options:
       extauth:
-        config_ref:
+        configRef:
           name: apikey-auth
           namespace: gloo-system
 EOF

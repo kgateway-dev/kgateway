@@ -1,4 +1,4 @@
-vendor
+vendor*
 .vendor-new
 _output
 _test
