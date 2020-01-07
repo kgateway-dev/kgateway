@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
+
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -89,21 +91,24 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	allKeys := map[string]bool{
-		xds.FallbackNodeKey: true,
-	}
-	for _, key := range s.xdsCache.GetStatusKeys() {
-		allKeys[key] = false
-	}
-	for _, key := range xds.GetKeysFromProxies(snap.Proxies) {
-		allKeys[key] = true
-	}
+	proxyGarbageCollection := settingsutil.FromContext(ctx).GetGloo().GetProxyGarbageCollection().GetValue()
+	if proxyGarbageCollection {
+		allKeys := map[string]bool{
+			xds.FallbackNodeKey: true,
+		}
+		for _, key := range s.xdsCache.GetStatusKeys() {
+			allKeys[key] = false
+		}
+		for _, key := range xds.GetKeysFromProxies(snap.Proxies) {
+			allKeys[key] = true
+		}
 
-	// preserve keys from the current list of proxies, set previous snapshots to empty snapshot
-	for key, valid := range allKeys {
-		if !valid {
-			if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
-				return err
+		// preserve keys from the current list of proxies, set previous snapshots to empty snapshot
+		for key, valid := range allKeys {
+			if !valid {
+				if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
+					return err
+				}
 			}
 		}
 	}

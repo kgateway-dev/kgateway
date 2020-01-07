@@ -3,6 +3,8 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"net/http"
 	"time"
 
@@ -216,6 +218,14 @@ var _ = Describe("Gateway", func() {
 				TestUpstreamReachable()
 
 				// Delete the Virtual Service
+				settingsutil.WithSettings(ctx, &gloov1.Settings{
+					Gloo:                 &gloov1.GlooOptions{
+						ProxyGarbageCollection: &types.BoolValue{
+							Value: true,
+						},
+					},
+				})
+
 				err = testClients.VirtualServiceClient.Delete(writeNamespace, vs.GetMetadata().Name, clients.DeleteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 

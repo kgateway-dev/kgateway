@@ -1,8 +1,13 @@
 changelog:
 - type: FIX
   description: >
-      If a virtual service being deleted results in 0 proxies, we need to manually remove all the 
-      listeners and route descriptors in all of our envoy configs.
+      Introduce a feature flag in the Settings CRD named proxyGarbageCollection, 
+      located under the 'gloo' options. Set this option to determine the state of
+      the envoy configuration when a virtual service is deleted, resulting in a
+      proxy with no configured routes.
+      Set to true if you wish to reset the envoy configuration to a clean slate with no routes.
+      Set to false if you wish to keep envoy serving the routes from the latest valid configuration.
+      For this release, proxyGarbageCollection will default to 'false'.
   issueLink: https://github.com/solo-io/gloo/issues/1245
 
 
