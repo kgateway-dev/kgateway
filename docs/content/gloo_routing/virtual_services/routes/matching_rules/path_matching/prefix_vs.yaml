@@ -9,7 +9,7 @@ spec:
       - 'foo'
     routes:
       - matchers:
-         - prefix: /
+         - prefix: /posts
         routeAction:
           single:
             upstream:
