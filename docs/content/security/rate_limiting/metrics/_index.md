@@ -1,7 +1,7 @@
 ---
 title: Metrics (Enterprise)
 weight: 45
-description: Use prometheus metrics to determine alert when rate-limit rule breaches are close or occur.
+description: Use prometheus metrics to determine when requests are near or over rate-limits.
 ---
 
 In this tutorial we will see how to use the rate-limit service's default prometheus metrics to alert when rules are
