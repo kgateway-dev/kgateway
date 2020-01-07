@@ -99,6 +99,14 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
+	// if has gloo as a dependency, nest ExtraValues
+	for _, dependency := range chartObj.Dependencies() {
+		if dependency.Metadata.Name == constants.GlooReleaseName {
+			installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
+			break
+		}
+	}
+
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
 		ValueFiles: installerConfig.InstallCliArgs.HelmChartValueFileNames,
