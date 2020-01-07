@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 
@@ -284,6 +286,7 @@ var _ = Describe("Translator", func() {
 	})
 
 	Context("http", func() {
+
 		Context("all-in-one virtual service", func() {
 
 			var (
@@ -516,110 +519,58 @@ var _ = Describe("Translator", func() {
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
 			})
 
-			Context("merge", func() {
+			Context("validate domains", func() {
 				BeforeEach(func() {
 					snap.VirtualServices[1].VirtualHost.Domains = snap.VirtualServices[0].VirtualHost.Domains
 				})
 
-				It("should translate 2 virtual services with the same domains to 1 virtual service", func() {
+				It("should error when 2 virtual services linked to the same gateway have overlapping domains", func() {
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
 
-					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
 
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-					Expect(proxy.Metadata.Name).To(Equal(defaults.GatewayProxyName))
-					Expect(proxy.Metadata.Namespace).To(Equal(ns))
-					Expect(proxy.Listeners).To(HaveLen(1))
-					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
+					for _, expectedError := range []error{
+						DomainInOtherVirtualServicesErr("d1.com", []string{"gloo-system.name1"}),
+						DomainInOtherVirtualServicesErr("d1.com", []string{"gloo-system.name2"}),
+						GatewayHasConflictingVirtualServicesErr([]string{"d1.com"}),
+					} {
+						Expect(multiErr.WrappedErrors()).To(ContainElement(expectedError))
+					}
 				})
 
-				It("should translate 2 virtual services with the empty domains", func() {
+				It("should error when 2 virtual services linked to the same gateway have empty domains", func() {
 					snap.VirtualServices[1].VirtualHost.Domains = nil
 					snap.VirtualServices[0].VirtualHost.Domains = nil
 
-					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
 
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-					Expect(proxy.Listeners).To(HaveLen(1))
-					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
-					Expect(listener.VirtualHosts[0].Name).NotTo(BeEmpty())
-					Expect(listener.VirtualHosts[0].Name).NotTo(Equal(ns + "."))
+					multiErr, ok := errs.(*multierror.Error)
+					Expect(ok).To(BeTrue())
+
+					for _, expectedError := range []error{
+						DomainInOtherVirtualServicesErr("", []string{"gloo-system.name1"}),
+						DomainInOtherVirtualServicesErr("", []string{"gloo-system.name2"}),
+						GatewayHasConflictingVirtualServicesErr([]string{""}),
+					} {
+						Expect(multiErr.WrappedErrors()).To(ContainElement(expectedError))
+					}
 				})
 
-				It("should not error with one contains plugins", func() {
-					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
+				It("should warn when a virtual services does not specify a virtual host", func() {
+					snap.VirtualServices[0].VirtualHost = nil
 
-					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
+					Expect(reports.Validate()).NotTo(HaveOccurred())
 
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-				})
+					errs := reports.ValidateStrict()
+					Expect(errs).To(HaveOccurred())
 
-				It("should error with both having plugins", func() {
-					snap.VirtualServices[0].VirtualHost.Options = new(gloov1.VirtualHostOptions)
-					snap.VirtualServices[1].VirtualHost.Options = new(gloov1.VirtualHostOptions)
-
-					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).To(HaveOccurred())
-				})
-
-				It("should not error with one contains ssl config", func() {
-					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-
-					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
-				})
-
-				It("should not error with one contains ssl config", func() {
-					snap.Gateways[0].Ssl = true
-					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-
-					proxy, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
-					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
-					Expect(listener.VirtualHosts[0].Routes).To(HaveLen(1))
-				})
-
-				It("should error when two virtual services conflict", func() {
-					snap.Gateways[0].Ssl = true
-					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
-					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
-
-					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).To(HaveOccurred())
-				})
-
-				It("should error when two virtual services conflict", func() {
-					snap.Gateways[0].Ssl = true
-					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[0].SslConfig.SniDomains = []string{"bar"}
-					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
-
-					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).To(HaveOccurred())
-				})
-
-				It("should error when two virtual services conflict", func() {
-					snap.Gateways[0].Ssl = true
-					snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
-					snap.VirtualServices[0].SslConfig.SniDomains = []string{"foo"}
-					snap.VirtualServices[1].SslConfig.SniDomains = []string{"foo"}
-
-					_, errs := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-
-					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
+					Expect(errs.Error()).To(ContainSubstring(NoVirtualHostErr(snap.VirtualServices[0]).Error()))
 				})
 			})
 		})

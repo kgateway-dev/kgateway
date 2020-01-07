@@ -126,8 +126,8 @@ func (s *proxyReconciler) addProxyValidationResults(ctx context.Context, proxies
 	return nil
 }
 
-// strips any listeners and virtualhosts who are created from an errored virtual service / gateway
-// check the vs/gateway for the listener/virtualhost by looking at their metadata.sources
+// strips any listeners and virtual hosts who are created from an errored virtual service / gateway
+// check the vs/gateway for the listener/virtual host by looking at their metadata.sources
 // check the error on the vs/gateway by searching through the resource reports
 // this function must be called before reconciling the proxies
 func stripInvalidListenersAndVirtualHosts(ctx context.Context, proxiesToWrite GeneratedProxies) (GeneratedProxies, error) {

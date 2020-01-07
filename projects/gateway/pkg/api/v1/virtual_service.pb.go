@@ -276,9 +276,7 @@ func (m *VirtualHost) GetOptions() *v1.VirtualHostOptions {
 }
 
 //
-//
 // A route specifies how to match a request and what action to take when the request is matched.
-//
 //
 // When a request matches on a route, the route can perform one of the following actions:
 // - *Route* the request to a destination
@@ -287,7 +285,6 @@ func (m *VirtualHost) GetOptions() *v1.VirtualHostOptions {
 // - *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 // DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
 // top-level `RouteTable` resources.
-//
 type Route struct {
 	// Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
 	// If empty, the route will match all requests (i.e, a single "/" path prefix matcher)

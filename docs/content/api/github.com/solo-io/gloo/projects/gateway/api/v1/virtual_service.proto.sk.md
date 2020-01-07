@@ -174,7 +174,6 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
  
 A route specifies how to match a request and what action to take when the request is matched.
 
-
 When a request matches on a route, the route can perform one of the following actions:
 - *Route* the request to a destination
 - Reply with a *Direct Response*

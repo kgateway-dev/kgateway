@@ -3,7 +3,6 @@ package translator
 import (
 	"context"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -25,6 +24,31 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
+var (
+	NoVirtualHostErr = func(vs *v1.VirtualService) error {
+		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
+	}
+	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+		if domain == "" {
+			return errors.Errorf("domain conflict: other virtual services associated with the gateway that manages this "+
+				"virtual service don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
+		}
+		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
+			"associated with the gateway that manages this virtual service: %v", domain, conflictingVsNames)
+	}
+	GatewayHasConflictingVirtualServicesErr = func(conflictingDomains []string) error {
+		var loggedDomains []string
+		for _, domain := range conflictingDomains {
+			if domain == "" {
+				domain = "EMPTY_DOMAIN"
+			}
+			loggedDomains = append(loggedDomains, domain)
+		}
+		return errors.Errorf("domain conflict: the following domains are present in more than one of the "+
+			"virtual services associated with this gateway: %v", loggedDomains)
+	}
+)
+
 type HttpTranslator struct{}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
@@ -40,108 +64,57 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 		}
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
-		mergedVirtualServices := validateAndMergeVirtualServices(gateway, virtualServices, reports)
-		listener := desiredListenerForHttp(gateway, mergedVirtualServices, snap.RouteTables, reports)
+		validateVirtualServiceDomains(gateway, virtualServices, reports)
+		listener := desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
 	return result
 }
 
-func domainsToKey(domains []string) string {
-	// copy before mutating for good measure
-	domains = append([]string{}, domains...)
-	// sort, and join all domains with an out of band character, like ','
-	sort.Strings(domains)
-	return strings.Join(domains, ",")
-}
+// TODO(marco): validate SNI domains?
+// Errors will be added to the report object.
+func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 
-func validateAndMergeVirtualServices(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) v1.VirtualServiceList {
-	ns := gateway.Metadata.GetNamespace()
-	domainKeysSets := map[string]v1.VirtualServiceList{}
+	// Index the virtual services for this gateway by the domain
+	vsByDomain := map[string]v1.VirtualServiceList{}
 	for _, vs := range virtualServices {
+
+		// Add warning and skip if no virtual host
 		if vs.VirtualHost == nil {
-			continue
-		}
-		domainsKey := domainsToKey(vs.VirtualHost.Domains)
-		domainKeysSets[domainsKey] = append(domainKeysSets[domainsKey], vs)
-	}
-
-	domainSet := map[string][]string{}
-	// make sure each domain is only in one domain set
-	for k, vslist := range domainKeysSets {
-		// take the first one as they are all the same
-		domains := vslist[0].VirtualHost.Domains
-		for _, d := range domains {
-			domainSet[d] = append(domainSet[d], k)
-		}
-	}
-
-	// report errors
-	for domain, domainSetKeys := range domainSet {
-		if len(domainSetKeys) > 1 {
-			reports.AddError(gateway, fmt.Errorf("domain %s is present in more than one vservice set in this gateway", domain))
-		}
-	}
-	// return merged list
-	var mergedVirtualServices v1.VirtualServiceList
-	for k, vslist := range domainKeysSets {
-		if len(vslist) == 1 {
-			// only one vservice, do nothing.
-			mergedVirtualServices = append(mergedVirtualServices, vslist[0])
+			reports.AddWarning(vs, NoVirtualHostErr(vs).Error())
 			continue
 		}
 
-		// take the first one as they are all the same
-		var routes []*v1.Route
-		var sslConfig *gloov1.SslConfig
-		var vhostPlugins *gloov1.VirtualHostOptions
-		for _, vs := range vslist {
-			routes = append(routes, vs.VirtualHost.Routes...)
-			if sslConfig == nil {
-				sslConfig = vs.SslConfig
-			} else if !vs.SslConfig.Equal(sslConfig) {
-				reports.AddError(gateway, fmt.Errorf("more than one distinct ssl config is present in virtual service of these domains: %s", k))
-			}
+		// Not specifying any domains is not an error per se, but we need to check whether multiple virtual services
+		// don't specify any, so we use the empty string as a placeholder in this function.
+		domains := append([]string{}, vs.VirtualHost.Domains...)
+		if len(domains) == 0 {
+			domains = []string{""}
+		}
 
-			havePlugins := vs.VirtualHost != nil &&
-				vs.VirtualHost.Options != nil
+		for _, domain := range domains {
+			vsByDomain[domain] = append(vsByDomain[domain], vs)
+		}
+	}
 
-			if vhostPlugins == nil {
-				if havePlugins {
-					vhostPlugins = vs.VirtualHost.Options
+	var conflictingDomains []string
+	for domain, vsWithThisDomain := range vsByDomain {
+		if len(vsWithThisDomain) > 1 {
+			conflictingDomains = append(conflictingDomains, domain)
+			for i, vs := range vsWithThisDomain {
+				var conflictingVsNames []string
+				for j, otherVs := range vsWithThisDomain {
+					if i != j {
+						conflictingVsNames = append(conflictingVsNames, otherVs.Metadata.Ref().Key())
+					}
 				}
-			} else if havePlugins {
-				reports.AddError(gateway, fmt.Errorf("more than one vhost plugin is present in virtual service of these domains: %s", k))
+				reports.AddError(vs, DomainInOtherVirtualServicesErr(domain, conflictingVsNames))
 			}
 		}
-
-		glooutils.SortGatewayRoutesByPath(routes)
-
-		ref := core.Metadata{
-			// name shouldn't matter as it this object is ephemeral.
-			Name:      getMergedName(k),
-			Namespace: ns,
-		}
-		mergedVs := &v1.VirtualService{
-			VirtualHost: &v1.VirtualHost{
-				Domains: vslist[0].VirtualHost.Domains,
-				Routes:  routes,
-				Options: vhostPlugins,
-			},
-			SslConfig: sslConfig,
-			Metadata:  ref,
-		}
-		mergedVirtualServices = append(mergedVirtualServices, mergedVs)
 	}
-
-	return mergedVirtualServices
-}
-
-func getMergedName(k string) string {
-	if k == "" {
-		return "catchall"
+	if len(conflictingDomains) > 0 {
+		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingDomains))
 	}
-	return "merged-" + k
 }
 
 func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
