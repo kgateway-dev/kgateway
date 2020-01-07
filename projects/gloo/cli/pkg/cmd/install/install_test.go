@@ -66,14 +66,14 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	FIt("should contain 'ingress-proxy' for ingress dry run with enterprise helm chart override", func() {
+	It("should contain 'ingress-proxy' for ingress dry run with enterprise helm chart override", func() {
 		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install ingress --file https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-1.0.0-rc8.tgz --dry-run"))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outputYaml).NotTo(BeEmpty())
 		Expect(outputYaml).To(ContainSubstring("name: ingress-proxy\n"))
 	})
 
-	FIt("should contain 'knative-external-proxy' for knative dry run with enterprise helm chart override", func() {
+	It("should contain 'knative-external-proxy' for knative dry run with enterprise helm chart override", func() {
 		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install knative --file https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-1.0.0-rc8.tgz --dry-run"))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(outputYaml).NotTo(BeEmpty())
