@@ -270,7 +270,7 @@ Templates can be used only if the request/response payload is a JSON string.
 
 Gloo templates are powered by the [Inja](https://github.com/pantor/inja) template engine, which is inspired by 
 the popular [Jinja](https://palletsprojects.com/p/jinja/) templating language in Python. 
-When writing your templates, you can take advantage of all the core _Inja_ features, i.e. loops, conditional logic, 
+When writing your templates, you can take advantage of all the core _Inja_ features, i.a. loops, conditional logic, 
 and functions.
 
 In addition to the standard functions available in the core _Inja_ library, you can use additional custom functions that 
