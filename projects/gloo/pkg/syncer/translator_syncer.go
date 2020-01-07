@@ -23,7 +23,7 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
-	settings *v1.Settings
+	settings   *v1.Settings
 }
 
 type TranslatorSyncerExtensionParams struct {
