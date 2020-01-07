@@ -476,7 +476,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		routeReplacingSanitizer,
 	}
 
-	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions)
+	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
 
 	syncers := v1.ApiSyncers{
 		translationSync,

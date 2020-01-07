@@ -23,6 +23,7 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
+	settings *v1.Settings
 }
 
 type TranslatorSyncerExtensionParams struct {
@@ -35,7 +36,7 @@ type TranslatorSyncerExtension interface {
 	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) error
 }
 
-func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension) v1.ApiSyncer {
+func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension, settings *v1.Settings) v1.ApiSyncer {
 	s := &translatorSyncer{
 		translator: translator,
 		xdsCache:   xdsCache,
@@ -43,6 +44,7 @@ func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.S
 		reporter:   reporter,
 		extensions: extensions,
 		sanitizer:  sanitizer,
+		settings:   settings,
 	}
 	if devMode {
 		// TODO(ilackarms): move this somewhere else?

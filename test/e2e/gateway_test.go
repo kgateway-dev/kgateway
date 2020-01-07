@@ -3,11 +3,9 @@ package e2e_test
 import (
 	"context"
 	"fmt"
+	"github.com/gogo/protobuf/types"
 	"net/http"
 	"time"
-
-	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -54,6 +52,15 @@ var _ = Describe("Gateway", func() {
 				WhatToRun: services.What{
 					DisableFds: true,
 					DisableUds: true,
+				},
+				// Set this to 'true' to test the behavior where gloo cleans up the envoy config when no proxies
+				// contain any virtual services.
+				Settings: &gloov1.Settings{
+					Gloo: &gloov1.GlooOptions{
+						ProxyGarbageCollection: &types.BoolValue{
+							Value: true,
+						},
+					},
 				},
 			}
 
@@ -219,14 +226,6 @@ var _ = Describe("Gateway", func() {
 				TestUpstreamReachable()
 
 				// Delete the Virtual Service
-				settingsutil.WithSettings(ctx, &gloov1.Settings{
-					Gloo: &gloov1.GlooOptions{
-						ProxyGarbageCollection: &types.BoolValue{
-							Value: true,
-						},
-					},
-				})
-
 				err = testClients.VirtualServiceClient.Delete(writeNamespace, vs.GetMetadata().Name, clients.DeleteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 

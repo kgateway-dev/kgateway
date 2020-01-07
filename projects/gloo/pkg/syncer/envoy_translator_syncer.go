@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/solo-io/gloo/pkg/utils/settingsutil"
-
 	syncerstats "github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -91,7 +89,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	proxyGarbageCollection := settingsutil.FromContext(ctx).GetGloo().GetProxyGarbageCollection().GetValue()
+	proxyGarbageCollection := s.settings.GetGloo().GetProxyGarbageCollection().GetValue()
 	if proxyGarbageCollection {
 		allKeys := map[string]bool{
 			xds.FallbackNodeKey: true,
