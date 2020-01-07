@@ -34,7 +34,7 @@ great way to get a cluster up quickly.
 
 ### Install the Gloo Gateway and glooctl
 
-The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on on Kubernetes to the default `gloo-system` namespace.
+The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on Kubernetes to the default `gloo-system` namespace.
 
 Once you have completed the installation of `glooctl` and Gloo Gateway, you are now ready to deploy an example application and configure routing.
 
@@ -91,7 +91,7 @@ petstore  ClusterIP  10.XX.XX.XX  <none>       8080/TCP  1m
 
 ### Verify the Upstream for the Pet Store Application
 
-The Gloo discovery services watch for new services added to the Kubernetes cluster. We the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. Let’s verify this by using the `glooctl` command line tool:
+The Gloo discovery services watch for new services added to the Kubernetes cluster. When the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. Let’s verify this by using the `glooctl` command line tool:
 
 ```shell
 glooctl get upstreams
