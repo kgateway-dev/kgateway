@@ -114,5 +114,5 @@ dashboard:
 
 Sometimes you'd like to further drill down into the offending requests, as well as requests that contributed to
 rate-limit rule breaches. If the default metrics aren't enough, the next recommended course of action is to do some
-analysis of your access logs. We have a simple access logs example
+analysis of your access logs. To get started, you can check out our access logs example
 [here]({{% versioned_link_path fromRoot="/security/rate_limiting/access_logs" %}}).
