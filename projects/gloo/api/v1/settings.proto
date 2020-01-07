@@ -355,6 +355,13 @@ message GlooOptions {
     // If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
     // in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
     bool disable_kubernetes_destinations = 7;
+
+
+    // Default policy for grpc-web.
+    // set to true if you do not wash grpc-web to be automatically enabled.
+    // set to false if you wish grpc-web enabled unless disabled on the listener level.
+    // If not specified, defaults to `false`.
+    google.protobuf.BoolValue disable_grpc_web = 8;
 }
 
 // Settings specific to the Gateway controller

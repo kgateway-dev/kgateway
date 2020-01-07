@@ -182,7 +182,7 @@ spec:
             port: 8080
     options:
       extauth:
-        config_ref:
+        configRef:
           name: opa
           namespace: gloo-system
 EOF
@@ -473,7 +473,7 @@ spec:
             port: 8080
     options:
       extauth:
-        config_ref:
+        configRef:
           name: jwt-opa
           namespace: gloo-system
 {{< /highlight >}}

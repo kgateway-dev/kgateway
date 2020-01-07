@@ -329,6 +329,9 @@ apis:
   fault.options.gloo.solo.io.RouteFaults:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteFaults
     package: fault.options.gloo.solo.io
+  gateway.solo.io.DelegateAction:
+    relativepath: api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#DelegateAction
+    package: gateway.solo.io
   gateway.solo.io.Gateway:
     relativepath: api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#Gateway
     package: gateway.solo.io
@@ -340,6 +343,9 @@ apis:
     package: gateway.solo.io
   gateway.solo.io.RouteTable:
     relativepath: api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk/#RouteTable
+    package: gateway.solo.io
+  gateway.solo.io.RouteTableSelector:
+    relativepath: api/github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto.sk/#RouteTableSelector
     package: gateway.solo.io
   gateway.solo.io.TcpGateway:
     relativepath: api/github.com/solo-io/gloo/projects/gateway/api/v1/gateway.proto.sk/#TcpGateway

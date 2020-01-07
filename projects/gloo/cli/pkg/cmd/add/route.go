@@ -75,9 +75,13 @@ func addRoute(opts *options.Options) error {
 		Options:  plugins,
 	}
 
-	if opts.Add.Route.Destination.Delegate.Name != "" {
+	if opts.Add.Route.Destination.Delegate.Single.Name != "" {
 		v1Route.Action = &gatewayv1.Route_DelegateAction{
-			DelegateAction: &opts.Add.Route.Destination.Delegate,
+			DelegateAction: &gatewayv1.DelegateAction{
+				DelegationType: &gatewayv1.DelegateAction_Ref{
+					Ref: &opts.Add.Route.Destination.Delegate.Single,
+				},
+			},
 		}
 	} else {
 		v1Route.Action, err = routeActionFromInput(opts.Add.Route)

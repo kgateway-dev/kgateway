@@ -18,6 +18,9 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+DEFAULT_BRANCH := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -62,7 +65,7 @@ init:
 
 .PHONY: fmt-changed
 fmt-changed:
-	git diff --name-only | grep '.*.go$$' | xargs goimports -w
+	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
 
 
 # must be a seperate target so that make waits for it to complete before moving on
@@ -116,9 +119,9 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
-	find * -type f | grep .sk.md | xargs rm
-	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	find * -type f | grep .sk.md | xargs --no-run-if-empty rm
 	GO111MODULE=on go generate ./...
+	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
@@ -469,7 +472,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := false
+ASSETS_ONLY := true
+ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
+    ASSETS_ONLY = false
+endif
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets

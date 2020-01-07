@@ -32,14 +32,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = Describe("Access Log", func() {
 
 	var (
 		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
-		settings       runner.Settings
 		writeNamespace string
 
 		baseAccessLogPort = uint32(27000)
@@ -110,11 +109,10 @@ var _ = Describe("Gateway", func() {
 			Context("Grpc", func() {
 
 				var (
-					msgChan chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					msgChan <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
 				)
 
 				BeforeEach(func() {
-					msgChan = make(chan *envoy_data_accesslog_v2.HTTPAccessLogEntry, 20)
 					accessLogPort := atomic.AddUint32(&baseAccessLogPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
 
 					logger := zaptest.LoggerWriter(GinkgoWriter)
@@ -128,39 +126,7 @@ var _ = Describe("Gateway", func() {
 					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					settings = runner.Settings{
-						DebugPort:  0,
-						ServerPort: int(accessLogPort),
-					}
-
-					opts := loggingservice.Options{
-						Ordered: true,
-						Callbacks: loggingservice.AlsCallbackList{
-							func(ctx context.Context, message *envoyals.StreamAccessLogsMessage) error {
-								httpLogs := message.GetHttpLogs()
-								Expect(httpLogs).NotTo(BeNil())
-								for _, v := range httpLogs.LogEntry {
-									select {
-									case msgChan <- v:
-										return nil
-									case <-time.After(time.Second):
-										Fail("unable to send log message on channel")
-									}
-								}
-								return nil
-							},
-						},
-						Ctx: ctx,
-					}
-
-					service := loggingservice.NewServer(opts)
-					go func(testctx context.Context) {
-						defer GinkgoRecover()
-						err := runner.RunWithSettings(testctx, service, settings)
-						if testctx.Err() == nil {
-							Expect(err).NotTo(HaveOccurred())
-						}
-					}(ctx)
+					msgChan = runAccessLog(ctx, accessLogPort)
 				})
 
 				AfterEach(func() {
@@ -356,3 +322,45 @@ var _ = Describe("Gateway", func() {
 		})
 	})
 })
+
+func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry {
+	msgChan := make(chan *envoy_data_accesslog_v2.HTTPAccessLogEntry, 10)
+
+	opts := loggingservice.Options{
+		Ordered: true,
+		Callbacks: loggingservice.AlsCallbackList{
+			func(ctx context.Context, message *envoyals.StreamAccessLogsMessage) error {
+				defer GinkgoRecover()
+				httpLogs := message.GetHttpLogs()
+				Expect(httpLogs).NotTo(BeNil())
+				for _, v := range httpLogs.LogEntry {
+					select {
+					case msgChan <- v:
+						return nil
+					case <-time.After(time.Second):
+						Fail("unable to send log message on channel")
+					}
+				}
+				return nil
+			},
+		},
+		Ctx: ctx,
+	}
+
+	service := loggingservice.NewServer(opts)
+
+	settings := runner.Settings{
+		DebugPort:   0,
+		ServerPort:  int(accessLogPort),
+		ServiceName: "AccessLog",
+	}
+
+	go func(testctx context.Context) {
+		defer GinkgoRecover()
+		err := runner.RunWithSettings(testctx, service, settings)
+		if testctx.Err() == nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+	}(ctx)
+	return msgChan
+}
