@@ -30,7 +30,7 @@ This guide also assumes that you are running Gloo Gateway in a Kubernetes cluste
 First we are going to create a simple upstream for testing called `json-upstream`, that routes to a static site.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_createupstream.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_createupstream.mp4" type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -51,7 +51,7 @@ The site referenced in the Upstream is JSONPlaceholder - a fake online REST API 
 To see how prefix matching is configured, let's create a Virtual Service and route to that Upstream.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_prefixcreate.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_prefixcreate.mp4" type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -65,7 +65,7 @@ The prefix specified is `/posts`, meaning that any requests starting with `/post
 In the domains portion of the `virtualHost` spec we are specifying the `foo` domain, meaning that this Virtual Service will only answer requests made against the host `foo`. This is useful in case there are other existing Virtual Services using the wildcard (`*`) domain for matching. If we make a curl request and don't provide the `Host` header with the value `foo`, the response will be a 404 as shown by the request below.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_prefixtest.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_prefixtest.mp4"  type="video/mp4">
 </video>
 
 ```shell
@@ -133,7 +133,7 @@ A 404 is generated because there is no match for the host `foo` and the path `/`
 Let's clean up this Virtual Service and look at exact matchers next. 
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_prefixdelete.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_prefixdelete.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -152,7 +152,7 @@ glooctl delete vs --name test-prefix
 Now let's configure a Virtual Service using the exact match option to route to our test Upstream. In this first example we are once again using the host `foo` and matching on the exact path `/`.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exactcreate.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exactcreate.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -168,7 +168,7 @@ glooctl add route --name test-exact-1 --path-exact / --dest-name json-upstream
 A request to the path `/posts` is not an exact match to `/`, and should return a 404.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exacttest.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exacttest.mp4"  type="video/mp4">
 </video>
 
 ```shell
@@ -178,7 +178,7 @@ curl -v -H "Host: foo" $(glooctl proxy url)/posts
 Let's delete that Virtual Service and create a new one that works with the `/posts` path.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exactdelete.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exactdelete.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -193,7 +193,7 @@ glooctl delete vs --name test-exact-1
 We're going to create a Virtual Service with a route that has an exact match on the path `/posts`.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exactcreate_2.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exactcreate_2.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -209,7 +209,7 @@ glooctl add route --name test-exact-2 --path-exact /posts --dest-name json-upstr
 Let's test the new Virtual Service by sending a request to the `/posts` path.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exacttest_2.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exacttest_2.mp4"  type="video/mp4">
 </video>
 
 ```shell
@@ -245,7 +245,7 @@ It will now returns results.
 You can try any number of different combination to see how the exact match option works. When you're done, let's clean up the exact match Virtual Server and check out the regex matcher.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_exactdelete_2.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_exactdelete_2.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -264,7 +264,7 @@ glooctl delete vs --name test-exact-2
 Regex matching provides the most flexibility when using path matching, but it also adds complexity. Be sure to fully test your regex expressions before using them in production. Let's create a route that uses a regex matcher to match any path of five characters in the set `[a-z]`.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_regexcreate.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regexcreate.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -280,7 +280,7 @@ glooctl add route --name test-regex --path-regex /[a-z]{5} --dest-name json-upst
 The regex matcher should work on the path `/posts`, but not on the path `/comments` or `/list`. The path `/comments` is over five characters and the path `/list` is less than five characters. Let's test out the path `/comments`.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_regextest.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regextest.mp4"  type="video/mp4">
 </video>
 
 ```shell
@@ -363,7 +363,7 @@ curl -v -H "Host: foo" $(glooctl proxy url)/todos
 You can replace this Virtual Service with other regex expressions to see how they react. When you are finished, let's delete this virtual service.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_regexdelete.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regexdelete.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
@@ -384,7 +384,7 @@ In this tutorial, we created a static Upstream and added a route on a Virtual Se
 Let's cleanup the test upstream we used.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/pathmatch_deleteupstream.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_deleteupstream.mp4"  type="video/mp4">
 </video>
 
 {{< tabs >}}
