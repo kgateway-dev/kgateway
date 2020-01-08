@@ -173,7 +173,7 @@ steps:
   secretEnv: ['GITHUB_TOKEN']
   volumes: *vol
   waitFor: ['compile']
-  id: 'release-images'
+  id: 'docker-push'
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
 - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
