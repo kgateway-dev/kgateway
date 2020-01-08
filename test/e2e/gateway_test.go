@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gogo/protobuf/types"
-
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
@@ -53,15 +51,6 @@ var _ = Describe("Gateway", func() {
 				WhatToRun: services.What{
 					DisableFds: true,
 					DisableUds: true,
-				},
-				// Set this to 'true' to test the behavior where gloo cleans up the envoy config when no proxies
-				// contain any virtual services.
-				Settings: &gloov1.Settings{
-					Gloo: &gloov1.GlooOptions{
-						ProxyGarbageCollection: &types.BoolValue{
-							Value: true,
-						},
-					},
 				},
 			}
 
