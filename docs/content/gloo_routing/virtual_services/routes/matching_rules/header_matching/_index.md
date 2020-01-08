@@ -145,6 +145,8 @@ curl -v -H "Host: foo" -H "header1: value1" -H "header2: value2" -H "header3: v"
   -H "header5: value5" $(glooctl proxy url)/posts
 ```
 
+---
+
 ## Summary
 
 In this guide, we added header matchers to a Virtual Service route. We used exact match and regex matchers for a header value, and also showed how to match on a header without any specific value. 

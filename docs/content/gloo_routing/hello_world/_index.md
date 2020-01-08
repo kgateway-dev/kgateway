@@ -44,7 +44,7 @@ Once you have completed the installation of `glooctl` and Gloo Gateway, you are 
 On your Kubernetes installation, you will deploy the Pet Store Application and validate this it is operational.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/helloworld_deploy.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_deploy.mp4" type="video/mp4">
 </video>
 
 ### Deploy the Pet Store Application
@@ -91,7 +91,7 @@ petstore  ClusterIP  10.XX.XX.XX  <none>       8080/TCP  1m
 The Gloo discovery services watch for new services added to the Kubernetes cluster. When the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. 
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/helloworld_upstreams.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_upstreams.mp4" type="video/mp4">
 </video>
 
 Let’s verify this by using the `glooctl` command line tool:
@@ -143,7 +143,7 @@ The upstream was created in the `gloo-system` namespace rather than `default` be
 You can view more information about the properties of a particular Upstream by specifying the output type as `kube-yaml`.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/helloworld_upstreams_2.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_upstreams_2.mp4" type="video/mp4">
 </video>
 
 Let's take a closer look at the upstream that Gloo's Discovery service created:
@@ -261,7 +261,7 @@ The application endpoints were discovered by Gloo's Function Discovery (fds) ser
 We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service and test them to ensure we get a valid response.
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/helloworld_virtualservice.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/helloworld_virtualservice.mp4" type="video/mp4">
 </video>
 
 ### Add a Routing Rule
