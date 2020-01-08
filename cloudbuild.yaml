@@ -160,6 +160,36 @@ steps:
   volumes: *vol
   id: 'compile'
 
+# 1) Run make targets to push docker images
+- name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
+  args: ['docker-push']
+  env:
+  - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'HELM_HOME=/root/.helm' # tell helm where to find data
+  dir: './gopath/src/github.com/solo-io/gloo'
+  secretEnv: ['GITHUB_TOKEN']
+  volumes: *vol
+  waitFor: ['compile']
+  id: 'release-images'
+# 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
+# isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
+- name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
+  args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', '-B']
+  env:
+  - 'TAGGED_VERSION=$TAG_NAME'
+  - 'PROJECT_ROOT=github.com/solo-io/gloo'
+  - 'GOPATH=/workspace/gopath'
+  - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+  - 'HELM_HOME=/root/.helm' # tell helm where to find data
+  dir: './gopath/src/github.com/solo-io/gloo'
+  secretEnv: ['GITHUB_TOKEN']
+  volumes: *vol
+  waitFor: ['compile']
+  id: 'release-chart'
+
 # Run regression tests
 - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
   args: ['build-test-assets']
@@ -171,7 +201,7 @@ steps:
     - 'HELM_HOME=/root/.helm'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: './gopath/src/github.com/solo-io/gloo'
-  waitFor: ['compile', 'docker-login', 'test']
+  waitFor: ['compile', 'docker-login', 'docker-push', 'test']
   volumes: *vol
   id: 'build-test-assets'
 - name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.2.1'
@@ -236,33 +266,6 @@ steps:
   - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'debug-git-checkout'
-# 1) Run make targets to push docker images
-- name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
-  args: ['docker-push']
-  env:
-  - 'DOCKER_CONFIG=/workspace/docker-config'
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  - 'HELM_HOME=/root/.helm' # tell helm where to find data
-  dir: './gopath/src/github.com/solo-io/gloo'
-  secretEnv: ['GITHUB_TOKEN']
-  volumes: *vol
-  id: 'release-images'
-# 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
-# isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-- name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
-  args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', '-B']
-  env:
-  - 'TAGGED_VERSION=$TAG_NAME'
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-  - 'HELM_HOME=/root/.helm' # tell helm where to find data
-  dir: './gopath/src/github.com/solo-io/gloo'
-  secretEnv: ['GITHUB_TOKEN']
-  volumes: *vol
-  id: 'release-chart'
 # 3) Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-make:0.2.1'
   args: ['save-helm']
