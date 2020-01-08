@@ -216,7 +216,7 @@ Let's test the new Virtual Service by sending a request to the `/posts` path.
 curl -v -H "Host: foo" $(glooctl proxy url)/posts
 ```
 
-It will now returns results.
+It will now return results.
 
 ```json
 [
