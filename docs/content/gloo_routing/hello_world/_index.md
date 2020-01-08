@@ -4,14 +4,13 @@ weight: 10
 description: Follow this guide for hands on, step-by-step tutorial for creating your first virtual service and routing rules in Kubernetes.
 ---
 
-In this guide, we will introduce Gloo's *Upstream* and *Virtual Service* concepts. 
+In this guide, we will introduce Gloo's *Upstream* and *Virtual Service* concepts by accomplishing the following tasks:
 
-We will deploy a REST service to Kubernetes using the Pet Store sample application, and we will see that Gloo's Discovery system finds that service
-and creates an *Upstream* Custom Resource Definition (CRD) for it, to be used as a destination for routing. 
-
-Next we will create a *Virtual Service* and add routes sending traffic to specific paths on the Pet Store *Upstream* based on incoming web requests, and verify Gloo correctly configures Envoy to route to that endpoint.
-
-Finally, we will test the routes by submitting web requests using `curl`.
+* Deploy a REST service to Kubernetes using the Pet Store sample application
+* Observe that Gloo's Discovery system finds the Pet Store service and creates an Upstream Custom Resource Definition (CRD) for it
+* Create a Virtual Service and add routes sending traffic to specific paths on the Pet Store Upstream based on incoming web requests
+* Verify Gloo correctly configures Envoy to route to the Upstream
+* Test the routes by submitting web requests using `curl`
 
 {{% notice note %}}
 If there are no routes configured, Envoy will not be listening on the gateway port.
@@ -34,7 +33,7 @@ great way to get a cluster up quickly.
 
 ### Install the Gloo Gateway and glooctl
 
-The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on on Kubernetes to the default `gloo-system` namespace.
+The [linked guide]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}) walks you through the process of installing `glooctl` locally and installing the Gloo Gateway on Kubernetes to the default `gloo-system` namespace.
 
 Once you have completed the installation of `glooctl` and Gloo Gateway, you are now ready to deploy an example application and configure routing.
 
@@ -44,15 +43,13 @@ Once you have completed the installation of `glooctl` and Gloo Gateway, you are 
 
 On your Kubernetes installation, you will deploy the Pet Store Application and validate this it is operational.
 
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/helloworld_deploy.mp4" %}} type="video/mp4">
+</video>
+
 ### Deploy the Pet Store Application
 
-First we need to enable function discovery for the `default` namespace by running the following command.
-
-```shell script
-kubectl label namespace default discovery.solo.io/function_discovery=enabled
-```
-
-Now let's deploy the Pet Store Application on Kubernetes using a YAML file hosted on GitHub. The deployment will stand up the Pet Store container and expose the Pet Store API through a Kubernetes service.
+Let's deploy the Pet Store Application on Kubernetes using a YAML file hosted on GitHub. The deployment will stand up the Pet Store container and expose the Pet Store API through a Kubernetes service.
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
@@ -91,7 +88,13 @@ petstore  ClusterIP  10.XX.XX.XX  <none>       8080/TCP  1m
 
 ### Verify the Upstream for the Pet Store Application
 
-The Gloo discovery services watch for new services added to the Kubernetes cluster. We the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. Let’s verify this by using the `glooctl` command line tool:
+The Gloo discovery services watch for new services added to the Kubernetes cluster. When the petstore service was created, Gloo automatically created an Upstream for the petstore service. If everything deployed properly, the Upstream **STATUS** should be **Accepted**. 
+
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/helloworld_upstreams.mp4" %}} type="video/mp4">
+</video>
+
+Let’s verify this by using the `glooctl` command line tool:
 
 ```shell
 glooctl get upstreams
@@ -136,6 +139,12 @@ The upstream was created in the `gloo-system` namespace rather than `default` be
 {{% /notice %}}
 
 ### Investigate the YAML of the Upstream
+
+You can view more information about the properties of a particular Upstream by specifying the output type as `kube-yaml`.
+
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/helloworld_upstreams_2.mp4" %}} type="video/mp4">
+</video>
 
 Let's take a closer look at the upstream that Gloo's Discovery service created:
 
@@ -249,7 +258,11 @@ The application endpoints were discovered by Gloo's Function Discovery (fds) ser
 
 ## Configuring Routing
 
-We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service.
+We have confirmed that the Pet Store application was deployed successfully and that the Function Discovery service on Gloo automatically added an Upstream entry with all the published application endpoints of the Pet Store application. Now let's configure some routing rules on the default Virtual Service and test them to ensure we get a valid response.
+
+<video controls loop>
+  <source src={{% versioned_link_path fromRoot="/img/helloworld_virtualservice.mp4" %}} type="video/mp4">
+</video>
 
 ### Add a Routing Rule
 

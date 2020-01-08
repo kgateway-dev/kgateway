@@ -9,7 +9,8 @@ In this tutorial we will see how to use
 of rate-limit offending requests.
 
 ### Setup
-Let's start by setting up the virtual service and settings resources to match the rule priority [example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
+Let's start by setting up the virtual service and settings resources to match the rule priority
+[example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
 
 Let's also update the default `Gateway` resource to enable access logging:
 
@@ -178,7 +179,7 @@ if __name__ == "__main__":
 
 This script creates a histogram to chart the distribution of requests to each number. We can use this to determine
 common message recipients even though the rate limit rule being breached only cares about the message type
-(Rule 1, limit all Messenger requests to 2/min ).
+(Rule 1, limit all Messenger requests to 2/min).
 
 Parse the logs and generate a histogram for the number contacted:
 
