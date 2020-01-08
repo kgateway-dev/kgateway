@@ -25,7 +25,6 @@ GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
 BUILD_ID := $(BUILD_ID)
 
-TEST_IMAGE_TAG := test-$(BUILD_ID)
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
 #----------------------------------------------------------------------------------
@@ -512,7 +511,6 @@ push-kind-images: docker
 # The following targets are used to generate the assets on which the kube2e tests rely upon. The following actions are performed:
 #
 #   1. Generate Gloo value files
-#      - set the tag for each image to TEST_IMAGE_TAG
 #   2. Package the Gloo Helm chart to the _test directory (also generate an index file)
 #
 # The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
@@ -528,7 +526,7 @@ build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TEST_IMAGE_TAG)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
