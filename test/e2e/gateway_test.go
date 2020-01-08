@@ -250,7 +250,7 @@ var _ = Describe("Gateway", func() {
 				Eventually(func() int {
 					response, err := client.Do(request)
 					if err != nil {
-						return 0
+						return 503
 					}
 					return response.StatusCode
 				}, 20*time.Second, 500*time.Millisecond).Should(Equal(503))
