@@ -3,12 +3,13 @@ package install
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"io"
 	"os"
 	"path"
 	"reflect"
 	"strings"
+
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
