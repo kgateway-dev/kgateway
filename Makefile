@@ -27,8 +27,6 @@ BUILD_ID := $(BUILD_ID)
 
 TEST_IMAGE_TAG := test-$(BUILD_ID)
 TEST_ASSET_DIR := $(ROOTDIR)/_test
-GCR_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
-
 
 #----------------------------------------------------------------------------------
 # Marcos
@@ -37,17 +35,6 @@ GCR_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
 # This macro takes a relative path as its only argument and returns all the files
 # in the tree rooted at that directory that match the given criteria.
 get_sources = $(shell find $(1) -name "*.go" | grep -v test | grep -v generated.go | grep -v mock_)
-
-# If both GCLOUD_PROJECT_ID and BUILD_ID are set, define a function that takes a docker image name
-# and returns a '-t' flag that can be passed to 'docker build' to create a tag for a test image.
-# If the function is not defined, any attempt at calling if will return nothing (it does not cause en error)
-ifneq ($(GCLOUD_PROJECT_ID),)
-ifneq ($(BUILD_ID),)
-define get_test_tag
-	-t $(GCR_REPO_PREFIX)/$(1):$(TEST_IMAGE_TAG)
-endef
-endif
-endif
 
 #----------------------------------------------------------------------------------
 # Repo setup
@@ -209,8 +196,7 @@ $(OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 
 gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
-		-t quay.io/solo-io/gateway:$(VERSION) \
-		$(call get_test_tag,gateway)
+		-t quay.io/solo-io/gateway:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -231,8 +217,7 @@ $(OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 
 ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
-		-t quay.io/solo-io/ingress:$(VERSION) \
-		$(call get_test_tag,ingress)
+		-t quay.io/solo-io/ingress:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Access Logger
@@ -253,8 +238,7 @@ $(OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
 
 access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dockerfile.access-logger
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.access-logger \
-		-t quay.io/solo-io/access-logger:$(VERSION) \
-		$(call get_test_tag,access-logger)
+		-t quay.io/solo-io/access-logger:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -275,8 +259,7 @@ $(OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 
 discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery \
-		-t quay.io/solo-io/discovery:$(VERSION) \
-		$(call get_test_tag,discovery)
+		-t quay.io/solo-io/discovery:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Gloo
@@ -298,8 +281,7 @@ $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
-		-t quay.io/solo-io/gloo:$(VERSION) \
-		$(call get_test_tag,gloo)
+		-t quay.io/solo-io/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE)
@@ -321,8 +303,7 @@ $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
-		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) \
-		$(call get_test_tag,gloo-envoy-wrapper)
+		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Envoy init (WASM)
@@ -344,8 +325,7 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 .PHONY: gloo-envoy-wasm-wrapper-docker
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
-		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) \
-		$(call get_test_tag,gloo-envoy-wasm-wrapper)
+		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION)
 
 
 #----------------------------------------------------------------------------------
@@ -368,8 +348,7 @@ $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 .PHONY: certgen-docker
 certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
-		-t quay.io/solo-io/certgen:$(VERSION) \
-		$(call get_test_tag,certgen)
+		-t quay.io/solo-io/certgen:$(VERSION)
 
 
 #----------------------------------------------------------------------------------
@@ -532,49 +511,24 @@ push-kind-images: docker
 #
 # The following targets are used to generate the assets on which the kube2e tests rely upon. The following actions are performed:
 #
-#   1. Push the images to GCR (images have been tagged as $(GCR_REPO_PREFIX)/<image-name>:$(TEST_IMAGE_TAG)
-#   2. Generate Gloo value files providing overrides to make the image elements point to GCR
-#      - override the repository prefix for all repository names (e.g. quay.io/solo-io/gateway -> gcr.io/solo-public/gateway)
+#   1. Generate Gloo value files
 #      - set the tag for each image to TEST_IMAGE_TAG
-#   3. Package the Gloo Helm chart to the _test directory (also generate an index file)
+#   2. Package the Gloo Helm chart to the _test directory (also generate an index file)
 #
 # The Kube2e tests will use the generated Gloo Chart to install Gloo to the GKE test cluster.
 
 .PHONY: build-test-assets
-build-test-assets: push-test-images build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
+build-test-assets: build-test-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
  	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
 .PHONY: build-kind-assets
 build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux-amd64 \
  	$(OUTPUT_DIR)/glooctl-darwin-amd64
 
-TEST_DOCKER_TARGETS := gateway-docker-test ingress-docker-test discovery-docker-test gloo-docker-test gloo-envoy-wrapper-docker-test certgen-docker-test
-
-.PHONY: push-test-images $(TEST_DOCKER_TARGETS)
-push-test-images: $(TEST_DOCKER_TARGETS)
-
-gateway-docker-test: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
-	docker push $(GCR_REPO_PREFIX)/gateway:$(TEST_IMAGE_TAG)
-
-ingress-docker-test: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
-	docker push $(GCR_REPO_PREFIX)/ingress:$(TEST_IMAGE_TAG)
-
-discovery-docker-test: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
-	docker push $(GCR_REPO_PREFIX)/discovery:$(TEST_IMAGE_TAG)
-
-gloo-docker-test: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
-	docker push $(GCR_REPO_PREFIX)/gloo:$(TEST_IMAGE_TAG)
-
-gloo-envoy-wrapper-docker-test: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
-	docker push $(GCR_REPO_PREFIX)/gloo-envoy-wrapper:$(TEST_IMAGE_TAG)
-
-certgen-docker-test: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
-	docker push $(GCR_REPO_PREFIX)/certgen:$(TEST_IMAGE_TAG)
-
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TEST_IMAGE_TAG) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TEST_IMAGE_TAG)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
@@ -590,16 +544,13 @@ build-kind-chart:
 # Build assets for non-release charts (meant to be invoked on your dev machine)
 #----------------------------------------------------------------------------------
 
-# Must be run on your dev machine because TAGGED_VERSION depends on `git describe --tags`, and our CI doesn't clone
-# the repo or have any git context
-
 # Sample invocation:
 # TAGGED_VERSION=$(git describe --tags) GCLOUD_PROJECT_ID=solo-public make clean fetch-tagged-helm build-tagged-chart save-tagged-helm
 
 .PHONY: build-tagged-chart
 build-tagged-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TAGGED_VERSION) $(GCR_REPO_PREFIX) "Always"
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TAGGED_VERSION)
 	mkdir -p $(HELM_SYNC_DIR)/charts
 	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
 	helm repo index $(HELM_SYNC_DIR)
