@@ -28,7 +28,7 @@ glooctl install gateway
 ```
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/glooctl-gateway-install.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-gateway-install.mp4" type="video/mp4">
 </video>
 
 
@@ -129,7 +129,7 @@ kubectl get all -n gloo-system
 ```
 
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/kubectl-get-all.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/kubectl-get-all.mp4" type="video/mp4">
 </video>
 
 ```noop
@@ -174,7 +174,7 @@ To uninstall Gloo simply run the following.
 glooctl uninstall
 ```
 <video controls loop>
-  <source src={{% versioned_link_path fromRoot="/img/glooctl-uninstall.mp4" %}} type="video/mp4">
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-uninstall.mp4" type="video/mp4">
 </video>
 
 If you installed Gloo to a different namespace, you will have to specify that namespace using the `-n` option:
