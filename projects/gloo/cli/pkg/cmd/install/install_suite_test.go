@@ -24,6 +24,11 @@ var RootDir string
 var dir string
 var file, values1, values2 string
 
+const (
+	unitTestingTaggedVersion = "vunit-testing"
+	expectedHelmFilename     = "gloo-unit-testing.tgz"
+)
+
 // NOTE: This needs to be run from the root of the repo as the working directory
 var _ = BeforeSuite(func() {
 
@@ -39,14 +44,14 @@ var _ = BeforeSuite(func() {
 	dir = filepath.Join(RootDir, "_unit_test/")
 	os.Mkdir(dir, 0755)
 
-	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing")
+	err = testutils.Make(RootDir, "build-test-chart TEST_ASSET_DIR=\""+dir+"\" TAGGED_VERSION="+unitTestingTaggedVersion)
 	Expect(err).NotTo(HaveOccurred())
 
 	// Some tests need the Gloo/GlooE version that gets linked into the glooctl binary at build time
 	err = testutils.Make(RootDir, "glooctl")
 	Expect(err).NotTo(HaveOccurred())
 
-	file = filepath.Join(dir, "gloo-test-unit-testing.tgz")
+	file = filepath.Join(dir, expectedHelmFilename)
 
 	values1 = filepath.Join(dir, "values-namespace1.yaml")
 	values2 = filepath.Join(dir, "values-namespace2.yaml")
@@ -77,6 +82,6 @@ var _ = AfterSuite(func() {
 	err = os.RemoveAll(dir)
 	Expect(err).NotTo(HaveOccurred())
 	// Restore the helm docs to their make generated-code format
-	err = testutils.Make(RootDir, "generate-helm-files TEST_ASSET_DIR=\""+dir+"\" BUILD_ID=unit-testing -B")
+	err = testutils.Make(RootDir, "generate-helm-files TEST_ASSET_DIR=\""+dir+"\" TAGGED_VERSION="+unitTestingTaggedVersion+" -B")
 	Expect(err).NotTo(HaveOccurred())
 })
