@@ -80,6 +80,13 @@ var _ = Describe("Install", func() {
 		Expect(outputYaml).To(ContainSubstring("name: knative-external-proxy\n"))
 	})
 
+	It("should contain base64 encoding of license key for gateway enterprise dry run with license-key flag", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --license-key testLicenseKey --dry-run"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).To(ContainSubstring("license-key: \"dGVzdExpY2Vuc2VLZXk=\"\n"))
+	})
+
 	It("should error when not overriding helm chart in dev mode", func() {
 		_, err := testutils.GlooctlOut("install ingress --dry-run")
 		Expect(err).To(HaveOccurred())

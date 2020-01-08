@@ -3,9 +3,11 @@ package install
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -99,11 +101,31 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	// if has gloo as a dependency, nest ExtraValues
+	// if has gloo as a dependency, and ExtraValues are in the Gloo helm chart model, nest ExtraValues
 	if installerConfig.ExtraValues != nil {
 		for _, dependency := range chartObj.Dependencies() {
 			if dependency.Metadata.Name == constants.GlooReleaseName {
-				installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
+				// has gloo as a dependency
+
+				// check if ExtraValues are in the Gloo helm chart model to determine if these values should be nested
+
+				// use json as a middleman between map and struct
+				var glooHelmConfigExtraValues generate.HelmConfig
+				extraValuesBytes, err := json.Marshal(installerConfig.ExtraValues)
+				if err != nil {
+					return err
+				}
+				err = json.Unmarshal(extraValuesBytes, &glooHelmConfigExtraValues)
+				if err != nil {
+					return err
+				}
+
+				// if the chart with ExtraValues isn't the same as the empty one, ExtraValues has gloo values that need to be nested
+				var glooHelmConfigEmpty generate.HelmConfig
+				if !reflect.DeepEqual(glooHelmConfigExtraValues, glooHelmConfigEmpty) {
+					installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
+				}
+
 				break
 			}
 		}
