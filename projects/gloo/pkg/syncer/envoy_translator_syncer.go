@@ -89,11 +89,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	proxyGarbageCollection := true
-	if s.settings.GetGloo().GetProxyGarbageCollection() != nil {
-		proxyGarbageCollection = s.settings.GetGloo().GetProxyGarbageCollection().GetValue()
-	}
-	if proxyGarbageCollection {
+	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
 		allKeys := map[string]bool{
 			xds.FallbackNodeKey: true,
 		}

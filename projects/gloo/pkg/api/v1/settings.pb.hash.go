@@ -497,12 +497,12 @@ func (m *GlooOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetProxyGarbageCollection()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetDisableProxyGarbageCollection()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetProxyGarbageCollection(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetDisableProxyGarbageCollection(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {

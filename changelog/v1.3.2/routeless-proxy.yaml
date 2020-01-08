@@ -1,13 +1,13 @@
 changelog:
 - type: FIX
   description: >
-      Introduce a feature flag in the Settings CRD named proxyGarbageCollection, 
+      Introduce a feature flag in the Settings CRD named disableProxyGarbageCollection,
       located under the 'gloo' options. Set this option to determine the state of
       the envoy configuration when a virtual service is deleted, resulting in a
       proxy with no configured routes.
-      Set to true if you wish to reset the envoy configuration to a clean slate with no routes.
-      Set to false if you wish to keep envoy serving the routes from the latest valid configuration.
-      For this release, proxyGarbageCollection will default to 'true'.
+      Set to true if you wish to keep envoy serving the routes from the latest valid configuration.
+      Set to false if you wish to reset the envoy configuration to a clean slate with no routes.
+      disableProxyGarbageCollection defaults to 'false'.
   issueLink: https://github.com/solo-io/gloo/issues/1245
 
 

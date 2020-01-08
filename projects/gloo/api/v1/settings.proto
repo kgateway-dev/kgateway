@@ -364,10 +364,10 @@ message GlooOptions {
 
     // Set this option to determine the state of the envoy configuration when a virtual service is deleted, resulting in a
     // proxy with no configured routes.
-    // set to true if you wish to reset the envoy configuration to a clean slate with no routes.
-    // set to false if you wish to keep envoy serving the routes from the latest valid configuration.
+    // set to true if you wish to keep envoy serving the routes from the latest valid configuration.
+    // set to false if you wish to reset the envoy configuration to a clean slate with no routes.
     // If not specified, defaults to `false`.
-    google.protobuf.BoolValue proxy_garbage_collection = 9;
+    google.protobuf.BoolValue disable_proxy_garbage_collection = 9;
 }
 
 // Settings specific to the Gateway controller
