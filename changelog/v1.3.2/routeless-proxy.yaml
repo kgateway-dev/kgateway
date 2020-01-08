@@ -7,7 +7,7 @@ changelog:
       proxy with no configured routes.
       Set to true if you wish to reset the envoy configuration to a clean slate with no routes.
       Set to false if you wish to keep envoy serving the routes from the latest valid configuration.
-      For this release, proxyGarbageCollection will default to 'false'.
+      For this release, proxyGarbageCollection will default to 'true'.
   issueLink: https://github.com/solo-io/gloo/issues/1245
 
 
