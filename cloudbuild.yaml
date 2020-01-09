@@ -161,7 +161,6 @@ steps:
   - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  volumes: *vol
   waitFor: ['compile']
   id: 'docker-push'
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
@@ -175,7 +174,6 @@ steps:
   - 'HELM_HOME=/root/.helm' # tell helm where to find data
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  volumes: *vol
   waitFor: ['compile']
   id: 'release-chart'
 
