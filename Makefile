@@ -371,7 +371,7 @@ HELM_DIR := install/helm/gloo
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 $(OUTPUT_DIR)/.helm-prepared:
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)  --generate-helm-docs
 	touch $@
 
 package-chart: generate-helm-files

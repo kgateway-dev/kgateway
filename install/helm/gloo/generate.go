@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"io/ioutil"
 	"os"
 
@@ -24,9 +25,33 @@ var (
 	helmDocsVersionText = "<release_version, ex: 1.2.3>"
 
 	always = "Always"
+
+	flagOpts = defaultFlagOptions()
 )
 
+type flagOptions struct {
+	// If set, will generate helm docs. Note that some helm values are parameterized within this script to help testing.
+	// When generating helm values for test purposes you should not set this flag, otherwise you will dirty the repo
+	// with the test-specific helm values diff.
+	generateHelmDocs bool
+}
+
+const (
+	generateHelmDocsFlag = "generate-helm-docs"
+)
+
+func defaultFlagOptions() flagOptions {
+	return flagOptions{
+		generateHelmDocs: false,
+	}
+}
+func ingestFlags() {
+	flag.BoolVar(&flagOpts.generateHelmDocs, "gen-helm-docs", false, "if set, will generate docs for the helm values")
+	flag.Parse()
+}
+
 func main() {
+	ingestFlags()
 	var version, repoPrefixOverride, globalPullPolicy string
 	if len(os.Args) < 2 {
 		panic("Must provide version as argument")
@@ -45,8 +70,13 @@ func main() {
 	if err := generateValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if err := generateValueDocs(helmDocsVersionText, repoPrefixOverride, globalPullPolicy); err != nil {
-		log.Fatalf("generating values.yaml docs failed!: %v", err)
+	if flagOpts.generateHelmDocs {
+		log.Printf("Generating helm value docs in file: %v", docsOutput)
+		if err := generateValueDocs(helmDocsVersionText, repoPrefixOverride, globalPullPolicy); err != nil {
+			log.Fatalf("generating values.yaml docs failed!: %v", err)
+		}
+	} else {
+		log.Printf("NOT generating helm value docs, set %v to produce helm value docs", generateHelmDocsFlag)
 	}
 	if err := generateChartYaml(version); err != nil {
 		log.Fatalf("generating Chart.yaml failed!: %v", err)
