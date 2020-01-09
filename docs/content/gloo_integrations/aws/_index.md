@@ -160,8 +160,9 @@ EOF
 Test your Gloo services deployed on AWS EKS behind an AWS Network Load Balancer
 
 ```shell
-# Test TLS termination at Gloo proxy
-curl --verbose --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='https')
+# Test TLS termination at Gloo proxy. `--connect-to` option is needed if gloo.example.com is not a DNS mapped to AWS NLB
+# IP Address as `--connect-to` redirects connection while preserving SNI information
+curl --verbose --cacert tls.crt --connect-to "gloo.example.com:443:$(glooctl proxy address --port='https')" https://gloo.example.com
 
 # Test HTTP => HTTPS redirect
 curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
