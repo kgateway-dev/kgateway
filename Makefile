@@ -543,31 +543,6 @@ build-kind-chart:
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
-
-#----------------------------------------------------------------------------------
-# Build assets for non-release charts (meant to be invoked on your dev machine)
-#----------------------------------------------------------------------------------
-
-# Sample invocation:
-# TAGGED_VERSION=$(git describe --tags) GCLOUD_PROJECT_ID=solo-public make clean fetch-tagged-helm build-tagged-chart save-tagged-helm
-
-.PHONY: build-tagged-chart
-build-tagged-chart:
-	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(TAGGED_VERSION)
-	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
-	helm repo index $(HELM_SYNC_DIR)
-
-.PHONY: save-tagged-helm
-save-tagged-helm:
-	gsutil -m rsync -r './_output/helm' gs://solo-public-tagged-helm/
-
-.PHONY: fetch-tagged-helm
-fetch-tagged-helm:
-	mkdir -p $(HELM_SYNC_DIR)
-	gsutil -m rsync -r gs://solo-public-tagged-helm/ './_output/helm'
-
 #----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
