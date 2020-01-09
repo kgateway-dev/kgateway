@@ -38,6 +38,12 @@ import (
 )
 
 func TestHelm(t *testing.T) {
+	RegisterFailHandler(Fail)
+	testutils.RegisterCommonFailHandlers()
+	RunSpecs(t, "Helm Suite")
+}
+
+var _ = BeforeSuite(func() {
 	version = os.Getenv("TAGGED_VERSION")
 	isReleaseVersion, err := glooVersion.IsReleaseVersion()
 	Expect(err).NotTo(HaveOccurred())
@@ -51,13 +57,6 @@ func TestHelm(t *testing.T) {
 		version = version[1:]
 		pullPolicy = v1.PullIfNotPresent
 	}
-
-	RegisterFailHandler(Fail)
-	testutils.RegisterCommonFailHandlers()
-	RunSpecs(t, "Helm Suite")
-}
-
-var _ = BeforeSuite(func() {
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })
