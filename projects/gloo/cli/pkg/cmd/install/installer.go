@@ -102,33 +102,34 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	// if has gloo as a dependency, and ExtraValues are in the Gloo helm chart model, nest ExtraValues
-	if installerConfig.ExtraValues != nil {
+	// if using a helm chart override, determine if it's an enterprise chart by checking if has gloo as a dependency
+	if installerConfig.InstallCliArgs.HelmChartOverride != "" {
 		for _, dependency := range chartObj.Dependencies() {
 			if dependency.Metadata.Name == constants.GlooReleaseName {
-				// has gloo as a dependency
-
-				// check if ExtraValues are in the Gloo helm chart model to determine if these values should be nested
-
-				// use json as a middleman between map and struct
-				var glooHelmConfigExtraValues generate.HelmConfig
-				extraValuesBytes, err := json.Marshal(installerConfig.ExtraValues)
-				if err != nil {
-					return err
-				}
-				err = json.Unmarshal(extraValuesBytes, &glooHelmConfigExtraValues)
-				if err != nil {
-					return err
-				}
-
-				// if the chart with ExtraValues isn't the same as the empty one, ExtraValues has gloo values that need to be nested
-				var glooHelmConfigEmpty generate.HelmConfig
-				if !reflect.DeepEqual(glooHelmConfigExtraValues, glooHelmConfigEmpty) {
-					installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
-				}
-
+				installerConfig.Enterprise = true
 				break
 			}
+		}
+	}
+
+	// if enterprise and ExtraValues are in the Gloo helm chart model, nest ExtraValues under "gloo" heading
+	if installerConfig.Enterprise && installerConfig.ExtraValues != nil {
+
+		// use json as a middleman between map and struct
+		var glooHelmConfigExtraValues generate.HelmConfig
+		extraValuesBytes, err := json.Marshal(installerConfig.ExtraValues)
+		if err != nil {
+			return err // TODO do we actually want to do this? Should we just assume it does/doesn't need to be nested?
+		}
+		err = json.Unmarshal(extraValuesBytes, &glooHelmConfigExtraValues)
+		if err != nil {
+			return err // TODO do we actually want to do this? Should we just assume it does/doesn't need to be nested?
+		}
+
+		// if the chart with ExtraValues isn't the same as the empty one, ExtraValues has gloo values that need to be nested
+		var glooHelmConfigEmpty generate.HelmConfig
+		if !reflect.DeepEqual(glooHelmConfigExtraValues, glooHelmConfigEmpty) {
+			installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
 		}
 	}
 
@@ -209,10 +210,10 @@ func setCrdCreateToFalse(config *InstallerConfig) {
 
 	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
 	if config.Enterprise {
-		if _, ok := config.ExtraValues["gloo"]; !ok {
-			config.ExtraValues["gloo"] = map[string]interface{}{}
+		if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
+			config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
 		}
-		mapWithCrdValueToOverride = config.ExtraValues["gloo"].(map[string]interface{})
+		mapWithCrdValueToOverride = config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})
 	}
 
 	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
