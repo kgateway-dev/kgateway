@@ -117,7 +117,7 @@ The configuration format is the same in all three cases. It must be specified un
 ```yaml
 options:
   extauth:
-    config_ref:
+    configRef:
       # references the example AuthConfig we defined earlier
       name: basic-auth
       namespace: gloo-system
@@ -130,8 +130,7 @@ The second form is used to disable authentication explicitly:
 ```yaml
 options:
   extauth:
-    config_ref:
-      disable: true
+    disable: true
 ```
 
 #### Inheritance Rules

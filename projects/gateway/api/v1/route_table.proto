@@ -7,11 +7,11 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
+import "gloo/projects/gateway/api/v1/virtual_service.proto";
 
 /*
 *

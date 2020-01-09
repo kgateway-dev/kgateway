@@ -137,7 +137,7 @@ func (p *Plugin) verifyConfiguration(schema Schema, config string) error {
 
 func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	if os.Getenv(WasmEnabled) == "" {
-		contextutils.LoggerFrom(params.Ctx).Debugf("%s was not set, therefore not creating wasm config")
+		contextutils.LoggerFrom(params.Ctx).Debugf("%s was not set, therefore not creating wasm config", WasmEnabled)
 		return nil, nil
 	}
 	wasm := l.GetOptions().GetWasm()

@@ -27,7 +27,6 @@ weight: 5
 
  
 A way to reference resources across namespaces
-TODO(ilackarms): make upstreamname and secretref into ResourceRefs
 
 ```yaml
 "name": string

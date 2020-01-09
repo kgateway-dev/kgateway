@@ -16,6 +16,9 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+DEFAULT_BRANCH := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
@@ -46,24 +49,26 @@ init:
 
 .PHONY: fmt-changed
 fmt-changed:
-	git diff --name-only | grep '.*.go$$' | xargs goimports -w
+	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
+
+
+# must be a seperate target so that make waits for it to complete before moving on
+.PHONY: mod-download
+mod-download:
+	go mod download
+
 
 .PHONY: update-deps
-update-deps: vendor
-	$(shell cd vendor/github.com/solo-io/protoc-gen-ext; make install)
+update-deps: mod-download
+	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
+	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
 	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
 	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
 	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	mkdir -p $$GOPATH/src/github.com/envoyproxy
-	# use a specific commit (c15f2c24fb27b136e722fa912accddd0c8db9dfa) until v0.0.15 is released, as in v0.0.14 the import paths were not yet changed
-	cd $$GOPATH/src/github.com/envoyproxy && if [ ! -e protoc-gen-validate ];then git clone https://github.com/envoyproxy/protoc-gen-validate; fi && cd protoc-gen-validate && git fetch && git checkout c15f2c24fb27b136e722fa912accddd0c8db9dfa
 	GO111MODULE=off go get -u github.com/cratonica/2goarray
 	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
 	GO111MODULE=off go install github.com/golang/mock/mockgen
 
-.PHONY: pin-repos
-pin-repos:
-	GO111MODULE=on go run ci/pin_repos/pin_repos.go
 
 .PHONY: check-format
 check-format:
@@ -88,9 +93,6 @@ clean:
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
-.PHONY: vendor
-vendor:
-	go mod vendor
 
 .PHONY: generated-code
 generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-licenses generate-helm-files
@@ -100,9 +102,10 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 # TODO(EItanya): make mockgen work for gloo
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
-	find . -name *.sk.md | xargs rm
-	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	go mod tidy
+	find * -type f | grep .sk.md | xargs --no-run-if-empty rm
 	GO111MODULE=on go generate ./...
+	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
@@ -445,7 +448,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := false
+ASSETS_ONLY := true
+ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
+    ASSETS_ONLY = false
+endif
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets

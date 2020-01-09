@@ -154,7 +154,7 @@ spec:
             port: 80
     options:
       extauth:
-        config_ref:
+        configRef:
           name: google-oidc
           namespace: gloo-system
 {{< /highlight >}}

@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 
 	. "github.com/solo-io/gloo/projects/gloo/constants"
 
@@ -33,7 +34,7 @@ var _ = Describe("Consul EDS", func() {
 			ctx               context.Context
 			cancel            context.CancelFunc
 			ctrl              *gomock.Controller
-			consulWatcherMock *consul.MockConsulWatcher
+			consulWatcherMock *mock_consul.MockConsulWatcher
 
 			// Data center names
 			dc1         = "dc-1"
@@ -86,7 +87,7 @@ var _ = Describe("Consul EDS", func() {
 				},
 			}
 
-			consulWatcherMock = consul.NewMockConsulWatcher(ctrl)
+			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
 			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters).Return(serviceMetaProducer, errorProducer).Times(1)
 

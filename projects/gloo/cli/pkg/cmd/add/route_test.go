@@ -116,9 +116,13 @@ var _ = Describe("Routes", func() {
 					},
 				}},
 				Action: &v1.Route_DelegateAction{
-					DelegateAction: &core.ResourceRef{
-						Name:      "my-delegate",
-						Namespace: "gloo-system",
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "my-delegate",
+								Namespace: "gloo-system",
+							},
+						},
 					},
 				},
 			},

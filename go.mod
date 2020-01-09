@@ -6,12 +6,12 @@ require (
 	cloud.google.com/go v0.45.1 // indirect
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
+	github.com/Masterminds/semver/v3 v3.0.1
 	github.com/Masterminds/sprig v2.22.0+incompatible // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.26.2
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
-	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -20,7 +20,7 @@ require (
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-openapi/swag v0.19.5
 	github.com/go-swagger/go-swagger v0.21.0
-	github.com/gogo/googleapis v1.3.0
+	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.3.1
 	github.com/golang/protobuf v1.3.2
@@ -41,9 +41,9 @@ require (
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
 	github.com/mitchellh/hashstructure v1.0.0
-	github.com/olekukonko/tablewriter v0.0.3
-	github.com/onsi/ginkgo v1.10.3
-	github.com/onsi/gomega v1.7.1
+	github.com/olekukonko/tablewriter v0.0.4
+	github.com/onsi/ginkgo v1.11.0
+	github.com/onsi/gomega v1.8.1
 	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1
@@ -54,9 +54,9 @@ require (
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.11.7
-	github.com/solo-io/protoc-gen-ext v0.0.4
+	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.11.16
+	github.com/solo-io/solo-kit v0.12.1
 	github.com/solo-io/wasme v0.0.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
@@ -78,6 +78,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/code-generator v0.0.0
 	k8s.io/helm v2.16.1+incompatible
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.16.2

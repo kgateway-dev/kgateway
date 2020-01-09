@@ -61,9 +61,9 @@ After a few moments the fork will complete and you will be taken to the page wit
 
 ### Make the update and commit it
 
-In this step you will make the actual change to the document that has an issue. From the forked repository, select the branch you want to make changes to. The current branch being used to generate the Gloo docs is `feature-rc1`. The files that make up the docs website are in `docs/content`, and the directory structure follows the menu structure of the docs site.
+In this step you will make the actual change to the document that has an issue. From the forked repository, select the branch you want to make changes to. The current branch being used to generate the Gloo docs is `master`. The files that make up the docs website are in `docs/content`, and the directory structure follows the menu structure of the docs site.
 
-* Select the correct branch to edit (`feature-rc1`)
+* Select the correct branch to edit (`master`)
 * Find the file you want to edit and click the **pencil** icon
 * Make your changes to the file
 * Select the **Create a new branch** option
@@ -77,7 +77,7 @@ The change has been committed to a new branch on your forked repository.
 Now that the change has been committed to your fork of the Gloo repository, it's time to submit a pull request to merge the change into the official Gloo repository.
 
 * Go back to the main page of your forked repository and click on **New pull request**
-* Select the proper branch for the Gloo repository (`feature-rc1`) and the branch you just created
+* Select the proper branch for the Gloo repository (`master`) and the branch you just created
 * Click on **Create pull request**
 * Fill out the comment field with the changes made and reference the Issue created earlier
 * Select the label **Area: Docs**

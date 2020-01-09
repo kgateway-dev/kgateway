@@ -2,7 +2,7 @@ syntax = "proto3";
 package dlp.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
 import "envoy/type/percent.proto";
 import "gogoproto/gogo.proto";

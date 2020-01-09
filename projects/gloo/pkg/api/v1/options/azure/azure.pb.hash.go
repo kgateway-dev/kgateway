@@ -34,6 +34,9 @@ func (m *UpstreamSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure.UpstreamSpec")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetFunctionAppName())); err != nil {
 		return 0, err
@@ -83,6 +86,9 @@ func (m *DestinationSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure.DestinationSpec")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetFunctionName())); err != nil {
 		return 0, err
@@ -100,6 +106,9 @@ func (m *UpstreamSpec_FunctionSpec) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("azure.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure.UpstreamSpec_FunctionSpec")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetFunctionName())); err != nil {
 		return 0, err

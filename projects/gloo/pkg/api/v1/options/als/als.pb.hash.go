@@ -34,6 +34,9 @@ func (m *AccessLoggingService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.AccessLoggingService")); err != nil {
+		return 0, err
+	}
 
 	for _, v := range m.GetAccessLog() {
 
@@ -65,6 +68,9 @@ func (m *AccessLog) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.AccessLog")); err != nil {
+		return 0, err
+	}
 
 	switch m.OutputDestination.(type) {
 
@@ -114,6 +120,9 @@ func (m *FileSink) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.FileSink")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetPath())); err != nil {
 		return 0, err
@@ -157,6 +166,9 @@ func (m *GrpcService) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("als.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als.GrpcService")); err != nil {
+		return 0, err
+	}
 
 	if _, err = hasher.Write([]byte(m.GetLogName())); err != nil {
 		return 0, err

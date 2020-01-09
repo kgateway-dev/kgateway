@@ -34,6 +34,9 @@ func (m *LoadBalancerConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetHealthyPanicThreshold()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -158,6 +161,10 @@ func (m *LoadBalancerConfig_RoundRobin) Hash(hasher hash.Hash64) (uint64, error)
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_RoundRobin")); err != nil {
+		return 0, err
+	}
 
 	return hasher.Sum64(), nil
 }
@@ -171,6 +178,9 @@ func (m *LoadBalancerConfig_LeastRequest) Hash(hasher hash.Hash64) (uint64, erro
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_LeastRequest")); err != nil {
+		return 0, err
+	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetChoiceCount())
 	if err != nil {
@@ -188,6 +198,10 @@ func (m *LoadBalancerConfig_Random) Hash(hasher hash.Hash64) (uint64, error) {
 	if hasher == nil {
 		hasher = fnv.New64()
 	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_Random")); err != nil {
+		return 0, err
+	}
 
 	return hasher.Sum64(), nil
 }
@@ -201,6 +215,9 @@ func (m *LoadBalancerConfig_RingHashConfig) Hash(hasher hash.Hash64) (uint64, er
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_RingHashConfig")); err != nil {
+		return 0, err
+	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetMinimumRingSize())
 	if err != nil {
@@ -224,6 +241,9 @@ func (m *LoadBalancerConfig_RingHash) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_RingHash")); err != nil {
+		return 0, err
+	}
 
 	if h, ok := interface{}(m.GetRingHashConfig()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
@@ -249,6 +269,10 @@ func (m *LoadBalancerConfig_Maglev) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 	if hasher == nil {
 		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.LoadBalancerConfig_Maglev")); err != nil {
+		return 0, err
 	}
 
 	return hasher.Sum64(), nil
