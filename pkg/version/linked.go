@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os/exec"
 	"strings"
+
+	"github.com/solo-io/go-utils/errors"
 )
 
 var UndefinedVersion = "undefined"
@@ -11,18 +13,29 @@ var UndefinedVersion = "undefined"
 // This will be set by the linker during build
 var Version = UndefinedVersion
 
-func IsReleaseVersion() bool {
-	return Version != UndefinedVersion && checkedoutAtTag()
+var InvalidVersionError = func(err error) error {
+	return errors.Wrapf(err, "invalid version")
 }
 
-func checkedoutAtTag() bool {
-	version := VersionFromGitDescribe()
+func IsReleaseVersion() (bool, error) {
+	atTag, err := checkedoutAtTag()
+	if err != nil {
+		return false, err
+	}
+	return Version != UndefinedVersion && atTag, nil
+}
+
+func checkedoutAtTag() (bool, error) {
+	version, err := VersionFromGitDescribe()
+	if err != nil {
+		return false, err
+	}
 	parts := strings.Split(version, "-")
-	return len(parts) == 1
+	return len(parts) == 1, nil
 }
 
-const FallbackVersion = "git-describe-error" // default version set if running "make glooctl"
-func VersionFromGitDescribe() string {
+// VersionFromGitDescribe is the canonical means of deriving
+func VersionFromGitDescribe() (string, error) {
 	cmd := exec.Command("git", "describe", "--tags", "--dirty", "--always")
 	outBuf := bytes.NewBuffer([]byte{})
 	errBuf := bytes.NewBuffer([]byte{})
@@ -30,11 +43,7 @@ func VersionFromGitDescribe() string {
 	cmd.Stderr = errBuf
 	err := cmd.Run()
 	if err != nil {
-		return FallbackVersion
+		return "", InvalidVersionError(err)
 	}
-	versionOutputLines := strings.Split(outBuf.String(), "\n")
-	if len(versionOutputLines) != 2 {
-		return FallbackVersion
-	}
-	return versionOutputLines[0]
+	return strings.TrimSpace(outBuf.String()), nil
 }

@@ -39,9 +39,13 @@ import (
 
 func TestHelm(t *testing.T) {
 	version = os.Getenv("TAGGED_VERSION")
-	if !glooVersion.IsReleaseVersion() {
+	isReleaseVersion, err := glooVersion.IsReleaseVersion()
+	Expect(err).NotTo(HaveOccurred())
+	if !isReleaseVersion {
+		vVersion, err := glooVersion.VersionFromGitDescribe()
+		Expect(err).NotTo(HaveOccurred())
 		// remove the "v" prefix
-		version = glooVersion.VersionFromGitDescribe()[1:]
+		version = vVersion[1:]
 		pullPolicy = v1.PullAlways
 	} else {
 		version = version[1:]

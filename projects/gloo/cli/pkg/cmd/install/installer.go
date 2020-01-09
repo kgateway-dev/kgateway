@@ -257,7 +257,11 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 }
 
 func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
-	if !version.IsReleaseVersion() && chartOverride == "" {
+	isReleaseVersion, err := version.IsReleaseVersion()
+	if err != nil {
+		return "", err
+	}
+	if !isReleaseVersion && chartOverride == "" {
 		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
 	}
