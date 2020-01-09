@@ -26,20 +26,20 @@ Using Gloo with AWS ELBs is recommended for AWS based deployments. Gloo gateway 
 
 In general, we'd recommend using an AWS Network Load Balancer (NLB) with Gloo. Gloo provides more application (L7) capabilities than AWS Application Load Balancer (ALB). Gloo's configuration can be managed and deployed like other Kubernetes assets, which allow application teams to move faster by reducing the number of different teams and infrastructure tiers they have to coordinate with as part of a deployment.
 
-## How to
+## How To
 
-In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` is deployed, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
+In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
 
-Gloo's managed Envoy proxies are installed on EKS as a `LoadBalancer` type Service named `gateway-proxy`. Gloo's Helm chart allows the user to specify annotations to be added to Gloo's `gateway-proxy` Service, including adding AWS ELB annotations that influence the AWS ELB associated with the Gloo proxy service.
+Gloo's managed Envoy proxies install on EKS as a `LoadBalancer` type Service named `gateway-proxy`. Gloo's Helm chart allows the user to specify annotations added to Gloo's `gateway-proxy` Service, including adding AWS ELB annotations that influence the AWS ELB associated with the Gloo proxy service.
 
 The most commonly used AWS annotations used with Gloo are:
 
-* `service.beta.kubernetes.io/aws-load-balancer-type` - the only acceptable value is `nlb` to associate an AWS Network Load Balancer with the Service. If this annotation is not present, then AWS will associate a Classic ELB with this Service.
-* `service.beta.kubernetes.io/aws-load-balancer-internal` (default: `false`) - controls whether AWS ELB will be Public/Internet facing (`true`) or VPC internal (`false`).
-* `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS ELB is configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`.
+* `service.beta.kubernetes.io/aws-load-balancer-type` - the only acceptable value is `nlb` to associate an AWS Network Load Balancer with the Service. If this annotation is not present, then AWS associates a Classic ELB with this Service.
+* `service.beta.kubernetes.io/aws-load-balancer-internal` (default: `false`) - controls whether AWS ELB is Public/Internet facing (`true`) or VPC internal (`false`).
+* `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS ELB's configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`.
 
 {{% notice warning %}}
-Gloo does not open any proxy ports till at least one Virtual Service is successfully deployed. AWS ELB Health Checks are automatically created and can report that Gloo is unhealthy until the port is open to connections, i.e., at least one Gloo Virtual Service deployed.
+Gloo does not open any proxy ports till at least one Virtual Service is successfully deployed. AWS ELB Health Checks are automatically created and can report that Gloo is unhealthy until the port is open to connections, i.e., at least one Gloo Virtual Service deployed. If your clients see 503 errors, double check the AWS ELB Health Checks are passing as it can take a couple of minutes for them to detect changes in the Gloo proxy port status.
 {{% /notice %}}
 
 ### Gloo Helm install examples
@@ -86,11 +86,11 @@ EOF
 
 {{< /tabs >}}
 
-## Pass thru TLS
+## Passthrough TLS
 
-By using an AWS Network Load Balancer (NLB) in front of Gloo, you get an additional benefit of TLS pass thru. That is, HTTPS requests pass thru the AWS NLB and terminate TLS at the Gloo proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports are exposed through the AWS NLB.
+By using an AWS Network Load Balancer (NLB) in front of Gloo, you get an additional benefit of TLS passthrough. That is, HTTPS requests passthrough the AWS NLB and terminate TLS at the Gloo proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports get exposed through the AWS NLB.
 
-Note: Gloo only opens proxy ports when a Virtual Service is successfully deployed and using that port. That is, Virtual Services with `sslConfig` will open the HTTPS proxy port. Virtual Services without the `sslConfig` will open the HTTP port. It may take a couple of minutes for AWS NLB health checks to mark the proxy ports as healthy after a first Virtual Service is deployed, so be patient.
+Note: Gloo only opens proxy ports when a Virtual Service is successfully deployed and using that port. That is, Virtual Services with `sslConfig` opens the HTTPS proxy port. Virtual Services without the `sslConfig` only open the HTTP port. It may take a couple of minutes for AWS NLB health checks to mark the proxy ports as healthy after a first Virtual Service deploys, so be patient.
 
 ```shell
 # For this example, let's create a self-signed certificate for your DNS. You
@@ -167,3 +167,17 @@ curl --verbose --insecure --header "Host: gloo.example.com" $(glooctl proxy url 
 # Test HTTP => HTTPS redirect
 curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
 ```
+
+## TLS Considerations
+
+You need to think carefully around using TLS in terms of:
+
+* Which segments of the request path should be encrypted/protected
+* Which components need access to the request and, therefore, which components need to terminate the TLS connection. For example, any component making routing decisions based on HTTP headers, query path or methods needs access to the decrypted request
+* What are your certificate management needs for each component terminating TLS? Who generates the TLS certificate, and how frequently should it be rotated?
+
+Most people use Gloo as an L7 proxy/router, and that means Gloo needs access to the request as cleartext. Enabling access to the request means that either the AWS ELB terminates the TLS connection and/or Gloo terminates, so you could end up with one or two certificates you need to manage.
+
+When using an L4 TCP load balancer, like AWS Network Load Balancer, those will passthrough TLS connections so that you only need to terminate the TLS connection once at the Gloo proxy and only manage one TLS certificate. There are good reasons to terminate TLS connections at the AWS ELB, such as their integration with AWS Certificate Manager and AWS IAM, and offloading CPU workload associated with managing a TLS connection from the Gloo proxy.
+
+Spending a few minutes thinking through the deployment architecture of your TLS connections helps eliminate much frustration and debugging later on.
