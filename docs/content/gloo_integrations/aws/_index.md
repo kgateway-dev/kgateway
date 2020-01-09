@@ -35,7 +35,6 @@ Gloo's managed Envoy proxies install on EKS as a `LoadBalancer` type Service nam
 The most commonly used AWS annotations used with Gloo are:
 
 * `service.beta.kubernetes.io/aws-load-balancer-type` - the only acceptable value is `nlb` to associate an AWS Network Load Balancer with the Service. If this annotation is not present, then AWS associates a Classic ELB with this Service.
-* `service.beta.kubernetes.io/aws-load-balancer-internal` - if set to `0.0.0.0/0` then AWS will create an internal only load balancer.
 * `service.beta.kubernetes.io/aws-load-balancer-ssl-cert` - If specified, AWS ELB's configured listener uses TLS/HTTPS with the provided certificate. Value is a valid certificate ARN from AWS Certificate Manager or AWS IAM, e.g. `arn:aws:acm:us-east-1:123456789012:certificate/12345678-1234-1234-1234-123456789012`.
 
 {{% notice warning %}}
