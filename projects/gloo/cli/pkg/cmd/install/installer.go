@@ -193,7 +193,7 @@ func setExtraValues(config *InstallerConfig) error {
 		var glooHelmConfigValue generate.HelmConfig
 
 		// use json as a middleman between map and struct
-		valueBytes, err := json.Marshal(map[string]interface{}{k:v})
+		valueBytes, err := json.Marshal(map[string]interface{}{k: v})
 		if err != nil {
 			return err
 		}
