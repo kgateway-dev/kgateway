@@ -102,13 +102,12 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	// if using a helm chart override, determine if it's an enterprise chart by checking if has gloo as a dependency
-	if installerConfig.InstallCliArgs.HelmChartOverride != "" {
-		for _, dependency := range chartObj.Dependencies() {
-			if dependency.Metadata.Name == constants.GlooReleaseName {
-				installerConfig.Enterprise = true
-				break
-			}
+	// determine if it's an enterprise chart by checking if has gloo as a dependency
+	installerConfig.Enterprise = false
+	for _, dependency := range chartObj.Dependencies() {
+		if dependency.Metadata.Name == constants.GlooReleaseName {
+			installerConfig.Enterprise = true
+			break
 		}
 	}
 

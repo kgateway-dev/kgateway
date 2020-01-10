@@ -168,6 +168,10 @@ rules:
 	})
 
 	It("installs enterprise cleanly by default", func() {
+
+		dependenciesBefore := chart.Dependencies()
+
+		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: "gloo"}})
 		defaultInstall(true,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
@@ -177,6 +181,8 @@ rules:
 				},
 			},
 			glooEnterpriseChartUri)
+
+		chart.SetDependencies(dependenciesBefore...)
 	})
 
 	It("installs as enterprise cleanly if passed enterprise helmchart override", func() {
@@ -203,6 +209,25 @@ rules:
 			installConfig)
 
 		chart.SetDependencies(dependenciesBefore...)
+	})
+
+	It("installs as open-source cleanly if passed open-source helmchart override with enterprise subcommand", func() {
+
+		installConfig := &options.Install{
+			Namespace:         defaults.GlooSystem,
+			HelmReleaseName:   constants.GlooReleaseName,
+			CreateNamespace:   true,
+			HelmChartOverride: glooOsChartUri,
+		}
+
+		installWithInstallConfig(true,
+			map[string]interface{}{
+				"crds": map[string]interface{}{
+					"create": false,
+				},
+			},
+			glooOsChartUri,
+			installConfig)
 	})
 
 	It("outputs the expected kinds when in a dry run", func() {
