@@ -108,7 +108,7 @@ rules:
 		ctrl.Finish()
 	})
 
-	installWithInstallConfig := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string, installConfig *options.Install) {
+	installWithConfig := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string, installConfig *options.Install) {
 
 		helmEnv := &cli.EnvSettings{
 			KubeConfig: "path-to-kube-config",
@@ -154,7 +154,7 @@ rules:
 			CreateNamespace: true,
 		}
 
-		installWithInstallConfig(enterprise, expectedValues, expectedChartUri, installConfig)
+		installWithConfig(enterprise, expectedValues, expectedChartUri, installConfig)
 	}
 
 	It("installs cleanly by default", func() {
@@ -171,7 +171,7 @@ rules:
 
 		dependenciesBefore := chart.Dependencies()
 
-		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: "gloo"}})
+		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		defaultInstall(true,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
@@ -196,8 +196,8 @@ rules:
 
 		dependenciesBefore := chart.Dependencies()
 
-		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: "gloo"}})
-		installWithInstallConfig(false,
+		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
+		installWithConfig(false,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
 					"crds": map[string]interface{}{
@@ -220,7 +220,7 @@ rules:
 			HelmChartOverride: glooOsChartUri,
 		}
 
-		installWithInstallConfig(true,
+		installWithConfig(true,
 			map[string]interface{}{
 				"crds": map[string]interface{}{
 					"create": false,

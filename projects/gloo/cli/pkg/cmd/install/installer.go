@@ -187,6 +187,8 @@ func setExtraValues(config *InstallerConfig) error {
 		return nil
 	}
 
+	newExtraValues := map[string]interface{}{}
+
 	var glooHelmConfigEmpty generate.HelmConfig
 	for k, v := range config.ExtraValues {
 
@@ -204,13 +206,16 @@ func setExtraValues(config *InstallerConfig) error {
 
 		// if the chart with the value isn't the same as the empty one, value is gloo value that needs to be nested
 		if !reflect.DeepEqual(glooHelmConfigValue, glooHelmConfigEmpty) {
-			delete(config.ExtraValues, k)
-			if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
-				config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
+			if _, ok := newExtraValues[constants.GlooReleaseName]; !ok {
+				newExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
 			}
-			config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})[k] = v
+			newExtraValues[constants.GlooReleaseName].(map[string]interface{})[k] = v
+		} else {
+			newExtraValues[k] = v
 		}
 	}
+
+	config.ExtraValues = newExtraValues
 	return nil
 }
 
