@@ -827,7 +827,7 @@ var _ = Describe("Translator", func() {
 						{
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/1-upstream",
+									Prefix: "/a/3-delegate/upstream2",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -844,7 +844,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: rootLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 						{
 							Matchers: []*matchers.Matcher{{
@@ -871,7 +871,7 @@ var _ = Describe("Translator", func() {
 						{
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/3-delegate/upstream2",
+									Prefix: "/a/1-upstream",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -888,31 +888,10 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: mergedLeafLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
-						{
-							Matchers: []*matchers.Matcher{{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/b/2-upstream",
-								},
-							}},
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &core.ResourceRef{
-													Name:      "my-upstream",
-													Namespace: "gloo-system",
-												},
-											},
-										},
-									},
-								},
-							},
-						},
 						{
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
@@ -934,6 +913,27 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							Options: leafLevelRoutePlugins,
+						},
+						{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/b/2-upstream",
+								},
+							}},
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: &gloov1.Destination{
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Name:      "my-upstream",
+													Namespace: "gloo-system",
+												},
+											},
+										},
+									},
+								},
+							},
 						},
 					}))
 				})
@@ -1092,26 +1092,6 @@ var _ = Describe("Translator", func() {
 
 var expectedRouteMetadatas = [][]*SourceMetadata{
 	{
-		&SourceMetadata{
-			Sources: []SourceRef{
-				{
-					ResourceRef: core.ResourceRef{
-						Name:      "delegate-1",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.RouteTable",
-					ObservedGeneration: 0,
-				},
-				{
-					ResourceRef: core.ResourceRef{
-						Name:      "name1",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.VirtualService",
-					ObservedGeneration: 0,
-				},
-			},
-		},
 		{
 			Sources: []SourceRef{
 				{
@@ -1150,6 +1130,26 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 					ResourceKind:       "*v1.RouteTable",
 					ObservedGeneration: 0,
 				},
+				{
+					ResourceRef: core.ResourceRef{
+						Name:      "delegate-1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
+				{
+					ResourceRef: core.ResourceRef{
+						Name:      "name1",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.VirtualService",
+					ObservedGeneration: 0,
+				},
+			},
+		},
+		{
+			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",
