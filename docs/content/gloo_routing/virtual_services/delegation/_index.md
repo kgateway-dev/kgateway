@@ -164,13 +164,15 @@ spec:
     - matchers:
        - prefix: '/a' # delegate ownership of routes for `any.com/a`
       delegateAction:
-        name: 'a-routes'
-        namespace: 'a'
+        ref:
+          name: 'a-routes'
+          namespace: 'a'
     - matchers:
        - prefix: '/b' # delegate ownership of routes for `any.com/b`
       delegateAction:
-        name: 'b-routes'
-        namespace: 'b'
+        ref:
+          name: 'b-routes'
+          namespace: 'b'
 ```
 
 * A root-level **VirtualService** which delegates routing to to the `a-routes` and `b-routes` **RouteTables**.
@@ -221,8 +223,9 @@ spec:
        - prefix: '/b/c/'
       # routes in the RouteTable can perform any action, including a delegateAction
       delegateAction:
-        name: 'c-routes'
-        namespace: 'c'
+        ref:
+          name: 'c-routes'
+          namespace: 'c'
 
 ```
 

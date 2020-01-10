@@ -30,7 +30,7 @@ weight: 5
 ### VirtualService
 
  
-The **VirtualService** is the root Routing object for the Gloo Gateway.
+The **VirtualService** is the root routing object for the Gloo Gateway.
 A virtual service describes the set of routes to match for a set of domains.
 
 It defines:
@@ -59,12 +59,13 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
-        name: 'shared-routes'
-        namespace: 'usernamespace'
+        ref:
+          name: 'shared-routes'
+          namespace: 'usernamespace'
 
 ```
 
@@ -81,12 +82,13 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
-        name: 'shared-routes'
-        namespace: 'usernamespace'
+        ref:
+          name: 'shared-routes'
+          namespace: 'usernamespace'
   sslConfig:
     secretRef:
       name: gateway-tls
@@ -103,8 +105,8 @@ metadata:
   namespace: 'usernamespace'
 spec:
   routes:
-    - matcher:
-        prefix: '/some-route'
+    - matchers:
+      - prefix: '/some-route'
       routeAction:
         single:
           upstream:
@@ -223,7 +225,7 @@ DelegateActions are used to delegate routing decisions to Route Tables.
 | `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
 | `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
 | `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
-| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. TODO: route table selectors are currently not implemented. Only one of `selector` or `ref` can be set. |  |
+| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
 
 
 

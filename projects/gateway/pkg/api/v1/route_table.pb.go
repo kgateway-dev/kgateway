@@ -27,17 +27,14 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
 //
-// The **RouteTable** is a child Routing object for the Gloo Gateway.
+// The **RouteTable** is a child routing object for the Gloo Gateway.
 //
-// A **RouteTable** gets built into the complete routing configuration
-// when it is referenced by a `delegateAction`, either
-// in a parent VirtualService or another RouteTable.
+// A **RouteTable** gets built into the complete routing configuration when it is referenced by a `delegateAction`,
+// either in a parent VirtualService or another RouteTable.
 //
-// Routes specified in a RouteTable must have their paths start with the prefix provided in the
-// parent's matcher.
+// Routes specified in a RouteTable must have their paths start with the prefix provided in the parent's matcher.
 //
 // For example, the following configuration:
-//
 //
 // ```
 // virtualService: mydomain.com
@@ -77,16 +74,18 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     domains:
 //     - 'any.com'
 //     routes:
-//     - matcher:
-//         prefix: '/a' # delegate ownership of routes for `any.com/a`
+//     - matchers:
+//       - prefix: '/a' # delegate ownership of routes for `any.com/a`
 //       delegateAction:
-//         name: 'a-routes'
-//         namespace: 'a'
-//     - matcher:
-//         prefix: '/b' # delegate ownership of routes for `any.com/b`
+//         ref:
+//           name: 'a-routes'
+//           namespace: 'a'
+//     - matchers:
+//       - prefix: '/b' # delegate ownership of routes for `any.com/b`
 //       delegateAction:
-//         name: 'b-routes'
-//         namespace: 'b'
+//         ref:
+//           name: 'b-routes'
+//           namespace: 'b'
 // ```
 //
 // * A root-level **VirtualService** which delegates routing to to the `a-routes` and `b-routes` **RouteTables**.
@@ -100,16 +99,16 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'a'
 // spec:
 //   routes:
-//     - matcher:
-//         # the path matchers in this RouteTable must begin with the prefix `/a/`
-//         prefix: '/a/1'
+//     - matchers:
+//       # the path matchers in this RouteTable must begin with the prefix `/a/`
+//       - prefix: '/a/1'
 //       routeAction:
 //         single:
 //           upstream:
 //             name: 'foo-upstream'
 //
-//     - matcher:
-//         prefix: '/a/2'
+//     - matchers:
+//       - prefix: '/a/2'
 //       routeAction:
 //         single:
 //           upstream:
@@ -126,19 +125,20 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'b'
 // spec:
 //   routes:
-//     - matcher:
-//         # the path matchers in this RouteTable must begin with the prefix `/b/`
-//         regex: '/b/3'
+//     - matchers:
+//       # the path matchers in this RouteTable must begin with the prefix `/b/`
+//       - regex: '/b/3'
 //       routeAction:
 //         single:
 //           upstream:
 //             name: 'bar-upstream'
-//     - matcher:
-//         prefix: '/b/c/'
+//     - matchers:
+//       - prefix: '/b/c/'
 //       # routes in the RouteTable can perform any action, including a delegateAction
 //       delegateAction:
-//         name: 'c-routes'
-//         namespace: 'c'
+//         ref:
+//           name: 'c-routes'
+//           namespace: 'c'
 //
 // ```
 //
@@ -153,8 +153,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'c'
 // spec:
 //   routes:
-//     - matcher:
-//         exact: '/b/c/4'
+//     - matchers:
+//       - exact: '/b/c/4'
 //       routeAction:
 //         single:
 //           upstream:

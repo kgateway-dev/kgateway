@@ -29,7 +29,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
 //
-// The **VirtualService** is the root Routing object for the Gloo Gateway.
+// The **VirtualService** is the root routing object for the Gloo Gateway.
 // A virtual service describes the set of routes to match for a set of domains.
 //
 // It defines:
@@ -58,12 +58,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
-//         name: 'shared-routes'
-//         namespace: 'usernamespace'
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
 //
 // ```
 //
@@ -80,12 +81,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
-//         name: 'shared-routes'
-//         namespace: 'usernamespace'
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
 //   sslConfig:
 //     secretRef:
 //       name: gateway-tls
@@ -102,8 +104,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'usernamespace'
 // spec:
 //   routes:
-//     - matcher:
-//         prefix: '/some-route'
+//     - matchers:
+//       - prefix: '/some-route'
 //       routeAction:
 //         single:
 //           upstream:
