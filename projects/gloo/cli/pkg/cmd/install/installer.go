@@ -111,27 +111,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	// if enterprise and ExtraValues are in the Gloo helm chart model, nest ExtraValues under "gloo" heading
-	if installerConfig.Enterprise && installerConfig.ExtraValues != nil {
-
-		// TODO need to loop through ExtraValues and nest each individually
-		// use json as a middleman between map and struct
-		var glooHelmConfigExtraValues generate.HelmConfig
-		extraValuesBytes, err := json.Marshal(installerConfig.ExtraValues)
-		if err != nil {
-			return err // TODO do we actually want to do this? Should we just assume it does/doesn't need to be nested?
-		}
-		err = json.Unmarshal(extraValuesBytes, &glooHelmConfigExtraValues)
-		if err != nil {
-			return err // TODO do we actually want to do this? Should we just assume it does/doesn't need to be nested?
-		}
-
-		// if the chart with ExtraValues isn't the same as the empty one, ExtraValues has gloo values that need to be nested
-		var glooHelmConfigEmpty generate.HelmConfig
-		if !reflect.DeepEqual(glooHelmConfigExtraValues, glooHelmConfigEmpty) {
-			installerConfig.ExtraValues = map[string]interface{}{constants.GlooReleaseName: installerConfig.ExtraValues}
-		}
-	}
+	setExtraValues(installerConfig)
 
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
@@ -199,6 +179,39 @@ func (i *installer) createNamespace(namespace string) {
 		fmt.Printf("\nUnable to check if namespace %s exists. Continuing...\n", namespace)
 	}
 
+}
+
+// if enterprise, nest any gloo helm values under "gloo" heading
+func setExtraValues(config *InstallerConfig) error {
+	if config.ExtraValues == nil || !config.Enterprise {
+		return nil
+	}
+
+	var glooHelmConfigEmpty generate.HelmConfig
+	for k, v := range config.ExtraValues {
+
+		var glooHelmConfigValue generate.HelmConfig
+
+		// use json as a middleman between map and struct
+		valueBytes, err := json.Marshal(map[string]interface{}{k:v})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(valueBytes, &glooHelmConfigValue)
+		if err != nil {
+			return err
+		}
+
+		// if the chart with the value isn't the same as the empty one, value is gloo value that needs to be nested
+		if !reflect.DeepEqual(glooHelmConfigValue, glooHelmConfigEmpty) {
+			delete(config.ExtraValues, k)
+			if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
+				config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
+			}
+			config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})[k] = v
+		}
+	}
+	return nil
 }
 
 // Note: can be removed if we add {"gloo":{"crds":{"create":false}}} to default enterprise chart
