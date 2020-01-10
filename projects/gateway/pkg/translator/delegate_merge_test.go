@@ -384,6 +384,31 @@ var _ = Describe("route merge util", func() {
 			})
 		})
 
+		Describe("merged route ordering", func() {
+
+			BeforeEach(func() {
+				allRouteTables = v1.RouteTableList{
+					buildRouteTableWithSimpleAction("rt-1", "ns-1", "/foo", nil),
+					buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/bars", nil),
+					buildRouteTableWithSimpleAction("rt-3", "ns-1", "/foo/bar", nil),
+					buildRouteTableWithSimpleAction("rt-4", "ns-1", "/foo/bar/baz", nil),
+				}
+			})
+
+			It("merged routes are sorted by descending specificity", func() {
+				converted, err := visitor.convertDelegateAction(vs, buildRoute(&v1.RouteTableSelector{
+					Namespaces: []string{"ns-1"},
+				}), reports)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(4))
+				Expect(converted[0]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bars")))
+				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bar/baz")))
+				Expect(converted[2]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bar")))
+				Expect(converted[3]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo")))
+			})
+		})
+
 		When("configuration is correct", func() {
 
 			BeforeEach(func() {
