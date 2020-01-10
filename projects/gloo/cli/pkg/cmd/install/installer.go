@@ -115,6 +115,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	// if enterprise and ExtraValues are in the Gloo helm chart model, nest ExtraValues under "gloo" heading
 	if installerConfig.Enterprise && installerConfig.ExtraValues != nil {
 
+		// TODO need to loop through ExtraValues and nest each individually
 		// use json as a middleman between map and struct
 		var glooHelmConfigExtraValues generate.HelmConfig
 		extraValuesBytes, err := json.Marshal(installerConfig.ExtraValues)
@@ -201,6 +202,7 @@ func (i *installer) createNamespace(namespace string) {
 
 }
 
+// Note: can be removed if we add {"gloo":{"crds":{"create":false}}} to default enterprise chart
 func setCrdCreateToFalse(config *InstallerConfig) {
 	if config.ExtraValues == nil {
 		config.ExtraValues = map[string]interface{}{}

@@ -87,6 +87,13 @@ var _ = Describe("Install", func() {
 		Expect(outputYaml).To(ContainSubstring("license-key: \"ZmFrZS1saWNlbnNlLWtleQ==\"\n"))
 	})
 
+	It("should not contain license key for gateway enterprise dry run with open-source chart override", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).NotTo(ContainSubstring("license-key"))
+	})
+
 	It("should error when not overriding helm chart in dev mode", func() {
 		_, err := testutils.GlooctlOut("install ingress --dry-run")
 		Expect(err).To(HaveOccurred())
