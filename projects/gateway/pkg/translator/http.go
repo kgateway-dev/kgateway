@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	matchersv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/errors"
@@ -23,6 +23,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
+
+// Reserved value for route table namespace selection.
+// If a selector contains this value in its 'namespace' field, we match route tables from any namespace
+const allNamespaceRouteTableSelector = "*"
 
 var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
@@ -284,7 +288,7 @@ type routeVisitor struct {
 }
 
 func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours *v1.Route, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
-	matchers := []*matchers.Matcher{defaults.DefaultMatcher()}
+	matchers := []*matchersv1.Matcher{defaults.DefaultMatcher()}
 	if len(ours.Matchers) > 0 {
 		matchers = ours.Matchers
 	}
@@ -319,15 +323,23 @@ var (
 	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
 	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
 	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
-	delegationCycleErr  = errors.New("invalid route: delegation cycle detected")
+	delegationCycleErr  = func(cycleInfo string) error {
+		return errors.Errorf("invalid route: delegation cycle detected: %s", cycleInfo)
+	}
 
 	noDelegateActionErr = errors.New("internal error: convertDelegateAction() called on route without delegate action")
 
 	routeTableMissingWarning = func(ref core.ResourceRef) string {
 		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
 	}
+	noMatchingRouteTablesWarning    = "no route table matches the given selector"
 	invalidRouteTableForDelegateErr = func(delegatePrefix, pathString string) error {
 		return errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
+	}
+	missingRefAndSelectorWarning = func(res resources.InputResource) string {
+		ref := res.GetMetadata().Ref()
+		return fmt.Sprintf("cannot determine delegation target for %T %v.%v: you must specify a route table "+
+			"either via a resource reference or a selector", res, ref.Namespace, ref.Name)
 	}
 )
 
@@ -342,75 +354,84 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		return nil, err
 	}
 
-	var routeTableRef core.ResourceRef
-	// handle deprecated route table resource reference format
-	// TODO: remove when we remove the deprecated fields from the API
-	if delegate.Namespace != "" || delegate.Name != "" {
-		routeTableRef = core.ResourceRef{
-			Namespace: delegate.Namespace,
-			Name:      delegate.Name,
+	// Determine the route tables to delegate to
+	var routeTables v1.RouteTableList
+	if routeTableRef := getRouteTableRef(delegate); routeTableRef != nil {
+		// missing refs should only result in a warning
+		// this allows resources to be applied asynchronously
+		routeTable, err := rv.tables.Find((*routeTableRef).Strings())
+		if err != nil {
+			reports.AddWarning(routingResource, routeTableMissingWarning(*routeTableRef))
+			return nil, nil
+		}
+		routeTables = v1.RouteTableList{routeTable}
+	} else if rtSelector := delegate.GetSelector(); rtSelector != nil {
+		routeTables = rv.routeTablesForSelector(rtSelector, routingResource.GetMetadata().Namespace)
+
+		if len(routeTables) == 0 {
+			reports.AddWarning(routingResource, noMatchingRouteTablesWarning)
+			return nil, nil
 		}
 	} else {
-		switch selectorType := delegate.GetDelegationType().(type) {
-		case *v1.DelegateAction_Selector:
-			// TODO(marco): handle selector
-			return nil, errors.New("delegate action selectors are not implemented yet!")
-		case *v1.DelegateAction_Ref:
-			routeTableRef = *selectorType.Ref
-		}
-	}
-
-	// missing refs should only result in a warning
-	// this allows resources to be applied asynchronously
-	routeTable, err := rv.tables.Find(routeTableRef.Strings())
-	if err != nil {
-		reports.AddWarning(routingResource, routeTableMissingWarning(routeTableRef))
+		reports.AddWarning(routingResource, missingRefAndSelectorWarning(routingResource))
 		return nil, nil
 	}
 
+	// If any of the matching route tables has already been visited, that means we have a delegation cycle.
 	for _, visited := range rv.visited {
-		if routeTable == visited {
-			return nil, delegationCycleErr
+		for _, toVisit := range routeTables {
+			if toVisit == visited {
+				return nil, delegationCycleErr(
+					buildCycleInfoString(append(append(v1.RouteTableList{}, rv.visited...), toVisit)),
+				)
+			}
 		}
 	}
-
-	subRv := &routeVisitor{tables: rv.tables, visited: []*v1.RouteTable{routeTable}}
-	for _, vis := range rv.visited {
-		subRv.visited = append(subRv.visited, vis)
-	}
-
-	plugins := route.GetOptions()
 
 	var delegatedRoutes []*gloov1.Route
-	for _, routeTableRoute := range routeTable.Routes {
-		// clone route since we mutate
-		routeTableRoute := proto.Clone(routeTableRoute).(*v1.Route)
+	for _, routeTable := range routeTables {
 
-		merged, err := mergeRoutePlugins(routeTableRoute.GetOptions(), plugins)
-		if err != nil {
-			// should never happen
-			return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
+		// Create a new visitor to visit the current route table
+		// Copy over all route tables that have already been visited by the parent visitor and add the current one,
+		// so we can detect delegation cycles.
+		subRv := &routeVisitor{tables: rv.tables}
+		for _, vis := range rv.visited {
+			subRv.visited = append(subRv.visited, vis)
 		}
-		routeTableRoute.Options = merged
+		subRv.visited = append(subRv.visited, routeTable)
 
-		err = isRouteTableValidForDelegatePrefix(delegatePrefix, routeTableRoute)
-		if err != nil {
-			reports.AddError(routingResource, err)
-			continue
-		}
+		for _, routeTableRoute := range routeTable.Routes {
 
-		subRoutes, err := subRv.convertRoute(routeTable, routeTableRoute, reports)
-		if err != nil {
-			return nil, errors.Wrapf(err, "converting sub-route")
-		}
-		for _, sub := range subRoutes {
-			if err := appendSource(sub, routeTable); err != nil {
+			// clone route since we mutate
+			routeTableRoute := proto.Clone(routeTableRoute).(*v1.Route)
+
+			merged, err := mergeRoutePlugins(routeTableRoute.GetOptions(), route.GetOptions())
+			if err != nil {
 				// should never happen
+				return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
+			}
+			routeTableRoute.Options = merged
+
+			if err := isRouteTableValidForDelegatePrefix(delegatePrefix, routeTableRoute); err != nil {
+				reports.AddError(routingResource, err)
+				continue
+			}
+
+			subRoutes, err := subRv.convertRoute(routeTable, routeTableRoute, reports)
+			if err != nil {
 				return nil, err
 			}
-			delegatedRoutes = append(delegatedRoutes, sub)
+			for _, sub := range subRoutes {
+				if err := appendSource(sub, routeTable); err != nil {
+					// should never happen
+					return nil, err
+				}
+				delegatedRoutes = append(delegatedRoutes, sub)
+			}
 		}
 	}
+
+	glooutils.SortRoutesByPath(delegatedRoutes)
 
 	return delegatedRoutes, nil
 }
@@ -452,4 +473,84 @@ func isRouteTableValidForDelegatePrefix(delegatePrefix string, routeTable *v1.Ro
 		}
 	}
 	return nil
+}
+
+// Handles new and deprecated format for referencing a route table
+// TODO: remove this function when we remove the deprecated fields from the API
+func getRouteTableRef(delegate *v1.DelegateAction) *core.ResourceRef {
+	if delegate.Namespace != "" || delegate.Name != "" {
+		return &core.ResourceRef{
+			Namespace: delegate.Namespace,
+			Name:      delegate.Name,
+		}
+	}
+	return delegate.GetRef()
+}
+
+func (rv *routeVisitor) routeTablesForSelector(selector *v1.RouteTableSelector, ownerNamespace string) v1.RouteTableList {
+	type nsSelectorType int
+	const (
+		// Match route tables in the owner namespace
+		owner nsSelectorType = iota
+		// Match route tables in all namespaces watched by Gloo
+		all
+		// Match route tables in the specified namespaces
+		list
+	)
+
+	nsSelector := owner
+	if len(selector.Namespaces) > 0 {
+		nsSelector = list
+	}
+	for _, ns := range selector.Namespaces {
+		if ns == allNamespaceRouteTableSelector {
+			nsSelector = all
+		}
+	}
+
+	var labelSelector labels.Selector
+	if len(selector.Labels) > 0 {
+		labelSelector = labels.SelectorFromSet(selector.Labels)
+	}
+
+	var matchingRouteTables v1.RouteTableList
+	for _, candidate := range rv.tables {
+
+		// Check whether labels match
+		if labelSelector != nil {
+			rtLabels := labels.Set(candidate.Metadata.Labels)
+			if !labelSelector.Matches(rtLabels) {
+				continue
+			}
+		}
+
+		// Check whether namespace matches
+		nsMatches := false
+		switch nsSelector {
+		case all:
+			nsMatches = true
+		case owner:
+			nsMatches = candidate.Metadata.Namespace == ownerNamespace
+		case list:
+			for _, ns := range selector.Namespaces {
+				if ns == candidate.Metadata.Namespace {
+					nsMatches = true
+				}
+			}
+		}
+
+		if nsMatches {
+			matchingRouteTables = append(matchingRouteTables, candidate)
+		}
+	}
+
+	return matchingRouteTables
+}
+
+func buildCycleInfoString(routeTables v1.RouteTableList) string {
+	var visitedTables []string
+	for _, rt := range routeTables {
+		visitedTables = append(visitedTables, fmt.Sprintf("[%s]", rt.Metadata.Ref().Key()))
+	}
+	return strings.Join(visitedTables, " -> ")
 }

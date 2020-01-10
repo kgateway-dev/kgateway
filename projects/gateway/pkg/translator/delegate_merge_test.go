@@ -2,16 +2,19 @@ package translator
 
 import (
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
 var _ = Describe("route merge util", func() {
-	Context("bad config on a delegate route", func() {
+
+	When("bad config on a delegate route", func() {
 		It("returns the correct error", func() {
 			type routeErr struct {
 				route       *v1.Route
@@ -149,7 +152,8 @@ var _ = Describe("route merge util", func() {
 			}
 		})
 	})
-	Context("missing ref on a delegate route", func() {
+
+	When("missing ref on a delegate route", func() {
 		It("returns nil and adds a warning", func() {
 			ref := core.ResourceRef{
 				Name: "any",
@@ -183,7 +187,7 @@ var _ = Describe("route merge util", func() {
 		})
 	})
 
-	Context("valid config", func() {
+	When("valid config", func() {
 		It("uses '/' prefix matcher as default if matchers are omitted", func() {
 			ref := core.ResourceRef{
 				Name: "any",
@@ -215,7 +219,8 @@ var _ = Describe("route merge util", func() {
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
 	})
-	Context("bad route table config", func() {
+
+	When("bad route table config", func() {
 		It("returns error if route table has a matcher that doesn't have the delegate prefix", func() {
 			ref := core.ResourceRef{
 				Name: "rt",
@@ -261,6 +266,243 @@ var _ = Describe("route merge util", func() {
 			expectedErr := invalidRouteTableForDelegateErr("/foo", "/invalid").Error()
 			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
 			Expect(converted).To(BeNil())
+		})
+	})
+
+	Describe("route table selection", func() {
+
+		var (
+			allRouteTables v1.RouteTableList
+			reports        reporter.ResourceReports
+			vs             *v1.VirtualService
+			visitor        *routeVisitor
+		)
+
+		buildRouteTableWithSimpleAction := func(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
+			return &v1.RouteTable{
+				Metadata: core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+					Labels:    labels,
+				},
+				Routes: []*v1.Route{
+					{
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: prefix,
+								},
+							},
+						},
+						Action: &v1.Route_DirectResponseAction{
+							DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
+					},
+				},
+			}
+		}
+
+		buildRouteTableWithDelegateAction := func(name, namespace, prefix string, labels map[string]string, selector *v1.RouteTableSelector) *v1.RouteTable {
+			return &v1.RouteTable{
+				Metadata: core.Metadata{
+					Name:      name,
+					Namespace: namespace,
+					Labels:    labels,
+				},
+				Routes: []*v1.Route{
+					{
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: prefix,
+								},
+							},
+						},
+						Action: &v1.Route_DelegateAction{
+							DelegateAction: &v1.DelegateAction{
+								DelegationType: &v1.DelegateAction_Selector{
+									Selector: selector,
+								},
+							},
+						},
+					},
+				},
+			}
+		}
+
+		buildRoute := func(rtSelector *v1.RouteTableSelector) *v1.Route {
+			return &v1.Route{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo",
+					},
+				}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Selector{
+							Selector: rtSelector,
+						},
+					},
+				},
+			}
+		}
+
+		getFirstPrefixMatcher := func(route *gloov1.Route) string {
+			return route.GetMatchers()[0].GetPrefix()
+		}
+
+		JustBeforeEach(func() {
+			reports = reporter.ResourceReports{}
+			vs = &v1.VirtualService{
+				Metadata: core.Metadata{
+					Name:      "vs-1",
+					Namespace: "ns-1",
+				},
+			}
+			visitor = &routeVisitor{tables: allRouteTables}
+		})
+
+		When("selector has no matches", func() {
+
+			BeforeEach(func() {
+				allRouteTables = v1.RouteTableList{
+					buildRouteTableWithSimpleAction("rt-1", "ns-1", "/foo/1", nil),
+					buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/2", map[string]string{"foo": "bar"}),
+				}
+			})
+
+			It("returns the appropriate warning", func() {
+				converted, err := visitor.convertDelegateAction(vs, buildRoute(&v1.RouteTableSelector{
+					Labels:     map[string]string{"team": "dev", "foo": "bar"},
+					Namespaces: []string{"*"},
+				}), reports)
+
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(0))
+				Expect(reports).To(Equal(reporter.ResourceReports{vs: reporter.Report{
+					Warnings: []string{noMatchingRouteTablesWarning},
+				}}))
+			})
+		})
+
+		When("configuration is correct", func() {
+
+			BeforeEach(func() {
+				allRouteTables = v1.RouteTableList{
+					buildRouteTableWithSimpleAction("rt-1", "ns-1", "/foo/1", nil),
+					buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/2", map[string]string{"foo": "bar", "team": "dev"}),
+					buildRouteTableWithSimpleAction("rt-3", "ns-2", "/foo/3", map[string]string{"foo": "bar"}),
+					buildRouteTableWithSimpleAction("rt-4", "ns-3", "/foo/4", map[string]string{"foo": "baz"}),
+					buildRouteTableWithDelegateAction("rt-5", "ns-4", "/foo", nil,
+						&v1.RouteTableSelector{
+							Labels:     map[string]string{"team": "dev"},
+							Namespaces: []string{"ns-1", "ns-5"},
+						}),
+					buildRouteTableWithSimpleAction("rt-6", "ns-5", "/foo/6", map[string]string{"team": "dev"}),
+				}
+			})
+
+			DescribeTable("selector works as expected",
+				func(selector *v1.RouteTableSelector, expectedPrefixMatchers []string) {
+					converted, err := visitor.convertDelegateAction(vs, buildRoute(selector), reports)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(converted).To(HaveLen(len(expectedPrefixMatchers)))
+					for i, prefix := range expectedPrefixMatchers {
+						Expect(converted[i]).To(WithTransform(getFirstPrefixMatcher, Equal(prefix)))
+					}
+				},
+
+				Entry("when no labels nor namespaces are provided",
+					&v1.RouteTableSelector{},
+					[]string{"/foo/2", "/foo/1"},
+				),
+
+				Entry("when a label is specified in the selector (but no namespace)",
+					&v1.RouteTableSelector{
+						Labels: map[string]string{"foo": "bar"},
+					},
+					[]string{"/foo/2"},
+				),
+
+				Entry("when namespaces are specified in the selector (but no labels)",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-1", "ns-2"},
+					},
+					[]string{"/foo/3", "/foo/2", "/foo/1"},
+				),
+
+				Entry("when both namespaces and labels are specified in the selector",
+					&v1.RouteTableSelector{
+						Labels:     map[string]string{"foo": "bar"},
+						Namespaces: []string{"ns-2"},
+					},
+					[]string{"/foo/3"},
+				),
+
+				Entry("when we have multiple levels of delegation",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-4"},
+					},
+					[]string{"/foo/6", "/foo/2"},
+				),
+
+				// This also covers the case where a route table is selected by multiple route tables.
+				// rt-1 and rt-6 are selected both directly by the below selector and indirectly via rt-5.
+				Entry("when selector contains 'all namespaces' wildcard selector (*)",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-1", "*"},
+					},
+					[]string{"/foo/6", "/foo/6", "/foo/4", "/foo/3", "/foo/2", "/foo/2", "/foo/1"},
+				),
+			)
+		})
+
+		When("there are circular references", func() {
+
+			BeforeEach(func() {
+				allRouteTables = v1.RouteTableList{
+					buildRouteTableWithDelegateAction("rt-0", "self", "/foo", nil,
+						&v1.RouteTableSelector{
+							Namespaces: []string{"self"},
+						}),
+
+					buildRouteTableWithDelegateAction("rt-1", "ns-1", "/foo", nil,
+						&v1.RouteTableSelector{
+							Namespaces: []string{"*"},
+							Labels:     map[string]string{"foo": "bar"},
+						}),
+					buildRouteTableWithDelegateAction("rt-2", "ns-2", "/foo/1", map[string]string{"foo": "bar"},
+						&v1.RouteTableSelector{
+							Namespaces: []string{"ns-3"},
+						}),
+					// This one points back to rt-1
+					buildRouteTableWithDelegateAction("rt-3", "ns-3", "/foo/1/2", nil,
+						&v1.RouteTableSelector{
+							Namespaces: []string{"ns-1"},
+						}),
+				}
+			})
+
+			DescribeTable("delegation cycles are detected",
+				func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
+					_, err := visitor.convertDelegateAction(vs, buildRoute(selector), reports)
+					Expect(err).To(HaveOccurred())
+					Expect(err).To(MatchError(delegationCycleErr(expectedCycleInfoMessage)))
+				},
+
+				Entry("a route table selects itself",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"self"},
+					},
+					"[self.rt-0] -> [self.rt-0]",
+				),
+
+				Entry("multi route table cycle scenario",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-1"},
+					},
+					"[ns-1.rt-1] -> [ns-2.rt-2] -> [ns-3.rt-3] -> [ns-1.rt-1]",
+				),
+			)
 		})
 	})
 })

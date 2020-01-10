@@ -12,10 +12,12 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.26.2
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/cosiner/argv v0.0.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.1
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-delve/delve v1.3.2 // indirect
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.4
 	github.com/go-openapi/swag v0.19.5
@@ -40,11 +42,13 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
+	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.11.0
 	github.com/onsi/gomega v1.8.1
 	github.com/opencontainers/go-digest v1.0.0-rc1
+	github.com/peterh/liner v1.1.0 // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/prometheus/client_golang v1.2.1
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
@@ -63,16 +67,19 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.5.0
 	go.opencensus.io v0.22.2
+	go.starlark.net v0.0.0-20191227232015-caa3e9aa5008 // indirect
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/arch v0.0.0-20191126211547-368ea8f32fff // indirect
 	golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20200107162124-548cf772de50 // indirect
 	golang.org/x/tools v0.0.0-20191212051200-825cb0626375 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.7
 	helm.sh/helm/v3 v3.0.0
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0
