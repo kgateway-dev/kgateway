@@ -371,7 +371,7 @@ HELM_DIR := install/helm/gloo
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 $(OUTPUT_DIR)/.helm-prepared:
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)  --generate-helm-docs
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)  --generate-helm-docs
 	touch $@
 
 package-chart: generate-helm-files
@@ -532,14 +532,14 @@ build-kind-assets: push-kind-images build-kind-chart $(OUTPUT_DIR)/glooctl-linux
 .PHONY: build-test-chart
 build-test-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
 .PHONY: build-kind-chart
 build-kind-chart:
 	mkdir -p $(TEST_ASSET_DIR)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go $(VERSION)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
