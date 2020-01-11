@@ -646,7 +646,7 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
-					FIt("supports multiple deployments", func() {
+					It("supports multiple deployments", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=1",
