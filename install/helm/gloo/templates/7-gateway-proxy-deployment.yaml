@@ -9,7 +9,7 @@
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
-{{- $statsConfig := coalesce $spec.stats $global.glooStats -}}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}

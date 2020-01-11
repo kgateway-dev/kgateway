@@ -1,7 +1,7 @@
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
-{{- $statsConfig := coalesce $spec.stats $global.glooStats -}}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
 # config_map
 apiVersion: v1

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix whitespcae issue in helm chart
+    issueLink: https://github.com/solo-io/gloo/issues/2159
