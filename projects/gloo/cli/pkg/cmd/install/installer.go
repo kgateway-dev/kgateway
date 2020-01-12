@@ -111,7 +111,10 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	setExtraValues(installerConfig)
+	err = setExtraValues(installerConfig)
+	if err != nil {
+		return err
+	}
 
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
