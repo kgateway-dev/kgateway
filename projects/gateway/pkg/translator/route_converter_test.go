@@ -1,4 +1,4 @@
-package translator
+package translator_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -38,7 +39,7 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: missingPrefixErr,
+					expectedErr: translator.MissingPrefixErr,
 				},
 				{
 					route: &v1.Route{
@@ -57,7 +58,7 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: missingPrefixErr,
+					expectedErr: translator.MissingPrefixErr,
 				},
 				{
 					route: &v1.Route{
@@ -77,7 +78,7 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: hasHeaderMatcherErr,
+					expectedErr: translator.HasHeaderMatcherErr,
 				},
 				{
 					route: &v1.Route{
@@ -97,7 +98,7 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: hasMethodMatcherErr,
+					expectedErr: translator.HasMethodMatcherErr,
 				},
 				{
 					route: &v1.Route{
@@ -117,7 +118,7 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: hasQueryMatcherErr,
+					expectedErr: translator.HasQueryMatcherErr,
 				},
 				{
 					route: &v1.Route{
@@ -143,10 +144,10 @@ var _ = Describe("route merge util", func() {
 							},
 						},
 					},
-					expectedErr: matcherCountErr,
+					expectedErr: translator.MatcherCountErr,
 				},
 			} {
-				rv := NewRouteVisitor(&v1.VirtualService{}, nil, reporter.ResourceReports{})
+				rv := translator.NewRouteVisitor(&v1.VirtualService{}, nil, reporter.ResourceReports{})
 				_, err := rv.ConvertRoute(badRoute.route)
 				Expect(err).To(Equal(badRoute.expectedErr))
 			}
@@ -176,14 +177,14 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := NewRouteVisitor(vs, nil, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteVisitor(vs, nil, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(0)) // nothing to return, no error
 
 			// missing ref should result in a warning
 			Expect(rpt).To(Equal(reporter.ResourceReports{vs: reporter.Report{
-				Warnings: []string{routeTableMissingWarning(ref)},
+				Warnings: []string{translator.RouteTableMissingWarning(ref)},
 			}}))
 		})
 	})
@@ -215,7 +216,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -263,10 +264,10 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
-			expectedErr := invalidRouteTableForDelegateErr("/foo", "/invalid").Error()
+			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
 			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
 			Expect(converted).To(BeNil())
 		})
@@ -278,7 +279,7 @@ var _ = Describe("route merge util", func() {
 			allRouteTables v1.RouteTableList
 			reports        reporter.ResourceReports
 			vs             *v1.VirtualService
-			visitor        *routeVisitor
+			visitor        translator.RouteConverter
 		)
 
 		buildRouteTableWithSimpleAction := func(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
@@ -362,7 +363,7 @@ var _ = Describe("route merge util", func() {
 				},
 			}
 
-			visitor = NewRouteVisitor(vs, allRouteTables, reports)
+			visitor = translator.NewRouteVisitor(vs, allRouteTables, reports)
 		})
 
 		When("selector has no matches", func() {
@@ -383,7 +384,7 @@ var _ = Describe("route merge util", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(0))
 				Expect(reports).To(Equal(reporter.ResourceReports{vs: reporter.Report{
-					Warnings: []string{noMatchingRouteTablesWarning},
+					Warnings: []string{translator.NoMatchingRouteTablesWarning},
 				}}))
 			})
 		})
@@ -515,7 +516,7 @@ var _ = Describe("route merge util", func() {
 				func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
 					_, err := visitor.ConvertRoute(buildRoute(selector))
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(delegationCycleErr(expectedCycleInfoMessage)))
+					Expect(err).To(MatchError(translator.DelegationCycleErr(expectedCycleInfoMessage)))
 				},
 
 				Entry("a route table selects itself",
