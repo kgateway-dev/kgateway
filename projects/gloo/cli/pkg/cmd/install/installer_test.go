@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"bytes"
-
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/golang/mock/gomock"
@@ -25,6 +24,8 @@ var _ = Describe("Install", func() {
 		mockHelmClient       *mocks.MockHelmClient
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
+		chart                *helmchart.Chart
+		helmRelease          *release.Release
 
 		glooOsVersion          = "test"
 		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-test.tgz"
@@ -70,6 +71,14 @@ rules:
   resources: ["validatingwebhookconfigurations"]
   verbs: ["get", "update"]
 `
+	)
+
+	BeforeEach(func() {
+		version.Version = glooOsVersion
+
+		ctrl = gomock.NewController(GinkgoT())
+		mockHelmClient = mocks.NewMockHelmClient(ctrl)
+		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 
 		chart = &helmchart.Chart{
 			Metadata: &helmchart.Metadata{
@@ -80,7 +89,6 @@ rules:
 				Data: []byte(testCrdContent),
 			}},
 		}
-
 		helmRelease = &release.Release{
 			Chart: chart,
 			Hooks: []*release.Hook{
@@ -93,14 +101,6 @@ rules:
 			},
 			Namespace: defaults.GlooSystem,
 		}
-	)
-
-	BeforeEach(func() {
-		version.Version = glooOsVersion
-
-		ctrl = gomock.NewController(GinkgoT())
-		mockHelmClient = mocks.NewMockHelmClient(ctrl)
-		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 	})
 
 	AfterEach(func() {
@@ -169,8 +169,6 @@ rules:
 
 	It("installs enterprise cleanly by default", func() {
 
-		dependenciesBefore := chart.Dependencies()
-
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		defaultInstall(true,
 			map[string]interface{}{
@@ -181,8 +179,6 @@ rules:
 				},
 			},
 			glooEnterpriseChartUri)
-
-		chart.SetDependencies(dependenciesBefore...)
 	})
 
 	It("installs as enterprise cleanly if passed enterprise helmchart override", func() {
@@ -193,8 +189,6 @@ rules:
 			CreateNamespace:   true,
 			HelmChartOverride: glooEnterpriseChartUri,
 		}
-
-		dependenciesBefore := chart.Dependencies()
 
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		installWithConfig(false,
@@ -207,8 +201,6 @@ rules:
 			},
 			glooEnterpriseChartUri,
 			installConfig)
-
-		chart.SetDependencies(dependenciesBefore...)
 	})
 
 	It("installs as open-source cleanly if passed open-source helmchart override with enterprise subcommand", func() {
