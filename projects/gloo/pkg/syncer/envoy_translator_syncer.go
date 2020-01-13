@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
@@ -123,7 +123,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
-			err := errors.Wrapf(err, "translation loop failed")
+			err := eris.Wrapf(err, "translation loop failed")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
@@ -153,7 +153,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		}
 
 		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
-			err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
+			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
@@ -180,7 +180,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 	if err := s.reporter.WriteReports(ctx, allReports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
-		return errors.Wrapf(err, "writing reports")
+		return eris.Wrapf(err, "writing reports")
 	}
 	return nil
 }

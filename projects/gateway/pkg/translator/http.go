@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/go-utils/hashutils"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"k8s.io/apimachinery/pkg/labels"
@@ -340,21 +340,21 @@ func (rv *routeVisitor) convertRoute(ownerResource resources.InputResource, ours
 }
 
 var (
-	matcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
-	missingPrefixErr    = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
-	invalidPrefixErr    = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
-	hasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
-	hasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
-	hasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
-	delegationCycleErr  = errors.New("invalid route: delegation cycle detected")
+	matcherCountErr     = eris.New("invalid route: routes with delegate actions must omit or specify a single matcher")
+	missingPrefixErr    = eris.New("invalid route: routes with delegate actions must use a prefix matcher")
+	invalidPrefixErr    = eris.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
+	hasHeaderMatcherErr = eris.New("invalid route: routes with delegate actions cannot use header matchers")
+	hasMethodMatcherErr = eris.New("invalid route: routes with delegate actions cannot use method matchers")
+	hasQueryMatcherErr  = eris.New("invalid route: routes with delegate actions cannot use query matchers")
+	delegationCycleErr  = eris.New("invalid route: delegation cycle detected")
 
-	noDelegateActionErr = errors.New("internal error: convertDelegateAction() called on route without delegate action")
+	noDelegateActionErr = eris.New("internal error: convertDelegateAction() called on route without delegate action")
 
 	routeTableMissingWarning = func(ref core.ResourceRef) string {
 		return fmt.Sprintf("route table %v.%v missing", ref.Namespace, ref.Name)
 	}
 	invalidRouteTableForDelegateErr = func(delegatePrefix, pathString string) error {
-		return errors.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
+		return eris.Wrapf(invalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 	}
 )
 
@@ -381,7 +381,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		switch selectorType := delegate.GetDelegationType().(type) {
 		case *v1.DelegateAction_Selector:
 			// TODO(marco): handle selector
-			return nil, errors.New("delegate action selectors are not implemented yet!")
+			return nil, eris.New("delegate action selectors are not implemented yet!")
 		case *v1.DelegateAction_Ref:
 			routeTableRef = *selectorType.Ref
 		}
@@ -416,7 +416,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		merged, err := mergeRoutePlugins(routeTableRoute.GetOptions(), plugins)
 		if err != nil {
 			// should never happen
-			return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
+			return nil, eris.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
 		}
 		routeTableRoute.Options = merged
 
@@ -428,7 +428,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 
 		subRoutes, err := subRv.convertRoute(routeTable, routeTableRoute, reports)
 		if err != nil {
-			return nil, errors.Wrapf(err, "converting sub-route")
+			return nil, eris.Wrapf(err, "converting sub-route")
 		}
 		for _, sub := range subRoutes {
 			if err := appendSource(sub, routeTable); err != nil {

@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -43,7 +43,7 @@ func (p *plugin) ProcessRouteAction(params plugins.RouteActionParams, inAction *
 		}
 		return setWeightedClusters(params.Params, md, out)
 	}
-	return errors.Errorf("unknown upstream destination type")
+	return eris.Errorf("unknown upstream destination type")
 }
 
 func getMetadataMatch(dest *v1.Destination, allUpstreams v1.UpstreamList) (*envoycore.Metadata, *core.ResourceRef, error) {

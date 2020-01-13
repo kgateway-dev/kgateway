@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -30,7 +30,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 				Enterprise:     true,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
-				return errors.Wrapf(err, "installing Gloo Enterprise in gateway mode")
+				return eris.Wrapf(err, "installing Gloo Enterprise in gateway mode")
 			}
 
 			return nil

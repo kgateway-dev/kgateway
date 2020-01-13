@@ -10,12 +10,12 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1alpha1 "github.com/solo-io/gloo/projects/knative/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/knative/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
@@ -134,14 +134,14 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	g := &errgroup.Group{}
 	g.Go(func() error {
 		if err := s.propagateProxyStatus(ctx, externalProxy, externalIngresses); err != nil {
-			return errors.Wrapf(err, "failed to propagate external proxy status "+
+			return eris.Wrapf(err, "failed to propagate external proxy status "+
 				"to ingress objects")
 		}
 		return nil
 	})
 	g.Go(func() error {
 		if err := s.propagateProxyStatus(ctx, internalProxy, internalIngresses); err != nil {
-			return errors.Wrapf(err, "failed to propagate internal proxy status "+
+			return eris.Wrapf(err, "failed to propagate internal proxy status "+
 				"to ingress objects")
 		}
 		return nil
@@ -162,7 +162,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 		case <-ctx.Done():
 			return nil
 		case <-timeout:
-			return errors.Errorf("timed out waiting for proxy status to be updated")
+			return eris.Errorf("timed out waiting for proxy status to be updated")
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
 			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})

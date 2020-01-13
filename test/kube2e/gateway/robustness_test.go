@@ -27,7 +27,7 @@ import (
 	. "github.com/onsi/gomega"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -165,7 +165,7 @@ var _ = Describe("Robustness tests", func() {
 			if proxy.Status.State == core.Status_Accepted {
 				return nil
 			}
-			return errors.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
+			return eris.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
 		}, 60*time.Second, 1*time.Second).Should(BeNil())
 
 		By("verify that we can route to the service")
@@ -225,7 +225,7 @@ var _ = Describe("Robustness tests", func() {
 			if proxy.Status.State == core.Status_Warning {
 				return nil
 			}
-			return errors.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
+			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
 		}, 20*time.Second, 1*time.Second).Should(BeNil())
 
 		By("force an update of the service endpoints")
@@ -370,11 +370,11 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 		if len(pods.Items) == int(replicas) {
 			for _, pod := range pods.Items {
 				if pod.Status.Phase != corev1.PodRunning {
-					return errors.Errorf("expected pod %v to be %s but was %s", pod.Name, corev1.PodRunning, pod.Status.Phase)
+					return eris.Errorf("expected pod %v to be %s but was %s", pod.Name, corev1.PodRunning, pod.Status.Phase)
 				}
 			}
 			return nil
 		}
-		return errors.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
+		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
 }

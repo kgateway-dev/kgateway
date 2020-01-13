@@ -3,7 +3,7 @@ package ec2
 import (
 	"context"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
@@ -64,10 +64,10 @@ func (c *ec2InstanceLister) ListWithClient(ctx context.Context, svc *ec2.EC2) ([
 
 var (
 	GetClientError = func(err error) error {
-		return errors.Wrapf(err, "unable to get aws client")
+		return eris.Wrapf(err, "unable to get aws client")
 	}
 
 	DescribeInstancesError = func(err error) error {
-		return errors.Wrapf(err, "unable to describe instances")
+		return eris.Wrapf(err, "unable to describe instances")
 	}
 )

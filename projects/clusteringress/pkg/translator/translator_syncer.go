@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
@@ -83,7 +83,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	}
 
 	if err := s.propagateProxyStatus(ctx, proxy, snap.Clusteringresses); err != nil {
-		return errors.Wrapf(err, "failed to propagate proxy status "+
+		return eris.Wrapf(err, "failed to propagate proxy status "+
 			"to clusteringress objects")
 	}
 
@@ -102,7 +102,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 		case <-ctx.Done():
 			return nil
 		case <-timeout:
-			return errors.Errorf("timed out waiting for proxy status to be updated")
+			return eris.Errorf("timed out waiting for proxy status to be updated")
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
 			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})

@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 )
 
@@ -137,7 +137,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 
 func copyGrpcSettings(cfg *envoyalcfg.HttpGrpcAccessLogConfig, alsSettings *als.AccessLog_GrpcService, params plugins.Params) error {
 	if alsSettings.GrpcService == nil {
-		return errors.New("grpc service object cannot be nil")
+		return eris.New("grpc service object cannot be nil")
 	}
 
 	svc := &envoycore.GrpcService{

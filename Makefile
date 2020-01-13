@@ -119,7 +119,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
-	find * -type f | grep .sk.md | xargs --no-run-if-empty rm
+	find * -type f | grep .sk.md | xargs rm
 	GO111MODULE=on go generate ./...
 	rm docs/content/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	gofmt -w $(SUBDIRS)

@@ -20,7 +20,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/protoutils"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
@@ -34,7 +34,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 	portFwd.Stdout = mergedPortForwardOutput
 	portFwd.Stderr = mergedPortForwardOutput
 	if err := portFwd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to start port-forward")
+		return nil, eris.Wrapf(err, "failed to start port-forward")
 	}
 	defer func() {
 		if portFwd.Process != nil {
@@ -66,7 +66,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, errors.Errorf("cancelled")
+			return nil, eris.Errorf("cancelled")
 		case err := <-errs:
 			if verboseErrors {
 				contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v", err.Error())
@@ -76,7 +76,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 		case <-timer:
 			contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v",
 				zap.Any("cmdErrors", string(mergedPortForwardOutput.Bytes())))
-			return nil, errors.Errorf("timed out trying to connect to Envoy admin port")
+			return nil, eris.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}
 
@@ -178,7 +178,7 @@ func listEndpoints(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	eds := v2.NewEndpointDiscoveryServiceClient(conn)
 	dresp, err := eds.FetchEndpoints(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("endpoints err: %v", err)
+		return nil, eris.Errorf("endpoints err: %v", err)
 	}
 	var class []v2.ClusterLoadAssignment
 
@@ -199,7 +199,7 @@ func listListeners(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	ldsc := v2.NewListenerDiscoveryServiceClient(conn)
 	dresp, err := ldsc.FetchListeners(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("listeners err: %v", err)
+		return nil, eris.Errorf("listeners err: %v", err)
 	}
 	var listeners []v2.Listener
 
@@ -222,7 +222,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *v2.DiscoveryRequ
 
 	dresp, err := ldsc.FetchRoutes(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("routes err: %v", err)
+		return nil, eris.Errorf("routes err: %v", err)
 	}
 	var routes []v2.RouteConfiguration
 

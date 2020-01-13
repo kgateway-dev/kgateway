@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
@@ -24,7 +24,7 @@ func DestinationToUpstreamRef(dest *v1.Destination) (*core.ResourceRef, error) {
 	case *v1.Destination_Consul:
 		ref = consul.DestinationToUpstreamRef(d.Consul)
 	default:
-		return nil, errors.Errorf("no destination type specified")
+		return nil, eris.Errorf("no destination type specified")
 	}
 	return ref, nil
 }

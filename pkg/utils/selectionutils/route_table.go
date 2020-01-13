@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/pkg/listers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -40,7 +40,7 @@ func (s *routeTableSelector) SelectOrCreateRouteTable(ctx context.Context, ref *
 	// unlike virtual service, name must be provided as there is no "default" virtual service
 	name := ref.GetName()
 	if name == "" {
-		return nil, errors.New("must provide a name for the target route table")
+		return nil, eris.New("must provide a name for the target route table")
 	}
 
 	ns := ref.GetNamespace()

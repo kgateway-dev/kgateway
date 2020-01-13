@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
@@ -32,7 +32,7 @@ import (
 
 var (
 	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
-		return errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
+		return eris.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
 	}
 )
 
@@ -150,7 +150,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 func (i *installer) createNamespace(namespace string) {
 	_, err := i.kubeNsClient.Get(namespace, metav1.GetOptions{})
-	if apierrors.IsNotFound(err) {
+	if apieris.IsNotFound(err) {
 		fmt.Printf("Creating namespace %s... ", namespace)
 		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
@@ -251,14 +251,14 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 	}
 
 	if path.Ext(helmChartArchiveUri) != ".tgz" && !strings.HasSuffix(helmChartArchiveUri, ".tar.gz") {
-		return "", errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmChartArchiveUri)
+		return "", eris.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmChartArchiveUri)
 	}
 	return helmChartArchiveUri, nil
 }
 
 func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	if !version.IsReleaseVersion() && chartOverride == "" {
-		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+		return "", eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
 	}
 	return version.Version, nil

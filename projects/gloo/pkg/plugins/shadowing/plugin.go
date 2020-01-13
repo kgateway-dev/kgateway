@@ -8,14 +8,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 var (
-	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
-	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
+	InvalidRouteActionError  = eris.New("cannot use shadowing plugin on non-Route_Route route actions")
+	UnspecifiedUpstreamError = eris.New("invalid plugin spec: must specify an upstream ref")
 	InvalidNumeratorError    = func(num float32) error {
-		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
+		return eris.Errorf("shadow percentage must be between 0 and 100, received %v", num)
 	}
 )
 

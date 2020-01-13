@@ -1,12 +1,12 @@
 package constants
 
 import (
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 )
 
 var (
-	SubcommandError = errors.New("please select a subcommand")
+	SubcommandError = eris.New("please select a subcommand")
 )
 
 var (

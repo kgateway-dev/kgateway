@@ -25,7 +25,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -59,7 +59,7 @@ func waitKnativeApiserviceReady() error {
 			break
 		}
 		if ctx.Err() != nil {
-			return errors.Errorf("timed out waiting for knative apiservice to be ready: %v", ctx.Err())
+			return eris.Errorf("timed out waiting for knative apiservice to be ready: %v", ctx.Err())
 		}
 		time.Sleep(1 * time.Second)
 	}
@@ -78,16 +78,16 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				if !opts.Install.DryRun {
 					installed, _, err := checkKnativeInstallation()
 					if err != nil {
-						return errors.Wrapf(err, "checking for existing knative installation")
+						return eris.Wrapf(err, "checking for existing knative installation")
 					}
 					if installed {
-						return errors.Errorf("knative-serving namespace found. please " +
+						return eris.Errorf("knative-serving namespace found. please " +
 							"uninstall the previous version of knative, or re-run this command with --install-knative=false")
 					}
 				}
 
 				if err := installKnativeServing(opts); err != nil {
-					return errors.Wrapf(err, "installing knative components failed. "+
+					return eris.Wrapf(err, "installing knative components failed. "+
 						"options used: %#v", opts.Install.Knative)
 				}
 			}
@@ -108,7 +108,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 				}
 				knativeOverrides, err := chartutil.ReadValues([]byte(knativeValues))
 				if err != nil {
-					return errors.Wrapf(err, "parsing override values for knative mode")
+					return eris.Wrapf(err, "parsing override values for knative mode")
 				}
 
 				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
@@ -116,7 +116,7 @@ func knativeCmd(opts *options.Options) *cobra.Command {
 					ExtraValues:    knativeOverrides,
 					Verbose:        opts.Top.Verbose,
 				}); err != nil {
-					return errors.Wrapf(err, "installing gloo in knative mode")
+					return eris.Wrapf(err, "installing gloo in knative mode")
 				}
 			}
 			return nil
@@ -156,11 +156,11 @@ func installKnativeServing(opts *options.Options) error {
 	// install crds first
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
 	if err := install.KubectlApply([]byte(knativeCrdManifests)); err != nil {
-		return errors.Wrapf(err, "installing knative crds with kubectl apply")
+		return eris.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
 	if err := waitForCrdsToBeRegistered(opts.Top.Ctx, knativeCrdNames); err != nil {
-		return errors.Wrapf(err, "waiting for knative CRDs to be registered")
+		return eris.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
@@ -170,13 +170,13 @@ func installKnativeServing(opts *options.Options) error {
 		// https://github.com/knative/serving/issues/6353
 		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
 		if err2 := install.KubectlApply([]byte(manifests)); err2 != nil {
-			return errors.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
+			return eris.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
 		}
 	}
 	// label the knative-serving namespace as belonging to us
 	if err := install.Kubectl(nil, "annotate", "namespace",
 		"knative-serving", installedByUsAnnotationKey+"="+string(knativeOptsJson)); err != nil {
-		return errors.Wrapf(err, "annotating installation namespace")
+		return eris.Wrapf(err, "annotating installation namespace")
 	}
 
 	fmt.Fprintln(os.Stderr, "Knative successfully installed!")
@@ -201,7 +201,7 @@ func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *option
 				installOpts := ns.Annotations[installedByUsAnnotationKey]
 				var opts options.Knative
 				if err := yaml.Unmarshal([]byte(installOpts), &opts); err != nil {
-					return false, nil, errors.Wrapf(err, "parsing install opts "+
+					return false, nil, eris.Wrapf(err, "parsing install opts "+
 						"from knative-serving namespace annotation %v", installedByUsAnnotationKey)
 				}
 				return true, &opts, nil
@@ -252,7 +252,7 @@ func getManifestForInstallation(url string) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != 200 {
-		return "", errors.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
+		return "", eris.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
 	}
 	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -405,7 +405,7 @@ func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
 	for _, crdName := range crds {
 		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
 		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
-			return errors.Wrapf(err, "waiting for crd %v to become registered", crdName)
+			return eris.Wrapf(err, "waiting for crd %v to become registered", crdName)
 		}
 	}
 

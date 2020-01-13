@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 var _ plugins.Plugin = new(Plugin)
@@ -20,7 +20,7 @@ type Plugin struct{}
 
 var (
 	InvalidRouteTypeError = func(e error) error {
-		return errors.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
+		return eris.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
 	}
 )
 

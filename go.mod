@@ -51,12 +51,13 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
+	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.11.7
+	github.com/solo-io/go-utils v0.13.1
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.12.1
+	github.com/solo-io/solo-kit v0.13.0
 	github.com/solo-io/wasme v0.0.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5

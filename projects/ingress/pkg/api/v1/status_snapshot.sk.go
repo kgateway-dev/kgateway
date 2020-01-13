@@ -8,7 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -51,17 +51,17 @@ func (s StatusSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	ServicesHash, err := s.hashServices(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("services", ServicesHash))
 	IngressesHash, err := s.hashIngresses(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("ingresses", IngressesHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
@@ -91,7 +91,7 @@ func (ss StatusSnapshotStringer) String() string {
 func (s StatusSnapshot) Stringer() StatusSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return StatusSnapshotStringer{
 		Version:   snapshotHash,

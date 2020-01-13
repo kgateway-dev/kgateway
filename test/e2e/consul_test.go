@@ -9,7 +9,7 @@ import (
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/hashicorp/consul/api"
 
@@ -53,7 +53,7 @@ var _ = Describe("Consul e2e", func() {
 			return "", err
 		}
 		if response.StatusCode != 200 {
-			return "", errors.Errorf("bad status code: %v (%v)", response.StatusCode, string(body))
+			return "", eris.Errorf("bad status code: %v (%v)", response.StatusCode, string(body))
 		}
 		return string(body), nil
 	}

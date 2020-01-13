@@ -5,7 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/spf13/cobra"
 )
@@ -45,11 +45,11 @@ func Routes(opts *options.Options) *cobra.Command {
 				return err
 			}
 			if len(virtualServices.Names()) != 1 {
-				return errors.Errorf("no virtualservice id provided")
+				return eris.Errorf("no virtualservice id provided")
 			}
 			vs, err := virtualServices.Find(opts.Metadata.Namespace, opts.Metadata.Name)
 			if err != nil {
-				return errors.Errorf("virtualservice id provided was incorrect")
+				return eris.Errorf("virtualservice id provided was incorrect")
 			}
 			_ = printers.PrintRoutes(vs.VirtualHost.Routes, opts.Top.Output)
 			return nil

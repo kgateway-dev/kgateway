@@ -6,7 +6,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -15,23 +15,23 @@ import (
 func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
-		return errors.Wrapf(err, "parsing resource from yaml")
+		return eris.Wrapf(err, "parsing resource from yaml")
 	}
 	switch res := resource.(type) {
 	case *gloov1.Upstream:
 		us, err := helpers.MustUpstreamClient().Write(res, clients.WriteOpts{})
 		if err != nil {
-			return errors.Wrapf(err, "saving Upstream to storage")
+			return eris.Wrapf(err, "saving Upstream to storage")
 		}
 		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil)
 	case *v1.VirtualService:
 		vs, err := helpers.MustVirtualServiceClient().Write(res, clients.WriteOpts{})
 		if err != nil {
-			return errors.Wrapf(err, "saving VirtualService to storage")
+			return eris.Wrapf(err, "saving VirtualService to storage")
 		}
 		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType)
 	default:
-		return errors.Errorf("cli error: unimplemented resource type %v", resource)
+		return eris.Errorf("cli error: unimplemented resource type %v", resource)
 	}
 	return nil
 }
@@ -56,5 +56,5 @@ func resourceFromYaml(yml []byte) (resources.Resource, error) {
 		}
 		return &us, nil
 	}
-	return nil, errors.Errorf("unknown object: %v", untypedObj)
+	return nil, eris.Errorf("unknown object: %v", untypedObj)
 }

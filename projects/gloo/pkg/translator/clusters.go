@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
@@ -52,7 +52,7 @@ func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.
 		}
 	}
 	if err := validateCluster(out); err != nil {
-		reports.AddError(upstream, errors.Wrapf(err, "cluster was configured improperly "+
+		reports.AddError(upstream, eris.Wrapf(err, "cluster was configured improperly "+
 			"by one or more plugins: %v", out))
 	}
 	return out
@@ -95,7 +95,7 @@ var (
 	}
 
 	NilFieldError = func(fieldName string) error {
-		return errors.Errorf("The field %s cannot be nil", fieldName)
+		return eris.Errorf("The field %s cannot be nil", fieldName)
 	}
 )
 
@@ -168,7 +168,7 @@ func validateCluster(c *envoyapi.Cluster) error {
 	clusterType := c.GetType()
 	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
 		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
-			return errors.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
+			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
 	return nil

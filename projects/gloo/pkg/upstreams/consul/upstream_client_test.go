@@ -11,9 +11,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/rotisserie/eris"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -192,7 +192,7 @@ var _ = Describe("ConsulClient", func() {
 
 						// Simulate failure on the first attempt
 						if attemptNum == 1 {
-							return nil, nil, errors.New("flake")
+							return nil, nil, eris.New("flake")
 						}
 
 						return map[string][]string{"svc-1": nil, "svc-2": nil}, &consulapi.QueryMeta{LastIndex: 200}, nil

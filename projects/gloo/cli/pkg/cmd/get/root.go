@@ -7,13 +7,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var EmptyGetError = errors.New("please provide a subcommand")
-var UnsetNamespaceError = errors.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
+var EmptyGetError = eris.New("please provide a subcommand")
+var UnsetNamespaceError = eris.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
