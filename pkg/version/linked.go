@@ -5,7 +5,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 var UndefinedVersion = "undefined"
@@ -14,7 +14,7 @@ var UndefinedVersion = "undefined"
 var Version = UndefinedVersion
 
 var InvalidVersionError = func(err error) error {
-	return errors.Wrapf(err, "invalid version")
+	return eris.Wrapf(err, "invalid version")
 }
 
 func IsReleaseVersion() (bool, error) {
