@@ -804,6 +804,7 @@ var _ = Describe("Translator", func() {
 						},
 					}
 				})
+
 				It("merges the vs and route tables to a single gloov1.VirtualHost", func() {
 					proxy, errs := translator.Translate(context.TODO(), "", ns, snap, snap.Gateways)
 					Expect(errs.ValidateStrict()).NotTo(HaveOccurred())

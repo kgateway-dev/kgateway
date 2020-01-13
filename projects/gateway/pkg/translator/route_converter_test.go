@@ -146,8 +146,8 @@ var _ = Describe("route merge util", func() {
 					expectedErr: matcherCountErr,
 				},
 			} {
-				rv := &routeVisitor{}
-				_, err := rv.convertDelegateAction(&v1.VirtualService{}, badRoute.route, reporter.ResourceReports{})
+				rv := NewRouteVisitor(&v1.VirtualService{}, nil, reporter.ResourceReports{})
+				_, err := rv.ConvertRoute(badRoute.route)
 				Expect(err).To(Equal(badRoute.expectedErr))
 			}
 		})
@@ -175,8 +175,9 @@ var _ = Describe("route merge util", func() {
 
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
-			rv := &routeVisitor{}
-			converted, err := rv.convertDelegateAction(vs, route, rpt)
+
+			converted, err := NewRouteVisitor(vs, nil, rpt).ConvertRoute(route)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(0)) // nothing to return, no error
 
@@ -213,8 +214,9 @@ var _ = Describe("route merge util", func() {
 
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
-			rv := &routeVisitor{tables: v1.RouteTableList{&rt}}
-			converted, err := rv.convertDelegateAction(vs, route, rpt)
+
+			converted, err := NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
@@ -260,8 +262,9 @@ var _ = Describe("route merge util", func() {
 
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
-			rv := &routeVisitor{tables: v1.RouteTableList{&rt}}
-			converted, err := rv.convertDelegateAction(vs, route, rpt)
+
+			converted, err := NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+
 			Expect(err).NotTo(HaveOccurred())
 			expectedErr := invalidRouteTableForDelegateErr("/foo", "/invalid").Error()
 			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
@@ -358,7 +361,8 @@ var _ = Describe("route merge util", func() {
 					Namespace: "ns-1",
 				},
 			}
-			visitor = &routeVisitor{tables: allRouteTables}
+
+			visitor = NewRouteVisitor(vs, allRouteTables, reports)
 		})
 
 		When("selector has no matches", func() {
@@ -371,10 +375,10 @@ var _ = Describe("route merge util", func() {
 			})
 
 			It("returns the appropriate warning", func() {
-				converted, err := visitor.convertDelegateAction(vs, buildRoute(&v1.RouteTableSelector{
+				converted, err := visitor.ConvertRoute(buildRoute(&v1.RouteTableSelector{
 					Labels:     map[string]string{"team": "dev", "foo": "bar"},
 					Namespaces: []string{"*"},
-				}), reports)
+				}))
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(0))
@@ -396,9 +400,9 @@ var _ = Describe("route merge util", func() {
 			})
 
 			It("merged routes are sorted by descending specificity", func() {
-				converted, err := visitor.convertDelegateAction(vs, buildRoute(&v1.RouteTableSelector{
+				converted, err := visitor.ConvertRoute(buildRoute(&v1.RouteTableSelector{
 					Namespaces: []string{"ns-1"},
-				}), reports)
+				}))
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(4))
@@ -428,7 +432,7 @@ var _ = Describe("route merge util", func() {
 
 			DescribeTable("selector works as expected",
 				func(selector *v1.RouteTableSelector, expectedPrefixMatchers []string) {
-					converted, err := visitor.convertDelegateAction(vs, buildRoute(selector), reports)
+					converted, err := visitor.ConvertRoute(buildRoute(selector))
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(HaveLen(len(expectedPrefixMatchers)))
 					for i, prefix := range expectedPrefixMatchers {
@@ -509,7 +513,7 @@ var _ = Describe("route merge util", func() {
 
 			DescribeTable("delegation cycles are detected",
 				func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
-					_, err := visitor.convertDelegateAction(vs, buildRoute(selector), reports)
+					_, err := visitor.ConvertRoute(buildRoute(selector))
 					Expect(err).To(HaveOccurred())
 					Expect(err).To(MatchError(delegationCycleErr(expectedCycleInfoMessage)))
 				},
