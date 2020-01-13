@@ -34,11 +34,11 @@ var (
 	}
 	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
 		if domain == "" {
-			return errors.Errorf("domain conflict: other virtual services associated with the gateway that manages this "+
-				"virtual service don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
+			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
+				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
 		}
 		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
-			"associated with the gateway that manages this virtual service: %v", domain, conflictingVsNames)
+			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
 	}
 	GatewayHasConflictingVirtualServicesErr = func(conflictingDomains []string) error {
 		var loggedDomains []string
@@ -338,7 +338,7 @@ var (
 	}
 	missingRefAndSelectorWarning = func(res resources.InputResource) string {
 		ref := res.GetMetadata().Ref()
-		return fmt.Sprintf("cannot determine delegation target for %T %v.%v: you must specify a route table "+
+		return fmt.Sprintf("cannot determine delegation target for %T %s.%s: you must specify a route table "+
 			"either via a resource reference or a selector", res, ref.Namespace, ref.Name)
 	}
 )
@@ -366,7 +366,7 @@ func (rv *routeVisitor) convertDelegateAction(routingResource resources.InputRes
 		}
 		routeTables = v1.RouteTableList{routeTable}
 	} else if rtSelector := delegate.GetSelector(); rtSelector != nil {
-		routeTables = rv.routeTablesForSelector(rtSelector, routingResource.GetMetadata().Namespace)
+		routeTables = routeTablesForSelector(rv.tables, rtSelector, routingResource.GetMetadata().Namespace)
 
 		if len(routeTables) == 0 {
 			reports.AddWarning(routingResource, noMatchingRouteTablesWarning)
@@ -487,7 +487,7 @@ func getRouteTableRef(delegate *v1.DelegateAction) *core.ResourceRef {
 	return delegate.GetRef()
 }
 
-func (rv *routeVisitor) routeTablesForSelector(selector *v1.RouteTableSelector, ownerNamespace string) v1.RouteTableList {
+func routeTablesForSelector(routeTables v1.RouteTableList, selector *v1.RouteTableSelector, ownerNamespace string) v1.RouteTableList {
 	type nsSelectorType int
 	const (
 		// Match route tables in the owner namespace
@@ -514,7 +514,7 @@ func (rv *routeVisitor) routeTablesForSelector(selector *v1.RouteTableSelector, 
 	}
 
 	var matchingRouteTables v1.RouteTableList
-	for _, candidate := range rv.tables {
+	for _, candidate := range routeTables {
 
 		// Check whether labels match
 		if labelSelector != nil {
