@@ -6,11 +6,12 @@ package mock_cache
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
-	go_digest "github.com/opencontainers/go-digest"
 	io "io"
 	http "net/http"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	go_digest "github.com/opencontainers/go-digest"
 )
 
 // MockCache is a mock of Cache interface

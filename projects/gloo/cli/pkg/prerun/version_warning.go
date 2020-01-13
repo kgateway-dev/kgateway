@@ -6,11 +6,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/rotisserie/eris"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	versioncmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
 	versiondiscovery "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/versionutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 

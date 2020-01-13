@@ -6,10 +6,11 @@ package mocks
 
 import (
 	context "context"
+	reflect "reflect"
+
 	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	gomock "github.com/golang/mock/gomock"
 	metadata "google.golang.org/grpc/metadata"
-	reflect "reflect"
 )
 
 // MockMetricsService_StreamMetricsServer is a mock of MetricsService_StreamMetricsServer interface

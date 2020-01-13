@@ -1,8 +1,8 @@
 package helm
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"helm.sh/helm/v3/pkg/release"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

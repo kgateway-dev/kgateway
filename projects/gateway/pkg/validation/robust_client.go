@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/avast/retry-go"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/rotisserie/eris"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

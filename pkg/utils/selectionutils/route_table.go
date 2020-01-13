@@ -3,8 +3,8 @@ package selectionutils
 import (
 	"context"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/pkg/listers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
