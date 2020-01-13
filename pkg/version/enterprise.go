@@ -2,12 +2,12 @@ package version
 
 import (
 	"math"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/go-utils/versionutils/git"
 	"github.com/spf13/afero"
 	"helm.sh/helm/v3/pkg/repo"
 )
@@ -70,8 +70,7 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 				}
 			}
 
-			tag := "v" + strings.TrimPrefix(chartVersion.Version, "v")
-			version, err := versionutils.ParseVersion(tag)
+			version, err := versionutils.ParseVersion(git.AppendTagPrefix(chartVersion.Version))
 			if err != nil {
 				continue
 			}
