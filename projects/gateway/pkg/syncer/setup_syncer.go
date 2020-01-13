@@ -211,12 +211,7 @@ func RunGateway(opts translator.Opts) error {
 			return errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
 		}
 
-		notificationStream, err := validationClient.NotifyOnResync(ctx, &validation.NotifyOnResyncRequest{})
-		if err != nil {
-			return errors.Wrapf(err, "failed to stream notifications from validation server.")
-		}
-
-		notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, notificationStream)
+		notifications, err = gatewayvalidation.MakeNotificationChannel(ctx, validationClient)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read notifications from stream")
 		}
