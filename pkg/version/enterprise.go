@@ -74,6 +74,10 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 			if err != nil {
 				continue
 			}
+
+			// with the default implementation of MustIsGreaterThanOrEqualTo,
+			// all rc releases will be larger than equivalent beta releases. (1.0.0-rc1 > 1.0.0-beta8)
+			// since those are the only allowed labels in Gloo, this tiebreak is acceptable
 			versionConstraintSatisfied := maxVersion.MustIsGreaterThanOrEqualTo(*version)
 			if !versionConstraintSatisfied {
 				continue
