@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"bytes"
+
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/golang/mock/gomock"
