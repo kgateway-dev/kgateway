@@ -59,5 +59,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 	flagutils.AddVerboseFlag(pflags, opts)
 
+	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

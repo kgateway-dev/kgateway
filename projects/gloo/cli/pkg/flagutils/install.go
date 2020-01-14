@@ -37,9 +37,3 @@ func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.BoolVarP(&install.InstallKnativeMonitoring, "install-monitoring", "m", false,
 		"Bundle Knative-Monitoring with your Gloo installation. Requires install-knative to be true")
 }
-
-// currently only used by install/uninstall but should be changed if it gets shared by more
-func AddVerboseFlag(set *pflag.FlagSet, opts *options.Options) {
-	set.BoolVarP(&opts.Top.Verbose, "verbose", "v", false,
-		"If true, output from kubectl commands will print to stdout/stderr")
-}
