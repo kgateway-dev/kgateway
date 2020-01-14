@@ -1,6 +1,7 @@
 ---
 title: "Architecture"
 weight: 30
+description: A description of the high-level architecture behind Gloo.
 ---
 
 ## Overview

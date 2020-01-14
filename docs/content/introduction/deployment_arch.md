@@ -1,6 +1,7 @@
 ---
 title: "Deployment Architecture"
 weight: 35
+description: Deployment options and patterns for Gloo.
 ---
 
 Gloo has a very flexible architecture and can be deployed in many ways on various infrastructure. If you have access to Kubernetes, we recommend it because it simplifies operations. Kubernetes, however, is not the only way to deploy Gloo. You can deploy and manage Gloo on any infrastructure (think VMs, or other container orchestrators) with out of the box support for Consul as the configuration backend. . The question you are probably asking: what options make sense for which problems? Let's take a look at some deployment architectures for Gloo:
