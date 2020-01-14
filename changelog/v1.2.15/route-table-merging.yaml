@@ -1,0 +1,9 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Update the delegation API to support delegating to multiple route tables. Route tables to delegate to can be
+    selected by either namespaces, labels, or both, using the new `RouteTableSelector` field.
+    The routes of all matching route tables will be merged and the resulting route set will be sorted by descending
+    specificity of the matchers on each route, i.e. matchers with longer prefixes will appear first (delegated routes can only have prefix matchers).
+  issueLink: https://github.com/solo-io/gloo/issues/2054
+  resolvesIssue: false
