@@ -6,9 +6,11 @@ import (
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
-	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -99,6 +101,20 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
+	// determine if it's an enterprise chart by checking if has gloo as a dependency
+	installerConfig.Enterprise = false
+	for _, dependency := range chartObj.Dependencies() {
+		if dependency.Metadata.Name == constants.GlooReleaseName {
+			installerConfig.Enterprise = true
+			break
+		}
+	}
+
+	err = setExtraValues(installerConfig)
+	if err != nil {
+		return err
+	}
+
 	// Merge values provided via the '--values' flag
 	valueOpts := &values.Options{
 		ValueFiles: installerConfig.InstallCliArgs.HelmChartValueFileNames,
@@ -167,6 +183,45 @@ func (i *installer) createNamespace(namespace string) {
 
 }
 
+// if enterprise, nest any gloo helm values under "gloo" heading
+func setExtraValues(config *InstallerConfig) error {
+	if config.ExtraValues == nil || !config.Enterprise {
+		return nil
+	}
+
+	newExtraValues := map[string]interface{}{}
+
+	var glooHelmConfigEmpty generate.HelmConfig
+	for k, v := range config.ExtraValues {
+
+		var glooHelmConfigValue generate.HelmConfig
+
+		// use json as a middleman between map and struct
+		valueBytes, err := json.Marshal(map[string]interface{}{k: v})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(valueBytes, &glooHelmConfigValue)
+		if err != nil {
+			return err
+		}
+
+		// if the chart with the value isn't the same as the empty one, value is gloo value that needs to be nested
+		if !reflect.DeepEqual(glooHelmConfigValue, glooHelmConfigEmpty) {
+			if _, ok := newExtraValues[constants.GlooReleaseName]; !ok {
+				newExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
+			}
+			newExtraValues[constants.GlooReleaseName].(map[string]interface{})[k] = v
+		} else {
+			newExtraValues[k] = v
+		}
+	}
+
+	config.ExtraValues = newExtraValues
+	return nil
+}
+
+// Note: can be removed if we add {"gloo":{"crds":{"create":false}}} to default enterprise chart
 func setCrdCreateToFalse(config *InstallerConfig) {
 	if config.ExtraValues == nil {
 		config.ExtraValues = map[string]interface{}{}
@@ -176,10 +231,10 @@ func setCrdCreateToFalse(config *InstallerConfig) {
 
 	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
 	if config.Enterprise {
-		if _, ok := config.ExtraValues["gloo"]; !ok {
-			config.ExtraValues["gloo"] = map[string]interface{}{}
+		if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
+			config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
 		}
-		mapWithCrdValueToOverride = config.ExtraValues["gloo"].(map[string]interface{})
+		mapWithCrdValueToOverride = config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})
 	}
 
 	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
@@ -262,7 +317,7 @@ func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 		return "", err
 	}
 	if !isReleaseVersion && chartOverride == "" {
-		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+		return "", eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
 	}
 	return version.Version, nil

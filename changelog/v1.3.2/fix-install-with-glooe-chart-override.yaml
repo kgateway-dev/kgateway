@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: fix `glooctl install ingress/knative` to nest helm overrides under "gloo" when a GlooE chart is passed with `-f` flag
+    issueLink: https://github.com/solo-io/gloo/issues/1999
+  - type: FIX
+    description: fix `glooctl install gateway enterprise` to stop nesting helm overrides under "gloo" when a Gloo open-source chart is passed with the `-f` flag
+    issueLink: https://github.com/solo-io/gloo/issues/2145

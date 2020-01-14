@@ -27,7 +27,7 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    extraValues,
-				Enterprise:     true,
+				Enterprise:     true, // will be overwritten in Install in case of a helm chart override
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
 				return eris.Wrapf(err, "installing Gloo Enterprise in gateway mode")

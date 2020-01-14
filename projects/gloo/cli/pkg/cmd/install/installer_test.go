@@ -25,6 +25,8 @@ var _ = Describe("Install", func() {
 		mockHelmClient       *mocks.MockHelmClient
 		mockHelmInstallation *mocks.MockHelmInstallation
 		ctrl                 *gomock.Controller
+		chart                *helmchart.Chart
+		helmRelease          *release.Release
 
 		glooOsVersion          = "test"
 		glooOsChartUri         = "https://storage.googleapis.com/solo-public-helm/charts/gloo-test.tgz"
@@ -70,6 +72,14 @@ rules:
   resources: ["validatingwebhookconfigurations"]
   verbs: ["get", "update"]
 `
+	)
+
+	BeforeEach(func() {
+		version.Version = glooOsVersion
+
+		ctrl = gomock.NewController(GinkgoT())
+		mockHelmClient = mocks.NewMockHelmClient(ctrl)
+		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 
 		chart = &helmchart.Chart{
 			Metadata: &helmchart.Metadata{
@@ -80,7 +90,6 @@ rules:
 				Data: []byte(testCrdContent),
 			}},
 		}
-
 		helmRelease = &release.Release{
 			Chart: chart,
 			Hooks: []*release.Hook{
@@ -93,14 +102,6 @@ rules:
 			},
 			Namespace: defaults.GlooSystem,
 		}
-	)
-
-	BeforeEach(func() {
-		version.Version = glooOsVersion
-
-		ctrl = gomock.NewController(GinkgoT())
-		mockHelmClient = mocks.NewMockHelmClient(ctrl)
-		mockHelmInstallation = mocks.NewMockHelmInstallation(ctrl)
 	})
 
 	AfterEach(func() {
@@ -108,13 +109,7 @@ rules:
 		ctrl.Finish()
 	})
 
-	defaultInstall := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string) {
-		installConfig := &options.Install{
-			Namespace:       defaults.GlooSystem,
-			HelmReleaseName: constants.GlooReleaseName,
-			Version:         "test",
-			CreateNamespace: true,
-		}
+	installWithConfig := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string, installConfig *options.Install) {
 
 		helmEnv := &cli.EnvSettings{
 			KubeConfig: "path-to-kube-config",
@@ -152,6 +147,17 @@ rules:
 		Expect(err).NotTo(HaveOccurred())
 	}
 
+	defaultInstall := func(enterprise bool, expectedValues map[string]interface{}, expectedChartUri string) {
+		installConfig := &options.Install{
+			Namespace:       defaults.GlooSystem,
+			HelmReleaseName: constants.GlooReleaseName,
+			Version:         "test",
+			CreateNamespace: true,
+		}
+
+		installWithConfig(enterprise, expectedValues, expectedChartUri, installConfig)
+	}
+
 	It("installs cleanly by default", func() {
 		defaultInstall(false,
 			map[string]interface{}{
@@ -163,6 +169,8 @@ rules:
 	})
 
 	It("installs enterprise cleanly by default", func() {
+
+		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
 		defaultInstall(true,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
@@ -172,6 +180,47 @@ rules:
 				},
 			},
 			glooEnterpriseChartUri)
+	})
+
+	It("installs as enterprise cleanly if passed enterprise helmchart override", func() {
+
+		installConfig := &options.Install{
+			Namespace:         defaults.GlooSystem,
+			HelmReleaseName:   constants.GlooReleaseName,
+			CreateNamespace:   true,
+			HelmChartOverride: glooEnterpriseChartUri,
+		}
+
+		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
+		installWithConfig(false,
+			map[string]interface{}{
+				"gloo": map[string]interface{}{
+					"crds": map[string]interface{}{
+						"create": false,
+					},
+				},
+			},
+			glooEnterpriseChartUri,
+			installConfig)
+	})
+
+	It("installs as open-source cleanly if passed open-source helmchart override with enterprise subcommand", func() {
+
+		installConfig := &options.Install{
+			Namespace:         defaults.GlooSystem,
+			HelmReleaseName:   constants.GlooReleaseName,
+			CreateNamespace:   true,
+			HelmChartOverride: glooOsChartUri,
+		}
+
+		installWithConfig(true,
+			map[string]interface{}{
+				"crds": map[string]interface{}{
+					"create": false,
+				},
+			},
+			glooOsChartUri,
+			installConfig)
 	})
 
 	It("outputs the expected kinds when in a dry run", func() {
