@@ -29,7 +29,7 @@ import (
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/linkerd"
 	"github.com/solo-io/go-utils/testutils/helper"
@@ -247,7 +247,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 
 					if status := proxy.Status; status.State != core.Status_Accepted {
-						return errors.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+						return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
 					}
 
 					for _, l := range proxy.Listeners {
@@ -268,7 +268,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						}
 					}
 
-					return errors.Errorf("proxy did not contain expected route")
+					return eris.Errorf("proxy did not contain expected route")
 				}, "15s", "0.5s").Should(BeNil())
 
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -934,7 +934,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}
 
 				if status := proxy.Status; status.State != core.Status_Accepted {
-					return errors.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+					return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
 				}
 
 				for _, l := range proxy.Listeners {
@@ -957,7 +957,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 				}
 
-				return errors.Errorf("proxy did not contain expected route")
+				return eris.Errorf("proxy did not contain expected route")
 			}, "15s", "0.5s").Should(BeNil())
 
 			responseString := fmt.Sprintf("Connected to %s",
@@ -1075,7 +1075,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				if len(coloredPods.Items)+len(vsList)+len(proxyList) == 0 {
 					return nil
 				}
-				return errors.Errorf("expected all test resources to have been deleted but found: "+
+				return eris.Errorf("expected all test resources to have been deleted but found: "+
 					"%d pods, %d virtual services, %d proxies", len(coloredPods.Items), len(vsList), len(proxyList))
 			}, time.Minute, time.Second).Should(BeNil())
 		})

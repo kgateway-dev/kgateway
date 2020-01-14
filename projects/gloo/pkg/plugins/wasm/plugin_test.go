@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/opencontainers/go-digest"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
@@ -53,7 +53,7 @@ var _ = Describe("wasm plugin", func() {
 			},
 		}
 
-		fakeErr := errors.New("hello")
+		fakeErr := eris.New("hello")
 		mockCache.EXPECT().Add(gomock.Any(), image).Return(digest.Digest(""), fakeErr)
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).To(HaveOccurred())

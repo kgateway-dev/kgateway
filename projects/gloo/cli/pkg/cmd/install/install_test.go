@@ -66,6 +66,34 @@ var _ = Describe("Install", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should contain 'ingress-proxy' for ingress dry run with enterprise helm chart override", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install ingress --file https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-1.0.0-rc8.tgz --dry-run"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).To(ContainSubstring("name: ingress-proxy\n"))
+	})
+
+	It("should contain 'knative-external-proxy' for knative dry run with enterprise helm chart override", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install knative --file https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-1.0.0-rc8.tgz --dry-run"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).To(ContainSubstring("name: knative-external-proxy\n"))
+	})
+
+	It("should contain base64 encoding of license key for gateway enterprise dry run with license-key flag", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --dry-run %s", licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).To(ContainSubstring("license-key: \"ZmFrZS1saWNlbnNlLWtleQ==\"\n"))
+	})
+
+	It("should not contain license key for gateway enterprise dry run with open-source chart override", func() {
+		outputYaml, err := testutils.GlooctlOut(fmt.Sprintf("install gateway enterprise --file %s --dry-run %s", file, licenseKey))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(outputYaml).NotTo(BeEmpty())
+		Expect(outputYaml).NotTo(ContainSubstring("license-key"))
+	})
+
 	It("should error when not overriding helm chart in dev mode", func() {
 		_, err := testutils.GlooctlOut("install ingress --dry-run")
 		Expect(err).To(HaveOccurred())

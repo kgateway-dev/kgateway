@@ -10,7 +10,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/go-utils/changelogutils"
 )
@@ -110,10 +110,10 @@ func getDocsVersionFromOpts(soloData *HugoDataSoloYaml, hugoOpts HugoDataSoloOpt
 		return nil
 	}
 	if hugoOpts.version == "" {
-		return errors.New("must provide a version for scoped docs generation")
+		return eris.New("must provide a version for scoped docs generation")
 	}
 	if hugoOpts.product == "" {
-		return errors.New("must provide a product for scoped docs generation")
+		return eris.New("must provide a product for scoped docs generation")
 	}
 	soloData.CodeVersion = hugoOpts.version
 	version := hugoOpts.version
@@ -131,7 +131,7 @@ const (
 
 var (
 	InvalidInputError = func(arg string) error {
-		return errors.Errorf("invalid input, must provide exactly one argument, either '%v' or '%v', (provided %v)",
+		return eris.Errorf("invalid input, must provide exactly one argument, either '%v' or '%v', (provided %v)",
 			glooDocGen,
 			glooEDocGen,
 			arg)

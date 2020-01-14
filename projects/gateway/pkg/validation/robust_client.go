@@ -5,9 +5,9 @@ import (
 	"sync"
 
 	"github.com/avast/retry-go"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -38,7 +38,7 @@ func RetryOnUnavailableClientConstructor(ctx context.Context, serverAddress stri
 
 		cc, err := grpc.DialContext(clientCtx, serverAddress, grpc.WithInsecure(), grpc.WithBlock())
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to initialize grpc connection to validation server.")
+			return nil, eris.Wrapf(err, "failed to initialize grpc connection to validation server.")
 		}
 
 		return validation.NewProxyValidationServiceClient(cc), nil

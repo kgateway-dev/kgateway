@@ -6,33 +6,32 @@ import (
 	"io"
 	"os"
 	"path"
+	"reflect"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
-
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
 )
 
 var (
 	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
-		return errors.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
+		return eris.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
 	}
 )
 
@@ -95,6 +94,20 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	}
 
 	chartObj, err := i.helmClient.DownloadChart(chartUri)
+	if err != nil {
+		return err
+	}
+
+	// determine if it's an enterprise chart by checking if has gloo as a dependency
+	installerConfig.Enterprise = false
+	for _, dependency := range chartObj.Dependencies() {
+		if dependency.Metadata.Name == constants.GlooReleaseName {
+			installerConfig.Enterprise = true
+			break
+		}
+	}
+
+	err = setExtraValues(installerConfig)
 	if err != nil {
 		return err
 	}
@@ -167,6 +180,45 @@ func (i *installer) createNamespace(namespace string) {
 
 }
 
+// if enterprise, nest any gloo helm values under "gloo" heading
+func setExtraValues(config *InstallerConfig) error {
+	if config.ExtraValues == nil || !config.Enterprise {
+		return nil
+	}
+
+	newExtraValues := map[string]interface{}{}
+
+	var glooHelmConfigEmpty generate.HelmConfig
+	for k, v := range config.ExtraValues {
+
+		var glooHelmConfigValue generate.HelmConfig
+
+		// use json as a middleman between map and struct
+		valueBytes, err := json.Marshal(map[string]interface{}{k: v})
+		if err != nil {
+			return err
+		}
+		err = json.Unmarshal(valueBytes, &glooHelmConfigValue)
+		if err != nil {
+			return err
+		}
+
+		// if the chart with the value isn't the same as the empty one, value is gloo value that needs to be nested
+		if !reflect.DeepEqual(glooHelmConfigValue, glooHelmConfigEmpty) {
+			if _, ok := newExtraValues[constants.GlooReleaseName]; !ok {
+				newExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
+			}
+			newExtraValues[constants.GlooReleaseName].(map[string]interface{})[k] = v
+		} else {
+			newExtraValues[k] = v
+		}
+	}
+
+	config.ExtraValues = newExtraValues
+	return nil
+}
+
+// Note: can be removed if we add {"gloo":{"crds":{"create":false}}} to default enterprise chart
 func setCrdCreateToFalse(config *InstallerConfig) {
 	if config.ExtraValues == nil {
 		config.ExtraValues = map[string]interface{}{}
@@ -176,10 +228,10 @@ func setCrdCreateToFalse(config *InstallerConfig) {
 
 	// If this is an enterprise install, `crds.create` is nested under the `gloo` field
 	if config.Enterprise {
-		if _, ok := config.ExtraValues["gloo"]; !ok {
-			config.ExtraValues["gloo"] = map[string]interface{}{}
+		if _, ok := config.ExtraValues[constants.GlooReleaseName]; !ok {
+			config.ExtraValues[constants.GlooReleaseName] = map[string]interface{}{}
 		}
-		mapWithCrdValueToOverride = config.ExtraValues["gloo"].(map[string]interface{})
+		mapWithCrdValueToOverride = config.ExtraValues[constants.GlooReleaseName].(map[string]interface{})
 	}
 
 	mapWithCrdValueToOverride["crds"] = map[string]interface{}{
@@ -251,14 +303,18 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 	}
 
 	if path.Ext(helmChartArchiveUri) != ".tgz" && !strings.HasSuffix(helmChartArchiveUri, ".tar.gz") {
-		return "", errors.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmChartArchiveUri)
+		return "", eris.Errorf("unsupported file extension for Helm chart URI: [%s]. Extension must either be .tgz or .tar.gz", helmChartArchiveUri)
 	}
 	return helmChartArchiveUri, nil
 }
 
 func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
-	if !version.IsReleaseVersion() && chartOverride == "" {
-		return "", errors.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+	isReleaseVersion, err := version.IsReleaseVersion()
+	if err != nil {
+		return "", err
+	}
+	if !isReleaseVersion && chartOverride == "" {
+		return "", eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
 			"when running an unreleased version of glooctl")
 	}
 	return version.Version, nil

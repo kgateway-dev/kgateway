@@ -7,6 +7,8 @@ import (
 	"path"
 	"testing"
 
+	glooVersion "github.com/solo-io/gloo/pkg/version"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"helm.sh/helm/v3/pkg/release"
@@ -36,21 +38,25 @@ import (
 )
 
 func TestHelm(t *testing.T) {
-	version = os.Getenv("TAGGED_VERSION")
-	if version == "" {
-		version = "dev"
-		pullPolicy = v1.PullAlways
-	} else {
-		version = version[1:]
-		pullPolicy = v1.PullIfNotPresent
-	}
-
 	RegisterFailHandler(Fail)
 	testutils.RegisterCommonFailHandlers()
 	RunSpecs(t, "Helm Suite")
 }
 
 var _ = BeforeSuite(func() {
+	version = os.Getenv("TAGGED_VERSION")
+	isReleaseVersion, err := glooVersion.IsReleaseVersion()
+	Expect(err).NotTo(HaveOccurred())
+	if !isReleaseVersion {
+		vVersion, err := glooVersion.VersionFromGitDescribe()
+		Expect(err).NotTo(HaveOccurred())
+		// remove the "v" prefix
+		version = vVersion[1:]
+		pullPolicy = v1.PullAlways
+	} else {
+		version = version[1:]
+		pullPolicy = v1.PullIfNotPresent
+	}
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })

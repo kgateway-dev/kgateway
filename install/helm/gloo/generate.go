@@ -1,8 +1,11 @@
 package main
 
 import (
+	"flag"
 	"io/ioutil"
 	"os"
+
+	glooVersion "github.com/solo-io/gloo/pkg/version"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -17,38 +20,66 @@ var (
 	docsOutput     = "docs/content/installation/gateway/kubernetes/values.txt"
 	chartTemplate  = "install/helm/gloo/Chart-template.yaml"
 	chartOutput    = "install/helm/gloo/Chart.yaml"
-	// For non-release builds, the string "dev" is used as the version
-	devVersionTag = "dev"
 	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.
 	// Provide an example to clarify format (1.2.3, not v1.2.3).
 	helmDocsVersionText = "<release_version, ex: 1.2.3>"
 
 	always = "Always"
+
+	flagOpts = defaultFlagOptions
 )
 
-func main() {
-	var version, repoPrefixOverride, globalPullPolicy string
-	if len(os.Args) < 2 {
-		panic("Must provide version as argument")
-	} else {
-		version = os.Args[1]
+type flagOptions struct {
+	version string
+	// If set, will generate helm docs. Note that some helm values are parameterized within this script to help testing.
+	// When generating helm values for test purposes you should not set this flag, otherwise you will dirty the repo
+	// with the test-specific helm values diff.
+	generateHelmDocs   bool
+	repoPrefixOverride string
+	globalPullPolicy   string
+}
 
-		if len(os.Args) >= 3 {
-			repoPrefixOverride = os.Args[2]
-		}
-		if len(os.Args) >= 4 {
-			globalPullPolicy = os.Args[3]
-		}
+const (
+	versionFlag            = "version"
+	generateHelmDocsFlag   = "generate-helm-docs"
+	repoPrefixOverrideFlag = "repo-prefix-override"
+	globalPullPolicyFlag   = "global-pull-policy-override"
+)
+
+var defaultFlagOptions = flagOptions{
+	version:            "",
+	generateHelmDocs:   false,
+	repoPrefixOverride: "",
+	globalPullPolicy:   "",
+}
+
+func ingestFlags() {
+	flag.StringVar(&flagOpts.version, versionFlag, "", "required, version to use for generated helm files")
+	flag.BoolVar(&flagOpts.generateHelmDocs, generateHelmDocsFlag, false, "(for release) if set, will generate docs for the helm values")
+	flag.StringVar(&flagOpts.repoPrefixOverride, repoPrefixOverrideFlag, "", "(for tests) if set, will override container repo")
+	flag.StringVar(&flagOpts.globalPullPolicy, globalPullPolicyFlag, "", "(for tests) if set, will override all image pull policies")
+	flag.Parse()
+}
+
+func main() {
+	ingestFlags()
+	if flagOpts.version == "" {
+		log.Fatalf("must pass a version with flag: %v", versionFlag)
 	}
 
 	log.Printf("Generating helm files.")
-	if err := generateValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
+	if err := generateValuesYaml(flagOpts.version, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if err := generateValueDocs(helmDocsVersionText, repoPrefixOverride, globalPullPolicy); err != nil {
-		log.Fatalf("generating values.yaml docs failed!: %v", err)
+	if flagOpts.generateHelmDocs {
+		log.Printf("Generating helm value docs in file: %v", docsOutput)
+		if err := generateValueDocs(helmDocsVersionText, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
+			log.Fatalf("generating values.yaml docs failed!: %v", err)
+		}
+	} else {
+		log.Printf("NOT generating helm value docs, set %v to produce helm value docs", generateHelmDocsFlag)
 	}
-	if err := generateChartYaml(version); err != nil {
+	if err := generateChartYaml(flagOpts.version); err != nil {
 		log.Fatalf("generating Chart.yaml failed!: %v", err)
 	}
 }
@@ -60,7 +91,11 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 	}
 
 	// customize config as needed for dev builds
-	if version == devVersionTag {
+	isReleaseVersion, err := glooVersion.IsReleaseVersion()
+	if err != nil {
+		return err
+	}
+	if !isReleaseVersion {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always
