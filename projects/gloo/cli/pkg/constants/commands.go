@@ -150,8 +150,9 @@ var (
 	}
 
 	UI_COMMAND = cobra.Command{
-		Use:   "ui",
-		Short: "Open Gloo UI",
-		Long:  "Open the Gloo Enterprise UI in your default browser",
+		Use:     "ui",
+		Aliases: []string{"dashboard"},
+		Short:   "Open Gloo UI",
+		Long:    "Open the Gloo Enterprise UI in your default browser",
 	}
 )
