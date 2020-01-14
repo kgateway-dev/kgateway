@@ -5,11 +5,16 @@ weight: 2
 
 The HTTP Connection Manager lets you refine the behavior of Envoy for each listener that you manage with Gloo.
 
+
+### Websocket
+
+You can configure the Http Connection Manager on a listener to enable or disable websocket upgrades. See the [Websocket]({{% versioned_link_path fromRoot="/gloo_routing/websockets/" %}}) documentation for more. 
+
 ### Tracing
 
 One of the fields in the HTTP Connection Manager Plugin is `tracing`. This specifies the listener-specific tracing configuration.
 
-For notes on configuring and using tracing with Gloo, please see the [tracing setup docs.](../../../observability/tracing/)
+For notes on configuring and using tracing with Gloo, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/observability/tracing/" %}})
 
 The tracing configuration fields of the Gateway CRD are highlighted below.
 
