@@ -1,6 +1,7 @@
 ---
 title: "Gloo vs others"
 weight: 100
+description: A comparison of similar products and how Gloo is different.
 ---
 
 Gloo is an API Gateway and may come up in discussions about how it's different from "X". Although API Gateways are not new, [API Gateways have been going through an identity crisis recently](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) in terms of deployment footprint, use cases, and their renaissance in cloud-native architectures vis-a-vis service mesh. We go into a lot of detail in [this blog](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7), but to put it concise, the categories of API Gateways fall loosely into the following:
