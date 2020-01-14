@@ -27,10 +27,9 @@ func main() {
 	}
 	// only version constraints we care about come from Gloo major/minor version
 	maxGlooEVersion := &versionutils.Version{
-		Major:            localVersion.Major,
-		Minor:            localVersion.Minor,
-		Patch:            math.MaxInt32,
-		ReleaseCandidate: math.MaxInt32,
+		Major: localVersion.Major,
+		Minor: localVersion.Minor,
+		Patch: math.MaxInt32,
 	}
 
 	os.Mkdir("./_output", 0755)
@@ -56,20 +55,21 @@ func getLargestLocalChangelogVersion(ctx context.Context, repoRootPath, owner, r
 	if err != nil {
 		return nil, changelogutils.ReadChangelogDirError(err)
 	}
-	largestVersion := &versionutils.Zero
+	zero := versionutils.Zero()
+	largestVersion := &zero
 	for _, file := range files {
 		if file.IsDir() {
 			curVersion, err := versionutils.ParseVersion(file.Name())
 			if err != nil {
 				continue
 			}
-			if curVersion.IsGreaterThan(largestVersion) {
+			if curVersion.MustIsGreaterThan(*largestVersion) {
 				largestVersion = curVersion
 			}
 		}
 	}
 
-	if largestVersion == &versionutils.Zero {
+	if largestVersion == &zero {
 		return nil, errors.Errorf("unable to find any versions at repo root %v with changelog dir %v", repoRootPath, changelogDirPath)
 	}
 

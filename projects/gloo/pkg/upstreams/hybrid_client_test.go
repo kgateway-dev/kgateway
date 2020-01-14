@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/rotisserie/eris"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
-	"github.com/solo-io/go-utils/errors"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
@@ -114,7 +114,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			case list := <-usChan:
 				return list, nil
 			case <-time.After(500 * time.Millisecond):
-				return nil, errors.Errorf("timed out waiting for next upstream list")
+				return nil, eris.Errorf("timed out waiting for next upstream list")
 			}
 		}, "3s").Should(HaveLen(4))
 		Consistently(errChan).Should(Not(Receive()))
@@ -141,7 +141,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				case list := <-usChan:
 					return list, nil
 				case <-time.After(500 * time.Millisecond):
-					return nil, errors.Errorf("timed out waiting for next upstream list")
+					return nil, eris.Errorf("timed out waiting for next upstream list")
 				}
 			}, "3s").Should(HaveLen(4))
 

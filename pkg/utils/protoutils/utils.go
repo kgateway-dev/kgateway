@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 var (
@@ -18,7 +18,7 @@ var (
 
 	gogoJsonpbMarshaler = &gogojson.Marshaler{OrigName: false}
 
-	NilStructError = errors.New("cannot unmarshal nil struct")
+	NilStructError = eris.New("cannot unmarshal nil struct")
 )
 
 // this function is designed for converting go object (that is not a proto.Message) into a

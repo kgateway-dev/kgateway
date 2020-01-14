@@ -6,11 +6,11 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	mock_version "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
-	"github.com/solo-io/go-utils/errors"
 )
 
 var _ = Describe("version command", func() {
@@ -26,7 +26,7 @@ var _ = Describe("version command", func() {
 
 	Context("getVersion", func() {
 		It("will error if an error occurs while getting the version", func() {
-			fakeErr := errors.New("test")
+			fakeErr := eris.New("test")
 			client.EXPECT().Get().Return(nil, fakeErr).Times(1)
 			_, err := GetClientServerVersions(client)
 			Expect(err).To(HaveOccurred())

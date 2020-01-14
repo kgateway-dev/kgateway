@@ -33,7 +33,7 @@ Following is an example of an `AuthConfig` with an OIDC configuration (for more 
 the [main page]({{< versioned_link_path fromRoot="/security/auth/#auth-configuration-overview" >}}) 
 of the authentication docs):
 
-{{< highlight yaml "hl_lines=8-15" >}}
+{{< highlight yaml "hl_lines=8-17" >}}
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
 metadata:
@@ -43,6 +43,8 @@ spec:
   configs:
   - oauth:
       issuer_url: theissuer.com
+      auth_endpoint_query_params:
+        paramKey: paramValue
       app_url: myapp.com
       callback_path: /my/callback/path/
       client_id: myclientid
@@ -59,6 +61,10 @@ The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through
 configuration by querying the `.well-known/open-configuration` endpoint on the `issuer_url`. For example, if you are 
 using Google as an identity provider, Gloo will expect to find OIDC discovery information at 
 `https://accounts.google.com/.well-known/openid-configuration`.
+- `auth_endpoint_query_params`: A map of query parameters appended to the issuer url in the form
+ `issuer_url`?`paramKey`:`paramValue`. These query parameters are sent to the [authorization endpoint](https://auth0.com/docs/protocols/oauth2#oauth-endpoints)
+  when Gloo initiates the OIDC flow. This can be useful when integrating Gloo with some identity providers that require
+  custom parameters to be sent to the authorization endpoint.
 - `app_url`: This is the public URL of your application. It is used in combination with the `callback_path` attribute.
 - `callback_path`: The callback path relative to the `app_url`. Once a user has been authenticated, the identity provider 
 will redirect them to this URL. Gloo will intercept requests with this path, exchange the authorization code received from 

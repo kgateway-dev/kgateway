@@ -17,6 +17,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -46,7 +47,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			}
 			_, err := BuildHttpFilters(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(ServerNotFound(invalidUs)))
+			Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
 		})
 	})
 
@@ -189,7 +190,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			It("returns an error", func() {
 				_, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(InvalidStatusOnErrorErr(999)))
+				Expect(err).To(HaveInErrorChain(InvalidStatusOnErrorErr(999)))
 			})
 		})
 

@@ -55,7 +55,7 @@ This tutorial uses files stored on the [Gloo GitHub repository](https://github.c
 In order to install Gloo using Docker-Compose, let's clone the repository:
 
 ```
-git clone --branch v1.1.0 https://github.com/solo-io/gloo
+git clone https://github.com/solo-io/gloo
 cd gloo/install/docker-compose-consul
 ```
 

@@ -9,13 +9,14 @@ import (
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/gorilla/mux"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/stats"
@@ -42,6 +43,22 @@ var (
 func init() {
 	_ = view.Register(envoySnapshotOutView)
 }
+
+// empty resources to give to envoy when a proxy was deleted
+const emptyVersionKey = "empty"
+
+var (
+	emptyResource = cache.Resources{
+		Version: emptyVersionKey,
+		Items:   map[string]envoycache.Resource{},
+	}
+	emptySnapshot = xds.NewSnapshotFromResources(
+		emptyResource,
+		emptyResource,
+		emptyResource,
+		emptyResource,
+	)
+)
 
 func measureResource(ctx context.Context, resource string, len int) {
 	if ctxWithTags, err := tag.New(ctx, tag.Insert(resourceNameKey, resource)); err == nil {
@@ -72,7 +89,26 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 	allReports.Accept(snap.UpstreamGroups.AsInputResources()...)
 	allReports.Accept(snap.Proxies.AsInputResources()...)
 
-	s.xdsHasher.SetKeysFromProxies(snap.Proxies)
+	if !s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue() {
+		allKeys := map[string]bool{
+			xds.FallbackNodeKey: true,
+		}
+		for _, key := range s.xdsCache.GetStatusKeys() {
+			allKeys[key] = false
+		}
+		for _, key := range xds.GetKeysFromProxies(snap.Proxies) {
+			allKeys[key] = true
+		}
+
+		// preserve keys from the current list of proxies, set previous snapshots to empty snapshot
+		for key, valid := range allKeys {
+			if !valid {
+				if err := s.xdsCache.SetSnapshot(key, emptySnapshot); err != nil {
+					return err
+				}
+			}
+		}
+	}
 
 	for _, proxy := range snap.Proxies {
 		proxyCtx := ctx
@@ -87,7 +123,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 		xdsSnapshot, reports, _, err := s.translator.Translate(params, proxy)
 		if err != nil {
-			err := errors.Wrapf(err, "translation loop failed")
+			err := eris.Wrapf(err, "translation loop failed")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
@@ -117,7 +153,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 		}
 
 		if err := s.xdsCache.SetSnapshot(key, sanitizedSnapshot); err != nil {
-			err := errors.Wrapf(err, "failed while updating xDS snapshot cache")
+			err := eris.Wrapf(err, "failed while updating xDS snapshot cache")
 			logger.DPanicw("", zap.Error(err))
 			return err
 		}
@@ -144,7 +180,7 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 
 	if err := s.reporter.WriteReports(ctx, allReports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)
-		return errors.Wrapf(err, "writing reports")
+		return eris.Wrapf(err, "writing reports")
 	}
 	return nil
 }
@@ -167,7 +203,6 @@ func (s *translatorSyncer) ServeXdsSnapshots() error {
 // - EDS from the Gloo API snapshot translated curing this sync
 // The resulting snapshot will be checked for consistency before being returned.
 func (s *translatorSyncer) updateEndpointsOnly(snapshotKey string, current envoycache.Snapshot) (envoycache.Snapshot, error) {
-
 	// Get a copy of the last successful snapshot
 	previous, err := s.xdsCache.GetSnapshot(snapshotKey)
 	if err != nil {

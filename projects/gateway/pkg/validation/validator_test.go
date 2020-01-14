@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -410,5 +410,5 @@ func failProxy(ctx context.Context, in *validation.ProxyValidationServiceRequest
 }
 
 func communicationErr(ctx context.Context, in *validation.ProxyValidationServiceRequest, opts ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
-	return nil, errors.Errorf("communication no good")
+	return nil, eris.Errorf("communication no good")
 }

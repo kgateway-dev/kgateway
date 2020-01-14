@@ -8,7 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -42,12 +42,12 @@ func (s SetupSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	SettingsHash, err := s.hashSettings(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("settings", SettingsHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
@@ -71,7 +71,7 @@ func (ss SetupSnapshotStringer) String() string {
 func (s SetupSnapshot) Stringer() SetupSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return SetupSnapshotStringer{
 		Version:  snapshotHash,

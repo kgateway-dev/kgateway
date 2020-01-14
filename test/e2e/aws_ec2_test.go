@@ -10,8 +10,8 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 
+	"github.com/rotisserie/eris"
 	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -143,16 +143,16 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		Eventually(func() (string, error) {
 			res, err := http.Get(url)
 			if err != nil {
-				return "", errors.Wrapf(err, "unable to call GET")
+				return "", eris.Wrapf(err, "unable to call GET")
 			}
 			if res.StatusCode != http.StatusOK {
-				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+				return "", eris.New(fmt.Sprintf("%v is not OK", res.StatusCode))
 			}
 
 			defer res.Body.Close()
 			body, err := ioutil.ReadAll(res.Body)
 			if err != nil {
-				return "", errors.Wrapf(err, "unable to read body")
+				return "", eris.Wrapf(err, "unable to read body")
 			}
 
 			return string(body), nil

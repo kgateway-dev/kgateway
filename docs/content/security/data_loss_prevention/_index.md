@@ -187,12 +187,12 @@ spec:
       dlp:
         actions:
         - customAction:
-            maskChar: "Y"
+            maskChar: "X"
             name: test   # only used for logging
             percent:
               value: 60  # % of regex match to mask
             regex:
-            - '(?!"name"[\s]*:[\s]*")[^"]+(?="[\s]*,|"[\s]})'
+            - '(?!"name":"[\s]*)[^"]+(?=",)'
 {{< /highlight >}}
 
 Query for pets again:
@@ -204,7 +204,7 @@ curl $(glooctl proxy url)/api/pets
 You should get a masked response:
 
 ```json
-[{"id":1,"name":"YYg","status":"available"},{"id":2,"name":"YYt","status":"pending"}]
+[{"id":1,"name":"XXg","status":"available"},{"id":2,"name":"XXt","status":"pending"}]
 ```
 
 ### Summary

@@ -3,18 +3,18 @@ package consul
 import (
 	"strings"
 
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
 var (
 	InvalidSpecTypeError = func(us *v1.Upstream, name string) error {
-		return errors.Errorf("internal error: invalid %s spec, "+
+		return eris.Errorf("internal error: invalid %s spec, "+
 			"expected *v1.Upstream_Consul, got  %T", name, us)
 	}
 )

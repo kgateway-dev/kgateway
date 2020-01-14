@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 )
 
 type OutputType int
@@ -75,7 +75,7 @@ func (o *OutputType) String() string {
 func (o *OutputType) Set(s string) error {
 	val, ok := _OutputTypeToValue[s]
 	if !ok {
-		return errors.Errorf("%s is not a valid output type", s)
+		return eris.Errorf("%s is not a valid output type", s)
 	}
 	*o = val
 	return nil
@@ -91,7 +91,7 @@ func (o OutputType) MarshalJSON() ([]byte, error) {
 	}
 	s, ok := _OutputValueToType[o]
 	if !ok {
-		return nil, errors.Errorf("invalid OutputType type: %d", o)
+		return nil, eris.Errorf("invalid OutputType type: %d", o)
 	}
 	return json.Marshal(s)
 }
@@ -99,11 +99,11 @@ func (o OutputType) MarshalJSON() ([]byte, error) {
 func (o *OutputType) UnmarshalJSON(data []byte) error {
 	var s string
 	if err := json.Unmarshal(data, &s); err != nil {
-		return errors.Errorf("OutputType should be a string, got %s", data)
+		return eris.Errorf("OutputType should be a string, got %s", data)
 	}
 	v, ok := _OutputTypeToValue[s]
 	if !ok {
-		return errors.Errorf("invalid OutputType %q", s)
+		return eris.Errorf("invalid OutputType %q", s)
 	}
 	*o = v
 	return nil

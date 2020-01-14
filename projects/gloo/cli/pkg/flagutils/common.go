@@ -3,10 +3,10 @@ package flagutils
 import (
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -88,13 +88,13 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 			tlsCfg.TLSServerName != "" ||
 			tlsCfg.Insecure {
 			if err := config.ConfigureTLS(tlsCfg); err != nil {
-				return nil, errors.Wrapf(err, "failed to configure vault client tls")
+				return nil, eris.Wrapf(err, "failed to configure vault client tls")
 			}
 		}
 
 		vaultClient, err := vaultapi.NewClient(config)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to configure vault client")
+			return nil, eris.Wrapf(err, "failed to configure vault client")
 		}
 
 		vaultClient.SetToken(token)

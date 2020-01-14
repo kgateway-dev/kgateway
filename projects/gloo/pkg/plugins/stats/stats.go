@@ -9,20 +9,20 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/go-utils/errors"
 )
 
 var (
 	invalidVirtualClusterErr = func(err error, vcName string) error {
-		return errors.Wrapf(err, "failed to process virtual cluster [%s]", vcName)
+		return eris.Wrapf(err, "failed to process virtual cluster [%s]", vcName)
 	}
-	missingNameErr    = errors.Errorf("name is required")
-	missingPatternErr = errors.Errorf("pattern is required")
+	missingNameErr    = eris.Errorf("name is required")
+	missingPatternErr = eris.Errorf("pattern is required")
 	invalidMethodErr  = func(methodName string) error {
-		return errors.Errorf("invalid method name [%s]. Allowed values: %s", methodName, validMethodNames())
+		return eris.Errorf("invalid method name [%s]. Allowed values: %s", methodName, validMethodNames())
 	}
 )
 

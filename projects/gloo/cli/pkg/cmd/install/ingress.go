@@ -1,7 +1,7 @@
 package install
 
 import (
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"helm.sh/helm/v3/pkg/chartutil"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -19,7 +19,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 
 			ingressOverrides, err := chartutil.ReadValues([]byte(ingressValues))
 			if err != nil {
-				return errors.Wrapf(err, "parsing override values for ingress mode")
+				return eris.Wrapf(err, "parsing override values for ingress mode")
 			}
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
@@ -27,7 +27,7 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 				ExtraValues:    ingressOverrides,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
-				return errors.Wrapf(err, "installing gloo in ingress mode")
+				return eris.Wrapf(err, "installing gloo in ingress mode")
 			}
 
 			return nil

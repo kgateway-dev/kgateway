@@ -10,7 +10,7 @@ import (
 
 	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -53,17 +53,17 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	UpstreamsHash, err := s.hashUpstreams(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
 	IngressesHash, err := s.hashIngresses(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("ingresses", IngressesHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
@@ -93,7 +93,7 @@ func (ss TranslatorSnapshotStringer) String() string {
 func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return TranslatorSnapshotStringer{
 		Version:   snapshotHash,
