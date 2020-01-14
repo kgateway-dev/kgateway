@@ -1,7 +1,7 @@
 ---
 title: Kubernetes Services
 weight: 30
-description: Routing to services that are registered as Kubernetes Services by querying the Kubernetes API
+description: Routing to services that are registered as Kubernetes Services by querying the Kubernetes API.
 ---
 
 If you are running Gloo in a Kubernetes cluster, it is possible to directly specify 

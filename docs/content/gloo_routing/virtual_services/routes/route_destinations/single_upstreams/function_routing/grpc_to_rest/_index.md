@@ -1,7 +1,7 @@
 ---
 title: gRPC to REST
 weight: 30
-description: Routing gRPC to REST
+description: Routing gRPC to REST.
 ---
 
 ## Motivation

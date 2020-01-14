@@ -1,7 +1,7 @@
 ---
 title: Upstream Groups
 weight: 20
-description: This is an abstraction where the upstreams and weights are stored in a separate UpstreamGroup CRD. This makes it easier to reuse the same set of upstreams across multiple routes, and modify the membership of the group without changing the VirtualService definition. 
+description: This is an abstraction where the Upstreams and weights are stored in a separate Upstream Group CRD.
 ---
 
 An {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} addresses

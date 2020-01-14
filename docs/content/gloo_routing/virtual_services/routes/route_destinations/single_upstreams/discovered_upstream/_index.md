@@ -1,7 +1,7 @@
 ---
 title: Discovered Upstreams
 weight: 20
-description: Configure Gloo to route to a single upstream that was automatically detected by Gloo's built in discovery system.
+description: Configure Gloo to route to a single Upstream that was automatically detected by Gloo's built in discovery system.
 ---
 
 Let's configure Gloo to route to a single upstream that was automatically detected by Gloo's built in discovery system. 
