@@ -40,7 +40,7 @@ We can also configure whether websocket is enabled per route as we see in the ne
 
 ## Configuring websocket per route
 
-If you need more fine-grained control configuring websockets, you can use the {{< protobuf name="gateway.solo.io.Route" display="Route">}} configuration in a {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}}. For example, if you have websockets disabled for you listener (as seen in previous section), you can enable it per route with the following:
+If you need more fine-grained control configuring websockets, you can use the {{< protobuf name="gateway.solo.io.Route" display="Route">}} configuration in a {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}}. For example, if you have websockets disabled for your listener (as seen in previous section), you can enable it per route with the following:
 
 {{< highlight yaml "hl_lines=8-10" >}}
 - matchers:
