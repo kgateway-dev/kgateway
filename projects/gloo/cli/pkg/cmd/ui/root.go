@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"os"
 	"os/exec"
 	"strconv"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
@@ -27,14 +29,19 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			kubectl := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
 				"deployment/api-server", port)
 
-			err := cliutil.Initialize()
-			if err != nil {
-				return err
+			if opts.Top.Verbose {
+				kubectl.Stdout = os.Stdout
+				kubectl.Stderr = os.Stderr
+			} else {
+				err := cliutil.Initialize()
+				if err != nil {
+					return err
+				}
+				kubectl.Stdout = cliutil.GetLogger()
+				kubectl.Stderr = cliutil.GetLogger()
 			}
-			kubectl.Stdout = cliutil.GetLogger()
-			kubectl.Stderr = cliutil.GetLogger()
 
-			err = kubectl.Start()
+			err := kubectl.Start()
 			if err != nil {
 				return err
 			}
@@ -49,9 +56,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
+	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
+	flagutils.AddVerboseFlag(pflags, opts)
 
-	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

@@ -40,6 +40,7 @@ glooctl is the unified CLI for Gloo.
 * [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 * [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource
 * [glooctl route](../glooctl_route)	 - subcommands for interacting with routes within virtual services
+* [glooctl ui](../glooctl_ui)	 - Open Gloo UI
 * [glooctl uninstall](../glooctl_uninstall)	 - uninstall gloo
 * [glooctl upgrade](../glooctl_upgrade)	 - upgrade glooctl binary
 * [glooctl version](../glooctl_version)	 - Print current version
