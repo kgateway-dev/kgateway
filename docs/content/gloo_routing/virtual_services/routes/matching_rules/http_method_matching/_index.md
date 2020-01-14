@@ -83,10 +83,6 @@ The response confirms that a new blog post was created on the Upstream.
 
 Now let's delete that virtual service to prepare for the next method.
 
-<video controls loop>
-  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/httpmatch_delete1.mp4" type="video/mp4">
-</video>
-
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
 kubectl delete vs -n gloo-system test-post
@@ -135,10 +131,6 @@ curl -H "Host: foo" $(glooctl proxy url)/posts
 In this guide, we created a virtual service that utilized HTTP method matching and demonstrated it on POST and GET requests. 
 
 Let's cleanup the Virtual Service and Upstream we used.
-
-<video controls loop>
-  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/httpmatch_delete2.mp4" type="video/mp4">
-</video>
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
