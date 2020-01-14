@@ -252,7 +252,7 @@ func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports repo
 	var routes []*gloov1.Route
 	for _, r := range vs.GetVirtualHost().GetRoutes() {
 
-		mergedRoutes, err := NewRouteVisitor(vs, tables, reports).ConvertRoute(r)
+		mergedRoutes, err := NewRouteConverter(vs, tables, reports).ConvertRoute(r)
 		if err != nil {
 			return nil, err
 		}

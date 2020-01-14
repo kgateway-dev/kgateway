@@ -68,6 +68,11 @@ var _ = Describe("Translator", func() {
 											Prefix: "/1",
 										},
 									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d1",
+										},
+									},
 								},
 							},
 						},
@@ -83,6 +88,11 @@ var _ = Describe("Translator", func() {
 											Prefix: "/2",
 										},
 									}},
+									Action: &v1.Route_DirectResponseAction{
+										DirectResponseAction: &gloov1.DirectResponseAction{
+											Body: "d2",
+										},
+									},
 								},
 							},
 						},
@@ -250,6 +260,11 @@ var _ = Describe("Translator", func() {
 												Prefix: "/1",
 											},
 										}},
+										Action: &v1.Route_DirectResponseAction{
+											DirectResponseAction: &gloov1.DirectResponseAction{
+												Body: "d1",
+											},
+										},
 									},
 								},
 							},
@@ -265,6 +280,11 @@ var _ = Describe("Translator", func() {
 												Prefix: "/2",
 											},
 										}},
+										Action: &v1.Route_DirectResponseAction{
+											DirectResponseAction: &gloov1.DirectResponseAction{
+												Body: "d2",
+											},
+										},
 									},
 								},
 							},
@@ -325,6 +345,11 @@ var _ = Describe("Translator", func() {
 												Prefix: "/1",
 											},
 										}},
+										Action: &v1.Route_DirectResponseAction{
+											DirectResponseAction: &gloov1.DirectResponseAction{
+												Body: "d1",
+											},
+										},
 									},
 								},
 							},
@@ -340,6 +365,11 @@ var _ = Describe("Translator", func() {
 												Prefix: "/2",
 											},
 										}},
+										Action: &v1.Route_DirectResponseAction{
+											DirectResponseAction: &gloov1.DirectResponseAction{
+												Body: "d2",
+											},
+										},
 									},
 								},
 							},
@@ -355,6 +385,11 @@ var _ = Describe("Translator", func() {
 												Prefix: "/3",
 											},
 										}},
+										Action: &v1.Route_DirectResponseAction{
+											DirectResponseAction: &gloov1.DirectResponseAction{
+												Body: "d3",
+											},
+										},
 									},
 								},
 							},

@@ -147,7 +147,7 @@ var _ = Describe("route merge util", func() {
 					expectedErr: translator.MatcherCountErr,
 				},
 			} {
-				rv := translator.NewRouteVisitor(&v1.VirtualService{}, nil, reporter.ResourceReports{})
+				rv := translator.NewRouteConverter(&v1.VirtualService{}, nil, reporter.ResourceReports{})
 				_, err := rv.ConvertRoute(badRoute.route)
 				Expect(err).To(Equal(badRoute.expectedErr))
 			}
@@ -177,7 +177,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteVisitor(vs, nil, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, nil, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(0)) // nothing to return, no error
@@ -207,6 +207,7 @@ var _ = Describe("route merge util", func() {
 			rt := v1.RouteTable{
 				Routes: []*v1.Route{{
 					Matchers: []*matchers.Matcher{}, // empty list should default to '/'
+					Action:   &v1.Route_DirectResponseAction{},
 				}},
 				Metadata: core.Metadata{
 					Name: "any",
@@ -216,7 +217,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -264,7 +265,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteVisitor(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
@@ -363,7 +364,7 @@ var _ = Describe("route merge util", func() {
 				},
 			}
 
-			visitor = translator.NewRouteVisitor(vs, allRouteTables, reports)
+			visitor = translator.NewRouteConverter(vs, allRouteTables, reports)
 		})
 
 		When("selector has no matches", func() {

@@ -74,7 +74,7 @@ type routeVisitor struct {
 // - root: root of the subtree of routes that we are going to visit; used primarily as a target to report errors and warnings on.
 // - tables: all the route tables that should be considered when resolving delegation chains.
 // - reports: this object will be updated with errors and warnings encountered during the conversion process.
-func NewRouteVisitor(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
+func NewRouteConverter(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
 	return &routeVisitor{
 		rootResource: root,
 		tables:       tables,
@@ -108,8 +108,8 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 		}
 	case *gatewayv1.Route_DelegateAction:
 		return rv.convertDelegateAction(gatewayRoute)
-		//default:
-		//	return nil, NoActionErr
+	default:
+		return nil, NoActionErr
 	}
 
 	return []*gloov1.Route{glooRoute}, nil
