@@ -24,7 +24,7 @@ var (
 		return eris.Errorf("extauth server upstream not found %s", usRef.String())
 	}
 	InvalidStatusOnErrorErr = func(code uint32) error {
-		return eris.Errorf("invalid statusOnError code", code)
+		return eris.Errorf("invalid statusOnError code: %d", code)
 	}
 )
 
