@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/go-utils/hashutils"
 
-	"github.com/solo-io/go-utils/errors"
+	errors "github.com/rotisserie/eris"
 
 	"k8s.io/apimachinery/pkg/labels"
 

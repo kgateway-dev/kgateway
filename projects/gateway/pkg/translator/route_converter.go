@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	matchersv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -23,6 +23,7 @@ import (
 const allNamespaceRouteTableSelector = "*"
 
 var (
+	NoActionErr         = errors.New("invalid route: route must specify an action")
 	MatcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
 	MissingPrefixErr    = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
 	InvalidPrefixErr    = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
@@ -50,20 +51,30 @@ var (
 )
 
 type RouteConverter interface {
-	// Converts a gateway route to one or more gloo routes.
+	// Converts a Gateway API route (i.e. a route on RouteTables/VirtualServices)
+	// to one or more Gloo API routes (i.e. routes on a Proxy resource).
 	// Can return multiple routes only if the input route uses delegation.
-	ConvertRoute(gatewayRoute *v1.Route) ([]*gloov1.Route, error)
+	ConvertRoute(route *gatewayv1.Route) ([]*gloov1.Route, error)
 }
 
 // Implements the RouteConverter interface by recursively visiting a route tree
 type routeVisitor struct {
+	// This is the root of the subtree of routes that we are going to visit. It can be either a virtual service or a
+	// route table. Errors and warnings for the current visitor will be reported on this resource.
 	rootResource resources.InputResource
-	tables       v1.RouteTableList
-	visited      v1.RouteTableList
-	reports      reporter.ResourceReports
+	// All the route tables in the current snapshot.
+	tables gatewayv1.RouteTableList
+	// Used to keep track of route tables that have already been visited in order to avoid cycles.
+	visited gatewayv1.RouteTableList
+	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
+	reports reporter.ResourceReports
 }
 
-func NewRouteVisitor(root resources.InputResource, tables v1.RouteTableList, reports reporter.ResourceReports) *routeVisitor {
+// Initializes and returns a route converter instance.
+// - root: root of the subtree of routes that we are going to visit; used primarily as a target to report errors and warnings on.
+// - tables: all the route tables that should be considered when resolving delegation chains.
+// - reports: this object will be updated with errors and warnings encountered during the conversion process.
+func NewRouteVisitor(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
 	return &routeVisitor{
 		rootResource: root,
 		tables:       tables,
@@ -71,7 +82,7 @@ func NewRouteVisitor(root resources.InputResource, tables v1.RouteTableList, rep
 	}
 }
 
-func (rv *routeVisitor) ConvertRoute(gatewayRoute *v1.Route) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.Route, error) {
 	matchers := []*matchersv1.Matcher{defaults.DefaultMatcher()}
 	if len(gatewayRoute.Matchers) > 0 {
 		matchers = gatewayRoute.Matchers
@@ -83,26 +94,28 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *v1.Route) ([]*gloov1.Route, e
 	}
 
 	switch action := gatewayRoute.Action.(type) {
-	case *v1.Route_RedirectAction:
+	case *gatewayv1.Route_RedirectAction:
 		glooRoute.Action = &gloov1.Route_RedirectAction{
 			RedirectAction: action.RedirectAction,
 		}
-	case *v1.Route_DirectResponseAction:
+	case *gatewayv1.Route_DirectResponseAction:
 		glooRoute.Action = &gloov1.Route_DirectResponseAction{
 			DirectResponseAction: action.DirectResponseAction,
 		}
-	case *v1.Route_RouteAction:
+	case *gatewayv1.Route_RouteAction:
 		glooRoute.Action = &gloov1.Route_RouteAction{
 			RouteAction: action.RouteAction,
 		}
-	case *v1.Route_DelegateAction:
+	case *gatewayv1.Route_DelegateAction:
 		return rv.convertDelegateAction(gatewayRoute)
+	default:
+		return nil, NoActionErr
 	}
 
 	return []*gloov1.Route{glooRoute}, nil
 }
 
-func (rv *routeVisitor) convertDelegateAction(route *v1.Route) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) convertDelegateAction(route *gatewayv1.Route) ([]*gloov1.Route, error) {
 	delegate := route.GetDelegateAction()
 	if delegate == nil {
 		return nil, NoDelegateActionErr
@@ -130,24 +143,24 @@ func (rv *routeVisitor) convertDelegateAction(route *v1.Route) ([]*gloov1.Route,
 		for _, routeTableRoute := range routeTable.Routes {
 
 			// Clone route since we mutate
-			routeTableRoute := proto.Clone(routeTableRoute).(*v1.Route)
+			routeClone := proto.Clone(routeTableRoute).(*gatewayv1.Route)
 
 			// Merge plugins from parent route
-			merged, err := mergeRoutePlugins(routeTableRoute.GetOptions(), route.GetOptions())
+			merged, err := mergeRoutePlugins(routeClone.GetOptions(), route.GetOptions())
 			if err != nil {
 				// Should never happen
 				return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
 			}
-			routeTableRoute.Options = merged
+			routeClone.Options = merged
 
-			// Check if the path prefix is
-			if err := isRouteTableValidForDelegatePrefix(delegatePrefix, routeTableRoute); err != nil {
+			// Check if the path prefix is compatible with the one on the parent route
+			if err := isRouteTableValidForDelegatePrefix(delegatePrefix, routeClone); err != nil {
 				rv.addError(err)
 				continue
 			}
 
 			// Spawn a new visitor to visit this route table. This recursively calls `ConvertRoute`.
-			subRoutes, err := rv.spawn(routeTable).ConvertRoute(routeTableRoute)
+			subRoutes, err := rv.createSubVisitor(routeTable).ConvertRoute(routeClone)
 			if err != nil {
 				return nil, err
 			}
@@ -166,8 +179,8 @@ func (rv *routeVisitor) convertDelegateAction(route *v1.Route) ([]*gloov1.Route,
 	return delegatedRoutes, nil
 }
 
-func (rv *routeVisitor) selectRouteTables(delegateAction *v1.DelegateAction) v1.RouteTableList {
-	var routeTables v1.RouteTableList
+func (rv *routeVisitor) selectRouteTables(delegateAction *gatewayv1.DelegateAction) gatewayv1.RouteTableList {
+	var routeTables gatewayv1.RouteTableList
 
 	if routeTableRef := getRouteTableRef(delegateAction); routeTableRef != nil {
 		// missing refs should only result in a warning
@@ -177,7 +190,7 @@ func (rv *routeVisitor) selectRouteTables(delegateAction *v1.DelegateAction) v1.
 			rv.addWarning(RouteTableMissingWarning(*routeTableRef))
 			return nil
 		}
-		routeTables = v1.RouteTableList{routeTable}
+		routeTables = gatewayv1.RouteTableList{routeTable}
 
 	} else if rtSelector := delegateAction.GetSelector(); rtSelector != nil {
 		routeTables = routeTablesForSelector(rv.tables, rtSelector, rv.rootResource.GetMetadata().Namespace)
@@ -194,8 +207,12 @@ func (rv *routeVisitor) selectRouteTables(delegateAction *v1.DelegateAction) v1.
 }
 
 // Create a new visitor to visit the current route table
-func (rv *routeVisitor) spawn(routeTable *v1.RouteTable) RouteConverter {
-	visitor := NewRouteVisitor(routeTable, rv.tables, rv.reports)
+func (rv *routeVisitor) createSubVisitor(routeTable *gatewayv1.RouteTable) *routeVisitor {
+	visitor := &routeVisitor{
+		rootResource: routeTable,
+		tables:       rv.tables,
+		reports:      rv.reports,
+	}
 
 	// Add all route tables from the parent visitor
 	for _, vis := range rv.visited {
@@ -209,12 +226,12 @@ func (rv *routeVisitor) spawn(routeTable *v1.RouteTable) RouteConverter {
 }
 
 // If any of the matching route tables has already been visited, that means we have a delegation cycle.
-func (rv *routeVisitor) checkForCycles(routeTables v1.RouteTableList) error {
+func (rv *routeVisitor) checkForCycles(routeTables gatewayv1.RouteTableList) error {
 	for _, visited := range rv.visited {
 		for _, toVisit := range routeTables {
 			if toVisit == visited {
 				return DelegationCycleErr(
-					buildCycleInfoString(append(append(v1.RouteTableList{}, rv.visited...), toVisit)),
+					buildCycleInfoString(append(append(gatewayv1.RouteTableList{}, rv.visited...), toVisit)),
 				)
 			}
 		}
@@ -230,7 +247,7 @@ func (rv *routeVisitor) addError(err error) {
 	rv.reports.AddError(rv.rootResource, err)
 }
 
-func getDelegateRoutePrefix(route *v1.Route) (string, error) {
+func getDelegateRoutePrefix(route *gatewayv1.Route) (string, error) {
 	switch len(route.GetMatchers()) {
 	case 0:
 		return defaults.DefaultMatcher().GetPrefix(), nil
@@ -259,8 +276,8 @@ func getDelegateRoutePrefix(route *v1.Route) (string, error) {
 	}
 }
 
-func isRouteTableValidForDelegatePrefix(delegatePrefix string, routeTable *v1.Route) error {
-	for _, match := range routeTable.Matchers {
+func isRouteTableValidForDelegatePrefix(delegatePrefix string, route *gatewayv1.Route) error {
+	for _, match := range route.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
 		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, delegatePrefix) {
 			return InvalidRouteTableForDelegateErr(delegatePrefix, pathString)
@@ -271,7 +288,7 @@ func isRouteTableValidForDelegatePrefix(delegatePrefix string, routeTable *v1.Ro
 
 // Handles new and deprecated format for referencing a route table
 // TODO: remove this function when we remove the deprecated fields from the API
-func getRouteTableRef(delegate *v1.DelegateAction) *core.ResourceRef {
+func getRouteTableRef(delegate *gatewayv1.DelegateAction) *core.ResourceRef {
 	if delegate.Namespace != "" || delegate.Name != "" {
 		return &core.ResourceRef{
 			Namespace: delegate.Namespace,
@@ -281,7 +298,7 @@ func getRouteTableRef(delegate *v1.DelegateAction) *core.ResourceRef {
 	return delegate.GetRef()
 }
 
-func routeTablesForSelector(routeTables v1.RouteTableList, selector *v1.RouteTableSelector, ownerNamespace string) v1.RouteTableList {
+func routeTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gatewayv1.RouteTableSelector, ownerNamespace string) gatewayv1.RouteTableList {
 	type nsSelectorType int
 	const (
 		// Match route tables in the owner namespace
@@ -307,7 +324,7 @@ func routeTablesForSelector(routeTables v1.RouteTableList, selector *v1.RouteTab
 		labelSelector = labels.SelectorFromSet(selector.Labels)
 	}
 
-	var matchingRouteTables v1.RouteTableList
+	var matchingRouteTables gatewayv1.RouteTableList
 	for _, candidate := range routeTables {
 
 		// Check whether labels match
@@ -341,7 +358,7 @@ func routeTablesForSelector(routeTables v1.RouteTableList, selector *v1.RouteTab
 	return matchingRouteTables
 }
 
-func buildCycleInfoString(routeTables v1.RouteTableList) string {
+func buildCycleInfoString(routeTables gatewayv1.RouteTableList) string {
 	var visitedTables []string
 	for _, rt := range routeTables {
 		visitedTables = append(visitedTables, fmt.Sprintf("[%s]", rt.Metadata.Ref().Key()))
