@@ -148,4 +148,10 @@ var (
 		Short:   "Print current version",
 		Long:    "Get the version of Glooctl and Gloo",
 	}
+
+	UI_COMMAND = cobra.Command{
+		Use:     "ui",
+		Short:   "Open Gloo UI",
+		Long:    "Open the Gloo Enterprise UI in your default browser",
+	}
 )
