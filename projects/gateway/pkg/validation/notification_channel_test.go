@@ -33,7 +33,10 @@ var _ = Describe("NotificationChannel", func() {
 		client.set(nil)
 
 		Eventually(func() int {
-			return client.streamStartedTimes
+			client.l.RLock()
+			times := client.streamStartedTimes
+			client.l.RUnlock()
+			return times
 		}).Should(BeNumerically(">", 1))
 
 	})
@@ -52,12 +55,17 @@ func (m *mockValidationClient) set(response *validation.NotifyOnResyncResponse) 
 }
 
 func (m *mockValidationClient) NotifyOnResync(ctx context.Context, in *validation.NotifyOnResyncRequest, opts ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
+	m.l.Lock()
 	m.streamStartedTimes++
+	m.l.Unlock()
 	return m, nil
 }
 
 func (m *mockValidationClient) Recv() (*validation.NotifyOnResyncResponse, error) {
-	if m.response == nil {
+	m.l.RLock()
+	resp := m.response
+	m.l.RUnlock()
+	if resp == nil {
 		return nil, errors.New("empty")
 	}
 	m.l.RLock()
