@@ -2,5 +2,5 @@ changelog:
   - type: DEPENDENCY_BUMP
     dependencyOwner: solo-io
     dependencyRepo: go-utils
-    dependencyTag: v0.13.0
+    dependencyTag: v0.13.1
     description: Update go-utils to version 0.13.0
