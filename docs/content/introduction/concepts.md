@@ -1,6 +1,7 @@
 ---
 title: "Concepts"
 weight: 40
+description: An explanation of the bedrock concepts behind Gloo.
 ---
 
 - [Overview](#overview)
