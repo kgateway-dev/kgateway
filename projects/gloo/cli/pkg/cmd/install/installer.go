@@ -9,25 +9,22 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/solo-io/gloo/install/helm/gloo/generate"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	"github.com/solo-io/gloo/pkg/cliutil/helm"
-
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/install/helm/gloo/generate"
 	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/pkg/cliutil/helm"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/cli/values"
 	"helm.sh/helm/v3/pkg/getter"
 	"helm.sh/helm/v3/pkg/release"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"sigs.k8s.io/yaml"
 )
@@ -166,7 +163,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 
 func (i *installer) createNamespace(namespace string) {
 	_, err := i.kubeNsClient.Get(namespace, metav1.GetOptions{})
-	if apieris.IsNotFound(err) {
+	if apierrors.IsNotFound(err) {
 		fmt.Printf("Creating namespace %s... ", namespace)
 		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
