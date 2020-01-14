@@ -10,7 +10,6 @@ import (
 )
 
 func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidationServiceClient) (<-chan struct{}, error) {
-	//func MakeNotificationChannel(ctx context.Context, stream validation.ProxyValidationService_NotifyOnResyncClient) (<-chan struct{}, error) {
 	notifications := make(chan struct{}, 1)
 
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "validation-resync-notifications"))
