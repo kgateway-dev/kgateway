@@ -14,11 +14,11 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
@@ -136,7 +136,7 @@ var _ = Describe("Consul EDS", func() {
 							}, nil, nil
 						}
 					}
-					return nil, &consulapi.QueryMeta{}, errors.New("you screwed up the test")
+					return nil, &consulapi.QueryMeta{}, eris.New("you screwed up the test")
 				},
 			).AnyTimes()
 
@@ -272,7 +272,7 @@ var _ = Describe("Consul EDS", func() {
 			errRoutineCancel()
 			_ = eg.Wait()
 
-			errorProducer <- errors.New("fail")
+			errorProducer <- eris.New("fail")
 			Eventually(errorChan).Should(Receive())
 
 			// Simulate an update to the services

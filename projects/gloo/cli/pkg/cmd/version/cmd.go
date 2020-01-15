@@ -9,6 +9,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/olekukonko/tablewriter"
+	"github.com/rotisserie/eris"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -16,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	NoNamespaceAllError = errors.New("single namespace must be specified, cannot be namespace all for version command")
+	NoNamespaceAllError = eris.New("single namespace must be specified, cannot be namespace all for version command")
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {

@@ -10,7 +10,7 @@ import (
 
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 )
@@ -106,42 +106,42 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 	hasher := fnv.New64()
 	ArtifactsHash, err := s.hashArtifacts(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("artifacts", ArtifactsHash))
 	EndpointsHash, err := s.hashEndpoints(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("endpoints", EndpointsHash))
 	ProxiesHash, err := s.hashProxies(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("proxies", ProxiesHash))
 	UpstreamGroupsHash, err := s.hashUpstreamGroups(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("upstreamGroups", UpstreamGroupsHash))
 	SecretsHash, err := s.hashSecrets(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("secrets", SecretsHash))
 	UpstreamsHash, err := s.hashUpstreams(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
 	AuthConfigsHash, err := s.hashAuthConfigs(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("authConfigs", AuthConfigsHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return append(fields, zap.Uint64("snapshotHash", snapshotHash))
 }
@@ -201,7 +201,7 @@ func (ss ApiSnapshotStringer) String() string {
 func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 	snapshotHash, err := s.Hash(nil)
 	if err != nil {
-		log.Println(errors.Wrapf(err, "error hashing, this should never happen"))
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return ApiSnapshotStringer{
 		Version:        snapshotHash,

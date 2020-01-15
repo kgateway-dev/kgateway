@@ -3,19 +3,19 @@ package shadowing
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/errors"
 )
 
 var (
-	InvalidRouteActionError  = errors.New("cannot use shadowing plugin on non-Route_Route route actions")
-	UnspecifiedUpstreamError = errors.New("invalid plugin spec: must specify an upstream ref")
+	InvalidRouteActionError  = eris.New("cannot use shadowing plugin on non-Route_Route route actions")
+	UnspecifiedUpstreamError = eris.New("invalid plugin spec: must specify an upstream ref")
 	InvalidNumeratorError    = func(num float32) error {
-		return errors.Errorf("shadow percentage must be between 0 and 100, received %v", num)
+		return eris.Errorf("shadow percentage must be between 0 and 100, received %v", num)
 	}
 )
 

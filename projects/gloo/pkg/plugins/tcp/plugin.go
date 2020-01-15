@@ -5,6 +5,7 @@ import (
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -13,7 +14,6 @@ import (
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 )
@@ -31,11 +31,11 @@ var (
 	_ plugins.ListenerFilterChainPlugin = new(Plugin)
 
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
-		return errors.Errorf("no destination type was specified for tcp host %v", host)
+		return eris.Errorf("no destination type was specified for tcp host %v", host)
 	}
 
 	InvalidSecretsError = func(err error, name string) error {
-		return errors.Wrapf(err, "invalid secrets for listener %v", name)
+		return eris.Wrapf(err, "invalid secrets for listener %v", name)
 	}
 )
 

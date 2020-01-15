@@ -21,11 +21,11 @@ import (
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -201,7 +201,7 @@ func getRoutes(snap envoycache.Snapshot) ([]*envoyapi.RouteConfiguration, error)
 	for _, routeConfigProto := range routeConfigProtos.Items {
 		routeConfig, ok := routeConfigProto.ResourceProto().(*envoyapi.RouteConfiguration)
 		if !ok {
-			return nil, errors.Errorf("invalid type, expected *envoyapi.RouteConfiguration, found %T", routeConfigProto)
+			return nil, eris.Errorf("invalid type, expected *envoyapi.RouteConfiguration, found %T", routeConfigProto)
 		}
 		routeConfigs = append(routeConfigs, routeConfig)
 	}

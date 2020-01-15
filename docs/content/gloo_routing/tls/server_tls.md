@@ -183,7 +183,7 @@ curl $(glooctl proxy url --port https)/sample-route-1
 It's possible that if you used self-signed certs, `curl` cannot validate the certificate. In this case, SPECIFICALLY FOR THIS EXAMPLE, you can skip certificate validation with `curl -k ...`(note this is not secure):
 
 ```bash
-curl -k https://192.168.64.50:31767/sample-route-1
+curl -k $(glooctl proxy url --port https)/sample-route-1
 ```
 
 ```json

@@ -6,8 +6,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 
@@ -148,7 +148,7 @@ func getSecretClient() (v1.SecretClient, error) {
 	}
 	secretClient, err := v1.NewSecretClient(secretClientFactory)
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating Secrets client")
+		return nil, eris.Wrapf(err, "creating Secrets client")
 	}
 	if err := secretClient.Register(); err != nil {
 		return nil, err

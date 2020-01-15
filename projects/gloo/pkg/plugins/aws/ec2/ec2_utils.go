@@ -3,7 +3,7 @@ package ec2
 import (
 	"fmt"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 
@@ -114,10 +114,10 @@ func tagFiltersKey(tagName string) *ec2.Filter {
 
 var (
 	CreateSessionFromEnvError = func(err error) error {
-		return errors.Wrapf(err, "unable to create a session with credentials taken from env")
+		return eris.Wrapf(err, "unable to create a session with credentials taken from env")
 	}
 
 	CreateSessionFromSecretError = func(err error) error {
-		return errors.Wrapf(err, "unable to create a session with credentials taken from secret ref")
+		return eris.Wrapf(err, "unable to create a session with credentials taken from secret ref")
 	}
 )

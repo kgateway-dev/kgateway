@@ -40,6 +40,7 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a // indirect
+	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.11.0
@@ -51,12 +52,13 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/radovskyb/watcher v1.0.7 // indirect
+	github.com/rotisserie/eris v0.1.1
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.11.7
+	github.com/solo-io/go-utils v0.13.1
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.12.1
+	github.com/solo-io/solo-kit v0.13.0
 	github.com/solo-io/wasme v0.0.1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
@@ -67,12 +69,13 @@ require (
 	go.uber.org/zap v1.13.0
 	golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/sys v0.0.0-20200107162124-548cf772de50 // indirect
 	golang.org/x/tools v0.0.0-20191212051200-825cb0626375 // indirect
 	google.golang.org/api v0.10.0 // indirect
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.25.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.7
 	helm.sh/helm/v3 v3.0.0
 	k8s.io/api v0.0.0
 	k8s.io/apiextensions-apiserver v0.0.0

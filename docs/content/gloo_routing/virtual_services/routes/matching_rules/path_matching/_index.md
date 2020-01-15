@@ -11,7 +11,7 @@ The route rules in a *Virtual Service* can use path matching rules to match requ
 * [`exact`](#exact) - match if request path matches specified path exactly.
 * [`regex`](#regex) - match if the specified regular expression matches.
 
-We're going to take a closer look at each matching type by creating an *Upstream* and then creating a *Virtual Service* to route requests to that Upstream based on the path submitted as part of the request.
+In this guide, we're going to take a closer look at each matching type by creating an *Upstream* and then creating a *Virtual Service* to route requests to that Upstream based on the path submitted as part of the request.
 
 ---
 

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix error (and repetitive logging) when Gateway Notification Channel is closed. This issue can happen when network communication between tthe Gloo and Gateway pods is interrupted.
+    issueLink: https://github.com/solo-io/gloo/issues/2070

@@ -5,7 +5,7 @@ import (
 	"net/url"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
@@ -39,7 +39,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	instances, _, err := p.client.Service(spec.ServiceName, "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting service from catalog")
+		return nil, eris.Wrapf(err, "getting service from catalog")
 	}
 
 	scheme := "http"
@@ -53,7 +53,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		}
 	}
 
-	return nil, errors.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
+	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
 func NewPlugin(client consul.ConsulWatcher) *plugin {

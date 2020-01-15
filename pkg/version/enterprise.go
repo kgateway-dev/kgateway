@@ -2,12 +2,12 @@ package version
 
 import (
 	"math"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/githubutils"
 	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/go-utils/versionutils/git"
 	"github.com/spf13/afero"
 	"helm.sh/helm/v3/pkg/repo"
 )
@@ -19,10 +19,9 @@ const GlooEE = "gloo-ee"
 // Calculated from the largest semver gloo-ee version in the helm repo index
 func GetLatestEnterpriseVersion(stableOnly bool) (string, error) {
 	return GetLatestEnterpriseVersionWithMaxVersion(stableOnly, &versionutils.Version{
-		Major:            math.MaxInt32,
-		Minor:            math.MaxInt32,
-		Patch:            math.MaxInt32,
-		ReleaseCandidate: math.MaxInt32,
+		Major: math.MaxInt32,
+		Minor: math.MaxInt32,
+		Patch: math.MaxInt32,
 	})
 }
 
@@ -42,10 +41,9 @@ func GetLatestEnterpriseVersionWithMaxVersion(stableOnly bool, maxVersion *versi
 
 func LatestVersionFromRepo(file string, stableOnly bool) (string, error) {
 	return LatestVersionFromRepoWithMaxVersion(file, stableOnly, &versionutils.Version{
-		Major:            math.MaxInt32,
-		Minor:            math.MaxInt32,
-		Patch:            math.MaxInt32,
-		ReleaseCandidate: math.MaxInt32,
+		Major: math.MaxInt32,
+		Minor: math.MaxInt32,
+		Patch: math.MaxInt32,
 	})
 }
 
@@ -58,7 +56,8 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 	// we can't depend on ind.SortEntries() because this doesn't properly sort rc releases
 	// e.g., it would sort 1.0.0-rc1, 1.0.0-rc10, 1.0.0-rc2, ... 1.0.0-rc9, which is incorrect
 	// instead, we use our version comparison logic to get the largest tag
-	largestVersion := &versionutils.Zero
+	zero := versionutils.Zero()
+	largestVersion := &zero
 	var largestTag string
 	if chartVersions, ok := ind.Entries[GlooEE]; ok && len(chartVersions) > 0 {
 		for _, chartVersion := range chartVersions {
@@ -71,18 +70,21 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 				}
 			}
 
-			tag := "v" + strings.TrimPrefix(chartVersion.Version, "v")
-			version, err := versionutils.ParseVersion(tag)
+			version, err := versionutils.ParseVersion(git.AppendTagPrefix(chartVersion.Version))
 			if err != nil {
 				continue
 			}
-			versionConstraintSatisfied, err := maxVersion.IsGreaterThanOrEqualTo(version)
-			if err != nil || !versionConstraintSatisfied {
+
+			// with the default implementation of MustIsGreaterThanOrEqualTo,
+			// all rc releases will be larger than equivalent beta releases. (1.0.0-rc1 > 1.0.0-beta8)
+			// since those are the only allowed labels in Gloo, this tiebreak is acceptable
+			versionConstraintSatisfied := maxVersion.MustIsGreaterThanOrEqualTo(*version)
+			if !versionConstraintSatisfied {
 				continue
 			}
 
-			isLargest, err := version.IsGreaterThanOrEqualTo(largestVersion)
-			if err == nil && isLargest {
+			isLargest := version.MustIsGreaterThanOrEqualTo(*largestVersion)
+			if isLargest {
 				largestVersion = version
 				largestTag = chartVersion.Version
 			}
@@ -91,7 +93,7 @@ func LatestVersionFromRepoWithMaxVersion(file string, stableOnly bool, maxVersio
 	}
 
 	if largestTag == "" {
-		return "", errors.Errorf("Couldn't find any %s versions in index file %s that satisfies constraints: [stable]: %v, [maxVersion]: %v",
+		return "", eris.Errorf("Couldn't find any %s versions in index file %s that satisfies constraints: [stable]: %v, [maxVersion]: %v",
 			GlooEE, file, stableOnly, maxVersion)
 	}
 

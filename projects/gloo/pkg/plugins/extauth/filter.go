@@ -8,23 +8,23 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var (
 	DefaultTimeout = 200 * time.Millisecond
-	NoServerRefErr = errors.New("no extauth server reference configured")
+	NoServerRefErr = eris.New("no extauth server reference configured")
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return errors.Errorf("extauth server upstream not found %s", usRef.String())
+		return eris.Errorf("extauth server upstream not found %s", usRef.String())
 	}
 	InvalidStatusOnErrorErr = func(code uint32) error {
-		return errors.Errorf("invalid statusOnError code", code)
+		return eris.Errorf("invalid statusOnError code: %d", code)
 	}
 )
 
