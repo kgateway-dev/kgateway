@@ -8,7 +8,7 @@ Open Gloo UI
 
 ### Synopsis
 
-Open the Gloo Enterprise UI in your default browser
+Open the Gloo UI in your default browser
 
 ```
 glooctl ui [flags]

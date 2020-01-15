@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/solo-io/go-utils/kubeutils"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/pkg/browser"
@@ -43,18 +43,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				return err
 			}
 
-			deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{
-				FieldSelector: fields.OneTermEqualSelector("metadata.name", "api-server").String(),
-			})
+			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get("api-server", metav1.GetOptions{})
 			if err != nil {
+				fmt.Println("No Gloo UI found as part of the installation. The full UI is part of Gloo Enterprise by default. " +
+					"The open-source read-only UI can be installed by `glooctl install <installType> --with-admin-console`.")
 				return err
-			}
-			if len(deployments.Items) != 1 {
-				return eris.Errorf("Could not find 'api-server' deployment in the '%s' namespace", opts.Metadata.Namespace)
 			}
 
 			var staticPort string
-			for _, container := range deployments.Items[0].Spec.Template.Spec.Containers {
+			for _, container := range deployment.Spec.Template.Spec.Containers {
 				if container.Name == "apiserver-ui" {
 					for _, port := range container.Ports {
 						if port.Name == "static" {

@@ -153,6 +153,6 @@ var (
 		Use:     "ui",
 		Aliases: []string{"dashboard"},
 		Short:   "Open Gloo UI",
-		Long:    "Open the Gloo Enterprise UI in your default browser",
+		Long:    "Open the Gloo UI in your default browser",
 	}
 )
