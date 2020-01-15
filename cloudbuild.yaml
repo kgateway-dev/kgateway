@@ -126,7 +126,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   - 'HELM_HOME=/root/.helm'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=10', '--noColor']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '--noColor']
   waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-test-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
