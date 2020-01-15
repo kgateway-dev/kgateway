@@ -572,7 +572,7 @@ var _ = Describe("Translator", func() {
 						DomainInOtherVirtualServicesErr("d1.com", []string{"gloo-system.name2"}),
 						GatewayHasConflictingVirtualServicesErr([]string{"d1.com"}),
 					} {
-						Expect(multiErr.WrappedErrors()).To(ContainElement(MatchError(expectedError)))
+						Expect(multiErr.WrappedErrors()).To(ContainElement(expectedError))
 					}
 				})
 
