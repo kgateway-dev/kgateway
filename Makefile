@@ -31,7 +31,7 @@ BUILD_ID := $(BUILD_ID)
 TEST_ASSET_DIR := $(ROOTDIR)/_test
 
 #----------------------------------------------------------------------------------
-# Marcos
+# Macros
 #----------------------------------------------------------------------------------
 
 # This macro takes a relative path as its only argument and returns all the files

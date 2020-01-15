@@ -3,9 +3,9 @@ package validation
 import (
 	"context"
 
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"go.uber.org/zap"
 )
 

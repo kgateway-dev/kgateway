@@ -496,7 +496,7 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 
 		var routeTableRef *core.ResourceRef
 		// handle deprecated route table resource reference format
-		// TODO: remove when we remove the deprecated fields from the API
+		// TODO(marco): remove when we remove the deprecated fields from the API
 		if delegate.Namespace != "" || delegate.Name != "" {
 			routeTableRef = &core.ResourceRef{
 				Namespace: delegate.Namespace,
@@ -505,8 +505,9 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 		} else {
 			switch selectorType := delegate.GetDelegationType().(type) {
 			case *v1.DelegateAction_Selector:
-				// TODO(marco): handle selector
-				break
+				// Selectors do not represent hard referential constraints, i.e. we can safely remove
+				// a route table even when it is matches by one or more selectors. Hence, skip this check.
+				continue
 			case *v1.DelegateAction_Ref:
 				routeTableRef = selectorType.Ref
 			}
