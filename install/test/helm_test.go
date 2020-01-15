@@ -660,6 +660,7 @@ var _ = Describe("Helm Test", func() {
 						deploymentName := "gateway-proxy-internal"
 						// deployment exists for for second declaration of gateway proxy
 						testManifest.Expect("Deployment", namespace, deploymentName).NotTo(BeNil())
+						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
 					It("creates a deployment with gloo wasm envoy", func() {
@@ -1571,6 +1572,7 @@ metadata:
 						cmName := "gateway-proxy-internal-envoy-config"
 						// cm exists for for second declaration of gateway proxy
 						testManifest.Expect("ConfigMap", namespace, cmName).NotTo(BeNil())
+						testManifest.Expect("ConfigMap", namespace, "gateway-proxy-envoy-config").NotTo(BeNil())
 					})
 				})
 
