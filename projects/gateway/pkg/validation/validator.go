@@ -506,8 +506,9 @@ func routesContainRefs(list []*v1.Route, refs refSet) bool {
 		} else {
 			switch selectorType := delegate.GetDelegationType().(type) {
 			case *v1.DelegateAction_Selector:
-				// TODO(marco): handle selector
-				break
+				// Selectors do not represent hard referential constraints, i.e. we can safely remove
+				// a route table even when it is matches by one or more selectors. Hence, skip this check.
+				continue
 			case *v1.DelegateAction_Ref:
 				routeTableRef = selectorType.Ref
 			}
