@@ -3,10 +3,11 @@ package ui
 import (
 	"fmt"
 	"io"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"os"
 	"os/exec"
 	"strconv"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/rotisserie/eris"
 
@@ -47,7 +48,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get("api-server", metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					fmt.Printf("No Gloo UI found as part of the installation in namespace %s. The full UI is part of Gloo Enterprise by default. " +
+					fmt.Printf("No Gloo UI found as part of the installation in namespace %s. The full UI is part of Gloo Enterprise by default. "+
 						"The open-source read-only UI can be installed by `glooctl install <installType> --with-admin-console`.\n", opts.Metadata.Namespace)
 				}
 				return err
