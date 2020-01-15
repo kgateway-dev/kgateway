@@ -1,5 +1,5 @@
 changelog:
-- type: NEW_FEATURE
+- type: FIX
   description: >
     Update the delegation API to support delegating to multiple route tables. Route tables to delegate to can be
     selected by either namespaces, labels, or both, using the new `RouteTableSelector` field.
