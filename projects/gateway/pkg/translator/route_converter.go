@@ -193,7 +193,7 @@ func (rv *routeVisitor) selectRouteTables(delegateAction *gatewayv1.DelegateActi
 		routeTables = gatewayv1.RouteTableList{routeTable}
 
 	} else if rtSelector := delegateAction.GetSelector(); rtSelector != nil {
-		routeTables = routeTablesForSelector(rv.tables, rtSelector, rv.rootResource.GetMetadata().Namespace)
+		routeTables = RouteTablesForSelector(rv.tables, rtSelector, rv.rootResource.GetMetadata().Namespace)
 
 		if len(routeTables) == 0 {
 			rv.addWarning(NoMatchingRouteTablesWarning)
@@ -298,7 +298,9 @@ func getRouteTableRef(delegate *gatewayv1.DelegateAction) *core.ResourceRef {
 	return delegate.GetRef()
 }
 
-func routeTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gatewayv1.RouteTableSelector, ownerNamespace string) gatewayv1.RouteTableList {
+// Returns the subset of `routeTables` that matches the given `selector`.
+// Search will be restricted to the `ownerNamespace` if the selector does not specify any namespaces.
+func RouteTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gatewayv1.RouteTableSelector, ownerNamespace string) gatewayv1.RouteTableList {
 	type nsSelectorType int
 	const (
 		// Match route tables in the owner namespace
