@@ -146,7 +146,7 @@ graph LR;
 {{< /mermaid >}}
 
 ## Example Configuration
-The `delegateAction` object can assume one of two forms:
+The `delegateAction` object (that can be defines on both virtual service and route table routes) can assume one of two forms:
 
 1. `ref`: delegates to a specific route table;
 1. `selector`: delegates to all the route tables that match the selection criteria.
@@ -311,7 +311,7 @@ graph LR;
 {{< /mermaid >}}
 
 ### Delegation via route table selector
-By using a {{< protobuf name="gateway.solo.io.RouteTableSelector">}}, a route can delegate to multiple route tables. 
+By using a {{< protobuf name="gateway.solo.io.RouteTableSelector" display="RouteTableSelector" >}}, a route can delegate to multiple route tables. 
 You can specify two types of selection criteria (which can be used together):
 
 1. `labels`: if present, Gloo will select route tables whose labels match the specified ones;
