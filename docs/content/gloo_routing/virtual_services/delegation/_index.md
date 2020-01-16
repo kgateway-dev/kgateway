@@ -154,10 +154,10 @@ The `delegateAction` object can assume one of two forms:
 In the next two sections we will see examples of both these delegation actions.
 
 ### Delegation via direct reference
-A complete configuration that uses `delegateAction` which reference specific route tables might look as follows:
+A complete configuration that uses a `delegateAction` which references specific route tables might look as follows:
 
-* A root-level **VirtualService** which delegates routing to the `a-routes` and `b-routes` **RouteTables**. 
-Please note thath routes with `delegateActions` can only use a `prefix` matcher.
+* A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
+Please note that routes with `delegateActions` can only use a `prefix` matcher.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
