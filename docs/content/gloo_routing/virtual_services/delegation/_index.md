@@ -146,7 +146,8 @@ graph LR;
 {{< /mermaid >}}
 
 ## Example Configuration
-The `delegateAction` object (that can be defines on both virtual service and route table routes) can assume one of two forms:
+The `delegateAction` object (which can be defined on routes, both on `VirtualServices` and `RouteTables`) can assume 
+one of two forms:
 
 1. `ref`: delegates to a specific route table;
 1. `selector`: delegates to all the route tables that match the selection criteria.
