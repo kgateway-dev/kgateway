@@ -81,22 +81,26 @@ install-tools:
 
 
 # use vx.y.z-latest as the tag for images that are serving version x.y.z of the docs under the docs.solo.io/gloo/latest/ path
-SERVE_AS_LATEST_TAG:=$(VERSION)-latest
+LATEST_TAG:=latest
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
+ifeq ($(DEFAULT_BRANCH),$(CURRENT_BRANCH))
 	docker build \
 		--build-arg VERSION=latest \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-latest \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG)
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(LATEST_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(LATEST_TAG)
+endif
+ifeq ($(RELEASE),"true")
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-versioned \
 		-t $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION) .
 	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION)
+endif
 
 .PHONY: manifest
 manifest:
@@ -107,6 +111,6 @@ manifest:
 		> install/manifest-versioned.yaml
 	helm template install/helm \
 		--set docsVersion=latest \
-		--set image.tag=$(SERVE_AS_LATEST_TAG) \
+		--set image.tag=$(LATEST_TAG) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-latest.yaml
