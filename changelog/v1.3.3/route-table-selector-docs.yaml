@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Fix broken links in custom auth docs page.
+  issueLink: https://github.com/solo-io/gloo/issues/2201

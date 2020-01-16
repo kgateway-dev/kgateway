@@ -104,7 +104,9 @@ As you can see, this service will allow requests to `/api/pets/1` and will deny 
 
 ### Deploy auth service
 
-To deploy this service to your cluster, download the [auth-service yaml](auth-service.yaml) file and apply it:
+To deploy this service to your cluster, copy the content of 
+[this file](https://github.com/solo-io/gloo/blob/v1.3.2/docs/content/security/auth/custom_auth/auth-service.yaml) 
+to a file named `auth-service.yaml` and apply it:
 
 ```shell
 kubectl apply --filename auth-service.yaml
@@ -243,8 +245,9 @@ spec:
 EOF
 {{< /highlight >}}
 
-If you have followed this guide verbatim, you can just download and apply [this manifest](gloo-vs.yaml) to update 
-both the `Settings` and the `Virtual Service`.
+If you have followed this guide verbatim, you can just download and apply 
+[this manifest](https://github.com/solo-io/gloo/blob/v1.3.2/docs/content/security/auth/custom_auth/gloo-vs.yaml) 
+to update both the `Settings` and the `Virtual Service`.
 
 ## Test
 
