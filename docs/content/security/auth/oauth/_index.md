@@ -68,7 +68,12 @@ using Google as an identity provider, Gloo will expect to find OIDC discovery in
 - `app_url`: This is the public URL of your application. It is used in combination with the `callback_path` attribute.
 - `callback_path`: The callback path relative to the `app_url`. Once a user has been authenticated, the identity provider 
 will redirect them to this URL. Gloo will intercept requests with this path, exchange the authorization code received from 
-Dex for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination.
+the Identity Provider for an ID token, place the ID token in a cookie on the request, and forward the request to its original destination. 
+
+{{% notice note %}}
+The callback path must have a matching route in the VirtualService associated with the OIDC settings. For example, you could simply have a `/` path-prefix route which would match any callback path. The important part of this callback "catch all" route is that it goes through the routing filters including external auth. Please see the examples for Google and Dex. 
+{{% /notice %}}
+
 - `client_id`: This is the **client id** that you obtained when you registered your application with the identity provider.
 - `client_secret_ref`: This is a reference to a Kubernetes secret containing the **client secret** that you obtained 
 when you registered your application with the identity provider. The easiest way to create the Kubernetes secret in the 
