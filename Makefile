@@ -16,8 +16,30 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-DEFAULT_BRANCH := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
-CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+# The full SHA of the currently checked out commit
+CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
+# Returns the full ref for the HEAD of the default branch, e.g. refs/remotes/origin/master
+DEFAULT_BRANCH_REF := $(shell git symbolic-ref refs/remotes/origin/HEAD)
+# Get objectname (SHA) for the remote default branch HEAD ref
+DEFAULT_BRANCH_HEAD_SHA := $(shell git for-each-ref $(DEFAULT_BRANCH_REF) --format="%(objectname)")
+
+# If the current commit is also the HEAD of the remote default branch, then we are on the default branch.
+ON_DEFAULT_BRANCH_HEAD := false
+ifeq ($(CHECKED_OUT_SHA),$(DEFAULT_BRANCH_HEAD_SHA))
+    ON_DEFAULT_BRANCH_HEAD = true
+endif
+
+ASSETS_ONLY_RELEASE := true
+ifeq ($(ON_DEFAULT_BRANCH_HEAD), "true")
+    ASSETS_ONLY_RELEASE = false
+endif
+
+print-git-info:
+	@echo CHECKED_OUT_SHA: $(CHECKED_OUT_SHA)
+	@echo DEFAULT_BRANCH_REF: $(DEFAULT_BRANCH_REF)
+	@echo DEFAULT_BRANCH_HEAD_SHA: $(DEFAULT_BRANCH_HEAD_SHA)
+	@echo ON_DEFAULT_BRANCH_HEAD: $(ON_DEFAULT_BRANCH_HEAD)
+	@echo ASSETS_ONLY_RELEASE: $(ASSETS_ONLY_RELEASE)
 
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
@@ -454,15 +476,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := true
-ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
-    ASSETS_ONLY = false
-endif
-
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
-upload-github-release-assets: build-cli render-manifests
-	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
+upload-github-release-assets: print-git-info build-cli render-manifests
+	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
 .PHONY: publish-docs
 publish-docs: generate-helm-files
