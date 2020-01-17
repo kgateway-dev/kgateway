@@ -37,9 +37,15 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
-> Note: You can run the command with the flag `--dry-run` to output 
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/enterprise/#verify-your-installation" %}}).
+
+
+{{% notice note %}}
+You can run the command with the flag `--dry-run` to output 
 the Kubernetes manifests (as `yaml`) that `glooctl` will 
 apply to the cluster instead of installing them.
+{{% /notice %}}
+
 
 ### Installing on Kubernetes with Helm
 
@@ -59,6 +65,8 @@ Finally, install Gloo using the following command:
 helm install glooe/gloo-ee --name glooe --namespace gloo-system \
   --set-string license_key=YOUR_LICENSE_KEY
 ```
+
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/enterprise/#verify-your-installation" %}}).
 
 #### Customizing your installation with Helm
 
@@ -166,6 +174,12 @@ replicaset.apps/rate-limit-6b847b95c8                            1         1    
 replicaset.apps/redis-7f6954b84d                                 1         1         1       5m21s
 ```
 
+#### Looking for opened ports?
+You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}). 
+
+{{% notice note %}}
+NOT opening the listener ports when there are no listeners (routes) is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
+{{% /notice %}}
 
 ## Uninstall {#uninstall}
 
