@@ -1,4 +1,4 @@
 changelog:
 - type: FIX
   description: Fix logic to determine whether we are on the default branch.
-  issueLink: https://github.com/solo-io/gloo/issues/2159
+  issueLink: https://github.com/solo-io/gloo/issues/2220
