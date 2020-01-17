@@ -35,7 +35,6 @@ ifeq ($(ON_DEFAULT_BRANCH_HEAD), "true")
 endif
 
 print-git-info:
-	@echo Stupid diff
 	@echo CHECKED_OUT_SHA: $(CHECKED_OUT_SHA)
 	@echo DEFAULT_BRANCH_REF: $(DEFAULT_BRANCH_REF)
 	@echo DEFAULT_BRANCH_HEAD_SHA: $(DEFAULT_BRANCH_HEAD_SHA)
