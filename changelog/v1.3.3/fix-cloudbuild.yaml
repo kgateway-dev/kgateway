@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Ensure regression tests run before we release assets, and some cleanup of cloudbuild file.
+    issueLink: https://github.com/solo-io/gloo/issues/2222

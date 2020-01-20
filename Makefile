@@ -387,6 +387,7 @@ push-chart-to-registry: generate-helm-files
 
 .PHONY: fetch-helm
 fetch-helm:
+	mkdir -p './_output/helm'
 	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
 
 .PHONY: save-helm

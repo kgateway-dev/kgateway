@@ -15,8 +15,6 @@ steps:
   id: 'untar-mod-cache'
 
 # TODO: during this step, prepare-workspace to set up the project so it can be built and tested
-# Dep modifies workspace so that the code is moved into the PROJECT_ROOT
-# All steps after this must set GOPATH
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
   args:
   - "--repo-owner"
@@ -28,10 +26,8 @@ steps:
   - "--repo-output-dir"
   - "."
   env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'GIT_SSH_CONFIG=FALSE'
   id: 'prepare-workspace'
-
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -39,15 +35,14 @@ steps:
 # 3) ensure that the site is generated with no warnings (strict = true in mkdocs)
 
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-go-mod-ginkgo
-# Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
+# All steps after this must set dir: *dir to use the cloned Gloo source
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
   dir: &dir '/workspace/gloo'
   entrypoint: make
   args: ['check-format']
   waitFor: ['prepare-workspace']
   id: 'check-format'
+
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
@@ -71,6 +66,7 @@ steps:
   waitFor: ['prepare-workspace']
   dir: *dir
   id: 'get-envoy'
+
 - name: gcr.io/cloud-builders/gcloud
   args:
   - kms
@@ -83,21 +79,16 @@ steps:
   waitFor: ['prepare-workspace']
   dir: *dir
   id: 'setup-aws-creds'
+
 # Helm related setup
-- name: gcr.io/cloud-builders/gsutil
-  entrypoint: mkdir
-  args: ['-p', './_output/helm']
-  dir: *dir
-  waitFor: ['prepare-workspace']
-  id: 'make-helm-dir'
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['fetch-helm']
   env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
   id: 'fetch-helm'
   waitFor: ['prepare-workspace']
+
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
@@ -108,8 +99,7 @@ steps:
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-test-zone'
-  # run after dep so it doesn't move our settings
-  waitFor: ['prepare-workspace']
+
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
   id: 'get-test-credentials'
@@ -117,7 +107,6 @@ steps:
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
   - 'ENVOY_BINARY=/workspace/envoy'
   - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
   - 'RUN_KUBE_TESTS=1'
@@ -139,10 +128,10 @@ steps:
   secretEnv: ['QUAY_IO_PASSWORD']
   id: 'docker-login'
   waitFor: ['prepare-workspace']
+
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['docker']
   env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'TAGGED_VERSION=$TAG_NAME'
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
@@ -156,11 +145,11 @@ steps:
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['compile']
   id: 'docker-push'
+
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
 - name: gcr.io/cloud-builders/gcloud
@@ -170,29 +159,15 @@ steps:
   dir: *dir
   waitFor: ['compile']
   id: 'gcr-auth'
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', 'push-chart-to-registry', '-B']
-  env:
-    - 'DOCKER_CONFIG=/workspace/docker-config'
-    - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
-    - 'TAGGED_VERSION=$TAG_NAME'
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
-    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-  dir: *dir
-  secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['compile', 'gcr-auth']
-  id: 'release-chart'
 
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
   id: 'set-regression-zone'
-  # run after dep so it doesn't move our settings
-  waitFor: ['test']
+
 # Run regression tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['build-test-assets']
   env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
     - 'TAGGED_VERSION=$TAG_NAME'
@@ -204,24 +179,20 @@ steps:
   env:
   - 'KUBECONFIG=/workspace/kube-e2e'
   args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
+  waitFor: ['set-regression-zone']
   id: 'get-regression-credentials'
-  # wait for dep so our kube config is not moved.
-  waitFor: ['set-regression-zone', 'prepare-workspace']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'RUN_KUBE2E_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
   waitFor: ['build-test-assets', 'set-regression-zone']
   id: 'regression-tests'
 
-
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
     - 'KUBECONFIG=/workspace/kube-e2e'
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'RUN_KUBE2E_TESTS=1'
     - 'CLUSTER_LOCK_TESTS=1'
   dir: *dir
@@ -229,11 +200,22 @@ steps:
   waitFor: ['build-test-assets', 'get-regression-credentials']
   id: 'regression-tests-cluster-lock'
 
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+  args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', 'push-chart-to-registry', '-B']
+  env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
+    - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+  dir: *dir
+  secretEnv: ['GITHUB_TOKEN']
+  waitFor: ['compile', 'gcr-auth', 'regression-tests', 'regression-tests-cluster-lock']
+  id: 'release-chart'
+
 # 3) Sync helm chart data back to google storage bucket
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['save-helm']
   env:
-    - 'PROJECT_ROOT=github.com/solo-io/gloo'
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
   id: 'save-helm-chart'
