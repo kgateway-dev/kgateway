@@ -84,7 +84,7 @@ CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
-ifeq ($(DEFAULT_BRANCH),$(CURRENT_BRANCH))
+ifeq ($(ON_DEFAULT_BRANCH), true)
 	docker build \
 		--build-arg VERSION=latest \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
