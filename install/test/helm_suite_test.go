@@ -45,8 +45,7 @@ func TestHelm(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	version = os.Getenv("TAGGED_VERSION")
-	isReleaseVersion, err := glooVersion.IsReleaseVersion()
-	Expect(err).NotTo(HaveOccurred())
+	isReleaseVersion := glooVersion.IsReleaseVersion()
 	if !isReleaseVersion {
 		vVersion, err := glooVersion.VersionFromGitDescribe()
 		Expect(err).NotTo(HaveOccurred())

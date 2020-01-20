@@ -17,21 +17,8 @@ var InvalidVersionError = func(err error) error {
 	return eris.Wrapf(err, "invalid version")
 }
 
-func IsReleaseVersion() (bool, error) {
-	atTag, err := checkedoutAtTag()
-	if err != nil {
-		return false, err
-	}
-	return Version != UndefinedVersion && atTag, nil
-}
-
-func checkedoutAtTag() (bool, error) {
-	version, err := VersionFromGitDescribe()
-	if err != nil {
-		return false, err
-	}
-	parts := strings.Split(version, "-")
-	return len(parts) == 1, nil
+func IsReleaseVersion() bool {
+	return Version != UndefinedVersion
 }
 
 // VersionFromGitDescribe is the canonical means of deriving

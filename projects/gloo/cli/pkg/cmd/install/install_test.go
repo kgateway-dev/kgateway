@@ -18,7 +18,12 @@ var _ = Describe("Install", func() {
 	const licenseKey = "--license-key=fake-license-key"
 	const overrideVersion = "0.20.7"
 
-	It("shouldn't get errors for gateway dry run", func() {
+	It("should error for gateway dry run on unreleased glooctl", func() {
+		_, err := testutils.GlooctlOut("install gateway --dry-run")
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("shouldn't get errors for gateway dry run with file override", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())
 	})
