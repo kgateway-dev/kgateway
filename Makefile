@@ -25,7 +25,6 @@ DEFAULT_BRANCH_NAME := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed '
 # If we get back a result, it mean we are on the default branch.
 EMPTY_IF_NOT_DEFAULT := $(shell git branch --contains $(CHECKED_OUT_SHA) | grep -ow $(DEFAULT_BRANCH_NAME))
 
-# If commit is also the HEAD of the remote default branch, then we are on the default branch.
 ON_DEFAULT_BRANCH := false
 ifneq ($(EMPTY_IF_NOT_DEFAULT),)
     ON_DEFAULT_BRANCH = true
