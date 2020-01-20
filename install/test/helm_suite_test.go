@@ -7,6 +7,8 @@ import (
 	"path"
 	"testing"
 
+	"github.com/solo-io/go-utils/versionutils/git"
+
 	glooVersion "github.com/solo-io/gloo/pkg/version"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
@@ -46,10 +48,10 @@ func TestHelm(t *testing.T) {
 var _ = BeforeSuite(func() {
 	version = os.Getenv("TAGGED_VERSION")
 	if !glooVersion.IsReleaseVersion() {
-		vVersion, err := glooVersion.VersionFromGitDescribe()
+		gitInfo, err := git.GetGitRefInfo("./")
 		Expect(err).NotTo(HaveOccurred())
 		// remove the "v" prefix
-		version = vVersion[1:]
+		version = gitInfo.Tag[1:]
 		pullPolicy = v1.PullAlways
 	} else {
 		version = version[1:]
