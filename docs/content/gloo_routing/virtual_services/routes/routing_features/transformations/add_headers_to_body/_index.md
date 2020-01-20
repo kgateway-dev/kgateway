@@ -119,7 +119,7 @@ spec:
     options:
       transformations:
         requestTransformation:
-          transformation_template:
+          transformationTemplate:
             # Merge the specified extractors to the request body
             merge_extractors_to_body: {}
             extractors:

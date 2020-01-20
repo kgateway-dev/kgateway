@@ -146,9 +146,19 @@ graph LR;
 {{< /mermaid >}}
 
 ## Example Configuration
+The `delegateAction` object (which can be defined on routes, both on `VirtualServices` and `RouteTables`) can assume 
+one of two forms:
 
+1. `ref`: delegates to a specific route table;
+1. `selector`: delegates to all the route tables that match the selection criteria.
 
-A complete configuration might look as follows:
+In the next two sections we will see examples of both these delegation actions.
+
+### Delegation via direct reference
+A complete configuration that uses a `delegateAction` which references specific route tables might look as follows:
+
+* A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
+Please note that routes with `delegateActions` can only use a `prefix` matcher.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -175,8 +185,7 @@ spec:
           namespace: 'b'
 ```
 
-* A root-level **VirtualService** which delegates routing to to the `a-routes` and `b-routes` **RouteTables**.
-* Routes with `delegateActions` can only use a `prefix` matcher.
+* A **RouteTable** which defines two routes.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -202,7 +211,7 @@ spec:
             name: 'bar-upstream'
 ```
 
-* A **RouteTable** which defines two routes.
+* A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -229,8 +238,8 @@ spec:
 
 ```
 
-* A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
 
+* A RouteTable which is a child of another route table.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -248,7 +257,6 @@ spec:
             name: 'qux-upstream'
 ```
 
-* A RouteTable which is a child of another route table.
 
 The above configuration can be visualized as:
 
@@ -281,7 +289,6 @@ graph LR;
 
 And would result in the following Proxy:
 
-
 {{<mermaid align="left">}}
 graph LR;
 
@@ -303,6 +310,126 @@ graph LR;
      style us4 fill:#f9f,stroke:#333,stroke-width:4px
     
 {{< /mermaid >}}
+
+### Delegation via route table selector
+By using a {{< protobuf name="gateway.solo.io.RouteTableSelector" display="RouteTableSelector" >}}, a route can delegate to multiple route tables. 
+You can specify two types of selection criteria (which can be used together):
+
+1. `labels`: if present, Gloo will select route tables whose labels match the specified ones;
+1. `namespaces`: if present, Gloo will select route tables in these namespaces. If omitted, Gloo will only select route 
+tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved 
+value `*` can be used to select Route Tables in all namespaces watched by Gloo.
+
+A complete configuration might look as follows:
+
+* A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `any` namespace that 
+contain the `domain: any.com` label.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'any'
+  namespace: 'any'
+spec:
+  virtualHost:
+    domains:
+    - 'any.com'
+    routes:
+    - matchers:
+       - prefix: '/' # delegate ownership of all routes for `any.com`
+      delegateAction:
+        selector:
+          labels:
+            domain: any.com
+          namespaces:
+          - any
+```
+
+* Two **RouteTables** which match the selection criteria:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: RouteTable
+metadata:
+  name: 'a-routes'
+  namespace: 'any'
+  labels:
+    domain: any.com
+spec:
+  routes:
+    - matchers:
+        # the path matchers in this RouteTable can begin with any prefix
+       - prefix: '/a'
+      routeAction:
+        single:
+          upstream:
+            name: 'foo-upstream'
+```
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: RouteTable
+metadata:
+  name: 'a-b-routes'
+  namespace: 'any'
+  labels:
+    domain: any.com
+spec:
+  routes:
+    - matchers:
+        # the path matchers in this RouteTable can begin with any prefix
+       - regex: '/a/b'
+      routeAction:
+        single:
+          upstream:
+            name: 'bar-upstream'
+
+```
+
+The above configuration can be visualized as:
+
+{{<mermaid align="left">}}
+graph LR;
+
+    vs[Virtual Service <br> <br> <code>any.com</code>] 
+    
+    vs -->|delegate <code>/</code> prefix | rt1(Route Table <br> <br> <code>/a</code>)
+
+    vs -->|delegate <code>/</code> prefix | rt2(Route Table <br> <br> <code>/a/b/</code>)
+    
+    rt1 -->|route <code>/a</code> | us1(Upstream <br> <br> <code>foo-upstream</code>)
+    
+    rt2 -->|route <code>/a/b</code> | us3(Upstream <br> <br> <code>bar-upstream</code>)
+    
+     style vs fill:#0DFF00,stroke:#233,stroke-width:4px
+     style us1 fill:#f9f,stroke:#333,stroke-width:4px
+     style us3 fill:#f9f,stroke:#333,stroke-width:4px
+    
+{{< /mermaid >}}
+
+And would result in the following Proxy:
+
+{{<mermaid align="left">}}
+graph LR;
+
+    px{Proxy <br> <br> <code>any.com</code>}
+    
+    style px fill:#0DFFDD,stroke:#333,stroke-width:4px
+    
+    px -->|route <code>/a/b</code> | us1(Upstream <br> <br> <code>bar-upstream</code>)
+    
+    px -->|route <code>/a</code> | us2(Upstream <br> <br> <code>foo-upstream</code>)
+    
+     style us1 fill:#f9f,stroke:#333,stroke-width:4px
+     style us2 fill:#f9f,stroke:#333,stroke-width:4px
+    
+{{< /mermaid >}}
+
+As you can see in the diagram above, Gloo will reorder the routes by descending specificity when adding them to the proxy: 
+routes with longer paths will come first, and in case of equal paths, precedence will be given to the route that 
+defines the more restrictive matchers (the algorithm used for sorting the routes can be found 
+[here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23)).
 
 ## Learn more
 

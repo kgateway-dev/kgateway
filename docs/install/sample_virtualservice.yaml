@@ -8,15 +8,15 @@ spec:
     domains:
     - 'docs.solo.io'
     routes:
-    - matcher:
-        prefix: /vabc10/
+    - matchers:
+      - prefix: /vabc10/
       routeAction:
         single:
           upstream:
             name: docs-gloo-docs-vabc10-80
             namespace: gloo-system
-    - matcher:
-        prefix: /vabc11/
+    - matchers:
+      - prefix: /vabc11/
       routeAction:
         single:
           upstream:

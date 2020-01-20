@@ -31,6 +31,8 @@ glooctl install gateway
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/glooctl-gateway-install.mp4" type="video/mp4">
 </video>
 
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
+
 
 {{% notice note %}}
 You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
@@ -84,6 +86,8 @@ helm template gloo --namespace my-namespace  --set crds.create=true | k apply -f
 helm install gloo gloo/gloo --namespace my-namespace
 {{< /tab >}}
 {{< /tabs >}}
+
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#verify-your-installation" %}}).
 
 <br>
 
@@ -159,6 +163,12 @@ replicaset.apps/gloo-5b7b748dbf           1         1         1         5m
 NAME                        COMPLETIONS   DURATION   AGE
 job.batch/gateway-certgen   1/1           14s        5m
 ```
+#### Looking for opened ports?
+You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}). 
+
+{{% notice note %}}
+NOT opening the listener ports when there are no listeners (routes) is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
+{{% /notice %}}
 
 ---
 

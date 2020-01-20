@@ -159,6 +159,10 @@ spec:
           namespace: gloo-system
 {{< /highlight >}}
 
+{{% notice note %}}
+Note this is a simplistic example that has a `/` catch-all path prefix route. Gloo needs to handle the `/callback` route and does so in the External Auth service. If you don't have a matching route (ie, either using a `/` or `/callback`) for the `callback` setting, you'll see `404`s when the Identity Provider tries to callback to Gloo with the correct tokens. Please reach out to us on the [Slack](https://slack.solo.io) if you run into trouble here.
+{{% /notice %}}
+
 ## Testing our configuration
 Since we didn't register any URL, Google will only allow authentication with applications running on localhost for 
 security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:

@@ -217,6 +217,10 @@ spec:
           namespace: gloo-system
 {{< /highlight >}}
 
+{{% notice note %}}
+Note this is a simplistic example that has a `/` catch-all path prefix route. Gloo needs to handle the `/callback` route and does so in the External Auth service. If you don't have a matching route (ie, either using a `/` or `/callback`) for the `callback` setting, you'll see `404`s when the Identity Provider tries to callback to Gloo with the correct tokens. Please reach out to us on the [Slack](https://slack.solo.io) if you run into trouble here.
+{{% /notice %}}
+
 ### Testing our configuration
 The OIDC flow redirects the client (in this case, your browser) to a login page hosted by Dex. Since Dex is running in 
 your cluster and is not publicly reachable, we need some additional configuration to make our example work. Please note 

@@ -154,8 +154,8 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        exact: /abc
+    - matchers:
+      - exact: /abc
       routeAction:
         single:
           upstream:
