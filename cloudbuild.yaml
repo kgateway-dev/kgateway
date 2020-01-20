@@ -126,8 +126,8 @@ steps:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
   secretEnv: ['QUAY_IO_PASSWORD']
-  id: 'docker-login'
   waitFor: ['prepare-workspace']
+  id: 'docker-login'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['docker']
