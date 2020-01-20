@@ -18,27 +18,29 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
-# Returns the full ref for the HEAD of the default branch, e.g. refs/remotes/origin/master
-DEFAULT_BRANCH_REF := $(shell git symbolic-ref refs/remotes/origin/HEAD)
-# Get objectname (SHA) for the remote default branch HEAD ref
-DEFAULT_BRANCH_HEAD_SHA := $(shell git for-each-ref $(DEFAULT_BRANCH_REF) --format="%(objectname)")
+# Returns the name of the default branch in the remote `origin` repository, e.g. `master`
+DEFAULT_BRANCH_NAME := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+# Print the branches that contain the current commit and keep only the one that
+# EXACTLY matches the name of the default branch (avoid matching e.g. `master-2`).
+# If we get back a result, it mean we are on the default branch.
+EMPTY_IF_NOT_DEFAULT := $(shell git branch --contains $(CHECKED_OUT_SHA) | grep -ow $(DEFAULT_BRANCH_NAME))
 
-# If the current commit is also the HEAD of the remote default branch, then we are on the default branch.
-ON_DEFAULT_BRANCH_HEAD := false
-ifeq ($(CHECKED_OUT_SHA),$(DEFAULT_BRANCH_HEAD_SHA))
-    ON_DEFAULT_BRANCH_HEAD = true
+# If commit is also the HEAD of the remote default branch, then we are on the default branch.
+ON_DEFAULT_BRANCH := false
+ifneq ($(EMPTY_IF_NOT_DEFAULT),)
+    ON_DEFAULT_BRANCH = true
 endif
 
 ASSETS_ONLY_RELEASE := true
-ifeq ($(ON_DEFAULT_BRANCH_HEAD), "true")
+ifeq ($(ON_DEFAULT_BRANCH), true)
     ASSETS_ONLY_RELEASE = false
 endif
 
 print-git-info:
 	@echo CHECKED_OUT_SHA: $(CHECKED_OUT_SHA)
-	@echo DEFAULT_BRANCH_REF: $(DEFAULT_BRANCH_REF)
-	@echo DEFAULT_BRANCH_HEAD_SHA: $(DEFAULT_BRANCH_HEAD_SHA)
-	@echo ON_DEFAULT_BRANCH_HEAD: $(ON_DEFAULT_BRANCH_HEAD)
+	@echo DEFAULT_BRANCH_NAME: $(DEFAULT_BRANCH_NAME)
+	@echo EMPTY_IF_NOT_DEFAULT: $(EMPTY_IF_NOT_DEFAULT)
+	@echo ON_DEFAULT_BRANCH: $(ON_DEFAULT_BRANCH)
 	@echo ASSETS_ONLY_RELEASE: $(ASSETS_ONLY_RELEASE)
 
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
