@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/solo-io/gloo/pkg/version"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"github.com/solo-io/go-utils/testutils/exec"
@@ -18,9 +20,19 @@ var _ = Describe("Install", func() {
 	const licenseKey = "--license-key=fake-license-key"
 	const overrideVersion = "0.20.7"
 
+	BeforeEach(func() {
+		version.Version = version.UndefinedVersion // we're testing an "unreleased" glooctl
+	})
+
 	It("should error for gateway dry run on unreleased glooctl", func() {
 		_, err := testutils.GlooctlOut("install gateway --dry-run")
-		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError(install.UnreleasedWithoutOverrideErr))
+	})
+
+	It("shouldn't error for gateway dry run on released glooctl", func() {
+		version.Version = "1.3.2" // pretend we set this using linker on a release build of glooctl
+		_, err := testutils.GlooctlOut("install gateway --dry-run")
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("shouldn't get errors for gateway dry run with file override", func() {

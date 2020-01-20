@@ -33,6 +33,8 @@ var (
 	ChartAndReleaseFlagErr = func(chartOverride, versionOverride string) error {
 		return eris.Errorf("you may not specify both a chart with -f and a release version with --version. Received: %s and %s", chartOverride, versionOverride)
 	}
+	UnreleasedWithoutOverrideErr = eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
+		"when running an unreleased version of glooctl")
 )
 
 type Installer interface {
@@ -310,8 +312,7 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 
 func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	if !version.IsReleaseVersion() && chartOverride == "" {
-		return "", eris.Errorf("you must provide a Gloo Helm chart URI via the 'file' option " +
-			"when running an unreleased version of glooctl")
+		return "", UnreleasedWithoutOverrideErr
 	}
 	return version.Version, nil
 }
