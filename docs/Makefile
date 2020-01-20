@@ -81,7 +81,7 @@ install-tools:
 
 
 # use "current" instead of the default "latest" so we don't accidentally push something with this tag 
-LATEST_TAG:=current
+CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
@@ -90,8 +90,8 @@ ifeq ($(DEFAULT_BRANCH),$(CURRENT_BRANCH))
 		--build-arg VERSION=latest \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-latest \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(LATEST_TAG) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(LATEST_TAG)
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG)
 endif
 ifeq ($(RELEASE),"true")
 	docker build \
@@ -111,6 +111,6 @@ manifest:
 		> install/manifest-versioned.yaml
 	helm template install/helm \
 		--set docsVersion=latest \
-		--set image.tag=$(LATEST_TAG) \
+		--set image.tag=$(CURRENT_TAG) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-latest.yaml
