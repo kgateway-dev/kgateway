@@ -18,7 +18,13 @@ var InvalidVersionError = func(err error) error {
 }
 
 func IsReleaseVersion() bool {
-	return Version != UndefinedVersion
+	if Version == UndefinedVersion {
+		return false
+	}
+	// if not a tagged release, linked version will look like: 1.3.2-8-gc032db6d8
+	// thus if we can split the version into more than one part, then it is not a release version
+	parts := strings.Split(Version, "-")
+	return len(parts) == 1
 }
 
 // VersionFromGitDescribe is the canonical means of deriving
