@@ -209,7 +209,7 @@ steps:
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['compile', 'gcr-auth', 'regression-tests', 'regression-tests-cluster-lock']
+  waitFor: ['gcr-auth', 'regression-tests', 'regression-tests-cluster-lock']
   id: 'release-chart'
 
 # 3) Sync helm chart data back to google storage bucket
@@ -218,6 +218,7 @@ steps:
   env:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
+  waitFor: ['release-chart']
   id: 'save-helm-chart'
 
 secrets:
@@ -231,6 +232,3 @@ timeout: 5400s
 tags: ['gloo']
 options:
   machineType: 'N1_HIGHCPU_32'
-  volumes:
-  - name: 'gopath'
-    path: '/go'
