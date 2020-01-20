@@ -449,10 +449,8 @@ $(OUTPUT_DIR)/gloo-enterprise-version:
 
 .PHONY: download-glooe-changelog
 download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
-ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
-endif
 
 ASSETS_ONLY := true
 ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
