@@ -80,8 +80,8 @@ install-tools:
 	gem install html-proofer
 
 
-# use vx.y.z-latest as the tag for images that are serving version x.y.z of the docs under the docs.solo.io/gloo/latest/ path
-LATEST_TAG:=latest
+# use "current" instead of the default "latest" so we don't accidentally push something with this tag 
+LATEST_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
