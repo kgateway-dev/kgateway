@@ -35,6 +35,12 @@ var _ = Describe("Install", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	It("should error for gateway dry run on released glooctl with bad linked version", func() {
+		version.Version = "1.3.2-11-g271bd663c" // pretend we set this using linker on a release build of glooctl
+		_, err := testutils.GlooctlOut("install gateway --dry-run")
+		Expect(err).To(MatchError(install.UnreleasedWithoutOverrideErr))
+	})
+
 	It("shouldn't get errors for gateway dry run with file override", func() {
 		_, err := testutils.GlooctlOut(fmt.Sprintf("install gateway --file %s --dry-run", file))
 		Expect(err).NotTo(HaveOccurred())
