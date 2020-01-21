@@ -91,11 +91,7 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 	}
 
 	// customize config as needed for dev builds
-	isReleaseVersion, err := glooVersion.IsReleaseVersion()
-	if err != nil {
-		return err
-	}
-	if !isReleaseVersion {
+	if !glooVersion.IsReleaseVersion() {
 		cfg.Gloo.Deployment.Image.PullPolicy = always
 		cfg.Discovery.Deployment.Image.PullPolicy = always
 		cfg.Gateway.Deployment.Image.PullPolicy = always

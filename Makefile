@@ -11,13 +11,36 @@ z := $(shell mkdir -p $(OUTPUT_DIR))
 SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
-	TAGGED_VERSION := $(shell git describe --tags --dirty --always)
+	TAGGED_VERSION := $(shell git describe --tags --dirty)
 	RELEASE := "false"
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-DEFAULT_BRANCH := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
-CURRENT_BRANCH := $(shell git rev-parse --abbrev-ref HEAD)
+# The full SHA of the currently checked out commit
+CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
+# Returns the name of the default branch in the remote `origin` repository, e.g. `master`
+DEFAULT_BRANCH_NAME := $(shell git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
+# Print the branches that contain the current commit and keep only the one that
+# EXACTLY matches the name of the default branch (avoid matching e.g. `master-2`).
+# If we get back a result, it mean we are on the default branch.
+EMPTY_IF_NOT_DEFAULT := $(shell git branch --contains $(CHECKED_OUT_SHA) | grep -ow $(DEFAULT_BRANCH_NAME))
+
+ON_DEFAULT_BRANCH := false
+ifneq ($(EMPTY_IF_NOT_DEFAULT),)
+    ON_DEFAULT_BRANCH = true
+endif
+
+ASSETS_ONLY_RELEASE := true
+ifeq ($(ON_DEFAULT_BRANCH), true)
+    ASSETS_ONLY_RELEASE = false
+endif
+
+print-git-info:
+	@echo CHECKED_OUT_SHA: $(CHECKED_OUT_SHA)
+	@echo DEFAULT_BRANCH_NAME: $(DEFAULT_BRANCH_NAME)
+	@echo EMPTY_IF_NOT_DEFAULT: $(EMPTY_IF_NOT_DEFAULT)
+	@echo ON_DEFAULT_BRANCH: $(ON_DEFAULT_BRANCH)
+	@echo ASSETS_ONLY_RELEASE: $(ASSETS_ONLY_RELEASE)
 
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
@@ -455,15 +478,10 @@ ifeq ($(RELEASE),"true")
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 endif
 
-ASSETS_ONLY := true
-ifeq ($(DEFAULT_BRANCH), $(CURRENT_BRANCH))
-    ASSETS_ONLY = false
-endif
-
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
-upload-github-release-assets: build-cli render-manifests
-	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY)
+upload-github-release-assets: print-git-info build-cli render-manifests
+	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
 .PHONY: publish-docs
 publish-docs: generate-helm-files
