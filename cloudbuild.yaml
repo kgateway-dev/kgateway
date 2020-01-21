@@ -98,12 +98,12 @@ steps:
 
 - name: gcr.io/cloud-builders/gcloud
   args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-test-zone'
+  id: 'set-gcr-zone'
 
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
   id: 'get-test-credentials'
-  waitFor: ['set-test-zone']
+  waitFor: ['set-gcr-zone']
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
@@ -115,7 +115,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '--noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-test-zone', 'get-test-credentials']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
@@ -160,10 +160,6 @@ steps:
   waitFor: ['compile']
   id: 'gcr-auth'
 
-- name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-regression-zone'
-
 # Run regression tests
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   args: ['build-test-assets']
@@ -179,7 +175,7 @@ steps:
   env:
   - 'KUBECONFIG=/workspace/kube-e2e'
   args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  waitFor: ['set-regression-zone']
+  waitFor: ['set-gcr-zone']
   id: 'get-regression-credentials'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
@@ -187,7 +183,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
-  waitFor: ['build-test-assets', 'set-regression-zone']
+  waitFor: ['build-test-assets', 'docker-push', 'get-regression-credentials']
   id: 'regression-tests'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
@@ -197,7 +193,7 @@ steps:
     - 'CLUSTER_LOCK_TESTS=1'
   dir: *dir
   args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
-  waitFor: ['build-test-assets', 'get-regression-credentials']
+  waitFor: ['build-test-assets', 'docker-push', 'get-regression-credentials']
   id: 'regression-tests-cluster-lock'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
