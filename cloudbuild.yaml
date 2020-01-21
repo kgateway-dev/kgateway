@@ -233,5 +233,5 @@ tags: ['gloo']
 options:
   machineType: 'N1_HIGHCPU_32'
   volumes:
-    - name: 'gopath'
-      path: '/go'
+  - name: 'gopath'
+    path: '/go'
