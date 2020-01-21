@@ -67,8 +67,8 @@ steps:
     ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile.envoyinit|cut -d: -f2)
     gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
-  waitFor: ['prepare-workspace']
   dir: *dir
+  waitFor: ['prepare-workspace']
   id: 'get-envoy'
 
 - name: gcr.io/cloud-builders/gcloud
@@ -80,8 +80,8 @@ steps:
   - --location=global
   - --keyring=build
   - --key=build-key
-  waitFor: ['prepare-workspace']
   dir: *dir
+  waitFor: ['prepare-workspace']
   id: 'setup-aws-creds'
 
 # Helm related setup
@@ -90,8 +90,8 @@ steps:
   env:
     - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
-  id: 'fetch-helm'
   waitFor: ['prepare-workspace']
+  id: 'fetch-helm'
 
 # Docker related setup
 # grab this container immediately in parallel
