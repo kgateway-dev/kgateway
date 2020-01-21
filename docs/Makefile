@@ -92,7 +92,7 @@ ifeq ($(ON_DEFAULT_BRANCH), true)
 		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
 	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG)
 endif
-ifeq ($(RELEASE),"true")
+ifeq ($(RELEASE),true)
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
