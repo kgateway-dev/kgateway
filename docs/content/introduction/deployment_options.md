@@ -23,6 +23,8 @@ The options included are:
 
 The simplest and most common deployment option for Gloo is using Kubernetes to orchestrate the deployment of Gloo, and using Kubernetes primitives like *Custom Resources* and *Config Maps*. The diagram below shows an example of how Gloo might be deployed on Kubernetes and how each primitive is leveraged to match the component architecture.
 
+![Kubernetes Architecture]({{% versioned_link_path fromRoot="/img/deployments/kubernetes-deployment-architecture.png" %}})
+
 ### Pods and Deployments
 
 The following components of Gloo are deployed as separate pods and deployments:
@@ -74,7 +76,7 @@ When Gloo is installed on Kubernetes, it creates a number of Custom Resource Def
 | Name | Grouping | Purpose |
 |------|----------|---------|
 | {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration |
-| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed to the Envoy proxy. |
+| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed by Gloo to the Envoy proxy. |
 | {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo components. |
 | {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Defining multiple Upstreams or external endpoints for a Virtual Service. |
 | {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing HTTP requests. |
@@ -87,3 +89,40 @@ You can find out more about deploying Gloo on Kubernetes by [following this guid
 ---
 
 ## HashiCorp Consul, Vault, and Nomad
+
+Gloo can use some of the HashiCorp products to provide the necessary primitives for container management, persistent storage, and secrets management. The diagram below provides and example of how HashiCorp products could be used to host a Gloo deployment.
+
+<img src="{{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}}" alt="Gloo Gateway on Nomad Architecture" width="50%">
+
+### Containers and Jobs
+
+HashiCorp's Nomad is a a popular workload scheduler that can be used in place of, or in combination with Kubernetes as a way of running long-lived processes on a cluster of hosts. Nomad supports native integration with Consul and Vault, making configuration, service discovery, and credential management easy for application developers. 
+
+Nomad is used to deploy the Gloo containers by using Gloo deployment jobs. Similar to a Kubernetes deployment, each Nomad job defines a set of deployment tasks for the various Gloo components. There are four jobs in total which deploy the following container groups:
+
+* gloo
+* discovery
+* gateway
+* gateway-proxy
+
+Within the definition of each task is the port mappings and service names for each group of containers.
+
+### Services
+
+HashiCorps's Consul is a service networking solution to connect and secure services across multiple platforms. It can also store arbitrary key/value pairs. In the case of a Gloo deployment, Consul is used to publish and resolve the networking services published by the Gloo container groups and hold configuration information about Gloo objects like Upstreams, Envoy configs, and Virtual Services.
+
+The **Services** component of Consul publishes the services: consul, gateway-proxy, gloo-xds, nomad, and nomad-client.
+
+The **Key/Value** component of Consul holds data at the following paths:
+
+* gloo/gateway.solo.io/v1/Gateway/gateway-proxy
+* gloo/gateway.solo.io/v1/Gateway/gateway-proxy-ssl
+* gloo/gloo.solo.io/v1/Upstream
+
+The configuration data that would typically be housed in a ConfigMap or Custom Resource on Kubernetes is instead held in one of the above paths on Consul's Key/Value store.
+
+Consul also supports service discovery, which is added to Gloo by publishing a Key/Value entry to the path `gloo/gloo.solo.io/v1/Upstream`.
+
+### Secrets
+
+HashiCorp's Vault is secrets lifecycle management solution providing secure, tightly controlled access to tokens, passwords, certificates, and encryption keys.
