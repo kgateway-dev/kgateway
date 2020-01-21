@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/go-utils/log"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -529,32 +530,32 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
 				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName,
 					clients.ReadOpts{})
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
 				Expect(err).NotTo(HaveOccurred())
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
 				// we should not need this
 				Expect(invalidVs).NotTo(BeNil())
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
 
 				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName,
 					clients.ReadOpts{})
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
-				fmt.Sprintf("validVs: %v\n", validVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
+				log.Printf("validVs: %v\n", validVs)
 
 				Expect(err).NotTo(HaveOccurred())
 				// we should not need this
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
-				fmt.Sprintf("validVs: %v\n", validVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
+				log.Printf("validVs: %v\n", validVs)
 
 				Expect(validVs).NotTo(BeNil())
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
-				fmt.Sprintf("validVs: %v\n", validVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
+				log.Printf("validVs: %v\n", validVs)
 
 				// make the invalid vs valid and the valid vs invalid
 				invalidVh := invalidVs.VirtualHost
 
-				fmt.Sprintf("invalidVs: %v\n", invalidVs)
-				fmt.Sprintf("validVs: %v\n", validVs)
+				log.Printf("invalidVs: %v\n", invalidVs)
+				log.Printf("validVs: %v\n", validVs)
 
 				validVh := validVs.VirtualHost
 				validVh.Domains = []string{"all-good-in-the-hood.com"}
