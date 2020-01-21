@@ -529,18 +529,33 @@ var _ = Describe("Kube2e: gateway", func() {
 			It("preserves the valid virtual services in envoy when a virtual service has been made invalid", func() {
 				invalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName,
 					clients.ReadOpts{})
+				fmt.Sprintf("invalidVs: %v", invalidVs)
 				Expect(err).NotTo(HaveOccurred())
+				fmt.Sprintf("invalidVs: %v", invalidVs)
 				// we should not need this
 				Expect(invalidVs).NotTo(BeNil())
+				fmt.Sprintf("invalidVs: %v", invalidVs)
 
 				validVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName,
 					clients.ReadOpts{})
+				fmt.Sprintf("invalidVs: %v", invalidVs)
+				fmt.Sprintf("validVs: %v", validVs)
+
 				Expect(err).NotTo(HaveOccurred())
 				// we should not need this
+				fmt.Sprintf("invalidVs: %v", invalidVs)
+				fmt.Sprintf("validVs: %v", validVs)
+
 				Expect(validVs).NotTo(BeNil())
+				fmt.Sprintf("invalidVs: %v", invalidVs)
+				fmt.Sprintf("validVs: %v", validVs)
 
 				// make the invalid vs valid and the valid vs invalid
 				invalidVh := invalidVs.VirtualHost
+
+				fmt.Sprintf("invalidVs: %v", invalidVs)
+				fmt.Sprintf("validVs: %v", validVs)
+
 				validVh := validVs.VirtualHost
 				validVh.Domains = []string{"all-good-in-the-hood.com"}
 
