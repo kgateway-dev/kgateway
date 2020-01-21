@@ -1,9 +1,28 @@
 steps:
 
+# clones Gloo so it can be setup & tested
+# All steps after this must set working directory to use the cloned Gloo source
+
+# $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
+# gcloud builds submit --substitutions COMMIT_SHA=abc ./
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+  args:
+    - "--repo-owner"
+    - "solo-io"
+    - "--repo-name"
+    - gloo
+    - "--repo-sha"
+    - "$COMMIT_SHA"
+    - "--repo-output-dir"
+    - "."
+  env:
+    - 'GIT_SSH_CONFIG=FALSE'
+  id: 'prepare-workspace'
+
 - name: 'gcr.io/cloud-builders/wget'
   entrypoint: ./ci/spell.sh
   args: ['check']
-  waitFor: ['-']
+  dir: &dir '/workspace/gloo'
   env:
   # The LSCOMMAND is the env var which tells the spell script how to search for the files it needs to fix.
   - 'LSCOMMAND=find * -type f | grep -v vendor | grep -v docs/themes | grep -v docs/site'
@@ -12,22 +31,8 @@ steps:
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
   args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
+  dir: *dir
   id: 'untar-mod-cache'
-
-# TODO: during this step, prepare-workspace to set up the project so it can be built and tested
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
-  args:
-  - "--repo-owner"
-  - "solo-io"
-  - "--repo-name"
-  - gloo
-  - "--repo-sha"
-  - "$COMMIT_SHA"
-  - "--repo-output-dir"
-  - "."
-  env:
-  - 'GIT_SSH_CONFIG=FALSE'
-  id: 'prepare-workspace'
 
 # Run some basic checks on the repo
 # 1) check formatting of go files
@@ -35,12 +40,11 @@ steps:
 # 3) ensure that the site is generated with no warnings (strict = true in mkdocs)
 
 # e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-go-mod-ginkgo
-# All steps after this must set dir: *dir to use the cloned Gloo source
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-  dir: &dir '/workspace/gloo'
+  dir: *dir
   entrypoint: make
   args: ['check-format']
-  waitFor: ['prepare-workspace']
+  waitFor: ['untar-mod-cache']
   id: 'check-format'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
@@ -49,7 +53,7 @@ steps:
   env:
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
-  waitFor: ['prepare-workspace']
+  waitFor: ['untar-mod-cache']
   id: 'check-code-and-docs-gen'
 
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
