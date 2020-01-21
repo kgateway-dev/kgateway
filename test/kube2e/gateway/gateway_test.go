@@ -174,7 +174,7 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		AfterEach(func() {
 			cancel()
-			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist:true})
+			err := virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -1082,15 +1082,15 @@ var _ = Describe("Kube2e: gateway", func() {
 
 		// TODO(kdorosh) fixme
 		/*
-		creating kube resource vs: admission webhook "gateway.gateway-test-4227-1.svc" denied the request: resource
-		incompatible with current Gloo snapshot: [Route Error: ProcessingError. Reason: *azure.plugin: input destination
-		Multi but output destination was not; Route Error: ProcessingError. Reason: *aws.plugin: input destination Multi
-		but output destination was not; Route Error: ProcessingError. Reason: *rest.plugin: input destination Multi but
-		output destination was not; Route Error: ProcessingError. Reason: *grpc.plugin: input destination Multi but output
-		destination was not; Route Error: ProcessingError. Reason: *faultinjection.Plugin: input destination Multi but
-		output destination was not]
-		  occurred
-		 */
+			creating kube resource vs: admission webhook "gateway.gateway-test-4227-1.svc" denied the request: resource
+			incompatible with current Gloo snapshot: [Route Error: ProcessingError. Reason: *azure.plugin: input destination
+			Multi but output destination was not; Route Error: ProcessingError. Reason: *aws.plugin: input destination Multi
+			but output destination was not; Route Error: ProcessingError. Reason: *rest.plugin: input destination Multi but
+			output destination was not; Route Error: ProcessingError. Reason: *grpc.plugin: input destination Multi but output
+			destination was not; Route Error: ProcessingError. Reason: *faultinjection.Plugin: input destination Multi but
+			output destination was not]
+			  occurred
+		*/
 		PIt("routes to subsets and upstream groups", func() {
 			getUpstream := func() (*gloov1.Upstream, error) {
 				name := testHelper.InstallNamespace + "-" + service.Name + "-5678"
