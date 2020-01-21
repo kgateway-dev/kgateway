@@ -3,6 +3,6 @@ changelog:
     description: >
       Publish helm charts for all CI builds (not just releases) to make it easier
       to test projects built on non-release versions of Gloo. Images will be tagged
-      with the output of `git describe --tags --dirty --always`.
+      with the output of `git describe --tags --dirty`.
       Helm charts can then be pulled with: `HELM_EXPERIMENTAL_OCI helm pull gcr.io/solo-public/gloo-helm:<tag_name>`.
     issueLink: https://github.com/solo-io/gloo/issues/2074

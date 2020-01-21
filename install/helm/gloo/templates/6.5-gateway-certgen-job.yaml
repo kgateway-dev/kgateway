@@ -13,7 +13,7 @@ metadata:
   name: gateway-certgen
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "10"
     "helm.sh/hook-delete-policy": hook-succeeded
 spec:
@@ -54,7 +54,7 @@ metadata:
     app: gloo
     gloo: gateway
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
   name: gateway-certgen
   namespace: {{ $.Release.Namespace }}
@@ -69,7 +69,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 subjects:
 - kind: ServiceAccount
@@ -90,7 +90,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 rules:
 - apiGroups: [""]

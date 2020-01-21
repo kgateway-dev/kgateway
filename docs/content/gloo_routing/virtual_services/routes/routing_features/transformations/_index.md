@@ -98,10 +98,14 @@ This attribute determines how the request/response body will be parsed and can h
 - `ParseAsJson`: Gloo will attempt to parse the body as a JSON structure. This is the default behavior.
 - `DontParse`: the body will be treated as plain text.
 
+The important part to know about the `DontParse` setting is that the body will be buffered and available, but will not be parsed. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
+
 As we will [see later](#templating-language), some of the templating features won't be available when treating the body as plain text.
 
 ##### ignoreErrorOnParse
 If set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
+
+Implicit in this setting is that the body will be buffered and available. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
 
 ##### extractors
 Use this attribute to extract information from a request or response. It consists of a set of mappings from a string 
@@ -201,6 +205,8 @@ transformationTemplate:
   passthrough: {}
   # [...]
 ```
+
+If you're looking to parse the body, and either [ignore errors on parsing](#ignoreerroronparse), or just [disable JSON parsing](#parsebodybehavior), see those sections in this document, respectively. 
 
 ##### mergeExtractorsToBody
 Use this type of body transformation to merge all the `extractions` defined in the `transformationTemplate` to the body.
