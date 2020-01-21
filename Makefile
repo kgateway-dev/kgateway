@@ -486,7 +486,8 @@ publish-docs: generate-helm-files
 		VERSION=$(VERSION) \
 		TAGGED_VERSION=$(TAGGED_VERSION) \
 		GCLOUD_PROJECT_ID=$(GCLOUD_PROJECT_ID) \
-		RELEASE=$(RELEASE)
+		RELEASE=$(RELEASE) \
+		ON_DEFAULT_BRANCH=$(ON_DEFAULT_BRANCH)
 
 
 #----------------------------------------------------------------------------------
