@@ -2,3 +2,5 @@ changelog:
   - type: NON_USER_FACING
     description: Ensure regression tests run before we release assets, and some cleanup of cloudbuild file.
     issueLink: https://github.com/solo-io/gloo/issues/2222
+  - type: NON_USER_FACING
+    description: Remove custom fail handler to re-enable all our gateway regression tests; mark some of them pending temporarily
