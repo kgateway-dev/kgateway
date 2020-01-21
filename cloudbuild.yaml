@@ -106,8 +106,8 @@ steps:
 
 - name: gcr.io/cloud-builders/gcloud
   args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
-  id: 'get-test-credentials'
   waitFor: ['set-gcr-zone']
+  id: 'get-test-credentials'
 
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
