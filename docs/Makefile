@@ -19,7 +19,6 @@ IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 
 # this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
 PRODUCT_SCOPE := gloo
-DOCS_VERSION := latest
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -80,23 +79,27 @@ install-tools:
 	gem install html-proofer
 
 
-# use vx.y.z-latest as the tag for images that are serving version x.y.z of the docs under the docs.solo.io/gloo/latest/ path
-SERVE_AS_LATEST_TAG:=$(VERSION)-latest
+# use "current" instead of the default "latest" so we don't accidentally push something with this tag 
+CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
+ifeq ($(ON_DEFAULT_BRANCH), true)
 	docker build \
 		--build-arg VERSION=latest \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-latest \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG)
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG)
+endif
+ifeq ($(RELEASE),true)
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-versioned \
 		-t $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION) .
 	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION)
+endif
 
 .PHONY: manifest
 manifest:
@@ -107,6 +110,6 @@ manifest:
 		> install/manifest-versioned.yaml
 	helm template install/helm \
 		--set docsVersion=latest \
-		--set image.tag=$(SERVE_AS_LATEST_TAG) \
+		--set image.tag=$(CURRENT_TAG) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-latest.yaml

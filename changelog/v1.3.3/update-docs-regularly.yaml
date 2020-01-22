@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Push new docs image for every update to master, not just releases, to keep docs up to date.
+    issueLink: https://github.com/solo-io/gloo/issues/2205
