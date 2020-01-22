@@ -32,6 +32,7 @@ glooctl is the unified CLI for Gloo.
 * [glooctl check](../glooctl_check)	 - Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 * [glooctl completion](../glooctl_completion)	 - generate auto completion for your shell
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
+* [glooctl dashboard](../glooctl_dashboard)	 - Open Gloo dashboard
 * [glooctl debug](../glooctl_debug)	 - Debug a Gloo resource (requires Gloo running on Kubernetes)
 * [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
 * [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
@@ -40,7 +41,6 @@ glooctl is the unified CLI for Gloo.
 * [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 * [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource
 * [glooctl route](../glooctl_route)	 - subcommands for interacting with routes within virtual services
-* [glooctl ui](../glooctl_ui)	 - Open Gloo UI
 * [glooctl uninstall](../glooctl_uninstall)	 - uninstall gloo
 * [glooctl upgrade](../glooctl_upgrade)	 - upgrade glooctl binary
 * [glooctl version](../glooctl_version)	 - Print current version

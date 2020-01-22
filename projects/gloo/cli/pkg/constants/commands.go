@@ -149,10 +149,9 @@ var (
 		Long:    "Get the version of Glooctl and Gloo",
 	}
 
-	UI_COMMAND = cobra.Command{
-		Use:     "ui",
-		Aliases: []string{"dashboard"},
-		Short:   "Open Gloo UI",
-		Long:    "Open the Gloo UI in your default browser",
+	DASHBOARD_COMMAND = cobra.Command{
+		Use:   "dashboard",
+		Short: "Open Gloo dashboard",
+		Long:  "Open the Gloo dashboard/UI in your default browser",
 	}
 )

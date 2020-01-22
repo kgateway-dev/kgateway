@@ -30,7 +30,7 @@ func AddDryRunFlag(set *pflag.FlagSet, dryRun *bool) {
 		"rather than creating or updating a resource")
 }
 
-// currently only used by install/uninstall/ui but should be changed if it gets shared by more
+// currently only used by install/uninstall/dashboard but should be changed if it gets shared by more
 func AddVerboseFlag(set *pflag.FlagSet, opts *options.Options) {
 	set.BoolVarP(&opts.Top.Verbose, "verbose", "v", false,
 		"If true, output from kubectl commands will print to stdout/stderr")

@@ -1,4 +1,4 @@
-package ui
+package dashboard
 
 import (
 	"fmt"
@@ -27,10 +27,9 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     constants.UI_COMMAND.Use,
-		Aliases: constants.UI_COMMAND.Aliases,
-		Short:   constants.UI_COMMAND.Short,
-		Long:    constants.UI_COMMAND.Long,
+		Use:   constants.DASHBOARD_COMMAND.Use,
+		Short: constants.DASHBOARD_COMMAND.Short,
+		Long:  constants.DASHBOARD_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			/** Get the port **/
@@ -48,8 +47,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			deployment, err := client.AppsV1().Deployments(opts.Metadata.Namespace).Get("api-server", metav1.GetOptions{})
 			if err != nil {
 				if apierrors.IsNotFound(err) {
-					fmt.Printf("No Gloo UI found as part of the installation in namespace %s. The full UI is part of Gloo Enterprise by default. "+
-						"The open-source read-only UI can be installed by `glooctl install <installType> --with-admin-console`.\n", opts.Metadata.Namespace)
+					fmt.Printf("No Gloo dashboard found as part of the installation in namespace %s. The full dashboard is part of Gloo Enterprise by default. "+
+						"The open-source read-only dashboard can be installed by `glooctl install <installType> --with-admin-console`.\n", opts.Metadata.Namespace)
 				}
 				return err
 			}
