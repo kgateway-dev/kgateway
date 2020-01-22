@@ -8,14 +8,14 @@ Gloo is a flexible architecture that can be deployed on a range of infrastructur
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/introduction/component_architecture.png" %}})
 
-In an actual deployment of Gloo, components like storage, secrets, and endpoint discovery must be supplied by the infrastructure stack. Gloo also requires a place to launch the containers that comprise both Gloo and Envoy. The following sections details a potential deployment option along with links to the installation guide for each option.
+In an actual deployment of Gloo, components like storage, secrets, and endpoint discovery must be supplied by the infrastructure stack. Gloo also requires a place to launch the containers that comprise both Gloo and Envoy. The following sections detail potential deployment options along with links to the installation guide for each option.
 
 The options included are:
 
 * [Kubernetes using Kubernetes primitives](#kubernetes-using-kubernetes-primitives)
 * [HashiCorp Consul, Vault, and Nomad](#hashicorp-consul-vault-and-nomad)
-* Docker Compose with HashiCorp Consul and Vault
-* Docker Compose with the local filesystem (development only)
+
+It is also possible to use Docker Compose for container management and the local file system for configuration and secrets management. These are development scenarios and should not be considered for a production deployment. Using Kubernetes or HashiCorp products are the two major ways to provide the necessary storage, secrets, and container management components in a production scenario.
 
 ---
 
@@ -96,7 +96,7 @@ Gloo can use some of the HashiCorp products to provide the necessary primitives 
 
 ### Containers and Jobs
 
-HashiCorp's Nomad is a a popular workload scheduler that can be used in place of, or in combination with Kubernetes as a way of running long-lived processes on a cluster of hosts. Nomad supports native integration with Consul and Vault, making configuration, service discovery, and credential management easy for application developers. 
+HashiCorp's [Nomad](https://www.nomadproject.io/) is a a popular workload scheduler that can be used in place of, or in combination with Kubernetes as a way of running long-lived processes on a cluster of hosts. Nomad supports native integration with Consul and Vault, making configuration, service discovery, and credential management easy for application developers. 
 
 Nomad is used to deploy the Gloo containers by using Gloo deployment jobs. Similar to a Kubernetes deployment, each Nomad job defines a set of deployment tasks for the various Gloo components. There are four jobs in total which deploy the following container groups:
 
@@ -107,16 +107,17 @@ Nomad is used to deploy the Gloo containers by using Gloo deployment jobs. Simil
 
 Within the definition of each task is the port mappings and service names for each group of containers.
 
-### Services
+### Services and Configuration
 
-HashiCorps's Consul is a service networking solution to connect and secure services across multiple platforms. It can also store arbitrary key/value pairs. In the case of a Gloo deployment, Consul is used to publish and resolve the networking services published by the Gloo container groups and hold configuration information about Gloo objects like Upstreams, Envoy configs, and Virtual Services.
+HashiCorps's [Consul](https://www.consul.io/) is a service networking solution to connect and secure services across multiple platforms. It can also store arbitrary key/value pairs. In the case of a Gloo deployment, Consul is used to publish and resolve the networking services published by the Gloo container groups and hold configuration information about Gloo objects like Upstreams, Envoy configs, and Virtual Services.
 
-The **Services** component of Consul publishes the services: consul, gateway-proxy, gloo-xds, nomad, and nomad-client.
+The **Services** component of Consul publishes the services: consul, gateway-proxy, gloo-xds, nomad, and nomad-client. It will also publish other services deployed through Nomad, which the Discovery service can find and push into the Upstream listing.
 
 The **Key/Value** component of Consul holds data at the following paths:
 
 * gloo/gateway.solo.io/v1/Gateway/gateway-proxy
 * gloo/gateway.solo.io/v1/Gateway/gateway-proxy-ssl
+* gloo/gateway.solo.io/v1/VirtualService
 * gloo/gloo.solo.io/v1/Upstream
 
 The configuration data that would typically be housed in a ConfigMap or Custom Resource on Kubernetes is instead held in one of the above paths on Consul's Key/Value store.
@@ -125,4 +126,18 @@ Consul also supports service discovery, which is added to Gloo by publishing a K
 
 ### Secrets
 
-HashiCorp's Vault is secrets lifecycle management solution providing secure, tightly controlled access to tokens, passwords, certificates, and encryption keys.
+HashiCorp's [Vault](https://www.vaultproject.io/) is secrets lifecycle management solution providing secure, tightly controlled access to tokens, passwords, certificates, and encryption keys.
+
+Gloo can be configured to store its secrets in Vault rather than using Kubernetes secrets. Vault is also capable of issuing tokens for access to secrets. After the inital set up of Gloo with Vault, the only issued items are tokens for Gloo to access Vault. The Vault product can store Key/Value pairs, certificates, tokens, and act as a PKI.
+
+You can find out more about using Gloo with Nomad, Consul, and Vault [following this guide]({{% versioned_link_path fromRoot="/installation/gateway/nomad/" %}}).
+
+---
+
+## Next Step
+
+Now that you have an understanding of the Gloo deployment option, there are number of potential next steps that we'd like to recommend.
+
+* **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.

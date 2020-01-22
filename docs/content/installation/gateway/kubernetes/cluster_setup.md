@@ -1,6 +1,6 @@
 ---
 title: Kubernetes Cluster Setup
-weight: 1
+weight: 10
 description: How to prepare a Kubernetes cluster for Gloo installation.
 ---
 
