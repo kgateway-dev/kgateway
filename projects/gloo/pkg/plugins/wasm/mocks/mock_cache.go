@@ -11,7 +11,7 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	go_digest "github.com/opencontainers/go-digest"
+	digest "github.com/opencontainers/go-digest"
 )
 
 // MockCache is a mock of Cache interface
@@ -38,10 +38,10 @@ func (m *MockCache) EXPECT() *MockCacheMockRecorder {
 }
 
 // Add mocks base method
-func (m *MockCache) Add(arg0 context.Context, arg1 string) (go_digest.Digest, error) {
+func (m *MockCache) Add(arg0 context.Context, arg1 string) (digest.Digest, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Add", arg0, arg1)
-	ret0, _ := ret[0].(go_digest.Digest)
+	ret0, _ := ret[0].(digest.Digest)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -53,7 +53,7 @@ func (mr *MockCacheMockRecorder) Add(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockCache) Get(arg0 context.Context, arg1 go_digest.Digest) (io.ReadCloser, error) {
+func (m *MockCache) Get(arg0 context.Context, arg1 digest.Digest) (io.ReadCloser, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
 	ret0, _ := ret[0].(io.ReadCloser)
