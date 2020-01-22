@@ -41,7 +41,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 subjects:
 - kind: ServiceAccount

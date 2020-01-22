@@ -10,8 +10,6 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
-	"github.com/solo-io/gloo/pkg/cliutil/install"
-
 	"github.com/gogo/protobuf/types"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -70,14 +68,6 @@ func StartTestHelper() {
 
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	RegisterFailHandler(func(_ string, _ ...int) {
-		glooLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gloo")
-		gwLogs, _ := install.KubectlOut(nil, "logs", "-n", testHelper.InstallNamespace, "-l", "gloo=gateway")
-
-		_, _ = fmt.Fprintf(GinkgoWriter, "\n\nGLOO LOGS\n\n%s\n\n", glooLogs)
-		_, _ = fmt.Fprintf(GinkgoWriter, "\n\nGATEWAY LOGS\n\n%s\n\n", gwLogs)
-	})
-
 	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
 	defer cleanupFunc()
 
