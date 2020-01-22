@@ -207,6 +207,8 @@ message Route {
     // Route options include configuration such as retries, rate limiting, and request/response transformation.
     // RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
     gloo.solo.io.RouteOptions options = 6;
+
+    string name = 7;
 }
 
 // DelegateActions are used to delegate routing decisions to Route Tables.

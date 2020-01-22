@@ -91,6 +91,7 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 	glooRoute := &gloov1.Route{
 		Matchers: matchers,
 		Options:  gatewayRoute.Options,
+		Name:     gatewayRoute.Name,
 	}
 
 	switch action := gatewayRoute.Action.(type) {
