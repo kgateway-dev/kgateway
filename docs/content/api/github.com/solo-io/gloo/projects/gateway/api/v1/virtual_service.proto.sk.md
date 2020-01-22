@@ -191,6 +191,7 @@ top-level `RouteTable` resources.
 "directResponseAction": .gloo.solo.io.DirectResponseAction
 "delegateAction": .gateway.solo.io.DelegateAction
 "options": .gloo.solo.io.RouteOptions
+"name": string
 
 ```
 
@@ -202,6 +203,7 @@ top-level `RouteTable` resources.
 | `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
 | `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
 | `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |  |
+| `name` | `string` |  |  |
 
 
 

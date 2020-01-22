@@ -483,6 +483,10 @@ func (m *Route) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
+	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
+		return 0, err
+	}
+
 	switch m.Action.(type) {
 
 	case *Route_RouteAction:
