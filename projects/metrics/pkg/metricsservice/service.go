@@ -19,8 +19,6 @@ const (
 	ListenerStatPrefix = "listener"
 )
 
-//go:generate mockgen -destination mocks/mock_metrics_stream.go -package mocks github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2 MetricsService_StreamMetricsServer
-
 // server is used to implement envoymet.MetricsServiceServer.
 type Server struct {
 	opts           *Options
