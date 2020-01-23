@@ -1,23 +1,23 @@
 ---
-title: "glooctl ui"
+title: "glooctl dashboard"
 weight: 5
 ---
-## glooctl ui
+## glooctl dashboard
 
-Open Gloo UI
+Open Gloo dashboard
 
 ### Synopsis
 
-Open the Gloo UI in your default browser
+Open the Gloo dashboard/UI in your default browser
 
 ```
-glooctl ui [flags]
+glooctl dashboard [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help               help for ui
+  -h, --help               help for dashboard
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
   -v, --verbose            If true, output from kubectl commands will print to stdout/stderr
 ```
