@@ -222,6 +222,41 @@ var _ = Describe("route merge util", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
+
+		It("builds corrects route name", func() {
+			ref := core.ResourceRef{
+				Name: "any",
+			}
+			route := &v1.Route{
+				Name:     "route1",
+				Matchers: []*matchers.Matcher{{}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &ref,
+						},
+					},
+				},
+			}
+			rt := v1.RouteTable{
+				Routes: []*v1.Route{{
+					Name:     "",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_DirectResponseAction{},
+				}},
+				Metadata: core.Metadata{
+					Name: "any",
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{Metadata: core.Metadata{Name: "vs1"}}
+
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(converted[0].Name).To(Equal("vs:vs1_route:route1_rtb:any_route:N/A"))
+		})
 	})
 
 	When("bad route table config", func() {

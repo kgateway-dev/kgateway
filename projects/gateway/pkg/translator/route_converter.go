@@ -82,7 +82,7 @@ func NewRouteConverter(root resources.InputResource, tables gatewayv1.RouteTable
 	if vs, ok := root.(*gatewayv1.VirtualService); ok {
 		rootName = "vs:" + vs.Metadata.Name
 	} else {
-		rootName = fmt.Sprintf("%T:" + root.GetMetadata().Name, root)
+		rootName = fmt.Sprintf("%T:"+root.GetMetadata().Name, root)
 		reports.AddWarning(root, fmt.Sprintf("InputResource of type %T passed to NewRouteConverter but expected *v1.VirtualService", root))
 	}
 

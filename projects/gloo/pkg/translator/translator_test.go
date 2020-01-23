@@ -139,7 +139,7 @@ var _ = Describe("Translator", func() {
 			},
 		}
 		routes = []*v1.Route{{
-			Name: "testRouteName",
+			Name:     "testRouteName",
 			Matchers: []*matchers.Matcher{matcher},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
