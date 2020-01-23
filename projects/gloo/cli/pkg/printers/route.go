@@ -72,7 +72,7 @@ func RouteTable(list []*v1.Route, w io.Writer) {
 
 func routeDefaultTable(w io.Writer, customHeaders []string) *tablewriter.Table {
 	table := tablewriter.NewWriter(w)
-	headers := []string{"Id", "Matchers", "Types", "Verbs", "Headers", "Action"}
+	headers := []string{"Id", "Name", "Matchers", "Types", "Verbs", "Headers", "Action"}
 	table.SetHeader(append(headers, customHeaders...))
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	return table
@@ -81,7 +81,7 @@ func routeDefaultTable(w io.Writer, customHeaders []string) *tablewriter.Table {
 func routeDefaultTableRow(r *v1.Route, index int, customItems []string) []string {
 	matcher, rType, verb, headers := Matchers(r.Matchers)
 	act := Action(r)
-	defaultRow := []string{strconv.Itoa(index + 1), matcher, rType, verb, headers, act}
+	defaultRow := []string{strconv.Itoa(index + 1), r.Name, matcher, rType, verb, headers, act}
 	return append(defaultRow, customItems...)
 }
 

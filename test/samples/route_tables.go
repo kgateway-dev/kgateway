@@ -22,6 +22,7 @@ func LenLinkedRouteTablesWithVirtualService(lengthOfChain int, vsName, namespace
 		return &v1.RouteTable{
 			Metadata: core.Metadata{Name: fmt.Sprintf("node-%d", i), Namespace: namespace},
 			Routes: []*v1.Route{{
+				Name: "testRouteName",
 				Matchers: []*matchers.Matcher{{
 					PathSpecifier: &matchers.Matcher_Prefix{
 						Prefix: prefix,

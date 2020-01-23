@@ -36,8 +36,9 @@ var _ = Describe("Get RouteTable", func() {
 		Expect(out).To(Equal(`+-------------+--------------------------------+---------+
 | ROUTE TABLE |             ROUTES             | STATUS  |
 +-------------+--------------------------------+---------+
-| node-0      | /root/0 -> gloo-system.node-1  | Pending |
-|             | (route table)                  |         |
+| node-0      | testRouteName: /root/0 ->      | Pending |
+|             | gloo-system.node-1 (route      |         |
+|             | table)                         |         |
 +-------------+--------------------------------+---------+`))
 	})
 })
