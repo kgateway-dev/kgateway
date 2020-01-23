@@ -27,9 +27,10 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   constants.DASHBOARD_COMMAND.Use,
-		Short: constants.DASHBOARD_COMMAND.Short,
-		Long:  constants.DASHBOARD_COMMAND.Long,
+		Use:     constants.DASHBOARD_COMMAND.Use,
+		Aliases: constants.DASHBOARD_COMMAND.Aliases,
+		Short:   constants.DASHBOARD_COMMAND.Short,
+		Long:    constants.DASHBOARD_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			/** Get the port **/
