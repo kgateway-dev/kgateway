@@ -68,6 +68,9 @@ type routeVisitor struct {
 	visited gatewayv1.RouteTableList
 	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
 	reports reporter.ResourceReports
+	// Used to keep track of the long name of a route as we traverse the tree toward it, including vs, route, and route table ancestors.
+	// Ex name: "vs:myvirtualservice_route:myfirstroute_rtb:myroutetable_route:mytableroute"
+	nameTree string
 }
 
 // Initializes and returns a route converter instance.
@@ -75,10 +78,19 @@ type routeVisitor struct {
 // - tables: all the route tables that should be considered when resolving delegation chains.
 // - reports: this object will be updated with errors and warnings encountered during the conversion process.
 func NewRouteConverter(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
+	var rootName string
+	if vs, ok := root.(*gatewayv1.VirtualService); ok {
+		rootName = "vs:" + vs.Metadata.Name
+	} else {
+		rootName = fmt.Sprintf("%T:" + root.GetMetadata().Name, root)
+		reports.AddWarning(root, fmt.Sprintf("InputResource of type %T passed to NewRouteConverter but expected *v1.VirtualService", root))
+	}
+
 	return &routeVisitor{
 		rootResource: root,
 		tables:       tables,
 		reports:      reports,
+		nameTree:     rootName,
 	}
 }
 
@@ -88,10 +100,15 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 		matchers = gatewayRoute.Matchers
 	}
 
+	routeDisplayName := gatewayRoute.Name
+	if routeDisplayName == "" {
+		routeDisplayName = "N/A"
+	}
+	rv.nameTree += "_route:" + routeDisplayName
 	glooRoute := &gloov1.Route{
 		Matchers: matchers,
 		Options:  gatewayRoute.Options,
-		Name:     gatewayRoute.Name,
+		Name:     rv.nameTree,
 	}
 
 	switch action := gatewayRoute.Action.(type) {
@@ -213,6 +230,7 @@ func (rv *routeVisitor) createSubVisitor(routeTable *gatewayv1.RouteTable) *rout
 		rootResource: routeTable,
 		tables:       rv.tables,
 		reports:      rv.reports,
+		nameTree:     rv.nameTree + "_rtb:" + routeTable.Metadata.Name,
 	}
 
 	// Add all route tables from the parent visitor
