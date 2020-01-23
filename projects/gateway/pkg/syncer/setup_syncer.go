@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -44,6 +45,10 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	var (
 		cfg *rest.Config
 	)
+
+	logger := contextutils.LoggerFrom(ctx)
+	logger.Info(fmt.Sprintf("settings: %v", settings))
+	//runtime.Breakpoint()
 
 	consulClient, err := bootstrap.ConsulClientForSettings(settings)
 	if err != nil {
@@ -255,6 +260,8 @@ func RunGateway(opts translator.Opts) error {
 	go errutils.AggregateErrs(ctx, writeErrs, eventLoopErrs, "event_loop")
 
 	logger := contextutils.LoggerFrom(ctx)
+
+	logger.Info("opts: %v", opts)
 
 	go func() {
 		for {

@@ -241,6 +241,9 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
+	logger.Info(fmt.Sprintf("alwaysAcceptLogging: %v, watchNs: %v", wh.alwaysAccept, wh.watchNamespaces))
+	logger.Info(fmt.Sprintf("proxy reports %v, validationErr %v", proxyReports, validationErr))
+
 	success := &v1beta1.AdmissionResponse{
 		Allowed: true,
 	}
