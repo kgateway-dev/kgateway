@@ -5,6 +5,6 @@ changelog:
 - type: NON_USER_FACING
   description: >
     Temporarily disable watch function for the Gloo artifact client. This will have no impact on the open source
-    version of Gloo, as artifacts are currenlty only used in Gloo Enterprise.
+    version of Gloo, as artifacts are currently only used in Gloo Enterprise.
   issueLink: https://github.com/solo-io/gloo/issues/2277
   solvesIssue: false
