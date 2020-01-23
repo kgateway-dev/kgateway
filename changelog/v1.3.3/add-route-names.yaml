@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow naming of routes.
+    issueLink: https://github.com/solo-io/gloo/issues/2234
