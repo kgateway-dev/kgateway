@@ -139,6 +139,7 @@ var _ = Describe("Translator", func() {
 			},
 		}
 		routes = []*v1.Route{{
+			Name: "testRouteName",
 			Matchers: []*matchers.Matcher{matcher},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
@@ -432,17 +433,23 @@ var _ = Describe("Translator", func() {
 
 			It("should translate multiple matchers on a single Gloo route to multiple Envoy routes", func() {
 				translate()
-				fooPrefix := routeConfiguration.VirtualHosts[0].Routes[0].Match.GetPrefix()
-				barPrefix := routeConfiguration.VirtualHosts[0].Routes[1].Match.GetPrefix()
+				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
+
+				fooPrefix := fooRoute.Match.GetPrefix()
+				barPrefix := barRoute.Match.GetPrefix()
 
 				Expect(fooPrefix).To(Equal("/foo"))
 				Expect(barPrefix).To(Equal("/bar"))
 
-				// the routes should be otherwise identical. wipe the matchers and compare them
-				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
-				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
+				Expect(fooRoute.Name).To(MatchRegexp("testRouteName-[0-9]*"))
+				Expect(barRoute.Name).To(MatchRegexp("testRouteName-[0-9]*"))
+
+				// the routes should be otherwise identical. wipe the matchers and names and compare them
 				fooRoute.Match = &envoyrouteapi.RouteMatch{}
 				barRoute.Match = &envoyrouteapi.RouteMatch{}
+				fooRoute.Name = ""
+				barRoute.Name = ""
 
 				Expect(fooRoute).To(Equal(barRoute))
 			})
