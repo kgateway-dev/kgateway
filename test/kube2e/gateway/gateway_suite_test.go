@@ -123,7 +123,9 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())
 
-	// when config changes validation server restarts -- give time for it to come up again
+	// when validation config changes, the validation server restarts -- give time for it to come up again.
+	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
+	// what we want to test.
 	time.Sleep(3 * time.Second)
 }
 
