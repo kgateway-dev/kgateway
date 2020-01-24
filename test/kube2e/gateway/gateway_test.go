@@ -1277,10 +1277,9 @@ var _ = Describe("Kube2e: gateway", func() {
 		})
 	})
 
-	//TODO(kdorosh) fixme
-	PContext("tests for the validation server", func() {
-		testValidation := func(yam, expectedErr string) {
-			out, err := install.KubectlApplyOut([]byte(yam))
+	Context("tests for the validation server", func() {
+		testValidation := func(yaml, expectedErr string) {
+			out, err := install.KubectlApplyOut([]byte(yaml))
 			if expectedErr == "" {
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return
@@ -1318,10 +1317,12 @@ metadata:
   namespace: ` + testHelper.InstallNamespace + `
 spec:
   virtualHost:
+    domains:
+     - unique1
     routes:
-      - matcher:
-          methods:
-            - GET
+      - matchers:
+        - methods:
+           - GET
           prefix: /items/
         routeAction:
           single:
@@ -1340,16 +1341,18 @@ metadata:
   namespace: ` + testHelper.InstallNamespace + `
 spec:
   virtualHost:
+    domains:
+     - unique2
     routes:
-      - matcher:
-          methods:
-            - GET # not allowed
+      - matchers:
+        - methods:
+           - GET # not allowed
           prefix: /delegated-prefix
         delegateAction:
           name: does-not-exist # also not allowed, but caught later
           namespace: anywhere
 `,
-					expectedErr: "routes with delegate actions cannot use method matchers", // should not fail
+					expectedErr: "routes with delegate actions cannot use method matchers",
 				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErr)
