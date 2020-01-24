@@ -124,7 +124,7 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 	Expect(err).NotTo(HaveOccurred())
 
 	// when config changes validation server restarts -- give time for it to come up again
-	time.Sleep(3*time.Second)
+	time.Sleep(3 * time.Second)
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {

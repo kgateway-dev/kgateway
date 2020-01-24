@@ -5,6 +5,7 @@ import (
 	"log"
 	"math"
 	"os"
+
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/changelogutils"

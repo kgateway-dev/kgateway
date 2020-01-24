@@ -245,7 +245,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
-	isUnmarshalErr := validationErr!=nil && errors.Is(validationErr, UnmarshalErr(errors.Unwrap(validationErr)))
+	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, UnmarshalErr(errors.Unwrap(validationErr)))
 
 	if !isUnmarshalErr && (validationErr == nil || wh.alwaysAccept) {
 		logger.Debug("Succeeded")
