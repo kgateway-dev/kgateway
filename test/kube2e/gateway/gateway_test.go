@@ -583,8 +583,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			//TODO(kdorosh) fixme
-			PIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -630,7 +629,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 					reason = vs.Status.Reason
 					return vs.Status.State, nil
-				}).Should(Equal(core.Status_Rejected))
+				}, 10*time.Second).Should(Equal(core.Status_Rejected))
 
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
@@ -650,7 +649,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}).Should(Equal(core.Status_Accepted))
+				}, 10*time.Second).Should(Equal(core.Status_Accepted))
 			})
 		})
 
