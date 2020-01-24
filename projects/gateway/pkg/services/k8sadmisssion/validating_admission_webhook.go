@@ -245,9 +245,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
-	logger.Info(fmt.Sprintf("alwaysAcceptLogging: %v, watchNs: %v", wh.alwaysAccept, wh.watchNamespaces))
-	logger.Info(fmt.Sprintf("proxy reports %v, validationErr %v", proxyReports, validationErr))
-
 	isUnmarshalErr := validationErr!=nil && errors.Is(validationErr, UnmarshalErr(errors.Unwrap(validationErr)))
 
 	if !isUnmarshalErr && (validationErr == nil || wh.alwaysAccept) {
@@ -261,15 +258,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesRejected)
 	logger.Errorf("Validation failed: %v", validationErr)
 
-	// the problem is that we are hijacking proxyReports length to determine whether or not there was a marshalling error
-	// wh.alwaysAccept should be moved up and we should check the type of error
-
-	// OH! it got through because the validation service itself was down while restarting!!
-
-	// also i think whichever server isn't being cancelled properly thus whichever one we hit is still using the old settings :/
-
 	if len(proxyReports) > 0 {
-
 		var proxyErrs []error
 		for _, rpt := range proxyReports {
 			err := validationutil.GetProxyError(rpt)
