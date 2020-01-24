@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: Fix validation setting to honor always accept.
+    issueLink: https://github.com/solo-io/gloo/issues/2280
+  - type: NON_USER_FACING
+    description: Fix flaky behavior in validation regression tests.
+    issueLink: https://github.com/solo-io/gloo/issues/2280
+  - type: NON_USER_FACING
+    description: Move from github errors to eris errors.
