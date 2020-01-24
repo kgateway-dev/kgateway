@@ -50,9 +50,9 @@ var (
 	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
 	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
 
-	unmarshalErrMsg = "could not unmarshal raw object"
+	unmarshalErrMsg    = "could not unmarshal raw object"
 	SampleUnmarshalErr = errors.New(unmarshalErrMsg)
-	UnmarshalErr = func(err error) error {
+	UnmarshalErr       = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 )
