@@ -473,10 +473,8 @@ $(OUTPUT_DIR)/gloo-enterprise-version:
 
 .PHONY: download-glooe-changelog
 download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
-ifeq ($(RELEASE),"true")
 	mkdir -p '../solo-projects/changelog'
 	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
-endif
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
@@ -485,13 +483,12 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 
 .PHONY: publish-docs
 publish-docs: generate-helm-files
-ifeq ($(RELEASE),"true")
 	cd docs && make docker-push-docs \
 		VERSION=$(VERSION) \
 		TAGGED_VERSION=$(TAGGED_VERSION) \
 		GCLOUD_PROJECT_ID=$(GCLOUD_PROJECT_ID) \
-		RELEASE=$(RELEASE)
-endif
+		RELEASE=$(RELEASE) \
+		ON_DEFAULT_BRANCH=$(ON_DEFAULT_BRANCH)
 
 
 #----------------------------------------------------------------------------------

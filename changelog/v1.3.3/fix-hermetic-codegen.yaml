@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Ensure that codegen creates the same mocks every time it is run.
-    issueLink: https://github.com/solo-io/gloo/issues/2239
