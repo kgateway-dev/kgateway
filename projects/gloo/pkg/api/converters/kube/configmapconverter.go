@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 
+	errors "github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	skcfgmap "github.com/solo-io/solo-kit/pkg/api/v1/clients/configmap"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	kubev1 "k8s.io/api/core/v1"
 
 	skkubeutils "github.com/solo-io/solo-kit/pkg/utils/kubeutils"
@@ -20,22 +22,21 @@ func NewKubeConfigMapConverter() *kubeConverter {
 
 type kubeConverter struct{}
 
-func (cc *kubeConverter) FromKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
-
-	return cc.FromKubeConfigMapWithResource(ctx, rc.NewResource(), rc.Kind(), configMap)
+func (cc *kubeConverter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
+	return cc.FromKubeConfigMapWithResource(rc.NewResource(), rc.Kind(), configMap)
 }
 
-func (cc *kubeConverter) FromKubeConfigMapWithResource(ctx context.Context, resource resources.Resource, kind string, configMap *kubev1.ConfigMap) (resources.Resource, error) {
-	resourceMap := map[string]interface{}{
-		"data": configMap.Data,
+func (cc *kubeConverter) FromKubeConfigMapWithResource(resource resources.Resource, kind string, configMap *kubev1.ConfigMap) (resources.Resource, error) {
+	artifact, ok := resource.(*v1.Artifact)
+	if !ok {
+		// should never happen
+		return nil, errors.Errorf("expected [artifact] resource, got: [%s]", kind)
 	}
 
-	if err := skprotoutils.UnmarshalMap(resourceMap, resource); err != nil {
-		return nil, errors.Wrapf(err, "reading configmap data into %v", kind)
-	}
-	resource.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
+	artifact.Data = configMap.Data
+	artifact.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
 
-	return resource, nil
+	return artifact, nil
 }
 
 func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {

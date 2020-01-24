@@ -28,7 +28,7 @@ var _ = Describe("Configmapconverter", func() {
 					"test": "data",
 				},
 			}
-			artifact, err := kubeConverter.FromKubeConfigMapWithResource(context.TODO(), new(v1.Artifact), "artifact", cfgmap)
+			artifact, err := kubeConverter.FromKubeConfigMapWithResource(new(v1.Artifact), "artifact", cfgmap)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(artifact).NotTo(BeNil())
 			cfgmap2, err := kubeConverter.ToKubeConfigMapSimple(context.TODO(), artifact)
