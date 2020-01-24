@@ -386,7 +386,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
-	artifactClient, err := NewNoWatchArtifactClient(opts.Artifacts)
+	artifactClient, err := v1.NewArtifactClient(opts.Artifacts)
 	if err != nil {
 		return err
 	}
