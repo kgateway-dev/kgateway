@@ -3,7 +3,7 @@ package virtualservice
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"

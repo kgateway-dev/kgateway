@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/controller"

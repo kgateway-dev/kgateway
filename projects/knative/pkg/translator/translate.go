@@ -20,7 +20,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/go-utils/log"

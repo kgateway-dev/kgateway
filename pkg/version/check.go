@@ -1,7 +1,7 @@
 package version
 
 import (
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/versionutils"
 	"github.com/solo-io/go-utils/versionutils/dep"

@@ -6,7 +6,7 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	mock_listers "github.com/solo-io/gloo/pkg/listers/mocks"
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"

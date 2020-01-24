@@ -6,7 +6,7 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 )
 
 var dumpCommands = func(namespace string) []string {
