@@ -1085,18 +1085,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, time.Minute, time.Second).Should(BeNil())
 		})
 
-		// TODO(kdorosh) fixme
-		/*
-			creating kube resource vs: admission webhook "gateway.gateway-test-4227-1.svc" denied the request: resource
-			incompatible with current Gloo snapshot: [Route Error: ProcessingError. Reason: *azure.plugin: input destination
-			Multi but output destination was not; Route Error: ProcessingError. Reason: *aws.plugin: input destination Multi
-			but output destination was not; Route Error: ProcessingError. Reason: *rest.plugin: input destination Multi but
-			output destination was not; Route Error: ProcessingError. Reason: *grpc.plugin: input destination Multi but output
-			destination was not; Route Error: ProcessingError. Reason: *faultinjection.Plugin: input destination Multi but
-			output destination was not]
-			  occurred
-		*/
-		PIt("routes to subsets and upstream groups", func() {
+		It("routes to subsets and upstream groups", func() {
 			getUpstream := func() (*gloov1.Upstream, error) {
 				name := testHelper.InstallNamespace + "-" + service.Name + "-5678"
 				return upstreamClient.Read(testHelper.InstallNamespace, name, clients.ReadOpts{})
@@ -1166,10 +1155,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			ugref := ug.Metadata.Ref()
 
-			// create a pod
-			// create an upstream group
-			// add subset to the upstream
-			// create another pod
 			vs, err = virtualServiceClient.Write(&gatewayv1.VirtualService{
 				Metadata: core.Metadata{
 					Name:      "vs",
@@ -1219,11 +1204,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
-			caFile := ToFile(helpers.Certificate())
-			//noinspection GoUnhandledErrorResult
-			defer os.Remove(caFile)
-
-			// make sure we get both upstreams:
+			// make sure we get all three upstreams:
 			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/",
@@ -1257,6 +1238,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				WithoutStats:      true,
 			}, "green-pod", 1, 120*time.Second, 1*time.Second)
 
+			// now make sure we only get the red pod
 			redOpts := helper.CurlOpts{
 				Protocol:          "http",
 				Path:              "/red",
