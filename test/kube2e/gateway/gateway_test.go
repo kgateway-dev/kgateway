@@ -487,7 +487,6 @@ var _ = Describe("Kube2e: gateway", func() {
 				// TODO(kdorosh) ensure this isn't a resource version error!
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					fmt.Println(err)
 					return err
 				}, time.Second*10).Should(HaveOccurred())
 
@@ -583,7 +582,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			FIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
