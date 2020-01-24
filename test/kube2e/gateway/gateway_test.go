@@ -156,18 +156,6 @@ var _ = Describe("Kube2e: gateway", func() {
 		kubeCoreCache, err := kubecache.NewKubeCoreCache(ctx, kubeClient)
 		Expect(err).NotTo(HaveOccurred())
 		serviceClient = service.NewServiceClient(kubeClient, kubeCoreCache)
-
-		// give discovery time to write the upstream
-		//TODO(kdorosh) re-enable
-		//Eventually(func() error {
-		//	upstreams, err := upstreamClient.List(testHelper.InstallNamespace, clients.ListOpts{})
-		//	if err != nil {
-		//		return err
-		//	}
-		//	upstreamName := fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.HttpEchoName, helper.HttpEchoPort)
-		//	_, err = upstreams.Find(testHelper.InstallNamespace, upstreamName)
-		//	return err
-		//}, time.Second*30, time.Second).ShouldNot(HaveOccurred())
 	})
 
 	Context("tests with virtual service", func() {
