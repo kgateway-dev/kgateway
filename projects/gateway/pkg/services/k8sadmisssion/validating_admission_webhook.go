@@ -50,8 +50,10 @@ var (
 	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
 	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
 
+	unmarshalErrMsg = "could not unmarshal raw object"
+	SampleUnmarshalErr = errors.New(unmarshalErrMsg)
 	UnmarshalErr = func(err error) error {
-		return errors.Wrapf(err, "could not unmarshal raw object")
+		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 )
 
@@ -245,8 +247,9 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
-	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, UnmarshalErr(errors.Unwrap(validationErr)))
+	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, SampleUnmarshalErr)
 
+	// even if validation is set to always accept, we want to fail on unmarshal errors
 	if !isUnmarshalErr && (validationErr == nil || wh.alwaysAccept) {
 		logger.Debug("Succeeded")
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
