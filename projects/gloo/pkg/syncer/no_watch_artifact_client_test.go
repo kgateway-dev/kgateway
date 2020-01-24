@@ -14,7 +14,7 @@ import (
 var _ = Describe("NoWatchArtifactClient", func() {
 
 	When("calling watch function", func() {
-		FIt("result in a no-op", func() {
+		It("result in a no-op", func() {
 			rcFactory := &factory.MemoryResourceClientFactory{
 				Cache: memory.NewInMemoryResourceCache(),
 			}
