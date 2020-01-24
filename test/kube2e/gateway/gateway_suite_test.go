@@ -122,6 +122,9 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())
+
+	// when config changes validation server restarts -- give time for it to come up again
+	time.Sleep(3*time.Second)
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
