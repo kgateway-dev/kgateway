@@ -2,9 +2,6 @@ changelog:
 - type: FIX
   description: Remove occurrences of deprecated hash functions.
   issueLink: https://github.com/solo-io/gloo/issues/2275
-- type: NON_USER_FACING
-  description: >
-    Temporarily disable watch function for the Gloo artifact client. This will have no impact on the open source
-    version of Gloo, as artifacts are currently only used in Gloo Enterprise.
+- type: FIX
+  description: Remove unnecessary unmarshalling in `ConfigMap` converter.
   issueLink: https://github.com/solo-io/gloo/issues/2277
-  solvesIssue: false
