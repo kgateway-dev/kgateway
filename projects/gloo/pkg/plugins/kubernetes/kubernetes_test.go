@@ -156,7 +156,6 @@ var _ = Describe("Kubernetes", func() {
 			}, discovery.Opts{})
 			Expect(err).NotTo(HaveOccurred())
 
-
 			select {
 			case <-time.After(time.Second * 2):
 				Fail("no upstreams detected after 2s")
