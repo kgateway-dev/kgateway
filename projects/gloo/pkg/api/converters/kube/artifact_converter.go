@@ -16,34 +16,33 @@ import (
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 )
 
-func NewKubeConfigMapConverter() *kubeConverter {
-	return &kubeConverter{}
+func NewArtifactConverter() skcfgmap.ConfigMapConverter {
+	return &converter{}
 }
 
-type kubeConverter struct{}
+type converter struct{}
 
-func (cc *kubeConverter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
-	return cc.FromKubeConfigMapWithResource(rc.NewResource(), rc.Kind(), configMap)
-}
-
-func (cc *kubeConverter) FromKubeConfigMapWithResource(resource resources.Resource, kind string, configMap *kubev1.ConfigMap) (resources.Resource, error) {
-	artifact, ok := resource.(*v1.Artifact)
-	if !ok {
+func (c *converter) FromKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, configMap *kubev1.ConfigMap) (resources.Resource, error) {
+	if _, ok := rc.NewResource().(*v1.Artifact); !ok {
 		// should never happen
-		return nil, errors.Errorf("expected [artifact] resource, got: [%s]", kind)
+		return nil, errors.Errorf("expected [artifact] resource client, got: [%s]", rc.Kind())
 	}
+	return KubeConfigMapToArtifact(configMap), nil
+}
 
+func KubeConfigMapToArtifact(configMap *kubev1.ConfigMap) *v1.Artifact {
+	artifact := new(v1.Artifact)
 	artifact.Data = configMap.Data
 	artifact.SetMetadata(skkubeutils.FromKubeMeta(configMap.ObjectMeta))
 
-	return artifact, nil
+	return artifact
 }
 
-func (cc *kubeConverter) ToKubeConfigMap(ctx context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {
-	return cc.ToKubeConfigMapSimple(ctx, resource)
+func (c *converter) ToKubeConfigMap(_ context.Context, rc *skcfgmap.ResourceClient, resource resources.Resource) (*kubev1.ConfigMap, error) {
+	return ArtifactToKubeConfigMap(resource)
 }
 
-func (cc *kubeConverter) ToKubeConfigMapSimple(ctx context.Context, resource resources.Resource) (*kubev1.ConfigMap, error) {
+func ArtifactToKubeConfigMap(resource resources.Resource) (*kubev1.ConfigMap, error) {
 
 	resourceMap, err := skprotoutils.MarshalMapEmitZeroValues(resource)
 	if err != nil {
