@@ -818,7 +818,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 					_, err = upstreamClient.Write(upstream, clients.WriteOpts{OverwriteExisting: true})
 					return err
-				}, "1s", "0.1s").ShouldNot(HaveOccurred())
+				}, "10s", "0.5s").ShouldNot(HaveOccurred())
 			}
 
 			// chill for a few letting discovery reconcile
