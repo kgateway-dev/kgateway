@@ -208,6 +208,7 @@ message Route {
     // RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
     gloo.solo.io.RouteOptions options = 6;
 
+    // The name provides a convenience for users to be able to refer to a route by name.
     string name = 7;
 }
 
