@@ -11,8 +11,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var disabledLabels = map[string]string{FdsLabelKey: disbledLabelValue}
-var enabledLabels = map[string]string{FdsLabelKey: enbledLabelValue}
+var disabledLabels = map[string]string{FdsLabelKey: disabledLabelValue}
+var enabledLabels = map[string]string{FdsLabelKey: enabledLabelValue}
 var _ = Describe("selectUpstreamsForDiscovery", func() {
 	disabledNs := &kubernetes.KubeNamespace{KubeNamespace: namespace.KubeNamespace{
 		ObjectMeta: metav1.ObjectMeta{

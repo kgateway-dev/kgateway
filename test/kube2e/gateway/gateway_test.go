@@ -598,8 +598,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						},
 					}, nil)))
 
-				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute,
-					clients.WriteOpts{})
+				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
 				// the VS should be rejected
@@ -620,7 +619,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "disabled"
+				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
 
 				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
