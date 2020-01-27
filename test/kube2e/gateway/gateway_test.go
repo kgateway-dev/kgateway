@@ -1260,6 +1260,8 @@ var _ = Describe("Kube2e: gateway", func() {
 			out, err := install.KubectlApplyOut([]byte(yaml))
 			if expectedErr == "" {
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
+				err = install.KubectlDelete([]byte(yaml))
+				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return
 			}
 			ExpectWithOffset(1, err).To(HaveOccurred())
