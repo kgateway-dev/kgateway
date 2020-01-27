@@ -6,6 +6,7 @@ import (
 
 	"github.com/solo-io/go-utils/certutils"
 	"k8s.io/client-go/util/cert"
+	"knative.dev/pkg/network"
 )
 
 func GenCerts(svcName, svcNamespace string) (*certutils.Certificates, error) {
@@ -17,7 +18,7 @@ func GenCerts(svcName, svcNamespace string) (*certutils.Certificates, error) {
 				svcName,
 				fmt.Sprintf("%s.%s", svcName, svcNamespace),
 				fmt.Sprintf("%s.%s.svc", svcName, svcNamespace),
-				fmt.Sprintf("%s.%s.svc.cluster.local", svcName, svcNamespace),
+				fmt.Sprintf("%s.%s.svc.%s", svcName, svcNamespace, network.GetClusterDomainName()),
 			},
 		},
 		Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
