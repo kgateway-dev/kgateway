@@ -303,11 +303,12 @@ type Route struct {
 	// Route Options extend the behavior of routes.
 	// Route options include configuration such as retries, rate limiting, and request/response transformation.
 	// RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
-	Options              *v1.RouteOptions `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
-	Name                 string           `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	Options *v1.RouteOptions `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
+	// The name provides a convenience for users to be able to refer to a route by name.
+	Name                 string   `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *Route) Reset()         { *m = Route{} }
