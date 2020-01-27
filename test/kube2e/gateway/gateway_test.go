@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -468,10 +469,15 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, time.Second*10).ShouldNot(HaveOccurred())
 
 				// sanity check that validation is enabled/strict
-				// TODO(kdorosh) ensure this isn't a resource version error!
+				// TODO(kdorosh) hacky let's try to get around this error by wrapping both of these in eventually:
+				// invalid resource version gateway-test-7563-1.i-am-invalid given , expected 52074978
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					return err
+					// ensure error was validation error before returning
+					if err != nil && strings.Contains(err.Error(), "could not render proxy") {
+						return err
+					}
+					return nil
 				}, time.Second*10).Should(HaveOccurred())
 
 				// disable strict validation
@@ -530,7 +536,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
 
-				// TODO(kdorosh) hacky let's get around this error by wrapping both of these in eventually:
+				// TODO(kdorosh) hacky let's try to get around this error by wrapping both of these in eventually:
 				// invalid resource version gateway-test-7563-1.i-am-invalid given , expected 52074978
 				Eventually(func() error {
 					_, err = virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
