@@ -8,6 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/gogo/protobuf/types"
@@ -97,11 +101,11 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
-	if testHelper != nil {
-		err := testHelper.UninstallGloo()
-		Expect(err).NotTo(HaveOccurred())
-		_ = testutils.Kubectl("delete", "--wait=false", "namespace", testHelper.InstallNamespace)
-	}
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
 
 // enable/disable strict validation
