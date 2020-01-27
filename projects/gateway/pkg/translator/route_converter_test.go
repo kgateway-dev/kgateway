@@ -243,11 +243,11 @@ var _ = Describe("route merge util", func() {
 					Name:     "",
 					Matchers: []*matchers.Matcher{},
 					Action:   &v1.Route_DirectResponseAction{},
-				},{
+				}, {
 					Name:     "redirectAction",
 					Matchers: []*matchers.Matcher{},
 					Action:   &v1.Route_RedirectAction{},
-				},{
+				}, {
 					Name:     "routeAction",
 					Matchers: []*matchers.Matcher{},
 					Action:   &v1.Route_RouteAction{},
