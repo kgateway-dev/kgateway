@@ -149,6 +149,7 @@ var _ = Describe("Kubernetes", func() {
 		})
 
 		// TODO: why is this not working?
+		/*
 		PIt("uses json keys when serializing", func() {
 			plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
 			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
@@ -170,7 +171,7 @@ var _ = Describe("Kubernetes", func() {
 					Expect(err).NotTo(HaveOccurred())
 				}
 			}
-		})
+		})*/
 
 		It("shares endpoints between multiple upstreams that have the same endpoint", func() {
 			makeUpstream := func(name string) *v1.Upstream {

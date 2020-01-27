@@ -539,11 +539,11 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() error {
 					_, err = virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
 					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				}, "10s", "0.5s").ShouldNot(HaveOccurred())
 				Eventually(func() error {
 					_, err = virtualServiceClient.Write(invalidVs, clients.WriteOpts{OverwriteExisting: true})
 					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				}, "10s", "0.5s").ShouldNot(HaveOccurred())
 
 				// the original virtual service should work
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
