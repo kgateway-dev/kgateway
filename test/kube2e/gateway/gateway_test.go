@@ -601,6 +601,10 @@ var _ = Describe("Kube2e: gateway", func() {
 				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
+				// This makes the test a lot less flaky
+				// ~50% pass rate instead of ~90+% fail rate when focused
+				time.Sleep(10 * time.Second)
+
 				// the VS should be rejected
 				// the err message should be that the rest spec is missing
 				var reason string
@@ -611,10 +615,13 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 					reason = vs.Status.Reason
 					return vs.Status.State, nil
-				}, 10*time.Second).Should(Equal(core.Status_Rejected))
+				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
 
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
+				// This makes the test a lot less flaky
+				// ~50% pass rate instead of ~90+% fail rate when focused
+				time.Sleep(10 * time.Second)
 				// enable fds on the upstream
 				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
@@ -624,6 +631,12 @@ var _ = Describe("Kube2e: gateway", func() {
 				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
+				// we have updated an upstream, which prompts Gloo to send a notification to the
+				// gateway to resync virtual service status
+
+				// This makes the test a lot less flaky
+				// ~50% pass rate instead of ~90+% fail rate when focused
+				time.Sleep(10 * time.Second)
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
@@ -631,7 +644,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}, 10*time.Second).Should(Equal(core.Status_Accepted))
+				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
 
