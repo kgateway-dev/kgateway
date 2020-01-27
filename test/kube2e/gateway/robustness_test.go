@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -213,8 +214,17 @@ var _ = Describe("Robustness tests", func() {
 		// required to prevent gateway webhook from rejecting
 		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
 
-		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
-		Expect(err).NotTo(HaveOccurred())
+		// TODO(kdorosh) hacky let's get around this error by wrapping both of these in eventually:
+		// invalid resource version gateway-test-7563-1.i-am-invalid given , expected 52074978
+		Eventually(func() error {
+			virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+			if err != nil && strings.Contains(err.Error(), "invalid resource version") {
+				updatedVs, err := virtualServiceClient.Read(virtualService.Metadata.Namespace, virtualService.Metadata.Name, clients.ReadOpts{Ctx: ctx})
+				Expect(err).To(BeNil())
+				virtualService.Metadata.ResourceVersion = updatedVs.Metadata.ResourceVersion
+			}
+			return err
+		}, "10s", "0.5s").ShouldNot(HaveOccurred())
 
 		By("wait for proxy to enter warning state")
 		Eventually(func() error {
