@@ -550,7 +550,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					if err != nil && strings.Contains(err.Error(), "invalid resource version") {
 						updatedInvalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
 						Expect(err).To(BeNil())
-						validVs.Metadata.ResourceVersion = updatedInvalidVs.Metadata.ResourceVersion
+						invalidVs.Metadata.ResourceVersion = updatedInvalidVs.Metadata.ResourceVersion
 					}
 					return err
 				}, "10s", "0.5s").ShouldNot(HaveOccurred())
