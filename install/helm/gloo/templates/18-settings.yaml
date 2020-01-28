@@ -14,6 +14,7 @@ spec:
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
+    disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}

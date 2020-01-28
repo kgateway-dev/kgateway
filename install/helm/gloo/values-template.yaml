@@ -23,8 +23,13 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
-  # namespaces that Gloo should watch. this includes watches set for pods, services, as well as CRD configuration objects
+  # Namespaces that Gloo should watch. This includes watches set for pods, services, as well as CRD configuration objects.
   watchNamespaces: []
+  # Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
+  # Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them.
+  # If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
+  # in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off.
+  disableKubernetesDestinations: false
 gloo:
   deployment:
     image:
