@@ -264,9 +264,9 @@ var _ = Describe("route merge util", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(3))
-			Expect(converted[0].Name).To(Equal("vs:vs1_route:route1_rtb:any_route:N/A"))
-			Expect(converted[1].Name).To(Equal("vs:vs1_route:route1_rtb:any_route:redirectAction"))
-			Expect(converted[2].Name).To(Equal("vs:vs1_route:route1_rtb:any_route:routeAction"))
+			Expect(converted[0].Name).To(Equal("vs:vs1_route:route1_rt:any_route:N/A"))
+			Expect(converted[1].Name).To(Equal("vs:vs1_route:route1_rt:any_route:redirectAction"))
+			Expect(converted[2].Name).To(Equal("vs:vs1_route:route1_rt:any_route:routeAction"))
 		})
 	})
 
@@ -552,8 +552,8 @@ var _ = Describe("route merge util", func() {
 				Entry("when one delegate action matches multiple route tables",
 					&v1.RouteTableSelector{},
 					"testRouteName",
-					[]string{"vs:vs-1_route:testRouteName_rtb:rt-2_route:simpleRouteName",
-						"vs:vs-1_route:testRouteName_rtb:rt-1_route:simpleRouteName"},
+					[]string{"vs:vs-1_route:testRouteName_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:testRouteName_rt:rt-1_route:simpleRouteName"},
 				),
 
 				Entry("when we have multiple levels of delegation",
@@ -561,8 +561,8 @@ var _ = Describe("route merge util", func() {
 						Namespaces: []string{"ns-4"},
 					},
 					"topLevelRoute",
-					[]string{"vs:vs-1_route:topLevelRoute_rtb:rt-5_route:N/A_rtb:rt-6_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-5_route:N/A_rtb:rt-2_route:simpleRouteName"},
+					[]string{"vs:vs-1_route:topLevelRoute_rt:rt-5_route:N/A_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-5_route:N/A_rt:rt-2_route:simpleRouteName"},
 				),
 
 				// rt-1 and rt-6 are selected both directly by the below selector and indirectly via rt-5.
@@ -571,13 +571,13 @@ var _ = Describe("route merge util", func() {
 						Namespaces: []string{"ns-1", "*"},
 					},
 					"topLevelRoute",
-					[]string{"vs:vs-1_route:topLevelRoute_rtb:rt-5_route:N/A_rtb:rt-6_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-6_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-4_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-3_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-2_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-5_route:N/A_rtb:rt-2_route:simpleRouteName",
-						"vs:vs-1_route:topLevelRoute_rtb:rt-1_route:simpleRouteName"},
+					[]string{"vs:vs-1_route:topLevelRoute_rt:rt-5_route:N/A_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-4_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-3_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-5_route:N/A_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-1_route:simpleRouteName"},
 				),
 			)
 
