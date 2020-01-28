@@ -58,7 +58,7 @@ metadata:
     app: gloo
     gloo: rbac
   annotations:
-    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
     "` + constants.HookCleanupResourceAnnotation + `": "true" # Used internally to mark "hook cleanup" resources
 rules:
