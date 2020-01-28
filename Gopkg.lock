@@ -744,12 +744,9 @@
   revision = "611e8accdfc92c4187d399e95ce826046d4c8d73"
 
 [[projects]]
-  digest = "1:f92fd6e98da2322ddd7f60b9fd647b11bb67c6ab01dfdfb59f8f5ded2e7522d6"
+  digest = "1:be408f349cae090a7c17a279633d6e62b00068e64af66a582cae0983de8890ea"
   name = "github.com/golang/mock"
-  packages = [
-    "gomock",
-    "mockgen/model",
-  ]
+  packages = ["gomock"]
   pruneopts = "UT"
   revision = "9fa652df1129bef0e734c9cf9bf6dbae9ef3b9fa"
   version = "1.3.1"
@@ -1259,6 +1256,17 @@
   revision = "89fcab3d43de07060e4fd4c1547430ed57e87f24"
 
 [[projects]]
+  digest = "1:367e578e8aec4ae4949a7dc2dd3b961d721ceb61cebc3e636caac5bd20211e9f"
+  name = "github.com/lyft/protoc-gen-star"
+  packages = [
+    ".",
+    "lang/go",
+  ]
+  pruneopts = "UT"
+  revision = "069c3e1b02c79c8685b2f4e83c40e624b5fe8f13"
+  version = "v0.4.14"
+
+[[projects]]
   digest = "1:5a0ef768465592efca0412f7e838cdc0826712f8447e70e6ccc52eb441e9ab13"
   name = "github.com/magiconair/properties"
   packages = ["."]
@@ -1706,11 +1714,17 @@
   version = "v0.11.7"
 
 [[projects]]
-  digest = "1:58948f05e3ef5eddc9c334f2a8eaa2abf2fe3f2a39dd2d0c7a0574874401492b"
+  digest = "1:c6f9818635fe15ca7f0f228b33b9cef3e0400cc4ad821793065804e66434bbd3"
   name = "github.com/solo-io/protoc-gen-ext"
   packages = [
+    ".",
     "extproto",
+    "extproto/gogoproto",
+    "module/equal",
+    "module/hash",
     "pkg/hasher",
+    "templates",
+    "templates/go",
   ]
   pruneopts = "UT"
   revision = "1a24aaf46919946df1c65ddc9ab4aff86f530b82"
@@ -1729,7 +1743,7 @@
   version = "v0.1.2"
 
 [[projects]]
-  digest = "1:d3ac93af321367583ff22878fdc43cc50eba474936ddf29afafb0d795b1339f8"
+  digest = "1:aa742ccfe052f65891b4926ac668dba30ec85ade6234eea06ef825e8a60db693"
   name = "github.com/solo-io/solo-kit"
   packages = [
     "api/external/kubernetes/configmap",
@@ -1800,8 +1814,8 @@
     "test/setup",
   ]
   pruneopts = "UT"
-  revision = "6f2c5d2fd22bf267af62308daa41d7389317b781"
-  version = "v0.11.16"
+  revision = "05951b8a4a8d02d323ba2f5e94961c911edfd545"
+  version = "v0.11.17"
 
 [[projects]]
   digest = "1:7a9de87a6acc3189ca35c1101fedc5d3d00a047bdf3ae4d0c0f589f3dd1759ce"
@@ -3218,7 +3232,6 @@
     "github.com/gogo/protobuf/protoc-gen-gogo/descriptor",
     "github.com/gogo/protobuf/types",
     "github.com/golang/mock/gomock",
-    "github.com/golang/mock/mockgen/model",
     "github.com/golang/protobuf/jsonpb",
     "github.com/golang/protobuf/proto",
     "github.com/golang/protobuf/protoc-gen-go/descriptor",
@@ -3289,6 +3302,10 @@
     "github.com/solo-io/go-utils/versionutils",
     "github.com/solo-io/go-utils/versionutils/dep",
     "github.com/solo-io/go-utils/versionutils/git",
+    "github.com/solo-io/go-utils/vfsutils",
+    "github.com/solo-io/protoc-gen-ext",
+    "github.com/solo-io/protoc-gen-ext/extproto",
+    "github.com/solo-io/protoc-gen-ext/pkg/hasher",
     "github.com/solo-io/reporting-client/pkg/api/v1",
     "github.com/solo-io/reporting-client/pkg/client",
     "github.com/solo-io/reporting-client/pkg/signature",
@@ -3350,6 +3367,7 @@
     "google.golang.org/genproto/googleapis/rpc/status",
     "google.golang.org/grpc",
     "google.golang.org/grpc/codes",
+    "google.golang.org/grpc/credentials",
     "google.golang.org/grpc/health",
     "google.golang.org/grpc/health/grpc_health_v1",
     "google.golang.org/grpc/metadata",

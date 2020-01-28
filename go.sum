@@ -1801,6 +1801,8 @@ github.com/solo-io/protoc-gen-ext v0.0.2 h1:CVyf687fYAFN6x43dz8S+VYyixhg7KM/0gsM
 github.com/solo-io/protoc-gen-ext v0.0.2/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/solo-io/protoc-gen-ext v0.0.4 h1:OFuoFLf7ru6qqvG+jVksPT4TnVouBy/bTuIWdTeJbnk=
 github.com/solo-io/protoc-gen-ext v0.0.4/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
+github.com/solo-io/protoc-gen-ext v0.0.7 h1:s9uFGtAoSsXL7vukWKPgofkxzHUeje7m6+0C3rYA2fU=
+github.com/solo-io/protoc-gen-ext v0.0.7/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4tPthhnYko=
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
 github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
@@ -1812,6 +1814,8 @@ github.com/solo-io/solo-kit v0.11.15 h1:cRaB3GzgToOxfuFq3E4EHVcK/HAk5dHfpUjWl6jB
 github.com/solo-io/solo-kit v0.11.15/go.mod h1:9w7Dr/FR7IlOKSv4ke2s6ndEKBy/eTC0DIcndKNj45Q=
 github.com/solo-io/solo-kit v0.11.16 h1:na9Q2NM3KbM4KWE+j/Pe5U5Zkxb68ANINgtv3SEQU8s=
 github.com/solo-io/solo-kit v0.11.16/go.mod h1:9w7Dr/FR7IlOKSv4ke2s6ndEKBy/eTC0DIcndKNj45Q=
+github.com/solo-io/solo-kit v0.11.17 h1:tDR7OiC3Ha96hYDDN+k+i2WP5frHMsqgic7naV3GiuA=
+github.com/solo-io/solo-kit v0.11.17/go.mod h1:aYL4+1XYtqZaRSxyOjI9zugODIT67Ad72OzojW0EXC4=
 github.com/solo-io/wasme v0.0.1 h1:SjYWzJZ2IGVGTI0WS1/Gv2I74FLvibieLgyl6+TYciU=
 github.com/solo-io/wasme v0.0.1/go.mod h1:Zb85GQMTyx7NEyEINCUiofKE9KZLjQVF6obvHOHBQE8=
 github.com/sony/gobreaker v0.4.1/go.mod h1:ZKptC7FHNvhBz7dN2LGjPVBz2sZJmc0/PkyDJOjmxWY=

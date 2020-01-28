@@ -1,0 +1,8 @@
+changelog:
+- type: NEW_FEATURE
+  description: Generate hash functions to improve CPU performance
+  issueLink: https://github.com/solo-io/gloo/issues/1711
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: solo-kit
+  dependencyTag: v0.11.17
