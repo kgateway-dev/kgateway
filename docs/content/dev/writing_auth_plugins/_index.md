@@ -328,7 +328,7 @@ Here is the sample output of a successful run of the script:
 {"level":"info","ts":"2019-08-21T17:02:22.803Z","logger":"verify-plugins","caller":"scripts/verify_plugins.go:62","msg":"Successfully verified that plugins can be loaded by Gloo!"}
 ```
 
-{{% notice note %}}s
+{{% notice note %}}
 The script is compiled to run on `linux` with `amd64` architectures. We will explain how it is supposed to be used in the next section.
 {{% /notice %}}
  
