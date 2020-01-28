@@ -34,37 +34,9 @@ func (m *PluginSource) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-
-	for _, v := range m.GetFilters() {
-
-		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(v, nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
+	if _, err = hasher.Write([]byte("wasm.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm.PluginSource")); err != nil {
+		return 0, err
 	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
 
 	if _, err = hasher.Write([]byte(m.GetImage())); err != nil {
 		return 0, err
@@ -72,20 +44,6 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 
 	if _, err = hasher.Write([]byte(m.GetConfig())); err != nil {
 		return 0, err
-	}
-
-	if h, ok := interface{}(m.GetFilterStage()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetFilterStage(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
 	}
 
 	if _, err = hasher.Write([]byte(m.GetName())); err != nil {
@@ -97,29 +55,6 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetVmType())
-	if err != nil {
-		return 0, err
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
-func (m *FilterStage) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetStage())
-	if err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetPredicate())
 	if err != nil {
 		return 0, err
 	}
