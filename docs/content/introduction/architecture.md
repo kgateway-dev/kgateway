@@ -52,7 +52,17 @@ The *Secret Watcher* watches a secret store for updates to secrets (which are re
 
 ### Translator
 
-The *Translator* receives snapshots of the entire state, composed of user configuration, secrets, and discovery information and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
+The *Translator* receives snapshots of the entire state, composed of the following configuration data:
+
+* Artifacts
+* Endpoints
+* Proxies
+* Upstreams
+* UpstreamGroups
+* Secrets
+* AuthConfigs
+
+user configuration, secrets, and discovery information and initiates a new *translation loop*, creating a new Envoy xDS Snapshot.
 
 1. The translation cycle starts by creating *[Envoy clusters](https://www.envoyproxy.io/docs/envoy/v1.8.0/api-v1/cluster_manager/cluster)* from all configured Upstreams. Each Upstream has a *type*, indicating which Upstream plugin is responsible for processing that Upstream object. Correctly configured Upstreams are converted into Envoy clusters by their respective plugins. Plugins may set cluster metadata on the cluster object.
 
