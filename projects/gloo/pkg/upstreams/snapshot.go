@@ -41,6 +41,10 @@ func (s *hybridUpstreamSnapshot) hash() uint64 {
 
 	// Sort merged slice for consistent hashing
 	allUpstreams.Sort()
+	hash, err := hashutils.HashAllSafe(nil, allUpstreams.AsInterfaces()...)
+	if err != nil {
+		panic("this error should never happen, as it is in a safe hasher")
+	}
 
-	return hashutils.HashAll(allUpstreams.AsInterfaces()...)
+	return hash
 }
