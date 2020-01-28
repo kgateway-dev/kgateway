@@ -233,7 +233,7 @@ func ArtifactFactoryForSettings(ctx context.Context,
 		return &factory.KubeConfigMapClientFactory{
 			Clientset:       *clientset,
 			Cache:           *kubeCoreCache,
-			CustomConverter: kubeconverters.NewKubeConfigMapConverter(),
+			CustomConverter: kubeconverters.NewArtifactConverter(),
 		}, nil
 	case *v1.Settings_DirectoryArtifactSource:
 		return &factory.FileResourceClientFactory{

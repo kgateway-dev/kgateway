@@ -43,14 +43,18 @@ func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
 	// we compare the hash of resources that can affect
 	// the validation result (which excludes Endpoints)
 	hashFunc := func(snap *v1.ApiSnapshot) uint64 {
-		return hashutils.HashAll(
-			snap.Upstreams,
-			snap.UpstreamGroups,
-			snap.Secrets,
-			// we also include proxies as this will help
-			// the gateway to resync in case the proxy was deleted
-			snap.Proxies,
-		)
+		toHash := append([]interface{}{}, snap.Upstreams.AsInterfaces()...)
+		toHash = append(toHash, snap.UpstreamGroups.AsInterfaces()...)
+		toHash = append(toHash, snap.Secrets.AsInterfaces()...)
+		// we also include proxies as this will help
+		// the gateway to resync in case the proxy was deleted
+		toHash = append(toHash, snap.Proxies.AsInterfaces()...)
+
+		hash, err := hashutils.HashAllSafe(nil, toHash...)
+		if err != nil {
+			panic("this error should never happen, as this is safe hasher")
+		}
+		return hash
 	}
 
 	// notify if the hash of what we care about has changed
