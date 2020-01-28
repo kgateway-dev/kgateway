@@ -5,7 +5,6 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -57,9 +56,6 @@ func (t *TestContext) After() {
 }
 
 func (t *TestContext) EnsureDefaultGateways() {
-	err := helpers.WriteDefaultGateways(t.WriteNamespace, t.TestClients.GatewayClient)
-	Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
 	// wait for the two gateways to be created.
 	Eventually(func() (gatewayv1.GatewayList, error) {
 		return t.TestClients.GatewayClient.List(t.WriteNamespace, clients.ListOpts{})

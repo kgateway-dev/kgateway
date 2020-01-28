@@ -6,3 +6,7 @@ changelog:
   dependencyOwner: solo-io
   dependencyRepo: solo-kit
   dependencyTag: v0.11.17
+- type: NON_USER_FACING
+  description: Fix grpc web e2e test flake. Setting `resolvesIssue=false` as this still needs to be fixed on `master`.
+  issueLink: https://github.com/solo-io/gloo/issues/2245
+  resolvesIssue: false
