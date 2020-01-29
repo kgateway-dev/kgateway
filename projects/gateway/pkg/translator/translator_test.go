@@ -888,7 +888,7 @@ var _ = Describe("Translator", func() {
 							Options: mergedLeafLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:N/A",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:<unnamed>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/3-delegate/upstream1",
@@ -911,7 +911,7 @@ var _ = Describe("Translator", func() {
 							Options: mergedMidLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:N/A",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/a/1-upstream",
@@ -936,7 +936,7 @@ var _ = Describe("Translator", func() {
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
 						{
-							Name: "vs:name2_route:N/A_rt:delegate-2_route:N/A",
+							Name: "",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/b/2-upstream-plugin-override",
@@ -959,7 +959,7 @@ var _ = Describe("Translator", func() {
 							Options: leafLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name2_route:N/A_rt:delegate-2_route:delegate2Route1",
+							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
 									Prefix: "/b/2-upstream",

@@ -168,7 +168,9 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []*envoyro
 		match := GlooMatcherToEnvoyMatcher(matcher)
 		out[i] = &envoyroute.Route{
 			Match: &match,
-			Name:  fmt.Sprintf(in.Name+"-%d", i),
+		}
+		if in.Name != "" {
+			out[i].Name = fmt.Sprintf(in.Name+"-%d", i)
 		}
 	}
 

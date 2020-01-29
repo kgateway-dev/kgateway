@@ -69,8 +69,10 @@ type routeVisitor struct {
 	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
 	reports reporter.ResourceReports
 	// Used to keep track of the long name of a route as we traverse the tree toward it, including vs, route, and route table ancestors.
-	// Ex name: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:mytableroute"
+	// Ex name: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
 	nameTree string
+	// used to keep track of whether there is a named route anywhere in the tree for naming purposes
+	containsNamedRoute bool
 }
 
 // Initializes and returns a route converter instance.
@@ -95,13 +97,20 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 
 	routeDisplayName := gatewayRoute.Name
 	if routeDisplayName == "" {
-		routeDisplayName = "N/A"
+		routeDisplayName = "<unnamed>"
+	} else {
+		rv.containsNamedRoute = true
 	}
 	rv.nameTree += "_route:" + routeDisplayName
 	glooRoute := &gloov1.Route{
 		Matchers: matchers,
 		Options:  gatewayRoute.Options,
 		Name:     rv.nameTree,
+	}
+
+	// if this is a leaf and there are no named routes in the tree, wipe the name
+	if _, ok := gatewayRoute.Action.(*gatewayv1.Route_DelegateAction); !ok && !rv.containsNamedRoute {
+		glooRoute.Name = ""
 	}
 
 	switch action := gatewayRoute.Action.(type) {
@@ -224,6 +233,7 @@ func (rv *routeVisitor) createSubVisitor(routeTable *gatewayv1.RouteTable) *rout
 		tables:       rv.tables,
 		reports:      rv.reports,
 		nameTree:     rv.nameTree + "_rt:" + routeTable.Metadata.Name,
+		containsNamedRoute: rv.containsNamedRoute,
 	}
 
 	// Add all route tables from the parent visitor
