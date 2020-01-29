@@ -88,7 +88,7 @@ If using Helm to manage settings, set the following value:
 
 If writing Settings directly to Kubernetes, add the following to the `spec.gateway` block:
 
-{{< highlight yaml "hl_lines=13-15" >}}
+{{< highlight yaml "hl_lines=10-12" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -122,8 +122,7 @@ metadata:
 spec:
   virtualHost:
     routes:
-      # this route is missing a path specifier and will be rejected
-      - matchers: {}
+      - matchers:
         routeAction:
           single:
             upstream:
