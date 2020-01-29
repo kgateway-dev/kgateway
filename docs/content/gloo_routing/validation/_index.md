@@ -111,23 +111,25 @@ spec:
 
 Once these are applied to the cluster, we can test that validation is enabled:
 
-
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: reject-me
-  namespace: default
+  namespace: gloo-system
 spec:
   virtualHost:
     routes:
-      - matchers:
-        routeAction:
-          single:
-            upstream:
-              name: does-not-exist
-              namespace: anywhere
+    - matchers:
+      - headers:
+        - name: foo
+          value: bar
+      routeAction:
+        single:
+          upstream:
+            name: does-not-exist
+            namespace: gloo-system
 EOF
 
 ```
