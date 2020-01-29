@@ -229,10 +229,10 @@ func (rv *routeVisitor) selectRouteTables(delegateAction *gatewayv1.DelegateActi
 // Create a new visitor to visit the current route table
 func (rv *routeVisitor) createSubVisitor(routeTable *gatewayv1.RouteTable) *routeVisitor {
 	visitor := &routeVisitor{
-		rootResource: routeTable,
-		tables:       rv.tables,
-		reports:      rv.reports,
-		nameTree:     rv.nameTree + "_rt:" + routeTable.Metadata.Name,
+		rootResource:       routeTable,
+		tables:             rv.tables,
+		reports:            rv.reports,
+		nameTree:           rv.nameTree + "_rt:" + routeTable.Metadata.Name,
 		containsNamedRoute: rv.containsNamedRoute,
 	}
 
