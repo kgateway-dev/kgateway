@@ -70,7 +70,7 @@ The conditions are:
 (2) This object is created or updated.
 
 ```
-	input.request.object.spec.virtualHost.routes[_].routePlugins.prefixRewrite
+	input.request.object.spec.virtualHost.routes[_].options.prefixRewrite
 ```
 (3) This object has a prefixRewrite stanza.
 
@@ -95,7 +95,7 @@ kubectl get configmaps -n opa vs-no-prefix-rewrite -o yaml
 apiVersion: v1
 data:
   vs-no-prefix-rewrite.rego: "package kubernetes.admission\n\noperations = {\"CREATE\",
-    \"UPDATE\"}\n\ndeny[msg] {\n\tinput.request.kind.kind == \"VirtualService\"\n\toperations[input.request.operation]\n\tinput.request.object.spec.virtualHost.routes[_].routePlugins.prefixRewrite\n\tmsg
+    \"UPDATE\"}\n\ndeny[msg] {\n\tinput.request.kind.kind == \"VirtualService\"\n\toperations[input.request.operation]\n\tinput.request.object.spec.virtualHost.routes[_].options.prefixRewrite\n\tmsg
     := \"prefix re-write not allowed\"\n}\n"
 kind: ConfigMap
 metadata:
@@ -134,7 +134,7 @@ virtualservice.gateway.solo.io/default created
 ```shell
 kubectl apply -f vs-err.yaml
 Error from server (prefix re-write not allowed): error when applying patch:
-{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"name\":\"gloo-system.default\",\"routes\":[{\"matcher\":{\"exact\":\"/sample-route-1\"},\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}},\"routePlugins\":{\"prefixRewrite\":{\"prefixRewrite\":\"/api/pets\"}}}]}}}\n"}},"spec":{"virtualHost":{"routes":[{"matcher":{"exact":"/sample-route-1"},"routeAction":{"single":{"upstream":{"name":"default-petstore-8080","namespace":"gloo-system"}}},"routePlugins":{"prefixRewrite":{"prefixRewrite":"/api/pets"}}}]}}}
+{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"name\":\"gloo-system.default\",\"routes\":[{\"matcher\":{\"exact\":\"/sample-route-1\"},\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}},\"options\":{\"prefixRewrite\":{\"prefixRewrite\":\"/api/pets\"}}}]}}}\n"}},"spec":{"virtualHost":{"routes":[{"matcher":{"exact":"/sample-route-1"},"routeAction":{"single":{"upstream":{"name":"default-petstore-8080","namespace":"gloo-system"}}},"options":{"prefixRewrite":{"prefixRewrite":"/api/pets"}}}]}}}
 to:
 Resource: "gateway.solo.io/v1, Resource=virtualservices", GroupVersionKind: "gateway.solo.io/v1, Kind=VirtualService"
 Name: "default", Namespace: "gloo-system"
