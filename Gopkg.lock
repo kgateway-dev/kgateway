@@ -1611,6 +1611,14 @@
   version = "v1.0.7"
 
 [[projects]]
+  digest = "1:c8186817f64b4452516bac70ee6807a7dcea75f76887af1be2d61471e6f11648"
+  name = "github.com/rotisserie/eris"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "6d094599cddc73f69602968b4511636c06d0e2da"
+  version = "v0.2.1"
+
+[[projects]]
   digest = "1:2ee0f15eb0fb04f918db7c2dcf39745f40d69f798ef171610a730e8a56aaa4fd"
   name = "github.com/russross/blackfriday"
   packages = ["."]
@@ -3273,6 +3281,7 @@
     "github.com/prometheus/client_golang/api/prometheus/v1",
     "github.com/prometheus/client_model/go",
     "github.com/prometheus/prometheus/discovery/targetgroup",
+    "github.com/rotisserie/eris",
     "github.com/solo-io/envoy-operator/pkg/downward",
     "github.com/solo-io/go-list-licenses/pkg/license",
     "github.com/solo-io/go-utils/certutils",
