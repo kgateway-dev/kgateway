@@ -31,6 +31,7 @@ import "gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
 
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
+import "gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
 
 import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
@@ -82,6 +83,13 @@ message HttpListenerOptions {
     // Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true
     // These require a special nightly version of envoy which is not deployed by default
     wasm.options.gloo.solo.io.PluginSource wasm = 7;
+
+    // Gzip is an HTTP option which enables Gloo to compress
+    // data returned from an upstream service upon client request.
+    // Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
+    // Example:
+    //
+    envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

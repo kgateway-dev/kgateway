@@ -2,7 +2,7 @@ package healthcheck
 
 import (
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	evnoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
+	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
@@ -42,7 +42,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, errors.Errorf("health check path cannot be \"\"")
 	}
 
-	hc := &evnoyhealthcheck.HealthCheck{
+	hc := &envoyhealthcheck.HealthCheck{
 		PassThroughMode: &wrappers.BoolValue{Value: false},
 		Headers: []*route.HeaderMatcher{{
 			Name: ":path",

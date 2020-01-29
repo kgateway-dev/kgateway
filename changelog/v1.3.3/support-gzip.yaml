@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/1489
+  description: >
+    Gloo now supports enabling the Envoy gzip compression filter by configuring `spec.httpGateway.options.gzip` of the desired Gateway.
