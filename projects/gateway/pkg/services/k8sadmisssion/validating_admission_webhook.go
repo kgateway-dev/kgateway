@@ -250,7 +250,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, UnmarshalErr)
 
 	// even if validation is set to always accept, we want to fail on unmarshal errors
-	if !isUnmarshalErr && (validationErr == nil || wh.alwaysAccept) {
+	if validationErr == nil || (wh.alwaysAccept && !isUnmarshalErr) {
 		logger.Debug("Succeeded, alwaysAccept: %v validationErr: %v", wh.alwaysAccept, validationErr)
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
 		return &v1beta1.AdmissionResponse{
