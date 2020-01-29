@@ -615,10 +615,6 @@ var _ = Describe("Kube2e: gateway", func() {
 				vsWithFunctionRoute, err = virtualServiceClient.Write(vsWithFunctionRoute, clients.WriteOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				// This makes the test a lot less flaky
-				// ~50% pass rate instead of ~90+% fail rate when focused
-				time.Sleep(10 * time.Second)
-
 				// the VS should be rejected
 				// the err message should be that the rest spec is missing
 				var reason string
@@ -633,10 +629,6 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
-				// This makes the test a lot less flaky
-				// ~50% pass rate instead of ~90+% fail rate when focused
-				time.Sleep(10 * time.Second)
-				// enable fds on the upstream
 				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
@@ -648,9 +640,21 @@ var _ = Describe("Kube2e: gateway", func() {
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
 
-				// This makes the test a lot less flaky
-				// ~50% pass rate instead of ~90+% fail rate when focused
-				time.Sleep(10 * time.Second)
+				// TODO(kdorosh) fix this bug, this shouldn't be required
+				// change vs to ensure that gateway resync is called
+				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
+				vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				vs.VirtualHost.Domains[0] = "petstore2.com" // just to change so resync in gateway is called :/
+				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
+				vs, err = virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				vs.VirtualHost.Domains[0] = "petstore.com"
+				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
