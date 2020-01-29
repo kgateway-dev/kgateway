@@ -123,7 +123,7 @@ spec:
   virtualHost:
     routes:
       # this route is missing a path specifier and will be rejected
-      - matcher: {}
+      - matchers: {}
         routeAction:
           single:
             upstream:
