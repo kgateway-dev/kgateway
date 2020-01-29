@@ -877,6 +877,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   disableKubernetesDestinations: false
    invalidConfigPolicy:
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
@@ -890,6 +891,46 @@ spec:
 `)
 
 						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("correctly sets the `disableKubernetesDestinations` field in the settings", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   disableKubernetesDestinations: true
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
+
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.disableKubernetesDestinations=true",
+							},
+						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
