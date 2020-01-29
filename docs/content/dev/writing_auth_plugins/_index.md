@@ -307,20 +307,17 @@ three arguments:
 | Arg Name | Description | Optional |
 | ---- | ----------- | -------- |
 | pluginDir | Path to a directory containing the plugin `.so` files to verify |  No |
-| manifest | A .yaml file containing information required to load the plugins | No |
+| manifest | A .yaml file containing information required to load the plugin | No |
 | debug | Set debug log level | Yes |
 
 The `manifest` file is needed to instruct the script on how to load the plugins. It intentionally has a very similar 
 format as the configuration defined on the `AuthConfig` resource:
 
 ```yaml
-plugins:
-- name: MyPlugin
-  pluginFileName: Plugin.so
-  exportedSymbolName: MyPlugin
-- name: AnotherPlugin
-  plugin_file_name: AnotherFile.so
-  exported_symbol_name: AnotherSymbol
+name: MyPlugin
+pluginFileName: Plugin.so
+exportedSymbolName: MyPlugin
+config: {} # plugin-specific config
 ```
 
 Here is the sample output of a successful run of the script:

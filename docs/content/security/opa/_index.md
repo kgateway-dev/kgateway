@@ -4,38 +4,33 @@ weight: 60
 description: Define fine-grained policies to control Gloo configuration itself.
 ---
 
-## Motivation
-
-In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use 
-normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability
-to create a Gloo VirtualService. RBAC only allows to grant permissions entire objects.
-With the Open Policy Agent, one can specify very fine grain control over Gloo objects.
-For example, with RBAC you can say, "user john@example.com is allowed to create virtual service"
-With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
+In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo VirtualService. RBAC only allows to grant permissions entire objects. With the Open Policy Agent, one can specify very fine grain control over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service" With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
 
 You can of-course combine both, as you see fit.
 
-In this document we will show a simple OPA policy that dictates that all virtual services must not 
-have a prefix re-write.
+In this document we will show a simple OPA policy that dictates that all virtual services must not have a prefix re-write.
+
+---
 
 ### Prerequisites
-Install Gloo gateway.
+
+Before you get started, you will need to have the Gloo Gateway running in a Kubernetes cluster. For more information, you can follow this [installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
 ### Setup
 
-First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before
-they are visible to the controllers that act on them (Gloo in our case).
+First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo in our case).
 
 You can use the [setup.sh](setup.sh) script for that purpose.
-Note this script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/)
-with some small adaptations for the Gloo API.
 
-For your convenience, here's the content of setup.sh (click to reveal):
-<details><summary>[setup.sh](setup.sh)</summary>
+This script follows the docs outlined in [official OPA docs](https://www.openpolicyagent.org/docs/latest/kubernetes-admission-control/) with some small adaptations for the Gloo API.
+
+{{% expand "Click to see the full setup.sh file that should be used for this project." %}}
 ```
 {{% readfile file="security/opa/setup.sh" %}}
 ```
-</details>
+{{% /expand %}}
+
+---
 
 ## Policy
 
@@ -70,7 +65,7 @@ The conditions are:
 (2) This object is created or updated.
 
 ```
-	input.request.object.spec.virtualHost.routes[_].routePlugins.prefixRewrite
+	input.request.object.spec.virtualHost.routes[_].options.prefixRewrite
 ```
 (3) This object has a prefixRewrite stanza.
 
@@ -78,6 +73,8 @@ If all these conditions are true, the object will be denied with this message:
 ```
 	msg := "prefix re-write not allowed"
 ```
+
+---
 
 ## Apply Policy
 
@@ -95,7 +92,7 @@ kubectl get configmaps -n opa vs-no-prefix-rewrite -o yaml
 apiVersion: v1
 data:
   vs-no-prefix-rewrite.rego: "package kubernetes.admission\n\noperations = {\"CREATE\",
-    \"UPDATE\"}\n\ndeny[msg] {\n\tinput.request.kind.kind == \"VirtualService\"\n\toperations[input.request.operation]\n\tinput.request.object.spec.virtualHost.routes[_].routePlugins.prefixRewrite\n\tmsg
+    \"UPDATE\"}\n\ndeny[msg] {\n\tinput.request.kind.kind == \"VirtualService\"\n\toperations[input.request.operation]\n\tinput.request.object.spec.virtualHost.routes[_].options.prefixRewrite\n\tmsg
     := \"prefix re-write not allowed\"\n}\n"
 kind: ConfigMap
 metadata:
@@ -109,10 +106,13 @@ metadata:
   uid: 2de8732f-c33b-11e9-8be1-42010a8000dc
 {{< /highlight >}}
 
+---
+
 ## Verify
 
 Time to test!
-we have prepared two virtual services for testing:
+
+We have prepared two virtual services for testing:
 
 <details><summary>[vs-ok.yaml](vs-ok.yaml)</summary>
 ```
@@ -134,20 +134,32 @@ virtualservice.gateway.solo.io/default created
 ```shell
 kubectl apply -f vs-err.yaml
 Error from server (prefix re-write not allowed): error when applying patch:
-{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"name\":\"gloo-system.default\",\"routes\":[{\"matcher\":{\"exact\":\"/sample-route-1\"},\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}},\"routePlugins\":{\"prefixRewrite\":{\"prefixRewrite\":\"/api/pets\"}}}]}}}\n"}},"spec":{"virtualHost":{"routes":[{"matcher":{"exact":"/sample-route-1"},"routeAction":{"single":{"upstream":{"name":"default-petstore-8080","namespace":"gloo-system"}}},"routePlugins":{"prefixRewrite":{"prefixRewrite":"/api/pets"}}}]}}}
+{"metadata":{"annotations":{"kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"routes\":[{\"matchers\":[{\"exact\":\"/sample-route-1\"}],\"options\":{\"prefixRewrite\":\"/api/pets\"},\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}}}]}}}\n"}},"spec":{"virtualHost":{"routes":[{"matchers":[{"exact":"/sample-route-1"}],"options":{"prefixRewrite":"/api/pets"},"routeAction":{"single":{"upstream":{"name":"default-petstore-8080","namespace":"gloo-system"}}}}]}}}
 to:
 Resource: "gateway.solo.io/v1, Resource=virtualservices", GroupVersionKind: "gateway.solo.io/v1, Kind=VirtualService"
 Name: "default", Namespace: "gloo-system"
-Object: &{map["apiVersion":"gateway.solo.io/v1" "kind":"VirtualService" "metadata":map["annotations":map["kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"name\":\"gloo-system.default\",\"routes\":[{\"matcher\":{\"exact\":\"/sample-route-1\"},\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}}}]}}}\n"] "creationTimestamp":"2019-08-20T11:09:00Z" "generation":'\x01' "name":"default" "namespace":"gloo-system" "resourceVersion":"39558469" "selfLink":"/apis/gateway.solo.io/v1/namespaces/gloo-system/virtualservices/default" "uid":"e99ba1a0-c33a-11e9-8be1-42010a8000dc"] "spec":map["virtualHost":map["domains":["*"] "name":"gloo-system.default" "routes":[map["matcher":map["exact":"/sample-route-1"] "routeAction":map["single":map["upstream":map["name":"default-petstore-8080" "namespace":"gloo-system"]]]]]]] "status":map["reported_by":"gateway" "state":'\x01' "subresource_statuses":map["*v1.Proxy gloo-system gateway-proxy":map["reported_by":"gloo" "state":'\x01']]]]}
+Object: &{map["apiVersion":"gateway.solo.io/v1" "kind":"VirtualService" "metadata":map["annotations":map["kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"gateway.solo.io/v1\",\"kind\":\"VirtualService\",\"metadata\":{\"annotations\":{},\"name\":\"default\",\"namespace\":\"gloo-system\"},\"spec\":{\"virtualHost\":{\"domains\":[\"*\"],\"routes\":[{\"matchers\":[{\"exact\":\"/sample-route-1\"}],\"routeAction\":{\"single\":{\"upstream\":{\"name\":\"default-petstore-8080\",\"namespace\":\"gloo-system\"}}}}]}}}\n"] "creationTimestamp":"2020-01-29T14:41:28Z" "generation":'\x06' "name":"default" "namespace":"gloo-system" "resourceVersion":"7076134" "selfLink":"/apis/gateway.solo.io/v1/namespaces/gloo-system/virtualservices/default" "uid":"6ed4d802-42a5-11ea-84a5-56542bf21e7d"] "spec":map["virtualHost":map["domains":["*"] "routes":[map["matchers":[map["exact":"/sample-route-1"]] "routeAction":map["single":map["upstream":map["name":"default-petstore-8080" "namespace":"gloo-system"]]]]]]] "status":map["reported_by":"gateway" "state":'\x01' "subresource_statuses":map["*v1.Proxy.gloo-system.gateway-proxy":map["reported_by":"gloo" "state":'\x01']]]]}
 for: "vs-err.yaml": admission webhook "validating-webhook.openpolicyagent.org" denied the request: prefix re-write not allowed
 ```
+
+---
 
 ## Cleanup
 you can use the [teardown.sh](teardown.sh) to clean-up the resources created in this document.
 
-For your convenience, here's the content of teardown.sh (click to reveal):
-<details><summary>[teardown.sh](teardown.sh)</summary>
+For your convenience, here's the content of teardown.sh:
 ```
 {{% readfile file="security/opa/teardown.sh" %}}
 ```
-</details>
+
+---
+
+## Next Steps
+
+Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security featuers in Gloo.
+
+* [**Web Application Firewall**]({{% versioned_link_path fromRoot="/security/waf/" %}})
+* [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/security/data_loss_prevention/" %}})
+* [**Cross-Origin Resource Sharing**]({{% versioned_link_path fromRoot="/security/cors/" %}})
+
+Or you might want to learn more about the various features available to [Routes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/" %}}) on a [Virtual Service]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/" %}}).

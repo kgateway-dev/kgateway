@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Fix extauth plugin manifest example on docs.
+  issueLink: https://github.com/solo-io/gloo/issues/2294

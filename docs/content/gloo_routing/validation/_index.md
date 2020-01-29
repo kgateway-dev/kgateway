@@ -88,7 +88,7 @@ If using Helm to manage settings, set the following value:
 
 If writing Settings directly to Kubernetes, add the following to the `spec.gateway` block:
 
-{{< highlight yaml "hl_lines=13-15" >}}
+{{< highlight yaml "hl_lines=10-12" >}}
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
@@ -111,24 +111,25 @@ spec:
 
 Once these are applied to the cluster, we can test that validation is enabled:
 
-
 ```bash
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   name: reject-me
-  namespace: default
+  namespace: gloo-system
 spec:
   virtualHost:
     routes:
-      # this route is missing a path specifier and will be rejected
-      - matcher: {}
-        routeAction:
-          single:
-            upstream:
-              name: does-not-exist
-              namespace: anywhere
+    - matchers:
+      - headers:
+        - name: foo
+          value: bar
+      routeAction:
+        single:
+          upstream:
+            name: does-not-exist
+            namespace: gloo-system
 EOF
 
 ```
