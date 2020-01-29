@@ -5,7 +5,7 @@ syntax = "proto3";
 package envoy.config.filter.http.gzip.v2;
 
 // manually updated this line:
-option go_package = "github.com/solo-io/gloo/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2";
 
 // manually added equal_all:
 import "gogoproto/gogo.proto";

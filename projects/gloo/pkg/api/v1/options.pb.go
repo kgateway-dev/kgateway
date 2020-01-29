@@ -6,13 +6,10 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-	time "time"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
-	v2 "github.com/solo-io/gloo/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2"
+	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	dlp "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
@@ -40,6 +37,8 @@ import (
 	tracing "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 	wasm "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
+	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
