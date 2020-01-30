@@ -13,6 +13,7 @@ metadata:
     app: gloo
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpPort }}
@@ -38,6 +39,7 @@ metadata:
     app: gloo
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpsPort }}

@@ -9,6 +9,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
   gloo:
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
