@@ -118,7 +118,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-randomizeSuites', '-noColor']
   waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
@@ -180,7 +180,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
     - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-noColor', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-randomizeSuites', '-noColor', 'test/kube2e']
   waitFor: ['build-test-assets', 'docker-push']
   id: 'regression-tests'
 
@@ -198,7 +198,7 @@ steps:
     - 'CLUSTER_LOCK_TESTS=1'
     - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-randomizeSuites', '-noColor', 'test/kube2e']
   waitFor: ['build-test-assets', 'docker-push', 'get-regression-clusterlock-credentials']
   id: 'regression-tests-cluster-lock'
 
