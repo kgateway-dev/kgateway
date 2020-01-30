@@ -311,7 +311,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() error {
 					_, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 					return err
-				}, time.Second*5, time.Second).ShouldNot(HaveOccurred())
+				}, time.Second*10, time.Second).ShouldNot(HaveOccurred())
 				Expect(err).NotTo(HaveOccurred())
 
 				defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
