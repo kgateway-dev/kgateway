@@ -4,6 +4,6 @@ changelog:
     Settings and Gateway resources currently get automatically created when the `gloo` and `gateway` pods
     (respectively) start up. This creates a race condition with our installation that we currently solve by
     creating our default Settings and Gateways as Helm Hook resources, which means that they are not
-    managed as a part of the Helm release lifecycle. This is fixed by no longer creating those resources
-    if they do not exist when the pods start up.
+    managed as a part of the Helm release lifecycle. With this change removes the automatic generation feature.
+    Note that the default Settings and Gateway resources in the Helm chart are still marked as Helm hooks.
   issueLink: https://github.com/solo-io/gloo/issues/1828
