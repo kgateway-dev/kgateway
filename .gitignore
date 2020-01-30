@@ -1,5 +1,4 @@
-vendor
-.vendor-new
+vendor*
 _output
 _test
 _artifacts
