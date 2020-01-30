@@ -632,16 +632,26 @@ var _ = Describe("Kube2e: gateway", func() {
 				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
+				Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeNil())
 				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
 
 				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
 				Expect(err).NotTo(HaveOccurred())
 
+				// FDS should update the upstream with discovered rest spec
+				Eventually(func() interface{} {
+					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+					Expect(err).ToNot(HaveOccurred())
+					fmt.Println(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl())
+					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
+				}, "10s", "1s").ShouldNot(BeNil())
+
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
+				// TODO(kdorosh) is this event/notification being dropped?
 
 				// TODO(kdorosh) fix this bug, this shouldn't be required
-				// change vs to ensure that gateway resync is called
+				// change vs to ensure proxy gets updated so Gloo updates proxy status
 				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
 				vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
