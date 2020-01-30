@@ -12,7 +12,7 @@ import (
 
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/healthcheck"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"

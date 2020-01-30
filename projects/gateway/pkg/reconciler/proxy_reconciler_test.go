@@ -24,7 +24,7 @@ import (
 
 	"context"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 

@@ -4,7 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 )
 
 const (

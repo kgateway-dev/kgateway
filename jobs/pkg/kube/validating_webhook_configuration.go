@@ -3,7 +3,7 @@ package kube
 import (
 	"context"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/contextutils"
 	"go.uber.org/zap"
 	"k8s.io/api/admissionregistration/v1beta1"

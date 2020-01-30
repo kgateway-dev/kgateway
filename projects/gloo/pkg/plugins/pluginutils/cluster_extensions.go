@@ -5,7 +5,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 )
 
 func SetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {

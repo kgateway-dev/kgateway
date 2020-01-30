@@ -213,7 +213,8 @@ var _ = Describe("Robustness tests", func() {
 		// required to prevent gateway webhook from rejecting
 		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
 
-		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("wait for proxy to enter warning state")
