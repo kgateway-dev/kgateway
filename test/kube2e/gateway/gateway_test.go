@@ -580,7 +580,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			PIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -643,7 +643,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 					Expect(err).ToNot(HaveOccurred())
 					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
-				}, "20s", "1s").ShouldNot(BeEmpty())
+				}, "10s", "1s").ShouldNot(BeEmpty())
 
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
@@ -671,7 +671,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}, "20s", "0.5s").Should(Equal(core.Status_Accepted))
+				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
 
