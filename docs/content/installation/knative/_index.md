@@ -6,7 +6,7 @@ weight: 3
 
 For the purpose of running Knative, Gloo can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
 
-This guide walks you through installing Gloo and Knative using eith `glooctl` (the Gloo command line) or Helm. 
+This guide walks you through installing Gloo and Knative using either `glooctl` (the Gloo command line) or Helm. 
 
 {{% notice note %}}
 `glooctl` generates a manifest which can be piped to stdout or a file using the `--dry-run` flag. Alternatively, Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes#installing-on-kubernetes-with-helm" >}}), which will permit fine-grained configuration of installation parameters.
