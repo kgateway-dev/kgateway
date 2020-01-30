@@ -109,7 +109,7 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 	}
 
 	// if this is a leaf and there are no named routes in the tree, wipe the name
-	if _, ok := gatewayRoute.Action.(*gatewayv1.Route_DelegateAction); !ok && !rv.containsNamedRoute {
+	if gatewayRoute.GetDelegateAction() == nil && !rv.containsNamedRoute {
 		glooRoute.Name = ""
 	}
 

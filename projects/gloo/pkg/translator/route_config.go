@@ -170,7 +170,7 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []*envoyro
 			Match: &match,
 		}
 		if in.Name != "" {
-			out[i].Name = fmt.Sprintf(in.Name+"-%d", i)
+			out[i].Name = fmt.Sprintf("%s-%d", in.Name, i)
 		}
 	}
 
