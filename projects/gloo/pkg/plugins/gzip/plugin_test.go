@@ -35,7 +35,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter{
-					Name: "envoy.health_check",
+					Name: "envoy.gzip",
 					ConfigType: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter_Config{
 						Config: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
@@ -69,8 +69,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 				Stage: plugins.FilterStage{
-					RelativeTo: 4,
-					Weight:     1,
+					RelativeTo: 8,
+					Weight:     0,
 				},
 			},
 		}))
