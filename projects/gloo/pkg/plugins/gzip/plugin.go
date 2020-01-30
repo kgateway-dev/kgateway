@@ -8,8 +8,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-// filter info
-var pluginStage = plugins.AfterStage(plugins.AuthZStage)
+// filter should be called after routing decision has been made
+var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
 const filterName = util.Gzip
 
