@@ -108,7 +108,7 @@ Let's edit the `productpage` upstream and tell Gloo to use the secrets that are 
 
 Edit the upstream with the command `kubectl edit upstream default-productpage-9080 --namespace gloo-system`. The updated upstream should look like this:
 
-{{< highlight yaml "hl_lines=20-24" >}}
+{{< highlight yaml "hl_lines=19-23" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -249,7 +249,7 @@ Next, we need to update the `productpage` upstream with the appropriate SDS conf
 kubectl edit upstream default-productpage-9080  -n gloo-system
 ```
 
-{{< highlight yaml "hl_lines=24-32" >}}
+{{< highlight yaml "hl_lines=23-31" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -363,7 +363,7 @@ And in the upstream, point to the new location of the projected token:
 kubectl edit upstream default-productpage-9080  -n gloo-system
 ```
 
-{{< highlight yaml "hl_lines=17" >}}
+{{< highlight yaml "hl_lines=16" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 spec:
