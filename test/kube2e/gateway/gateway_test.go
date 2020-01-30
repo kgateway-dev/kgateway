@@ -534,26 +534,9 @@ var _ = Describe("Kube2e: gateway", func() {
 				invalidVs.VirtualHost = validVh
 				validVs.VirtualHost = invalidVh
 
-				// TODO(kdorosh) hacky let's get around this error by wrapping both of these in eventually:
-				// invalid resource version gateway-test-7563-1.i-am-invalid given , expected 52074978
-				Eventually(func() error {
-					_, err = virtualServiceClient.Write(validVs, clients.WriteOpts{OverwriteExisting: true})
-					if err != nil && strings.Contains(err.Error(), "invalid resource version") {
-						updatedValidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, validVsName, clients.ReadOpts{})
-						Expect(err).To(BeNil())
-						validVs.Metadata.ResourceVersion = updatedValidVs.Metadata.ResourceVersion
-					}
-					return err
-				}, "10s", "0.5s").ShouldNot(HaveOccurred())
-				Eventually(func() error {
-					_, err = virtualServiceClient.Write(invalidVs, clients.WriteOpts{OverwriteExisting: true})
-					if err != nil && strings.Contains(err.Error(), "invalid resource version") {
-						updatedInvalidVs, err := virtualServiceClient.Read(testHelper.InstallNamespace, invalidVsName, clients.ReadOpts{})
-						Expect(err).To(BeNil())
-						invalidVs.Metadata.ResourceVersion = updatedInvalidVs.Metadata.ResourceVersion
-					}
-					return err
-				}, "10s", "0.5s").ShouldNot(HaveOccurred())
+				virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+				err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{validVs, invalidVs}, nil, clients.ListOpts{})
+				Expect(err).NotTo(HaveOccurred())
 
 				// the original virtual service should work
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
