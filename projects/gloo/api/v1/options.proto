@@ -88,7 +88,11 @@ message HttpListenerOptions {
     // data returned from an upstream service upon client request.
     // Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
     // Example:
-    //
+    // ```
+    // gzip:
+    //  contentType: "application/json"
+    //  compressionLevel: BEST
+    // ```
     envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
 }
 
