@@ -1614,12 +1614,12 @@
   version = "v1.0.7"
 
 [[projects]]
-  digest = "1:c8186817f64b4452516bac70ee6807a7dcea75f76887af1be2d61471e6f11648"
+  digest = "1:63cf1ee4ea80ad7859f392c2a0bfcf4aa2aa714417faee3a8a4d84d7fba2aa16"
   name = "github.com/rotisserie/eris"
   packages = ["."]
   pruneopts = "UT"
-  revision = "6d094599cddc73f69602968b4511636c06d0e2da"
-  version = "v0.2.1"
+  revision = "db68646630744108b022bbbe145fbb93c5db80c9"
+  version = "v0.1.1"
 
 [[projects]]
   digest = "1:2ee0f15eb0fb04f918db7c2dcf39745f40d69f798ef171610a730e8a56aaa4fd"
