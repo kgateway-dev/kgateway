@@ -770,7 +770,7 @@ metadata:
   name: default
   namespace: ` + namespace + `
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
 spec:
  discovery:
    fdsMode: WHITELIST

@@ -12,7 +12,7 @@ metadata:
   labels:
     app: gloo
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpPort }}
@@ -37,7 +37,7 @@ metadata:
   labels:
     app: gloo
   annotations:
-    "helm.sh/hook": pre-install
+    "helm.sh/hook": pre-install,pre-upgrade
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpsPort }}

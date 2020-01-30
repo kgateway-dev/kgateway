@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Allow updating settings and default gateway resources when upgrading via Helm.
+  issueLink: https://github.com/solo-io/gloo/issues/2317
