@@ -184,6 +184,8 @@ The `glooctl` tool merges those descriptors into the Gloo Settings manifest as f
 apiVersion: gloo.solo.io/v1
 kind: Settings
 metadata:
+  annotations:
+    helm.sh/hook: pre-install
   labels:
     app: gloo
     gloo: settings

@@ -769,6 +769,8 @@ metadata:
     app: gloo
   name: default
   namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
  discovery:
    fdsMode: WHITELIST

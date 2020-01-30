@@ -11,6 +11,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpPort }}
@@ -34,6 +36,8 @@ metadata:
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpsPort }}

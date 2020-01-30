@@ -7,6 +7,8 @@ metadata:
     app: gloo
   name: default
   namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   gloo:
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
