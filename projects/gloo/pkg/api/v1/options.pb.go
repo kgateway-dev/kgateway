@@ -138,7 +138,12 @@ type HttpListenerOptions struct {
 	// data returned from an upstream service upon client request.
 	// Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
 	// Example:
-	//
+	// ```
+	// gzip:
+	//  contentType:
+	//  - "application/json"
+	//  compressionLevel: BEST
+	// ```
 	Gzip                 *v2.Gzip `protobuf:"bytes,8,opt,name=gzip,proto3" json:"gzip,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`

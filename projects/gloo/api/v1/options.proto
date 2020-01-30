@@ -90,7 +90,8 @@ message HttpListenerOptions {
     // Example:
     // ```
     // gzip:
-    //  contentType: "application/json"
+    //  contentType:
+    //  - "application/json"
     //  compressionLevel: BEST
     // ```
     envoy.config.filter.http.gzip.v2.Gzip gzip = 8;
