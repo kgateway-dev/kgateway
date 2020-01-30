@@ -632,7 +632,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeNil())
+				Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
 				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
 
 				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
@@ -644,7 +644,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					Expect(err).ToNot(HaveOccurred())
 					fmt.Println(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl())
 					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
-				}, "10s", "1s").ShouldNot(BeNil())
+				}, "10s", "1s").ShouldNot(BeEmpty())
 
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
