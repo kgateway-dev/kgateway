@@ -11,6 +11,8 @@ import (
 // filter info
 var pluginStage = plugins.AfterStage(plugins.AuthZStage)
 
+const filterName = util.Gzip
+
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -33,7 +35,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	gzipFilter, err := plugins.NewStagedFilterWithConfig(util.HealthCheck, gzipConfig, pluginStage)
+	gzipFilter, err := plugins.NewStagedFilterWithConfig(filterName, gzipConfig, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}
