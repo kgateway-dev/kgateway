@@ -642,9 +642,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				Eventually(func() interface{} {
 					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 					Expect(err).ToNot(HaveOccurred())
-					fmt.Println(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl())
 					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
-				}, "10s", "1s").ShouldNot(BeEmpty())
+				}, "20s", "1s").ShouldNot(BeEmpty())
 
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
@@ -672,7 +671,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				}, "20s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
 
