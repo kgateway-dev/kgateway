@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  description: Remove occurrences of deprecated hash functions.
+  issueLink: https://github.com/solo-io/gloo/issues/2275
+- type: FIX
+  description: Remove unnecessary unmarshalling in `ConfigMap` converter.
+  issueLink: https://github.com/solo-io/gloo/issues/2277
