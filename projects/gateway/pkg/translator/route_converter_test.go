@@ -222,6 +222,98 @@ var _ = Describe("route merge util", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
+
+		It("builds correct route name when the parent route is named", func() {
+			ref := core.ResourceRef{
+				Name: "any",
+			}
+			route := &v1.Route{
+				Name:     "route1",
+				Matchers: []*matchers.Matcher{{}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &ref,
+						},
+					},
+				},
+			}
+			rt := v1.RouteTable{
+				Routes: []*v1.Route{{
+					Name:     "",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_DirectResponseAction{},
+				}, {
+					Name:     "redirectAction",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_RedirectAction{},
+				}, {
+					Name:     "routeAction",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_RouteAction{},
+				}},
+				Metadata: core.Metadata{
+					Name: "any",
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{Metadata: core.Metadata{Name: "vs1"}}
+
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(converted).To(HaveLen(3))
+			Expect(converted[0].Name).To(Equal("vs:vs1_route:route1_rt:any_route:<unnamed>"))
+			Expect(converted[1].Name).To(Equal("vs:vs1_route:route1_rt:any_route:redirectAction"))
+			Expect(converted[2].Name).To(Equal("vs:vs1_route:route1_rt:any_route:routeAction"))
+		})
+
+		It("builds correct route name when the parent route is unnamed", func() {
+			ref := core.ResourceRef{
+				Name: "any",
+			}
+			route := &v1.Route{
+				Matchers: []*matchers.Matcher{{}},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &ref,
+						},
+					},
+				},
+			}
+			rt := v1.RouteTable{
+				Routes: []*v1.Route{{
+					Name:     "directResponseAction",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_DirectResponseAction{},
+				}, {
+					Name:     "",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_RedirectAction{},
+				}, {
+					Name:     "routeAction",
+					Matchers: []*matchers.Matcher{},
+					Action:   &v1.Route_RouteAction{},
+				}},
+				Metadata: core.Metadata{
+					Name: "any",
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{Metadata: core.Metadata{Name: "vs1"}}
+
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+
+			Expect(err).NotTo(HaveOccurred())
+			Expect(converted).To(HaveLen(3))
+			Expect(converted[0].Name).To(Equal("vs:vs1_route:<unnamed>_rt:any_route:directResponseAction"))
+			Expect(converted[1].Name).To(Equal(""))
+			Expect(converted[2].Name).To(Equal("vs:vs1_route:<unnamed>_rt:any_route:routeAction"))
+		})
+
 	})
 
 	When("bad route table config", func() {
@@ -292,6 +384,7 @@ var _ = Describe("route merge util", func() {
 				},
 				Routes: []*v1.Route{
 					{
+						Name: "simpleRouteName",
 						Matchers: []*matchers.Matcher{
 							{
 								PathSpecifier: &matchers.Matcher_Prefix{
@@ -349,6 +442,12 @@ var _ = Describe("route merge util", func() {
 					},
 				},
 			}
+		}
+
+		buildRouteWithName := func(rtSelector *v1.RouteTableSelector, routeName string) *v1.Route {
+			route := buildRoute(rtSelector)
+			route.Name = routeName
+			return route
 		}
 
 		getFirstPrefixMatcher := func(route *gloov1.Route) string {
@@ -485,6 +584,49 @@ var _ = Describe("route merge util", func() {
 					[]string{"/foo/6", "/foo/6", "/foo/4", "/foo/3", "/foo/2", "/foo/2", "/foo/1"},
 				),
 			)
+
+			DescribeTable("route naming works as expected",
+				func(selector *v1.RouteTableSelector, routeName string, expectedNames []string) {
+					converted, err := visitor.ConvertRoute(buildRouteWithName(selector, routeName))
+					Expect(err).NotTo(HaveOccurred())
+					Expect(converted).To(HaveLen(len(expectedNames)))
+					for i, name := range expectedNames {
+						Expect(converted[i].Name).To(Equal(name))
+					}
+				},
+
+				Entry("when one delegate action matches multiple route tables",
+					&v1.RouteTableSelector{},
+					"testRouteName",
+					[]string{"vs:vs-1_route:testRouteName_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:testRouteName_rt:rt-1_route:simpleRouteName"},
+				),
+
+				Entry("when we have multiple levels of delegation",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-4"},
+					},
+					"topLevelRoute",
+					[]string{"vs:vs-1_route:topLevelRoute_rt:rt-5_route:<unnamed>_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-5_route:<unnamed>_rt:rt-2_route:simpleRouteName"},
+				),
+
+				// rt-1 and rt-6 are selected both directly by the below selector and indirectly via rt-5.
+				Entry("when a route table is selected by multiple route tables",
+					&v1.RouteTableSelector{
+						Namespaces: []string{"ns-1", "*"},
+					},
+					"topLevelRoute",
+					[]string{"vs:vs-1_route:topLevelRoute_rt:rt-5_route:<unnamed>_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-6_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-4_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-3_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-5_route:<unnamed>_rt:rt-2_route:simpleRouteName",
+						"vs:vs-1_route:topLevelRoute_rt:rt-1_route:simpleRouteName"},
+				),
+			)
+
 		})
 
 		When("there are circular references", func() {

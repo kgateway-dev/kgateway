@@ -68,17 +68,24 @@ type routeVisitor struct {
 	visited gatewayv1.RouteTableList
 	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
 	reports reporter.ResourceReports
+	// Used to keep track of the long name of a route as we traverse the tree toward it, including vs, route, and route table ancestors.
+	// Ex name: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
+	nameTree string
+	// used to keep track of whether there is a named route anywhere in the tree for naming purposes
+	containsNamedRoute bool
 }
 
 // Initializes and returns a route converter instance.
 // - root: root of the subtree of routes that we are going to visit; used primarily as a target to report errors and warnings on.
 // - tables: all the route tables that should be considered when resolving delegation chains.
 // - reports: this object will be updated with errors and warnings encountered during the conversion process.
-func NewRouteConverter(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
+func NewRouteConverter(root *gatewayv1.VirtualService, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
+
 	return &routeVisitor{
 		rootResource: root,
 		tables:       tables,
 		reports:      reports,
+		nameTree:     "vs:" + root.Metadata.Name,
 	}
 }
 
@@ -88,9 +95,22 @@ func (rv *routeVisitor) ConvertRoute(gatewayRoute *gatewayv1.Route) ([]*gloov1.R
 		matchers = gatewayRoute.Matchers
 	}
 
+	routeDisplayName := gatewayRoute.Name
+	if routeDisplayName == "" {
+		routeDisplayName = "<unnamed>"
+	} else {
+		rv.containsNamedRoute = true
+	}
+	rv.nameTree += "_route:" + routeDisplayName
 	glooRoute := &gloov1.Route{
 		Matchers: matchers,
 		Options:  gatewayRoute.Options,
+		Name:     rv.nameTree,
+	}
+
+	// if this is a leaf and there are no named routes in the tree, wipe the name
+	if gatewayRoute.GetDelegateAction() == nil && !rv.containsNamedRoute {
+		glooRoute.Name = ""
 	}
 
 	switch action := gatewayRoute.Action.(type) {
@@ -209,9 +229,11 @@ func (rv *routeVisitor) selectRouteTables(delegateAction *gatewayv1.DelegateActi
 // Create a new visitor to visit the current route table
 func (rv *routeVisitor) createSubVisitor(routeTable *gatewayv1.RouteTable) *routeVisitor {
 	visitor := &routeVisitor{
-		rootResource: routeTable,
-		tables:       rv.tables,
-		reports:      rv.reports,
+		rootResource:       routeTable,
+		tables:             rv.tables,
+		reports:            rv.reports,
+		nameTree:           rv.nameTree + "_rt:" + routeTable.Metadata.Name,
+		containsNamedRoute: rv.containsNamedRoute,
 	}
 
 	// Add all route tables from the parent visitor

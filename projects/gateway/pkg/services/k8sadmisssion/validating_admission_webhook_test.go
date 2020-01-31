@@ -80,8 +80,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
 		}
 	},
-		table.Entry("invalid gateway", false, v1.GatewayCrd, gateway),
 		table.Entry("valid gateway", true, v1.GatewayCrd, gateway),
+		table.Entry("invalid gateway", false, v1.GatewayCrd, gateway),
 		table.Entry("valid virtual service", true, v1.VirtualServiceCrd, vs),
 		table.Entry("invalid virtual service", false, v1.VirtualServiceCrd, vs),
 		table.Entry("valid route table", true, v1.RouteTableCrd, routeTable),

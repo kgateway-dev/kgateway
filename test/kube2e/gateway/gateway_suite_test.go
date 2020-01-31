@@ -8,13 +8,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/gogo/protobuf/types"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -97,11 +101,11 @@ func StartTestHelper() {
 }
 
 func TearDownTestHelper() {
-	if testHelper != nil {
-		err := testHelper.UninstallGloo()
-		Expect(err).NotTo(HaveOccurred())
-		_ = testutils.Kubectl("delete", "--wait=false", "namespace", testHelper.InstallNamespace)
-	}
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
 
 // enable/disable strict validation
@@ -122,6 +126,11 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	Expect(err).NotTo(HaveOccurred())
+
+	// when validation config changes, the validation server restarts -- give time for it to come up again.
+	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
+	// what we want to test.
+	time.Sleep(3 * time.Second)
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {

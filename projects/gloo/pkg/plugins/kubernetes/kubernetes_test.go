@@ -148,8 +148,7 @@ var _ = Describe("Kubernetes", func() {
 			}
 		})
 
-		// TODO: why is this not working?
-		PIt("uses json keys when serializing", func() {
+		It("uses json keys when serializing", func() {
 			plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
 			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
 				Ctx:         context.TODO(),
@@ -157,18 +156,17 @@ var _ = Describe("Kubernetes", func() {
 			}, discovery.Opts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			for {
-				select {
-				case <-time.After(time.Second * 2):
-					Fail("no upstreams detected after 2s")
-				case upstreamList := <-upstreams:
-					Expect(upstreamList).To(HaveLen(4)) // two pods, two ports per pod
-				case err, ok := <-errs:
-					if !ok {
-						return
-					}
-					Expect(err).NotTo(HaveOccurred())
+			select {
+			case <-time.After(time.Second * 2):
+				Fail("no upstreams detected after 2s")
+			case upstreamList := <-upstreams:
+				Expect(upstreamList).To(HaveLen(4)) // two pods, two ports per pod
+				break
+			case err, ok := <-errs:
+				if !ok {
+					return
 				}
+				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 

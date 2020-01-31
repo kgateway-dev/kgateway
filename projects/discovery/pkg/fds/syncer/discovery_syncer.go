@@ -47,9 +47,9 @@ func (s *syncer) Sync(ctx context.Context, snap *v1.DiscoverySnapshot) error {
 }
 
 const (
-	FdsLabelKey       = "discovery.solo.io/function_discovery"
-	enbledLabelValue  = "enabled"
-	disbledLabelValue = "disabled"
+	FdsLabelKey        = "discovery.solo.io/function_discovery"
+	enabledLabelValue  = "enabled"
+	disabledLabelValue = "disabled"
 )
 
 func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, upstreams v1.UpstreamList, namespaces kubernetes.KubeNamespaceList) v1.UpstreamList {
@@ -74,11 +74,11 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 }
 
 func isBlacklisted(labels map[string]string) bool {
-	return labels != nil && labels[FdsLabelKey] == disbledLabelValue
+	return labels != nil && labels[FdsLabelKey] == disabledLabelValue
 }
 
 func isWhitelisted(labels map[string]string) bool {
-	return labels != nil && labels[FdsLabelKey] == enbledLabelValue
+	return labels != nil && labels[FdsLabelKey] == enabledLabelValue
 }
 
 // do not run fds on these namespaces unless explicitly enabled

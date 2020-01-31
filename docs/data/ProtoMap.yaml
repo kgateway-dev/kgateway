@@ -266,6 +266,9 @@ apis:
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaProtocolExtension:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaProtocolExtension
     package: envoy.config.filter.http.aws_lambda.v2
+  envoy.config.filter.http.gzip.v2.Gzip:
+    relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#Gzip
+    package: envoy.config.filter.http.gzip.v2
   envoy.config.filter.http.modsecurity.v2.ModSecurity:
     relativepath: api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurity
     package: envoy.config.filter.http.modsecurity.v2

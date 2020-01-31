@@ -40,6 +40,7 @@ var _ = Describe("VirtualService", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
+						Name: "testRouteName",
 						Matchers: []*matchers.Matcher{
 							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}},
 							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/bar"}},
@@ -73,8 +74,8 @@ var _ = Describe("VirtualService", func() {
 			Expect(out).To(Equal(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
-| default         |              | *       | none | Pending |                 | /foo, /bar -> gloo-system.test |
-|                 |              |         |      |         |                 | (upstream)                     |
+| default         |              | *       | none | Pending |                 | testRouteName: /foo, /bar ->   |
+|                 |              |         |      |         |                 | gloo-system.test (upstream)    |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+`))
 		})
 
@@ -86,12 +87,12 @@ var _ = Describe("VirtualService", func() {
 			out, err := testutils.GlooctlOut("get vs route default")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`Route Action
-+----+----------+-------------+-------+---------+--------------+---------+---------+
-| ID | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
-+----+----------+-------------+-------+---------+--------------+---------+---------+
-| 1  | /foo     | Path Prefix | *     |         | route action |
-|    | /bar     | Path Prefix | *     |         |              |
-+----+----------+-------------+-------+---------+--------------+---------+---------+`))
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+
+| ID |     NAME      | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+
+| 1  | testRouteName | /foo     | Path Prefix | *     |         | route action |
+|    |               | /bar     | Path Prefix | *     |         |              |
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+`))
 		})
 	})
 })

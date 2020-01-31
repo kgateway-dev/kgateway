@@ -5,11 +5,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	glooVersion "github.com/solo-io/gloo/pkg/version"
-
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	glooVersion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/installutils/helmchart"
 	"github.com/solo-io/go-utils/log"
 )

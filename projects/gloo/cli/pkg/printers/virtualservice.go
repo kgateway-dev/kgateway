@@ -182,7 +182,11 @@ func routeList(routeList []*v1.Route) []string {
 	}
 	var routes []string
 	for _, route := range routeList {
-		routes = append(routes, fmt.Sprintf("%v -> %v", matchersString(route.Matchers), destinationString(route)))
+		var namePrefix string
+		if route.Name != "" {
+			namePrefix = route.Name + ": "
+		}
+		routes = append(routes, fmt.Sprintf("%s%v -> %v", namePrefix, matchersString(route.Matchers), destinationString(route)))
 	}
 	return routes
 }

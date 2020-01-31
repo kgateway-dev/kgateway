@@ -13,7 +13,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd"
 )
