@@ -28,11 +28,7 @@ PRODUCT_SCOPE := gloo
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/e0c50784a92fb7f61c635ff9a6e3a010f636f550
-<<<<<<< HEAD
 	git -C themes/hugo-theme-soloio checkout ba9072114c4d82194605de4378c82d42e7b44c2c
-=======
-	git -C themes/hugo-theme-soloio checkout 2e6e7b5cd8998734b9a9411e04ed3ad027d2b3ea
->>>>>>> a59ba9c401130ddf03d7791f4afa246483caa482
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
