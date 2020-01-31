@@ -31,10 +31,15 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 
 			notification, err := stream.Recv()
 			if err != nil {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
 				logger.Errorw("error reading from stream. attempting to establish new stream.", zap.Error(err))
 				stream, err = startNotificationStream(ctx, client, logger)
 				if err != nil {
-					logger.Errorw("failed to resume notifications. Gateway will no longer receive validation resync notifications from Gloo.", zap.Error(err))
+					logger.Fatalw("failed to resume notifications. Gateway will no longer receive validation resync notifications from Gloo.", zap.Error(err))
 					return
 				}
 				continue
