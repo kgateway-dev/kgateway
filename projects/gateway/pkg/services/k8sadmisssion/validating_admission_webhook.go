@@ -21,7 +21,7 @@ import (
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"github.com/solo-io/go-utils/contextutils"
@@ -49,6 +49,12 @@ var (
 
 	mGatewayResourcesAccepted = utils.MakeSumCounter("validation.gateway.solo.io/resources_accepted", "The number of resources accepted")
 	mGatewayResourcesRejected = utils.MakeSumCounter("validation.gateway.solo.io/resources_rejected", "The number of resources rejected")
+
+	unmarshalErrMsg     = "could not unmarshal raw object"
+	UnmarshalErr        = errors.New(unmarshalErrMsg)
+	WrappedUnmarshalErr = func(err error) error {
+		return errors.Wrapf(err, unmarshalErrMsg)
+	}
 )
 
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
@@ -241,28 +247,21 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
 
-	success := &v1beta1.AdmissionResponse{
-		Allowed: true,
-	}
+	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, UnmarshalErr)
 
-	if validationErr == nil {
-		logger.Debug("Succeeded")
-
+	// even if validation is set to always accept, we want to fail on unmarshal errors
+	if validationErr == nil || (wh.alwaysAccept && !isUnmarshalErr) {
+		logger.Debug("Succeeded, alwaysAccept: %v validationErr: %v", wh.alwaysAccept, validationErr)
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
-
-		return success
+		return &v1beta1.AdmissionResponse{
+			Allowed: true,
+		}
 	}
 
 	incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesRejected)
-
 	logger.Errorf("Validation failed: %v", validationErr)
 
 	if len(proxyReports) > 0 {
-		if wh.alwaysAccept {
-			// if not an unmarshal error, accept the resource
-			return success
-		}
-
 		var proxyErrs []error
 		for _, rpt := range proxyReports {
 			err := validationutil.GetProxyError(rpt)
@@ -367,7 +366,7 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
 	var gw gwv1.Gateway
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
-		return nil, errors.Wrapf(err, "could not unmarshal raw object")
+		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(gw.Metadata.Annotations) {
 		return nil, nil
@@ -381,7 +380,7 @@ func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson
 func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
 	var vs gwv1.VirtualService
 	if err := protoutils.UnmarshalResource(rawJson, &vs); err != nil {
-		return nil, errors.Wrapf(err, "could not unmarshal raw object")
+		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(vs.Metadata.Annotations) {
 		return nil, nil
@@ -395,7 +394,7 @@ func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, 
 func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
 	var rt gwv1.RouteTable
 	if err := protoutils.UnmarshalResource(rawJson, &rt); err != nil {
-		return nil, errors.Wrapf(err, "could not unmarshal raw object")
+		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(rt.Metadata.Annotations) {
 		return nil, nil
