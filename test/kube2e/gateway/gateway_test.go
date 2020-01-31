@@ -622,11 +622,12 @@ var _ = Describe("Kube2e: gateway", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				// FDS should update the upstream with discovered rest spec
+				// it can take a long time for this to happen, perhaps petstore wasn't healthy yet?
 				Eventually(func() interface{} {
 					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 					Expect(err).ToNot(HaveOccurred())
 					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
-				}, "10s", "1s").ShouldNot(BeEmpty())
+				}, "120s", "1s").ShouldNot(BeEmpty())
 
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
