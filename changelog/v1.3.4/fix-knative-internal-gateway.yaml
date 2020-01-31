@@ -1,4 +1,7 @@
 changelog:
   - type: FIX
-    description: Ensure Knative Services are exposed on the internal Knative proxy.
+    description: >
+      Ensure Knative Services are exposed on the internal Knative proxy. currently this assumption is made but not documented
+      by Knative's visibility setting: [knative/serving#6642](https://github.com/knative/serving/issues/6642). In order for Knative Eventing to work with Gloo,
+       Gloo must load cluster-local services on the internal proxy as well.
     issueLink: https://github.com/solo-io/gloo/issues/2336
