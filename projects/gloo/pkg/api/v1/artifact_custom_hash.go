@@ -12,7 +12,7 @@ import (
 // This is a custom implementation of the `SafeHasher` interface for Artifacts.
 // If works just as its generated counterpart, except that it includes `ResourceVersion` instead of `Data` in the hash.
 func (m *Artifact) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
+	if m == nil || m.Metadata.Name == "gloo-usage" {
 		return 0, nil
 	}
 	if hasher == nil {
