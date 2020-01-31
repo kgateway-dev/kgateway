@@ -29,7 +29,7 @@ Next, add Gloo to your path with:
 
 Verify the CLI is installed and running correctly with:
 
-`glooctl --version`
+`glooctl version`
 
 #### 2. Install Knative and Gloo to your Kubernetes Cluster using Glooctl
 

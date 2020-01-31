@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Ensure Knative Services are exposed on the internal Knative proxy.
+    issueLink: https://github.com/solo-io/gloo/issues/2336
