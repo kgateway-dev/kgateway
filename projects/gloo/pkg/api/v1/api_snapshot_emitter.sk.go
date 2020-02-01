@@ -3,6 +3,9 @@
 package v1
 
 import (
+	"fmt"
+	"github.com/solo-io/gloo/test/debugprint"
+	"log"
 	"sync"
 	"time"
 
@@ -442,6 +445,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	/* Initialize snapshot for AuthConfigs */
 	currentSnapshot.AuthConfigs = initialAuthConfigList.Sort()
 
+	var lastSnapshot ApiSnapshot
+
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
 		// sent initial snapshot to kick off the watch
@@ -463,11 +468,17 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				return
 			}
 
+			prevyaml := debugprint.SprintAny(lastSnapshot)
+			curYaml := debugprint.SprintAny(currentSnapshot)
+			fmt.Println(prevyaml)
+			fmt.Println(curYaml)
+
 			sentSnapshot := currentSnapshot.Clone()
 			select {
 			case snapshots <- &sentSnapshot:
 				stats.Record(ctx, mApiSnapshotOut.M(1))
 				previousHash = currentHash
+				lastSnapshot = currentSnapshot
 			default:
 				stats.Record(ctx, mApiSnapshotMissed.M(1))
 			}
@@ -550,7 +561,19 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 				for _, proxies := range proxiesByNamespace {
 					proxyList = append(proxyList, proxies...)
 				}
+				oldProxies := currentSnapshot.Proxies
+				oldHash, _ := currentSnapshot.Hash(nil)
+
 				currentSnapshot.Proxies = proxyList.Sort()
+
+				newHash, _ := currentSnapshot.Hash(nil)
+
+				if oldHash != newHash {
+					debugprint.PrintAny(currentSnapshot.Proxies)
+					log.Print("dfajwifawiulfhawd")
+					debugprint.PrintAny(oldProxies)
+					log.Print(oldProxies)
+				}
 			case upstreamGroupNamespacedList := <-upstreamGroupChan:
 				record()
 

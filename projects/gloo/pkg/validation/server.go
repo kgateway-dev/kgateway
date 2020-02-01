@@ -2,6 +2,8 @@ package validation
 
 import (
 	"context"
+	"fmt"
+	"github.com/solo-io/gloo/test/debugprint"
 	"sync"
 
 	"github.com/rotisserie/eris"
@@ -57,14 +59,26 @@ func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
 		return hash
 	}
 
+	ret := hashFunc(s.latestSnapshot) != hashFunc(snap)
+
+	if ret == true {
+		ye := debugprint.SprintAny(s.latestSnapshot)
+		ye2 := debugprint.SprintAny(snap)
+		fmt.Println(ye)
+		fmt.Println("---")
+		fmt.Println(ye2)
+	}
+
 	// notify if the hash of what we care about has changed
-	return hashFunc(s.latestSnapshot) != hashFunc(snap)
+	return ret
 }
 
 // only call within a lock
 // notify all receivers
 func (s *validator) pushNotifications() {
+	fmt.Println("pushing notifications")
 	for _, receiver := range s.notifyResync {
+		fmt.Println(fmt.Sprintf("pushing notification for receiver %v", receiver))
 		receiver := receiver
 		go func() {
 			select {

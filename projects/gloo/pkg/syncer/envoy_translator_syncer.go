@@ -175,8 +175,10 @@ func (s *translatorSyncer) syncEnvoy(ctx context.Context, snap *v1.ApiSnapshot) 
 			"routes", routesLen,
 			"endpoints", endpointsLen)
 
-		logger.Debugf("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
+		logger.Infof("Full snapshot for proxy %v: %v", proxy.Metadata.Name, xdsSnapshot)
 	}
+
+	fmt.Println(fmt.Sprintf("gloo reports: %v", allReports))
 
 	if err := s.reporter.WriteReports(ctx, allReports, nil); err != nil {
 		logger.Debugf("Failed writing report for proxies: %v", err)

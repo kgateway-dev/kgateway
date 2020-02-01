@@ -1,6 +1,7 @@
 package services
 
 import (
+	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	"net"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"context"
@@ -120,10 +120,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	glooOpts.ValidationServer.BindAddr.(*net.TCPAddr).Port = int(runOptions.ValidationPort)
-	if !runOptions.WhatToRun.DisableGateway {
-		opts := defaultTestConstructOpts(ctx, runOptions)
-		go gatewaysyncer.RunGateway(opts)
-	}
 
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
@@ -133,6 +129,15 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+
+	time.Sleep(10 * time.Second)
+
+	// gloo is dependency of gateway, needs to run second
+	if !runOptions.WhatToRun.DisableGateway {
+		opts := defaultTestConstructOpts(ctx, runOptions)
+		go gatewaysyncer.RunGateway(opts)
+	}
+
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
@@ -198,6 +203,15 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 			RefreshRate: time.Minute,
 		},
 		DevMode: false,
+		Validation: &translator.ValidationOpts{
+			ProxyValidationServerAddress: "127.0.0.1:9988", // gloo:9988 the default, we can remove this
+			ValidatingWebhookPort:        8081,
+			ValidatingWebhookCertPath:    "",
+			ValidatingWebhookKeyPath:     "",
+			IgnoreProxyValidationFailure: false,
+			AlwaysAcceptResources:        true,
+			AllowMissingLinks:            false,
+		},
 	}
 }
 

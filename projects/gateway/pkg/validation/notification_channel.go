@@ -2,6 +2,7 @@ package validation
 
 import (
 	"context"
+	"fmt"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -32,10 +33,12 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 
 			notification, err := stream.Recv()
 			logger.Debugf("received notification", zap.Any("notification", notification), zap.Error(err))
+			fmt.Println("received notification")
 
 			select {
 			case notifications <- struct{}{}:
 				logger.Debugf("sent notification to notifications channel")
+				fmt.Println("sent notification to notifications channel")
 			default:
 				logger.Warnf("dropping notification")
 			}
@@ -49,7 +52,7 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 				logger.Errorw("error reading from stream. attempting to establish new stream.", zap.Error(err))
 				stream, err = startNotificationStream(ctx, client, logger)
 				if err != nil {
-					logger.Fatalf("failed to resume notifications. Gateway will no longer receive validation resync notifications from Gloo.", zap.Error(err))
+					logger.Errorf("failed to resume notifications. Gateway will no longer receive validation resync notifications from Gloo.", zap.Error(err))
 					return
 				}
 				continue

@@ -7,8 +7,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/go-utils/hashutils"
-	"go.uber.org/zap/zapcore"
-
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -52,7 +50,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Debugw("begin sync", zap.Any("snapshot", snap.Stringer()))
+	logger.Info("begin sync", zap.Any("snapshot", snap.Stringer()))
 	snapHash := hashutils.MustHash(snap)
 	logger.Infof("begin sync %v (%v virtual services, %v gateways, %v route tables)", snapHash,
 		len(snap.VirtualServices), len(snap.Gateways), len(snap.RouteTables))
@@ -60,9 +58,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 
 	// stringify-ing the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		logger.Debug(syncutil.StringifySnapshot(snap))
-	}
+	//if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Info(syncutil.StringifySnapshot(snap))
+	//}
 
 	labels := map[string]string{
 		"created_by": "gateway",
@@ -89,6 +87,10 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	// repeat for all resources
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
+		fmt.Println(fmt.Sprintf("reports: %v", reports))
+		fmt.Println(fmt.Sprintf("reports validate: %v", reports.Validate()))
+		fmt.Println(fmt.Sprintf("reports validate strict: %v", reports.ValidateStrict()))
+
 		if err := s.propagateProxyStatus(ctx, proxy, reports); err != nil {
 			return err
 		}
@@ -112,6 +114,8 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			case <-ctx.Done():
 				return
 			case status := <-statuses:
+				fmt.Println(fmt.Sprintf("gateway received proxy status: %v", status))
+				// or status is pending!!!
 				if status.Equal(lastStatus) {
 					continue
 				}
@@ -119,6 +123,9 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				subresourceStatuses := map[string]*core.Status{
 					fmt.Sprintf("%T.%s", proxy, proxy.GetMetadata().Ref().Key()): &status,
 				}
+				fmt.Println(fmt.Sprintf("gateway reports: %v", reports))
+				fmt.Println(fmt.Sprintf("gateway subresource statuses: %v", subresourceStatuses))
+
 				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Errorf("err: updating dependent statuses: %v", err)

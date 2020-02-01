@@ -2,15 +2,14 @@ package gateway_test
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
-
-	"github.com/solo-io/gloo/test/kube2e"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -71,7 +70,7 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Register additional fail handlers
-	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
+	//skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
 	defer cleanupFunc()
 
@@ -145,6 +144,9 @@ global:
 settings:
   singleNamespace: true
   create: true
+gloo:
+  deployment:
+    disableUsageStatistics: true
 `))
 	Expect(err).NotTo(HaveOccurred())
 

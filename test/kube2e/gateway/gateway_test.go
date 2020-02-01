@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -195,6 +194,46 @@ var _ = Describe("Kube2e: gateway", func() {
 				WithoutStats:      true,
 			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 		})
+
+		//FIt("eventually reaches proxy steady-state", func() {
+		//
+		//	lastProxyGeneration := 0
+		//	currentProxyGeneration := 0
+		//
+		//	// wait for the expected proxy configuration to be accepted
+		//	Eventually(func() error {
+		//		proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+		//		if err != nil {
+		//			return err
+		//		}
+		//
+		//		if status := proxy.Status; status.State != core.Status_Accepted {
+		//			return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
+		//		}
+		//
+		//		for _, l := range proxy.Listeners {
+		//			for _, vh := range l.GetHttpListener().VirtualHosts {
+		//				for _, r := range vh.Routes {
+		//					if action := r.GetRouteAction(); action != nil {
+		//						if single := action.GetSingle(); single != nil {
+		//							if svcDest := single.GetKube(); svcDest != nil {
+		//								if svcDest.Ref.Name == helper.TestrunnerName &&
+		//									svcDest.Ref.Namespace == testHelper.InstallNamespace &&
+		//									svcDest.Port == uint32(helper.TestRunnerPort) {
+		//									return nil
+		//								}
+		//							}
+		//						}
+		//					}
+		//				}
+		//			}
+		//		}
+		//
+		//		return eris.Errorf("proxy did not contain expected route")
+		//	}, "60s", "0.5s").Should(BeNil())
+		//
+		//	proxyClient.Read(testHelper.InstallNamespace, )
+		//})
 
 		Context("routing directly to kubernetes services", func() {
 
@@ -446,54 +485,54 @@ var _ = Describe("Kube2e: gateway", func() {
 			)
 			BeforeEach(func() {
 
-				valid := withName(validVsName, withDomains([]string{"valid.com"},
-					getVirtualService(&gloov1.Destination{
-						DestinationType: &gloov1.Destination_Upstream{
-							Upstream: &core.ResourceRef{
-								Namespace: testHelper.InstallNamespace,
-								Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
-							},
-						},
-					}, nil)))
-				inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
-					getVirtualServiceWithRoute(&gatewayv1.Route{
-						Matchers: []*matchers.Matcher{{}},
-						Options: &gloov1.RouteOptions{
-							PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
-						},
-					}, nil)))
-
-				Eventually(func() error {
-					_, err := virtualServiceClient.Write(valid, clients.WriteOpts{})
-					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
-
-				// sanity check that validation is enabled/strict
-				Eventually(func() error {
-					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					// ensure error was validation error before returning
-					if err != nil && strings.Contains(err.Error(), "could not render proxy") {
-						return err
-					}
-					return nil
-				}, time.Second*10).Should(HaveOccurred())
+				//valid := withName(validVsName, withDomains([]string{"valid.com"},
+				//	getVirtualService(&gloov1.Destination{
+				//		DestinationType: &gloov1.Destination_Upstream{
+				//			Upstream: &core.ResourceRef{
+				//				Namespace: testHelper.InstallNamespace,
+				//				Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+				//			},
+				//		},
+				//	}, nil)))
+				//inValid := withName(invalidVsName, withDomains([]string{"invalid.com"},
+				//	getVirtualServiceWithRoute(&gatewayv1.Route{
+				//		Matchers: []*matchers.Matcher{{}},
+				//		Options: &gloov1.RouteOptions{
+				//			PrefixRewrite: &types.StringValue{Value: "matcher and action are missing"},
+				//		},
+				//	}, nil)))
+				//
+				//Eventually(func() error {
+				//	_, err := virtualServiceClient.Write(valid, clients.WriteOpts{})
+				//	return err
+				//}, time.Second*10).ShouldNot(HaveOccurred())
+				//
+				//// sanity check that validation is enabled/strict
+				//Eventually(func() error {
+				//	_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
+				//	// ensure error was validation error before returning
+				//	if err != nil && strings.Contains(err.Error(), "could not render proxy") {
+				//		return err
+				//	}
+				//	return nil
+				//}, time.Second*10).Should(HaveOccurred())
 
 				// disable strict validation
 				UpdateAlwaysAcceptSetting(true)
 
-				Eventually(func() error {
-					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					return err
-				}, time.Second*10).ShouldNot(HaveOccurred())
+				//Eventually(func() error {
+				//	_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
+				//	return err
+				//}, time.Second*10).ShouldNot(HaveOccurred())
 
 			})
 			AfterEach(func() {
-				UpdateAlwaysAcceptSetting(false)
-				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
-				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
-				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, petstoreName, clients.DeleteOpts{})
-				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(petstoreName, nil)
-				_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(petstoreName, nil)
+				//UpdateAlwaysAcceptSetting(false)
+				//_ = virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
+				//_ = virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
+				//_ = virtualServiceClient.Delete(testHelper.InstallNamespace, petstoreName, clients.DeleteOpts{})
+				//_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(petstoreName, nil)
+				//_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(petstoreName, nil)
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -563,7 +602,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			PIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			FIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -603,12 +642,18 @@ var _ = Describe("Kube2e: gateway", func() {
 				var reason string
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(testHelper.InstallNamespace, petstoreName, clients.ReadOpts{})
+					//proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					//fmt.Println("loop begin!")
+					//fmt.Println(vs)
+					//fmt.Println(proxy)
 					if err != nil {
 						return 0, err
 					}
 					reason = vs.Status.Reason
 					return vs.Status.State, nil
 				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
+
+				fmt.Println("WE REJECTED THE INVALID VS!")
 
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
@@ -635,27 +680,45 @@ var _ = Describe("Kube2e: gateway", func() {
 
 				// TODO(kdorosh) fix this bug, this shouldn't be required
 				// change vs to ensure proxy gets updated so Gloo updates proxy status
-				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
-				vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				vs.VirtualHost.Domains[0] = "petstore2.com" // just to change so resync in gateway is called :/
-				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
-				vs, err = virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				vs.VirtualHost.Domains[0] = "petstore.com"
-				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+				//time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
+				//vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+				//Expect(err).NotTo(HaveOccurred())
+				//vs.VirtualHost.Domains[0] = "petstore2.com" // just to change so resync in gateway is called :/
+				//_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+				//Expect(err).NotTo(HaveOccurred())
+				//time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
+				//vs, err = virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+				//Expect(err).NotTo(HaveOccurred())
+				//vs.VirtualHost.Domains[0] = "petstore.com"
+				//_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+				//Expect(err).NotTo(HaveOccurred())
 
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+					proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+					fmt.Println("loop begin!")
+					fmt.Println(vs)
+					fmt.Println(proxy)
 					if err != nil {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
+				}, "20s", "0.3s").Should(Equal(core.Status_Accepted))
+
+				fmt.Println("TEST PASSED!")
+
+				//Eventually(func() (core.Status_State, error) {
+				//	vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
+				//	proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+				//	fmt.Println("loop begin!")
+				//	fmt.Println(vs)
+				//	fmt.Println(proxy)
+				//	if err != nil {
+				//		return 0, err
+				//	}
+				//	return vs.Status.State, nil
+				//}, "5s", "0.3s").Should(Equal(core.Status_Pending))
 			})
 		})
 
