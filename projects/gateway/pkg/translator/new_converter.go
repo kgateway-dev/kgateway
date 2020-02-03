@@ -54,7 +54,7 @@ type ConvertibleRouteTable struct {
 }
 
 func (v *ConvertibleRouteTable) InputResource() resources.InputResource {
-	return v
+	return v.RouteTable
 }
 
 type RouteConverter interface {
@@ -87,6 +87,10 @@ type routeInfo struct {
 	prefix string
 	// The options on the route
 	options *gloov1.RouteOptions
+	// Used to build the name of the route as we traverse the tree
+	name string
+	// Is true if any route on the current branch is explicitly named by the user
+	containsNamedRoute bool
 }
 
 func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
@@ -94,21 +98,33 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 
 	for _, gatewayRoute := range resource.GetRoutes() {
 
+		// Clone route to be safe, since we might mutate it
+		routeClone := proto.Clone(gatewayRoute).(*gatewayv1.Route)
+
+		// Set route name
+		name, routeHasName := routeName(resource.InputResource(), routeClone, parentRoute)
+		routeClone.Name = name
+
+		containsNamedRoute := routeHasName
+		if parentRoute != nil {
+			containsNamedRoute = containsNamedRoute || parentRoute.containsNamedRoute
+		}
+
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
 		if parentRoute != nil {
 			var err error
-			gatewayRoute, err = mergeParentRoute(gatewayRoute, parentRoute)
+			routeClone, err = mergeParentRoute(routeClone, parentRoute)
 			if err != nil {
 				rv.reports.AddError(resource.InputResource(), err)
 				continue
 			}
 		}
 
-		switch action := gatewayRoute.Action.(type) {
+		switch action := routeClone.Action.(type) {
 		case *gatewayv1.Route_DelegateAction:
 
 			// Validate the matcher of the delegate route
-			prefix, err := getDelegateRoutePrefix(gatewayRoute)
+			prefix, err := getDelegateRoutePrefix(routeClone)
 			if err != nil {
 				return nil, err
 			}
@@ -130,8 +146,10 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 				}
 
 				currentRouteInfo := &routeInfo{
-					prefix:  prefix,
-					options: gatewayRoute.Options,
+					prefix:             prefix,
+					options:            routeClone.Options,
+					name:               name,
+					containsNamedRoute: containsNamedRoute,
 				}
 
 				// Make a copy of the existing set of visited route tables and pass that into the recursive call.
@@ -146,7 +164,13 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 				routes = append(routes, subRoutes...)
 			}
 		default:
-			glooRoute, err := convertSimpleAction(gatewayRoute)
+
+			// If there are no named routes in the tree, wipe the name
+			if !containsNamedRoute {
+				routeClone.Name = ""
+			}
+
+			glooRoute, err := convertSimpleAction(routeClone)
 			if err != nil {
 				return nil, err
 			}
@@ -164,6 +188,33 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 	glooutils.SortRoutesByPath(routes)
 
 	return routes, nil
+}
+
+// Ex name: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
+func routeName(resource resources.InputResource, route *gatewayv1.Route, parentRouteInfo *routeInfo) (string, bool) {
+	var prefix string
+	if parentRouteInfo != nil {
+		prefix = parentRouteInfo.name + "_"
+	}
+
+	resourceKindName := ""
+	switch resource.(type) {
+	case *gatewayv1.VirtualService:
+		resourceKindName = "vs"
+	case *gatewayv1.RouteTable:
+		resourceKindName = "rt"
+	}
+	resourceName := resource.GetMetadata().Name
+
+	var isRouteNamed bool
+	routeDisplayName := route.Name
+	if routeDisplayName == "" {
+		routeDisplayName = "<unnamed>"
+	} else {
+		isRouteNamed = true
+	}
+
+	return fmt.Sprintf("%s%s:%s_route:%s", prefix, resourceKindName, resourceName, routeDisplayName), isRouteNamed
 }
 
 func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
@@ -241,24 +292,21 @@ func getDelegateRoutePrefix(route *gatewayv1.Route) (string, error) {
 
 func mergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
 
-	// Clone route since we might mutates
-	routeClone := proto.Clone(child).(*gatewayv1.Route)
-
 	// Verify that the matchers are compatible with the parent prefix
 	if err := isRouteTableValidForDelegatePrefix(parent.prefix, child); err != nil {
 		return nil, err
 	}
 
 	// Merge plugins from parent routes
-	merged, err := mergeRoutePlugins(routeClone.GetOptions(), parent.options)
+	merged, err := mergeRoutePlugins(child.GetOptions(), parent.options)
 	if err != nil {
 		// Should never happen
 		return nil, errors.Wrapf(err, "internal error: merging route plugins from parent to delegated route")
 	}
 
-	routeClone.Options = merged
+	child.Options = merged
 
-	return routeClone, nil
+	return child, nil
 }
 
 func isRouteTableValidForDelegatePrefix(delegatePrefix string, route *gatewayv1.Route) error {
