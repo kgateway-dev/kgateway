@@ -131,9 +131,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
 
-	time.Sleep(10 * time.Second)
-
-	// gloo is dependency of gateway, needs to run second
+	// gloo is dependency of gateway, needs to run second if we want to test validation
 	if !runOptions.WhatToRun.DisableGateway {
 		opts := defaultTestConstructOpts(ctx, runOptions)
 		go gatewaysyncer.RunGateway(opts)
@@ -204,15 +202,6 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 			RefreshRate: time.Minute,
 		},
 		DevMode: false,
-		Validation: &translator.ValidationOpts{
-			ProxyValidationServerAddress: "127.0.0.1:9988", // gloo:9988 the default, we can remove this
-			ValidatingWebhookPort:        8081,
-			ValidatingWebhookCertPath:    "",
-			ValidatingWebhookKeyPath:     "",
-			IgnoreProxyValidationFailure: false,
-			AlwaysAcceptResources:        true,
-			AllowMissingLinks:            false,
-		},
 	}
 }
 
