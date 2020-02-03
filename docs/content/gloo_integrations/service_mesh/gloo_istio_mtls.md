@@ -9,13 +9,20 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 mutual TLS communication between Gloo and the rest of the cluster. Mutual TLS means that the client 
 proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
-For this exercise, you will need Istio installed with mTLS enabled. This guide was tested with GKE v1.15, with Istio 1.0.6, 1.1, 1.3, and 1.4.3.
+For this exercise, you will need Istio installed with mTLS enabled. This guide was tested with GKE v1.15, with Istio 1.0.6, 1.1.17, 1.3.6, and 1.4.3.
 
 This guide also assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
 and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does NOT exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more. 
 
 To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
 [quick start](../../../installation/gateway/kubernetes/) guide for more information.
+
+### Gloo versions
+
+This guide was tested with Gloo v1.3.1.
+
+Please note that:
+`kubectl label namespace default  discovery.solo.io/function_discovery=enabled` is necessary before editing the upstream in gloo 1.1+
 
 ### Kubernetes versions
 Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing
@@ -24,7 +31,7 @@ Istio in SDS mode. This mode requires the projection of the istio-token service 
 We recommend installing Istio in a GKE cluster, which has this feature turned on by default.
 
 ## Istio 1.0.x
-For a quick install of Istio 1.0.6 on minikube with mTLS enabled, run the following commands:
+For a quick install of Istio 1.0.6 with mTLS enabled, run the following commands:
 ```bash
 kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml
 kubectl apply -f install/kubernetes/istio-demo-auth.yaml
@@ -161,7 +168,7 @@ HTTP_GW=$(glooctl proxy url)
 $([ "$(uname -s)" = "Linux" ] && echo xdg-open || echo open) $HTTP_GW
 ```
 
-## Istio 1.1.x
+## Istio 1.1.17
 
 With Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/secret.html#secret-discovery-service-sds). This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as we saw in the previous section. This has two big benefits:
 
@@ -170,7 +177,7 @@ With Istio 1.1, a new option to configure certificates and keys was introduced b
 
 For more information on [Istio's identity provisioning through SDS](https://istio.io/docs/tasks/security/auth-sds/) take a look at the [Istio documentation](https://istio.io/docs/tasks/security/auth-sds/).
 
-Just like in the previous section, we need Istio installed with SDS enabled, and the bookinfo example deployed. To install Istio with SDS you can [review their installation steps](https://istio.io/docs/tasks/security/auth-sds/). To install the bookinfo application, refer to the previous section.
+Note that we need Istio installed with SDS enabled, and the bookinfo example deployed. To install Istio with SDS you can [review their installation steps](https://istio.io/docs/tasks/security/auth-sds/). To install the bookinfo application, refer to the previous section.
 
 ### Configure Gloo
 
@@ -254,6 +261,9 @@ Next, we need to update the `productpage` upstream with the appropriate SDS conf
 kubectl edit upstream default-productpage-9080  -n gloo-system
 ```
 
+Note that Istio has a mispelling in their header on version 1.1.17, using 'credentail' instead of 'credential' in the header.
+This was fixed in Istio 1.3.6.
+
 {{< highlight yaml "hl_lines=23-31" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -281,7 +291,7 @@ spec:
     sds:
       callCredentials:
         fileCredentialSource:
-          header: istio_sds_credential_header-bin
+          header: istio_sds_credentail_header-bin
           tokenFileName: /var/run/secrets/kubernetes.io/serviceaccount/token
       certificatesSecretName: default
       targetUri: unix:/var/run/sds/uds_path
@@ -292,7 +302,6 @@ status:
 {{< /highlight >}}  
 
 In the above snippet we configure the location of the Unix Domain Socket where the Istio node agent is listening. Istio's node agent is the one that generates the certificates/keys communicates with Istio Citadel to sign the certificate, and ultimately provides the SDS API for Envoy/Gloo's Gateway proxy. The other various configurations are the location of the JWT token for the service account under which the proxy runs so the node agent can verify what identity is being requested, and finally how the request will be sent (in a header, etc). 
-
 
 At this point, the Gloo gateway-proxy can communicate with Istio's SDS and consume the correct certificates and keys to participate in mTLS with the rest of the Istio mesh. 
 
@@ -309,7 +318,9 @@ curl -v $(glooctl proxy url)/productpage
 ```
 
 
-## Changes for Istio 1.3.x
+## Changes for Istio 1.3.6
+
+Just like in the previous section, we need Istio installed with SDS enabled, and the bookinfo example deployed.
 
 In Istio 1.3 there were some changes to the token used to authenticate as well as how that projected token gets into the gateway. For Istio 1.3, let's add the projected token:
 
@@ -361,43 +372,15 @@ spec:
 ...        
 {{< /highlight >}}
 
-And in the upstream, point to the new location of the projected token:
+And in the upstream, point to the new location of the projected token.
+
+Note that, the header field was fixed from ‘credentail’ to ‘credentials’.
 
 ```
 kubectl edit upstream default-productpage-9080  -n gloo-system
 ```
 
-{{< highlight yaml "hl_lines=16" >}}
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-spec:
-  discoveryMetadata: {}
-  kube:
-    selector:
-      app: productpage
-    serviceName: productpage
-    serviceNamespace: default
-    servicePort: 9080
-  sslConfig:
-    sds:
-      callCredentials:
-        fileCredentialSource:
-          header: istio_sds_credential_header-bin
-          tokenFileName: /var/run/secrets/tokens/istio-token
-      certificatesSecretName: default
-      targetUri: unix:/var/run/sds/uds_path
-      validationContextName: ROOTCA
-{{< /highlight >}}
-
-## Changes for Istio 1.4.3
-
-In Istio 1.4 the header field was changed slightly from 'credential' to 'credentials'.
-
-```
-kubectl edit upstream default-productpage-9080  -n gloo-system
-```
-
-{{< highlight yaml "hl_lines=15" >}}
+{{< highlight yaml "hl_lines=15-16" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 spec:
@@ -418,3 +401,16 @@ spec:
       targetUri: unix:/var/run/sds/uds_path
       validationContextName: ROOTCA
 {{< /highlight >}}
+
+
+To test this out, we need a route in Gloo:
+
+```bash
+glooctl add route --name prodpage --namespace gloo-system --path-prefix / --dest-name default-productpage-9080 --dest-namespace gloo-system
+```
+
+And we can curl it:
+
+```bash
+curl -v $(glooctl proxy url)/productpage
+```
