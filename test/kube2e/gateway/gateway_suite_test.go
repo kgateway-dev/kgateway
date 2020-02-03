@@ -3,8 +3,11 @@ package gateway_test
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strconv"
 	"testing"
 	"time"
 
@@ -98,6 +101,36 @@ func StartTestHelper() {
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
 	UpdateAlwaysAcceptSetting(false)
+
+	// Ensure proxy reaches valid state and doesn't
+	// use snap_out counter and ensure stays at stable number for 20+ seconds
+	// same for leaking go-routines after sync!
+	//EventuallyReachesConsistentState()
+}
+
+func EventuallyReachesConsistentState() {
+	metricsPort := strconv.Itoa(9091)
+	portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
+		"deployment/gloo", metricsPort)
+	portFwd.Stdout = os.Stderr
+	portFwd.Stderr = os.Stderr
+	err := portFwd.Start()
+	Expect(err).ToNot(HaveOccurred())
+
+	defer func() {
+		if portFwd.Process != nil {
+			portFwd.Process.Kill()
+		}
+	}()
+
+	// wrap in eventually to give time to start port-forward
+	res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(res.StatusCode).To(Equal(200))
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	Expect(err).ToNot(HaveOccurred())
+	Expect(string(body)).To(BeEmpty())
 }
 
 func TearDownTestHelper() {

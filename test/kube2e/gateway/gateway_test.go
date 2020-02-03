@@ -196,46 +196,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 		})
 
-		//FIt("eventually reaches proxy steady-state", func() {
-		//
-		//	lastProxyGeneration := 0
-		//	currentProxyGeneration := 0
-		//
-		//	// wait for the expected proxy configuration to be accepted
-		//	Eventually(func() error {
-		//		proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-		//		if err != nil {
-		//			return err
-		//		}
-		//
-		//		if status := proxy.Status; status.State != core.Status_Accepted {
-		//			return eris.Errorf("unexpected proxy state: %v. Reason: %v", status.State, status.Reason)
-		//		}
-		//
-		//		for _, l := range proxy.Listeners {
-		//			for _, vh := range l.GetHttpListener().VirtualHosts {
-		//				for _, r := range vh.Routes {
-		//					if action := r.GetRouteAction(); action != nil {
-		//						if single := action.GetSingle(); single != nil {
-		//							if svcDest := single.GetKube(); svcDest != nil {
-		//								if svcDest.Ref.Name == helper.TestrunnerName &&
-		//									svcDest.Ref.Namespace == testHelper.InstallNamespace &&
-		//									svcDest.Port == uint32(helper.TestRunnerPort) {
-		//									return nil
-		//								}
-		//							}
-		//						}
-		//					}
-		//				}
-		//			}
-		//		}
-		//
-		//		return eris.Errorf("proxy did not contain expected route")
-		//	}, "60s", "0.5s").Should(BeNil())
-		//
-		//	proxyClient.Read(testHelper.InstallNamespace, )
-		//})
-
 		Context("routing directly to kubernetes services", func() {
 
 			BeforeEach(func() {
