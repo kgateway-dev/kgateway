@@ -14,7 +14,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gateway/pkg/validation"
 )
 
-var _ = FDescribe("NotificationChannel", func() {
+var _ = Describe("NotificationChannel", func() {
 	It("refreshes the stream when a receive fails", func() {
 		client := &mockValidationClient{
 			response: &validation.NotifyOnResyncResponse{},
