@@ -1,9 +1,10 @@
 package services
 
 import (
-	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	"net"
 	"time"
+
+	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 

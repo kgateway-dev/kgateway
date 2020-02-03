@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -673,10 +674,6 @@ var _ = Describe("Kube2e: gateway", func() {
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {
 					vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
-					proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
-					fmt.Println("loop begin!")
-					fmt.Println(vs)
-					fmt.Println(proxy)
 					if err != nil {
 						return 0, err
 					}

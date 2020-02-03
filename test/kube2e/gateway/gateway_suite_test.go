@@ -2,14 +2,15 @@ package gateway_test
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
