@@ -9,14 +9,19 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 mutual TLS communication between Gloo and the rest of the cluster. Mutual TLS means that the client 
 proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
-
-For this exercise, you will need Istio installed with mTLS enabled. This guide was tested with istio 1.0.6 and Istio 1.1. 
+For this exercise, you will need Istio installed with mTLS enabled. This guide was tested with GKE v1.15, with Istio 1.0.6, 1.1, 1.3, and 1.4.3.
 
 This guide also assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
 and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does NOT exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more. 
 
 To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
 [quick start](../../../installation/gateway/kubernetes/) guide for more information.
+
+### Kubernetes versions
+Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing
+Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes.
+
+We recommend installing Istio in a GKE cluster, which has this feature turned on by default.
 
 ## Istio 1.0.x
 For a quick install of Istio 1.0.6 on minikube with mTLS enabled, run the following commands:
@@ -306,7 +311,6 @@ curl -v $(glooctl proxy url)/productpage
 
 ## Changes for Istio 1.3.x
 
-
 In Istio 1.3 there were some changes to the token used to authenticate as well as how that projected token gets into the gateway. For Istio 1.3, let's add the projected token:
 
 
@@ -379,6 +383,36 @@ spec:
       callCredentials:
         fileCredentialSource:
           header: istio_sds_credential_header-bin
+          tokenFileName: /var/run/secrets/tokens/istio-token
+      certificatesSecretName: default
+      targetUri: unix:/var/run/sds/uds_path
+      validationContextName: ROOTCA
+{{< /highlight >}}
+
+## Changes for Istio 1.4.3
+
+In Istio 1.4 the header field was changed slightly from 'credential' to 'credentials'.
+
+```
+kubectl edit upstream default-productpage-9080  -n gloo-system
+```
+
+{{< highlight yaml "hl_lines=15" >}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      app: productpage
+    serviceName: productpage
+    serviceNamespace: default
+    servicePort: 9080
+  sslConfig:
+    sds:
+      callCredentials:
+        fileCredentialSource:
+          header: istio_sds_credentials_header-bin
           tokenFileName: /var/run/secrets/tokens/istio-token
       certificatesSecretName: default
       targetUri: unix:/var/run/sds/uds_path
