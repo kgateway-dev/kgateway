@@ -119,6 +119,43 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		Expect(ci.Status.IsReady()).To(BeTrue())
 	})
+
+	It("puts all ingresses on the internal proxy", func() {
+		syncer := NewSyncer(proxyAddressExternal, proxyAddressInternal, namespace, proxyClient, knativeClient, make(chan error), false).(*translatorSyncer)
+
+		// the ingresses loaded to each proxy
+		proxiesWithIngresses := make(map[string]v1alpha1.IngressList)
+		syncer.translateProxy = func(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (proxy *v1.Proxy, err error) {
+			proxiesWithIngresses[proxyName] = ingresses
+			return nil, nil
+		}
+
+		externalIngress := &v1alpha1.Ingress{
+			Ingress: knative.Ingress{
+				ObjectMeta: v12.ObjectMeta{Generation: 1},
+				Spec:       knativev1alpha1.IngressSpec{},
+			},
+		}
+		internalIngress := &v1alpha1.Ingress{
+			Ingress: knative.Ingress{
+				ObjectMeta: v12.ObjectMeta{Generation: 1},
+				Spec:       knativev1alpha1.IngressSpec{Visibility: knativev1alpha1.IngressVisibilityClusterLocal},
+			},
+		}
+
+		// sync with an ClusterLocal and an External visibility service
+		err := syncer.Sync(context.TODO(), &knativev1.TranslatorSnapshot{
+			Ingresses: []*v1alpha1.Ingress{
+				externalIngress,
+				internalIngress,
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		// the External should be on both ingresses
+		Expect(proxiesWithIngresses[externalProxyName]).To(HaveLen(1))
+		Expect(proxiesWithIngresses[internalProxyName]).To(HaveLen(2))
+	})
 })
 
 func toKube(ci *v1alpha1.Ingress) *knativev1alpha1.Ingress {
