@@ -31,6 +31,9 @@ type translatorSyncer struct {
 	proxyReconciler      gloov1.ProxyReconciler
 	ingressClient        knativeclient.IngressesGetter
 	requireIngressClass  bool
+
+	// injection for testing
+	translateProxy func(ctx context.Context, proxyName, proxyNamespace string, ingresses v1alpha1.IngressList) (*gloov1.Proxy, error)
 }
 
 func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error, requireIngressClass bool) v1.TranslatorSyncer {
@@ -43,6 +46,7 @@ func NewSyncer(externalProxyAddress, internalProxyAddress, writeNamespace string
 		ingressClient:        ingressClient,
 		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
 		requireIngressClass:  requireIngressClass,
+		translateProxy:       translateProxy,
 	}
 }
 
@@ -88,19 +92,18 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 
 		if ing.IsPublic() {
 			externalIngresses = append(externalIngresses, ing)
-		} else {
-			internalIngresses = append(internalIngresses, ing)
 		}
+		internalIngresses = append(internalIngresses, ing)
 	}
 
-	externalProxy, err := translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses)
+	externalProxy, err := s.translateProxy(ctx, externalProxyName, s.writeNamespace, externalIngresses)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress externalProxy will not be updated.", snapHash, err)
 		return err
 	}
 
-	internalProxy, err := translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses)
+	internalProxy, err := s.translateProxy(ctx, internalProxyName, s.writeNamespace, internalIngresses)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
 			"knative ingress externalProxy will not be updated.", snapHash, err)

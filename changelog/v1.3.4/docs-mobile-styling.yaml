@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update docs for better mobile experience.
+    issueLink: https://github.com/solo-io/gloo/issues/2255

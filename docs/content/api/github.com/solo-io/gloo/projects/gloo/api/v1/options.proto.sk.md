@@ -65,6 +65,7 @@ Optional, feature-specific configuration that lives on http listeners
 "waf": .waf.options.gloo.solo.io.Settings
 "dlp": .dlp.options.gloo.solo.io.FilterConfig
 "wasm": .wasm.options.gloo.solo.io.PluginSource
+"gzip": .envoy.config.filter.http.gzip.v2.Gzip
 
 ```
 
@@ -77,6 +78,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `waf` | [.waf.options.gloo.solo.io.Settings](../enterprise/options/waf/waf.proto.sk/#settings) | Enterprise-only: Config for Web Application Firewall (WAF), supporting the popular ModSecurity 3.0 ruleset. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.FilterConfig](../enterprise/options/dlp/dlp.proto.sk/#filterconfig) | Enterprise-only: Config for data loss prevention. |  |
 | `wasm` | [.wasm.options.gloo.solo.io.PluginSource](../options/wasm/wasm.proto.sk/#pluginsource) | Wasm filter config [very-experimental!] Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true These require a special nightly version of envoy which is not deployed by default. |  |
+| `gzip` | [.envoy.config.filter.http.gzip.v2.Gzip](../../external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#gzip) | Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```. |  |
 
 
 
