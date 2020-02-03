@@ -34,7 +34,7 @@ type selector struct {
 	toSearch gatewayv1.RouteTableList
 }
 
-// When an error is returned, the returned ist is empty
+// When an error is returned, the returned list is empty
 func (s *selector) SelectRouteTables(action *gatewayv1.DelegateAction, parentNamespace string) (gatewayv1.RouteTableList, error) {
 	var routeTables gatewayv1.RouteTableList
 

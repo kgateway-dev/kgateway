@@ -13,17 +13,15 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var _ = Describe("route merge util", func() {
+var _ = Describe("Route converter", func() {
 
 	DescribeTable("should reject bad config on a delegate route",
 		func(route *v1.Route, expectedErr error) {
 			rv := translator.NewRouteConverter(nil, reporter.ResourceReports{})
-			_, err := rv.ConvertRoute(
-				&translator.ConvertibleVirtualService{
-					VirtualService: &v1.VirtualService{
-						VirtualHost: &v1.VirtualHost{
-							Routes: []*v1.Route{route},
-						},
+			_, err := rv.ConvertVirtualService(
+				&v1.VirtualService{
+					VirtualHost: &v1.VirtualHost{
+						Routes: []*v1.Route{route},
 					},
 				},
 			)
@@ -161,50 +159,6 @@ var _ = Describe("route merge util", func() {
 		),
 	)
 
-	// TODO: Move to selector
-	When("missing ref on a delegate route", func() {
-
-		It("returns nil and adds a warning", func() {
-			ref := core.ResourceRef{
-				Name: "any",
-			}
-			route := &v1.Route{
-				Matchers: []*matchers.Matcher{{
-					PathSpecifier: &matchers.Matcher_Prefix{
-						Prefix: "/any",
-					},
-				}},
-				Action: &v1.Route_DelegateAction{
-					DelegateAction: &v1.DelegateAction{
-						DelegationType: &v1.DelegateAction_Ref{
-							Ref: &ref,
-						},
-					},
-				},
-			}
-
-			rpt := reporter.ResourceReports{}
-			vs := &v1.VirtualService{
-				VirtualHost: &v1.VirtualHost{
-					Routes: []*v1.Route{route},
-				},
-			}
-
-			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(nil), rpt)
-			converted, err := rv.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
-
-			Expect(err).NotTo(HaveOccurred())
-			Expect(converted).To(HaveLen(0)) // nothing to return, no error
-
-			// missing ref should result in a warning
-			Expect(rpt).To(Equal(reporter.ResourceReports{
-				vs: reporter.Report{
-					Warnings: []string{translator.RouteTableMissingWarning(ref).Error()},
-				},
-			}))
-		})
-	})
-
 	When("valid config", func() {
 		It("uses '/' prefix matcher as default if matchers are omitted", func() {
 			ref := core.ResourceRef{
@@ -238,7 +192,7 @@ var _ = Describe("route merge util", func() {
 			}
 
 			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
-			converted, err := rv.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+			converted, err := rv.ConvertVirtualService(vs)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
@@ -286,7 +240,7 @@ var _ = Describe("route merge util", func() {
 			}
 
 			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
-			converted, err := rv.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+			converted, err := rv.ConvertVirtualService(vs)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(3))
@@ -337,7 +291,7 @@ var _ = Describe("route merge util", func() {
 			}
 
 			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
-			converted, err := rv.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+			converted, err := rv.ConvertVirtualService(vs)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(3))
@@ -394,7 +348,7 @@ var _ = Describe("route merge util", func() {
 			}
 
 			rv := translator.NewRouteConverter(translator.NewRouteTableSelector(v1.RouteTableList{&rt}), rpt)
-			converted, err := rv.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+			converted, err := rv.ConvertVirtualService(vs)
 			Expect(err).NotTo(HaveOccurred())
 			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
 			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
@@ -410,58 +364,6 @@ var _ = Describe("route merge util", func() {
 			vs             *v1.VirtualService
 			visitor        translator.RouteConverter
 		)
-
-		buildRouteTableWithSimpleAction := func(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
-			return &v1.RouteTable{
-				Metadata: core.Metadata{
-					Name:      name,
-					Namespace: namespace,
-					Labels:    labels,
-				},
-				Routes: []*v1.Route{
-					{
-						Name: "simpleRouteName",
-						Matchers: []*matchers.Matcher{
-							{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: prefix,
-								},
-							},
-						},
-						Action: &v1.Route_DirectResponseAction{
-							DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
-					},
-				},
-			}
-		}
-
-		buildRouteTableWithDelegateAction := func(name, namespace, prefix string, labels map[string]string, selector *v1.RouteTableSelector) *v1.RouteTable {
-			return &v1.RouteTable{
-				Metadata: core.Metadata{
-					Name:      name,
-					Namespace: namespace,
-					Labels:    labels,
-				},
-				Routes: []*v1.Route{
-					{
-						Matchers: []*matchers.Matcher{
-							{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: prefix,
-								},
-							},
-						},
-						Action: &v1.Route_DelegateAction{
-							DelegateAction: &v1.DelegateAction{
-								DelegationType: &v1.DelegateAction_Selector{
-									Selector: selector,
-								},
-							},
-						},
-					},
-				},
-			}
-		}
 
 		buildVirtualService := func(rtSelector *v1.RouteTableSelector) *v1.VirtualService {
 			return &v1.VirtualService{
@@ -496,39 +398,9 @@ var _ = Describe("route merge util", func() {
 			return vs
 		}
 
-		getFirstPrefixMatcher := func(route *gloov1.Route) string {
-			return route.GetMatchers()[0].GetPrefix()
-		}
-
 		JustBeforeEach(func() {
 			reports = reporter.ResourceReports{}
 			visitor = translator.NewRouteConverter(translator.NewRouteTableSelector(allRouteTables), reports)
-		})
-
-		// TODO: move to selector
-		When("selector has no matches", func() {
-
-			BeforeEach(func() {
-				allRouteTables = v1.RouteTableList{
-					buildRouteTableWithSimpleAction("rt-1", "ns-1", "/foo/1", nil),
-					buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/2", map[string]string{"foo": "bar"}),
-				}
-			})
-
-			It("returns the appropriate warning", func() {
-				vs = buildVirtualService(&v1.RouteTableSelector{
-					Labels:     map[string]string{"team": "dev", "foo": "bar"},
-					Namespaces: []string{"*"},
-				})
-
-				converted, err := visitor.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
-
-				Expect(err).NotTo(HaveOccurred())
-				Expect(converted).To(HaveLen(0))
-				Expect(reports).To(Equal(reporter.ResourceReports{vs: reporter.Report{
-					Warnings: []string{translator.NoMatchingRouteTablesWarning.Error()},
-				}}))
-			})
 		})
 
 		Describe("merged route ordering", func() {
@@ -547,7 +419,7 @@ var _ = Describe("route merge util", func() {
 					Namespaces: []string{"ns-1"},
 				})
 
-				converted, err := visitor.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+				converted, err := visitor.ConvertVirtualService(vs)
 
 				Expect(err).NotTo(HaveOccurred())
 				Expect(converted).To(HaveLen(4))
@@ -578,7 +450,7 @@ var _ = Describe("route merge util", func() {
 			DescribeTable("selector works as expected",
 				func(selector *v1.RouteTableSelector, expectedPrefixMatchers []string) {
 					vs = buildVirtualService(selector)
-					converted, err := visitor.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+					converted, err := visitor.ConvertVirtualService(vs)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(HaveLen(len(expectedPrefixMatchers)))
 					for i, prefix := range expectedPrefixMatchers {
@@ -634,7 +506,7 @@ var _ = Describe("route merge util", func() {
 				func(selector *v1.RouteTableSelector, routeName string, expectedNames []string) {
 
 					vs = buildVirtualServiceWithName(selector, routeName)
-					converted, err := visitor.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+					converted, err := visitor.ConvertVirtualService(vs)
 
 					Expect(err).NotTo(HaveOccurred())
 					Expect(converted).To(HaveLen(len(expectedNames)))
@@ -706,7 +578,7 @@ var _ = Describe("route merge util", func() {
 			DescribeTable("delegation cycles are detected",
 				func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
 					vs = buildVirtualService(selector)
-					_, err := visitor.ConvertRoute(&translator.ConvertibleVirtualService{VirtualService: vs})
+					_, err := visitor.ConvertVirtualService(vs)
 					Expect(err).To(HaveOccurred())
 					Expect(err).To(MatchError(translator.DelegationCycleErr(expectedCycleInfoMessage)))
 				},
@@ -728,3 +600,59 @@ var _ = Describe("route merge util", func() {
 		})
 	})
 })
+
+func getFirstPrefixMatcher(route *gloov1.Route) string {
+	return route.GetMatchers()[0].GetPrefix()
+}
+
+func buildRouteTableWithSimpleAction(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
+	return &v1.RouteTable{
+		Metadata: core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Routes: []*v1.Route{
+			{
+				Name: "simpleRouteName",
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: prefix,
+						},
+					},
+				},
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
+			},
+		},
+	}
+}
+
+func buildRouteTableWithDelegateAction(name, namespace, prefix string, labels map[string]string, selector *v1.RouteTableSelector) *v1.RouteTable {
+	return &v1.RouteTable{
+		Metadata: core.Metadata{
+			Name:      name,
+			Namespace: namespace,
+			Labels:    labels,
+		},
+		Routes: []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: prefix,
+						},
+					},
+				},
+				Action: &v1.Route_DelegateAction{
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Selector{
+							Selector: selector,
+						},
+					},
+				},
+			},
+		},
+	}
+}

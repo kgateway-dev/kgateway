@@ -15,6 +15,8 @@ import (
 	"strings"
 )
 
+const unnamedRouteName = "<unnamed>"
+
 var (
 	NoActionErr         = errors.New("invalid route: route must specify an action")
 	MatcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
@@ -31,36 +33,11 @@ var (
 	}
 )
 
-// We define this interface to abstract both virtual services and route tables
-type ResourceWithRoutes interface {
-	InputResource() resources.InputResource
-	GetRoutes() []*gatewayv1.Route
-}
-
-type ConvertibleVirtualService struct {
-	*gatewayv1.VirtualService
-}
-
-func (v *ConvertibleVirtualService) GetRoutes() []*gatewayv1.Route {
-	return v.GetVirtualHost().GetRoutes()
-}
-
-func (v *ConvertibleVirtualService) InputResource() resources.InputResource {
-	return v.VirtualService
-}
-
-type ConvertibleRouteTable struct {
-	*gatewayv1.RouteTable
-}
-
-func (v *ConvertibleRouteTable) InputResource() resources.InputResource {
-	return v.RouteTable
-}
-
 type RouteConverter interface {
-	// Converts a Gateway API resource with routes (i.e. a VirtualService or RouteTable)
-	// to a set of Gloo API routes (i.e. routes on a Proxy resource).
-	ConvertRoute(resource ResourceWithRoutes) ([]*gloov1.Route, error)
+	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
+	ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error)
+	// Converts a RouteTable to a set of Gloo API routes (i.e. routes on a Proxy resource).
+	ConvertRouteTable(virtualService *gatewayv1.RouteTable) ([]*gloov1.Route, error)
 }
 
 func NewRouteConverter(selector RouteTableSelector, reports reporter.ResourceReports) RouteConverter {
@@ -70,30 +47,76 @@ func NewRouteConverter(selector RouteTableSelector, reports reporter.ResourceRep
 	}
 }
 
-func (rv *routeVisitor) ConvertRoute(resource ResourceWithRoutes) ([]*gloov1.Route, error) {
-	return rv.collectRoutes(resource, nil, nil)
+// We define this interface to abstract both virtual services and route tables.
+type resourceWithRoutes interface {
+	InputResource() resources.InputResource
+	GetRoutes() []*gatewayv1.Route
 }
 
-// Implements the RouteConverter interface by recursively visiting a route tree
+type visitableVirtualService struct {
+	*gatewayv1.VirtualService
+}
+
+func (v *visitableVirtualService) GetRoutes() []*gatewayv1.Route {
+	return v.GetVirtualHost().GetRoutes()
+}
+
+func (v *visitableVirtualService) InputResource() resources.InputResource {
+	return v.VirtualService
+}
+
+type visitableRouteTable struct {
+	*gatewayv1.RouteTable
+}
+
+func (v *visitableRouteTable) InputResource() resources.InputResource {
+	return v.RouteTable
+}
+
+func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
+	wrapper := &visitableVirtualService{VirtualService: virtualService}
+	return rv.visitAndReorder(wrapper)
+}
+
+func (rv *routeVisitor) ConvertRouteTable(routeTable *gatewayv1.RouteTable) ([]*gloov1.Route, error) {
+	wrapper := &visitableRouteTable{RouteTable: routeTable}
+	return rv.visitAndReorder(wrapper)
+}
+
+func (rv *routeVisitor) visitAndReorder(resource resourceWithRoutes) ([]*gloov1.Route, error) {
+	routes, err := rv.visit(resource, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	glooutils.SortRoutesByPath(routes)
+
+	return routes, nil
+}
+
+// Implements Converter interface by recursively visiting a routing resource
 type routeVisitor struct {
 	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
 	reports reporter.ResourceReports
-	//
+	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
 }
 
+// Helper object used to store information about previously visited routes.
 type routeInfo struct {
-	// The path prefix for the route
+	// The path prefix for the route.
 	prefix string
-	// The options on the route
+	// The options on the route.
 	options *gloov1.RouteOptions
-	// Used to build the name of the route as we traverse the tree
+	// Used to build the name of the route as we traverse the tree.
 	name string
-	// Is true if any route on the current branch is explicitly named by the user
-	containsNamedRoute bool
+	// Is true if any route on the current route tree branch is explicitly named by the user.
+	hasName bool
 }
 
-func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
+// Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
+// The additional arguments are used to store the state of the traversal of the current branch of the route tree.
+func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
 
 	for _, gatewayRoute := range resource.GetRoutes() {
@@ -101,23 +124,21 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 		// Clone route to be safe, since we might mutate it
 		routeClone := proto.Clone(gatewayRoute).(*gatewayv1.Route)
 
-		// Set route name
+		// Determine route name
 		name, routeHasName := routeName(resource.InputResource(), routeClone, parentRoute)
 		routeClone.Name = name
-
-		containsNamedRoute := routeHasName
-		if parentRoute != nil {
-			containsNamedRoute = containsNamedRoute || parentRoute.containsNamedRoute
-		}
 
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
 		if parentRoute != nil {
 			var err error
-			routeClone, err = mergeParentRoute(routeClone, parentRoute)
+			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
 				rv.reports.AddError(resource.InputResource(), err)
 				continue
 			}
+
+			// If the current route has no name, but the parent one does, then we consider the resulting route to be named.
+			routeHasName = routeHasName || parentRoute.hasName
 		}
 
 		switch action := routeClone.Action.(type) {
@@ -132,10 +153,8 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 			// Determine the route tables to delegate to
 			routeTables, err := rv.routeTableSelector.SelectRouteTables(action.DelegateAction, resource.InputResource().GetMetadata().Namespace)
 			if err != nil {
-				// Only return warning here
 				rv.reports.AddWarning(resource.InputResource(), err.Error())
-				// TODO: continue?
-				return nil, nil
+				continue
 			}
 
 			for _, routeTable := range routeTables {
@@ -145,28 +164,31 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 					return nil, err
 				}
 
+				// Collect information about this route that are relevant when visiting the delegated route table
 				currentRouteInfo := &routeInfo{
-					prefix:             prefix,
-					options:            routeClone.Options,
-					name:               name,
-					containsNamedRoute: containsNamedRoute,
+					prefix:  prefix,
+					options: routeClone.Options,
+					name:    name,
+					hasName: routeHasName,
 				}
 
 				// Make a copy of the existing set of visited route tables and pass that into the recursive call.
 				// We do NOT want it to be modified.
 				visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
 
-				subRoutes, err := rv.collectRoutes(&ConvertibleRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
+				// Recursive call
+				subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
 				if err != nil {
 					return nil, err
 				}
 
 				routes = append(routes, subRoutes...)
 			}
+
 		default:
 
-			// If there are no named routes in the tree, wipe the name
-			if !containsNamedRoute {
+			// If there are no named routes on this branch of the route tree, then wipe the name.
+			if !routeHasName {
 				routeClone.Name = ""
 			}
 
@@ -178,6 +200,7 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 		}
 	}
 
+	// Append source metadata to all the routes
 	for _, r := range routes {
 		if err := appendSource(r, resource.InputResource()); err != nil {
 			// should never happen
@@ -185,12 +208,10 @@ func (rv *routeVisitor) collectRoutes(resource ResourceWithRoutes, parentRoute *
 		}
 	}
 
-	glooutils.SortRoutesByPath(routes)
-
 	return routes, nil
 }
 
-// Ex name: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
+// Route names have the following format: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
 func routeName(resource resources.InputResource, route *gatewayv1.Route, parentRouteInfo *routeInfo) (string, bool) {
 	var prefix string
 	if parentRouteInfo != nil {
@@ -203,13 +224,15 @@ func routeName(resource resources.InputResource, route *gatewayv1.Route, parentR
 		resourceKindName = "vs"
 	case *gatewayv1.RouteTable:
 		resourceKindName = "rt"
+	default:
+		// Should never happen
 	}
 	resourceName := resource.GetMetadata().Name
 
 	var isRouteNamed bool
 	routeDisplayName := route.Name
 	if routeDisplayName == "" {
-		routeDisplayName = "<unnamed>"
+		routeDisplayName = unnamedRouteName
 	} else {
 		isRouteNamed = true
 	}
@@ -242,6 +265,9 @@ func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
 		glooRoute.Action = &gloov1.Route_RouteAction{
 			RouteAction: action.RouteAction,
 		}
+	case *gatewayv1.Route_DelegateAction:
+		// Should never happen
+		return nil, errors.New("internal error: expected simple route action but found delegation!")
 	default:
 		return nil, NoActionErr
 	}
@@ -249,7 +275,7 @@ func convertSimpleAction(simpleRoute *gatewayv1.Route) (*gloov1.Route, error) {
 	return glooRoute, nil
 }
 
-// If any of the matching route tables has already been visited, that means we have a delegation cycle.
+// If any of the matching route tables has already been visited, then we have a delegation cycle.
 func checkForCycles(toVisit *gatewayv1.RouteTable, visited gatewayv1.RouteTableList) error {
 	for _, alreadyVisitedTable := range visited {
 		if toVisit == alreadyVisitedTable {
@@ -290,7 +316,7 @@ func getDelegateRoutePrefix(route *gatewayv1.Route) (string, error) {
 	}
 }
 
-func mergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
+func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
 
 	// Verify that the matchers are compatible with the parent prefix
 	if err := isRouteTableValidForDelegatePrefix(parent.prefix, child); err != nil {
