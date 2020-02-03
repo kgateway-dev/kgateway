@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -58,9 +59,9 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 
 	// stringify-ing the snapshot may be an expensive operation, so we'd like to avoid building the large
 	// string if we're not even going to log it anyway
-	//if contextutils.GetLogLevel() == zapcore.DebugLevel {
-		logger.Info(syncutil.StringifySnapshot(snap))
-	//}
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	labels := map[string]string{
 		"created_by": "gateway",
@@ -87,10 +88,10 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	// repeat for all resources
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
-		fmt.Println(fmt.Sprintf("reports: %v", reports))
-		fmt.Println(fmt.Sprintf("reports validate: %v", reports.Validate()))
-		fmt.Println(fmt.Sprintf("reports validate strict: %v", reports.ValidateStrict()))
-
+		logger.Debugw("propagating reports to proxy status",
+			zap.Any("reports", reports),
+			zap.Any("validatedReports", reports.Validate()),
+			zap.Any("strictValidatedReports", reports.ValidateStrict()))
 		if err := s.propagateProxyStatus(ctx, proxy, reports); err != nil {
 			return err
 		}
@@ -114,8 +115,8 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			case <-ctx.Done():
 				return
 			case status := <-statuses:
-				fmt.Println(fmt.Sprintf("gateway received proxy status: %v", status))
-				// or status is pending!!!
+				logger := contextutils.LoggerFrom(ctx)
+				logger.Debugf("gateway received proxy status: %v", status)
 				if status.Equal(lastStatus) {
 					continue
 				}
@@ -123,8 +124,10 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				subresourceStatuses := map[string]*core.Status{
 					fmt.Sprintf("%T.%s", proxy, proxy.GetMetadata().Ref().Key()): &status,
 				}
-				fmt.Println(fmt.Sprintf("gateway reports: %v", reports))
-				fmt.Println(fmt.Sprintf("gateway subresource statuses: %v", subresourceStatuses))
+
+				logger.Debugw("gateway reports to be written",
+					zap.Any("reports", reports),
+					zap.Any("subresourceStatuses", subresourceStatuses))
 
 				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
 				if err != nil {
