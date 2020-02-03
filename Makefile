@@ -505,7 +505,9 @@ ifeq ($(RELEASE),"true")
 endif
 
 .PHONY: docker docker-push
-docker: gateway-docker gloo-docker
+docker: discovery-docker gateway-docker gloo-docker \
+ 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
+ 		certgen-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -513,7 +515,13 @@ docker: gateway-docker gloo-docker
 # docker-push is intended to be run by CI
 docker-push: $(DOCKER_IMAGES)
 	docker push quay.io/solo-io/gateway:$(VERSION) && \
-	docker push quay.io/solo-io/gloo:$(VERSION)
+	docker push quay.io/solo-io/ingress:$(VERSION) && \
+	docker push quay.io/solo-io/discovery:$(VERSION) && \
+	docker push quay.io/solo-io/gloo:$(VERSION) && \
+	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
+	docker push quay.io/solo-io/certgen:$(VERSION) && \
+	docker push quay.io/solo-io/access-logger:$(VERSION)
 
 push-kind-images: docker
 	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
