@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Refactor the components that convert a Gateway API routing object (virtual service or route table) to a set of Gloo API routes.
+  issueLink: https://github.com/solo-io/gloo/issues/2196
