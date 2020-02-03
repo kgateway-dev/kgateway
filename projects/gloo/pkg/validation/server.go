@@ -2,9 +2,10 @@ package validation
 
 import (
 	"context"
+	"sync"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"go.uber.org/zap/zapcore"
-	"sync"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"

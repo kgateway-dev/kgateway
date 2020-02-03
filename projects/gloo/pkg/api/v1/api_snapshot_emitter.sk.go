@@ -4,10 +4,11 @@ package v1
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/test/debugprint"
 	"log"
 	"sync"
 	"time"
+
+	"github.com/solo-io/gloo/test/debugprint"
 
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
