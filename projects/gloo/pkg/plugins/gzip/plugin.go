@@ -1,7 +1,7 @@
 package gzip
 
 import (
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
