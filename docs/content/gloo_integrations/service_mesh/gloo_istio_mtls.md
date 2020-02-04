@@ -91,7 +91,7 @@ both with and without mTLS enabled - a common occurrence in a brown field enviro
 
 #### Without SDS
 
-We will need to add Istio certs as a volume mount.
+Edit the gateway-proxy to add Istio certs as a volume mount:
 ```bash
 kubectl edit deploy/gateway-proxy -n gloo-system
 ```
@@ -199,6 +199,8 @@ status:
 {{< /highlight >}}
 
 At this point, we have the correct certificates/keys/CAs installed into the proxy and configured for the `productpage` service.
+
+See the bottom of the page for instructions on [testing your configuration]({{% versioned_link_path fromRoot="/gloo_integrations/service_mesh/gloo_istio_mtls/#test-your-configuration" %}}).
 
 #### With SDS mode
 
@@ -370,11 +372,11 @@ status:
 
 
 {{% notice note %}}
-Note that Istio has a misspelling on version 1.1, using 'credentail' instead of 'credential' in the header.
+Note that Istio has a misspelling on version 1.1.17, using 'credentail' instead of 'credential' in the header.
 This was fixed by Istio 1.3.6.
 {{% /notice %}}
 
-#### Istio > 1.3.6
+#### Istio 1.3.x and 1.4.x
 
 For Istio 1.3 and 1.4, we need to use the new header name as well as point to the new location of the projected token.
 
@@ -406,11 +408,9 @@ spec:
 ...
 {{< /highlight >}}
 
-In the above snippet we configure the location of the Unix Domain Socket where the Istio node agent is listening. Istio's node agent is the one that generates the certificates/keys communicates with Istio Citadel to sign the certificate, and ultimately provides the SDS API for Envoy/Gloo's Gateway proxy. The other various configurations are the location of the JWT token for the service account under which the proxy runs so the node agent can verify what identity is being requested, and finally how the request will be sent (in a header, etc). 
+For either version, in the above snippet we configure the location of the Unix Domain Socket where the Istio node agent is listening. Istio's node agent is the one that generates the certificates/keys communicates with Istio Citadel to sign the certificate, and ultimately provides the SDS API for Envoy/Gloo's Gateway proxy. The other various configurations are the location of the JWT token for the service account under which the proxy runs so the node agent can verify what identity is being requested, and finally how the request will be sent (in a header, etc). 
 
 At this point, the Gloo gateway-proxy can communicate with Istio's SDS and consume the correct certificates and keys to participate in mTLS with the rest of the Istio mesh.
-
-See the bottom of the page for instructions on [testing your configuration]({{% versioned_link_path fromRoot="/gloo_integrations/service_mesh/gloo_istio_mtls/#test-your-configuration" %}}).
 
 ### Test your configuration 
 
