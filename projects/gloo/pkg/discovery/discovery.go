@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
+//go:generate mockgen -destination mocks/mock_discovery.go -package mocks github.com/solo-io/gloo/projects/gloo/pkg/discovery DiscoveryPlugin
 type DiscoveryPlugin interface {
 	plugins.Plugin
 
@@ -52,20 +53,25 @@ type EndpointDiscovery struct {
 	endpointReconciler v1.EndpointReconciler
 	discoveryPlugins   []DiscoveryPlugin
 
-	readyClosed bool
-	ready       chan struct{}
+	readyClosed    bool
+	ready          chan struct{}
+	endpointsByEds map[DiscoveryPlugin]v1.EndpointList
+	lock           sync.Mutex
 }
 
 func NewEndpointDiscovery(watchNamespaces []string,
 	writeNamespace string,
 	endpointsClient v1.EndpointClient,
 	discoveryPlugins []DiscoveryPlugin) *EndpointDiscovery {
+
 	return &EndpointDiscovery{
 		watchNamespaces:    watchNamespaces,
 		writeNamespace:     writeNamespace,
 		endpointReconciler: v1.NewEndpointReconciler(endpointsClient),
 		discoveryPlugins:   discoveryPlugins,
 		ready:              make(chan struct{}),
+		endpointsByEds:     make(map[DiscoveryPlugin]v1.EndpointList),
+		lock:               sync.Mutex{},
 	}
 }
 
@@ -161,9 +167,7 @@ func setLabels(udsName string, upstreamList v1.UpstreamList) v1.UpstreamList {
 // launch a goroutine for all the UDS plugins with a single cancel to close them all
 func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (chan error, error) {
 	aggregatedErrs := make(chan error)
-	endpointsByEds := make(map[DiscoveryPlugin]v1.EndpointList)
 	logger := contextutils.LoggerFrom(opts.Ctx)
-	lock := sync.Mutex{}
 	for _, eds := range d.discoveryPlugins {
 		endpoints, errs, err := eds.WatchEndpoints(d.writeNamespace, upstreamsToTrack, opts)
 		if err != nil {
@@ -179,22 +183,22 @@ func (d *EndpointDiscovery) StartEds(upstreamsToTrack v1.UpstreamList, opts clie
 					if !ok {
 						return
 					}
-					lock.Lock()
-					if _, ok := endpointsByEds[eds]; !ok {
+					d.lock.Lock()
+					if _, ok := d.endpointsByEds[eds]; !ok {
 						logger.Infof("Received first EDS update from plugin: %T", eds)
 					}
-					endpointsByEds[eds] = endpointList
-					desiredEndpoints := aggregateEndpoints(endpointsByEds)
+					d.endpointsByEds[eds] = endpointList
+					desiredEndpoints := aggregateEndpoints(d.endpointsByEds)
 					if err := d.endpointReconciler.Reconcile(d.writeNamespace, desiredEndpoints, txnEndpoint, clients.ListOpts{
 						Ctx:      opts.Ctx,
 						Selector: opts.Selector,
 					}); err != nil {
 						aggregatedErrs <- err
 					}
-					if len(endpointsByEds) == len(d.discoveryPlugins) {
+					if len(d.endpointsByEds) == len(d.discoveryPlugins) {
 						d.signalReady()
 					}
-					lock.Unlock()
+					d.lock.Unlock()
 				case err, ok := <-errs:
 					if !ok {
 						return
