@@ -21,7 +21,9 @@ var _ = Describe("Discovery", func() {
 	It("preserves cached EDS results across calls to StartEDS", func() {
 		// in this test we will run 2 plugins in EDS.
 		// we will write endpoints for 2 plugins
-		//
+		// then we will restart eds, and send another update
+		// we want to see that we didnt lose the endpoints
+		// for the eds plugin that didn't get updated after the restart
 		ns := ""
 		ctl := gomock.NewController(GinkgoT())
 		endpointClient, _ := v1.NewEndpointClient(&factory.MemoryResourceClientFactory{
@@ -80,8 +82,16 @@ var _ = Describe("Discovery", func() {
 		}
 
 		// expect the eds to make it to us
-		listEps := func() (v1.EndpointList, error) {
-			return endpointClient.List(ns, clients.ListOpts{})
+		listEps := func() ([]string, error) {
+			list, err := endpointClient.List(ns, clients.ListOpts{})
+			if err != nil {
+				return nil, err
+			}
+			var epNames []string
+			list.Each(func(element *v1.Endpoint) {
+				epNames = append(epNames, element.Metadata.Name)
+			})
+			return epNames, nil
 		}
 
 		Eventually(listEps, time.Minute*2).Should(HaveLen(2))
@@ -100,6 +110,6 @@ var _ = Describe("Discovery", func() {
 		}
 
 		// expect 1 blue always
-		Consistently(listEps).Should(ContainElement(blueEp))
+		Consistently(listEps).Should(ContainElement("endpoint-blue-1"))
 	})
 })
