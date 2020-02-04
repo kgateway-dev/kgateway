@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -580,7 +581,7 @@ var _ = Describe("Route converter", func() {
 					vs = buildVirtualService(selector)
 					_, err := visitor.ConvertVirtualService(vs)
 					Expect(err).To(HaveOccurred())
-					Expect(err).To(MatchError(translator.DelegationCycleErr(expectedCycleInfoMessage)))
+					Expect(err).To(testutils.HaveInErrorChain(translator.DelegationCycleErr(expectedCycleInfoMessage)))
 				},
 
 				Entry("a route table selects itself",

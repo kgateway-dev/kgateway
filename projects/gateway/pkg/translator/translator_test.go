@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
@@ -572,7 +574,7 @@ var _ = Describe("Translator", func() {
 						DomainInOtherVirtualServicesErr("d1.com", []string{"gloo-system.name2"}),
 						GatewayHasConflictingVirtualServicesErr([]string{"d1.com"}),
 					} {
-						Expect(multiErr.WrappedErrors()).To(ContainElement(MatchError(expectedError)))
+						Expect(multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(expectedError)))
 					}
 				})
 
@@ -592,7 +594,7 @@ var _ = Describe("Translator", func() {
 						DomainInOtherVirtualServicesErr("", []string{"gloo-system.name2"}),
 						GatewayHasConflictingVirtualServicesErr([]string{""}),
 					} {
-						Expect(multiErr.WrappedErrors()).To(ContainElement(MatchError(expectedError.Error())))
+						Expect(multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(expectedError)))
 					}
 				})
 

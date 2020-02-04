@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -26,7 +27,7 @@ var _ = Describe("RouteTableSelector", func() {
 
 			Expect(list).To(HaveLen(0))
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(translator.RouteTableMissingWarning(ref)))
+			Expect(err).To(testutils.HaveInErrorChain(translator.RouteTableMissingWarning(ref)))
 		})
 	})
 
@@ -41,7 +42,7 @@ var _ = Describe("RouteTableSelector", func() {
 
 			Expect(list).To(HaveLen(0))
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(MatchError(translator.MissingRefAndSelectorWarning))
+			Expect(err).To(testutils.HaveInErrorChain(translator.MissingRefAndSelectorWarning))
 		})
 	})
 
@@ -65,7 +66,7 @@ var _ = Describe("RouteTableSelector", func() {
 
 			Expect(err).To(HaveOccurred())
 			Expect(list).To(HaveLen(0))
-			Expect(err).To(MatchError(translator.NoMatchingRouteTablesWarning))
+			Expect(err).To(testutils.HaveInErrorChain(translator.NoMatchingRouteTablesWarning))
 		})
 	})
 
