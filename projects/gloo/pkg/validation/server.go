@@ -80,7 +80,7 @@ func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
 // notify all receivers
 func (s *validator) pushNotifications() {
 	logger := contextutils.LoggerFrom(s.ctx)
-	logger.Debug("pushing notifications")
+	logger.Debugw("pushing notifications", zap.Any("validator", s))
 	for _, receiver := range s.notifyResync {
 		logger.Debugf("pushing notification for receiver %v", receiver)
 		receiver := receiver
@@ -121,17 +121,17 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 
 	// add the receiver to our map
 	s.lock.Lock()
-	logger.Debug("adding receiver to map", zap.Any("beforeMap", s.notifyResync))
+	logger.Debug("adding receiver to map", zap.Any("beforeMap", s.notifyResync), zap.Any("validator", s))
 	s.notifyResync[req] = receiver
-	logger.Debug("added receiver to map", zap.Any("afterMap", s.notifyResync))
+	logger.Debug("added receiver to map", zap.Any("afterMap", s.notifyResync), zap.Any("validator", s))
 	s.lock.Unlock()
 
 	defer func() {
 		// remove the receiver from the map
 		s.lock.Lock()
-		logger.Debug("removing receiver from map", zap.Any("beforeMap", s.notifyResync))
+		logger.Debug("removing receiver from map", zap.Any("beforeMap", s.notifyResync), zap.Any("validator", s))
 		delete(s.notifyResync, req)
-		logger.Debug("removed receiver from map", zap.Any("afterMap", s.notifyResync))
+		logger.Debug("removed receiver from map", zap.Any("afterMap", s.notifyResync), zap.Any("validator", s))
 		s.lock.Unlock()
 	}()
 
