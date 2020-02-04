@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -471,12 +470,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				// sanity check that validation is enabled/strict
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					// ensure error was validation error before returning
-					if err != nil && strings.Contains(err.Error(), "could not render proxy") {
-						return err
-					}
-					return nil
-				}, time.Second*10).Should(HaveOccurred())
+					return err
+				}, time.Second*10).Should(And(HaveOccurred(), MatchError(ContainSubstring("could not render proxy"))))
 
 				// disable strict validation
 				UpdateAlwaysAcceptSetting(true)
