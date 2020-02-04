@@ -2,6 +2,7 @@ package v1
 
 import (
 	"encoding/binary"
+	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"hash"
 	"hash/fnv"
 
@@ -12,7 +13,7 @@ import (
 // This is a custom implementation of the `SafeHasher` interface for Artifacts.
 // If works just as its generated counterpart, except that it includes `ResourceVersion` instead of `Data` in the hash.
 func (m *Artifact) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil || m.Metadata.Name == "gloo-usage" {
+	if m == nil || m.Metadata.Name == metricsservice.MetricsConfigMapName {
 		return 0, nil
 	}
 	if hasher == nil {
