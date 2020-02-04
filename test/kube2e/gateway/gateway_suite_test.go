@@ -158,7 +158,7 @@ func getSnapOut(metricsPort string) string {
 	}, "3s", "0.5s").ShouldNot(BeEmpty())
 
 	Expect(bodyResp).To(ContainSubstring("api_gloo_solo_io_emitter_snap_out"))
-	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d])")
+	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d+])")
 	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
 	Expect(matches).To(HaveLen(1))
 	snapOut := matches[0][1]
