@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"testing"
 	"time"
@@ -105,7 +106,7 @@ func StartTestHelper() {
 	// Ensure proxy reaches valid state and doesn't
 	// use snap_out counter and ensure stays at stable number for 20+ seconds
 	// same for leaking go-routines after sync!
-	//EventuallyReachesConsistentState()
+	EventuallyReachesConsistentState()
 }
 
 func EventuallyReachesConsistentState() {
@@ -123,14 +124,46 @@ func EventuallyReachesConsistentState() {
 		}
 	}()
 
-	// wrap in eventually to give time to start port-forward
-	res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(res.StatusCode).To(Equal(200))
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	Expect(err).ToNot(HaveOccurred())
-	Expect(string(body)).To(BeEmpty())
+	// make sure we eventually reach an eventually consistent state
+	lastSnapOut := getSnapOut(metricsPort)
+
+	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
+	time.Sleep(eventuallyConsistentPollingInterval)
+
+	Eventually(func() bool {
+		currentSnapOut := getSnapOut(metricsPort)
+		consistent := lastSnapOut == currentSnapOut
+		lastSnapOut = currentSnapOut
+		return consistent
+	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
+
+	Consistently(func() string {
+		currentSnapOut := getSnapOut(metricsPort)
+		return currentSnapOut
+	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
+}
+
+// needs a port-forward of the metrics port before a call to this will work
+func getSnapOut(metricsPort string) string {
+	var bodyResp string
+	Eventually(func() string {
+		res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
+		if err != nil || res.StatusCode != 200 {
+			return ""
+		}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		Expect(err).ToNot(HaveOccurred())
+		bodyResp = string(body)
+		return bodyResp
+	}, "3s", "0.5s").ShouldNot(BeEmpty())
+
+	Expect(bodyResp).To(ContainSubstring("api_gloo_solo_io_emitter_snap_out"))
+	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d])")
+	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
+	Expect(matches).To(HaveLen(1))
+	snapOut := matches[0][1]
+	return snapOut
 }
 
 func TearDownTestHelper() {
