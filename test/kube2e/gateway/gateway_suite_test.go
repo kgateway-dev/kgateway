@@ -103,9 +103,8 @@ func StartTestHelper() {
 	// See https://github.com/solo-io/gloo/issues/1374
 	UpdateAlwaysAcceptSetting(false)
 
-	// Ensure proxy reaches valid state and doesn't
-	// use snap_out counter and ensure stays at stable number for 20+ seconds
-	// same for leaking go-routines after sync!
+	// Ensure gloo reaches valid state and doesn't continually resync
+	// we can consider doing the same for leaking go-routines after resyncs
 	EventuallyReachesConsistentState()
 }
 
