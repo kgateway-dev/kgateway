@@ -31,15 +31,6 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 			}
 
 			notification, err := stream.Recv()
-			logger.Debugf("received notification", zap.Any("notification", notification), zap.Error(err))
-
-			select {
-			case notifications <- struct{}{}:
-				logger.Debugf("sent notification to notifications channel")
-			default:
-				logger.Warnf("dropping notification")
-			}
-
 			if err != nil {
 				select {
 				case <-ctx.Done():
@@ -59,6 +50,14 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 					return
 				}
 				continue
+			}
+			logger.Debugf("received notification", zap.Any("notification", notification), zap.Error(err))
+
+			select {
+			case notifications <- struct{}{}:
+				logger.Debugf("sent notification to notifications channel")
+			default:
+				logger.Warnf("dropping notification")
 			}
 		}
 	}()
