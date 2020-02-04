@@ -2,6 +2,8 @@ package translator
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/gogo/protobuf/proto"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -12,7 +14,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
-	"strings"
 )
 
 const unnamedRouteName = "<unnamed>"
@@ -96,7 +97,7 @@ func (rv *routeVisitor) visitAndReorder(resource resourceWithRoutes) ([]*gloov1.
 
 // Implements Converter interface by recursively visiting a routing resource
 type routeVisitor struct {
-	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
+	// Used to store of errors and warnings for the root resource.
 	reports reporter.ResourceReports
 	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
