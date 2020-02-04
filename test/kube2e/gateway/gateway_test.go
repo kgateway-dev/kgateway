@@ -606,14 +606,17 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
-				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				// wrapped in eventually to get around resource version errors
+				Eventually(func() error {
+					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
 
-				Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
-				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
+					Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
+					petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
 
-				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+					_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
+					return err
+				}, "5s", "0.5s").ShouldNot(HaveOccurred())
 
 				// FDS should update the upstream with discovered rest spec
 				// it can take a long time for this to happen, perhaps petstore wasn't healthy yet?
