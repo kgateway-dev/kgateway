@@ -2,9 +2,10 @@ package v1
 
 import (
 	"encoding/binary"
-	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"hash"
 	"hash/fnv"
+
+	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 
 	"github.com/mitchellh/hashstructure"
 	safe_hasher "github.com/solo-io/protoc-gen-ext/pkg/hasher"
