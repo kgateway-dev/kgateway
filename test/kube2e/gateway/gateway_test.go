@@ -638,7 +638,7 @@ var _ = Describe("Kube2e: gateway", func() {
 						return 0, err
 					}
 					return vs.Status.State, nil
-				}, "10s", "0.3s").Should(Equal(core.Status_Accepted))
+				}, "10s", "0.5s").Should(Equal(core.Status_Accepted))
 			})
 		})
 
