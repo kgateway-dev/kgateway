@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
@@ -471,12 +470,8 @@ var _ = Describe("Kube2e: gateway", func() {
 				// sanity check that validation is enabled/strict
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
-					// ensure error was validation error before returning
-					if err != nil && strings.Contains(err.Error(), "could not render proxy") {
-						return err
-					}
-					return nil
-				}, time.Second*10).Should(HaveOccurred())
+					return err
+				}, time.Second*10).Should(And(HaveOccurred(), MatchError(ContainSubstring("could not render proxy"))))
 
 				// disable strict validation
 				UpdateAlwaysAcceptSetting(true)
@@ -563,7 +558,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 			})
 
-			PIt("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
+			It("adds the invalid virtual services back into the proxy when updating an upstream makes them valid", func() {
 
 				petstoreDeployment, petstoreSvc := petstore(testHelper.InstallNamespace)
 
@@ -609,43 +604,30 @@ var _ = Describe("Kube2e: gateway", func() {
 					reason = vs.Status.Reason
 					return vs.Status.State, nil
 				}, "10s", "0.5s").Should(Equal(core.Status_Rejected))
-
 				Expect(reason).To(ContainSubstring("does not have a rest service spec"))
 
-				petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				// wrapped in eventually to get around resource version errors
+				Eventually(func() error {
+					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
+					Expect(err).NotTo(HaveOccurred())
 
-				Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
-				petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
+					Expect(petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()).To(BeEmpty())
+					petstoreUs.Metadata.Labels[syncer.FdsLabelKey] = "enabled"
 
-				_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
+					_, err = upstreamClient.Write(petstoreUs, clients.WriteOpts{OverwriteExisting: true})
+					return err
+				}, "5s", "0.5s").ShouldNot(HaveOccurred())
 
 				// FDS should update the upstream with discovered rest spec
+				// it can take a long time for this to happen, perhaps petstore wasn't healthy yet?
 				Eventually(func() interface{} {
 					petstoreUs, err := upstreamClient.Read(testHelper.InstallNamespace, upstreamName, clients.ReadOpts{})
 					Expect(err).ToNot(HaveOccurred())
 					return petstoreUs.GetKube().GetServiceSpec().GetRest().GetSwaggerInfo().GetUrl()
-				}, "10s", "1s").ShouldNot(BeEmpty())
+				}, "120s", "1s").ShouldNot(BeEmpty())
 
 				// we have updated an upstream, which prompts Gloo to send a notification to the
 				// gateway to resync virtual service status
-				// TODO(kdorosh) is this event/notification being dropped?
-
-				// TODO(kdorosh) fix this bug, this shouldn't be required
-				// change vs to ensure proxy gets updated so Gloo updates proxy status
-				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
-				vs, err := virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				vs.VirtualHost.Domains[0] = "petstore2.com" // just to change so resync in gateway is called :/
-				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
-				time.Sleep(4 * time.Second) // wait so resource version gets updated before re-reading
-				vs, err = virtualServiceClient.Read(vsWithFunctionRoute.Metadata.Namespace, vsWithFunctionRoute.Metadata.Name, clients.ReadOpts{})
-				Expect(err).NotTo(HaveOccurred())
-				vs.VirtualHost.Domains[0] = "petstore.com"
-				_, err = virtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-				Expect(err).NotTo(HaveOccurred())
 
 				// the VS should get accepted
 				Eventually(func() (core.Status_State, error) {

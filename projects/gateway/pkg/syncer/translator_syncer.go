@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/go-utils/hashutils"
-	"go.uber.org/zap/zapcore"
-
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -112,6 +112,8 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			case <-ctx.Done():
 				return
 			case status := <-statuses:
+				logger := contextutils.LoggerFrom(ctx)
+				logger.Debugf("gateway received proxy status: %v", status)
 				if status.Equal(lastStatus) {
 					continue
 				}
@@ -119,6 +121,11 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 				subresourceStatuses := map[string]*core.Status{
 					fmt.Sprintf("%T.%s", proxy, proxy.GetMetadata().Ref().Key()): &status,
 				}
+
+				logger.Debugw("gateway reports to be written",
+					zap.Any("reports", reports),
+					zap.Any("subresourceStatuses", subresourceStatuses))
+
 				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
 				if err != nil {
 					contextutils.LoggerFrom(ctx).Errorf("err: updating dependent statuses: %v", err)

@@ -182,7 +182,7 @@ steps:
     - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
     - 'RUN_KUBE2E_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
-  args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
   volumes: *vol
   waitFor: ['build-test-assets', 'set-zone']
   id: 'regression-tests'
@@ -204,7 +204,7 @@ steps:
     - 'CLUSTER_LOCK_TESTS=1'
   dir: './gopath/src/github.com/solo-io/gloo'
   volumes: *vol
-  args: ['-r', '--noColor', '-failFast', '-trace', '-progress', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
   waitFor: ['build-test-assets', 'get-credentials']
   id: 'regression-tests-cluster-lock'
 

@@ -3,8 +3,12 @@ package gateway_test
 import (
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"testing"
 	"time"
 
@@ -105,6 +109,67 @@ func StartTestHelper() {
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
 	UpdateAlwaysAcceptSetting(false)
+
+	// Ensure gloo reaches valid state and doesn't continually resync
+	// we can consider doing the same for leaking go-routines after resyncs
+	EventuallyReachesConsistentState()
+}
+
+func EventuallyReachesConsistentState() {
+	metricsPort := strconv.Itoa(9091)
+	portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
+		"deployment/gloo", metricsPort)
+	portFwd.Stdout = os.Stderr
+	portFwd.Stderr = os.Stderr
+	err := portFwd.Start()
+	Expect(err).ToNot(HaveOccurred())
+
+	defer func() {
+		if portFwd.Process != nil {
+			portFwd.Process.Kill()
+		}
+	}()
+
+	// make sure we eventually reach an eventually consistent state
+	lastSnapOut := getSnapOut(metricsPort)
+
+	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
+	time.Sleep(eventuallyConsistentPollingInterval)
+
+	Eventually(func() bool {
+		currentSnapOut := getSnapOut(metricsPort)
+		consistent := lastSnapOut == currentSnapOut
+		lastSnapOut = currentSnapOut
+		return consistent
+	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
+
+	Consistently(func() string {
+		currentSnapOut := getSnapOut(metricsPort)
+		return currentSnapOut
+	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
+}
+
+// needs a port-forward of the metrics port before a call to this will work
+func getSnapOut(metricsPort string) string {
+	var bodyResp string
+	Eventually(func() string {
+		res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
+		if err != nil || res.StatusCode != 200 {
+			return ""
+		}
+		defer res.Body.Close()
+		body, err := ioutil.ReadAll(res.Body)
+		Expect(err).ToNot(HaveOccurred())
+		bodyResp = string(body)
+		return bodyResp
+	}, "3s", "0.5s").ShouldNot(BeEmpty())
+
+	Expect(bodyResp).To(ContainSubstring("api_gloo_solo_io_emitter_snap_out"))
+	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d]+)")
+	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
+	Expect(matches).To(HaveLen(1))
+	snapOut := matches[0][1]
+	return snapOut
 }
 
 func TearDownTestHelper() {
@@ -144,6 +209,10 @@ func getHelmValuesOverrideFile() (filename string, cleanup func()) {
 	values, err := ioutil.TempFile("", "*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
+	// disabling usage statistics is not important to the functionality of the tests,
+	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
+	// install to a single namespace so we can run multiple invocations of the regression tests against the
+	// same cluster in CI.
 	_, err = values.Write([]byte(`
 global:
   glooRbac:
@@ -152,6 +221,9 @@ global:
 settings:
   singleNamespace: true
   create: true
+gloo:
+  deployment:
+    disableUsageStatistics: true
 `))
 	Expect(err).NotTo(HaveOccurred())
 
