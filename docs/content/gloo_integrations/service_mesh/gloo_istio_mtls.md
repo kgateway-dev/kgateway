@@ -69,7 +69,7 @@ or you can use your preferred upstream. Either way, you'll need to enable istio-
 kubectl label namespace default istio-injection=enabled
 ```
 
-To install the bookinfo sample app, run this command:
+To install the bookinfo sample app, cd into your downloaded Istio directory and run this command:
 ```bash
 kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ```
@@ -77,7 +77,9 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ### Step 3 - Configure Gloo
 
 This guide assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
-and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does NOT exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more. 
+and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the
+`istio-injection` label does *not* exist on the `gloo-system` namespace.
+See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
 
 To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
 [quick start](../../../installation/gateway/kubernetes/) guide for more information.
@@ -205,7 +207,7 @@ See the bottom of the page for instructions on [testing your configuration]({{% 
 #### With SDS mode
 
 Gloo can easily and automatically plug into the Istio SDS architecture. 
-To configure Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over Unix Domain Socket:
+To allow Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
 ```bash
 kubectl edit deploy/gateway-proxy -n gloo-system
 ```
