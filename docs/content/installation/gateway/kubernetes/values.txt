@@ -247,5 +247,3 @@
 |global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
 |global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
-|global.glooMtls.tlsKey[]|uint8||Byte string of TLS key|
-|global.glooMtls.tlsCert[]|uint8||Byte string of TLS cert|

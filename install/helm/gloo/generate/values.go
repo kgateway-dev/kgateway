@@ -308,7 +308,5 @@ type Stats struct {
 }
 
 type Mtls struct {
-	Enabled bool   `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
-	TlsKey  []byte `json:"tlsKey,omitempty" desc:"Byte string of TLS key"`
-	TlsCert []byte `json:"tlsCert,omitempty" desc:"Byte string of TLS cert"`
+	Enabled bool `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
 }
