@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/errors"
 	"go.uber.org/zap/zapcore"
 
 	"github.com/solo-io/go-utils/hashutils"
@@ -18,7 +18,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"google.golang.org/grpc"
-
 )
 
 type Validator interface {
