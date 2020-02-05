@@ -57,7 +57,7 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 			case notifications <- struct{}{}:
 				logger.Debugf("sent notification to notifications channel")
 			default:
-				logger.Warnf("dropping notification")
+				logger.Debug("dropping notification")
 			}
 		}
 	}()

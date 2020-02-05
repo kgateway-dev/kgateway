@@ -3,7 +3,6 @@ package syncer
 import (
 	"context"
 	"fmt"
-
 	"go.uber.org/zap/zapcore"
 
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
@@ -89,10 +88,6 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	// repeat for all resources
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
-		logger.Debugw("propagating reports to proxy status",
-			zap.Any("reports", reports),
-			zap.Any("validatedReports", reports.Validate()),
-			zap.Any("strictValidatedReports", reports.ValidateStrict()))
 		if err := s.propagateProxyStatus(ctx, proxy, reports); err != nil {
 			return err
 		}
