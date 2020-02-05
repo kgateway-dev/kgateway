@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: Ignore opaque metadata when hashing, which can make Gloo & Gateway interactions less noisy and reduce unnecessary resyncs.
+    issueLink: https://github.com/solo-io/gloo/issues/2331
+  - type: FIX
+    description: Fix leaking goroutine in validation.
+    issueLink: https://github.com/solo-io/gloo/issues/2313
+    resolvesIssue: false

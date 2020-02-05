@@ -1,7 +1,8 @@
 package gzip
 
 import (
-	"github.com/pkg/errors"
+	"github.com/rotisserie/eris"
+
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -37,7 +38,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	gzipFilter, err := plugins.NewStagedFilterWithConfig(filterName, gzipConfig, pluginStage)
 	if err != nil {
-		return nil, errors.Wrapf(err, "generating filter config")
+		return nil, eris.Wrapf(err, "generating filter config")
 	}
 
 	return []plugins.StagedHttpFilter{gzipFilter}, nil

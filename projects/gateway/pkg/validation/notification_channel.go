@@ -20,6 +20,7 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 	}
 
 	go func() {
+		logger.Infof("starting notification channel")
 		defer close(notifications)
 		defer logger.Infof("shutting down notification channel")
 		for {
@@ -31,21 +32,30 @@ func MakeNotificationChannel(ctx context.Context, client validation.ProxyValidat
 
 			notification, err := stream.Recv()
 			if err != nil {
+				select {
+				case <-ctx.Done():
+					return
+				default:
+				}
 				logger.Errorw("error reading from stream. attempting to establish new stream.", zap.Error(err))
 				stream, err = startNotificationStream(ctx, client, logger)
 				if err != nil {
+					select {
+					case <-ctx.Done():
+						return
+					default:
+					}
+					// TODO(kdorosh) be noiser here when we fail. bubble up onto proxy status perhaps
 					logger.Errorw("failed to resume notifications. Gateway will no longer receive validation resync notifications from Gloo.", zap.Error(err))
 					return
 				}
 				continue
 			}
-
-			logger.Debug("received", zap.Any("notification", notification))
+			logger.Debugf("received notification", zap.Any("notification", notification), zap.Error(err))
 
 			select {
-			case <-ctx.Done():
-				return
 			case notifications <- struct{}{}:
+				logger.Debugf("sent notification to notifications channel")
 			default:
 				logger.Debug("dropping notification")
 			}
@@ -66,6 +76,8 @@ func startNotificationStream(ctx context.Context, client validation.ProxyValidat
 	if _, err = stream.Recv(); err != nil {
 		return nil, err
 	}
+
+	contextutils.LoggerFrom(ctx).Debug("validation ACK received")
 
 	return stream, nil
 }

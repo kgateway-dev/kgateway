@@ -180,7 +180,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
     - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4',  '-noColor', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
   waitFor: ['build-test-assets', 'docker-push']
   id: 'regression-tests'
 
