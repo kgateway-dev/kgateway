@@ -27,7 +27,8 @@ before editing the upstream. This prevents your changes from being overwritten.
 This guide was tested with GKE v1.15.
 
 Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing
-Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes. We recommend installing Istio in a GKE cluster, which has this feature turned on by default.
+Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes.
+We recommend installing Istio in a cluster which has this feature turned on by default (for example, GKE).
 
 ### Step 1 - Install Istio
 
