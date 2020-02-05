@@ -74,6 +74,26 @@ func (v *visitableRouteTable) InputResource() resources.InputResource {
 	return v.RouteTable
 }
 
+// Implements Converter interface by recursively visiting a routing resource
+type routeVisitor struct {
+	// Used to store errors and warnings for the visited virtual services and route tables.
+	reports reporter.ResourceReports
+	// Used to select route tables for delegated routes.
+	routeTableSelector RouteTableSelector
+}
+
+// Helper object used to store information about previously visited routes.
+type routeInfo struct {
+	// The path prefix for the route.
+	prefix string
+	// The options on the route.
+	options *gloov1.RouteOptions
+	// Used to build the name of the route as we traverse the tree.
+	name string
+	// Is true if any route on the current route tree branch is explicitly named by the user.
+	hasName bool
+}
+
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
 	return rv.visitAndReorder(wrapper)
@@ -93,26 +113,6 @@ func (rv *routeVisitor) visitAndReorder(resource resourceWithRoutes) ([]*gloov1.
 	glooutils.SortRoutesByPath(routes)
 
 	return routes, nil
-}
-
-// Implements Converter interface by recursively visiting a routing resource
-type routeVisitor struct {
-	// Used to store of errors and warnings for the root resource.
-	reports reporter.ResourceReports
-	// Used to select route tables for delegated routes.
-	routeTableSelector RouteTableSelector
-}
-
-// Helper object used to store information about previously visited routes.
-type routeInfo struct {
-	// The path prefix for the route.
-	prefix string
-	// The options on the route.
-	options *gloov1.RouteOptions
-	// Used to build the name of the route as we traverse the tree.
-	name string
-	// Is true if any route on the current route tree branch is explicitly named by the user.
-	hasName bool
 }
 
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
@@ -137,9 +137,6 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				rv.reports.AddError(resource.InputResource(), err)
 				continue
 			}
-
-			// If the current route has no name, but the parent one does, then we consider the resulting route to be named.
-			routeHasName = routeHasName || parentRoute.hasName
 		}
 
 		switch action := routeClone.Action.(type) {
@@ -212,6 +209,7 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 	return routes, nil
 }
 
+// Returns the name of the route and a flag that is true if either the route or the parent route are explicitly named.
 // Route names have the following format: "vs:myvirtualservice_route:myfirstroute_rt:myroutetable_route:<unnamed>"
 func routeName(resource resources.InputResource, route *gatewayv1.Route, parentRouteInfo *routeInfo) (string, bool) {
 	var prefix string
@@ -237,6 +235,9 @@ func routeName(resource resources.InputResource, route *gatewayv1.Route, parentR
 	} else {
 		isRouteNamed = true
 	}
+
+	// If the current route has no name, but the parent one does, then we consider the resulting route to be named.
+	isRouteNamed = isRouteNamed || (parentRouteInfo != nil && parentRouteInfo.hasName)
 
 	return fmt.Sprintf("%s%s:%s_route:%s", prefix, resourceKindName, resourceName, routeDisplayName), isRouteNamed
 }
