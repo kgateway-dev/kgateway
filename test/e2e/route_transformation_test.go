@@ -56,7 +56,7 @@ var _ = Describe("Transformations", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-		envoyPort = services.NextBindPort()
+		envoyPort = defaults.HttpPort
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
@@ -124,7 +124,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "127.0.0.1",
+				BindAddress: "0.0.0.0",
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
