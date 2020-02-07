@@ -51,8 +51,8 @@ var _ = Describe("Plugin", func() {
 		plugin = NewPlugin()
 	})
 
-	tlsContext := func() *envoyauth.DownstreamTlsContext {
-		return pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.DownstreamTlsContext)
+	tlsContext := func() *envoyauth.UpstreamTlsContext {
+		return pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 	}
 	It("should process an upstream with tls config", func() {
 		err := plugin.ProcessUpstream(params, upstream, out)
