@@ -109,7 +109,6 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.GenerateRequestId).To(Equal(gogoutils.BoolGogoToProto(hcms.GenerateRequestId)))
 		Expect(cfg.Proxy_100Continue).To(Equal(hcms.Proxy_100Continue))
 		Expect(cfg.StreamIdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.StreamIdleTimeout)))
-		Expect(cfg.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
 		Expect(cfg.MaxRequestHeadersKb).To(Equal(gogoutils.UInt32GogoToProto(hcms.MaxRequestHeadersKb)))
 		Expect(cfg.RequestTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.RequestTimeout)))
 		Expect(cfg.DrainTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DrainTimeout)))
@@ -118,6 +117,9 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(hcms.PreserveExternalRequestId))
+
+		Expect(cfg.CommonHttpProtocolOptions).NotTo(BeNil())
+		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
 
 		trace := cfg.Tracing
 		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
