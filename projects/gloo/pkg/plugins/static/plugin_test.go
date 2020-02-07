@@ -91,6 +91,9 @@ var _ = Describe("Plugin", func() {
 
 	Context("ssl", func() {
 		tlsContext := func() *envoyauth.UpstreamTlsContext {
+			if out.TransportSocket == nil {
+				return nil
+			}
 			return pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 		}
 		It("doesn't have ssl by default", func() {
