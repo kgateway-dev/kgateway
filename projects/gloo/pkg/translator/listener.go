@@ -14,6 +14,7 @@ import (
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -225,8 +226,13 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters:       listenerFilters,
-		TlsContext:    downstreamConfig,
+		Filters: listenerFilters,
+
+		TransportSocket: &envoycore.TransportSocket{
+			Name:       pluginutils.TlsTransportSocket,
+			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(downstreamConfig)},
+		},
+
 		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
 	}
 }
