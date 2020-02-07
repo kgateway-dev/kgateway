@@ -121,7 +121,7 @@ var _ = Describe("Plugin", func() {
 			}
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)
-			Expect(tlsContext()).To(BeIdenticalTo(existing))
+			Expect(tlsContext()).To(Equal(existing))
 		})
 	})
 })
