@@ -224,7 +224,8 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 }
 
 func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
-	routes, err := convertRoutes(vs, tables, reports)
+	converter := NewRouteConverter(NewRouteTableSelector(tables), reports)
+	routes, err := converter.ConvertVirtualService(vs)
 	if err != nil {
 		return nil, err
 	}
@@ -246,23 +247,4 @@ func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList
 
 func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name)
-}
-
-func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
-	var routes []*gloov1.Route
-	for _, r := range vs.GetVirtualHost().GetRoutes() {
-
-		mergedRoutes, err := NewRouteConverter(vs, tables, reports).ConvertRoute(r)
-		if err != nil {
-			return nil, err
-		}
-		for _, route := range mergedRoutes {
-			if err := appendSource(route, vs); err != nil {
-				// should never happen
-				return nil, err
-			}
-		}
-		routes = append(routes, mergedRoutes...)
-	}
-	return routes, nil
 }

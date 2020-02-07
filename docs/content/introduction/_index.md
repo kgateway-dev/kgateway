@@ -20,7 +20,7 @@ weight: 10
 * **Function-level routing allows integration of legacy applications, microservices and serverless**: Gloo can route
 requests directly to _functions_, which can be: a serverless function call (e.g. Lambda, Google Cloud Function, OpenFaaS function, etc.);
 an API call on a microservice or a legacy service (e.g. a REST API call, OpenAPI operation, XML/SOAP request etc.);
-or publishing to a message queue (e.g. NATS, AMQP, etc.). This unique ability is what makes Gloo the only API gateway
+or publishing to a message queue. This unique ability is what makes Gloo the only API gateway
 that supports hybrid apps, as well as the only one that does not tie the user to a specific paradigm.
 
 * **Gloo incorporates vetted open-source projects to provide broad functionality**: Gloo support high-quality features by integrating with top open-source projects, including gRPC, GraphQL, OpenTracing, NATS and more. Gloo's architecture allows rapid integration of future popular open-source projects as they emerge.

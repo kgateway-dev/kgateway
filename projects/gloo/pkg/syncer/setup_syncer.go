@@ -461,7 +461,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
-	validator := validation.NewValidator(t)
+	validator := validation.NewValidator(watchOpts.Ctx, t)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
