@@ -172,11 +172,11 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 
 		bash := fmt.Sprintf(`
 set -ex
-CID=$(docker run -d  soloio/envoy:%s /bin/bash -c exit)
+CID=$(docker run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
 
 # just print the image sha for repoducibility
 echo "Using Envoy Image:"
-docker inspect soloio/envoy:%s -f "{{.RepoDigests}}"
+docker inspect quay.io/solo-io/envoy-gloo:%s -f "{{.RepoDigests}}"
 
 docker cp $CID:/usr/local/bin/envoy .
 docker rm $CID
