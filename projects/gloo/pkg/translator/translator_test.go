@@ -392,7 +392,7 @@ var _ = Describe("Translator", func() {
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
 			Expect(headerMatch.InvertMatch).To(Equal(false))
-			regex := headerMatch.GetRegexMatch()
+			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
 		})
 
