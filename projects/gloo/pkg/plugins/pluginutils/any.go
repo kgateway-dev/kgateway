@@ -1,20 +1,28 @@
 package pluginutils
 
 import (
+	"fmt"
+
+	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/proto"
+	goproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	pany "github.com/golang/protobuf/ptypes/any"
 )
 
 func MessageToAny(msg proto.Message) (*pany.Any, error) {
-	b := proto.NewBuffer(nil)
-	b.SetDeterministic(true)
-	if err := b.Marshal(msg); err != nil {
+
+	name, err := protoToMessageName(msg)
+	if err != nil {
+		return nil, err
+	}
+	buf, err := protoToMessageBytes(msg)
+	if err != nil {
 		return nil, err
 	}
 	return &pany.Any{
-		TypeUrl: "type.googleapis.com/" + proto.MessageName(msg),
-		Value:   b.Bytes(),
+		TypeUrl: name,
+		Value:   buf,
 	}, nil
 }
 
@@ -39,4 +47,29 @@ func MustAnyToMessage(a *pany.Any) proto.Message {
 		panic(err)
 	}
 	return x.Message
+}
+
+func protoToMessageName(msg proto.Message) (string, error) {
+	typeUrlPrefix := "type.googleapis.com/"
+
+	if s := gogoproto.MessageName(msg); s != "" {
+		return typeUrlPrefix + s, nil
+	} else if s := goproto.MessageName(msg); s != "" {
+		return typeUrlPrefix + s, nil
+	}
+	return "", fmt.Errorf("can't determine message name")
+}
+
+func protoToMessageBytes(msg proto.Message) ([]byte, error) {
+	b := proto.NewBuffer(nil)
+	b.SetDeterministic(true)
+	if err := b.Marshal(msg); err == nil {
+		return b.Bytes(), nil
+	}
+
+	b2 := gogoproto.NewBuffer(nil)
+	b2.SetDeterministic(true)
+	err := b.Marshal(msg)
+	return b2.Bytes(), err
+
 }
