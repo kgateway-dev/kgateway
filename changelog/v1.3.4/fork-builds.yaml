@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Upgrade the `prepare-go-workspace` container so that fork PRs will be built properly.
