@@ -7,10 +7,8 @@ steps:
 # gcloud builds submit --substitutions COMMIT_SHA=abc ./
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
   args:
-    - "--repo-owner"
-    - "solo-io"
     - "--repo-name"
-    - gloo
+    - "$REPO_NAME"
     - "--repo-sha"
     - "$COMMIT_SHA"
     - "--repo-output-dir"
