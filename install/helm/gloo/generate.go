@@ -8,7 +8,6 @@ import (
 	"github.com/ghodss/yaml"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
-	glooVersion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/installutils/helmchart"
 	"github.com/solo-io/go-utils/log"
 )
@@ -22,8 +21,6 @@ var (
 	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.
 	// Provide an example to clarify format (1.2.3, not v1.2.3).
 	helmDocsVersionText = "<release_version, ex: 1.2.3>"
-
-	always = "Always"
 
 	flagOpts = defaultFlagOptions
 )
@@ -87,24 +84,6 @@ func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) erro
 	cfg, err := generateValuesConfig(version, repositoryPrefix, globalPullPolicy)
 	if err != nil {
 		return err
-	}
-
-	// customize config as needed for dev builds
-	if !glooVersion.IsReleaseVersion() {
-		cfg.Gloo.Deployment.Image.PullPolicy = always
-		cfg.Discovery.Deployment.Image.PullPolicy = always
-		cfg.Gateway.Deployment.Image.PullPolicy = always
-		cfg.Gateway.CertGenJob.Image.PullPolicy = always
-
-		cfg.AccessLogger.Image.PullPolicy = always
-
-		cfg.Ingress.Deployment.Image.PullPolicy = always
-		cfg.IngressProxy.Deployment.Image.PullPolicy = always
-		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = always
-
-		for _, v := range cfg.GatewayProxies {
-			v.PodTemplate.Image.PullPolicy = always
-		}
 	}
 
 	return writeYaml(cfg, valuesOutput)
