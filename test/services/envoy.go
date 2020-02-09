@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"text/template"
 
@@ -132,6 +134,36 @@ type EnvoyFactory struct {
 	instances []*EnvoyInstance
 }
 
+func getEnvoyImageTag() string {
+	eit := os.Getenv("ENVOY_IMAGE_TAG")
+	if eit != "" {
+		return eit
+	}
+
+	// get project base
+	gomod, err := exec.Command("go", "env", "GOMOD").CombinedOutput()
+	Expect(err).NotTo(HaveOccurred())
+	gomodfile := strings.TrimSpace(string(gomod))
+	projectbase, _ := filepath.Split(gomodfile)
+
+	envoyinit := filepath.Join(projectbase, "projects/envoyinit/cmd/Dockerfile.envoyinit")
+	inFile, err := os.Open(envoyinit)
+	Expect(err).NotTo(HaveOccurred())
+
+	defer inFile.Close()
+
+	scanner := bufio.NewScanner(inFile)
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.Split(strings.TrimSpace(line), ":")
+		if len(parts) == 2 {
+			return parts[1]
+		}
+
+	}
+	return ""
+}
+
 func NewEnvoyFactory() (*EnvoyFactory, error) {
 	// if an envoy binary is explicitly specified
 	// use it
@@ -164,7 +196,7 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 			return nil, err
 		}
 
-		envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
+		envoyImageTag := getEnvoyImageTag()
 		if envoyImageTag == "" {
 			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 		}
@@ -384,7 +416,7 @@ func (ei *EnvoyInstance) Clean() error {
 }
 
 func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
-	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
+	envoyImageTag := getEnvoyImageTag()
 	if envoyImageTag == "" {
 		return errors.New("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 	}
