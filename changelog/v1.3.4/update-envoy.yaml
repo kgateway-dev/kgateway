@@ -7,3 +7,6 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/2395
   description: >
     Use envoy's SafeRegex feature to have more deterministic regex performance.
+- type: NON_USER_FACING
+  description: >
+    Update the control plane to not use fields deprecated in envoy.
