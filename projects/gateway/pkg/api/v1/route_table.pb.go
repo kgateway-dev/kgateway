@@ -185,8 +185,8 @@ type RouteTable struct {
 	// Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of
 	// each route table in the order they are defined. If multiple route tables define the same weight, Gloo will sort the
 	// routes which belong to those tables to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`).
-	// Gloo will also alert the user by adding a warning to the status of the parent resource (the one that specifies
-	// the `RouteTableSelector`).
+	// In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource
+	// (the one that specifies the `RouteTableSelector`).
 	Weight *types.Int32Value `protobuf:"bytes,2,opt,name=weight,proto3" json:"weight,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation

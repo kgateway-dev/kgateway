@@ -9,12 +9,9 @@ changelog:
     To prevent this, we are adding an optional `weight` field to the `RouteTable` resource. Gloo will now inspect this
     field to determine the order in which route tables are to be evaluated when a `selector` matches multiple ones.
     This will give the user control over the order in which the routes will appear on the final `Proxy` resource.
-    When a `RouteTableSelector` matches multiple route tables, we can distinguish three scenarios: 1) if all the route
-    tables specify a `weight`, Gloo will process them in ascending order by `weight` and collect the routes of each
-    route table in the order they are defined; 2) if none of the matched route tables specifies a `weight`, Gloo will
-    process the tables in no particular order, but will sort the resulting routes to avoid short-circuiting; 3) if only
-    a subset of the matched route tables specifies `weights`, Gloo will first process that subset in ascending order by
-    `weight` and then process the rest of the matched route tables in no specific order; in this case the resulting
-    routes will NOT be sorted and Gloo will alert the user by adding a warning to the status of the parent resource
-    (the one that specifies the `RouteTableSelector` that matches said tables).
+    The field is optional; if no value is specified, the weight defaults to `0` (zero). Gloo will process the route
+    tables matched by a selector in ascending order by weight and collect the routes of each route table in the order
+    they are defined. If multiple route tables define the same weight, Gloo will sort the routes which belong to those
+    tables to avoid short-circuiting. In this scenario, Gloo will also alert the user by adding a warning to the status
+    of the parent resource (the one that specifies the `RouteTableSelector`).
   issueLink: https://github.com/solo-io/gloo/issues/2233
