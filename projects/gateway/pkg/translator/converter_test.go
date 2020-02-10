@@ -631,7 +631,7 @@ var _ = Describe("Route converter", func() {
 
 		Describe("route tables with weights", func() {
 
-			var rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b *v1.RouteTable
+			var rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b, rt3c *v1.RouteTable
 
 			BeforeEach(func() {
 
@@ -665,26 +665,32 @@ var _ = Describe("Route converter", func() {
 				// No weight
 				rt1b = buildRouteTableWithSimpleAction("rt-1-b", "ns-2", "/foo/a/1/2", nil)
 
-				// No weight
 				rt3a = buildRouteTableWithSimpleAction("rt-3-a", "ns-3", "/foo/c/1", nil)
+				rt3a.Weight = &types.Int32Value{Value: -20}
 
-				rt3b = buildRouteTableWithSimpleAction("rt-3-b", "ns-3", "/foo/c/2", nil)
+				// The following RTs have the same weight. We want to verify that only the routes from rt3b and rt3c
+				// get re-sorted, but that we respect the -10 weight on rt3a.
+				rt3b = buildRouteTableWithSimpleAction("rt-3-b", "ns-3", "/foo/c/1/short-circuited", nil)
 				rt3b.Weight = &types.Int32Value{Value: 0}
+				rt3c = buildRouteTableWithSimpleAction("rt-3-c", "ns-3", "/foo/c/2", nil)
+				rt3c.Weight = &types.Int32Value{Value: 0}
 
-				allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b}
+				allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b, rt3c}
 			})
 
 			It("works as expected", func() {
+
 				converted, err := visitor.ConvertVirtualService(vs)
 
 				Expect(err).NotTo(HaveOccurred())
-				Expect(converted).To(HaveLen(5))
+				Expect(converted).To(HaveLen(6))
 
-				Expect(converted[0]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/2")))
-				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/1")))
-				Expect(converted[2]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/b")))
-				Expect(converted[3]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1/2")))
-				Expect(converted[4]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1")))
+				Expect(converted[0]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/1")))
+				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/2")))
+				Expect(converted[2]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/c/1/short-circuited")))
+				Expect(converted[3]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/b")))
+				Expect(converted[4]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1/2")))
+				Expect(converted[5]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1")))
 
 				By("virtual service contains a warning about two child route tables with the same weight", func() {
 					_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
@@ -695,12 +701,21 @@ var _ = Describe("Route converter", func() {
 					))
 				})
 
+				By("route table 1 contains a warning about two child route tables with the same weight", func() {
+					_, vsReport := reports.Find("*v1.RouteTable", rt1.Metadata.Ref())
+					Expect(vsReport).NotTo(BeNil())
+					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings).To(ConsistOf(
+						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1a, rt1b}, 0).Error(),
+					))
+				})
+
 				By("route table 3 contains a warning about two child route tables with the same weight", func() {
 					_, vsReport := reports.Find("*v1.RouteTable", rt3.Metadata.Ref())
 					Expect(vsReport).NotTo(BeNil())
 					Expect(vsReport.Warnings).To(HaveLen(1))
 					Expect(vsReport.Warnings).To(ConsistOf(
-						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3a, rt3b}, 0).Error(),
+						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3b, rt3c}, 0).Error(),
 					))
 				})
 
