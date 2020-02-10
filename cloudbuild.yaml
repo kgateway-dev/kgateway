@@ -5,12 +5,10 @@ steps:
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
 # gcloud builds submit --substitutions COMMIT_SHA=abc ./
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
   args:
-    - "--repo-owner"
-    - "solo-io"
     - "--repo-name"
-    - gloo
+    - "$REPO_NAME"
     - "--repo-sha"
     - "$COMMIT_SHA"
     - "--repo-output-dir"
