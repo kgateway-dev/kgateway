@@ -179,18 +179,14 @@ type RouteTable struct {
 	Routes []*Route `protobuf:"bytes,1,rep,name=routes,proto3" json:"routes,omitempty"`
 	// When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this
 	// field to determine the order in which the route tables are to be evaluated. This determines the order in which
-	// the routes will appear on the final `Proxy` resource.
+	// the routes will appear on the final `Proxy` resource. The field is optional; if no value is specified, the weight
+	// defaults to 0 (zero).
 	//
-	// If all the matching route tables specify a weight, Gloo will process them in ascending order by weight and
-	// collect the routes of each route table in the order they are defined.
-	//
-	// If none of the matched route tables specifies a weight, Gloo will process the tables in no particular order,
-	// but will sort the resulting routes to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`).
-	//
-	// If only a subset of the matched route tables specifies weights, Gloo will first process that subset in ascending
-	// order by weight and then process the rest of the matched route tables in no specific order; in this case the
-	// resulting routes will NOT be sorted and Gloo will alert the user by adding a warning to the status of the parent
-	// resource (the one that specifies the `RouteTableSelector` that matches said tables).
+	// Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of
+	// each route table in the order they are defined. If multiple route tables define the same weight, Gloo will sort the
+	// routes which belong to those tables to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`).
+	// Gloo will also alert the user by adding a warning to the status of the parent resource (the one that specifies
+	// the `RouteTableSelector`).
 	Weight *types.Int32Value `protobuf:"bytes,2,opt,name=weight,proto3" json:"weight,omitempty"`
 	// Status indicates the validation status of this resource.
 	// Status is read-only by clients, and set by gloo during validation
