@@ -63,75 +63,97 @@ var _ = Describe("RouteTableSorter", func() {
 
 	When("an empty list is passed", func() {
 		It("returns nothing without errors", func() {
-			haveBeenSorted, errs := sorter.Sort(nil)
+			byWeight, weights, errs := sorter.IndexByWeight(nil)
 			Expect(errs).To(BeNil())
-			Expect(haveBeenSorted).To(BeFalse())
+			Expect(byWeight).To(BeEmpty())
+			Expect(weights).To(BeEmpty())
 		})
 	})
 
 	When("a single route table is passed", func() {
-
 		It("returns the table without errors", func() {
-			haveBeenSorted, errs := sorter.Sort(v1.RouteTableList{noWeight1})
+			byWeight, weights, errs := sorter.IndexByWeight(v1.RouteTableList{noWeight1})
 			Expect(errs).To(BeNil())
-			Expect(haveBeenSorted).To(BeFalse())
+			Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
+			Expect(byWeight).To(ConsistOf(BeEquivalentTo(v1.RouteTableList{noWeight1})))
 		})
 	})
 
 	Context("multiple route tables are passed", func() {
 
 		When("no route tables have weights", func() {
-			It("does not sort the tables and returns the correct flag", func() {
+			It("correctly indexes them and returns the expected warning", func() {
 				tables := v1.RouteTableList{noWeight1, noWeight2, noWeight3}
-				haveBeenSorted, errs := sorter.Sort(tables)
-				Expect(errs).To(BeNil())
-				Expect(haveBeenSorted).To(BeFalse())
-				Expect(tables).To(Equal(v1.RouteTableList{noWeight1, noWeight2, noWeight3}))
+				byWeight, weights, errs := sorter.IndexByWeight(tables)
+
+				Expect(weights).To(HaveLen(1))
+				Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
+
+				Expect(byWeight).To(HaveLen(1))
+				Expect(byWeight[0]).To(ConsistOf(noWeight1, noWeight2, noWeight3))
+
+				Expect(errs).To(ConsistOf(testutils.HaveInErrorChain(
+					translator.RouteTablesWithSameWeightErr(v1.RouteTableList{noWeight1, noWeight2, noWeight3}, 0),
+				)))
 			})
 		})
 
-		When("all route tables have weights", func() {
-			It("sorts the tables in ascending order by weight", func() {
+		When("all route tables have distinct weights", func() {
+			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{weightTen, weightMinus10, weightTwenty, weightZero}
-				haveBeenSorted, errs := sorter.Sort(tables)
+				byWeight, weights, errs := sorter.IndexByWeight(tables)
+
 				Expect(errs).To(BeNil())
-				Expect(haveBeenSorted).To(BeTrue())
-				Expect(tables).To(Equal(v1.RouteTableList{weightMinus10, weightZero, weightTen, weightTwenty}))
+
+				Expect(weights).To(HaveLen(4))
+				Expect(weights).To(Equal([]int32{-10, 0, 10, 20}))
+
+				Expect(byWeight).To(HaveLen(4))
+				Expect(byWeight[-10]).To(ConsistOf(weightMinus10))
+				Expect(byWeight[0]).To(ConsistOf(weightZero))
+				Expect(byWeight[10]).To(ConsistOf(weightTen))
+				Expect(byWeight[20]).To(ConsistOf(weightTwenty))
 			})
 		})
 
 		When("some route tables have weights and others don't", func() {
-			It("sorts the ones with weight in ascending order by weight and appends the rest", func() {
-				tables := v1.RouteTableList{weightTen, noWeight1, weightMinus10, weightTwenty, noWeight3, weightZero, noWeight2}
-				haveBeenSorted, errs := sorter.Sort(tables)
+			It("correctly indexes them", func() {
+				tables := v1.RouteTableList{weightTen, noWeight1, weightMinus10, weightTwenty}
+				byWeight, weights, errs := sorter.IndexByWeight(tables)
 
-				Expect(errs).To(ConsistOf(testutils.HaveInErrorChain(
-					translator.WithAndWithoutWeightErr(
-						v1.RouteTableList{weightTen, weightMinus10, weightTwenty, weightZero},
-						v1.RouteTableList{noWeight1, noWeight3, noWeight2},
-					),
-				)), "warns about likely user error")
+				Expect(errs).To(BeNil())
 
-				Expect(haveBeenSorted).To(BeTrue())
-				Expect(tables[:4]).To(Equal(v1.RouteTableList{weightMinus10, weightZero, weightTen, weightTwenty}))
-				Expect(tables[4:]).To(Equal(v1.RouteTableList{noWeight1, noWeight3, noWeight2}))
+				Expect(weights).To(HaveLen(4))
+				Expect(weights).To(Equal([]int32{-10, 0, 10, 20}))
+
+				Expect(byWeight).To(HaveLen(4))
+				Expect(byWeight[-10]).To(ConsistOf(weightMinus10))
+				Expect(byWeight[0]).To(ConsistOf(noWeight1))
+				Expect(byWeight[10]).To(ConsistOf(weightTen))
+				Expect(byWeight[20]).To(ConsistOf(weightTwenty))
 			})
 		})
 
 		When("some route tables have the same weight", func() {
-			It("sorts the routes and warns about likely user error", func() {
+			It("correctly indexes them and returns the expected warning", func() {
 				weightTenClone := proto.Clone(weightTen).(*v1.RouteTable)
 				weightTenClone.Metadata.Name = "ten-dup"
 				tables := v1.RouteTableList{weightZero, weightTen, weightTwenty, weightTenClone}
 
-				haveBeenSorted, errs := sorter.Sort(tables)
+				byWeight, weights, errs := sorter.IndexByWeight(tables)
+
+				Expect(weights).To(HaveLen(3))
+				Expect(weights).To(Equal([]int32{0, 10, 20}))
 
 				Expect(errs).To(ConsistOf(testutils.HaveInErrorChain(
 					translator.RouteTablesWithSameWeightErr(v1.RouteTableList{weightTen, weightTenClone}, 10),
 				)))
 
-				Expect(haveBeenSorted).To(BeTrue())
-				Expect(tables).To(Equal(v1.RouteTableList{weightZero, weightTenClone, weightTen, weightTwenty}))
+				Expect(byWeight).To(HaveLen(3))
+				Expect(byWeight[0]).To(ConsistOf(weightZero))
+				Expect(byWeight[10]).To(HaveLen(2))
+				Expect(byWeight[10]).To(ConsistOf(weightTen, weightTenClone))
+				Expect(byWeight[20]).To(ConsistOf(weightTwenty))
 			})
 		})
 

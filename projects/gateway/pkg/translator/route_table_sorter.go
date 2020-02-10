@@ -8,23 +8,16 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 )
 
-var (
-	RouteTablesWithSameWeightErr = func(tables v1.RouteTableList, weight int32) error {
-		return errors.Errorf("the following route tables have the same weight (%d): [%s]. This can result in "+
-			"unintended ordering of the resulting routes on the Proxy resource", weight, collectNames(tables))
-	}
-	WithAndWithoutWeightErr = func(with, without v1.RouteTableList) error {
-		return errors.Errorf("some route tables define a weight and some do not; this can result in "+
-			"unintended ordering of the resulting routes on the Proxy resource. Tables with weight: [%s], tables without "+
-			"weight: [%s]", collectNames(with), collectNames(without))
-	}
-)
+var RouteTablesWithSameWeightErr = func(tables v1.RouteTableList, weight int32) error {
+	return errors.Errorf("the following route tables have the same weight (%d): [%s]. This can result in "+
+		"unintended ordering of the resulting routes on the Proxy resource", weight, collectNames(tables))
+}
 
 type RouteTableSorter interface {
-	// Sorts the given route table list according to their weights (if present).
-	// - `haveBeenSorted` indicates whether we were able to sort the routes.
-	// - `errs` represent potential issues with the sorting result.
-	Sort(routeTables v1.RouteTableList) (haveBeenSorted bool, errs []error)
+	// Indexes the given route tables by weight and returns them as a map.
+	// The map key set is also returned as a sorted array so the client can range over the map in the desired order.
+	// The error slice contain warning about route tables with duplicated weights.
+	IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.RouteTableList, []int32, []error)
 }
 
 func NewRouteTableSorter() RouteTableSorter {
@@ -33,66 +26,35 @@ func NewRouteTableSorter() RouteTableSorter {
 
 type sorter struct{}
 
-func (sorter) Sort(routeTables v1.RouteTableList) (bool, []error) {
-
-	// No need to sort if we do not have multiple tables
-	if len(routeTables) <= 1 {
-		return false, nil
-	}
-
-	// Separate tables that have weights from the ones that don't
-	var withWeight, withoutWeight v1.RouteTableList
-	for _, table := range routeTables {
-		if weight := table.GetWeight(); weight != nil {
-			withWeight = append(withWeight, table)
-		} else {
-			withoutWeight = append(withoutWeight, table)
-		}
-	}
-
-	// If none of the tables have a weight, we have no way of sorting them
-	if len(withoutWeight) == len(routeTables) {
-		return false, nil
-	}
-
-	// Sort tables by weight. Tables with a weight are always "less" than tables without a weight; hence, route tables
-	// without a weight will always be at the tail of the sorted slice (in no particular order).
-	sort.SliceStable(routeTables, func(i, j int) bool {
-		left, right := routeTables[i], routeTables[j]
-		if left.Weight == nil {
-			return false
-		} else if right.Weight == nil {
-			return true
-		} else {
-			return left.Weight.Value <= right.Weight.Value
-		}
-	})
-
-	return true, validate(withWeight, withoutWeight)
-}
-
-func validate(withWeight, withoutWeight v1.RouteTableList) []error {
-	var warnings []error
+func (s *sorter) IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.RouteTableList, []int32, []error) {
 
 	// Index by weight
-	withWeightMap := map[int32]v1.RouteTableList{}
-	for _, rt := range withWeight {
-		withWeightMap[rt.Weight.Value] = append(withWeightMap[rt.Weight.Value], rt)
+	byWeight := map[int32]v1.RouteTableList{}
+	for _, rt := range routeTables {
+		if rt.Weight == nil {
+			// Just to be safe, handle nil weights
+			byWeight[defaultTableWeight] = append(byWeight[defaultTableWeight], rt)
+		} else {
+			byWeight[rt.Weight.Value] = append(byWeight[rt.Weight.Value], rt)
+		}
 	}
 
 	// Warn if multiple tables have the same weight
-	for weight, tablesForWeight := range withWeightMap {
+	var warnings []error
+	for weight, tablesForWeight := range byWeight {
 		if len(tablesForWeight) > 1 {
 			warnings = append(warnings, RouteTablesWithSameWeightErr(tablesForWeight, weight))
 		}
 	}
 
-	// Warn if some tables have weight and others don't
-	if len(withWeight) > 0 && len(withoutWeight) > 0 {
-		warnings = append(warnings, WithAndWithoutWeightErr(withWeight, withoutWeight))
+	// Collect and sort weights
+	var sortedWeights []int32
+	for weight := range byWeight {
+		sortedWeights = append(sortedWeights, weight)
 	}
+	sort.SliceStable(sortedWeights, func(i, j int) bool { return sortedWeights[i] < sortedWeights[j] })
 
-	return warnings
+	return byWeight, sortedWeights, warnings
 }
 
 func collectNames(routeTables v1.RouteTableList) string {
