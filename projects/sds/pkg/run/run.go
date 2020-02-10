@@ -17,6 +17,7 @@ const (
 	sslKeyFile  = secretDir + v1.TLSPrivateKeyKey        // tls.key
 	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
 	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
+	sdsServerAddress = "0.0.0.0:8236"
 )
 
 func Run(ctx context.Context) error {
@@ -26,7 +27,7 @@ func Run(ctx context.Context) error {
 	grpcServer, snapshotCache := server.SetupEnvoySDS()
 
 	// Run the gRPC Server
-	err := server.RunSDSServer(ctx, grpcServer) // runs the grpc server in internal goroutines
+	err := server.RunSDSServer(ctx, grpcServer, sdsServerAddress) // runs the grpc server in internal goroutines
 	if err != nil {
 		return err
 	}

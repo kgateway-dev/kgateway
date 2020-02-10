@@ -23,7 +23,6 @@ import (
 
 const (
 	sdsClient        = "sds_client"
-	sdsServerAddress = "0.0.0.0:8234"
 )
 
 var (
@@ -47,21 +46,21 @@ func SetupEnvoySDS() (*grpc.Server, cache.SnapshotCache) {
 	return grpcServer, snapshotCache
 }
 
-func RunSDSServer(ctx context.Context, grpcServer *grpc.Server) error {
-	lis, err := net.Listen("tcp", sdsServerAddress)
+func RunSDSServer(ctx context.Context, grpcServer *grpc.Server, serverAddress string) error {
+	lis, err := net.Listen("tcp", serverAddress)
 	if err != nil {
 		return err
 	}
-	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", sdsServerAddress))
+	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", serverAddress))
 	go func() {
 		if err = grpcServer.Serve(lis); err != nil {
-			contextutils.LoggerFrom(ctx).Error(fmt.Sprintf("Stopping sds server listening on %s\n", sdsServerAddress))
+			contextutils.LoggerFrom(ctx).Error(fmt.Sprintf("Stopping sds server listening on %s\n", serverAddress))
 			os.Exit(1)
 		}
 	}()
 	go func() {
 		<-ctx.Done()
-		contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("stopping sds server on %s\n", sdsServerAddress))
+		contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("stopping sds server on %s\n", serverAddress))
 		grpcServer.GracefulStop()
 	}()
 	return nil

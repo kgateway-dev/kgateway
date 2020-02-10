@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/spf13/afero"
@@ -73,14 +72,14 @@ var _ = Describe("SDS Server", func() {
 			cancel        context.CancelFunc
 			grpcServer    *grpc.Server
 			snapshotCache cache.SnapshotCache
+			testServerAddress = "0.0.0.0:8236"
 		)
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
 			grpcServer, snapshotCache = SetupEnvoySDS()
-			err := RunSDSServer(ctx, grpcServer)
+			err := RunSDSServer(ctx, grpcServer, testServerAddress)
 			Expect(err).To(BeNil())
-			UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
 		})
 
 		AfterEach(func() {
@@ -92,15 +91,22 @@ var _ = Describe("SDS Server", func() {
 			var conn *grpc.ClientConn
 
 			// Initiate a connection with the server
-			conn, err := grpc.Dial("0.0.0.0:8234", grpc.WithInsecure())
+			conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
 			Expect(err).To(BeNil())
 			defer conn.Close()
 
 			client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
+			// Before any snapshot is set, expect an error when fetching secrets
 			resp, err := client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
+			Expect(err).NotTo(BeNil())
+
+			// After snapshot is set, expect to see the secrets
+			UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
+			resp, err = client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			Expect(len(resp.GetResources())).To(Equal(2))
+			Expect(resp.Validate()).To(BeNil())
 		})
 	})
 })
