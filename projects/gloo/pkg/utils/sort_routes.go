@@ -11,15 +11,13 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// opinionated method to sort routes by convention
+// Opinionated method to sort routes by convention.
 //
-// for each route, find the "smallest" matcher
-// (i.e., the most-specific one) and use that
-// to sort the entire route
+// For each route, find the "smallest" matcher (i.e., the most-specific one) and use that to sort the entire route.
 
-// matchers sort according to the following rules:
+// Matchers sort according to the following rules:
 // 1. exact path < regex path < prefix path
-// 2. longer path string < shorter path string
+// 2. lexicographically greater path string < lexicographically greater path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		smallest1 := *defaults.DefaultMatcher()
