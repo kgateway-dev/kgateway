@@ -42,8 +42,6 @@ var (
 type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
 	ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error)
-	// Converts a RouteTable to a set of Gloo API routes (i.e. routes on a Proxy resource).
-	ConvertRouteTable(virtualService *gatewayv1.RouteTable) ([]*gloov1.Route, error)
 }
 
 func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, reports reporter.ResourceReports) RouteConverter {
@@ -104,11 +102,6 @@ type routeInfo struct {
 
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
-	return rv.visit(wrapper, nil, nil)
-}
-
-func (rv *routeVisitor) ConvertRouteTable(routeTable *gatewayv1.RouteTable) ([]*gloov1.Route, error) {
-	wrapper := &visitableRouteTable{RouteTable: routeTable}
 	return rv.visit(wrapper, nil, nil)
 }
 
