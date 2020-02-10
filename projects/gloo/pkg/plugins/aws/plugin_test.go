@@ -4,6 +4,7 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	gogoproto "github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -112,7 +113,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	processProtocolOptions := func() {
-		err := conversion.StructToMessage(out.ExtensionProtocolOptions[filterName], lpe)
+		anyExt := out.TypedExtensionProtocolOptions[filterName]
+		err := gogoproto.Unmarshal(anyExt.Value, lpe)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
@@ -121,8 +123,8 @@ var _ = Describe("Plugin", func() {
 		It("should process upstream with secrets", func() {
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.ExtensionProtocolOptions).NotTo(BeEmpty())
-			Expect(out.ExtensionProtocolOptions).To(HaveKey(filterName))
+			Expect(out.TypedExtensionProtocolOptions).NotTo(BeEmpty())
+			Expect(out.TypedExtensionProtocolOptions).To(HaveKey(filterName))
 			processProtocolOptions()
 
 			Expect(lpe.AccessKey).To(Equal(accessKeyValue))

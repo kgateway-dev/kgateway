@@ -19,6 +19,7 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -477,8 +478,13 @@ func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
 			Path: path.Exact,
 		}
 	case *matchers.Matcher_Regex:
-		out.PathSpecifier = &envoyroute.RouteMatch_Regex{
-			Regex: path.Regex,
+		out.PathSpecifier = &envoyroute.RouteMatch_SafeRegex{
+			SafeRegex: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+				},
+				Regex: path.Regex,
+			},
 		}
 	case *matchers.Matcher_Prefix:
 		out.PathSpecifier = &envoyroute.RouteMatch_Prefix{
@@ -500,8 +506,11 @@ func envoyHeaderMatcher(in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatche
 			}
 		} else {
 			if matcher.Regex {
-				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_RegexMatch{
-					RegexMatch: matcher.Value,
+				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_SafeRegexMatch{
+					SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
+						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
+						Regex:      matcher.Value,
+					},
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{
@@ -523,11 +532,34 @@ func envoyQueryMatcher(in []*matchers.QueryParameterMatcher) []*envoyroute.Query
 	var out []*envoyroute.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroute.QueryParameterMatcher{
-			Name:  matcher.Name,
-			Value: matcher.Value,
-			Regex: &wrappers.BoolValue{
-				Value: matcher.Regex,
-			},
+			Name: matcher.Name,
+		}
+
+		if matcher.Value == "" {
+			envoyMatch.QueryParameterMatchSpecifier = &envoyroute.QueryParameterMatcher_PresentMatch{
+				PresentMatch: true,
+			}
+		} else {
+			if matcher.Regex {
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroute.QueryParameterMatcher_StringMatch{
+					StringMatch: &envoy_type_matcher.StringMatcher{
+						MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
+							SafeRegex: &envoy_type_matcher.RegexMatcher{
+								EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
+								Regex:      matcher.Value,
+							},
+						},
+					},
+				}
+			} else {
+				envoyMatch.QueryParameterMatchSpecifier = &envoyroute.QueryParameterMatcher_StringMatch{
+					StringMatch: &envoy_type_matcher.StringMatcher{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: matcher.Value,
+						},
+					},
+				}
+			}
 		}
 		out = append(out, envoyMatch)
 	}
