@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/gogo/protobuf/proto"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -16,7 +18,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-const unnamedRouteName = "<unnamed>"
+const (
+	unnamedRouteName   = "<unnamed>"
+	defaultTableWeight = 0
+)
 
 var (
 	NoActionErr         = errors.New("invalid route: route must specify an action")
@@ -110,10 +115,7 @@ func (rv *routeVisitor) ConvertRouteTable(routeTable *gatewayv1.RouteTable) ([]*
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
 // The additional arguments are used to store the state of the traversal of the current branch of the route tree.
 func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
-	var (
-		routes           []*gloov1.Route
-		shouldSortRoutes bool
-	)
+	var routes []*gloov1.Route
 
 	for _, gatewayRoute := range resource.GetRoutes() {
 
@@ -150,48 +152,59 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				continue
 			}
 
-			// If the route delegates to more than one route table, try to sort the matching route tables.
-			if len(routeTables) > 1 {
-				haveBeenSorted, errs := rv.routeTableSorter.Sort(routeTables)
-				for _, err := range errs {
-					// `errs` indicates potential issues with the sorting result, so we just warn
-					rv.reports.AddWarning(resource.InputResource(), err.Error())
-				}
-
-				// If we were not able to sort the route tables (because the user did not specify any weights),
-				// we want to try and sort the resulting routes in order to protect against short-circuiting.
-				// E.g. we want to avoid `/foo` coming before `/foo/bar`.
-				if !haveBeenSorted {
-					shouldSortRoutes = true
+			// Default missing weights to 0
+			for _, routeTable := range routeTables {
+				if routeTable.GetWeight() == nil {
+					routeTable.Weight = &types.Int32Value{Value: defaultTableWeight}
 				}
 			}
 
-			for _, routeTable := range routeTables {
+			// Index by weight. `errs` contains warnings about multiple tables with the same weight.
+			routeTablesByWeight, sortedWeights, errs := rv.routeTableSorter.IndexByWeight(routeTables)
+			for _, err := range errs {
+				rv.reports.AddWarning(resource.InputResource(), err.Error())
+			}
 
-				// Check for delegation cycles
-				if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
-					return nil, err
+			// Process the route tables in order by weight
+			for _, weight := range sortedWeights {
+				routeTablesForWeight := routeTablesByWeight[weight]
+
+				var rtRoutesForWeight []*gloov1.Route
+				for _, routeTable := range routeTablesForWeight {
+
+					// Check for delegation cycles
+					if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
+						return nil, err
+					}
+
+					// Collect information about this route that are relevant when visiting the delegated route table
+					currentRouteInfo := &routeInfo{
+						prefix:  prefix,
+						options: routeClone.Options,
+						name:    name,
+						hasName: routeHasName,
+					}
+
+					// Make a copy of the existing set of visited route tables and pass that into the recursive call.
+					// We do NOT want it to be modified.
+					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
+
+					// Recursive call
+					subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
+					if err != nil {
+						return nil, err
+					}
+
+					rtRoutesForWeight = append(rtRoutesForWeight, subRoutes...)
 				}
 
-				// Collect information about this route that are relevant when visiting the delegated route table
-				currentRouteInfo := &routeInfo{
-					prefix:  prefix,
-					options: routeClone.Options,
-					name:    name,
-					hasName: routeHasName,
+				// If we have multiple route tables with this weight, we want to try and sort the resulting routes in
+				// order to protect against short-circuiting, e.g. we want to avoid `/foo` coming before `/foo/bar`.
+				if len(routeTablesForWeight) > 1 {
+					glooutils.SortRoutesByPath(rtRoutesForWeight)
 				}
 
-				// Make a copy of the existing set of visited route tables and pass that into the recursive call.
-				// We do NOT want it to be modified.
-				visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
-
-				// Recursive call
-				subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
-				if err != nil {
-					return nil, err
-				}
-
-				routes = append(routes, subRoutes...)
+				routes = append(routes, rtRoutesForWeight...)
 			}
 
 		default:
@@ -215,10 +228,6 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			// should never happen
 			return nil, err
 		}
-	}
-
-	if shouldSortRoutes {
-		glooutils.SortRoutesByPath(routes)
 	}
 
 	return routes, nil

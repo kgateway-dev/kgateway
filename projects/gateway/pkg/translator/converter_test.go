@@ -449,6 +449,14 @@ var _ = Describe("Route converter", func() {
 				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bar/baz")))
 				Expect(converted[2]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bar")))
 				Expect(converted[3]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo")))
+
+				Expect(reports).NotTo(BeNil())
+				_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
+				Expect(vsReport).NotTo(BeNil())
+				Expect(vsReport.Warnings).To(HaveLen(1))
+				Expect(vsReport.Warnings).To(ConsistOf(
+					translator.RouteTablesWithSameWeightErr(allRouteTables, 0).Error(),
+				))
 			})
 		})
 
@@ -623,9 +631,7 @@ var _ = Describe("Route converter", func() {
 
 		Describe("route tables with weights", func() {
 
-			var (
-				rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b *v1.RouteTable
-			)
+			var rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b *v1.RouteTable
 
 			BeforeEach(func() {
 
@@ -689,12 +695,12 @@ var _ = Describe("Route converter", func() {
 					))
 				})
 
-				By("route table 3 contains a warning about chile tables with and without weights", func() {
+				By("route table 3 contains a warning about two child route tables with the same weight", func() {
 					_, vsReport := reports.Find("*v1.RouteTable", rt3.Metadata.Ref())
 					Expect(vsReport).NotTo(BeNil())
 					Expect(vsReport.Warnings).To(HaveLen(1))
 					Expect(vsReport.Warnings).To(ConsistOf(
-						translator.WithAndWithoutWeightErr(v1.RouteTableList{rt3b}, v1.RouteTableList{rt3a}).Error(),
+						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3a, rt3b}, 0).Error(),
 					))
 				})
 
