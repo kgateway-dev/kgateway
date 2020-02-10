@@ -13,20 +13,20 @@ var RouteTablesWithSameWeightErr = func(tables v1.RouteTableList, weight int32) 
 		"unintended ordering of the resulting routes on the Proxy resource", weight, collectNames(tables))
 }
 
-type RouteTableSorter interface {
+type RouteTableIndexer interface {
 	// Indexes the given route tables by weight and returns them as a map.
 	// The map key set is also returned as a sorted array so the client can range over the map in the desired order.
 	// The error slice contain warning about route tables with duplicated weights.
 	IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.RouteTableList, []int32, []error)
 }
 
-func NewRouteTableSorter() RouteTableSorter {
-	return &sorter{}
+func NewRouteTableIndexer() RouteTableIndexer {
+	return &indexer{}
 }
 
-type sorter struct{}
+type indexer struct{}
 
-func (s *sorter) IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.RouteTableList, []int32, []error) {
+func (i *indexer) IndexByWeight(routeTables v1.RouteTableList) (map[int32]v1.RouteTableList, []int32, []error) {
 
 	// Index by weight
 	byWeight := map[int32]v1.RouteTableList{}

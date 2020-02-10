@@ -12,10 +12,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-var _ = Describe("RouteTableSorter", func() {
+var _ = Describe("RouteTableIndexer", func() {
 
 	var (
-		sorter translator.RouteTableSorter
+		indexer translator.RouteTableIndexer
 
 		noWeight1,
 		noWeight2,
@@ -45,7 +45,7 @@ var _ = Describe("RouteTableSorter", func() {
 	)
 
 	BeforeEach(func() {
-		sorter = translator.NewRouteTableSorter()
+		indexer = translator.NewRouteTableIndexer()
 
 		minus10 := int32(-10)
 		zero := int32(0)
@@ -63,7 +63,7 @@ var _ = Describe("RouteTableSorter", func() {
 
 	When("an empty list is passed", func() {
 		It("returns nothing without errors", func() {
-			byWeight, weights, errs := sorter.IndexByWeight(nil)
+			byWeight, weights, errs := indexer.IndexByWeight(nil)
 			Expect(errs).To(BeNil())
 			Expect(byWeight).To(BeEmpty())
 			Expect(weights).To(BeEmpty())
@@ -72,7 +72,7 @@ var _ = Describe("RouteTableSorter", func() {
 
 	When("a single route table is passed", func() {
 		It("returns the table without errors", func() {
-			byWeight, weights, errs := sorter.IndexByWeight(v1.RouteTableList{noWeight1})
+			byWeight, weights, errs := indexer.IndexByWeight(v1.RouteTableList{noWeight1})
 			Expect(errs).To(BeNil())
 			Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
 			Expect(byWeight).To(ConsistOf(BeEquivalentTo(v1.RouteTableList{noWeight1})))
@@ -84,7 +84,7 @@ var _ = Describe("RouteTableSorter", func() {
 		When("no route tables have weights", func() {
 			It("correctly indexes them and returns the expected warning", func() {
 				tables := v1.RouteTableList{noWeight1, noWeight2, noWeight3}
-				byWeight, weights, errs := sorter.IndexByWeight(tables)
+				byWeight, weights, errs := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(1))
 				Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
@@ -101,7 +101,7 @@ var _ = Describe("RouteTableSorter", func() {
 		When("all route tables have distinct weights", func() {
 			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{weightTen, weightMinus10, weightTwenty, weightZero}
-				byWeight, weights, errs := sorter.IndexByWeight(tables)
+				byWeight, weights, errs := indexer.IndexByWeight(tables)
 
 				Expect(errs).To(BeNil())
 
@@ -119,7 +119,7 @@ var _ = Describe("RouteTableSorter", func() {
 		When("some route tables have weights and others don't", func() {
 			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{weightTen, noWeight1, weightMinus10, weightTwenty}
-				byWeight, weights, errs := sorter.IndexByWeight(tables)
+				byWeight, weights, errs := indexer.IndexByWeight(tables)
 
 				Expect(errs).To(BeNil())
 
@@ -140,7 +140,7 @@ var _ = Describe("RouteTableSorter", func() {
 				weightTenClone.Metadata.Name = "ten-dup"
 				tables := v1.RouteTableList{weightZero, weightTen, weightTwenty, weightTenClone}
 
-				byWeight, weights, errs := sorter.IndexByWeight(tables)
+				byWeight, weights, errs := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(3))
 				Expect(weights).To(Equal([]int32{0, 10, 20}))

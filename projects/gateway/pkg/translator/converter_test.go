@@ -195,7 +195,7 @@ var _ = Describe("Route converter", func() {
 
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
-				translator.NewRouteTableSorter(),
+				translator.NewRouteTableIndexer(),
 				rpt,
 			)
 			converted, err := rv.ConvertVirtualService(vs)
@@ -247,7 +247,7 @@ var _ = Describe("Route converter", func() {
 
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
-				translator.NewRouteTableSorter(),
+				translator.NewRouteTableIndexer(),
 				rpt,
 			)
 			converted, err := rv.ConvertVirtualService(vs)
@@ -302,7 +302,7 @@ var _ = Describe("Route converter", func() {
 
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
-				translator.NewRouteTableSorter(),
+				translator.NewRouteTableIndexer(),
 				rpt,
 			)
 			converted, err := rv.ConvertVirtualService(vs)
@@ -363,7 +363,7 @@ var _ = Describe("Route converter", func() {
 
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
-				translator.NewRouteTableSorter(),
+				translator.NewRouteTableIndexer(),
 				rpt,
 			)
 			converted, err := rv.ConvertVirtualService(vs)
@@ -420,7 +420,7 @@ var _ = Describe("Route converter", func() {
 			reports = reporter.ResourceReports{}
 			visitor = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(allRouteTables),
-				translator.NewRouteTableSorter(),
+				translator.NewRouteTableIndexer(),
 				reports,
 			)
 		})
