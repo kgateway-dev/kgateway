@@ -61,15 +61,22 @@ func protoToMessageName(msg proto.Message) (string, error) {
 }
 
 func protoToMessageBytes(msg proto.Message) ([]byte, error) {
+	if b, err := protoToMessageBytesGolang(msg); err == nil {
+		return b, nil
+	}
+	return protoToMessageBytesGogo(msg)
+}
+
+func protoToMessageBytesGogo(msg proto.Message) ([]byte, error) {
+	b := gogoproto.NewBuffer(nil)
+	b.SetDeterministic(true)
+	err := b.Marshal(msg)
+	return b.Bytes(), err
+}
+
+func protoToMessageBytesGolang(msg proto.Message) ([]byte, error) {
 	b := proto.NewBuffer(nil)
 	b.SetDeterministic(true)
-	if err := b.Marshal(msg); err == nil {
-		return b.Bytes(), nil
-	}
-
-	b2 := gogoproto.NewBuffer(nil)
-	b2.SetDeterministic(true)
 	err := b.Marshal(msg)
-	return b2.Bytes(), err
-
+	return b.Bytes(), err
 }
