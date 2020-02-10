@@ -91,7 +91,7 @@ var _ = Describe("Consul e2e", func() {
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 		// Start Envoy
-		envoyPort = uint32(defaults.HttpPort)
+		envoyPort = defaults.HttpPort
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
