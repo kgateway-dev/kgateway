@@ -26,6 +26,7 @@ import (
 	"github.com/solo-io/solo-kit/test/setup"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	gloohelpers "github.com/solo-io/gloo/test/helpers"
@@ -102,6 +103,22 @@ var _ = Describe("Happy path", func() {
 
 		It("should not crash", func() {
 			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			TestUpstreamReachable()
+		})
+
+		It("should not crash multiple methods", func() {
+			proxy := getTrivialProxyForUpstream(defaults.GlooSystem, envoyPort, up.Metadata.Ref())
+			proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
+				VirtualHosts[0].Routes[0].Matchers = []*matchers.Matcher{
+				{
+					PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
+					Methods:       []string{"GET", "POST"},
+				},
+			}
+
 			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
