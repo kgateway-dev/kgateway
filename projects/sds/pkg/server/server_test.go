@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/spf13/afero"
@@ -68,10 +69,10 @@ var _ = Describe("SDS Server", func() {
 
 	Context("Test gRPC Server", func() {
 		var (
-			ctx           context.Context
-			cancel        context.CancelFunc
-			grpcServer    *grpc.Server
-			snapshotCache cache.SnapshotCache
+			ctx               context.Context
+			cancel            context.CancelFunc
+			grpcServer        *grpc.Server
+			snapshotCache     cache.SnapshotCache
 			testServerAddress = "0.0.0.0:8236"
 		)
 

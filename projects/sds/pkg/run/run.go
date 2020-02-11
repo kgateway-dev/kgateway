@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	secretDir   = "/etc/envoy/ssl/"
-	sslKeyFile  = secretDir + v1.TLSPrivateKeyKey        // tls.key
-	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
-	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
+	secretDir        = "/etc/envoy/ssl/"
+	sslKeyFile       = secretDir + v1.TLSPrivateKeyKey        // tls.key
+	sslCertFile      = secretDir + v1.TLSCertKey              //tls.crt
+	sslCaFile        = secretDir + v1.ServiceAccountRootCAKey //ca.crt
 	sdsServerAddress = "0.0.0.0:8236"
 )
 

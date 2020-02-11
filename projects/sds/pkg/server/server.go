@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	sdsClient        = "sds_client"
+	sdsClient = "sds_client"
 )
 
 var (
