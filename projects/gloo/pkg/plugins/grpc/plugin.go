@@ -110,6 +110,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
 	})
+	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.Metadata.Namespace, in.Metadata.Name)
 
 	return nil
 }
@@ -291,9 +292,9 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		if specI == specJ {
 			descriptorsI := p.upstreamServices[i].Descriptors.String()
 			descriptorsJ := p.upstreamServices[j].Descriptors.String()
-			return sort.StringsAreSorted([]string{descriptorsI, descriptorsJ})
+			return descriptorsI <= descriptorsJ
 		}
-		return sort.StringsAreSorted([]string{specI, specJ})
+		return specI <= specJ
 	})
 
 	var filters []plugins.StagedHttpFilter
