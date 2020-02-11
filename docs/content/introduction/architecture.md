@@ -34,7 +34,7 @@ In the most basic sense, Gloo is a translation engine and [Envoy xDS server](htt
 
 ![Component Architecture]({{% versioned_link_path fromRoot="/img/component_architecture.png" %}})
 
-At the logical layer, Gloo is comprised of several different services that perform unique functions. Gloo sits outside the data path, providing the control layer for Envoy and other services through its transformation plug-in. 
+At the logical layer, Gloo is comprised of several different services that perform unique functions. Gloo's control plane sits outside the request path, providing the control layer for Envoy and other services through its transformation plug-in.
 
 The following sections describe the various logical components of Gloo. The [Deployment Architecture guide]({{% versioned_link_path fromRoot="/introduction/deployment_arch" %}}) provides examples and guidance for specific implementations of Gloo on different software stacks.
 
