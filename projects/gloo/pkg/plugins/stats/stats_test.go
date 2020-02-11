@@ -2,8 +2,8 @@ package stats
 
 import (
 	"context"
+	"net/http"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -48,9 +48,19 @@ var _ = Describe("Virtual Clusters", func() {
 		Expect(outputVh).To(Equal(referenceVh))
 	})
 
+	getPattern := func(vc *envoyroute.VirtualCluster) string {
+		return vc.GetHeaders()[0].GetSafeRegexMatch().GetRegex()
+	}
+	getMethod := func(vc *envoyroute.VirtualCluster) string {
+		if len(vc.GetHeaders()) < 2 {
+			return ""
+		}
+		return vc.GetHeaders()[1].GetExactMatch()
+	}
+
 	It("correctly processes virtual clusters", func() {
 		inputVh.Options.Stats.VirtualClusters = []*statsapi.VirtualCluster{
-			{Name: "get", Pattern: "/test/.*", Method: "GET"},
+			{Name: "get", Pattern: "/test/.*", Method: "get"},
 			{Name: "post", Pattern: "/test/.*", Method: "POST"},
 		}
 		err := plugin.ProcessVirtualHost(pluginParams, &inputVh, &outputVh)
@@ -59,12 +69,12 @@ var _ = Describe("Virtual Clusters", func() {
 		Expect(outputVh.VirtualClusters).To(HaveLen(2))
 
 		Expect(outputVh.VirtualClusters[0].Name).To(Equal("get"))
-		Expect(outputVh.VirtualClusters[0].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.RequestMethod_GET))
+		Expect(getPattern(outputVh.VirtualClusters[0])).To(Equal("/test/.*"))
+		Expect(getMethod(outputVh.VirtualClusters[0])).To(Equal(http.MethodGet))
 
 		Expect(outputVh.VirtualClusters[1].Name).To(Equal("post"))
-		Expect(outputVh.VirtualClusters[1].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[1].Method).To(Equal(envoycore.RequestMethod_POST))
+		Expect(getPattern(outputVh.VirtualClusters[1])).To(Equal("/test/.*"))
+		Expect(getMethod(outputVh.VirtualClusters[1])).To(Equal(http.MethodPost))
 
 		// Remove virtual clusters and verify that the rest of the resource has not changed
 		outputVh.VirtualClusters = nil
@@ -78,7 +88,7 @@ var _ = Describe("Virtual Clusters", func() {
 
 		Expect(outputVh.VirtualClusters).To(HaveLen(1))
 		Expect(outputVh.VirtualClusters[0].Name).To(Equal("not_valid"))
-		Expect(outputVh.VirtualClusters[0].Pattern).To(Equal("/test/.*"))
+		Expect(getPattern(outputVh.VirtualClusters[0])).To(Equal("/test/.*"))
 	})
 
 	It("correctly defaults missing method name", func() {
@@ -88,8 +98,8 @@ var _ = Describe("Virtual Clusters", func() {
 
 		Expect(outputVh.VirtualClusters).To(HaveLen(1))
 		Expect(outputVh.VirtualClusters[0].Name).To(Equal("test"))
-		Expect(outputVh.VirtualClusters[0].Pattern).To(Equal("/test/.*"))
-		Expect(outputVh.VirtualClusters[0].Method).To(Equal(envoycore.RequestMethod_METHOD_UNSPECIFIED))
+		Expect(getPattern(outputVh.VirtualClusters[0])).To(Equal("/test/.*"))
+		Expect(getMethod(outputVh.VirtualClusters[0])).To(Equal(""))
 	})
 
 	Describe("expected failures", func() {
