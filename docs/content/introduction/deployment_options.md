@@ -34,7 +34,7 @@ The following components of Gloo are deployed as separate pods and deployments:
 * Discovery
 * Envoy
 
-Each deployment includes a replica set for the pods, which can be used to scale the number of pods and perform rolling upgrades.
+Each deployment creates a replica set for the pods, which can be used to scale the number of pods and perform rolling upgrades.
 
 ### Services
 
