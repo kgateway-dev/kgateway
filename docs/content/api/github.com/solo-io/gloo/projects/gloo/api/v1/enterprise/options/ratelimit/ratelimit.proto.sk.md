@@ -266,9 +266,9 @@ TODO(yuval-k): copied from envoy; will be removed and imported properly in a fut
  
 The following descriptor entry is appended to the descriptor:
 
-.. code-block:: cpp
-
+```
   ("source_cluster", "<local service cluster>")
+```
 
 <local service cluster> is derived from the :option:`--service-cluster` option.
 
@@ -288,19 +288,19 @@ The following descriptor entry is appended to the descriptor:
  
 The following descriptor entry is appended to the descriptor:
 
-.. code-block:: cpp
-
+```
   ("destination_cluster", "<routed target cluster>")
+```
 
 Once a request matches against a route table rule, a routed cluster is determined by one of
-the following :ref:`route table configuration <envoy_api_msg_RouteConfiguration>`
+the following `route table configuration (envoy_api_msg_RouteConfiguration)`
 settings:
 
-* :ref:`cluster <envoy_api_field_route.RouteAction.cluster>` indicates the upstream cluster
+* `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
   to route to.
-* :ref:`weighted_clusters <envoy_api_field_route.RouteAction.weighted_clusters>`
+* `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
   chooses a cluster randomly from a set of clusters with attributed weight.
-* :ref:`cluster_header <envoy_api_field_route.RouteAction.cluster_header>` indicates which
+* `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
   header in the request contains the target cluster.
 
 ```yaml
@@ -320,9 +320,9 @@ settings:
 The following descriptor entry is appended when a header contains a key that matches the
 *header_name*:
 
-.. code-block:: cpp
-
+```
   ("<descriptor_key>", "<header_value_queried_from_header>")
+```
 
 ```yaml
 "headerName": string
@@ -343,11 +343,11 @@ The following descriptor entry is appended when a header contains a key that mat
 
  
 The following descriptor entry is appended to the descriptor and is populated using the
-trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwarded-for>`:
+trusted address from `x-forwarded-for (config_http_conn_man_headers_x-forwarded-for)`:
 
-.. code-block:: cpp
-
+```
   ("remote_address", "<trusted address from x-forwarded-for>")
+```
 
 ```yaml
 
@@ -365,9 +365,9 @@ trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwa
  
 The following descriptor entry is appended to the descriptor:
 
-.. code-block:: cpp
-
+```
   ("generic_key", "<descriptor_value>")
+```
 
 ```yaml
 "descriptorValue": string
@@ -387,9 +387,9 @@ The following descriptor entry is appended to the descriptor:
  
 The following descriptor entry is appended to the descriptor:
 
-.. code-block:: cpp
-
+```
   ("header_match", "<descriptor_value>")
+```
 
 ```yaml
 "descriptorValue": string
@@ -449,7 +449,7 @@ end).
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | Specifies the name of the header in the request. |  |
 | `exactMatch` | `string` | If specified, header match will be performed based on the value of the header. Only one of `exactMatch`, `regexMatch`, `rangeMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
-| `regexMatch` | `string` | If specified, this regex string is a regular expression rule which implies the entire request header value must match the regex. The rule will not match if only a subsequence of the request header value matches the regex. The regex grammar used in the value field is defined `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex *\d{3}* matches the value *123* * The regex *\d{3}* does not match the value *1234* * The regex *\d{3}* does not match the value *123.456*. Only one of `regexMatch`, `exactMatch`, `rangeMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
+| `regexMatch` | `string` | If specified, this regex string is a regular expression rule which implies the entire request header value must match the regex. The rule will not match if only a subsequence of the request header value matches the regex. The regex grammar used in the value field is defined `(here)[https://en.cppreference.com/w/cpp/regex/ecmascript]`. Examples: * The regex *\d{3}* matches the value *123* * The regex *\d{3}* does not match the value *1234* * The regex *\d{3}* does not match the value *123.456*. Only one of `regexMatch`, `exactMatch`, `rangeMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
 | `rangeMatch` | [.ratelimit.options.gloo.solo.io.Int64Range](../ratelimit.proto.sk/#int64range) | If specified, header match will be performed based on range. The rule will match if the request header value is within this range. The entire request header value must represent an integer in base 10 notation: consisting of an optional plus or minus sign followed by a sequence of digits. The rule will not match if the header value does not represent an integer. Match will fail for empty values, floating point numbers or if only a subsequence of the header value is an integer. Examples: * For range [-10,0), route will match for header value -1, but not for 0, "somestring", 10.9, "-1somestring". Only one of `rangeMatch`, `exactMatch`, `regexMatch`, `presentMatch`, or `suffixMatch` can be set. |  |
 | `presentMatch` | `bool` | If specified, header match will be performed based on whether the header is in the request. Only one of `presentMatch`, `exactMatch`, `regexMatch`, `rangeMatch`, or `suffixMatch` can be set. |  |
 | `prefixMatch` | `string` | If specified, header match will be performed based on the prefix of the header value. Note: empty prefix is not allowed, please use present_match instead. Examples: * The prefix *abcd* matches the value *abcdxyz*, but not for *abcxyz*. Only one of `prefixMatch`, `exactMatch`, `regexMatch`, `rangeMatch`, or `suffixMatch` can be set. |  |

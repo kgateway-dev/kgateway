@@ -143,7 +143,7 @@ type HealthCheck struct {
 	//
 	// The default value for "healthy edge interval" is the same as the default interval.
 	HealthyEdgeInterval *types.Duration `protobuf:"bytes,16,opt,name=healthy_edge_interval,json=healthyEdgeInterval,proto3" json:"healthy_edge_interval,omitempty"`
-	// Specifies the path to the :ref:`health check event log <arch_overview_health_check_logging>`.
+	// Specifies the path to the `health check event log (arch_overview_health_check_logging)`.
 	// If empty, no event log will be written.
 	EventLogPath string `protobuf:"bytes,17,opt,name=event_log_path,json=eventLogPath,proto3" json:"event_log_path,omitempty"`
 	// If set to true, health check failure events will always be logged. If set to false, only the
@@ -421,13 +421,13 @@ type HealthCheck_HttpHealthCheck struct {
 	// */healthcheck*.
 	Path string `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
 	// An optional service name parameter which is used to validate the identity of
-	// the health checked cluster. See the :ref:`architecture overview
-	// <arch_overview_health_checking_identity>` for more information.
+	// the health checked cluster. See the `architecture overview
+	// (arch_overview_health_checking_identity)` for more information.
 	ServiceName string `protobuf:"bytes,5,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// Specifies a list of HTTP headers that should be added to each request that is sent to the
 	// health checked cluster. For more information, including details on header value syntax, see
-	// the documentation on :ref:`custom request headers
-	// <config_http_conn_man_headers_custom_request_headers>`.
+	// the documentation on `custom request headers
+	// (config_http_conn_man_headers_custom_request_headers)`.
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,6,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each request that is sent to the
 	// health checked cluster.
@@ -436,7 +436,7 @@ type HealthCheck_HttpHealthCheck struct {
 	UseHttp2 bool `protobuf:"varint,7,opt,name=use_http2,json=useHttp2,proto3" json:"use_http2,omitempty"`
 	// Specifies a list of HTTP response statuses considered healthy. If provided, replaces default
 	// 200-only policy - 200 must be included explicitly as needed. Ranges follow half-open
-	// semantics of :ref:`Int64Range <envoy_api_msg_type.Int64Range>`.
+	// semantics of `Int64Range (envoy_api_msg_type.Int64Range)`.
 	ExpectedStatuses     []*_type.Int64Range `protobuf:"bytes,9,rep,name=expected_statuses,json=expectedStatuses,proto3" json:"expected_statuses,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`

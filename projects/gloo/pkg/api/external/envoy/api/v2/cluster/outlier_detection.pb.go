@@ -26,7 +26,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// See the :ref:`architecture overview <arch_overview_outlier_detection>` for
+// See the `architecture overview  (arch_overview_outlier_detection)` for
 // more information on outlier detection.
 type OutlierDetection struct {
 	// The number of consecutive 5xx responses or local origin errors that are mapped
@@ -80,29 +80,29 @@ type OutlierDetection struct {
 	EnforcingConsecutiveGatewayFailure *types.UInt32Value `protobuf:"bytes,11,opt,name=enforcing_consecutive_gateway_failure,json=enforcingConsecutiveGatewayFailure,proto3" json:"enforcing_consecutive_gateway_failure,omitempty"`
 	// Determines whether to distinguish local origin failures from external errors. If set to true
 	// the following configuration parameters are taken into account:
-	// :ref:`consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure>`,
-	// :ref:`enforcing_consecutive_local_origin_failure<envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure>`
+	// `consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.consecutive_local_origin_failure)`,
+	// `enforcing_consecutive_local_origin_failure (envoy_api_field_cluster.OutlierDetection.enforcing_consecutive_local_origin_failure)`
 	// and
-	// :ref:`enforcing_local_origin_success_rate<envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate>`.
+	// `enforcing_local_origin_success_rate (envoy_api_field_cluster.OutlierDetection.enforcing_local_origin_success_rate)`.
 	// Defaults to false.
 	SplitExternalLocalOriginErrors bool `protobuf:"varint,12,opt,name=split_external_local_origin_errors,json=splitExternalLocalOriginErrors,proto3" json:"split_external_local_origin_errors,omitempty"`
 	// The number of consecutive locally originated failures before ejection
 	// occurs. Defaults to 5. Parameter takes effect only when
-	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)`
 	// is set to true.
 	ConsecutiveLocalOriginFailure *types.UInt32Value `protobuf:"bytes,13,opt,name=consecutive_local_origin_failure,json=consecutiveLocalOriginFailure,proto3" json:"consecutive_local_origin_failure,omitempty"`
 	// The % chance that a host will be actually ejected when an outlier status
 	// is detected through consecutive locally originated failures. This setting can be
 	// used to disable ejection or to ramp it up slowly. Defaults to 100.
 	// Parameter takes effect only when
-	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)`
 	// is set to true.
 	EnforcingConsecutiveLocalOriginFailure *types.UInt32Value `protobuf:"bytes,14,opt,name=enforcing_consecutive_local_origin_failure,json=enforcingConsecutiveLocalOriginFailure,proto3" json:"enforcing_consecutive_local_origin_failure,omitempty"`
 	// The % chance that a host will be actually ejected when an outlier status
 	// is detected through success rate statistics for locally originated errors.
 	// This setting can be used to disable ejection or to ramp it up slowly. Defaults to 100.
 	// Parameter takes effect only when
-	// :ref:`split_external_local_origin_errors<envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors>`
+	// `split_external_local_origin_errors (envoy_api_field_cluster.OutlierDetection.split_external_local_origin_errors)`
 	// is set to true.
 	EnforcingLocalOriginSuccessRate *types.UInt32Value `protobuf:"bytes,15,opt,name=enforcing_local_origin_success_rate,json=enforcingLocalOriginSuccessRate,proto3" json:"enforcing_local_origin_success_rate,omitempty"`
 	XXX_NoUnkeyedLiteral            struct{}           `json:"-"`
