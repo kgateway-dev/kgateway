@@ -9,6 +9,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -61,9 +62,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, hostname, 443)
 
-	out.TlsContext = &envoyauth.UpstreamTlsContext{
+	tlsContext := &envoyauth.UpstreamTlsContext{
 		// TODO(yuval-k): Add verification context
 		Sni: hostname,
+	}
+	out.TransportSocket = &envoycore.TransportSocket{
+		Name:       pluginutils.TlsTransportSocket,
+		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 	}
 
 	if azureUpstream.SecretRef.Name != "" {

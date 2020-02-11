@@ -6,6 +6,8 @@ weight: 7
 
 Gloo is an application (L7) proxy based on [Envoy](https://www.envoyproxy.io) that can act as both a secure edge router and as a developer friendly Kubernetes ingress/egress (north-south traffic) gateway. There are many benefits to pairing Gloo with one of AWS Elastic Load Balancers (ELB), including better cross availability zone failover and deeper integration with AWS services like AWS Certificate Manager, AWS CLI & CloudFormation, and Route 53 (DNS). AWS provides three (3) types of load balancers: Classic Load Balancer (ELB or CLB), Network Load Balancer (NLB), and an Application Load Balancer (ALB). Gloo works well with any of these AWS load balancers though our recommendation is to prefer AWS Network Load Balancer as that has the least capabilities overlap and the best value when paired with Gloo. Gloo provides all of the L7 HTTP/S and gRPC routing, security, and web application firewall capabilities (and much more) that either Classic Load Balancer or Application Load Balancer provides. And since Gloo leverages Envoy, Gloo benefits from growing Envoy community, including AWS contributions, and Envoy's extensible filter architecture to provide for customized extensions when needed.
 
+---
+
 ## AWS Load Balancers
 
 AWS provides three (3) types of load balancers:
@@ -20,11 +22,15 @@ All of these load balancers support offloading TLS termination and some degree o
 
 More details about AWS cloud load balancers are [here](https://docs.aws.amazon.com/elasticloadbalancing/index.html).
 
+---
+
 ## Combining with Gloo
 
 Using Gloo with AWS ELBs is recommended for AWS based deployments. Gloo gateway includes one or more managed Envoy proxies that can manage both TCP/UDP (L4) and HTTP/gRPC (L7) traffic, and the Gloo proxies can also terminate and originate TLS and HTTPS connections. Gloo's configuration has benefits over AWS ELB, especially for EKS/Kubernetes based services, in that Gloo's configurations are Kubernetes Custom Resources (CRDs) that allow development teams to keep service routing configurations with the application code and run through CI/CD. AWS ELBs have an advantage over Gloo in terms of deep integration with AWS infrastructure, giving the AWS Load Balancers a better integration cross availability zone.
 
 In general, we'd recommend using an AWS Network Load Balancer (NLB) with Gloo. Gloo provides more application (L7) capabilities than AWS Application Load Balancer (ALB). Gloo's configuration can be managed and deployed like other Kubernetes assets, which allow application teams to move faster by reducing the number of different teams and infrastructure tiers they have to coordinate with as part of a deployment.
+
+---
 
 ## How To
 
@@ -85,7 +91,7 @@ EOF
 
 {{< /tabs >}}
 
-## Passthrough TLS
+### Passthrough TLS
 
 By using an AWS Network Load Balancer (NLB) in front of Gloo, you get an additional benefit of TLS passthrough. That is, HTTPS requests passthrough the AWS NLB and terminate TLS at the Gloo proxy for extra security. AWS NLB automatically configures listeners for each Kubernetes Service port, so both HTTP and HTTPS ports get exposed through the AWS NLB.
 
@@ -168,7 +174,7 @@ curl --verbose --cacert tls.crt --connect-to "gloo.example.com:443:$(glooctl pro
 curl -verbose --location --insecure --header "Host: gloo.example.com" $(glooctl proxy url --port='http')
 ```
 
-## TLS Considerations
+### TLS Considerations
 
 You need to think carefully around using TLS in terms of:
 

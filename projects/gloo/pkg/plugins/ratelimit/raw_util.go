@@ -6,6 +6,7 @@ import (
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
@@ -104,8 +105,11 @@ func convertHeader(header *gloorl.HeaderMatcher) *envoyvhostratelimit.HeaderMatc
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
 		}
 	case *gloorl.HeaderMatcher_RegexMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RegexMatch{
-			RegexMatch: specificHeaderSpecifier.RegexMatch,
+		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
+			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
+				Regex:      specificHeaderSpecifier.RegexMatch,
+			},
 		}
 	case *gloorl.HeaderMatcher_RangeMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RangeMatch{

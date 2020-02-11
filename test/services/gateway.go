@@ -4,6 +4,8 @@ import (
 	"net"
 	"time"
 
+	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
@@ -15,7 +17,6 @@ import (
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"context"
@@ -120,10 +121,6 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	glooOpts.ValidationServer.BindAddr.(*net.TCPAddr).Port = int(runOptions.ValidationPort)
-	if !runOptions.WhatToRun.DisableGateway {
-		opts := defaultTestConstructOpts(ctx, runOptions)
-		go gatewaysyncer.RunGateway(opts)
-	}
 
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
@@ -133,6 +130,13 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+
+	// gloo is dependency of gateway, needs to run second if we want to test validation
+	if !runOptions.WhatToRun.DisableGateway {
+		opts := defaultTestConstructOpts(ctx, runOptions)
+		go gatewaysyncer.RunGateway(opts)
+	}
+
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()

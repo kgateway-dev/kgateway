@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -34,7 +36,7 @@ var _ = Describe("Validator", func() {
 	})
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil)
-		Expect(err).To(MatchError(NotReadyErr))
+		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(nil, &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
 	})

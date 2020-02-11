@@ -17,6 +17,8 @@ Gloo complements service-mesh technology by bringing a powerful "API Gateway" to
 
 Please see our [FAQ]({{% versioned_link_path fromRoot="/introduction/faq#what-s-the-difference-between-gloo-and-istio" %}}) for more on how Gloo can complement a service mesh.
 
+---
+
 ## Getting started with AWS App Mesh
 
 For this guide, we'll assume you want to use AWS App Mesh on Kubernetes (AWS EKS in this case, but it can be any Kubernetes on AWS), but AWS App Mesh is not limited to Kubernetes. 
@@ -56,7 +58,6 @@ virtualnode.appmesh.k8s.aws/colorteller-blue    1d
 virtualnode.appmesh.k8s.aws/colorteller-red     1d
 ```
 
-
 ```noop
 aws --region us-east-2 appmesh describe-route --route-name color-route-appmesh-demo \
     --virtual-router-name colorgateway-appmesh-demo  --mesh-name color-mesh
@@ -95,6 +96,7 @@ aws --region us-east-2 appmesh describe-route --route-name color-route-appmesh-d
     }
 }
 ```
+
 ```bash
 aws --region us-east-2 appmesh describe-route --route-name color-route-appmesh-demo \
     --virtual-router-name colorteller-appmesh-demo  --mesh-name color-mesh
@@ -142,6 +144,8 @@ aws --region us-east-2 appmesh describe-route --route-name color-route-appmesh-d
     }
 }
 ```
+
+---
 
 ## Using Gloo as the Ingress for AWS App Mesh
 

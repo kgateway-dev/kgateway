@@ -84,9 +84,9 @@ spec:
 
 ---
 
-## Blacklisting Namespaces & Services
+## Blacklisting Namespaces & Upstreams
 
-When running in `BLACKLIST` mode, blacklist services by adding the following label:
+When running in `BLACKLIST` mode, blacklist upstreams by adding the following label:
 
 `discovery.solo.io/function_discovery=disabled`.
 
@@ -94,20 +94,20 @@ E.g. with
 
 ```bash
 kubectl label namespace default discovery.solo.io/function_discovery=disabled
-kubectl label service -n myapp myservice discovery.solo.io/function_discovery=disabled
+kubectl label upstream -n myapp myupstream discovery.solo.io/function_discovery=disabled
 ```
 
-This label can be applied to namespaces, services, and upstreams.
+This label can be applied to namespaces and upstreams.
 
-To enable FDS for specific services/upstreams in a blacklisted namespace:
+To enable FDS for specific upstreams in a blacklisted namespace:
 
 `discovery.solo.io/function_discovery=enabled`
 
 ---
 
-## Whitelisting Namespaces & Services
+## Whitelisting Namespaces & Upstreams
 
-When running in `WHITELIST` mode, whitelist services by adding the following label:
+When running in `WHITELIST` mode, whitelist `Upstreams` by adding the following label:
 
 `discovery.solo.io/function_discovery=enabled`.
 
@@ -115,11 +115,11 @@ E.g. with
 
 ```bash
 kubectl label namespace default discovery.solo.io/function_discovery=enabled
-kubectl label service -n myapp myservice discovery.solo.io/function_discovery=enabled
+kubectl label upstream -n myapp myupstream discovery.solo.io/function_discovery=enabled
 ```
 
-This label can be applied to namespaces, services, and upstreams.
+This label can be applied to namespaces and upstreams.
 
-To disble FDS for specific services/upstreams in a whitelisted namespace:
+To disable FDS for specific services/upstreams in a whitelisted namespace:
 
 `discovery.solo.io/function_discovery=disabled`

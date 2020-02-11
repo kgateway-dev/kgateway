@@ -1,6 +1,6 @@
 ---
 title: Kubernetes Cluster Setup
-weight: 1
+weight: 10
 description: How to prepare a Kubernetes cluster for Gloo installation.
 ---
 
@@ -15,6 +15,10 @@ Click on the links below for details specific to your Kubernetes distribution:
 - [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
 - [Additional Notes](#additional-notes)
 - [Next Steps](#next-steps)
+
+{{% notice note %}}
+Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/introduction/support/#kubernetes" %}})
+{{% /notice %}}
 
 {{% notice note %}}
 This document assumes you have `kubectl` installed. Details on how to install [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).

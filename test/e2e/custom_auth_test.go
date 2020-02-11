@@ -41,7 +41,8 @@ var _ = Describe("CustomAuth", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		// Initialize Envoy instance
-		envoyInstance, err := envoyFactory.NewEnvoyInstance()
+		var err error
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start custom extauth server and create upstream for it

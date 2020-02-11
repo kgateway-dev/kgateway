@@ -73,7 +73,7 @@ var _ = Describe("Validation Server", func() {
 	Context("proxy validation", func() {
 		It("validates the requested proxy", func() {
 			proxy := params.Snapshot.Proxies[0]
-			s := NewValidator(translator)
+			s := NewValidator(context.TODO(), translator)
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
@@ -93,7 +93,7 @@ var _ = Describe("Validation Server", func() {
 
 			srv = grpc.NewServer()
 
-			v = NewValidator(nil)
+			v = NewValidator(context.TODO(), nil)
 
 			server := NewValidationServer()
 			server.SetValidator(v)

@@ -37,6 +37,15 @@ func PrintAny(any ...interface{}) {
 	}
 }
 
+func SprintAny(any ...interface{}) string {
+	var yams []string
+	for _, res := range any {
+		yam, _ := yaml.Marshal(res)
+		yams = append(yams, string(yam))
+	}
+	return strings.Join(yams, "\n---\n")
+}
+
 func SprintYaml(ress ...proto.Message) string {
 	var yams []string
 	for _, res := range ress {

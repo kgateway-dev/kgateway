@@ -4,6 +4,9 @@ import (
 	"context"
 	"sync"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -27,10 +30,11 @@ type validator struct {
 	latestSnapshot *v1.ApiSnapshot
 	translator     translator.Translator
 	notifyResync   map[*validation.NotifyOnResyncRequest]chan struct{}
+	ctx            context.Context
 }
 
-func NewValidator(translator translator.Translator) *validator {
-	return &validator{translator: translator, notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1)}
+func NewValidator(ctx context.Context, translator translator.Translator) *validator {
+	return &validator{translator: translator, notifyResync: make(map[*validation.NotifyOnResyncRequest]chan struct{}, 1), ctx: ctx}
 }
 
 // only call within a lock
@@ -57,14 +61,28 @@ func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
 		return hash
 	}
 
+	hashChanged := hashFunc(s.latestSnapshot) != hashFunc(snap)
+
+	logger := contextutils.LoggerFrom(s.ctx)
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debugw("last validation snapshot", zap.Any("latestSnapshot", syncutil.StringifySnapshot(s.latestSnapshot)))
+		logger.Debugw("current validation snapshot", zap.Any("currentSnapshot", syncutil.StringifySnapshot(snap)))
+	}
+	logger.Debugf("validation hash changed: %v", hashChanged)
+
 	// notify if the hash of what we care about has changed
-	return hashFunc(s.latestSnapshot) != hashFunc(snap)
+	return hashChanged
 }
 
 // only call within a lock
 // notify all receivers
 func (s *validator) pushNotifications() {
+	logger := contextutils.LoggerFrom(s.ctx)
+	logger.Debugw("pushing notifications", zap.Any("validator", s))
 	for _, receiver := range s.notifyResync {
+		logger.Debugf("pushing notification for receiver %v", receiver)
 		receiver := receiver
 		go func() {
 			select {
@@ -99,15 +117,19 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	// size of one so we don't queue multiple notifications
 	receiver := make(chan struct{}, 1)
 
+	logger := contextutils.LoggerFrom(s.ctx)
+
 	// add the receiver to our map
 	s.lock.Lock()
 	s.notifyResync[req] = receiver
+	logger.Debug("added receiver to map", zap.Any("newReceiver", receiver), zap.Any("afterMap", s.notifyResync), zap.Any("validator", s))
 	s.lock.Unlock()
 
 	defer func() {
 		// remove the receiver from the map
 		s.lock.Lock()
 		delete(s.notifyResync, req)
+		logger.Debug("removed receiver from map", zap.Any("removedReceiver", req), zap.Any("afterMap", s.notifyResync), zap.Any("validator", s))
 		s.lock.Unlock()
 	}()
 
@@ -115,6 +137,8 @@ func (s *validator) NotifyOnResync(req *validation.NotifyOnResyncRequest, stream
 	// whenever we read from the receiver channel
 	for {
 		select {
+		case <-s.ctx.Done():
+			return nil
 		case <-stream.Context().Done():
 			return stream.Context().Err()
 		case <-receiver:
