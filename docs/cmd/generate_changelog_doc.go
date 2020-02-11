@@ -153,6 +153,9 @@ func generateChangelogMd(opts *options, args []string) error {
 	case glooEDocGen:
 		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
 		repoRootPath = "../../solo-projects"
+		if os.Getenv("SOLO_PROJECTS_REPO") != "" {
+			repoRootPath = os.Getenv("SOLO_PROJECTS_REPO")
+		}
 		repo = "solo-projects"
 	default:
 		return InvalidInputError(target)

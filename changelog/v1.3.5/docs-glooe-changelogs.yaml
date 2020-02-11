@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Use `make SOLO_PROJECTS_REPO=<new_path> serve-site -B` if the solo-projects does not exist in the default ../../solo-projects path.
+    issueLink: https://github.com/solo-io/gloo/issues/2246
