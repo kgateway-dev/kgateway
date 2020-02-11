@@ -10,6 +10,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -80,9 +81,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
-	out.TlsContext = &envoyauth.UpstreamTlsContext{
+	tlsContext := &envoyauth.UpstreamTlsContext{
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
+	}
+	out.TransportSocket = &envoycore.TransportSocket{
+		Name:       pluginutils.TlsTransportSocket,
+		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 	}
 
 	accessKey := ""
