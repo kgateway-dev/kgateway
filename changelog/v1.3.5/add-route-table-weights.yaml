@@ -1,6 +1,6 @@
 changelog:
 - type: NEW_FEATURE
-  description: |
+  description: >
     Currently, when a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo has no way
     of determining the order in which to process the route tables; in these cases, to avoid short-circuiting routes
     (e.g. having a route with a `/foo` path prefix matcher before one with `/foo/bar`), Gloo currently automatically
