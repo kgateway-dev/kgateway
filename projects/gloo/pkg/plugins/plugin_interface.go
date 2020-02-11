@@ -152,6 +152,8 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 	}
 	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
 		return true
+	} else if s[i].HttpFilter.Name > s[j].HttpFilter.Name {
+		return false
 	}
 	// ensure stability
 	return i < j
