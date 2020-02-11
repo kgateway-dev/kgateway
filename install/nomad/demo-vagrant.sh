@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GLOO_VERSION='1.2.15'
+GLOO_VERSION='1.3.1'
 
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
@@ -9,12 +9,22 @@ set -eu
 # Get directory this script is located in to access script local files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 
-# Check Vagrant is running
+# Check Vagrant is available
+
+if ! [[ -x $(command -v vagrant) ]]; then
+  printf '\nYou must install vagrant first\n\n'
+  exit
+fi
+
+# Check levant is installed
 
 if ! [[ -x $(command -v levant) ]]; then
   printf '\nYou must install levant first\n\n'
   exit
 fi
+
+# Bring up the vagrant box
+vagrant up
 
 VARFILE="${SCRIPT_DIR}/variables.yaml"
 
@@ -46,7 +56,7 @@ gloo:
     registry: quay.io/solo-io
     repository: gloo
     tag: ${GLOO_VERSION}
-  cpuLimit: 1000
+  cpuLimit: 500
   memLimit: 500
   bandwidthLimit: 10
   # number of instances of gloo config server

@@ -17,7 +17,7 @@ You can see a demonstration of Gloo using Consul, Nomad, and Vault in this YouTu
 
 ## Architecture
 
-<img src="{{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}}" alt="Gloo Gateway on Nomad Architecture" width="50%">
+![HashiCorp Gloo Architecture]({{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}})
 
 Gloo Gateway on Nomad uses multiple pieces of software for deployment and functionality.
 
@@ -78,24 +78,19 @@ The [Levant Variables](https://github.com/jrasell/levant) for the Gloo Nomad Job
 
 ## Deploying Gloo with Nomad
 
-The scripts and files included in the Gloo repository provide three different options for deployment:
+The scripts and files included in the Gloo repository provide the option to run all the components on your local machine or use Vagrant to provision a Virtual Machine with all the components running. There are three deployment options:
 
-- [Architecture](#architecture)
-- [Preparing for Installation](#preparing-for-installation)
-  - [Prerequisite Software](#prerequisite-software)
-  - [Download the Installation Files](#download-the-installation-files)
-- [Deploying Gloo with Nomad](#deploying-gloo-with-nomad)
-  - [Run the complete Demo](#run-the-complete-demo)
-  - [Running Nomad Using Vagrant](#running-nomad-using-vagrant)
-  - [Running Nomad, Consul, and Vault](#running-nomad-consul-and-vault)
-  - [Installing Gloo on Nomad](#installing-gloo-on-nomad)
-- [Deploying a Sample Application](#deploying-a-sample-application)
-  - [Create a Route to the PetStore](#create-a-route-to-the-petstore)
-- [Next Steps](#next-steps)
+* **Local**
+  * [Run the complete demo locally](#run-the-complete-demo)
+  * [Run the core components locally](#running-nomad-locally)
+* **Vagrant**
+  * [Run the core components with Vagrant](#running-nomad-using-vagrant)
+
+The complete demo will stand up the entire environment including Gloo Gateway and the routing configuration. The other two options provide a more hands-on experience, where you walk through the steps of installing Gloo Gateway and the Pet Store application, and configuring the routing.
 
 ### Run the complete Demo
 
-If your environment is set up with Docker, Nomad, Consul, Vault, and Levant, you can simply run `demo-local.sh` to create a local demo of Gloo routing to the PetStore Nomad. The script will spin up dev instances of Consult, Nomad, and Vault. Then it will use Nomad to deploy the Gloo Gateway and the Pet Store application. Finally, it will create a route on the Gloo Gateway to the Pet Store application.
+If your environment is set up with Docker, Nomad, Consul, Vault, and Levant, you can simply run `demo-local.sh` to create a local demo of Gloo routing to the PetStore application. The script will spin up dev instances of Consult, Nomad, and Vault. Then it will use Nomad to deploy the Gloo Gateway and the Pet Store application. Finally, it will create a route on the Gloo Gateway to the Pet Store application.
 
 ```bash
 ./demo-local.sh
@@ -125,6 +120,34 @@ The value returned should be:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
+### Running Nomad locally
+
+If you've installed Nomad/Consul/Vault locally, you can use `launch-consul-vault-nomad-dev.sh` to run them on your local system.
+
+If running locally (without Vagrant) on macOS, you will need to install the [Weave Network](https://www.weave.works/docs/net/latest/install/installing-weave/).
+
+```shell
+weave launch
+```
+
+If running locally on Linux, you'll need to disable SELinux in order to run the demo (or add permission for docker containers to access `/` on their filesystem):
+
+```bash
+sudo setenforce 0
+```
+
+Then run the `launch-consul-vault-nomad-dev.sh` script.
+
+```bash
+./launch-consul-vault-nomad-dev.sh
+```
+
+The script will launch a dev instance of Consul, Vault, and Nomad and then continue to monitor the status of those services in debug mode. It also loads two key/value pairs into Consul for the default `gateway-proxy` and `gateway-proxy-ssl` configurations.
+
+You can stop all of the services by hitting `Ctrl-C`.
+
+Once you have finished launching these services, you are now ready to [install Gloo Gateway](#install-gloo-gateway).
+
 ### Running Nomad Using Vagrant
 
 The provided `Vagrantfile` will run Nomad, Consul, and Vault inside a VM on your local machine.
@@ -148,45 +171,21 @@ Ports will be forwarded to your local system, allowing you to access services on
 | gloo/https | 8443  |
 | gloo/admin | 19000 |
 
-### Running Nomad, Consul, and Vault
-
-If you've installed Nomad/Consul/Vault locally, you can use `launch-consul-vault-nomad-dev.sh` to run them on your local system.
-
-If running locally (without Vagrant) on macOS, you will need to install the [Weave Network](https://www.weave.works/docs/net/latest/install/installing-weave/).
-
-```shell
-weave launch
-```
-
-If running locally on Linux, you'll need to disable SELinux in order to run the demo (or add permission for docker containers to access `/` on their filesystem):
-
-```bash
-sudo setenforce 0
-```
-
-Then run the `launch-consul-vault-nomad-dev.sh` script.
-
-```bash
-./launch-consul-vault-nomad-dev.sh
-```
-
-The script will launch a dev instance of Consul, Vault, and Nomad and then continue to monitor the status of those services in debug mode. You can stop all of the services by hitting `Ctrl-C`.
-
-Once you have finished launching these services, you are now ready to install Gloo on either your [Linux](#installing-gloo-on-nomad-linux) or [macOS](#installing-gloo-on-nomad-mac) system.
+Once you have finished launching these services, you are now ready to [install Gloo Gateway](#install-gloo-gateway).
 
 ---
 
-### Installing Gloo on Nomad
+### Install Gloo Gateway
 
 Once you have a base environment set up with Consul, Vault, and Nomad running, you are ready to deploy the Nomad job that creates the necessary containers to run Gloo.
 
 The assumption is that you are running Consul, Nomad, and Vault either locally or remotely.
 
-If you are running these services remotely, then you will need to update the `address` and `consul-address` values with your configuration. The default port for Nomad is 4646 and for Consul is 8500. Make sure to give the full address to your Nomad and Consul servers, e.g. https://my.consul.local:8500.
+If you are running these services remotely, you will need to update the `address` and `consul-address` values with your configuration. The default port for Nomad is 4646 and for Consul is 8500. Make sure to give the full address to your Nomad and Consul servers, e.g. https://my.consul.local:8500.
 
 ```bash
 levant deploy \
-    -var-file variables/variables-linux.yaml \
+    -var-file variables.yaml \
     -address http://<nomad-host>:<nomad-port> \
     -consul-address http://<consul-host>:<consul-port> \
     jobs/gloo.nomad
@@ -196,11 +195,11 @@ If running locally or with `vagrant`, you can omit the `address` flags from the 
 
 ```bash
 levant deploy \
-    -var-file variables/variables-linux.yaml \
+    -var-file variables.yaml \
     jobs/gloo.nomad
 ```
 
-You can monitor the status of the deployment job by executing the following command:
+You can monitor the status of the deployment job by checking the UI or by executing the following command:
 
 ```bash
 nomad job status gloo

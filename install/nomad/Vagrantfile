@@ -5,7 +5,6 @@ $script = <<SCRIPT
 echo "Installing Docker..."
 sudo apt-get update
 sudo apt-get remove docker docker-engine docker.io
-echo '* libraries/restart-without-asking boolean true' | sudo debconf-set-selections
 sudo apt-get -y install apt-transport-https ca-certificates curl software-properties-common
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg |  sudo apt-key add -
 sudo apt-key fingerprint 0EBFCD88
@@ -27,7 +26,7 @@ sudo apt-get -y install unzip curl vim
 sudo apt-get -y install httpie socat
 
 echo "Installing Nomad..."
-NOMAD_VERSION=0.10.2
+NOMAD_VERSION=0.10.3
 cd /tmp/
 curl -sSL https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip -o nomad.zip
 unzip nomad.zip
@@ -35,19 +34,19 @@ sudo install nomad /usr/bin/nomad
 sudo mkdir -p /etc/nomad.d
 sudo chmod a+w /etc/nomad.d
 (
-cat <<'EOF'
-[Unit]
-Description=nomad agent
-Requires=network-online.target
-After=network-online.target
+cat <<-EOF
+  [Unit]
+  Description=nomad agent
+  Requires=network-online.target
+  After=network-online.target
 
-[Service]
-Restart=on-failure
-ExecStart=/usr/bin/nomad agent -dev -bind='0.0.0.0' -vault-enabled='true' -vault-token='root' -vault-address='http://127.0.0.1:8200' -network-interface='docker0'
-ExecReload=/bin/kill -HUP $MAINPID
+  [Service]
+  Restart=on-failure
+  ExecStart=/usr/bin/nomad agent -dev -bind=0.0.0.0 -vault-enabled=true -vault-token=root -vault-address=http://127.0.0.1:8200 -network-interface=docker0
+  ExecReload=/bin/kill -HUP $MAINPID
 
-[Install]
-WantedBy=multi-user.target
+  [Install]
+  WantedBy=multi-user.target
 EOF
 ) | sudo tee /etc/systemd/system/nomad.service
 sudo systemctl enable nomad.service
@@ -55,24 +54,24 @@ sudo systemctl start nomad
 
 
 echo "Installing Consul..."
-CONSUL_VERSION=1.6.2
+CONSUL_VERSION=1.6.3
 curl -sSL https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip > consul.zip
 unzip /tmp/consul.zip
 sudo install consul /usr/bin/consul
 (
-cat <<'EOF'
-[Unit]
-Description=consul agent
-Requires=network-online.target
-After=network-online.target
+cat <<-EOF
+  [Unit]
+  Description=consul agent
+  Requires=network-online.target
+  After=network-online.target
 
-[Service]
-Restart=on-failure
-ExecStart=/usr/bin/consul agent -dev --client='0.0.0.0'
-ExecReload=/bin/kill -HUP $MAINPID
+  [Service]
+  Restart=on-failure
+  ExecStart=/usr/bin/consul agent -dev --client 0.0.0.0
+  ExecReload=/bin/kill -HUP $MAINPID
 
-[Install]
-WantedBy=multi-user.target
+  [Install]
+  WantedBy=multi-user.target
 EOF
 ) | sudo tee /etc/systemd/system/consul.service
 sudo systemctl enable consul.service
@@ -85,26 +84,26 @@ curl -sSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VE
 unzip /tmp/vault.zip
 sudo install vault /usr/bin/vault
 (
-cat <<'EOF'
-[Unit]
-Description=vault agent
-Requires=network-online.target
-After=network-online.target
+cat <<-EOF
+  [Unit]
+  Description=vault agent
+  Requires=network-online.target
+  After=network-online.target
 
-[Service]
-Restart=on-failure
-ExecStart=/usr/bin/vault server -dev -dev-root-token-id='root' -dev-listen-address='0.0.0.0:8200' -log-level='trace'
-ExecReload=/bin/kill -HUP $MAINPID
+  [Service]
+  Restart=on-failure
+  ExecStart=/usr/bin/vault server -dev -dev-root-token-id=root -dev-listen-address 0.0.0.0:8200 -log-level=trace
+  ExecReload=/bin/kill -HUP $MAINPID
 
-[Install]
-WantedBy=multi-user.target
+  [Install]
+  WantedBy=multi-user.target
 EOF
 ) | sudo tee /etc/systemd/system/vault.service
 sudo systemctl enable vault.service
 sudo systemctl start vault
 
 echo "Installing Glooctl..."
-GLOO_VERSION=1.2.15
+GLOO_VERSION=1.3.1
 curl -sSL https://github.com/solo-io/gloo/releases/download/v${GLOO_VERSION}/glooctl-linux-amd64 -o glooctl
 sudo install glooctl /usr/bin/glooctl
 
@@ -120,14 +119,61 @@ nomad -autocomplete-install
 
 echo "export VAULT_ADDR='http://127.0.0.1:8200'" >> ~/.bashrc
 echo "export VAULT_TOKEN='root'" >> ~/.bashrc
-# echo "socat TCP4-LISTEN:19000,fork TCP:172.17.0.1:19000 &" >> ~/.bashrc
+echo "socat TCP4-LISTEN:19000,fork TCP:172.17.0.1:19000 &" >> ~/.bashrc
 
 VAULT_ADDR='http://127.0.0.1:8200' VAULT_TOKEN='root' vault policy write gloo /vagrant/gloo-policy.hcl
+
+echo "add Consul k/v entries for default http and https Gloo Gateways"
+
+consul kv put gloo/gateway.solo.io/v1/Gateway/gloo-system/gateway-proxy - <<-EOF
+bindAddress: '::'
+bindPort: 8080
+httpGateway: {}
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+  resourceVersion: "300"
+proxyNames:
+- gateway-proxy
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+useProxyProto: false
+EOF
+
+consul kv put gloo/gateway.solo.io/v1/Gateway/gloo-system/gateway-proxy-ssl - <<-EOF
+bindAddress: '::'
+bindPort: 8443
+httpGateway: {}
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy-ssl
+  namespace: gloo-system
+  resourceVersion: "292"
+proxyNames:
+- gateway-proxy
+ssl: true
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+useProxyProto: false
+EOF
 
 SCRIPT
 
 Vagrant.configure(2) do |config|
-  config.vm.box = "bento/ubuntu-18.04" # 18.04 LTS
+  config.vm.box = "bento/ubuntu-16.04" # 16.04 LTS
   config.vm.hostname = "nomad"
   config.vm.provision "shell", inline: $script, privileged: false
 
@@ -136,7 +182,7 @@ Vagrant.configure(2) do |config|
   config.vm.synced_folder ".", "/vagrant"
 
   # Expose the nomad api and ui to the host
-  config.vm.network "forwarded_port", guest: 4646, host: 4646, auto_correct: true
+  config.vm.network "forwarded_port", guest: 4646, host: 4646
 
   # Expose the Gloo HTTP Proxy
   config.vm.network "forwarded_port", guest: 8080, host: 8080, guest_ip: "172.17.0.1"
@@ -155,18 +201,18 @@ Vagrant.configure(2) do |config|
 
   # Increase memory for Parallels Desktop
   config.vm.provider "parallels" do |p, o|
-    p.memory = "8192"
+    p.memory = "4096"
   end
 
   # Increase memory for Virtualbox
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = "8192"
+    vb.memory = "4096"
   end
 
   # Increase memory for VMware
   ["vmware_fusion", "vmware_workstation"].each do |p|
     config.vm.provider p do |v|
-      v.vmx["memsize"] = "8192"
+      v.vmx["memsize"] = "4096"
     end
   end
 end
