@@ -3,17 +3,15 @@ title: Gloo and Istio mTLS
 weight: 3
 ---
 
-## Motivation
+Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS communication between Gloo and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
-Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting 
-mutual TLS communication between Gloo and the rest of the cluster. Mutual TLS means that the client 
-proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
+## Guide versions
 
-##### Istio versions
+### Istio versions
 
 This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, and 1.4.3.
 
-##### Gloo versions
+### Gloo versions
 
 This guide was tested with Gloo v1.3.1.
 
@@ -22,7 +20,7 @@ Please note that for gloo versions 1.1.x and up, you must run: `kubectl label na
 before editing the upstream. This prevents your changes from being overwritten.
 {{% /notice %}}
 
-##### Kubernetes versions
+### Kubernetes versions
 
 This guide was tested with GKE v1.15.
 
@@ -30,11 +28,13 @@ Please note that if you are running Kubernetes > 1.12 in Minikube, you may run i
 Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes.
 We recommend installing Istio in a cluster which has this feature turned on by default (for example, GKE).
 
-### Step 1 - Install Istio
+---
+
+## Step 1 - Install Istio
 
 For this exercise, you will need Istio installed with mTLS enabled.
 
-#### Download and install
+### Download and install
 
 To download and install the latest version of Istio, follow the installation instructions [here](https://istio.io/docs/setup/getting-started/).
 You will need to set the profile to sds for this guide.
@@ -42,16 +42,16 @@ You will need to set the profile to sds for this guide.
 Previous releases can be found for download [here](https://github.com/istio/istio/releases).
 
 For a quick install of Istio 1.0.6 or 1.0.9 (prior to SDS mode option) with mTLS enabled, run the following commands:
+
 ```bash
 kubectl apply -f install/kubernetes/helm/istio/templates/crds.yaml
 kubectl apply -f install/kubernetes/istio-demo-auth.yaml
 kubectl get pods -w -n istio-system
 ```
 
-Use `kubectl get pods -n istio-system` to check the status on the Istio pods and wait until all the 
-pods are **Running** or **Completed**.
+Use `kubectl get pods -n istio-system` to check the status on the Istio pods and wait until all the pods are **Running** or **Completed**.
 
-#### SDS mode
+### SDS mode
 
 In Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/secret.html#secret-discovery-service-sds). 
 This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as with Istio 1.0. This has two big benefits:
@@ -61,8 +61,9 @@ This mode enables Istio to deliver the secrets via an API instead of mounting to
 
 For more information on [Istio's identity provisioning through SDS](https://istio.io/docs/tasks/security/auth-sds/) take a look at the [Istio documentation](https://istio.io/docs/tasks/security/auth-sds/).
 
+---
 
-### Step 2 - Install bookinfo
+## Step 2 - Install bookinfo
 
 Before configuring gloo, you'll need to install the bookinfo sample app to be consistent with this guide, 
 or you can use your preferred upstream. Either way, you'll need to enable istio-injection in the default namespace:
@@ -75,7 +76,9 @@ To install the bookinfo sample app, cd into your downloaded Istio directory and 
 kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 
-### Step 3 - Configure Gloo
+---
+
+## Step 3 - Configure Gloo
 
 This guide assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
 and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the
@@ -92,7 +95,7 @@ upstream service.
 The last configuration step is to configure the relevant Gloo upstreams with mTLS. We can be fine-grained about which upstreams have these settings as not all Gloo upstreams may need/want mTLS enabled. This gives us the flexibility to route to upstreams
 both with and without mTLS enabled - a common occurrence in a brown field environment or during a migration to Istio.
 
-#### Without SDS
+### Without SDS
 
 Edit the gateway-proxy to add Istio certs as a volume mount:
 ```bash
@@ -100,6 +103,7 @@ kubectl edit deploy/gateway-proxy -n gloo-system
 ```
 
 Here's an example of an edited deployment:
+
 {{< highlight yaml "hl_lines=43-45 50-54" >}}
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -158,6 +162,7 @@ spec:
 {{< /highlight >}}
 
 The Gloo gateway will now have access to Istio client secrets.
+
 Let's edit the `productpage` upstream and tell Gloo to use the secrets that we just mounted into the Gloo Gateway.
 
 Edit the upstream with this command:
@@ -205,7 +210,7 @@ At this point, we have the correct certificates/keys/CAs installed into the prox
 
 See the bottom of the page for instructions on [testing your configuration]({{% versioned_link_path fromRoot="/gloo_integrations/service_mesh/gloo_istio_mtls/#test-your-configuration" %}}).
 
-#### With SDS mode
+### With SDS mode
 
 Gloo can easily and automatically plug into the Istio SDS architecture. 
 To allow Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
@@ -332,7 +337,7 @@ Next, we need to update the `productpage` upstream with the appropriate SDS conf
 kubectl edit upstream default-productpage-9080 -n gloo-system
 ```
 
-#### Istio 1.1.x
+### Istio 1.1.x
 
 Here's an example of the edited upstream for Istio 1.1.
 
@@ -373,13 +378,12 @@ status:
   state: 1
 {{< /highlight >}}
 
-
 {{% notice note %}}
 Note that Istio has a misspelling on version 1.1.17, using 'credentail' instead of 'credential' in the header.
 This was fixed by Istio 1.3.6.
 {{% /notice %}}
 
-#### Istio 1.3.x and 1.4.x
+### Istio 1.3.x and 1.4.x
 
 For Istio 1.3 and 1.4, we need to use the new header name as well as point to the new location of the projected token.
 
@@ -415,7 +419,9 @@ For either version, in the above snippet we configure the location of the Unix D
 
 At this point, the Gloo gateway-proxy can communicate with Istio's SDS and consume the correct certificates and keys to participate in mTLS with the rest of the Istio mesh.
 
-### Test your configuration 
+---
+
+## Test your configuration 
 
 To test this out, we need a route in Gloo:
 ```bash

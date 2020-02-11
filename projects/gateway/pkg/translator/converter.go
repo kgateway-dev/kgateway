@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/gogo/protobuf/proto"
 	errors "github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -16,7 +18,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-const unnamedRouteName = "<unnamed>"
+const (
+	unnamedRouteName   = "<unnamed>"
+	defaultTableWeight = 0
+)
 
 var (
 	NoActionErr         = errors.New("invalid route: route must specify an action")
@@ -37,14 +42,13 @@ var (
 type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
 	ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error)
-	// Converts a RouteTable to a set of Gloo API routes (i.e. routes on a Proxy resource).
-	ConvertRouteTable(virtualService *gatewayv1.RouteTable) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, reports reporter.ResourceReports) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, reports reporter.ResourceReports) RouteConverter {
 	return &routeVisitor{
 		reports:            reports,
 		routeTableSelector: selector,
+		routeTableIndexer:  indexer,
 	}
 }
 
@@ -80,6 +84,8 @@ type routeVisitor struct {
 	reports reporter.ResourceReports
 	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
+	// Used to sort route tables when multiple ones are matched by a selector.
+	routeTableIndexer RouteTableIndexer
 }
 
 // Helper object used to store information about previously visited routes.
@@ -96,23 +102,7 @@ type routeInfo struct {
 
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
-	return rv.visitAndReorder(wrapper)
-}
-
-func (rv *routeVisitor) ConvertRouteTable(routeTable *gatewayv1.RouteTable) ([]*gloov1.Route, error) {
-	wrapper := &visitableRouteTable{RouteTable: routeTable}
-	return rv.visitAndReorder(wrapper)
-}
-
-func (rv *routeVisitor) visitAndReorder(resource resourceWithRoutes) ([]*gloov1.Route, error) {
-	routes, err := rv.visit(resource, nil, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	glooutils.SortRoutesByPath(routes)
-
-	return routes, nil
+	return rv.visit(wrapper, nil, nil)
 }
 
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
@@ -155,32 +145,59 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				continue
 			}
 
+			// Default missing weights to 0
 			for _, routeTable := range routeTables {
+				if routeTable.GetWeight() == nil {
+					routeTable.Weight = &types.Int32Value{Value: defaultTableWeight}
+				}
+			}
 
-				// Check for delegation cycles
-				if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
-					return nil, err
+			// Index by weight. `errs` contains warnings about multiple tables with the same weight.
+			routeTablesByWeight, sortedWeights, errs := rv.routeTableIndexer.IndexByWeight(routeTables)
+			for _, err := range errs {
+				rv.reports.AddWarning(resource.InputResource(), err.Error())
+			}
+
+			// Process the route tables in order by weight
+			for _, weight := range sortedWeights {
+				routeTablesForWeight := routeTablesByWeight[weight]
+
+				var rtRoutesForWeight []*gloov1.Route
+				for _, routeTable := range routeTablesForWeight {
+
+					// Check for delegation cycles
+					if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
+						return nil, err
+					}
+
+					// Collect information about this route that are relevant when visiting the delegated route table
+					currentRouteInfo := &routeInfo{
+						prefix:  prefix,
+						options: routeClone.Options,
+						name:    name,
+						hasName: routeHasName,
+					}
+
+					// Make a copy of the existing set of visited route tables and pass that into the recursive call.
+					// We do NOT want it to be modified.
+					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
+
+					// Recursive call
+					subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
+					if err != nil {
+						return nil, err
+					}
+
+					rtRoutesForWeight = append(rtRoutesForWeight, subRoutes...)
 				}
 
-				// Collect information about this route that are relevant when visiting the delegated route table
-				currentRouteInfo := &routeInfo{
-					prefix:  prefix,
-					options: routeClone.Options,
-					name:    name,
-					hasName: routeHasName,
+				// If we have multiple route tables with this weight, we want to try and sort the resulting routes in
+				// order to protect against short-circuiting, e.g. we want to avoid `/foo` coming before `/foo/bar`.
+				if len(routeTablesForWeight) > 1 {
+					glooutils.SortRoutesByPath(rtRoutesForWeight)
 				}
 
-				// Make a copy of the existing set of visited route tables and pass that into the recursive call.
-				// We do NOT want it to be modified.
-				visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
-
-				// Recursive call
-				subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
-				if err != nil {
-					return nil, err
-				}
-
-				routes = append(routes, subRoutes...)
+				routes = append(routes, rtRoutesForWeight...)
 			}
 
 		default:

@@ -17,10 +17,12 @@ Although the idea of the API Gatway has been around for a bit, [the role of the 
 
 When we say Gloo is a "next-generation" gateway, we mean it was purpose-built for a highly dynamic, ephemeral environment like Kubernetes (or other workload orchestration platforms) and is built with the assumption of decentralized ownership. Gloo can provide powerful API Gateway functionality for both existing, on-premises investments (like VM deployments or physical hardware), as well as Kubernetes, and even including forward-leaning compute options like Function as a Service. Legacy API Management vendors would have to completely re-write their solutions to play nicely in this new cloud-native world.
 
+---
+
 ## Getting to know Gloo
 
-* [**Installation**](installation/)
-* [**Developers**](dev/)
+* [**Installation**]({{% versioned_link_path fromRoot="/installation" %}})
+* [**Developers**]({{% versioned_link_path fromRoot="/dev/" %}})
 * [**Blog**](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600)
 * [**Slack**](https://slack.solo.io)
 * [**Twitter**](https://twitter.com/soloio_inc)
