@@ -114,7 +114,8 @@ var _ = Describe("Happy path", func() {
 			proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener.
 				VirtualHosts[0].Routes[0].Matchers = []*matchers.Matcher{
 				{
-					Methods: []string{"GET", "POST"},
+					PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
+					Methods:       []string{"GET", "POST"},
 				},
 			}
 
