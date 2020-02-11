@@ -18,7 +18,7 @@ There are two steps to configuring session affinity:
   - This can include any combination of headers, cookies, and source IP address.
 
 
-Below, we show how to configure Gloo to use hashing load balancers and demonstrate a common cookie-basedhashing strategy using a Ring Hash load balancer.
+Below, we show how to configure Gloo to use hashing load balancers and demonstrate a common cookie-based hashing strategy using a Ring Hash load balancer.
 
 ---
 
