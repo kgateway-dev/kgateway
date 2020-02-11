@@ -94,7 +94,7 @@ Consul Values should be written using Gloo-style YAML, whose structure is descri
 
 `glooctl` provides a convenience to get started writing Gloo resources for use with Consul.
 
-Using `glooctl add route ... --yaml` and `glooctl create ... --yaml` will output YAML-formatted objects which can be stored as values in Consul.
+Using `glooctl add route ... -o yaml` and `glooctl create ... -o yaml` will output YAML-formatted objects which can be stored as values in Consul.
 
 For example:
 
@@ -102,7 +102,7 @@ For example:
 glooctl add route \
     --path-exact /sample-route-1 \
     --dest-name petstore \
-    --prefix-rewrite /api/pets --yaml
+    --prefix-rewrite /api/pets -oyaml
 ```
 
 Will produce the following:

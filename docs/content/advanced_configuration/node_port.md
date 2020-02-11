@@ -36,7 +36,7 @@ One advantage of using a NodePort is that it allows relatively easy deployment o
 In Gloo, the service that's responsible for ingress traffic is called `gateway-proxy`. To use Gloo with NodePort we simply need to configure the `gateway-proxy` Kubernetes service to use NodePort. For example, when installing with Helm, use the following command:
 
 ```
-helm install gloo/gloo --namespace gloo-system --set gatewayProxy.service.type=NodePort
+helm install gloo/gloo --namespace gloo-system --set gatewayProxies.gatewayProxy.service.type=NodePort
 ```
 
 Once installed, check what port was allocated:
@@ -58,7 +58,7 @@ spec:
   ports:
   - name: http
     nodePort: 30348
-    port: 8080
+    port: 80
     protocol: TCP
     targetPort: 8080
   selector:

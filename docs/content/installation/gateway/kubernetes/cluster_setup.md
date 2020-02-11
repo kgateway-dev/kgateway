@@ -47,6 +47,11 @@ kubectl config use-context minikube
 
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
+{{% notice note %}}
+To avoid resource limitations, make sure to give your Minikube VM extra RAM and CPU. Minimally, 
+we recommend provide the following arguments to Minikube: `minikube start --memory=4096 --cpus=2`. 
+{{% /notice %}}
+
 ---
 
 ## Minishift

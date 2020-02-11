@@ -239,7 +239,7 @@ status:
 curl $(glooctl proxy url)/hello
 ```
 
-The response should be an error:
+Now you should see the following response:
 
 ```bash
 Hello, world!
