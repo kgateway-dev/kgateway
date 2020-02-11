@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  description: >
+    Expose the `disableKubernetesDestinations` settings field as a Helm chart value, which if enabled in a Gloo
+    deployment monitoring a large number of kubernetes services, can drastically reduce Gloo memory usage.
+  issueLink: https://github.com/solo-io/gloo/issues/2299
