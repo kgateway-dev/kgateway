@@ -40,7 +40,7 @@ Each deployment includes a replica set for the pods, which can be used to scale 
 
 Along with the pods and deployments, three services are created.
 
-* `gloo`: Type ClusterIP exposing the ports 9966 (metrics), 9977 (grpc-xds), 9979 (wasm-cache), and 9988 (grpc-validation)
+* `gloo`: Type ClusterIP exposing the ports 9966 (grpc metrics), 9977 (grpc-xds), 9979 (wasm-cache), and 9988 (grpc-validation)
 * `gateway`: Type ClusterIP exposing the port 443
 * `gateway-proxy`: Type LoadBalancer exposing the ports 80, 443
 
@@ -75,14 +75,14 @@ When Gloo is installed on Kubernetes, it creates a number of Custom Resource Def
 
 | Name | Grouping | Purpose |
 |------|----------|---------|
-| {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration |
-| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed by Gloo to the Envoy proxy. |
 | {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} | gloo.solo.io | Global settings for all Gloo components. |
-| {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Defining multiple Upstreams or external endpoints for a Virtual Service. |
-| {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing HTTP requests. |
 | {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}} | gateway.solo.io | Describes a single Listener and the routing Upstreams reachable via the Gateway Proxy. |
-| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Gateway. |
 | {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}} | gateway.solo.io | Describes the set of routes to match for a set of domains. |
+| {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTable">}} | gateway.solo.io | Child Routing object for the Gloo Gateway. |
+| {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} | gloo.solo.io | A combination of Gateway resources to be pushed by Gloo to the Envoy proxy. |
+| {{< protobuf name="gloo.solo.io.Upstream" display="Upstream">}} | gloo.solo.io | Upstreams represent destinations for routing HTTP requests. |
+| {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} | gloo.solo.io | Defining multiple Upstreams or external endpoints for a Virtual Service. |
+| {{< protobuf name="enterprise.gloo.solo.io.AuthConfig" display="AuthConfig">}} | enterprise.gloo.solo.io | User-facing authentication configuration |
 
 You can find out more about deploying Gloo on Kubernetes by [following this guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
@@ -92,7 +92,7 @@ You can find out more about deploying Gloo on Kubernetes by [following this guid
 
 Gloo can use some of the HashiCorp products to provide the necessary primitives for container management, persistent storage, and secrets management. The diagram below provides and example of how HashiCorp products could be used to host a Gloo deployment.
 
-<img src="{{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}}" alt="Gloo Gateway on Nomad Architecture" width="50%">
+![HashiCorp Example]({{% versioned_link_path fromRoot="/img/gloo-architecture-nomad-consul-vault.png" %}})
 
 ### Containers and Jobs
 

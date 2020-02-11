@@ -67,7 +67,7 @@ spec:
   useProxyProto: false
 ```
 
-In this case, we are setting up an HTTP listener on port 8443. When [VirtualServices](#virtual-services) define a TLS context, they'll automatically bind to this Gateway. You can explicitly configure the Gateway to which a [VirtualService](#virtual-services) binds. In addition, you can also create [TCP gateways](../../gloo_routing/tcp_proxy/) that allow for binary traffic.
+In this case, we are setting up an HTTP listener on port 8443. When [VirtualServices](#virtual-services) define a TLS context, they'll automatically bind to this Gateway. You can explicitly configure the Gateway to which a [VirtualService](#virtual-services) binds. In addition, you can also create [TCP gateways]({{% versioned_link_path fromRoot="/gloo_routing/tcp_proxy/" %}}) that allow for binary traffic.
 
 ---
 

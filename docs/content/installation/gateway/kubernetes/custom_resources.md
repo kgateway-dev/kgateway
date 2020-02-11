@@ -34,19 +34,19 @@ The gateway, gloo, and discovery pods act as the control plane for Gloo. The dat
 
 Gateway is responsible for:
 
-* Translating Gateway and Virtual Service Custom Resources into configuration & status on the Proxy CR
+* Translating Gateway, RouteTables, and Virtual Service Custom Resources into configuration & status on the Proxy CR
 * Validation webhooks hit the Gateway validation server to validate a configuration before application
 
 Gloo is responsible for:
 
-* Translating the Proxy CR into a cached Envoy config
-* Translating Upstreams, ConfigMaps, and Endpoints into a cached Envoy config
+* Translating Proxy, Upstreams, UpstreamGroups, Secrets, AuthConfigs, ConfigMaps, and Endpoints into cached Envoy config
 * Serving cached Envoy configurations via xDS
 * Gloo validation server is hit by Gateway validation server to validate Proxy from Gloo's point of view
 
 Discovery is responsible for:
 
 * Discovering Upstreams in the cluster
+* Discovering functions with the Function Discovery Service (FDS)
 
 The next few sections detail different scenarios where a Custom Resource is used.
 

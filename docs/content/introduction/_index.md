@@ -53,7 +53,7 @@ Gloo makes it easy to solve your challenges of managing ingress traffic into you
 
 * **Build on Envoy proxy the right way**: Gloo is the decoupled control plane for Envoy Proxy enabling developers and operators to dynamically update Envoy using the xDS gRPC APIs in a declarative format. Please see our blogs on [building a control plane for Envoy](https://medium.com/solo-io/guidance-for-building-a-control-plane-to-manage-envoy-proxy-at-the-edge-as-a-gateway-or-in-a-mesh-badb6c36a2af) and [control plane deployment strategies.](https://medium.com/solo-io/guidance-for-building-a-control-plane-for-envoy-part-5-deployment-tradeoffs-a6ef55c06327)
 
-* **Stepping stone to Service Mesh**: Gloo adds service-mesh capabilities to your cluster ingress without being a service mesh itself. Gloo allows you to iteratively take small steps towards advanced features and ties in with systems like Flagger for [canary automation](https://docs.flagger.app/usage/gloo-progressive-delivery), and plugs in natively to [service-mesh implementations](../../gloo_integrations/service_mesh/) like Istio, Linkerd or Consul.
+* **Stepping stone to Service Mesh**: Gloo adds service-mesh capabilities to your cluster ingress without being a service mesh itself. Gloo allows you to iteratively take small steps towards advanced features and ties in with systems like Flagger for [canary automation](https://docs.flagger.app/usage/gloo-progressive-delivery), and plugs in natively to [service-mesh implementations]({{% versioned_link_path fromRoot="/gloo_integrations/service_mesh/" %}}) like Istio, Linkerd or Consul.
 
 * **Integration of legacy applications**: Gloo can route requests directly to _functions_, an API call on a microservice or a legacy service, or publishing to a message queue. This unique ability makes Gloo the only API gateway supporting hybrid apps without tying the user to a specific paradigm.
 
@@ -68,5 +68,7 @@ Gloo makes it easy to solve your challenges of managing ingress traffic into you
 ## Next Steps
 
 * [Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}}): Get started with your own Gloo deployment
+* [Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/" %}}): Learn about the high-level architecture behind Gloo
+* [Deployment Options]({{% versioned_link_path fromRoot="/introduction/deployment_options/" %}}): Learn about the various deployment options for Gloo
+* [Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}}): Learn about the core concepts behind Gloo
 
-{{% children description="true" %}}

@@ -50,9 +50,9 @@ The *Secret Watcher* watches a secret store for updates to secrets (which are re
 
 *Endpoint Discovery* watches service registries such as Kubernetes, Cloud Foundry, and Consul for IPs associated with services. Endpoint Discovery is plugin-specific, so each endpoint type will require a plug-in that supports the discovery functionality. For example, the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec" display="Kubernetes Plugin">}} runs its own Endpoint Discovery goroutine.
 
-### Translator
+### Gloo Translator
 
-The *Translator* receives snapshots of the entire state, composed of the following configuration data:
+The *Gloo Translator* receives snapshots of the entire state, composed of the following configuration data:
 
 * Artifacts
 * Endpoints
