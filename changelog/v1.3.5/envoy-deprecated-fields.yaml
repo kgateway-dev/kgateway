@@ -2,4 +2,4 @@ changelog:
 - type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/2395
   description: >
-    Use envoy's SafeRegex in method matching.
+    Use envoy's SafeRegex in method matching - old style regex match is now deprecated in envoy.
