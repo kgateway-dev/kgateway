@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Stopped the listeners from reloading too often in certain cases.
+    issueLink: https://github.com/solo-io/gloo/issues/2185
