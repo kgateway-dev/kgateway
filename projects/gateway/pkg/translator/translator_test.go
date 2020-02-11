@@ -867,10 +867,10 @@ var _ = Describe("Translator", func() {
 
 					Expect(listener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:delegate3Route2",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/3-delegate/upstream2",
+									Prefix: "/a/1-upstream",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -887,7 +887,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: mergedLeafLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 						{
 							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:<unnamed>",
@@ -913,10 +913,10 @@ var _ = Describe("Translator", func() {
 							Options: mergedMidLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:delegate3Route2",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/1-upstream",
+									Prefix: "/a/3-delegate/upstream2",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -933,10 +933,32 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: rootLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
+						{
+							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/b/2-upstream",
+								},
+							}},
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: &gloov1.Destination{
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Name:      "my-upstream",
+													Namespace: "gloo-system",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						{
 							Name: "",
 							Matchers: []*matchers.Matcher{{
@@ -959,28 +981,6 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							Options: leafLevelRoutePlugins,
-						},
-						{
-							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
-							Matchers: []*matchers.Matcher{{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/b/2-upstream",
-								},
-							}},
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &core.ResourceRef{
-													Name:      "my-upstream",
-													Namespace: "gloo-system",
-												},
-											},
-										},
-									},
-								},
-							},
 						},
 					}))
 				})
@@ -1143,14 +1143,6 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
-						Name:      "delegate-3",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.RouteTable",
-					ObservedGeneration: 0,
-				},
-				{
-					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",
 						Namespace: "gloo-system",
 					},
@@ -1197,6 +1189,14 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		},
 		{
 			Sources: []SourceRef{
+				{
+					ResourceRef: core.ResourceRef{
+						Name:      "delegate-3",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",

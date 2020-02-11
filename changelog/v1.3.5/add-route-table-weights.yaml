@@ -1,0 +1,17 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Currently, when a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo has no way
+    of determining the order in which to process the route tables; in these cases, to avoid short-circuiting routes
+    (e.g. having a route with a `/foo` path prefix matcher before one with `/foo/bar`), Gloo currently automatically
+    sorts the routes by descending specificity of their matchers. While this prevents short-circuiting errors, it can
+    lead to undesired behavior in cases where the user wants complete control over the final ordering of their routes.
+    To prevent this, we are adding an optional `weight` field to the `RouteTable` resource. Gloo will now inspect this
+    field to determine the order in which route tables are to be evaluated when a `selector` matches multiple ones.
+    This will give the user control over the order in which the routes will appear on the final `Proxy` resource.
+    The field is optional; if no value is specified, the weight defaults to `0` (zero). Gloo will process the route
+    tables matched by a selector in ascending order by weight and collect the routes of each route table in the order
+    they are defined. If multiple route tables define the same weight, Gloo will sort the routes which belong to those
+    tables to avoid short-circuiting. In this scenario, Gloo will also alert the user by adding a warning to the status
+    of the parent resource (the one that specifies the `RouteTableSelector`).
+  issueLink: https://github.com/solo-io/gloo/issues/2233
