@@ -29,7 +29,7 @@ type Plugin struct {
 	hcmPlugins []HcmPlugin
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *Plugin) Init(_ plugins.InitParams) error {
 	return nil
 }
 
@@ -95,7 +95,6 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 	cfg.GenerateRequestId = gogoutils.BoolGogoToProto(hcmSettings.GetGenerateRequestId())
 	cfg.Proxy_100Continue = hcmSettings.GetProxy_100Continue()
 	cfg.StreamIdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetStreamIdleTimeout())
-	cfg.IdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetIdleTimeout())
 	cfg.MaxRequestHeadersKb = gogoutils.UInt32GogoToProto(hcmSettings.GetMaxRequestHeadersKb())
 	cfg.RequestTimeout = gogoutils.DurationStdToProto(hcmSettings.GetRequestTimeout())
 	cfg.DrainTimeout = gogoutils.DurationStdToProto(hcmSettings.GetDrainTimeout())
@@ -108,6 +107,13 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 			AcceptHttp_10:         true,
 			DefaultHostForHttp_10: hcmSettings.GetDefaultHostForHttp_10(),
 		}
+	}
+
+	if hcmSettings.GetIdleTimeout() != nil {
+		if cfg.GetCommonHttpProtocolOptions() == nil {
+			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		cfg.CommonHttpProtocolOptions.IdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetIdleTimeout())
 	}
 
 	// allowed upgrades

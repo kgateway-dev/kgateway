@@ -2,6 +2,7 @@ package tcp
 
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	"github.com/gogo/protobuf/types"
@@ -186,8 +187,11 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters:       listenerFilters,
-		TlsContext:    downstreamConfig,
+		Filters: listenerFilters,
+		TransportSocket: &envoycore.TransportSocket{
+			Name:       pluginutils.TlsTransportSocket,
+			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(downstreamConfig)},
+		},
 		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
 	}
 }

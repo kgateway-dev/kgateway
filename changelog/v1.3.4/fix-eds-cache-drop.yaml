@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix bug which causes Gloo's EDS cache from being flushed when upstreams are updated, leading to temporary 503s from the proxy.
+    issueLink: https://github.com/solo-io/gloo/issues/2356
