@@ -166,7 +166,7 @@ DaemonSets are one type of resource that may benefit from session affinity. A Da
 
 We will use a very simple "counter" app to demonstrate session affinity configuration. The counter simply reports how many requests have been made to the `/count` endpoint. Without session affinity, subsequent requests will return a non-monotonically increasing response. For example, on a fresh deployment, your first request will be handled by node 1, and return a count of 1. Your second request will by handled by node 2, and also return a count of 1. After you enable session affinity, repeat requests will return a strictly increasing count response.
 
-The source code for the session affinity app is available [here](https://github.com/solo-io/gloo/blob/v1.2.12/docs/examples/session-affinity/main.go).1
+The source code for the session affinity app is available [here](https://github.com/solo-io/gloo/blob/v1.2.12/docs/examples/session-affinity/main.go).
 
 The core logic is shown below.
 
