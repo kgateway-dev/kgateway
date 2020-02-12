@@ -4,12 +4,12 @@ weight: 10
 description: Using automatic function discovery (ie, discovering and understanding Swagger/OAS docs or gRPC reflection)
 ---
 
-Gloo's **Function Discovery Service** (FDS) attempts to poll service endpoints for:
+Gloo's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 
 * A path serving a [Swagger Document](https://swagger.io/specification/).
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
 
-This means that the Gloo `discovery` pod/binary will make HTTP requests to all services known to Gloo. 
+This means that the Gloo `discovery` pod will make HTTP requests to all `Upstreams` known to Gloo.
 
 This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo is attempting to poll.
 
@@ -95,6 +95,10 @@ E.g. with
 ```bash
 kubectl label namespace default discovery.solo.io/function_discovery=disabled
 kubectl label upstream -n myapp myupstream discovery.solo.io/function_discovery=disabled
+
+# if the Upstream was discovered and is managed by UDS (Upstream Discovery Service)
+# then you can add the label to the service and it will propagate to the Upstream
+kubectl label service -n myapp myservice discovery.solo.io/function_discovery=disabled
 ```
 
 This label can be applied to namespaces and upstreams.
@@ -116,6 +120,10 @@ E.g. with
 ```bash
 kubectl label namespace default discovery.solo.io/function_discovery=enabled
 kubectl label upstream -n myapp myupstream discovery.solo.io/function_discovery=enabled
+
+# if the Upstream was discovered and is managed by UDS (Upstream Discovery Service)
+# then you can add the label to the service and it will propagate to the Upstream
+kubectl label service -n myapp myservice discovery.solo.io/function_discovery=enabled
 ```
 
 This label can be applied to namespaces and upstreams.
