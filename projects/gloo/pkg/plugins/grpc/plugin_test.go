@@ -126,7 +126,7 @@ var _ = Describe("Plugin", func() {
 			upstreamSpec1 *v1kube.UpstreamSpec
 			grpcSpec1     *pluginsv1.ServiceSpec_Grpc
 
-			entryList     [][]ServicesAndDescriptor
+			entryList [][]ServicesAndDescriptor
 		)
 
 		BeforeEach(func() {
@@ -136,8 +136,8 @@ var _ = Describe("Plugin", func() {
 			grpcSpec1 = &pluginsv1.ServiceSpec_Grpc{
 				Grpc: &v1grpc.ServiceSpec{
 					GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
-						PackageName:   "foo",
-						ServiceName:   "baz",
+						PackageName: "foo",
+						ServiceName: "baz",
 					}},
 					Descriptors: []byte("randomString"),
 				},
@@ -246,8 +246,7 @@ var _ = Describe("Plugin", func() {
 			Entry("for the 3rd permutation", 3),
 			Entry("for the 4th permutation", 4),
 			Entry("for the 5th permutation", 5),
-
-			)
+		)
 	})
 
 })
