@@ -808,6 +808,9 @@ metadata:
     app: gloo
   name: default
   namespace: ` + namespace + `
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-delete-policy": before-hook-creation
 spec:
  discovery:
    fdsMode: WHITELIST
