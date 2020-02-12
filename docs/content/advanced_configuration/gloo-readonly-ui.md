@@ -25,19 +25,19 @@ glooctl install gateway --with-admin-console
 
 With helm, add the following repo:
 ```shell script
-helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
+helm repo add gloo-os-with-ui https://storage.googleapis.com/gloo-os-ui-helm
 ```
 
 and install it:
 
 ```shell script
-helm install gloo gloo/gloo-os-with-ui --namespace my-namespace
+helm install gloo gloo-os-with-ui/gloo-os-with-ui --namespace gloo-system
 ```
 
 ## Install Gloo Enterprise Read-Only UI
 
-To install full Gloo Enterprise (including extauth, ratelimiting, enterprise-only Envoy filters) with the read-only UI,
-install Gloo with the following helm value override:
+To install full Gloo Enterprise (including extauth, ratelimiting, Envoy with enterprise-only Envoy filters) with the
+read-only UI, install Gloo with the following helm value override:
 
 ```yaml
 apiServer:
