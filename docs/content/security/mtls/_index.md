@@ -6,7 +6,7 @@ description: Gloo MTLS is a way to ensure that communications between Gloo and E
 
 {{% notice note %}}
 This feature was introduced in version 1.3.4 of Gloo and version 1.3.1 of Gloo Enterprise.
-If you are using an earlier version of open source Gloo, please disregard this page.
+If you are using earlier versions of Gloo, this feature will not be available.
 {{% /notice %}}
 
 ### Architecture
