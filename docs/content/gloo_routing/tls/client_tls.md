@@ -76,7 +76,7 @@ glooctl get upstream default-example-tls-server-8080
 +---------------------------------|------------|----------|--------------------------------+
 ```
 
-Now let's create a route to the example tls server like [we did in the hello world tutorial](../../../gloo_routing/hello_world/ )
+Now let's create a route to the example tls server like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
 
 ```bash
 glooctl add route \
@@ -239,7 +239,7 @@ status:
 curl $(glooctl proxy url)/hello
 ```
 
-The response should be an error:
+Now you should see the following response:
 
 ```bash
 Hello, world!

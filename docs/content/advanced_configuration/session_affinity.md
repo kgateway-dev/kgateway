@@ -4,13 +4,9 @@ weight: 48
 description: Configure Gloo session affinity (sticky sessions)
 ---
 
+For certain applications deployed across multiple replicas, it may be desirable to route all traffic from a single client session to the same instance of the application. This can help reduce latency through better use of caches. This load balancer behavior is referred to as Session Affinity or Sticky Sessions. Gloo exposes Envoy's full session affinity capabilities, as described below.
 
-For certain applications deployed across multiple replicas, it may be desirable
-to route all traffic from a single client session to the same instance of the
-application. This can help reduce latency through better use of caches. This
-load balancer behavior is referred to as Session Affinity or Sticky Sessions.
-Gloo exposes Envoy's full session affinity capabilities, as described below.
-
+---
 
 ## Configuration overview
 
@@ -22,12 +18,11 @@ There are two steps to configuring session affinity:
   - This can include any combination of headers, cookies, and source IP address.
 
 
-Below, we show how to configure Gloo to use hashing load balancers and demonstrate a common cookie-based
-hashing strategy using a Ring Hash load balancer.
+Below, we show how to configure Gloo to use hashing load balancers and demonstrate a common cookie-based hashing strategy using a Ring Hash load balancer.
 
+---
 
-
-### Upstream Plugin Configuration
+## Upstream Plugin Configuration
 
 - Whether an upstream was discovered by Gloo or created manually, just add the `loadBalancerConfig` spec to your upstream.
 - Either a `ringHash` or `maglev` load balancer must be specified to achieve session affinity. Some examples are shown below.
@@ -35,7 +30,7 @@ hashing strategy using a Ring Hash load balancer.
 the details in Envoy's [load balancer selection docs](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/load_balancers#ring-hash).
   - In many cases, either load balancer will work.
 
-#### Configure a Ring Hash Load Balancer on an Upstream
+### Configure a Ring Hash Load Balancer on an Upstream
 
 - Full reference specification:
 
@@ -84,7 +79,7 @@ spec:
     ringHash: {}
 {{< /highlight >}}
 
-#### Configure a Maglev Load Balancer on an Upstream
+### Configure a Maglev Load Balancer on an Upstream
 
 - There are no configurable parameters for Maglev load balancers:
 
@@ -93,10 +88,7 @@ spec:
       maglev: {}
 {{< /highlight >}}
 
-
-
 ### Route Plugin Configuration
-
 
 - Full reference specification:
 
@@ -132,7 +124,7 @@ spec:
         prefixRewrite: /count
 {{< /highlight >}}
 
-##### Notes on hash policies
+### Notes on hash policies
 
 1. One or more `hashPolicies` may be specified.
 2. Ordering of hash policies matters in that any hash policy can be `terminal`, meaning that if Envoy is able to create a hash key with the policies that it has processed up to and including that policy, it will ignore the subsequent policies. This can be used for implementing a content-contingent hashing policy optimization. For example, if a "x-unique-id" header is available, Envoy can save time by ignoring the later identifiers.
@@ -147,18 +139,20 @@ spec:
 
 For additional insights, please refer to Envoy's [route hash policy documentation](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/route/route.proto#route-routeaction-hashpolicy).
 
+---
+
 ## Tutorial: Cookie-based route hashing
 
 The following tutorial walks through the steps involved in configuring and verifying session affinity.
 
-##### Summary
+### Summary
 
 - Before enabling session affinity, each instance of our "Counter" app will service our requests in turn (Round Robin).
   - This will result in non-incrementing responses, such as [1,1,1,2,2,2,3,3,...].
 - After enabling cookie-based session affinity, a single instance of our "Counter" app will service all requests.
   - This will produce incremeting responses, such as [4,5,6,...].
 
-##### Requirements
+### Requirements
 
 - Kubernetes cluster with Gloo installed
 - At least two nodes in the cluster.
@@ -166,21 +160,14 @@ The following tutorial walks through the steps involved in configuring and verif
 
 ### Deploy a sample app in a DaemonSet
 
-DaemonSets are one type of resource that may benefit from session affinity.
-A DaemonSet ensures that all (or some) nodes run a given Pod.
-Depending on your architecture, you may have node-local caches that you want to associate with segments of your traffic.
-Session affinity can help steer requests from a given client to a consistent node.
+DaemonSets are one type of resource that may benefit from session affinity. A DaemonSet ensures that all (or some) nodes run a given Pod. Depending on your architecture, you may have node-local caches that you want to associate with segments of your traffic. Session affinity can help steer requests from a given client to a consistent node.
 
-##### Overview of the "Counter" application
+### Overview of the "Counter" application
 
-We will use a very simple "counter" app to demonstrate session affinity configuration.
-The counter simply reports how many requests have been made to the `/count` endpoint.
-Without session affinity, subsequent requests will return a non-monotonically increasing response.
-For example, on a fresh deployment, your first request will be handled by node 1, and return a count of 1.
-Your second request will by handled by node 2, and also return a count of 1.
-After you enable session affinity, repeat requests will return a strictly increasing count response.
+We will use a very simple "counter" app to demonstrate session affinity configuration. The counter simply reports how many requests have been made to the `/count` endpoint. Without session affinity, subsequent requests will return a non-monotonically increasing response. For example, on a fresh deployment, your first request will be handled by node 1, and return a count of 1. Your second request will by handled by node 2, and also return a count of 1. After you enable session affinity, repeat requests will return a strictly increasing count response.
 
 The source code for the session affinity app is available [here](https://github.com/solo-io/gloo/blob/v1.2.12/docs/examples/session-affinity/main.go).
+
 The core logic is shown below.
 
 {{< highlight golang "hl_lines=24-29" >}}
@@ -223,7 +210,7 @@ func App() error {
 }
 {{< /highlight >}}
 
-##### Apply the DaemonSet
+### Apply the DaemonSet
 
 The following command will create our DaemonSet and a matching Service.
 
@@ -267,8 +254,10 @@ spec:
       targetPort: 8080
 EOF
 ```
-Note: if you deployed the app to a namespace other than the default namespace you will need to adjust the following commands accordingly.
 
+{{% notice note %}}
+If you deployed the app to a namespace other than the default namespace you will need to adjust the following commands accordingly.
+{{% /notice %}}
 
 Gloo will have discovered the `session-affinity-app` service and created an Upstream from it.
 
@@ -278,22 +267,17 @@ Now create a route to the app with `glooctl`:
 glooctl add route --path-exact /route1 --dest-name default-session-affinity-app-80 --prefix-rewrite /count --name default
 ```
 
-In a browser, navigate to this route, `/route1`, on your gateway's URL (you can find this with `glooctl proxy url`).
-If you refresh the page, you should observe a non-incrementing count.
-For example, in cluster with three nodes, you should see something like the sequence:
+In a browser, navigate to this route, `/route1`, on your gateway's URL (you can find this with `glooctl proxy url`). If you refresh the page, you should observe a non-incrementing count. For example, in cluster with three nodes, you should see something like the sequence:
 
 ```
 1,1,1,2,2,2,3,3,3,4,4,4,...
 ```
 
-
 ### Apply the session affinity configuration
 
-
-##### Configure the upstream
+#### Configure the upstream
 
 Use `kubectl edit upstream -n gloo-system default-session-affinity-app-80` and apply the changes shown below to set a hashing load balancer on the app's upstream.
-
 
 {{< highlight yaml "hl_lines=17-21" >}}
 apiVersion: gloo.solo.io/v1
@@ -318,11 +302,9 @@ spec:
         minimumRingSize: "10"
 {{< /highlight >}}
 
-##### Configure the route
+#### Configure the route
 
-Now configure your route to produce hash keys based on a cookie.
-Update the route with `kubectl edit virtualservice -n gloo-system default` and apply the changes shown below.
-
+Now configure your route to produce hash keys based on a cookie. Update the route with `kubectl edit virtualservice -n gloo-system default` and apply the changes shown below.
 
 {{< highlight yaml "hl_lines=20-25" >}}
 apiVersion: gateway.solo.io/v1
@@ -352,8 +334,7 @@ spec:
         prefixRewrite: /count
 {{< /highlight >}}
 
-Return to the app in your browser and refresh the page a few times.
-You should see an increasing count similar to this:
+Return to the app in your browser and refresh the page a few times. You should see an increasing count similar to this:
 
 ```
 5,6,7,8,...

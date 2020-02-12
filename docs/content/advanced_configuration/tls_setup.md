@@ -4,9 +4,9 @@ weight: 50
 description: Understanding how to set up TLS for Gloo
 ---
 
-## Configuring TLS for Gloo
-
 We can configure HTTPS for our Gloo services to encrypt traffic coming from external clients. We can also configure Gloo to do mTLS with external clients as well. In this document, we'll explore configuring Gloo for server TLS.
+
+---
 
 ## Server TLS
 
@@ -45,7 +45,7 @@ glooctl get upstream default-petstore-8080
 +-----------------------+------------+----------+-------------------------+
 ```
 
-Now let's create a route to the petstore like [we did in the hello world tutorial](../../gloo_routing/hello_world/ )
+Now let's create a route to the petstore like [we did in the hello world tutorial]({{< versioned_link_path fromRoot="/gloo_routing/hello_world/" >}}).
 
 ```bash
 glooctl add route \
@@ -194,6 +194,8 @@ returns
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
+---
+
 ## Serving certificates for multiple virtual hosts with SNI
 
 Let's say we had another VirtualService that serves a different certificate for a different virtual host. Gloo allows you to serve multiple virtual hosts from a single HTTPS port and use [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication) to determine which certificate to present to which virtual host. In the previous example, we create a certificate for the `petstore.example.com` domain. Let's create a new self-signed certificate for a different domain, `animalstore.example.com` and see how Gloo can serve multiple virtual hosts on a single port/listener.
@@ -295,8 +297,9 @@ returns
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
+---
 
-### Understanding how it all works
+## Understanding how it all works
 
 By default, when a VirtualService does NOT have any SSL/TLS configuration, it will be attached to the HTTP listener that we have for Gloo proxy (listening on port `8080` by default, but exposed in Kubernetes on port `80` in the `gateway-proxy` service). When we add the SSL/TLS configuration, that VirtualService will automatically become bound to the HTTPS port (listening on port `8443` on the gateway-proxy, but mapped to port `443` on the Kubernetes service). 
 
