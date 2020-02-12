@@ -86,7 +86,7 @@ and should *not* be injected with the Istio sidecar. If you have automatic injec
 See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
 
 To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
-[quick start](../../../installation/gateway/kubernetes/) guide for more information.
+[quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
 For Gloo to successfully send requests to an Istio upstream with mTLS enabled, we need to add
 the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the 

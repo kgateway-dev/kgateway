@@ -6,8 +6,7 @@ weight: 10
 
 ## Installing the Gloo Gateway on Kubernetes
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" %}}).
 
 Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
 
@@ -94,7 +93,7 @@ helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f valu
 
 The table below describes all the enterprise-only values that you can override in your custom values file.
 
-The table for gloo open-source overrides (also available in enterprise) is [here](../gateway/kubernetes/#list-of-gloo-helm-chart-values).
+The table for gloo open-source overrides (also available in enterprise) is [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}).
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

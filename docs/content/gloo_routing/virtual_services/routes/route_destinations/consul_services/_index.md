@@ -55,7 +55,7 @@ display="consul destination type"
 allows you to target a subset of these service instances via the optional `tags` and `dataCenters` fields. Gloo will 
 detect the correspondent IP addresses and ports and load balance traffic between them. 
 
-If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams](../../../../../introduction/concepts#upstreams) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery](../../../../../introduction/concepts/#functions) (ie, REST or gRPC based on swagger or reflection respectively).
+If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts/#upstreams" %}}) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively).
 
 {{% notice note %}}
 When providing the `tags` option, Gloo will only match service instances that **exactly** match the given tag set.
@@ -102,6 +102,6 @@ routes:
 {{< /highlight >}}
 
 {{% notice note %}}
-As is the case with [`Subsets`](../multiple_upstreams/subsets/), Gloo will fall back to forwarding the request to all available service 
+As is the case with [`Subsets`]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/subsets/" %}}), Gloo will fall back to forwarding the request to all available service 
 instances if the given criteria do not match any subset of instances.
 {{% /notice %}}

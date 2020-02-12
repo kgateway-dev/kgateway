@@ -15,7 +15,7 @@ This guide will largely assume that you are running Gloo in Kubernetes.
 {{% /notice %}}
 
 In this guide, we'll walk you through how to upgrade Gloo. First you'll want to familiarize yourself
-with our various [Changelog entry types](../../changelog/changelog_types) so that you can review
+with our various [Changelog entry types]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}) so that you can review
 the changes that have been made in the release you are upgrading to. 
 
 Once you have reviewed the changes in the new release, there are two components to upgrade:
@@ -30,13 +30,9 @@ Once you have reviewed the changes in the new release, there are two components 
         * [Helm 2](#helm-2)
 
 Before upgrading, always make sure to check our changelogs (refer to our
-[open-source](../../changelog/open_source) or [enterprise](../../changelog/enterprise) changelogs)
-for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade 
-procedure; if this is the case, then we will take care to explain what must be done in the changelog notes.
+[open-source]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}) or [enterprise]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}) changelogs) for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade procedure; if this is the case, then we will take care to explain what ust be done in the changelog notes.
 
-You may also want to scan our [frequently-asked questions](../faq) to see if any of those cases apply to you.
-Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our 
-[public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
+You may also want to scan our [frequently-asked questions]({{% versioned_link_path fromRoot="/upgrading/faq/" %}}) to see if any of those cases apply to you. Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 {{% notice note %}}
 We version open-source Gloo separately from Gloo Enterprise. This is because Gloo Enterprise pulls in
@@ -67,12 +63,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"0.20.8","Na
 <br>
 
 If you are an open-source user of Gloo, you will only need to be aware of open-source versions found
-[in our open-source changelogs](../../changelog/open_source). If you are an enterprise user of Gloo,
-you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs](../../changelog/enterprise).
-However, you may need to be aware of the version of open-source Gloo included as a dependency in
-Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version
-will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in
-our [changelog entries](../../changelog/changelog_types).
+[in our open-source changelogs]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}). If you are an enterprise user of Gloo, you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}). However, you may need to be aware of the version of open-source Gloo included as a dependency in Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in our [changelog entries]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}).
 {{% /notice %}}
 
 ## Upgrading Components
@@ -145,9 +136,8 @@ mutually-exclusive; if you have used one in the past, you can freely choose to u
 Both installation methods allow you to provide overrides for the default chart values; however, installing through
 Helm may give you more flexibility as you are working directly with Helm rather than `glooctl`, which, for
 installation, is essentially just a wrapper around Helm.
-See our [open-source installation docs](../../installation/gateway/kubernetes/#list-of-gloo-helm-chart-values) and
-our [enterprise installation docs](../../installation/enterprise/#list-of-gloo-helm-chart-values)
-for a complete list of Helm values that can be overridden.
+See our [open-source installation docs]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}) and
+our [enterprise installation docs]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}) for a complete list of Helm values that can be overridden.
 
 {{% notice note %}}
 We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook.
