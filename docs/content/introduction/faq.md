@@ -29,8 +29,8 @@ Envoy Proxy is a data-plane component with powerful routing, observability, and 
 * Envoy filters to call [AWS Lambda directly](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/aws_lambda), handling the complex security handshaking
 * [Discovery of services running in a hybrid platform]({{< versioned_link_path fromRoot="/introduction/architecture#discovery-architecture" >}}) (like VMs, containers, infrastructure as code, function as a service, etc)
 * Out of the box caching filters - enterprise feature
-* [Rate-limiting service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/simple">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/envoy">}}), depending on what you need) - enterprise feature
-* [OIDC integration]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/oauth/oidc" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security" >}}) - enterprise feature
+* [Rate-limiting service]({{< versioned_link_path fromRoot="/security/rate_limiting/simple/">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/security/rate_limiting/envoy/">}}), depending on what you need) - enterprise feature
+* [OIDC integration]({{< versioned_link_path fromRoot="/security/auth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/security/auth/" >}}) - enterprise feature
 
 
 #### What's the difference between Gloo and Istio

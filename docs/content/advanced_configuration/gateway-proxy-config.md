@@ -6,15 +6,13 @@ description: Bootstrap configuration for Envoy
 
 ## Configuring Envoy
 
-Envoy's [bootstrap configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/v2_overview#bootstrap-configuration)
-can be done in two ways: 1) with a configuration file that we represent as the config map `gateway-proxy-envoy-config`
-and 2) with command-line arguments that we pass in to the `gateway-proxy` pod.
+Envoy's [bootstrap configuration](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/bootstrap) can be done in two ways: 1) with a configuration file that we represent as the config map `gateway-proxy-envoy-config` and 2) with command-line arguments that we pass in to the `gateway-proxy` pod.
 
 You do not need to set either of these manually - gloo has default settings for both in its Helm chart.
 
 ### Configuration File
 
-The Helm value that overrides our default bootstrap configuration is `gatewayProxies.$PROXY_NAME.configMap`. To see an example config map, look no further than [Envoy's configuration documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/v2_overview#bootstrap-configuration).
+The Helm value that overrides our default bootstrap configuration is `gatewayProxies.$PROXY_NAME.configMap`. To see an example config map, look no further than [Envoy's configuration documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/bootstrap).
 
 To see the entire list of Gloo Helm Overrides, see our [list of Helm Chart values]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm" >}}).
 
