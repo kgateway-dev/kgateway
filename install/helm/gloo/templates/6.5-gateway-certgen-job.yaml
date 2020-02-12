@@ -22,7 +22,7 @@ spec:
       labels:
         gloo: gateway-certgen
     spec:
-      serviceAccountName: gateway-certgen
+      serviceAccountName: certgen
       containers:
         - image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
@@ -43,20 +43,21 @@ spec:
   {{- if and .Values.gateway.certGenJob.setTtlAfterFinished (semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion) }}
   ttlSecondsAfterFinished: {{ .Values.gateway.certGenJob.ttlSecondsAfterFinished }}
   {{- end }}
+{{- end }}
 
+{{- if or (and .Values.gateway.enabled .Values.gateway.validation.enabled .Values.gateway.certGenJob.enabled) (.Values.global.glooMtls.enabled) }}
 ---
-
 {{- if .Values.global.glooRbac.create }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   labels:
     app: gloo
-    gloo: gateway
+    gloo: rbac
   annotations:
     "helm.sh/hook": pre-install
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
-  name: gateway-certgen
+  name: certgen
   namespace: {{ $.Release.Namespace }}
 
 ---
@@ -73,7 +74,7 @@ metadata:
     "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 subjects:
 - kind: ServiceAccount
-  name: gateway-certgen
+  name: certgen
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
@@ -121,12 +122,12 @@ kind: ServiceAccount
 metadata:
   labels:
     app: gloo
-    gloo: gateway
+    gloo: rbac
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
     "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
-  name: gateway-certgen
+  name: certgen
   namespace: {{ $.Release.Namespace }}
 
 ---
@@ -145,7 +146,7 @@ metadata:
     "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
 subjects:
 - kind: ServiceAccount
-  name: gateway-certgen
+  name: certgen
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole

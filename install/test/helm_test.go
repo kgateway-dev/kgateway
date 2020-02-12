@@ -283,7 +283,6 @@ var _ = Describe("Helm Test", func() {
 						if structuredDeployment.GetName() == "gloo-mtls-certgen" {
 							foundGlooMtlsCertgenJob = true
 						}
-
 					})
 					Expect(foundGlooMtlsCertgenJob).To(BeTrue(), "Did not find the gloo-mtls-certgen job")
 

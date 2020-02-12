@@ -339,11 +339,15 @@ envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
 $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
-	cp $(ENVOYINIT_DIR)/envoy-sidecar.yaml $(OUTPUT_DIR)/
-	cp $(ENVOYINIT_DIR)/docker-entrypoint.sh $(OUTPUT_DIR)/
+
+$(OUTPUT_DIR)/envoy-sidecar.yaml: $(ENVOYINIT_DIR)/envoy-sidecar.yaml
+	cp $< $@
+
+$(OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
+	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit $(OUTPUT_DIR)/envoy-sidecar.yaml $(OUTPUT_DIR)/docker-entrypoint.sh
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 
@@ -520,7 +524,7 @@ endif
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
  		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
- 		certgen-docker ingress-docker access-logger-docker
+		certgen-docker sds-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -534,6 +538,7 @@ docker-push: $(DOCKER_IMAGES)
 	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/certgen:$(VERSION) && \
+	docker push quay.io/solo-io/sds:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 
 push-kind-images: docker

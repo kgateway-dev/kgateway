@@ -1,12 +1,14 @@
 changelog:
   - type: NEW_FEATURE
     description: >
-      Enable MTLS authentication in between Gloo and Envoy.
+      Allow enabling mTLS authentication between the Gloo control plane and Envoy instances. Since the Envoy
+      configuration can contain secret data, plaintext communication between Gloo and Envoy is too insecure
+      in certain scenarios (e.g. if your setup has the Gloo control plane and Envoy instances running in separate
+      clusters). Turning on mTLS will encrypt the xDS communication between Gloo and Envoy.
     issueLink: https://github.com/solo-io/gloo/issues/2134
   - type: HELM
     description: >
-      Enable MTLS authentication in between Gloo and Envoy. Introduces the new Helm setting
-      "global.glooMtls.enabled".
+      We are introducing a new Helm value `global.glooMtls.enabled` to enable mTLS between Gloo and Envoy.
       An example of a helm override file that enables MTLS authentication is:
       ```
       global:
@@ -14,3 +16,6 @@ changelog:
           enabled: true
       ```
     issueLink: https://github.com/solo-io/gloo/issues/2134
+  - type: FIX
+    description: Pin versions of base docker images for Gloo containers
+    issueLink: https://github.com/solo-io/gloo/issues/2406

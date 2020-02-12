@@ -17,7 +17,8 @@ const (
 	sslKeyFile       = secretDir + v1.TLSPrivateKeyKey        // tls.key
 	sslCertFile      = secretDir + v1.TLSCertKey              //tls.crt
 	sslCaFile        = secretDir + v1.ServiceAccountRootCAKey //ca.crt
-	sdsServerAddress = "0.0.0.0:8236"
+	// This must match the value in the envoy-sidecar.yaml config running in the envoy-sidecar container
+	sdsServerAddress = "0.0.0.0:8234"
 )
 
 func Run(ctx context.Context) error {
