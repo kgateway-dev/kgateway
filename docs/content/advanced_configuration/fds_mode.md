@@ -9,7 +9,7 @@ Gloo's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 * A path serving a [Swagger Document](https://swagger.io/specification/).
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
 
-This means that the Gloo `discovery` pod will make HTTP requests to all services known to Gloo (i.e., defined in `Upstreams`).
+This means that the Gloo `discovery` pod will make HTTP requests to all `Upstreams` known to Gloo.
 
 This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo is attempting to poll.
 
