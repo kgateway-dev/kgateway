@@ -82,7 +82,7 @@ git clone https://github.com/solo-io/gloo
 git clone git@github.com:solo-io/gloo.git
 ```
 
-Starting in 1.x, the Gloo codebase no uses go modules for dependency managament. However, 
+Starting in 1.x, the Gloo codebase uses [Go modules](https://blog.golang.org/using-go-modules) for dependency management. However, 
 on older versions, ensure that [`dep`](https://github.com/golang/dep) is installed and run:
 
 ```bash
