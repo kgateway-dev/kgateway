@@ -36,7 +36,7 @@ data:
                         api_type: GRPC
                         grpc_services:
                           google_grpc:
-                            target_uri: 0.0.0.0:8234
+                            target_uri: 127.0.0.1:8234
                             stat_prefix: "gloo_sds"
                 validation_context_sds_secret_config:
                   name: validation_context
@@ -45,7 +45,7 @@ data:
                       api_type: GRPC
                       grpc_services:
                         google_grpc:
-                          target_uri: 0.0.0.0:8234
+                          target_uri: 127.0.0.1:8234
                           stat_prefix: "gloo_sds"
       clusters:
       - name: gloo_cluster

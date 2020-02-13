@@ -246,7 +246,7 @@ var _ = Describe("Helm Test", func() {
 			Context("gloo mtls settings", func() {
 				var (
 					glooMtlsSecretVolume = v1.Volume{
-						Name:         "gloo-mtls-certs",
+						Name: "gloo-mtls-certs",
 						VolumeSource: v1.VolumeSource{
 							Secret: &v1.SecretVolumeSource{
 								SecretName:  "gloo-mtls-certs",

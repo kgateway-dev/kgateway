@@ -5,6 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
+
+	"go.uber.org/zap"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
@@ -12,13 +15,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-const (
-	secretDir        = "/etc/envoy/ssl/"
-	sslKeyFile       = secretDir + v1.TLSPrivateKeyKey        // tls.key
-	sslCertFile      = secretDir + v1.TLSCertKey              //tls.crt
-	sslCaFile        = secretDir + v1.ServiceAccountRootCAKey //ca.crt
+var (
+	secretDir   = "/etc/envoy/ssl/"
+	sslKeyFile  = secretDir + v1.TLSPrivateKeyKey        // tls.key
+	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
+	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
+
 	// This must match the value in the envoy-sidecar.yaml config running in the envoy-sidecar container
-	sdsServerAddress = "0.0.0.0:8234"
+	sdsServerAddress = "127.0.0.1:8234"
 )
 
 func Run(ctx context.Context) error {
@@ -28,7 +32,7 @@ func Run(ctx context.Context) error {
 	grpcServer, snapshotCache := server.SetupEnvoySDS()
 
 	// Run the gRPC Server
-	err := server.RunSDSServer(ctx, grpcServer, sdsServerAddress) // runs the grpc server in internal goroutines
+	serverStopped, err := server.RunSDSServer(ctx, grpcServer, sdsServerAddress) // runs the grpc server in internal goroutines
 	if err != nil {
 		return err
 	}
@@ -55,11 +59,11 @@ func Run(ctx context.Context) error {
 			select {
 			// watch for events
 			case event := <-watcher.Events:
-				contextutils.LoggerFrom(ctx).Info("received event: \n", event)
+				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
 				server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
 			// watch for errors
 			case err := <-watcher.Errors:
-				contextutils.LoggerFrom(ctx).Warn("Received error: \n", err)
+				contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
 			case <-ctx.Done():
 				return
 			}
@@ -77,5 +81,10 @@ func Run(ctx context.Context) error {
 
 	<-sigs
 	cancel()
-	return nil
+	select {
+	case <-serverStopped:
+		return nil
+	case <-time.After(3 * time.Second):
+		return nil
+	}
 }

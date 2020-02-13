@@ -6,9 +6,9 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 	"net"
-	"os"
 
 	"github.com/solo-io/go-utils/hashutils"
+	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/contextutils"
 
@@ -21,8 +21,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/server"
 )
 
+// These values must match the values in the envoy sidecar's common_tls_context
 const (
-	sdsClient = "sds_client"
+	sdsClient         = "sds_client"         // node ID
+	serverCert        = "server_cert"        // name of a tls_certificate_sds_secret_config
+	validationContext = "validation_context" // name of the validation_context_sds_secret_config
 )
 
 var (
@@ -31,7 +34,7 @@ var (
 
 type EnvoyKey struct{}
 
-func (h *EnvoyKey) ID(node *core.Node) string {
+func (h *EnvoyKey) ID(_ *core.Node) string {
 	return sdsClient
 }
 
@@ -46,24 +49,25 @@ func SetupEnvoySDS() (*grpc.Server, cache.SnapshotCache) {
 	return grpcServer, snapshotCache
 }
 
-func RunSDSServer(ctx context.Context, grpcServer *grpc.Server, serverAddress string) error {
+func RunSDSServer(ctx context.Context, grpcServer *grpc.Server, serverAddress string) (<-chan struct{}, error) {
 	lis, err := net.Listen("tcp", serverAddress)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("sds server listening on %s\n", serverAddress))
+	contextutils.LoggerFrom(ctx).Infof("sds server listening on %s", serverAddress)
 	go func() {
 		if err = grpcServer.Serve(lis); err != nil {
-			contextutils.LoggerFrom(ctx).Error(fmt.Sprintf("Stopping sds server listening on %s\n", serverAddress))
-			os.Exit(1)
+			contextutils.LoggerFrom(ctx).Fatalw("fatal error in gRPC server", zap.String("address", serverAddress), zap.Error(err))
 		}
 	}()
+	serverStopped := make(chan struct{})
 	go func() {
 		<-ctx.Done()
-		contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("stopping sds server on %s\n", serverAddress))
+		contextutils.LoggerFrom(ctx).Infof("stopping sds server on %s\n", serverAddress)
 		grpcServer.GracefulStop()
+		serverStopped <- struct{}{}
 	}()
-	return nil
+	return serverStopped, nil
 }
 
 func GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile string) (string, error) {
@@ -89,7 +93,7 @@ func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile str
 	if err != nil {
 		return err
 	}
-	contextutils.LoggerFrom(ctx).Info(fmt.Sprintf("Updating SDS config. Snapshot version is %s", snapshotVersion))
+	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. Snapshot version is %s", snapshotVersion)
 
 	items := []cache.Resource{
 		serverCertSecret(sslCertFile, sslKeyFile),
@@ -102,7 +106,7 @@ func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile str
 
 func serverCertSecret(certFile, keyFile string) cache.Resource {
 	return &auth.Secret{
-		Name: "server_cert",
+		Name: serverCert,
 		Type: &auth.Secret_TlsCertificate{
 			TlsCertificate: &auth.TlsCertificate{
 				CertificateChain: &core.DataSource{
@@ -122,7 +126,7 @@ func serverCertSecret(certFile, keyFile string) cache.Resource {
 
 func validationContextSecret(caFile string) cache.Resource {
 	return &auth.Secret{
-		Name: "validation_context",
+		Name: validationContext,
 		Type: &auth.Secret_ValidationContext{
 			ValidationContext: &auth.CertificateValidationContext{
 				TrustedCa: &core.DataSource{
