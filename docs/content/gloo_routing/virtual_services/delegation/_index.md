@@ -157,7 +157,7 @@ In the next two sections we will see examples of both these delegation actions.
 ### Delegation via direct reference
 A complete configuration that uses a `delegateAction` which references specific route tables might look as follows:
 
-* A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
+A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
 Please note that routes with `delegateActions` can only use a `prefix` matcher.
 
 ```yaml
@@ -185,7 +185,7 @@ spec:
           namespace: 'b'
 ```
 
-* A **RouteTable** which defines two routes.
+A **RouteTable** which defines two routes.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -202,7 +202,6 @@ spec:
         single:
           upstream:
             name: 'foo-upstream'
-
     - matchers:
        - prefix: '/a/2'
       routeAction:
@@ -211,7 +210,7 @@ spec:
             name: 'bar-upstream'
 ```
 
-* A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
+A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -239,7 +238,7 @@ spec:
 ```
 
 
-* A RouteTable which is a child of another route table.
+A RouteTable which is a child of another route table.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -322,7 +321,7 @@ value `*` can be used to select Route Tables in all namespaces watched by Gloo.
 
 A complete configuration might look as follows:
 
-* A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `gloo-system` namespace that 
+A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `gloo-system` namespace that 
 contain the `domain: example.com` label.
 
 ```yaml
@@ -346,7 +345,7 @@ spec:
           - gloo-system
 ```
 
-* Two **RouteTables** which match the selection criteria:
+Two **RouteTables** which match the selection criteria:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
