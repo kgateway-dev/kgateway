@@ -292,9 +292,9 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		if specI == specJ {
 			descriptorsI := p.upstreamServices[i].Descriptors.String()
 			descriptorsJ := p.upstreamServices[j].Descriptors.String()
-			return descriptorsI <= descriptorsJ
+			return descriptorsI < descriptorsJ
 		}
-		return specI <= specJ
+		return specI < specJ
 	})
 
 	var filters []plugins.StagedHttpFilter
