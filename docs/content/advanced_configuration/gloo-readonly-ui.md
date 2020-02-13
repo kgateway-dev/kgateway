@@ -12,6 +12,8 @@ Additionally, Gloo Enterprise customers can also tighten the permissions of thei
 provide users insight into the state of Gloo without giving them admin-level permissions typically held by the Gloo UI
 backend service.
 
+Once installed, access the read-only UI with `glooctl ui` or `glooctl dashboard`.
+
 ## Install Gloo OSS Read-Only UI
 
 Along with each release of Gloo Enterprise, we build and release a helm chart that deploys open-source Gloo alongside
@@ -48,6 +50,7 @@ To install full Gloo Enterprise (including extauth, ratelimiting, Envoy with ent
 read-only UI, install Gloo with the following helm value override:
 
 ```yaml
+# This makes Gloo install the UI in read-only mode
 apiServer:
   enterprise: false
 ```
