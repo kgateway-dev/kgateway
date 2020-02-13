@@ -5,8 +5,8 @@ description: Routing to services that are registered in Consul service-discovery
 ---
 
 Gloo is capable of discovering services registered with [HashiCorp Consul](https://www.hashicorp.com/products/consul/). 
-If this feature has been enabled via the `serviceDiscovery` field in the {{< protobuf name="gloo.solo.io.ConsulServiceDestination" >}}
-section of the `Settings` resource, it is possible to specify Consul services as routing destinations.
+If this feature has been enabled via the `serviceDiscovery` field in the `consul` section of the
+{{< protobuf name="gloo.solo.io.Settings" >}} resource, it is possible to specify Consul services as routing destinations.
 
 A single Consul service usually maps to several service instances, which can have distinct sets of tags, listen on 
 different ports, and live in multiple data centers. To give a concrete example, here is a simplified response you might 
