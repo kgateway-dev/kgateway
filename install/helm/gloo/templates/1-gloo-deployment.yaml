@@ -34,6 +34,9 @@ spec:
         secret:
           defaultMode: 420
           secretName: gloo-mtls-certs
+      - name: envoy-sidecar-config
+        configMap:
+          name: envoy-sidecar-config
 {{- end }}
       - name: labels-volume
         downwardAPI:
@@ -60,6 +63,8 @@ spec:
           periodSeconds: 2
           failureThreshold: 10
         volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-sidecar-config
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true

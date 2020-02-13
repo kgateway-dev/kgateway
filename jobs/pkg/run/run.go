@@ -38,13 +38,13 @@ func Run(ctx context.Context, opts Options) error {
 		return eris.Errorf("must provide secret-name")
 	}
 	if opts.ServerCertSecretFileName == "" {
-		return eris.Errorf("must provide secret data configmap filename for server cert")
+		return eris.Errorf("must provide name for the server cert entry in the secret data")
 	}
 	if opts.ServerCertAuthorityFileName == "" {
-		return eris.Errorf("must provide secret data configmap filename for server Cert Authority")
+		return eris.Errorf("must provide name for the cert authority entry in the secret data")
 	}
 	if opts.ServerKeySecretFileName == "" {
-		return eris.Errorf("must provide secret data configmap filename for server key")
+		return eris.Errorf("must provide name for the server key entry in the secret data")
 	}
 	certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
 	if err != nil {
