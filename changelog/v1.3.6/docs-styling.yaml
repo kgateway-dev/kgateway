@@ -1,4 +1,4 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: Adjust docs layout to fit wider content, adjust line breaks.
     issueLink: https://github.com/solo-io/gloo/issues/2352
