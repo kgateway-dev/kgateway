@@ -101,7 +101,7 @@ The following ports will be exposed to the host machine:
 | gloo/https | 8443 | 
 | gloo/admin | 19000 | 
 
-You can view resources stored in the Consul UI at `http://localhost:8500/ui`.
+You can view resources stored in the Consul UI at [http://localhost:8500/ui](http://localhost:8500/ui).
 
 With all the containers now running, it is time to configure the *Upstream* for the Per Store application and a *Virtual Service* on the Gloo gateway to serve content from the Pet Store app.
 

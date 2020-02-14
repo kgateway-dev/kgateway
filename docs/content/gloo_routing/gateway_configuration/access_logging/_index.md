@@ -23,9 +23,10 @@ Possible use cases include:
 
 #### Configuration
 
-The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial](../../../installation/gateway/kubernetes). The only Gloo resource involved in enabling Access Logging is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
+The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}). The only Gloo resource involved in enabling Access Logging is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
 
-Enabling access logs in Gloo is as simple as adding a [listener plugin](../../gateway_configuration/) to any one of the gateway resources. 
+Enabling access logs in Gloo is as simple as adding a [listener plugin]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/" %}}) to any one of the gateway resources.
+
 The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.options.gloo.solo.io.AccessLog">}}.
 
 Gloo supports two types of Access Logging. `File Sink` and `GRPC`.
@@ -157,7 +158,7 @@ gloo-7975c97546-ssh26                             1/1     Running   0          2
 ```
 The output should be similar to the above, minus the generated section of the names.
 
-Once all of the gloo pods are up and running let's go ahead and install the petstore. The tutorial on how to do this as well as basic gloo routing is located [here](../../hello_world/).
+Once all of the gloo pods are up and running let's go ahead and install the petstore. The tutorial on how to do this as well as basic gloo routing is located [here]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}).
 Once the petstore pod is up and running we will route some traffic to it, and test that the traffic is being recorded in the access logs.
 
 Run the following curl from the routing tutorial doc.

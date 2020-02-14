@@ -13,7 +13,7 @@ However, condensing all routing config onto a single object can be cumbersome wh
 Gloo provides a feature referred to as *delegation*. 
 Delegation allows a complete routing configuration to be assembled from separate config objects. The root config object
 *delegates* responsibility to other objects, forming a tree of config objects. 
-The tree always has a *Virtual Service* as its root, which delgates to any number of *Route Tables*. 
+The tree always has a *Virtual Service* as its root, which delegates to any number of *Route Tables*.
 Route Tables  can further delegate to other Route Tables.
 
 ## Motivation
@@ -157,35 +157,35 @@ In the next two sections we will see examples of both these delegation actions.
 ### Delegation via direct reference
 A complete configuration that uses a `delegateAction` which references specific route tables might look as follows:
 
-* A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
+A root-level **VirtualService** which delegates routing decisions to the `a-routes` and `b-routes` **RouteTables**. 
 Please note that routes with `delegateActions` can only use a `prefix` matcher.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: 'any'
-  namespace: 'any'
+  name: 'example'
+  namespace: 'gloo-system'
 spec:
   virtualHost:
     domains:
-    - 'any.com'
+    - 'example.com'
     routes:
     - matchers:
-       - prefix: '/a' # delegate ownership of routes for `any.com/a`
+       - prefix: '/a' # delegate ownership of routes for `example.com/a`
       delegateAction:
         ref:
           name: 'a-routes'
           namespace: 'a'
     - matchers:
-       - prefix: '/b' # delegate ownership of routes for `any.com/b`
+       - prefix: '/b' # delegate ownership of routes for `example.com/b`
       delegateAction:
         ref:
           name: 'b-routes'
           namespace: 'b'
 ```
 
-* A **RouteTable** which defines two routes.
+A **RouteTable** which defines two routes.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -202,7 +202,6 @@ spec:
         single:
           upstream:
             name: 'foo-upstream'
-
     - matchers:
        - prefix: '/a/2'
       routeAction:
@@ -211,7 +210,7 @@ spec:
             name: 'bar-upstream'
 ```
 
-* A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
+A **RouteTable** which both *defines a route* and *delegates to* another **RouteTable**.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -239,7 +238,7 @@ spec:
 ```
 
 
-* A RouteTable which is a child of another route table.
+A RouteTable which is a child of another route table.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -263,7 +262,7 @@ The above configuration can be visualized as:
 {{<mermaid align="left">}}
 graph LR;
 
-    vs[Virtual Service <br> <br> <code>any.com</code>] 
+    vs[Virtual Service <br> <br> <code>example.com</code>] 
     
     vs -->|delegate <code>/a</code> prefix | rt1(Route Table <br> <br> <code>/a/1</code> <br> <code>/a/2</code>)
 
@@ -292,7 +291,7 @@ And would result in the following Proxy:
 {{<mermaid align="left">}}
 graph LR;
 
-    px{Proxy <br> <br> <code>any.com</code>}
+    px{Proxy <br> <br> <code>example.com</code>}
     
     style px fill:#0DFFDD,stroke:#333,stroke-width:4px
     
@@ -322,40 +321,40 @@ value `*` can be used to select Route Tables in all namespaces watched by Gloo.
 
 A complete configuration might look as follows:
 
-* A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `any` namespace that 
-contain the `domain: any.com` label.
+A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `gloo-system` namespace that 
+contain the `domain: example.com` label.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: 'any'
-  namespace: 'any'
+  name: 'example'
+  namespace: 'gloo-system'
 spec:
   virtualHost:
     domains:
-    - 'any.com'
+    - 'example.com'
     routes:
     - matchers:
-       - prefix: '/' # delegate ownership of all routes for `any.com`
+       - prefix: '/' # delegate ownership of all routes for `example.com`
       delegateAction:
         selector:
           labels:
-            domain: any.com
+            domain: example.com
           namespaces:
-          - any
+          - gloo-system
 ```
 
-* Two **RouteTables** which match the selection criteria:
+Two **RouteTables** which match the selection criteria:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: RouteTable
 metadata:
   name: 'a-routes'
-  namespace: 'any'
+  namespace: 'gloo-system'
   labels:
-    domain: any.com
+    domain: example.com
 spec:
   routes:
     - matchers:
@@ -372,9 +371,9 @@ apiVersion: gateway.solo.io/v1
 kind: RouteTable
 metadata:
   name: 'a-b-routes'
-  namespace: 'any'
+  namespace: 'gloo-system'
   labels:
-    domain: any.com
+    domain: example.com
 spec:
   routes:
     - matchers:
@@ -392,7 +391,7 @@ The above configuration can be visualized as:
 {{<mermaid align="left">}}
 graph LR;
 
-    vs[Virtual Service <br> <br> <code>any.com</code>] 
+    vs[Virtual Service <br> <br> <code>example.com</code>] 
     
     vs -->|delegate <code>/</code> prefix | rt1(Route Table <br> <br> <code>/a</code>)
 
@@ -413,7 +412,7 @@ And would result in the following Proxy:
 {{<mermaid align="left">}}
 graph LR;
 
-    px{Proxy <br> <br> <code>any.com</code>}
+    px{Proxy <br> <br> <code>example.com</code>}
     
     style px fill:#0DFFDD,stroke:#333,stroke-width:4px
     

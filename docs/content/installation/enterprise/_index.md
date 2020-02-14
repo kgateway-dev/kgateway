@@ -6,8 +6,7 @@ weight: 10
 
 ## Installing the Gloo Gateway on Kubernetes
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../gateway/kubernetes/cluster_setup).
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" %}}).
 
 Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
 
@@ -92,22 +91,28 @@ helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f valu
 
 #### List of Gloo Helm chart values
 
-The table below describes all the enterprise-only values that you can override in your custom values file.
+The table below describes the most important enterprise-only values that you can override in your custom values file.
 
-The table for gloo open-source overrides (also available in enterprise) is [here](../gateway/kubernetes/#list-of-gloo-helm-chart-values).
+The table for gloo open-source overrides (also available in enterprise) is [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}).
+
+{{% notice note %}}
+Open source helm values in Gloo enterprise must be prefixed with `gloo`, unless they are the Gloo settings (i.e., `settings.<rest of helm value>`).
+{{% /notice %}}
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | grafana.defaultInstallationEnabled                        | bool     | deploy grafana in your gloo system namespace. default is `true` |
 | prometheus.enabled                                        | bool     | deploy prometheus in your gloo system namespace. default is `true` |
 | rateLimit.enabled                                         | bool     | deploy rate-limiting in your gloo system namespace. default is `true` |
+| global.extensions.extAuth.enabled                         | bool     | deploy ext-auth in your gloo system namespace. default is `true` |
 | global.extensions.extAuth.envoySidecar                    | bool     | deploy ext-auth in the gateway-proxy pod, as a sidecar to envoy. communicates over unix domain socket instead of TCP. default is `false` |
+| observability.enabled                                     | bool     | deploy observability in your gloo system namespace. default is `true` |
 | observability.customGrafana.enabled                       | bool     | indicate you'll be using your own instance of grafana rather than the one shipped with Gloo. default is `false`
 | observability.customGrafana.username                      | string   | set this and the `password` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.password                      | string   | set this and the `username` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
 | observability.customGrafana.url                           | string   | the URL for the custom grafana instance
-
+| apiServer.enterprise                                      | bool     | deploy UI with permissions to modify Gloo resources. default is `true`
 ---
 ## Verify your Installation
 

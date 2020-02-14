@@ -26,7 +26,7 @@ sudo apt-get -y install unzip curl vim
 sudo apt-get -y install httpie socat
 
 echo "Installing Nomad..."
-NOMAD_VERSION=0.9.3
+NOMAD_VERSION=0.10.3
 cd /tmp/
 curl -sSL https://releases.hashicorp.com/nomad/${NOMAD_VERSION}/nomad_${NOMAD_VERSION}_linux_amd64.zip -o nomad.zip
 unzip nomad.zip
@@ -54,7 +54,7 @@ sudo systemctl start nomad
 
 
 echo "Installing Consul..."
-CONSUL_VERSION=1.5.2
+CONSUL_VERSION=1.6.3
 curl -sSL https://releases.hashicorp.com/consul/${CONSUL_VERSION}/consul_${CONSUL_VERSION}_linux_amd64.zip > consul.zip
 unzip /tmp/consul.zip
 sudo install consul /usr/bin/consul
@@ -79,7 +79,7 @@ sudo systemctl start consul
 
 
 echo "Installing Vault..."
-VAULT_VERSION=1.1.3
+VAULT_VERSION=1.3.2
 curl -sSL https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip > vault.zip
 unzip /tmp/vault.zip
 sudo install vault /usr/bin/vault
@@ -103,7 +103,7 @@ sudo systemctl enable vault.service
 sudo systemctl start vault
 
 echo "Installing Glooctl..."
-GLOO_VERSION=0.18.2
+GLOO_VERSION=1.3.1
 curl -sSL https://github.com/solo-io/gloo/releases/download/v${GLOO_VERSION}/glooctl-linux-amd64 -o glooctl
 sudo install glooctl /usr/bin/glooctl
 
@@ -122,6 +122,53 @@ echo "export VAULT_TOKEN='root'" >> ~/.bashrc
 echo "socat TCP4-LISTEN:19000,fork TCP:172.17.0.1:19000 &" >> ~/.bashrc
 
 VAULT_ADDR='http://127.0.0.1:8200' VAULT_TOKEN='root' vault policy write gloo /vagrant/gloo-policy.hcl
+
+echo "add Consul k/v entries for default http and https Gloo Gateways"
+
+consul kv put gloo/gateway.solo.io/v1/Gateway/gloo-system/gateway-proxy - <<-EOF
+bindAddress: '::'
+bindPort: 8080
+httpGateway: {}
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+  resourceVersion: "300"
+proxyNames:
+- gateway-proxy
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+useProxyProto: false
+EOF
+
+consul kv put gloo/gateway.solo.io/v1/Gateway/gloo-system/gateway-proxy-ssl - <<-EOF
+bindAddress: '::'
+bindPort: 8443
+httpGateway: {}
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy-ssl
+  namespace: gloo-system
+  resourceVersion: "292"
+proxyNames:
+- gateway-proxy
+ssl: true
+status:
+  reportedBy: gateway
+  state: Accepted
+  subresourceStatuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reportedBy: gloo
+      state: Accepted
+useProxyProto: false
+EOF
 
 SCRIPT
 

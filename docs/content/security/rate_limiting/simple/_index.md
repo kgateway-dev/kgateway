@@ -8,7 +8,7 @@ description: Simplified rate-limit API that covers most use cases.
 
 Gloo includes a simplified rate limiting model that allows you to specify the number of requests per configurable unit of time that can be made against all routes defined within a virtual host. You can set different limits for both authorized and anonymous users. An authorized user is one that the Gloo external authentication server has validated and their user token is included with the request. Authorized users are rate limited on a per user basis. Anonymous users are rate limited on a calling IP basis, i.e., all requests from that incoming IP count towards the requests per time limits.
 
-For a more fine grained approach, take a look at using Gloo with [Envoy's native rate limiting model](../envoy)
+For a more fine grained approach, take a look at using Gloo with [Envoy's native rate limiting model]({{% versioned_link_path fromRoot="/security/rate_limiting/envoy/" %}})
 
 ## Rate Limit
 

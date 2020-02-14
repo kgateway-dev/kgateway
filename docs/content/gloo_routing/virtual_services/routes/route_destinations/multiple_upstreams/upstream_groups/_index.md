@@ -16,7 +16,7 @@ from 90% v3 and 10% v4 => 50% v3 and 50% v4 **without** needing to know what rou
 ![Upstream Group example]({{% versioned_link_path fromRoot="/img/inv2.png" %}})
 
 There are two steps to using an upstream group. First, you need to create an Upstream Group custom resource, and then you
-need to reference that Upstream Group from your one or more route actions. Let's build on our [Multiple Destination](../multi_destination)
+need to reference that Upstream Group from your one or more route actions. Let's build on our [Multiple Destination]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/multi_destination/" %}})
 example.
 
 #### Create Upstream Group

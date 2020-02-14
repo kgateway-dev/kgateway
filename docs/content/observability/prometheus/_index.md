@@ -31,6 +31,6 @@ kubectl port-forward deployment/gateway-proxy 19000
 curl http://localhost:19000/stats/prometheus
 ```
 
-You can use these to customize the dashboards that get created for every upstream, as described [here](../grafana/dashboards/#dynamically-generated-dashboards)
+You can use these to customize the dashboards that get created for every upstream, as described [here]({{% versioned_link_path fromRoot="/observability/grafana/dashboards/#dynamically-generated-dashboards" %}}).
 
 {{% children description="true" %}}

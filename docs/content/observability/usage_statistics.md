@@ -16,7 +16,7 @@ that is collected includes:
 * CLI args, in the case of `glooctl`
 
 `glooctl` records a unique ID in the .soloio config directory 
-(see [this page](../../advanced_configuration/glooctl-config#config-file) in our docs for more info
+(see [this page]({{% versioned_link_path fromRoot="/advanced_configuration/glooctl-config/#config-file" %}}) in our docs for more info
 on where that directory can be found) in a file named `signature`. This contains no 
 personally-identifying information; it is just a random UUID used to associate multiple 
 usage records with the same source. As with the rest of this data, it will not be created or

@@ -52,20 +52,21 @@ glooctl create secret aws \
 You can see the details of the created secret as follows.
 
 ```shell
-kubectl describe secret my-aws
+kubectl describe secret my-aws -n gloo-system
 ```
 
 ```noop
 Name:         my-aws
 Namespace:    gloo-system
 Labels:       <none>
-Annotations:  resource_kind: *v1.Secret
+Annotations:  <none>
 
 Type:  Opaque
 
 Data
 ====
-aws:  84 bytes
+aws_access_key_id:      20 bytes
+aws_secret_access_key:  40 bytes
 ```
 
 ### Create AWS Upstream
