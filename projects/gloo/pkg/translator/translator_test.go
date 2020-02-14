@@ -734,7 +734,7 @@ var _ = Describe("Translator", func() {
 			originalHttpFilters = hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
 		})
 
-		It ("should have different version and http filters after adding 2 upstreams", func() {
+		It("should have different version and http filters after adding 2 upstreams", func() {
 
 			// add upstreams with same name
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
@@ -753,7 +753,7 @@ var _ = Describe("Translator", func() {
 			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
 		})
 
-		It ("should have same version and http filters when http filters with the same name are added in a different order", func() {
+		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
 
 			// add upstreams in the opposite order
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
