@@ -671,6 +671,109 @@ var _ = Describe("Translator", func() {
 		})
 	})
 
+	Context("lds", func() {
+
+		var (
+			localUpstream1 *v1.Upstream
+			localUpstream2 *v1.Upstream
+
+			originalVersion  string
+			upstreamsVersion string
+
+			originalHttpFilters  []*structpb.Value
+			upstreamsHttpFilters []*structpb.Value
+		)
+
+		BeforeEach(func() {
+
+			Expect(params.Snapshot.Upstreams).To(HaveLen(1))
+
+			buildLocalUpstream := func(descriptors string) *v1.Upstream {
+				return &v1.Upstream{
+					Metadata: core.Metadata{
+						Name:      "test2",
+						Namespace: "gloo-system",
+					},
+					UpstreamType: &v1.Upstream_Static{
+						Static: &v1static.UpstreamSpec{
+							ServiceSpec: &v1plugins.ServiceSpec{
+								PluginType: &v1plugins.ServiceSpec_Grpc{
+									Grpc: &v1grpc.ServiceSpec{
+										GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
+											PackageName: "foo",
+											ServiceName: "bar",
+										}},
+										Descriptors: []byte(descriptors),
+									},
+								},
+							},
+							Hosts: []*v1static.Host{
+								{
+									Addr: "Test2",
+									Port: 124,
+								},
+							},
+						},
+					},
+				}
+			}
+
+			localUpstream1 = buildLocalUpstream("")
+			localUpstream2 = buildLocalUpstream("randomString")
+
+		})
+
+		It("should record the version and http filters to prepare for coming tests", func() {
+			translate()
+
+			// get version
+			originalVersion = snapshot.GetResources(xds.ListenerType).Version
+
+			// get http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			originalHttpFilters = hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
+		})
+
+		It ("should have different version and http filters after adding 2 upstreams", func() {
+
+			// add upstreams with same name
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			upstreamsVersion = snapshot.GetResources(xds.ListenerType).Version
+			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
+
+			// get and compare http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			upstreamsHttpFilters = hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
+			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
+		})
+
+		It ("should have same version and http filters when http filters with the same name are added in a different order", func() {
+
+			// add upstreams in the opposite order
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			flipOrderVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
+
+			// get and compare http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			flipOrderHttpFilters := hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
+			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
+		})
+
+	})
+
 	Context("when handling upstream groups", func() {
 
 		var (
