@@ -23,7 +23,11 @@ spec:
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
   proxyNames:
+{{- if $gatewaySettings.customProxyNames }}
+{{ toYaml $gatewaySettings.customProxyNames | indent 2 }}
+{{- else }}
   - {{ $name | kebabcase }}
+{{- end }}
 
 ---
 
@@ -39,14 +43,18 @@ spec:
   bindPort: {{ $spec.podTemplate.httpsPort }}
 {{- if $gatewaySettings.customHttpsGateway}}
   httpGateway:
-{{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
+{{ toYaml $gatewaySettings.customHttpsGateway | indent 4}}
 {{- else }}
   httpGateway: {}
 {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true
   proxyNames:
+{{- if $gatewaySettings.customProxyNames }}
+{{ toYaml $gatewaySettings.customProxyNames | indent 2 }}
+{{- else }}
   - {{ $name | kebabcase }}
+{{- end }}
 {{- end }}
 {{- end }}
 {{- end }}

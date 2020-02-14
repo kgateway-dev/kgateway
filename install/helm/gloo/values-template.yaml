@@ -73,6 +73,9 @@ gateway:
   proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxy:
+    createConfigMap: true
+    createDeployment: true
+    createService: true
     gatewaySettings: {}
     kind:
       deployment:

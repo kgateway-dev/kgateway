@@ -1,18 +1,20 @@
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- $proxyID := default $name $spec.customProxyID }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
+{{- if $spec.createConfigMap }}
 ---
 # config_map
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ $name | kebabcase }}-envoy-config
+  name: {{ $proxyID | kebabcase }}-envoy-config
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
     gloo: gateway-proxy
-    gateway-proxy-id: {{ $name | kebabcase }}
+    gateway-proxy-id: {{ $proxyID | kebabcase }}
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
@@ -257,5 +259,6 @@ data:
           address: 127.0.0.1
           port_value: 19000
 {{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
+{{- end }} # if $spec.createConfigMap
 {{- end }} # range $name, $spec := .Values.gatewayProxies
 {{- end -}} # if .Values.gateway.enabled

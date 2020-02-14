@@ -10,6 +10,8 @@
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
+{{- $proxyID := default $name $spec.customProxyID }}
+{{- if $spec.createDeployment }}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -21,8 +23,8 @@ metadata:
   labels:
     app: gloo
     gloo: gateway-proxy
-    gateway-proxy-id: {{ $name | kebabcase }}
-  name: {{ $name | kebabcase }}
+    gateway-proxy-id: {{ $proxyID | kebabcase }}
+  name: {{ $proxyID | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
@@ -31,12 +33,12 @@ spec:
   selector:
     matchLabels:
       gloo: gateway-proxy
-      gateway-proxy-id: {{ $name | kebabcase }}
+      gateway-proxy-id: {{ $proxyID | kebabcase }}
   template:
     metadata:
       labels:
         gloo: gateway-proxy
-        gateway-proxy-id: {{ $name | kebabcase }}
+        gateway-proxy-id: {{ $proxyID | kebabcase }}
         {{- if not $isUpgrade }}
         gateway-proxy: live
         {{- end }}
@@ -108,7 +110,7 @@ spec:
         image: "{{ $image.registry }}/gloo-envoy-wasm-wrapper:{{ $image.tag }}"
         {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
-        name: {{ $name | kebabcase }}
+        name: {{ $proxyID | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -214,7 +216,7 @@ spec:
         - name: {{ $image.pullSecret }}{{end}}
       volumes:
       - configMap:
-          name: {{ $name | kebabcase }}-envoy-config
+          name: {{ $proxyID | kebabcase }}-envoy-config
         name: envoy-config
 {{- if $global.glooMtls.enabled }}
       - name: gloo-mtls-certs
@@ -229,5 +231,6 @@ spec:
       {{- if $spec.extraVolumeHelper }}
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}
