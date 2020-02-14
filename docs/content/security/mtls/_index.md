@@ -159,18 +159,28 @@ The configmap has the following change:
                     api_config_source:
                       api_type: GRPC
                       grpc_services:
-                        google_grpc:
-                          target_uri: 127.0.0.1:8234
-                          stat_prefix: "gateway_proxy_sds"
+                      - envoy_grpc:
+                          cluster_name: gateway_proxy_sds
               validation_context_sds_secret_config:
                 name: validation_context
                 sds_config:
                   api_config_source:
                     api_type: GRPC
                     grpc_services:
-                      google_grpc:
-                        target_uri: 127.0.0.1:8234
-                        stat_prefix: "gateway_proxy_sds"
+                    - envoy_grpc:
+                        cluster_name: gateway_proxy_sds
+      - name: gateway_proxy_sds
+        connect_timeout: 0.25s
+        http2_protocol_options: {}
+        load_assignment:
+          cluster_name: sds_server_mtls
+          endpoints:
+            - lb_endpoints:
+                - endpoint:
+                    address:
+                      socket_address:
+                        address: 127.0.0.1
+                        port_value: 8234
 {{< /highlight >}}
 
 The gateway-proxy deployment is changed to provide the certs to the pod.

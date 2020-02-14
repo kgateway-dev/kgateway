@@ -128,6 +128,10 @@ data:
                     address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                     port_value: {{ $.Values.gloo.deployment.xdsPort }}
         http2_protocol_options: {}
+        upstream_connection_options:
+          tcp_keepalive: {}
+        type: STRICT_DNS
+        respect_dns_ttl: true
 {{- if $global.glooMtls.enabled }}
         transport_socket:
           name: envoy.transport_sockets.tls
@@ -139,23 +143,29 @@ data:
                     api_config_source:
                       api_type: GRPC
                       grpc_services:
-                        google_grpc:
-                          target_uri: 127.0.0.1:8234
-                          stat_prefix: "gateway_proxy_sds"
+                      - envoy_grpc:
+                          cluster_name: gateway_proxy_sds
               validation_context_sds_secret_config:
                 name: validation_context
                 sds_config:
                   api_config_source:
                     api_type: GRPC
                     grpc_services:
-                      google_grpc:
-                        target_uri: 127.0.0.1:8234
-                        stat_prefix: "gateway_proxy_sds"
+                    - envoy_grpc:
+                        cluster_name: gateway_proxy_sds
+      - name: gateway_proxy_sds
+        connect_timeout: 0.25s
+        http2_protocol_options: {}
+        load_assignment:
+          cluster_name: gateway_proxy_sds
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 8234
 {{- end }}
-        upstream_connection_options:
-          tcp_keepalive: {}
-        type: STRICT_DNS
-        respect_dns_ttl: true
       - name: wasm-cache
         connect_timeout: 5.000s
         load_assignment:
