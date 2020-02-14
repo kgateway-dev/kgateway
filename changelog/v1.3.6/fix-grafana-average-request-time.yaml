@@ -1,4 +1,6 @@
 changelog:
   - type: FIX
-    description: Stopped the listeners from reloading too often in certain cases.
+    description: >
+      Fixes listener config sent to envoy to be idempotent, so that config no longer reloads as "different" when there are no changes.
+      This resolves the issue of the "Average Request Time" graph in grafana showing gaps in the downstream data, among other potential issues.
     issueLink: https://github.com/solo-io/gloo/issues/2185
