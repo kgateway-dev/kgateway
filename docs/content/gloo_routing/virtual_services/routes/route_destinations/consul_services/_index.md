@@ -12,7 +12,6 @@ When services registered into Consul require a bit more fine-grained grouping an
 
 Gloo can automatically discover [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts#upstreams" %}}) from Consul. You can also explicitly create upstreams from Consul. 
 
-
 To enable automatic discovery of Consul services, update your {{< protobuf name="gloo.solo.io.Settings" >}} resource and add the `consul` section:
 
 
