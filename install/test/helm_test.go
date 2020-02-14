@@ -1169,7 +1169,7 @@ spec:
       labels:
         gloo: gateway-certgen
     spec:
-      serviceAccountName: gateway-certgen
+      serviceAccountName: certgen
       containers:
         - image: quay.io/solo-io/certgen:` + version + `
           imagePullPolicy: Always
@@ -1225,7 +1225,7 @@ metadata:
     "helm.sh/hook-weight": "5"
 subjects:
 - kind: ServiceAccount
-  name: gateway-certgen
+  name: certgen
   namespace: ` + namespace + `
 roleRef:
   kind: ClusterRole
@@ -1242,11 +1242,11 @@ kind: ServiceAccount
 metadata:
   labels:
     app: gloo
-    gloo: gateway
+    gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
-  name: gateway-certgen
+  name: certgen
   namespace: ` + namespace + `
 
 `)
