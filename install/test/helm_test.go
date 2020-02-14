@@ -264,6 +264,15 @@ var _ = Describe("Helm Test", func() {
 						}
 						return false
 					}
+
+					haveSdsSidecar = func(containers []v1.Container) bool {
+						for _, c := range containers {
+							if c.Name == "sds" {
+								return true
+							}
+						}
+						return false
+					}
 				)
 
 				It("should put the secret volume in the Gloo and Gateway-Proxy Deployment and add a sidecar in the Gloo Deployment", func() {
@@ -296,10 +305,12 @@ var _ = Describe("Helm Test", func() {
 
 						if structuredDeployment.GetName() == "gloo" {
 							Ω(haveEnvoySidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
+							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(glooMtlsSecretVolume))
 						}
 
 						if structuredDeployment.GetName() == "gateway-proxy" {
+							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
 							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(glooMtlsSecretVolume))
 						}
 					})

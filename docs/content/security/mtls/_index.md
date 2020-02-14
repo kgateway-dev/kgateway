@@ -151,14 +151,26 @@ The configmap has the following change:
       - name: gloo.gloo-system.svc.cluster.local:9977
         transport_socket:
           name: envoy.transport_sockets.tls
-          typed_config:
-            "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+          config:
             common_tls_context:
-              tls_certificates:
-              - certificate_chain: { "filename": "/etc/envoy/ssl/tls.crt" }
-                private_key: { "filename": "/etc/envoy/ssl/tls.key" }
-              validation_context:
-                trusted_ca: trusted_ca: { "filename": "/etc/envoy/ssl/ca.crt" }
+              tls_certificate_sds_secret_configs:
+                - name: server_cert
+                  sds_config:
+                    api_config_source:
+                      api_type: GRPC
+                      grpc_services:
+                        google_grpc:
+                          target_uri: 127.0.0.1:8234
+                          stat_prefix: "gateway_proxy_sds"
+              validation_context_sds_secret_config:
+                name: validation_context
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                      google_grpc:
+                        target_uri: 127.0.0.1:8234
+                        stat_prefix: "gateway_proxy_sds"
 {{< /highlight >}}
 
 The gateway-proxy deployment is changed to provide the certs to the pod.
@@ -181,6 +193,18 @@ The gateway-proxy deployment is changed to provide the certs to the pod.
           defaultMode: 420
           secretName: gloo-mtls-certs
 {{< /highlight >}}
+
+A SDS sidecar is also added to the gateway-proxy deployment:
+
+```yaml
+      - name: sds
+        image: "quay.io/solo-io/sds:1.3.4"
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+```
 
 #### Extauth Server
 

@@ -21,7 +21,8 @@ var (
 	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
 	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
 
-	// This must match the value in the envoy-sidecar.yaml config running in the envoy-sidecar container
+	// This must match the value of the sds_config target_uri in the envoy instance that it is providing
+	// secrets to.
 	sdsServerAddress = "127.0.0.1:8234"
 )
 

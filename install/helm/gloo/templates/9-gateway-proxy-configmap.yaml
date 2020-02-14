@@ -131,14 +131,26 @@ data:
 {{- if $global.glooMtls.enabled }}
         transport_socket:
           name: envoy.transport_sockets.tls
-          typed_config:
-            "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+          config:
             common_tls_context:
-              tls_certificates:
-                - certificate_chain: { "filename": "/etc/envoy/ssl/tls.crt" }
-                  private_key: { "filename": "/etc/envoy/ssl/tls.key" }
-              validation_context:
-                trusted_ca: { "filename": "/etc/envoy/ssl/ca.crt" }
+              tls_certificate_sds_secret_configs:
+                - name: server_cert
+                  sds_config:
+                    api_config_source:
+                      api_type: GRPC
+                      grpc_services:
+                        google_grpc:
+                          target_uri: 127.0.0.1:8234
+                          stat_prefix: "gateway_proxy_sds"
+              validation_context_sds_secret_config:
+                name: validation_context
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                      google_grpc:
+                        target_uri: 127.0.0.1:8234
+                        stat_prefix: "gateway_proxy_sds"
 {{- end }}
         upstream_connection_options:
           tcp_keepalive: {}
