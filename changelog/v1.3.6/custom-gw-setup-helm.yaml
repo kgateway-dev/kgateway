@@ -1,0 +1,3 @@
+changelog:
+  - type: HELM
+    description: Allow many gateways pointing at gateway proxy in helm

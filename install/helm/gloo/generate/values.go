@@ -201,13 +201,18 @@ type GatewayProxy struct {
 	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
 	Stats                     *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	CreateConfigMap           bool                         `json:"createConfigMap" desc:"whether to create a configmap for the gateway proxy or not"`
+	CreateDeployment          bool                         `json:"createDeployment" desc:"whether to create a deployment for the gateway proxy or not"`
+	CreateService             bool                         `json:"createService" desc:"whether to create a service for the gateway proxy or not"`
+	CustomProxyID             string                       `json:"customProxyID,omitempty" desc:"alters name of the gateway proxy if other resources (e.g. service) have custom names"`
 }
 
 type GatewayProxyGatewaySettings struct {
-	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
-	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
-	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	DisableGeneratedGateways bool     `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
+	UseProxyProto            bool     `json:"useProxyProto" desc:"use proxy protocol"`
+	CustomHttpGateway        string   `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
+	CustomHttpsGateway       string   `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	CustomProxyNames         []string `json:"customProxyNames,omitempty" desc:"list of gateway proxies if you have more than just one"`
 }
 
 type GatewayProxyKind struct {
