@@ -114,7 +114,7 @@ The next step is to expose the Pet Store's API through the Gloo gateway. We will
 To create the service on Consul, we need to get the IP address of the `petstore` container. The command below retrieves the IP address and then creates a JSON file with information about the Pet Store application. The JSON file will be submitted to Consul to create the service.
 
 ```bash
-PETSTORE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' docker-compose-consul_petstore_1)
+PETSTORE_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' docker-compose-consul_petstore_1
 cat > petstore-service.json <<EOF
 {
   "ID": "petstore1",
