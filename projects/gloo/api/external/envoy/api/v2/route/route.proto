@@ -86,8 +86,8 @@ message VirtualHost {
 
     // Specifies a list of HTTP headers that should be added to each request
     // handled by this virtual host. Headers specified at this level are applied
-    // after headers from enclosed `envoy_api_msg_route.Rout)` and before headers from the
-    // enclosing `envoy_api_msg_RouteConfiguratio)`. For more information, including
+    // after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+    // enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
     // details on header value syntax, see the documentation on `custom request headers
     // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption request_headers_to_add = 7
@@ -99,8 +99,8 @@ message VirtualHost {
 
     // Specifies a list of HTTP headers that should be added to each response
     // handled by this virtual host. Headers specified at this level are applied
-    // after headers from enclosed `envoy_api_msg_route.Rout)` and before headers from the
-    // enclosing `envoy_api_msg_RouteConfiguratio)`. For more information, including
+    // after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+    // enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
     // details on header value syntax, see the documentation on `custom request headers
     // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption response_headers_to_add = 10
@@ -204,8 +204,8 @@ message Route {
 
     // Specifies a set of headers that will be added to requests matching this
     // route. Headers specified at this level are applied before headers from the
-    // enclosing `envoy_api_msg_route.VirtualHos)` and
-    // `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+    // enclosing `envoy_api_msg_route.VirtualHost` and
+    // `envoy_api_msg_RouteConfiguration`. For more information, including details on
     // header value syntax, see the documentation on `custom request headers
     // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption request_headers_to_add = 9
@@ -217,8 +217,8 @@ message Route {
 
     // Specifies a set of headers that will be added to responses to requests
     // matching this route. Headers specified at this level are applied before
-    // headers from the enclosing `envoy_api_msg_route.VirtualHos)` and
-    // `envoy_api_msg_RouteConfiguratio)`. For more information, including
+    // headers from the enclosing `envoy_api_msg_route.VirtualHost` and
+    // `envoy_api_msg_RouteConfiguration`. For more information, including
     // details on header value syntax, see the documentation on
     // `custom request headers (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption response_headers_to_add = 10
@@ -259,31 +259,31 @@ message WeightedCluster {
         core.Metadata metadata_match = 3;
 
         // Specifies a list of headers to be added to requests when this cluster is selected
-        // through the enclosing `envoy_api_msg_route.RouteActio)`.
+        // through the enclosing `envoy_api_msg_route.RouteAction)`.
         // Headers specified at this level are applied before headers from the enclosing
-        // `envoy_api_msg_route.Rout)`, `envoy_api_msg_route.VirtualHos)`, and
-        // `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+        // `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+        // `envoy_api_msg_RouteConfiguration`. For more information, including details on
         // header value syntax, see the documentation on `custom request headers
         // (config_http_conn_man_headers_custom_request_headers)`.
         repeated core.HeaderValueOption request_headers_to_add = 4
         [(validate.rules).repeated .max_items = 1000];
 
         // Specifies a list of HTTP headers that should be removed from each request when
-        // this cluster is selected through the enclosing `envoy_api_msg_route.RouteActio)`.
+        // this cluster is selected through the enclosing `envoy_api_msg_route.RouteAction)`.
         repeated string request_headers_to_remove = 9;
 
         // Specifies a list of headers to be added to responses when this cluster is selected
-        // through the enclosing `envoy_api_msg_route.RouteActio)`.
+        // through the enclosing `envoy_api_msg_route.RouteAction)`.
         // Headers specified at this level are applied before headers from the enclosing
-        // `envoy_api_msg_route.Rout)`, `envoy_api_msg_route.VirtualHos)`, and
-        // `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+        // `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+        // `envoy_api_msg_RouteConfiguration`. For more information, including details on
         // header value syntax, see the documentation on `custom request headers
         // (config_http_conn_man_headers_custom_request_headers)`.
         repeated core.HeaderValueOption response_headers_to_add = 5
         [(validate.rules).repeated .max_items = 1000];
 
         // Specifies a list of headers to be removed from responses when this cluster is selected
-        // through the enclosing `envoy_api_msg_route.RouteActio)`.
+        // through the enclosing `envoy_api_msg_route.RouteAction)`.
         repeated string response_headers_to_remove = 6;
 
         reserved 7;
@@ -551,8 +551,8 @@ message RouteAction {
     //
     //
     //   This timeout includes all retries. See also
-    //   `config_http_filters_router_x-envoy-upstream-rq-timeout-m)`,
-    //   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-m)`, and the
+    //   `config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
+    //   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
     //   `retry overview (arch_overview_http_routing_retry)`.
     google.protobuf.Duration timeout = 8 [(gogoproto.stdduration) = true];
 
@@ -774,8 +774,8 @@ message RouteAction {
     // Allows enabling and disabling upgrades on a per-route basis.
     // This overrides any enabled/disabled upgrade filter chain specified in the
     // HttpConnectionManager
-    // upgrade_configs`
-    // <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs>`
+    // `upgrade_configs
+    // (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs)`
     // but does not affect any custom filter chain specified there.
     message UpgradeConfig {
         // The case-insensitive name of this upgrade, e.g. "websocket".
@@ -803,18 +803,18 @@ message RouteAction {
 // HTTP retry `architecture overview (arch_overview_http_routing_retry)`.
 message RetryPolicy {
     // Specifies the conditions under which retry takes place. These are the same
-    // conditions documented for `config_http_filters_router_x-envoy-retry-o)` and
-    // `config_http_filters_router_x-envoy-retry-grpc-o)`.
+    // conditions documented for `config_http_filters_router_x-envoy-retry-on` and
+    // `config_http_filters_router_x-envoy-retry-grpc-on`.
     string retry_on = 1;
 
     // Specifies the allowed number of retries. This parameter is optional and
     // defaults to 1. These are the same conditions documented for
-    // `config_http_filters_router_x-envoy-max-retrie)`.
+    // `config_http_filters_router_x-envoy-max-retries`.
     google.protobuf.UInt32Value num_retries = 2;
 
     // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. The
     // same conditions documented for
-    // `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-m)` apply.
+    // `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
     //
     //
     //   If left unspecified, Envoy will use the global
@@ -864,7 +864,7 @@ message RetryPolicy {
     message RetryBackOff {
         // Specifies the base interval between retries. This parameter is required and must be greater
         // than zero. Values less than 1 ms are rounded up to 1 ms.
-        // See `config_http_filters_router_x-envoy-max-retrie)` for a discussion of Envoy's
+        // See `config_http_filters_router_x-envoy-max-retries` for a discussion of Envoy's
         // back-off algorithm.
         google.protobuf.Duration base_interval = 1 [
       (validate.rules).duration = {
@@ -876,7 +876,7 @@ message RetryPolicy {
 
 // Specifies the maximum interval between retries. This parameter is optional, but must be
 // greater than or equal to the `base_interval` if set. The default is 10 times the
-// `base_interval`. See `config_http_filters_router_x-envoy-max-retrie)` for a discussion
+// `base_interval`. See `config_http_filters_router_x-envoy-max-retries` for a discussion
 // of Envoy's back-off algorithm.
 google.protobuf.Duration max_interval = 2
 [(validate.rules).duration.gt = {seconds: 0}, (gogoproto.stdduration) = true];
@@ -885,7 +885,7 @@ google.protobuf.Duration max_interval = 2
 // Specifies parameters that control retry back off. This parameter is optional, in which case the
 // default base interval is 25 milliseconds or, if set, the current value of the
 // `upstream.base_retry_backoff_ms` runtime parameter. The default maximum interval is 10 times
-// the base interval. The documentation for `config_http_filters_router_x-envoy-max-retrie)`
+// the base interval. The documentation for `config_http_filters_router_x-envoy-max-retries`
 // describes Envoy's back-off algorithm.
 RetryBackOff retry_back_off = 8;
 }
@@ -981,8 +981,8 @@ message DirectResponseAction {
     //
     //
     //   Headers can be specified using *response_headers_to_add* in the enclosing
-    //   `envoy_api_msg_route.Rout)`, `envoy_api_msg_RouteConfiguratio)` or
-    //   `envoy_api_msg_route.VirtualHos)`.
+    //   `envoy_api_msg_route.Route`, `envoy_api_msg_RouteConfiguration` or
+    //   `envoy_api_msg_route.VirtualHost`.
     core.DataSource body = 2;
 }
 
