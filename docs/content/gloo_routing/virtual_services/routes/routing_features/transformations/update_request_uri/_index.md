@@ -60,9 +60,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-We will now configure Gloo to update the request path from `/get` to `/post` if a header named `foo` is present and has 
-the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update 
-the HTTP method of the request as well.
+We will now configure Gloo to update the request path from `/get` to `/post` if a header named `foo` is present and has the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update the HTTP method of the request as well.
 
 To do this, we need to add the following to our Virtual Service definition:
 
@@ -103,15 +101,13 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.
-1. Use a [template transformation]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
+1. Use a [template transformation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
 1. Update the `:path` and `:method` pseudo-headers if the `foo` header is present and has value `bar`; otherwise keep the original values.
 
-The template uses the [Inja templating language]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}}) 
-to define the conditional logic that will be applied to the `:path` and `:method` pseudo-headers.
+The template uses the [Inja templating language]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" %}}) to define the conditional logic that will be applied to the `:path` and `:method` pseudo-headers.
 
 #### Test our configuration
-To test that our configuration has been correctly applied, let's add the `foo` header with the expected `bar` value to 
-the previously used `curl` command:
+To test that our configuration has been correctly applied, let's add the `foo` header with the expected `bar` value to the previously used `curl` command:
 
 ```shell
 curl -H "foo: bar" $(glooctl proxy url)/get | jq
