@@ -4,32 +4,25 @@ weight: 50
 description: Using Consul as a backing store for Gloo configuration
 ---
 
-## Motivation
-
 While Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)), credential storage ([Secrets](https://kubernetes.io/docs/concepts/configuration/secret/)), and service discovery ([Services](https://kubernetes.io/docs/concepts/services-networking/service/)), users may wish to run Gloo without using Kubernetes.
 
 Gloo provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [Consul Key-Value storage](https://www.consul.io/api/kv.html) and [Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
 
 This document describes how to write configuration YAML to Consul's Key-Value store to configure Gloo.
 
+---
 
 ## Configuring Gloo using custom Settings
 
-When Gloo boots, it attempts to read a 
-{{< protobuf name="gloo.solo.io.Settings">}} resource from a 
-preconfigured location. By default, Gloo will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings`
-Custom Resource in namespace `gloo-system`, named `default`. 
+When Gloo boots, it attempts to read a {{< protobuf name="gloo.solo.io.Settings">}} resource from a preconfigured location. By default, Gloo will attempt to connect to a Kubernetes cluster and look up the `gloo.solo.io/v1.Settings` Custom Resource in namespace `gloo-system`, named `default`. 
 
 When desiring to run without Kubernetes, it is possible to instead provide this file to Gloo inside of a configuration directory.
 
-When running the `gloo`, `discovery`, and `gateway` processes, it is necessary to provide a `--dir` flag pointing to
-the config directory containing the Settings YAML.
+When running the `gloo`, `discovery`, and `gateway` processes, it is necessary to provide a `--dir` flag pointing to the config directory containing the Settings YAML.
 
 If we were to create a directory called `data`, the structure of the directory should look like so:
 
 ```bash
- tree data
-
 data
 ├── artifacts
 ├── gloo-system
@@ -39,13 +32,11 @@ data
 3 directories, 1 file
 ```
 
-When we pass the flag `--dir=./data` to Gloo, Gloo will look for the settings file in `data/<namespace>/*.yaml`.
-The default namespace for Gloo is `gloo-system`. This can be overridden with the `--namespace` flag.
+When we pass the flag `--dir=./data` to Gloo, Gloo will look for the settings file in `data/<namespace>/*.yaml`. The default namespace for Gloo is `gloo-system`. This can be overridden with the `--namespace` flag.
 
-## Customizing the Gloo Settings file
+### Customizing the Gloo Settings file
 
-The full list of options for Gloo Settings, including the ability to set auth/TLS parameters for Consul can be found
-{{< protobuf name="gloo.solo.io.Settings" display="in the v1.Settings API reference">}}.
+The full list of options for Gloo Settings, including the ability to set auth/TLS parameters for Consul can be found {{< protobuf name="gloo.solo.io.Settings" display="in the v1.Settings API reference">}}.
 
 Here is provided an example Settings so Gloo will read config from Consul Key-Value store:
 
@@ -95,14 +86,15 @@ status: {}
 
 {{< /highlight >}}
 
+---
+
 ## Writing Config Objects to Consul
 
 Consul Values should be written using Gloo-style YAML, whose structure is described in the [`API Reference`]({{< versioned_link_path fromRoot="/api" >}}).
 
 `glooctl` provides a convenience to get started writing Gloo resources for use with Consul.
 
-Using `glooctl add route ... --yaml` and `glooctl create ... --yaml` will output 
-YAML-formatted objects which can be stored as values in Consul.
+Using `glooctl add route ... -o yaml` and `glooctl create ... -o yaml` will output YAML-formatted objects which can be stored as values in Consul.
 
 For example:
 
@@ -110,7 +102,7 @@ For example:
 glooctl add route \
     --path-exact /sample-route-1 \
     --dest-name petstore \
-    --prefix-rewrite /api/pets --yaml
+    --prefix-rewrite /api/pets -oyaml
 ```
 
 Will produce the following:

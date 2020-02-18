@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update docs to explain read-only UI installation workflow.
+    issueLink: https://github.com/solo-io/gloo/issues/2378

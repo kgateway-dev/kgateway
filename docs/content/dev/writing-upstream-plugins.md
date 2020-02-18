@@ -360,7 +360,8 @@ import (
 )
 ```
 
-We can download these imports to our project with `dep ensure`:
+Gloo now uses go modules, so these should automatically be pulled into your IDE. However, 
+on older versions of Gloo that use dep, we can download these imports to our project with `dep ensure`:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo

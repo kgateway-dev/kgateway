@@ -82,7 +82,8 @@ git clone https://github.com/solo-io/gloo
 git clone git@github.com:solo-io/gloo.git
 ```
 
-Ensure that [`dep`](https://github.com/golang/dep) is installed and run:
+Starting in 1.x, the Gloo codebase uses [Go modules](https://blog.golang.org/using-go-modules) for dependency management. However, 
+on older versions, ensure that [`dep`](https://github.com/golang/dep) is installed and run:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo
@@ -121,7 +122,7 @@ mkdir -p ${GOPATH}/src/github.com/solo-io
 cd ${GOPATH}/src/github.com/solo-io
 git clone https://github.com/solo-io/solo-kit
 cd gloo
-# import all go dependencies to ./vendor
+# if developing against older versions of Gloo, import all go dependencies to ./vendor
 dep ensure -v
 # pin the installed version of solo-kit
 make pin-repos

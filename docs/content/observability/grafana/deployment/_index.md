@@ -44,7 +44,7 @@ kind: Secret
 If you create an API key in Grafana, you can make the pod use it instead of basic auth by setting the key `GRAFANA_API_KEY` in that same secret and then restarting the `observability` pod. If an API key is present, the pod will prefer to use that over any username/password combo that may be set.
 
 ### Custom Deployment
-If you'd like Gloo to talk to your pre-existing instance of Grafana, there are a few helm values that you'll need to set at install time. See the code snippet below for the bare minimum, but in general you'll need to set several values in the `observability.customGrafana` object; see a complete list of those fields [here](../../../installation/enterprise/#list-of-gloo-helm-chart-values)
+If you'd like Gloo to talk to your pre-existing instance of Grafana, there are a few helm values that you'll need to set at install time. See the code snippet below for the bare minimum, but in general you'll need to set several values in the `observability.customGrafana` object; see a complete list of those fields [here]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}).
 
 ```bash
 helm install ... \

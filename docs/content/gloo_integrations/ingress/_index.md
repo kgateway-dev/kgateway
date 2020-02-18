@@ -4,8 +4,7 @@ weight: 5
 description: Setting up Gloo to handle Kubernetes Ingress Objects.
 ---
 
-Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress
-objects with the `glooctl install ingress` command, Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
+Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command, Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
 
 {{% notice note %}}
 Note: if running multiple ingress controllers in cluster, Gloo can be configured to only process Ingress objects annotated with `kubernetes.io/ingress.class: gloo` 
@@ -17,22 +16,23 @@ This feature can be enabled one of the following:
 
 {{% /notice %}}
 
-If you need more advanced routing capabilities, we encourage you to use Gloo `VirtualServices` by installing as
-`glooctl install gateway`. See the remaining routing documentation for more details on the extended capabilities Gloo
-provides **without** needing to add lots of additional custom annotations to your Ingress Objects.
+If you need more advanced routing capabilities, we encourage you to use Gloo `VirtualServices` by installing as `glooctl install gateway`. See the remaining routing documentation for more details on the extended capabilities Gloo provides **without** needing to add lots of additional custom annotations to your Ingress Objects.
 
-### What you'll need
+---
+
+## What you'll need
 
 * [`kubectl`](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 * Kubernetes v1.11.3+ deployed somewhere. [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) is a
 great way to get a cluster up quickly.
+
+---
 
 ## Basic Ingress Object managed by Gloo
 
 ### Steps
 
 1. The Gloo Ingress [installed]({{% versioned_link_path fromRoot="/installation/ingress" %}}) and running on Kubernetes.
-
 
 1. Next, deploy the Pet Store app to Kubernetes:
 
@@ -112,6 +112,7 @@ EOF
     ```
     {{% /notice %}}
 
+---
 
 ## TLS Configuration
 
@@ -130,8 +131,7 @@ example using `gloo.system.com` domain.
     kubectl create secret tls my-tls-secret --key my_key.key --cert my_cert.cert
     ```
 
-1. If you want to add server-side TLS to your Ingress, you can add it as shown below. Note that it is important that the hostnames
-match in both the `tls` section and in the `rules` that you want to be covered by TLS.
+1. If you want to add server-side TLS to your Ingress, you can add it as shown below. Note that it is important that the hostnames match in both the `tls` section and in the `rules` that you want to be covered by TLS.
 
     {{< highlight yaml "hl_lines=9-12 14" >}}
 cat <<EOF | kubectl apply --filename -
@@ -181,15 +181,10 @@ EOF
     [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
     ```
 
+---
+
 ## Next Steps
 
-Great! Our ingress is up and running. See <https://kubernetes.io/docs/concepts/services-networking/ingress>
-for more information on using Kubernetes Ingress Controllers.
+Great! Our ingress is up and running. Check out the [official docs](https://kubernetes.io/docs/concepts/services-networking/ingress) for more information on using Kubernetes Ingress Controllers.
 
-If you want to take advantage of greater routing capabilities of Gloo, you should look at
-[Gloo in gateway mode]({{% versioned_link_path fromRoot="/gloo_routing" %}}), which complements Gloo's Ingress
-support, i.e., you can use both modes together in a single cluster. Gloo Gateway uses
-[Kubernetes Custom Resources](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/)
-instead of Ingress Objects as the only way to configure Ingress' beyond their basic routing spec is to use lots of
-vendor-specific [Kubernetes Annotations](https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/)
-to your Kubernetes manifests.
+If you want to take advantage of greater routing capabilities of Gloo, you should look at [Gloo in gateway mode]({{% versioned_link_path fromRoot="/gloo_routing" %}}), which complements Gloo's Ingress support, i.e., you can use both modes together in a single cluster. 

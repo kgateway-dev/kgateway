@@ -16,11 +16,12 @@ You do not need to set either of these manually - gloo has default settings for 
 
 The Helm value that overrides our default bootstrap configuration is `gatewayProxies.$PROXY_NAME.configMap`. To see an example config map, look no further than [Envoy's configuration documentation](https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/v2_overview#bootstrap-configuration).
 
-To see the entire list of Gloo Helm Overrides, see our [list of Helm Chart values](../../installation/gateway/kubernetes/#list-of-gloo-helm-chart-values).
+To see the entire list of Gloo Helm Overrides, see our [list of Helm Chart values]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-helm" >}}).
 
 ### Command-line Arguments
 
 The Helm value that sets additional Envoy command line arguments is `gatewayProxies.NAME.extraEnvoyArgs`. 
+
 To see a list of available Envoy command line arguments, see their [latest command line documentation](https://www.envoyproxy.io/docs/envoy/latest/operations/cli).
 
 {{% notice note %}}
@@ -36,6 +37,5 @@ gatewayProxies:
       - upstream:debug,connection:trace
 ```
 
-This sets the log levels of individual Envoy components - setting the upstream log levels to `debug`
-and the `connection` component's log level to `trace`.
+This sets the log levels of individual Envoy components - setting the upstream log levels to `debug` and the `connection` component's log level to `trace`.
 

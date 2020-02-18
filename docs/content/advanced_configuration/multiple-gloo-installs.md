@@ -4,14 +4,13 @@ weight: 20
 description: Multi-tenant Gloo installations by installing to multiple namespaces
 ---
 
-## Motivation
-
-
 In the default deployment scenario, a single deployment of the Gloo control plane and Envoy proxy are installed for the entire cluster. However, in some cases, it may be desirable to deploy multiple instances of the Gloo control plane and proxies in a single cluster.
 
 This is useful when multiple tenants or applications want control over their own instance of Gloo. Some deployment scenarios may involve a Gloo-per-application architecture. Additionally, different Gloo instances living in their own namespace may be given different levels of RBAC permissions.
 
 In this document, we will review how to deploy multiple instances of Gloo to their own namespaces within a single Kubernetes cluster. 
+
+---
 
 ## Scoping Gloo to specific namespaces
 
@@ -21,9 +20,13 @@ Gloo can be configured to only watch specific namespaces, meaning Gloo will not 
 
 By leveraging this option, we can install Gloo to as many namespaces we need, ensuring that the `watchNamespaces` do not overlap.
 
-> Note: `watchNamespaces` can be shared between Gloo instances, so long as any Virtual Services are not written to a shared namespace. When this happens, both Gloo instances will attempt to apply the same routing config, which can cause domain conflicts.
+{{% notice note %}}
+`watchNamespaces` can be shared between Gloo instances, so long as any Virtual Services are not written to a shared namespace. When this happens, both Gloo instances will attempt to apply the same routing config, which can cause domain conflicts.
+{{% /notice %}}
 
 Currently, installing Gloo with specific `watchNamespaces` requires installation via the Helm chart.
+
+---
 
 ## Installing Namespace-Scoped Gloo with Helm
 
@@ -52,8 +55,7 @@ settings:
 {{< /tab >}}
 {{< /tabs >}}
 
-Now, let's install Gloo. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}})
-if you need a refresher.
+Now, let's install Gloo. Review our [Kubernetes installation guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) if you need a refresher.
 
 First create the namespace for our first Gloo deployment:
 
@@ -99,7 +101,7 @@ gateway-proxy-67f4c7dfb6-hc5kg   1/1     Running   0          27s
 gloo-dd5bcdc8f-bvtjh             1/1     Running   0          39s
 ```
 
-And we should see that Gloo is only creating upstreams from services in `default` and `gloo1`:
+And we should see that Gloo is only creating Upstreams from services in `default` and `gloo1`:
 
 ```bash
 kubectl get us -n gloo1                                              
@@ -183,7 +185,7 @@ gateway-proxy-67f4c7dfb6-284wv   1/1     Running   0          8s
 gloo-dd5bcdc8f-krp5p             1/1     Running   0          9s
 ```
 
-And we should see that the second installation of Gloo is only creating upstreams from services in `default` and `gloo2`:
+And we should see that the second installation of Gloo is only creating Upstreams from services in `default` and `gloo2`:
 
 ```bash
 kubectl get us -n gloo2
@@ -199,4 +201,6 @@ gloo2-gloo-9977           53s
 
 And that's it! We can now create routes for Gloo #1 by creating our Virtual Services in the `gloo1` namespace, and routes for Gloo #2 by creating Virtual Services in the `gloo2` namespace. We can add `watchNamespaces` to our liking; the only catch is that a Virtual Service which lives in a shared namespace will be applied to both gateways (which can lead to undesired behavior if this was not the intended effect).
 
-> Warning: When uninstalling a single instance of Gloo when multiple instances are installed, you should only delete the namespace into which that instance is installed. Running `glooctl uninstall` can cause cluster-wide resources to be deleted, which will break any remaining Gloo installation in your cluster
+{{% notice warning %}}
+When uninstalling a single instance of Gloo when multiple instances are installed, you should only delete the namespace into which that instance is installed. Running `glooctl uninstall` can cause cluster-wide resources to be deleted, which will break any remaining Gloo installation in your cluster
+{{% /notice %}}
