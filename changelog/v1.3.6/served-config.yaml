@@ -3,5 +3,5 @@ changelog:
     description: >
       When `glooctl proxy served-config` is called, if Gloo is running in mTLS mode,
       the command will check if the configmap 'envoy-sidecar-config' exists in the Gloo
-      namespace and connect to port 9999 instead of 9977.
+      namespace and connect to port `9999` instead of `9977`.
     issueLink: https://github.com/solo-io/gloo/issues/2381
