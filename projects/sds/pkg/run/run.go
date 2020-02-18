@@ -14,7 +14,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-
 func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddress string) error {
 	ctx, cancel := context.WithCancel(ctx)
 

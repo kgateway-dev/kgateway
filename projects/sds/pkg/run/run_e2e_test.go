@@ -2,6 +2,7 @@ package run_test
 
 import (
 	"context"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
@@ -20,7 +21,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		dir                       string
 		keyFile, certFile, caFile afero.File
 		err                       error
-		testServerAddress = "127.0.0.1:8236"
+		testServerAddress         = "127.0.0.1:8236"
 	)
 
 	BeforeEach(func() {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
 	"github.com/solo-io/go-utils/contextutils"

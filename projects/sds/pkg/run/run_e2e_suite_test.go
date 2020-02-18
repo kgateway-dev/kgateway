@@ -1,10 +1,10 @@
 package run_test
 
 import (
-"testing"
+	"testing"
 
-. "github.com/onsi/ginkgo"
-. "github.com/onsi/gomega"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func TestSDS_E2E_Server(t *testing.T) {
