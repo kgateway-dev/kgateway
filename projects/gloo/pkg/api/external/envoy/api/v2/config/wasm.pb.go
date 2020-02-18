@@ -175,7 +175,7 @@ func (m *PluginConfig) GetConfiguration() string {
 }
 
 // WasmService is configured as a built-in *envoy.wasm_service* `ServiceConfig
-// (envoy_api_msg_config.wasm.v2.ServiceConfig`. This opaque configuration will be used to
+// (envoy_api_msg_config.wasm.v2.ServiceConfig)`. This opaque configuration will be used to
 // create a Wasm Service.
 type WasmService struct {
 	// General plugin configuration.

@@ -195,8 +195,8 @@ type VirtualHost struct {
 	RateLimits []*RateLimit `protobuf:"bytes,6,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
 	// Specifies a list of HTTP headers that should be added to each request
 	// handled by this virtual host. Headers specified at this level are applied
-	// after headers from enclosed `envoy_api_msg_route.Rout)` and before headers from the
-	// enclosing `envoy_api_msg_RouteConfiguratio)`. For more information, including
+	// after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+	// enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
 	// details on header value syntax, see the documentation on `custom request headers
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,7,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
@@ -205,8 +205,8 @@ type VirtualHost struct {
 	RequestHeadersToRemove []string `protobuf:"bytes,13,rep,name=request_headers_to_remove,json=requestHeadersToRemove,proto3" json:"request_headers_to_remove,omitempty"`
 	// Specifies a list of HTTP headers that should be added to each response
 	// handled by this virtual host. Headers specified at this level are applied
-	// after headers from enclosed `envoy_api_msg_route.Rout)` and before headers from the
-	// enclosing `envoy_api_msg_RouteConfiguratio)`. For more information, including
+	// after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+	// enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
 	// details on header value syntax, see the documentation on `custom request headers
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	ResponseHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,10,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
@@ -423,8 +423,8 @@ type Route struct {
 	TypedPerFilterConfig map[string]*types.Any `protobuf:"bytes,13,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Specifies a set of headers that will be added to requests matching this
 	// route. Headers specified at this level are applied before headers from the
-	// enclosing `envoy_api_msg_route.VirtualHos)` and
-	// `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+	// enclosing `envoy_api_msg_route.VirtualHost` and
+	// `envoy_api_msg_RouteConfiguration`. For more information, including details on
 	// header value syntax, see the documentation on `custom request headers
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,9,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
@@ -433,8 +433,8 @@ type Route struct {
 	RequestHeadersToRemove []string `protobuf:"bytes,12,rep,name=request_headers_to_remove,json=requestHeadersToRemove,proto3" json:"request_headers_to_remove,omitempty"`
 	// Specifies a set of headers that will be added to responses to requests
 	// matching this route. Headers specified at this level are applied before
-	// headers from the enclosing `envoy_api_msg_route.VirtualHos)` and
-	// `envoy_api_msg_RouteConfiguratio)`. For more information, including
+	// headers from the enclosing `envoy_api_msg_route.VirtualHost` and
+	// `envoy_api_msg_RouteConfiguration`. For more information, including
 	// details on header value syntax, see the documentation on
 	// `custom request headers (config_http_conn_man_headers_custom_request_headers)`.
 	ResponseHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,10,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
@@ -693,26 +693,26 @@ type WeightedCluster_ClusterWeight struct {
 	// here taking precedence. The filter name should be specified as *envoy.lb*.
 	MetadataMatch *core.Metadata `protobuf:"bytes,3,opt,name=metadata_match,json=metadataMatch,proto3" json:"metadata_match,omitempty"`
 	// Specifies a list of headers to be added to requests when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteActio)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction)`.
 	// Headers specified at this level are applied before headers from the enclosing
-	// `envoy_api_msg_route.Rout)`, `envoy_api_msg_route.VirtualHos)`, and
-	// `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+	// `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+	// `envoy_api_msg_RouteConfiguration`. For more information, including details on
 	// header value syntax, see the documentation on `custom request headers
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,4,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each request when
-	// this cluster is selected through the enclosing `envoy_api_msg_route.RouteActio)`.
+	// this cluster is selected through the enclosing `envoy_api_msg_route.RouteAction)`.
 	RequestHeadersToRemove []string `protobuf:"bytes,9,rep,name=request_headers_to_remove,json=requestHeadersToRemove,proto3" json:"request_headers_to_remove,omitempty"`
 	// Specifies a list of headers to be added to responses when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteActio)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction)`.
 	// Headers specified at this level are applied before headers from the enclosing
-	// `envoy_api_msg_route.Rout)`, `envoy_api_msg_route.VirtualHos)`, and
-	// `envoy_api_msg_RouteConfiguratio)`. For more information, including details on
+	// `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+	// `envoy_api_msg_RouteConfiguration`. For more information, including details on
 	// header value syntax, see the documentation on `custom request headers
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	ResponseHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,5,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
 	// Specifies a list of headers to be removed from responses when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteActio)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction)`.
 	ResponseHeadersToRemove []string `protobuf:"bytes,6,rep,name=response_headers_to_remove,json=responseHeadersToRemove,proto3" json:"response_headers_to_remove,omitempty"`
 	// The per_filter_config field can be used to provide weighted cluster-specific
 	// configurations for filters. The key should match the filter name, such as
@@ -1223,8 +1223,8 @@ type RouteAction struct {
 	//
 	//
 	//   This timeout includes all retries. See also
-	//   `config_http_filters_router_x-envoy-upstream-rq-timeout-m)`,
-	//   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-m)`, and the
+	//   `config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
+	//   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
 	//   `retry overview (arch_overview_http_routing_retry)`.
 	Timeout *time.Duration `protobuf:"bytes,8,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
 	// Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
@@ -1929,8 +1929,8 @@ func (m *RouteAction_HashPolicy_ConnectionProperties) GetSourceIp() bool {
 // Allows enabling and disabling upgrades on a per-route basis.
 // This overrides any enabled/disabled upgrade filter chain specified in the
 // HttpConnectionManager
-// upgrade_configs`
-// <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs>`
+// `upgrade_configs
+// (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs)`
 // but does not affect any custom filter chain specified there.
 type RouteAction_UpgradeConfig struct {
 	// The case-insensitive name of this upgrade, e.g. "websocket".
@@ -1985,16 +1985,16 @@ func (m *RouteAction_UpgradeConfig) GetEnabled() *types.BoolValue {
 // HTTP retry `architecture overview (arch_overview_http_routing_retry)`.
 type RetryPolicy struct {
 	// Specifies the conditions under which retry takes place. These are the same
-	// conditions documented for `config_http_filters_router_x-envoy-retry-o)` and
-	// `config_http_filters_router_x-envoy-retry-grpc-o)`.
+	// conditions documented for `config_http_filters_router_x-envoy-retry-on` and
+	// `config_http_filters_router_x-envoy-retry-grpc-on`.
 	RetryOn string `protobuf:"bytes,1,opt,name=retry_on,json=retryOn,proto3" json:"retry_on,omitempty"`
 	// Specifies the allowed number of retries. This parameter is optional and
 	// defaults to 1. These are the same conditions documented for
-	// `config_http_filters_router_x-envoy-max-retrie)`.
+	// `config_http_filters_router_x-envoy-max-retries`.
 	NumRetries *types.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
 	// Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. The
 	// same conditions documented for
-	// `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-m)` apply.
+	// `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
 	//
 	//
 	//   If left unspecified, Envoy will use the global
@@ -2021,7 +2021,7 @@ type RetryPolicy struct {
 	// Specifies parameters that control retry back off. This parameter is optional, in which case the
 	// default base interval is 25 milliseconds or, if set, the current value of the
 	// `upstream.base_retry_backoff_ms` runtime parameter. The default maximum interval is 10 times
-	// the base interval. The documentation for `config_http_filters_router_x-envoy-max-retrie)`
+	// the base interval. The documentation for `config_http_filters_router_x-envoy-max-retries`
 	// describes Envoy's back-off algorithm.
 	RetryBackOff         *RetryPolicy_RetryBackOff `protobuf:"bytes,8,opt,name=retry_back_off,json=retryBackOff,proto3" json:"retry_back_off,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
@@ -2284,12 +2284,12 @@ func (*RetryPolicy_RetryHostPredicate) XXX_OneofWrappers() []interface{} {
 type RetryPolicy_RetryBackOff struct {
 	// Specifies the base interval between retries. This parameter is required and must be greater
 	// than zero. Values less than 1 ms are rounded up to 1 ms.
-	// See `config_http_filters_router_x-envoy-max-retrie)` for a discussion of Envoy's
+	// See `config_http_filters_router_x-envoy-max-retries` for a discussion of Envoy's
 	// back-off algorithm.
 	BaseInterval *time.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3,stdduration" json:"base_interval,omitempty"`
 	// Specifies the maximum interval between retries. This parameter is optional, but must be
 	// greater than or equal to the `base_interval` if set. The default is 10 times the
-	// `base_interval`. See `config_http_filters_router_x-envoy-max-retrie)` for a discussion
+	// `base_interval`. See `config_http_filters_router_x-envoy-max-retries` for a discussion
 	// of Envoy's back-off algorithm.
 	MaxInterval          *time.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3,stdduration" json:"max_interval,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
@@ -2574,8 +2574,8 @@ type DirectResponseAction struct {
 	//
 	//
 	//   Headers can be specified using *response_headers_to_add* in the enclosing
-	//   `envoy_api_msg_route.Rout)`, `envoy_api_msg_RouteConfiguratio)` or
-	//   `envoy_api_msg_route.VirtualHos)`.
+	//   `envoy_api_msg_route.Route`, `envoy_api_msg_RouteConfiguration` or
+	//   `envoy_api_msg_route.VirtualHost`.
 	Body                 *core.DataSource `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`

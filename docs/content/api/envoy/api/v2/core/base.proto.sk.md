@@ -61,8 +61,8 @@ Identifies location of where either Envoy runs or where upstream hosts run.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `region` | `string` | Region this `zone (envoy_api_field_core.Locality.zone)` belongs to. |  |
-| `zone` | `string` | Defines the local service zone where Envoy is running. Though optional, it should be set if discovery service routing is used and the discovery service exposes `zone data (envoy_api_field_endpoint.LocalityLbEndpoints.locality)`, either in this message or via :option:`--service-zone`. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |  |
+| `region` | `string` | Region this :ref:`zone <envoy_api_field_core.Locality.zone>` belongs to. |  |
+| `zone` | `string` | Defines the local service zone where Envoy is running. Though optional, it should be set if discovery service routing is used and the discovery service exposes :ref:`zone data <envoy_api_field_endpoint.LocalityLbEndpoints.locality>`, either in this message or via :option:`--service-zone`. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |  |
 | `subZone` | `string` | When used for locality of upstream hosts, this field further splits zone into smaller chunks of sub-zones so they can be load balanced independently. |  |
 
 
@@ -87,8 +87,8 @@ configuration for serving.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-node`. |  |
-| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `health check cluster verification (envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name)`, `runtime override directory (envoy_api_msg_config.bootstrap.v2.Runtime)`, `user agent addition (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent)`, `HTTP global rate limiting (config_http_filters_rate_limit)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-cluster`. |  |
+| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-node`. |  |
+| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster verification <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name>`, :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`, :ref:`user agent addition <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`, :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-cluster`. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque metadata extending the node identifier. Envoy will pass this directly to the management server. |  |
 | `locality` | [.envoy.api.v2.core.Locality](../base.proto.sk/#locality) | Locality specifying where the Envoy instance is running. |  |
 | `buildVersion` | `string` | This is motivated by informing a management server during canary which version of Envoy is being tested in a heterogeneous fleet. This will be set by Envoy in management server RPCs. |  |
@@ -189,7 +189,7 @@ Header name/value pair.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `key` | `string` | Header name. |  |
-| `value` | `string` | Header value. The same `format specifier (config_access_log_format)` as used for `HTTP access logging (config_access_log)` applies here, however unknown header values are replaced with the empty string instead of `-`. |  |
+| `value` | `string` | Header value. The same :ref:`format specifier <config_access_log_format>` as used for :ref:`HTTP access logging <config_access_log>` applies here, however unknown header values are replaced with the empty string instead of `-`. |  |
 
 
 
@@ -298,8 +298,8 @@ Async data source which support async data fetch.
 ### TransportSocket
 
  
-Configuration for transport socket in `listeners (config_listeners)` and
-`clusters (envoy_api_msg_Cluster)`. If the configuration is
+Configuration for transport socket in :ref:`listeners <config_listeners>` and
+:ref:`clusters <envoy_api_msg_Cluster>`. If the configuration is
 empty, a default transport socket implementation and configuration will be
 chosen based on the platform and existence of tls_context.
 
@@ -403,8 +403,8 @@ Identifies a specific ControlPlane instance that Envoy is connected to.
   
 ### RoutingPriority
 
-Description: Envoy supports `upstream priority routing
-(arch_overview_http_routing_priority)` both at the route and the virtual
+Description: Envoy supports :ref:`upstream priority routing
+<arch_overview_http_routing_priority>` both at the route and the virtual
 cluster level. The current priority implementation uses different connection
 pool and circuit breaking settings for each priority level. This means that
 even for HTTP/2 requests, two physical connections will be used to an
