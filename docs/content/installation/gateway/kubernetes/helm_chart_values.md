@@ -10,7 +10,7 @@ chart for the Gloo Gateway. More information on using a Helm chart to install th
 
 {{% notice warning %}}
 If you are using the **Gloo Enterprise Helm** chart you will need to add a `gloo.` prefix to all the open source Gloo 
-chart values. This is due to the fact that the Gloo Enterprise Helm chart uses the open source one as a dependency;  
+chart values. This is due to the fact that the Gloo Enterprise Helm chart uses the open source one as a dependency; 
 therefore the sub-chart values have to be prefixed with the name of the sub-chart itself. 
 This applies to all values except:
 
