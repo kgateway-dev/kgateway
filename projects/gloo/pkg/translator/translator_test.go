@@ -82,7 +82,7 @@ var _ = Describe("Translator", func() {
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
 
-	BeforeEach(func() {
+	beforeEach := func() {
 
 		ctrl = gomock.NewController(T)
 
@@ -156,7 +156,8 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}}
-	})
+	}
+	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
 		getPlugins := func() []plugins.Plugin {
@@ -676,12 +677,6 @@ var _ = Describe("Translator", func() {
 		var (
 			localUpstream1 *v1.Upstream
 			localUpstream2 *v1.Upstream
-
-			originalVersion  string
-			upstreamsVersion string
-
-			originalHttpFilters  []*structpb.Value
-			upstreamsHttpFilters []*structpb.Value
 		)
 
 		BeforeEach(func() {
@@ -723,18 +718,19 @@ var _ = Describe("Translator", func() {
 
 		})
 
-		It("should record the version and http filters to prepare for coming tests", func() {
+		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
 			translate()
 
+			By("get the original version and http filters")
+
 			// get version
-			originalVersion = snapshot.GetResources(xds.ListenerType).Version
+			originalVersion := snapshot.GetResources(xds.ListenerType).Version
 
 			// get http filters
 			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			originalHttpFilters = hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
-		})
+			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
 
-		It("should have different version and http filters after adding 2 upstreams", func() {
+			By("add the upstreams and compare the new version and http filters")
 
 			// add upstreams with same name
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
@@ -744,16 +740,18 @@ var _ = Describe("Translator", func() {
 			translate()
 
 			// get and compare version
-			upstreamsVersion = snapshot.GetResources(xds.ListenerType).Version
+			upstreamsVersion := snapshot.GetResources(xds.ListenerType).Version
 			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
 
 			// get and compare http filters
-			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			upstreamsHttpFilters = hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
 			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
-		})
 
-		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
+			// reset modified global variables
+			beforeEach()
+
+			By("add the upstreams in the opposite order and compare the version and http filters")
 
 			// add upstreams in the opposite order
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
@@ -767,8 +765,8 @@ var _ = Describe("Translator", func() {
 			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
 
 			// get and compare http filters
-			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			flipOrderHttpFilters := hcmFilter.GetConfig().Fields["http_filters"].GetListValue().Values
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
 			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
 		})
 
