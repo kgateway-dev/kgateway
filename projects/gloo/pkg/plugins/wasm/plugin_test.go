@@ -111,7 +111,7 @@ var _ = Describe("wasm plugin", func() {
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
-		Expect(pc.Config.VmConfig.VmId).To(Equal(VmId))
+		Expect(pc.Config.VmConfig.VmId).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.VmConfig.Runtime).To(Equal(V8Runtime))
 		remote := pc.Config.VmConfig.Code.GetRemote()
 		Expect(remote).NotTo(BeNil())
