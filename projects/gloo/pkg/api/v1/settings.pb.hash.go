@@ -769,6 +769,14 @@ func (m *Settings_ConsulConfiguration) Hash(hasher hash.Hash64) (uint64, error) 
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetHttpAddress())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetDnsAddress())); err != nil {
+		return 0, err
+	}
+
 	if _, err = hasher.Write([]byte(m.GetDatacenter())); err != nil {
 		return 0, err
 	}

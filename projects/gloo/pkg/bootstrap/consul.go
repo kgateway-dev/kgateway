@@ -14,6 +14,9 @@ func ConsulClientForSettings(settings *v1.Settings) (*api.Client, error) {
 		if addr := consulSettings.GetAddress(); addr != "" {
 			cfg.Address = addr
 		}
+		if addr := consulSettings.GetHttpAddress(); addr != "" {
+			cfg.Address = addr
+		}
 		if dc := consulSettings.GetDatacenter(); dc != "" {
 			cfg.Datacenter = dc
 		}

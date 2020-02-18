@@ -298,6 +298,8 @@ need to be set on the Gloo container.
 
 ```yaml
 "address": string
+"httpAddress": string
+"dnsAddress": string
 "datacenter": string
 "username": string
 "password": string
@@ -315,6 +317,8 @@ need to be set on the Gloo container.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `address` | `string` | The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dnsAddress` | `string` | The address of the Consul DNS server. Defaults to 127.0.0.1:8600. |  |
 | `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
 | `username` | `string` | Username to use for HTTP Basic Authentication. |  |
 | `password` | `string` | Password to use for HTTP Basic Authentication. |  |

@@ -194,7 +194,15 @@ message Settings {
 
         // The address of the Consul server.
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
-        string address = 1;
+        string address = 1 [deprecated=true];
+
+        // The address of the Consul HTTP server.
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
+        string http_address = 13;
+
+        // The address of the Consul DNS server.
+        // Defaults to 127.0.0.1:8600.
+        string dns_address = 14;
 
         // Datacenter to use. If not provided, the default agent datacenter is used.
         string datacenter = 2;
