@@ -26,11 +26,15 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	envoySidecarConfig= "envoy-sidecar-config"
+)
+
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
 
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
 	// If gloo is in MTLS mode
-	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", "envoy-sidecar-config", "-n", namespace)
+	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", envoySidecarConfig, "-n", namespace)
 	if err := glooMtlsCheck.Run(); err == nil {
 		xdsPort = strconv.Itoa(int(defaults.GlooMtlsModeXdsPort))
 	}
