@@ -91,6 +91,7 @@ func GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile string) (string, erro
 func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
 	snapshotVersion, err := GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
 	if err != nil {
+		contextutils.LoggerFrom(ctx).Info("Error getting snapshot version", zap.Error(err))
 		return err
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. Snapshot version is %s", snapshotVersion)

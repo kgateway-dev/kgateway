@@ -50,15 +50,7 @@ func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddre
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
 				server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
-				if err := watcher.Add(sslCertFile); err != nil {
-					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
-				}
-				if err := watcher.Add(sslKeyFile); err != nil {
-					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
-				}
-				if err := watcher.Add(sslCaFile); err != nil {
-					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
-				}
+				watchFiles(ctx, watcher, sslKeyFile, sslCertFile, sslCaFile)
 			// watch for errors
 			case err := <-watcher.Errors:
 				contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
@@ -67,15 +59,7 @@ func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddre
 			}
 		}
 	}()
-	if err := watcher.Add(sslCertFile); err != nil {
-		return err
-	}
-	if err := watcher.Add(sslKeyFile); err != nil {
-		return err
-	}
-	if err := watcher.Add(sslCaFile); err != nil {
-		return err
-	}
+	watchFiles(ctx, watcher, sslKeyFile, sslCertFile, sslCaFile)
 
 	<-sigs
 	cancel()
@@ -84,5 +68,17 @@ func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddre
 		return nil
 	case <-time.After(3 * time.Second):
 		return nil
+	}
+}
+
+func watchFiles(ctx context.Context, watcher *fsnotify.Watcher, sslKeyFile string, sslCertFile string, sslCaFile string) {
+	if err := watcher.Add(sslKeyFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+	}
+	if err := watcher.Add(sslCertFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+	}
+	if err := watcher.Add(sslCaFile); err != nil {
+		contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
 	}
 }
