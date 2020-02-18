@@ -693,7 +693,7 @@ type WeightedCluster_ClusterWeight struct {
 	// here taking precedence. The filter name should be specified as *envoy.lb*.
 	MetadataMatch *core.Metadata `protobuf:"bytes,3,opt,name=metadata_match,json=metadataMatch,proto3" json:"metadata_match,omitempty"`
 	// Specifies a list of headers to be added to requests when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteAction)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction`.
 	// Headers specified at this level are applied before headers from the enclosing
 	// `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
 	// `envoy_api_msg_RouteConfiguration`. For more information, including details on
@@ -701,10 +701,10 @@ type WeightedCluster_ClusterWeight struct {
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	RequestHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,4,rep,name=request_headers_to_add,json=requestHeadersToAdd,proto3" json:"request_headers_to_add,omitempty"`
 	// Specifies a list of HTTP headers that should be removed from each request when
-	// this cluster is selected through the enclosing `envoy_api_msg_route.RouteAction)`.
+	// this cluster is selected through the enclosing `envoy_api_msg_route.RouteAction`.
 	RequestHeadersToRemove []string `protobuf:"bytes,9,rep,name=request_headers_to_remove,json=requestHeadersToRemove,proto3" json:"request_headers_to_remove,omitempty"`
 	// Specifies a list of headers to be added to responses when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteAction)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction`.
 	// Headers specified at this level are applied before headers from the enclosing
 	// `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
 	// `envoy_api_msg_RouteConfiguration`. For more information, including details on
@@ -712,7 +712,7 @@ type WeightedCluster_ClusterWeight struct {
 	// (config_http_conn_man_headers_custom_request_headers)`.
 	ResponseHeadersToAdd []*core.HeaderValueOption `protobuf:"bytes,5,rep,name=response_headers_to_add,json=responseHeadersToAdd,proto3" json:"response_headers_to_add,omitempty"`
 	// Specifies a list of headers to be removed from responses when this cluster is selected
-	// through the enclosing `envoy_api_msg_route.RouteAction)`.
+	// through the enclosing `envoy_api_msg_route.RouteAction`.
 	ResponseHeadersToRemove []string `protobuf:"bytes,6,rep,name=response_headers_to_remove,json=responseHeadersToRemove,proto3" json:"response_headers_to_remove,omitempty"`
 	// The per_filter_config field can be used to provide weighted cluster-specific
 	// configurations for filters. The key should match the filter name, such as

@@ -18,7 +18,7 @@ option (extproto.hash_all) = true;
 
 // [#protodoc-title: Outlier detection]
 
-// See the `architecture overview  (arch_overview_outlier_detection)` for
+// See the `architecture overview (arch_overview_outlier_detection)` for
 // more information on outlier detection.
 message OutlierDetection {
     // The number of consecutive 5xx responses or local origin errors that are mapped

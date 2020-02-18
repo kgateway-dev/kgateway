@@ -26,7 +26,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// See the `architecture overview  (arch_overview_outlier_detection)` for
+// See the `architecture overview (arch_overview_outlier_detection)` for
 // more information on outlier detection.
 type OutlierDetection struct {
 	// The number of consecutive 5xx responses or local origin errors that are mapped

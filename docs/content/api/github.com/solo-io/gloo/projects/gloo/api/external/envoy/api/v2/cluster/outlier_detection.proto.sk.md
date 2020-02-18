@@ -26,7 +26,7 @@ weight: 5
 ### OutlierDetection
 
  
-See the `architecture overview  (arch_overview_outlier_detection)` for
+See the `architecture overview (arch_overview_outlier_detection)` for
 more information on outlier detection.
 
 ```yaml
