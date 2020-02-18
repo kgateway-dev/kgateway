@@ -2,7 +2,6 @@ package consul
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"sort"
 	"strconv"
@@ -118,7 +117,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoints(writeNamespace, p.dnsAddress, spec, upstreams)...)
+						endpoints = append(endpoints, buildEndpoints(ctx, writeNamespace, p.dnsAddress, spec, upstreams)...)
 					}
 				}
 
@@ -195,7 +194,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(namespace, dnsAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
+func buildEndpoints(ctx context.Context, namespace, dnsAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -203,44 +202,53 @@ func buildEndpoints(namespace, dnsAddress string, service *consulapi.CatalogServ
 	if address == "" {
 		address = service.Address
 	}
-	var ipAddresses []string // where we will store the final IP addresses
 
-	addr := net.ParseIP(address)
-	if addr == nil {
-		// we're assuming the consul service returned a hostname instead of an IP
-		// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
-
-		if len(dnsAddress) == 0 {
-			fmt.Println("kdorosh err1") //TODO(kdorosh) proper logging of error
-			return nil
-		}
-
-		res := net.Resolver{
-			PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
-			Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
-				// DNS typically uses UDP and falls back to TCP if the response size is greater than one packet
-				// (originally 512 bytes). we use TCP to ensure we receive all IPs in a large DNS response
-				return net.Dial("tcp", dnsAddress)
-			},
-		}
-		ipAddrs, err := res.LookupIPAddr(context.Background(), address)
-		if err != nil || len(ipAddrs) == 0 {
-			fmt.Println("kdorosh err") //TODO(kdorosh) proper logging of error
-			return nil
-		}
-
-		for _, ipAddr := range ipAddrs {
-			ipAddresses = append(ipAddresses, ipAddr.String())
-		}
-	} else {
-		ipAddresses = []string{address}
-	}
+	ipAddresses := getIpAddresses(ctx, address, dnsAddress)
 
 	var endpoints []*v1.Endpoint
 	for _, ipAddr := range ipAddresses {
 		endpoints = append(endpoints, buildEndpoint(namespace, ipAddr, service, upstreams))
 	}
 	return endpoints
+}
+
+func getIpAddresses(ctx context.Context, address, dnsAddress string) []string {
+	addr := net.ParseIP(address)
+	if addr != nil {
+		// the consul service address is an IP address, no need to resolve it!
+		return []string{address}
+	}
+
+	logger := contextutils.LoggerFrom(ctx)
+
+	// we're assuming the consul service returned a hostname instead of an IP
+	// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
+	if len(dnsAddress) == 0 {
+		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
+			"would have resolved as a hostname but the configured Consul DNS Address was empty", address)
+		return nil
+	}
+
+	res := net.Resolver{
+		PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
+		Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
+			// DNS typically uses UDP and falls back to TCP if the response size is greater than one packet
+			// (originally 512 bytes). we use TCP to ensure we receive all IPs in a large DNS response
+			return net.Dial("tcp", dnsAddress)
+		},
+	}
+	ipAddrs, err := res.LookupIPAddr(context.Background(), address)
+	if err != nil || len(ipAddrs) == 0 {
+		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
+			"resolved as a hostname at %s but the DNS server returned no results, error: %v", address, dnsAddress, err)
+		return nil
+	}
+
+	var ipAddresses []string
+	for _, ipAddr := range ipAddrs {
+		ipAddresses = append(ipAddresses, ipAddr.String())
+	}
+	return ipAddresses
 }
 
 func buildEndpoint(namespace, address string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
