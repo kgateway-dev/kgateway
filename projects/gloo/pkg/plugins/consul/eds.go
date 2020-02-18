@@ -118,7 +118,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoints(writeNamespace, spec, upstreams)...)
+						endpoints = append(endpoints, buildEndpoints(writeNamespace, p.dnsAddress, spec, upstreams)...)
 					}
 				}
 
@@ -195,7 +195,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(namespace string, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
+func buildEndpoints(namespace, dnsAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -209,12 +209,18 @@ func buildEndpoints(namespace string, service *consulapi.CatalogService, upstrea
 	if addr == nil {
 		// we're assuming the consul service returned a hostname instead of an IP
 		// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
+
+		if len(dnsAddress) == 0 {
+			fmt.Println("kdorosh err1") //TODO(kdorosh) proper logging of error
+			return nil
+		}
+
 		res := net.Resolver{
 			PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
 			Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
 				// DNS typically uses UDP and falls back to TCP if the response size is greater than one packet
 				// (originally 512 bytes). we use TCP to ensure we receive all IPs in a large DNS response
-				return net.Dial("tcp", "127.0.0.1:8600")
+				return net.Dial("tcp", dnsAddress)
 			},
 		}
 		ipAddrs, err := res.LookupIPAddr(context.Background(), address)

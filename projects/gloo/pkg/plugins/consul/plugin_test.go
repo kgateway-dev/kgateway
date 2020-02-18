@@ -28,7 +28,7 @@ var _ = Describe("Resolve", func() {
 	})
 
 	It("can resolve consul service addresses", func() {
-		plug := NewPlugin(consulWatcherMock)
+		plug := NewPlugin(consulWatcherMock, "")
 
 		svcName := "my-svc"
 		tag := "tag"

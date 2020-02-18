@@ -30,13 +30,18 @@ type Opts struct {
 	Artifacts         factory.ResourceClientFactory
 	AuthConfigs       factory.ResourceClientFactory
 	KubeClient        kubernetes.Interface
-	ConsulWatcher     consul.ConsulWatcher
+	Consul            Consul
 	WatchOpts         clients.WatchOpts
 	DevMode           bool
 	ControlPlane      ControlPlane
 	ValidationServer  ValidationServer
 	Settings          *v1.Settings
 	KubeCoreCache     corecache.KubeCoreCache
+}
+
+type Consul struct {
+	ConsulWatcher consul.ConsulWatcher
+	DnsServer     string
 }
 
 type ControlPlane struct {

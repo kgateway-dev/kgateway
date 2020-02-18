@@ -20,7 +20,8 @@ import (
 var _ discovery.DiscoveryPlugin = new(plugin)
 
 type plugin struct {
-	client consul.ConsulWatcher
+	client     consul.ConsulWatcher
+	dnsAddress string
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -56,8 +57,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
-func NewPlugin(client consul.ConsulWatcher) *plugin {
-	return &plugin{client: client}
+func NewPlugin(client consul.ConsulWatcher, dnsServer string) *plugin {
+	return &plugin{client: client, dnsAddress: dnsServer}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

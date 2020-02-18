@@ -77,8 +77,8 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
 	}
-	if opts.ConsulWatcher != nil {
-		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulWatcher))
+	if opts.Consul.ConsulWatcher != nil {
+		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, opts.Consul.DnsServer))
 	}
 	hcmPlugin.RegisterHcmPlugins(reg.plugins)
 

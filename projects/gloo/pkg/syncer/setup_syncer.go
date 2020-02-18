@@ -290,7 +290,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		if err != nil {
 			return err
 		}
-		opts.ConsulWatcher = consulClientWrapper
+		opts.Consul.ConsulWatcher = consulClientWrapper
 	}
 
 	err = s.runFunc(opts)
@@ -355,7 +355,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
 		kubeServiceClient = nil
 	}
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher)
 	if err != nil {
 		return err
 	}
