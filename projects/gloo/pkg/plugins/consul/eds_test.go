@@ -302,7 +302,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 			upstream := createTestUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
 
-			endpoints := buildEndpoints(writeNamespace, "", consulService, v1.UpstreamList{upstream})
+			endpoints := buildEndpoints(context.TODO(), writeNamespace, "", consulService, v1.UpstreamList{upstream})
 
 			Expect(endpoints).To(ConsistOf(&v1.Endpoint{
 				Metadata: core.Metadata{
