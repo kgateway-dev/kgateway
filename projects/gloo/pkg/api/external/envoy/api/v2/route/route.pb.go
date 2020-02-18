@@ -689,7 +689,7 @@ type WeightedCluster_ClusterWeight struct {
 	// Optional endpoint metadata match criteria used by the subset load balancer. Only endpoints in
 	// the upstream cluster with metadata matching what is set in this field will be considered for
 	// load balancing. Note that this will be merged with what's provided in
-	// `RouteAction.MetadataMatch <envoy_api_field_route.RouteAction.metadata_match>`, with values
+	// `RouteAction.MetadataMatch (envoy_api_field_route.RouteAction.metadata_match)`, with values
 	// here taking precedence. The filter name should be specified as *envoy.lb*.
 	MetadataMatch *core.Metadata `protobuf:"bytes,3,opt,name=metadata_match,json=metadataMatch,proto3" json:"metadata_match,omitempty"`
 	// Specifies a list of headers to be added to requests when this cluster is selected
