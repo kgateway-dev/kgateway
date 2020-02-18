@@ -2,6 +2,8 @@ package run_test
 
 import (
 	"context"
+	"os"
+	"path"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
@@ -17,29 +19,38 @@ import (
 var _ = Describe("SDS Server E2E Test", func() {
 
 	var (
-		fs                        afero.Fs
-		dir                       string
-		keyFile, certFile, caFile afero.File
-		err                       error
-		testServerAddress         = "127.0.0.1:8236"
+		err                                            error
+		fs                                             afero.Fs
+		dir                                            string
+		keyName, certName, caName                      string
+		keyNameSymlink, certNameSymlink, caNameSymlink string
+		testServerAddress                              = "127.0.0.1:8236"
 	)
 
 	BeforeEach(func() {
+		fileString := []byte("test")
 		fs = afero.NewOsFs()
 		dir, err = afero.TempDir(fs, "", "")
 		Expect(err).To(BeNil())
-		fileString := `test`
-		keyFile, err = afero.TempFile(fs, dir, "")
+
+		// Kubernetes mounts secrets as a symlink to a ..data directory, so we'll mimic that here
+		keyName = path.Join(dir, "/", "tls.key-0")
+		certName = path.Join(dir, "/", "tls.crt-0")
+		caName = path.Join(dir, "/", "ca.crt-0")
+		err = afero.WriteFile(fs, keyName, fileString, 0644)
 		Expect(err).To(BeNil())
-		_, err = keyFile.WriteString(fileString)
+		err = afero.WriteFile(fs, certName, fileString, 0644)
 		Expect(err).To(BeNil())
-		certFile, err = afero.TempFile(fs, dir, "")
+		err = afero.WriteFile(fs, caName, fileString, 0644)
 		Expect(err).To(BeNil())
-		_, err = certFile.WriteString(fileString)
+		keyNameSymlink = path.Join(dir, "/", "tls.key")
+		certNameSymlink = path.Join(dir, "/", "tls.crt")
+		caNameSymlink = path.Join(dir, "/", "ca.crt")
+		err := os.Symlink(keyName, keyNameSymlink)
 		Expect(err).To(BeNil())
-		caFile, err = afero.TempFile(fs, dir, "")
+		err = os.Symlink(certName, certNameSymlink)
 		Expect(err).To(BeNil())
-		_, err = caFile.WriteString(fileString)
+		err = os.Symlink(caName, caNameSymlink)
 		Expect(err).To(BeNil())
 	})
 
@@ -50,7 +61,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 	It("runs and stops correctly", func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {
-			if err := run.Run(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), testServerAddress); err != nil {
+			if err := run.Run(ctx, keyNameSymlink, certNameSymlink, caNameSymlink, testServerAddress); err != nil {
 				Expect(err).To(BeNil())
 			}
 		}()
@@ -76,29 +87,36 @@ var _ = Describe("SDS Server E2E Test", func() {
 	})
 
 	It("correctly picks up multiple cert rotations", func() {
-		go run.Run(context.Background(), keyFile.Name(), certFile.Name(), caFile.Name(), testServerAddress)
+
+		go run.Run(context.Background(), keyNameSymlink, certNameSymlink, caNameSymlink, testServerAddress)
 
 		// Connect with the server
 		var conn *grpc.ClientConn
-		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
+		conn, err = grpc.Dial(testServerAddress, grpc.WithInsecure())
 		Expect(err).To(BeNil())
 		defer conn.Close()
 		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
-		snapshotVersion, err := server.GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		snapshotVersion, err := server.GetSnapshotVersion(keyName, certName, caName)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("11240719828806193304"))
-
 		resp, err := client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 		Expect(err).To(BeNil())
-		Expect(resp.VersionInfo).To(Equal(snapshotVersion))
+		Eventually(func() bool {
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			Expect(err).To(BeNil())
+			return resp.VersionInfo == snapshotVersion
+		}, "5s", "1s").Should(BeTrue())
 
 		// Cert rotation #1
-		_, err = keyFile.WriteString(`newFileString`)
+		err = os.Remove(keyName)
 		Expect(err).To(BeNil())
-		snapshotVersion, err = server.GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("15327026688369869607"))
+
+		snapshotVersion, err = server.GetSnapshotVersion(keyName, certName, caName)
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("15601967965718698291"))
 		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
@@ -107,11 +125,14 @@ var _ = Describe("SDS Server E2E Test", func() {
 		}, "5s", "1s").Should(BeTrue())
 
 		// Cert rotation #2
-		_, err = keyFile.WriteString(`newFileString2`)
+		err = os.Remove(keyName)
 		Expect(err).To(BeNil())
-		snapshotVersion, err = server.GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("15497820419858244991"))
+
+		snapshotVersion, err = server.GetSnapshotVersion(keyName, certName, caName)
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("11448956642433776987"))
 		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 		Expect(err).To(BeNil())
 		Eventually(func() bool {
