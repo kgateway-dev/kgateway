@@ -12,21 +12,10 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
-	v1 "k8s.io/api/core/v1"
 )
 
-var (
-	secretDir   = "/etc/envoy/ssl/"
-	sslKeyFile  = secretDir + v1.TLSPrivateKeyKey        // tls.key
-	sslCertFile = secretDir + v1.TLSCertKey              //tls.crt
-	sslCaFile   = secretDir + v1.ServiceAccountRootCAKey //ca.crt
 
-	// This must match the value of the sds_config target_uri in the envoy instance that it is providing
-	// secrets to.
-	sdsServerAddress = "127.0.0.1:8234"
-)
-
-func Run(ctx context.Context) error {
+func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddress string) error {
 	ctx, cancel := context.WithCancel(ctx)
 
 	// Set up the gRPC server
@@ -62,6 +51,15 @@ func Run(ctx context.Context) error {
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
 				server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
+				if err := watcher.Add(sslCertFile); err != nil {
+					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+				}
+				if err := watcher.Add(sslKeyFile); err != nil {
+					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+				}
+				if err := watcher.Add(sslCaFile); err != nil {
+					contextutils.LoggerFrom(ctx).Warn(zap.Error(err))
+				}
 			// watch for errors
 			case err := <-watcher.Errors:
 				contextutils.LoggerFrom(ctx).Warnw("Received error from file watcher", zap.Error(err))
