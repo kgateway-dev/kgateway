@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.11.3
 
 COPY gateway-linux-amd64 /usr/local/bin/gateway
 

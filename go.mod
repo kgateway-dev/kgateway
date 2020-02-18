@@ -7,9 +7,10 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.26.2
-	github.com/envoyproxy/go-control-plane v0.9.1
+	github.com/envoyproxy/go-control-plane v0.9.3
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
+	github.com/fsnotify/fsnotify v1.4.7
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/spec v0.19.4
@@ -49,7 +50,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/solo-kit v0.13.1
-	github.com/solo-io/wasme v0.0.13-alpha.1
+	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

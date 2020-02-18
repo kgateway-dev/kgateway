@@ -43,7 +43,6 @@ type ServicesAndDescriptor struct {
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
 		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
-		upstreamServices:  make(map[string]ServicesAndDescriptor),
 		transformsAdded:   transformsAdded,
 	}
 }
@@ -51,7 +50,7 @@ func NewPlugin(transformsAdded *bool) *plugin {
 type plugin struct {
 	transformsAdded   *bool
 	recordedUpstreams map[core.ResourceRef]*v1.Upstream
-	upstreamServices  map[string]ServicesAndDescriptor
+	upstreamServices  []ServicesAndDescriptor
 
 	ctx context.Context
 }
@@ -106,10 +105,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	addWellKnownProtos(descriptors)
 
 	p.recordedUpstreams[in.Metadata.Ref()] = in
-	p.upstreamServices[in.Metadata.Name] = ServicesAndDescriptor{
+	p.upstreamServices = append(p.upstreamServices, ServicesAndDescriptor{
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
-	}
+	})
+	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.Metadata.Namespace, in.Metadata.Name)
 
 	return nil
 }

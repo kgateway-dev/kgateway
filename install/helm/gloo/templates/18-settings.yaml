@@ -9,7 +9,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   gloo:
+{{- if .Values.global.glooMtls.enabled }}
+    xdsBindAddr: "127.0.0.1:9999"
+{{- else }}
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
+{{- end }}
 {{- if .Values.settings.invalidConfigPolicy }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}

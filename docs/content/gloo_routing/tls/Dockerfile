@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.11.3
 
 COPY cert.pem /cert.pem
 COPY key.pem /key.pem
