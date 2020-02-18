@@ -6,12 +6,12 @@ package mock_cache
 
 import (
 	context "context"
-	io "io"
 	http "net/http"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
 	digest "github.com/opencontainers/go-digest"
+	model "github.com/solo-io/wasme/pkg/model"
 )
 
 // MockCache is a mock of Cache interface
@@ -53,10 +53,10 @@ func (mr *MockCacheMockRecorder) Add(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // Get mocks base method
-func (m *MockCache) Get(arg0 context.Context, arg1 digest.Digest) (io.ReadCloser, error) {
+func (m *MockCache) Get(arg0 context.Context, arg1 digest.Digest) (model.Filter, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", arg0, arg1)
-	ret0, _ := ret[0].(io.ReadCloser)
+	ret0, _ := ret[0].(model.Filter)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
