@@ -726,6 +726,7 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=1",
 								"gatewayProxies.gatewayProxyInternal.configMap.data=null",
+								"gatewayProxies.gatewayProxyInternal.createDeployment=true",
 								"gatewayProxies.gatewayProxyInternal.service.extraAnnotations=null",
 								"gatewayProxies.gatewayProxyInternal.service.type=ClusterIP",
 								"gatewayProxies.gatewayProxyInternal.podTemplate.httpPort=8081",
@@ -1722,6 +1723,7 @@ metadata:
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxyInternal.kind.deployment.replicas=1",
 								"gatewayProxies.gatewayProxyInternal.configMap.data=null",
+								"gatewayProxies.gatewayProxyInternal.createConfigMap=true",
 								"gatewayProxies.gatewayProxyInternal.service.extraAnnotations=null",
 								"gatewayProxies.gatewayProxyInternal.service.type=ClusterIP",
 								"gatewayProxies.gatewayProxyInternal.podTemplate.httpPort=8081",
