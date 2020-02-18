@@ -8,13 +8,9 @@ description: Illustrating how to combine OpenID Connect with Open Policy Agent t
 The OPA feature was introduced with **Gloo Enterprise**, release 0.18.21. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that 
-can be used to define and enforce versatile policies in a uniform way across your organization. 
-Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see 
-[the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
+The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that can be used to define and enforce versatile policies in a uniform way across your organization. Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-Be sure to check the external auth [configuration overview]({{< ref "security/auth#configuration-overview" >}}) 
-for detailed information about how authentication is configured on Virtual Services.
+Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/security/auth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
 ## Table of Contents
 - [Setup](#setup)
@@ -92,14 +88,11 @@ You should see the following output:
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default 
-Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
-We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
+As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that only requests that comply with a given OPA policy are allowed.
 
 #### Define an OPA policy 
-Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). 
-The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work 
-with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
+
+Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
 
 ```shell
 cat <<EOF > policy.rego
@@ -127,8 +120,7 @@ This policy:
   - the path is exactly `/api/pets/2` AND the http method is either `GET` or `DELETE`
 
 #### Create an OPA AuthConfig CRD
-Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the 
-contents of the above policy file:
+Gloo expects OPA policies to be stored in a Kubernetes ConfigMap, so let's go ahead and create a ConfigMap with the contents of the above policy file:
 
 ```
 kubectl -n gloo-system create configmap allow-get-users --from-file=policy.rego
@@ -153,8 +145,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-The above `AuthConfig` references the ConfigMap  (`modules`) we created earlier and adds a query that allows access only 
-if the `allow` variable is `true`. 
+The above `AuthConfig` references the ConfigMap  (`modules`) we created earlier and adds a query that allows access only if the `allow` variable is `true`. 
 
 #### Updating the Virtual Service
 Once the `AuthConfig` has been created, we can use it to secure our Virtual Service:
@@ -188,8 +179,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< ref "security/auth#inheritance-rules" >}}) it.
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will inherit its `AuthConfig`, unless it [overwrites or disables]({{% versioned_link_path fromRoot="/security/auth#inheritance-rules" %}}) it.
 
 ### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):
