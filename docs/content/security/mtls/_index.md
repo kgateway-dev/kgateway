@@ -151,7 +151,8 @@ The configmap has the following change:
       - name: gloo.gloo-system.svc.cluster.local:9977
         transport_socket:
           name: envoy.transport_sockets.tls
-          config:
+          typed_config:
+            "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
             common_tls_context:
               tls_certificate_sds_secret_configs:
                 - name: server_cert
