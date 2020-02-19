@@ -26,8 +26,18 @@ import (
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	envoySidecarConfig = "envoy-sidecar-config"
+)
+
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
+
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
+	// If gloo is in MTLS mode
+	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", envoySidecarConfig, "-n", namespace)
+	if err := glooMtlsCheck.Run(); err == nil {
+		xdsPort = strconv.Itoa(int(defaults.GlooMtlsModeXdsPort))
+	}
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/gloo", xdsPort)
 	mergedPortForwardOutput := bytes.NewBuffer([]byte{})
@@ -50,10 +60,10 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 				return
 			default:
 			}
+			time.Sleep(time.Millisecond * 250)
 			out, err := getXdsDump(ctx, xdsPort, proxyName, namespace)
 			if err != nil {
 				errs <- err
-				time.Sleep(time.Millisecond * 250)
 				continue
 			}
 			result <- out
