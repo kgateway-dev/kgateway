@@ -78,6 +78,9 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
 	}
 	if opts.Consul.ConsulWatcher != nil {
+		if len(opts.Consul.DnsServer) == 0 {
+			opts.Consul.DnsServer = consul.DefaultDnsAddress
+		}
 		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, &consul.ConsulDnsResolver{DnsAddress: opts.Consul.DnsServer}))
 	}
 	hcmPlugin.RegisterHcmPlugins(reg.plugins)

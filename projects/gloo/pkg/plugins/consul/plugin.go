@@ -19,6 +19,10 @@ import (
 
 var _ discovery.DiscoveryPlugin = new(plugin)
 
+var (
+	DefaultDnsAddress = "127.0.0.1:8600"
+)
+
 type plugin struct {
 	client   consul.ConsulWatcher
 	resolver DnsResolver

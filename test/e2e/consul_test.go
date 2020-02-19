@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	"github.com/rotisserie/eris"
@@ -87,7 +89,7 @@ var _ = Describe("Consul e2e", func() {
 				DisableFds:     true,
 			},
 			ConsulClient:     consulClient,
-			ConsulDnsAddress: "127.0.0.1:8600", // the consul default
+			ConsulDnsAddress: consul2.DefaultDnsAddress,
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
