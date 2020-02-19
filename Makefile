@@ -212,7 +212,6 @@ GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
 $(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
-
 .PHONY: gateway
 gateway: $(OUTPUT_DIR)/gateway-linux-amd64
 
@@ -232,7 +231,6 @@ INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
 
 $(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
-
 
 .PHONY: ingress
 ingress: $(OUTPUT_DIR)/ingress-linux-amd64
@@ -254,7 +252,6 @@ ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
 $(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
-
 .PHONY: access-logger
 access-logger: $(OUTPUT_DIR)/access-logger-linux-amd64
 
@@ -274,7 +271,6 @@ DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
 
 $(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
-
 
 .PHONY: discovery
 discovery: $(OUTPUT_DIR)/discovery-linux-amd64
@@ -296,7 +292,6 @@ GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
 $(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
-
 .PHONY: gloo
 gloo: $(OUTPUT_DIR)/gloo-linux-amd64
 
@@ -309,7 +304,28 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 		-t quay.io/solo-io/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# Envoy init (BASE)
+# SDS Server - gRPC server for serving Secret Discovery Service config for Gloo MTLS
+#----------------------------------------------------------------------------------
+
+SDS_DIR=projects/sds/cmd
+SDS_SOURCES=$(call get_sources,$(SDS_DIR))
+
+$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+
+.PHONY: sds
+sds: $(OUTPUT_DIR)/sds-linux-amd64
+
+$(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
+	cp $< $@
+
+.PHONY: sds-docker
+sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
+	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
+		-t quay.io/solo-io/sds:$(VERSION)
+
+#----------------------------------------------------------------------------------
+# Envoy init (BASE/SIDECAR)
 #----------------------------------------------------------------------------------
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
@@ -321,12 +337,14 @@ $(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 .PHONY: envoyinit
 envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
+$(OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
+	cp $< $@
+
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit
+gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit $(OUTPUT_DIR)/docker-entrypoint.sh
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
 		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
 
@@ -343,7 +361,6 @@ $(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
 .PHONY: envoywasm
 envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 	cp $< $@
 
@@ -351,7 +368,6 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
 		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION)
-
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -366,7 +382,6 @@ $(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
 .PHONY: certgen
 certgen: $(OUTPUT_DIR)/certgen-linux-amd64
 
-
 $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 	cp $< $@
 
@@ -374,7 +389,6 @@ $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
 		-t quay.io/solo-io/certgen:$(VERSION)
-
 
 #----------------------------------------------------------------------------------
 # Build All
@@ -389,7 +403,7 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
 
-# Creates Chart.yaml and values.yaml. See install/helm/gloo/README.md for more info.
+# Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
@@ -507,7 +521,7 @@ endif
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
  		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
- 		certgen-docker ingress-docker access-logger-docker
+		certgen-docker sds-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -521,6 +535,7 @@ docker-push: $(DOCKER_IMAGES)
 	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
 	docker push quay.io/solo-io/certgen:$(VERSION) && \
+	docker push quay.io/solo-io/sds:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 
 push-kind-images: docker

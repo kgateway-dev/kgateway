@@ -132,6 +132,41 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
+{{- if $global.glooMtls.enabled }}
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+            common_tls_context:
+              tls_certificate_sds_secret_configs:
+                - name: server_cert
+                  sds_config:
+                    api_config_source:
+                      api_type: GRPC
+                      grpc_services:
+                      - envoy_grpc:
+                          cluster_name: gateway_proxy_sds
+              validation_context_sds_secret_config:
+                name: validation_context
+                sds_config:
+                  api_config_source:
+                    api_type: GRPC
+                    grpc_services:
+                    - envoy_grpc:
+                        cluster_name: gateway_proxy_sds
+      - name: gateway_proxy_sds
+        connect_timeout: 0.25s
+        http2_protocol_options: {}
+        load_assignment:
+          cluster_name: gateway_proxy_sds
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 8234
+{{- end }}
       - name: wasm-cache
         connect_timeout: 5.000s
         load_assignment:

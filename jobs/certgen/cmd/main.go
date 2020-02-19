@@ -46,10 +46,12 @@ func cmd(ctx context.Context) *cobra.Command {
 		"name of the secret to create which holds the certs")
 	pFlags.StringVar(&opts.SecretNamespace, "secret-namespace", podNamespace,
 		"namespace of the secret to create which holds the certs")
-	pFlags.StringVar(&opts.ServerCertSecretKey, "secret-cert-name", v1.TLSCertKey,
+	pFlags.StringVar(&opts.ServerCertSecretFileName, "secret-cert-name", v1.TLSCertKey,
 		"name of the server cert as it will be stored in the secret data")
-	pFlags.StringVar(&opts.ServerKeySecretKey, "server-key-name", v1.TLSPrivateKeyKey,
+	pFlags.StringVar(&opts.ServerKeySecretFileName, "server-key-name", v1.TLSPrivateKeyKey,
 		"name of the server key as it will be stored in the secret data")
+	pFlags.StringVar(&opts.ServerCertAuthorityFileName, "server-ca-name", v1.ServiceAccountRootCAKey,
+		"name of the server cert authority as it will be stored in the secret data")
 	pFlags.StringVar(&opts.ValidatingWebhookConfigurationName, "validating-webhook-configuration-name", "",
 		"name of the ValidatingWebhookConfiguration to patch with the generated CA bundle. leave empty to skip this step.")
 

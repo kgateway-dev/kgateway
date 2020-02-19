@@ -246,3 +246,4 @@
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
 |global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
 |global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
+|global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
