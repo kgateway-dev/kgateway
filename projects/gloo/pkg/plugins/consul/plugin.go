@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -56,9 +57,13 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
-			// TODO(kdorosh) this also needs to use the Consul DNS resolver!
-			// how do we know which URL to return...?
-			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, inst.ServiceAddress, inst.ServicePort))
+			ipAddresses := getIpAddresses(context.Background(), inst.ServiceAddress, p.resolver)
+			if len(ipAddresses) == 0 {
+				return nil, eris.Errorf("DNS result for %s returned an empty list of IPs", inst.ServiceAddress)
+			}
+			// arbitrarily default to the first result
+			ipAddr := ipAddresses[0]
+			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, ipAddr, inst.ServicePort))
 		}
 	}
 
