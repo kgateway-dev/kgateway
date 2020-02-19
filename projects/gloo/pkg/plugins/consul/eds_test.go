@@ -92,23 +92,6 @@ var _ = Describe("Consul EDS", func() {
 			}, nil, nil).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
-				//same thing three times in a row!?
-				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
-					ConsulTagKeyPrefix + primary:    no,
-					ConsulTagKeyPrefix + secondary:  yes,
-					ConsulTagKeyPrefix + canary:     no,
-					ConsulDataCenterKeyPrefix + dc1: no,
-					ConsulDataCenterKeyPrefix + dc2: yes,
-					ConsulDataCenterKeyPrefix + dc3: no,
-				}),
-				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
-					ConsulTagKeyPrefix + primary:    no,
-					ConsulTagKeyPrefix + secondary:  yes,
-					ConsulTagKeyPrefix + canary:     no,
-					ConsulDataCenterKeyPrefix + dc1: no,
-					ConsulDataCenterKeyPrefix + dc2: yes,
-					ConsulDataCenterKeyPrefix + dc3: no,
-				}),
 				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
@@ -152,7 +135,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(3) // once for each datacenter
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver)
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})

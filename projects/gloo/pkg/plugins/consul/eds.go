@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"encoding/json"
 	"net"
 	"sort"
 	"strconv"
@@ -99,7 +100,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 								return err
 							}
 
-							specs.Append(services)
+							specs.Add(services)
 
 							return nil
 						})
@@ -342,23 +343,37 @@ func newSpecCollector() specCollector {
 }
 
 type specCollector interface {
-	Append([]*consulapi.CatalogService)
+	Add([]*consulapi.CatalogService)
 	Get() []*consulapi.CatalogService
 }
 
 type collector struct {
 	mutex sync.Mutex
-	specs []*consulapi.CatalogService
+	specs map[string]*consulapi.CatalogService
 }
 
-func (c *collector) Append(specs []*consulapi.CatalogService) {
+func (c *collector) Add(specs []*consulapi.CatalogService) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	c.specs = append(c.specs, specs...)
+	if c.specs == nil {
+		c.specs = make(map[string]*consulapi.CatalogService)
+	}
+	for _, spec := range specs {
+		out, err := json.Marshal(spec)
+		if err != nil {
+			panic (err) //TODO(kdorosh)
+		}
+		specStr := string(out)
+		c.specs[specStr] = spec
+	}
 }
 
 func (c *collector) Get() []*consulapi.CatalogService {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
-	return c.specs
+	var services []*consulapi.CatalogService
+	for _, spec := range c.specs {
+		services = append(services, spec)
+	}
+	return services
 }
