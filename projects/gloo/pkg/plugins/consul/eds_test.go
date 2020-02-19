@@ -87,7 +87,7 @@ var _ = Describe("Consul EDS", func() {
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
 			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters).Return(serviceMetaProducer, errorProducer).Times(1)
 
-			consulWatcherMock.EXPECT().Service("svc-1", "", gomock.Any()).Return([]*consulapi.CatalogService{
+			consulWatcherMock.EXPECT().Service(svc1, "", gomock.Any()).Return([]*consulapi.CatalogService{
 				createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{secondary}, 3456, 100),
 			}, nil, nil).Times(3) // once for each datacenter
 
@@ -180,7 +180,9 @@ var _ = Describe("Consul EDS", func() {
 
 			Eventually(endpointsChan, "7s", "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
 
-			// TODO(kdorosh) ensure we don't receive anything else on channel even though we receive more DNS queries
+			// ensure we don't receive anything else on channel even though we receive more DNS queries
+			//mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
+			Consistently(endpointsChan, "4s", "1s").ShouldNot(Receive()) //TODO(kdorosh) this needs to be 6s+!
 
 			// Cancel and verify that all the channels have been closed
 			cancel()

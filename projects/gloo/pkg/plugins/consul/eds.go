@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/go-utils/hashutils"
+
 	"github.com/solo-io/go-utils/kubeutils"
 
 	"github.com/solo-io/gloo/projects/gloo/constants"
@@ -38,6 +40,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	// Filter out non-consul upstreams
 	trackedServices := make(map[string][]*v1.Upstream)
 	trackedSpecs := make(map[string]*consulapi.CatalogService)
+	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
@@ -135,15 +138,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
 				})
 
+				previousHash = hashutils.MustHash(endpoints)
 				endpointsChan <- endpoints
-
-			case <-opts.Ctx.Done():
-				close(endpointsChan)
-
-				// Wait for error aggregation routing to complete to avoid writing to closed errChan
-				errAggregator.Wait()
-				close(errChan)
-				return
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
@@ -162,9 +158,22 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
 				})
 
-				// TODO(kdorosh) only send if hash is different than last time (DNS update!)
+				currentHash := hashutils.MustHash(endpoints)
+				if previousHash == currentHash {
+					return
+				}
 
+				previousHash = currentHash
 				endpointsChan <- endpoints
+
+			case <-opts.Ctx.Done():
+				close(endpointsChan)
+
+				// Wait for error aggregation routing to complete to avoid writing to closed errChan
+				errAggregator.Wait()
+				close(errChan)
+				return
+
 			}
 		}
 	}()
@@ -361,7 +370,7 @@ func (c *collector) Add(specs []*consulapi.CatalogService) {
 	for _, spec := range specs {
 		out, err := json.Marshal(spec)
 		if err != nil {
-			panic (err) //TODO(kdorosh)
+			panic(err) //TODO(kdorosh)
 		}
 		specStr := string(out)
 		c.specs[specStr] = spec
