@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	envoySidecarConfig= "envoy-sidecar-config"
+	envoySidecarConfig = "envoy-sidecar-config"
 )
 
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
