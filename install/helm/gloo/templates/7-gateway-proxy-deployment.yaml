@@ -173,6 +173,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraProxyVolumeMountHelper }}
+{{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
+{{- end }}
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs

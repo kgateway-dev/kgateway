@@ -143,6 +143,7 @@
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
+|gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -195,6 +196,7 @@
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
+|gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|

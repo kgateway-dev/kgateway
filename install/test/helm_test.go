@@ -934,6 +934,34 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+							v1.VolumeMount{
+								Name:      "sds-uds-path",
+								MountPath: "/var/run/sds",
+							})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+							v1.Volume{
+								Name: "sds-uds-path",
+								VolumeSource: v1.VolumeSource{
+									HostPath: &v1.HostPathVolumeSource{
+										Path: "/var/run/sds",
+									},
+								},
+							})
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testIstioVolume",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testIstioVolumeMount",
+						        },
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
 				})
 
 				Context("gateway validation resources", func() {
