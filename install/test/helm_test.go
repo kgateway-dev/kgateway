@@ -958,7 +958,7 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testIstioVolume",
 								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testIstioVolumeMount",
-						        },
+							},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
