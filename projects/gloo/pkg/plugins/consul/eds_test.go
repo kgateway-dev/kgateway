@@ -5,6 +5,7 @@ import (
 	"net"
 	"sort"
 	"sync/atomic"
+	"time"
 
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
@@ -176,13 +177,13 @@ var _ = Describe("Consul EDS", func() {
 					Zone: "",
 				},
 			}
+			pollingInterval := DefaultDnsPollingInterval + time.Second
 			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
-
-			Eventually(endpointsChan, "7s", "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
+			Eventually(endpointsChan, pollingInterval, "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
 
 			// ensure we don't receive anything else on channel even though we receive more DNS queries
-			//mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
-			Consistently(endpointsChan, "4s", "1s").ShouldNot(Receive()) //TODO(kdorosh) this needs to be 6s+!
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
+			Consistently(endpointsChan, pollingInterval, "1s").ShouldNot(Receive())
 
 			// Cancel and verify that all the channels have been closed
 			cancel()

@@ -3,6 +3,7 @@ package consul
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
@@ -20,7 +21,8 @@ import (
 var _ discovery.DiscoveryPlugin = new(plugin)
 
 var (
-	DefaultDnsAddress = "127.0.0.1:8600"
+	DefaultDnsAddress         = "127.0.0.1:8600"
+	DefaultDnsPollingInterval = 5 * time.Second
 )
 
 type plugin struct {

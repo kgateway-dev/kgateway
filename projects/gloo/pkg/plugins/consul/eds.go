@@ -69,7 +69,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		// Use closure to allow cancel function to be updated as context changes
 		defer func() { cancel() }()
 
-		timer := time.NewTicker(time.Second * 5) //TODO(kdorosh) make configurable
+		timer := time.NewTicker(DefaultDnsPollingInterval)
 
 		for {
 			select {
@@ -160,7 +160,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
-					return
+					continue
 				}
 
 				previousHash = currentHash
