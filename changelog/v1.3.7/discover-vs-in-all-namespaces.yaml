@@ -1,0 +1,7 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      When a Gateway has an empty httpGateway.virtualServiceNamespaces list, include all virtual services in the cluster.
+      Previously the behavior was to include only virtual services in the same namespace as the gateway,
+      which has proven unintuitive to users.
+    issueLink: https://github.com/solo-io/gloo/issues/2156
