@@ -204,17 +204,17 @@ func (*Gateway) XXX_OneofWrappers() []interface{} {
 }
 
 type HttpGateway struct {
-	// Names & namespace refs of the the virtual services which contain the actual routes for the gateway.
-	// If the list is empty, all virtual services in the same namespace as this gateway will apply,
+	// Names & namespace refs of the virtual services which contain the actual routes for the gateway.
+	// If the list is empty, all virtual services in all namespaces will apply,
 	// with accordance to `ssl` flag on `Gateway` above.
 	// The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
 	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
 	VirtualServices []core.ResourceRef `protobuf:"bytes,1,rep,name=virtual_services,json=virtualServices,proto3" json:"virtual_services"`
-	// Select virtual services by their label. This will apply only to virtual services in the same namespace
-	// as the gateway resource, unless `virtual_service_namespaces` is provided below.
+	// Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
+	// to virtual services in the namespaces specified.
 	// Only one of `virtualServices` or `virtualServiceSelector` should be provided.
 	VirtualServiceSelector map[string]string `protobuf:"bytes,2,rep,name=virtual_service_selector,json=virtualServiceSelector,proto3" json:"virtual_service_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Expand the search by providing a list of valid search namespaces here, or search all namespaces by setting '*'
+	// Restrict the search by providing a list of valid search namespaces here
 	VirtualServiceNamespaces []string `protobuf:"bytes,3,rep,name=virtual_service_namespaces,json=virtualServiceNamespaces,proto3" json:"virtual_service_namespaces,omitempty"`
 	// HTTP Gateway configuration
 	Options              *v1.HttpListenerOptions `protobuf:"bytes,8,opt,name=options,proto3" json:"options,omitempty"`
