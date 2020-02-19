@@ -126,17 +126,19 @@ var _ = Describe("Consul EDS", func() {
 			close(errorProducer)
 		})
 
-		It("works as expected", func() {
+		It("handles DNS updates even if consul services are unchanged", func() {
 
-			ret := []net.IPAddr{
-				{
-					IP:   net.IPv4(2, 1, 0, 10),
-					Zone: "",
-				},
-			}
-
+			// we have to put all the mock expects before the test starts or else the test may have data races
+			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(initialIps, nil).Times(1) // once for each consul service
+
+			updatedIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 11)}}
+			// once for each consul service x 2 because we will let the test run through the EDS DNS poller twice
+			// the first poll, DNS will have changed and we expect to receive new endpoints on the channel
+			// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(updatedIps, nil).Times(2)
+
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver)
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
@@ -171,18 +173,10 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate an update to DNS entries
 			// by default we poll DNS every 5s for updates
-			ret = []net.IPAddr{
-				{
-					IP:   net.IPv4(2, 1, 0, 11),
-					Zone: "",
-				},
-			}
 			pollingInterval := DefaultDnsPollingInterval + time.Second
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
 			Eventually(endpointsChan, pollingInterval, "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
 
 			// ensure we don't receive anything else on channel even though we receive more DNS queries
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
 			Consistently(endpointsChan, pollingInterval, "1s").ShouldNot(Receive())
 
 			// Cancel and verify that all the channels have been closed
