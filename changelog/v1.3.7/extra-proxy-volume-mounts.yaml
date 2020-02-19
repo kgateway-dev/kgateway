@@ -1,0 +1,4 @@
+changelog:
+- type: HELM
+  description: Allow helm to install extra volume mounts on the proxy container such as with istio integration.
+  issueLink: https://github.com/solo-io/gloo/issues/2469
