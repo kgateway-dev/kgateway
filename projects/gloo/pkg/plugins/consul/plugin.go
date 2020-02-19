@@ -20,8 +20,8 @@ import (
 var _ discovery.DiscoveryPlugin = new(plugin)
 
 type plugin struct {
-	client     consul.ConsulWatcher
-	dnsAddress string
+	client   consul.ConsulWatcher
+	resolver DnsResolver
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -50,6 +50,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
+			// TODO(kdorosh) this also needs to use the Consul DNS resolver!
+			// how do we know which URL to return...?
 			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, inst.ServiceAddress, inst.ServicePort))
 		}
 	}
@@ -57,8 +59,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
-func NewPlugin(client consul.ConsulWatcher, dnsServer string) *plugin {
-	return &plugin{client: client, dnsAddress: dnsServer}
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver) *plugin {
+	return &plugin{client: client, resolver: resolver}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

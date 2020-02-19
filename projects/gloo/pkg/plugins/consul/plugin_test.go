@@ -27,8 +27,10 @@ var _ = Describe("Resolve", func() {
 		ctrl.Finish()
 	})
 
+	// TODO(kdorosh) test for hostnames resolution..
+
 	It("can resolve consul service addresses", func() {
-		plug := NewPlugin(consulWatcherMock, "")
+		plug := NewPlugin(consulWatcherMock, nil)
 
 		svcName := "my-svc"
 		tag := "tag"

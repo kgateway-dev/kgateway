@@ -2,8 +2,11 @@ package consul
 
 import (
 	"context"
+	"net"
 	"sort"
 	"sync/atomic"
+
+	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -28,7 +31,183 @@ var _ = Describe("Consul EDS", func() {
 
 	const writeNamespace = defaults.GlooSystem
 
-	Describe("endpoints watch", func() {
+	Describe("endpoints watch 2 - more idiomatic", func() {
+
+		var (
+			ctx               context.Context
+			cancel            context.CancelFunc
+			ctrl              *gomock.Controller
+			consulWatcherMock *mock_consul.MockConsulWatcher
+
+			// Data center names
+			dc1         = "dc-1"
+			dc2         = "dc-2"
+			dc3         = "dc-3"
+			dataCenters = []string{dc1, dc2, dc3}
+
+			// Service names
+			svc1 = "svc-1"
+
+			// Tag names
+			primary   = "primary"
+			secondary = "secondary"
+			canary    = "canary"
+			yes       = ConsulEndpointMetadataMatchTrue
+			no        = ConsulEndpointMetadataMatchFalse
+
+			upstreamsToTrack      v1.UpstreamList
+			consulServiceSnapshot []*consul.ServiceMeta
+			serviceMetaProducer   chan []*consul.ServiceMeta
+			errorProducer         chan error
+
+			expectedEndpointsFirstAttempt  v1.EndpointList
+			expectedEndpointsSecondAttempt v1.EndpointList
+		)
+
+		BeforeEach(func() {
+			ctx, cancel = context.WithCancel(context.Background())
+			ctrl = gomock.NewController(T)
+
+			serviceMetaProducer = make(chan []*consul.ServiceMeta)
+			errorProducer = make(chan error)
+
+			upstreamsToTrack = v1.UpstreamList{
+				createTestUpstream(svc1, []string{primary, secondary, canary}, []string{dc1, dc2, dc3}),
+			}
+
+			consulServiceSnapshot = []*consul.ServiceMeta{
+				{
+					Name:        svc1,
+					DataCenters: []string{dc1, dc2, dc3},
+					Tags:        []string{primary, secondary, canary},
+				},
+			}
+
+			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
+			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
+			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters).Return(serviceMetaProducer, errorProducer).Times(1)
+
+			consulWatcherMock.EXPECT().Service("svc-1", "", gomock.Any()).Return([]*consulapi.CatalogService{
+				createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{secondary}, 3456, 100),
+			}, nil, nil).Times(3) // once for each datacenter
+
+			expectedEndpointsFirstAttempt = v1.EndpointList{
+				//same thing three times in a row!?
+				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
+				}),
+				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
+				}),
+				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
+				}),
+			}
+
+			expectedEndpointsSecondAttempt = v1.EndpointList{
+				createExpectedEndpoint(svc1, "c", "2.1.0.11", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    no,
+					ConsulTagKeyPrefix + secondary:  yes,
+					ConsulTagKeyPrefix + canary:     no,
+					ConsulDataCenterKeyPrefix + dc1: no,
+					ConsulDataCenterKeyPrefix + dc2: yes,
+					ConsulDataCenterKeyPrefix + dc3: no,
+				}),
+			}
+		})
+
+		AfterEach(func() {
+			ctrl.Finish()
+
+			if cancel != nil {
+				cancel()
+			}
+
+			close(serviceMetaProducer)
+			close(errorProducer)
+		})
+
+		It("works as expected", func() {
+
+			ret := []net.IPAddr{
+				{
+					IP:   net.IPv4(2, 1, 0, 10),
+					Zone: "",
+				},
+			}
+
+			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(3) // once for each datacenter
+			eds := NewPlugin(consulWatcherMock, mockDnsResolver)
+
+			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
+
+			Expect(err).NotTo(HaveOccurred())
+
+			// Monitors error channel until we cancel its context
+			errRoutineCtx, errRoutineCancel := context.WithCancel(ctx)
+			eg := errgroup.Group{}
+			eg.Go(func() error {
+				defer GinkgoRecover()
+				for {
+					select {
+					default:
+						Consistently(errorChan).ShouldNot(Receive())
+					case <-errRoutineCtx.Done():
+						return nil
+					}
+				}
+			})
+
+			// Simulate the initial read when starting watch
+			serviceMetaProducer <- consulServiceSnapshot
+			Eventually(endpointsChan).Should(Receive(BeEquivalentTo(expectedEndpointsFirstAttempt)))
+
+			// Wait for error monitoring routine to stop, we want to simulate an error
+			errRoutineCancel()
+			_ = eg.Wait()
+
+			errorProducer <- eris.New("fail")
+			Eventually(errorChan).Should(Receive())
+
+			// Simulate an update to DNS entries
+			// by default we poll DNS every 5s for updates
+			ret = []net.IPAddr{
+				{
+					IP:   net.IPv4(2, 1, 0, 11),
+					Zone: "",
+				},
+			}
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(ret, nil).Times(1) // once for each consul service
+
+			Eventually(endpointsChan, "7s", "1s").Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
+
+			// TODO(kdorosh) ensure we don't receive anything else on channel even though we receive more DNS queries
+
+			// Cancel and verify that all the channels have been closed
+			cancel()
+			Eventually(endpointsChan).Should(BeClosed())
+			Eventually(errorChan).Should(BeClosed())
+		})
+
+	})
+
+	Describe("endpoints watch - not idiomatic (do not copy)", func() {
 
 		var (
 			ctx               context.Context
@@ -94,6 +273,9 @@ var _ = Describe("Consul EDS", func() {
 			// The Service function gets always invoked with the same parameters for same service. This makes it
 			// impossible to mock in an idiomatic way. Just use a single match on everything and use the DoAndReturn
 			// function to react based on the context.
+
+			// The above is not true, the service name and query params (with datacenter) are different, we can rewrite
+			// this in a more idiomatic way in the future.
 			attempt := uint32(0)
 			consulWatcherMock.EXPECT().Service(gomock.Any(), gomock.Any(), gomock.Any()).DoAndReturn(
 				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
@@ -243,7 +425,7 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		It("works as expected", func() {
-			eds := NewPlugin(consulWatcherMock, "")
+			eds := NewPlugin(consulWatcherMock, nil)
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
@@ -302,7 +484,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 			upstream := createTestUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
 
-			endpoints := buildEndpoints(context.TODO(), writeNamespace, "", consulService, v1.UpstreamList{upstream})
+			endpoints := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream})
 
 			Expect(endpoints).To(ConsistOf(&v1.Endpoint{
 				Metadata: core.Metadata{
@@ -373,4 +555,8 @@ func createExpectedEndpoint(name, id, address, version, ns string, port uint32, 
 		Address: address,
 		Port:    port,
 	}
+}
+
+func buildHostname(svc, dc string) string {
+	return svc + ".service." + dc + ".consul"
 }

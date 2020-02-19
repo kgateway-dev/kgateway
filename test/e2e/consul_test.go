@@ -174,7 +174,7 @@ var _ = Describe("Consul e2e", func() {
 
 	})
 
-	It("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
+	FIt("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
 		err = consulInstance.RegisterService("my-svc", "my-svc-1", "my-svc.service.dc1.consul", []string{"svc", "1"}, svc1.Port)
 		Expect(err).NotTo(HaveOccurred())
 

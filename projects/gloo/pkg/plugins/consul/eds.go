@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/solo-io/go-utils/kubeutils"
 
@@ -35,6 +36,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	// Filter out non-consul upstreams
 	trackedServices := make(map[string][]*v1.Upstream)
+	trackedSpecs := make(map[string]*consulapi.CatalogService)
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
@@ -62,6 +64,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		var cancel context.CancelFunc = func() {}
 		// Use closure to allow cancel function to be updated as context changes
 		defer func() { cancel() }()
+
+		timer := time.NewTicker(time.Second * 5) //TODO(kdorosh) make configurable
 
 		for {
 			select {
@@ -104,7 +108,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
 				//
-				// Don't return if an error occurred. We still want to propagate the endpoints  for the requests that
+				// Don't return if an error occurred. We still want to propagate the endpoints for the requests that
 				// succeeded. Any inconsistencies will be caught by the Gloo translator.
 				if err := eg.Wait(); err != nil {
 					select {
@@ -117,7 +121,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoints(ctx, writeNamespace, p.dnsAddress, spec, upstreams)...)
+						endpoints = append(endpoints, buildEndpoints(ctx, writeNamespace, p.resolver, spec, upstreams)...)
+						for _, us := range upstreams {
+							ref := us.Metadata.Ref()
+							trackedSpecs[ref.String()] = spec
+						}
 					}
 				}
 
@@ -135,6 +143,27 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				errAggregator.Wait()
 				close(errChan)
 				return
+
+			case <-timer.C:
+				// Poll to ensure any DNS updates get picked up in endpoints for EDS
+				var endpoints v1.EndpointList
+				for _, consulUpstreams := range trackedServices {
+					for _, consulUs := range consulUpstreams {
+						if consulUsSpec := consulUs.GetConsul(); consulUsSpec != nil {
+							ref := consulUs.Metadata.Ref()
+							endpoints = append(endpoints, buildEndpoints(opts.Ctx, writeNamespace, p.resolver, trackedSpecs[ref.String()], consulUpstreams)...)
+						}
+					}
+				}
+
+				// Sort by name in ascending order for idempotency
+				sort.SliceStable(endpoints, func(i, j int) bool {
+					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
+				})
+
+				// TODO(kdorosh) only send if hash is different than last time (DNS update!)
+
+				endpointsChan <- endpoints
 			}
 		}
 	}()
@@ -194,7 +223,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(ctx context.Context, namespace, dnsAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
+func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -203,7 +232,7 @@ func buildEndpoints(ctx context.Context, namespace, dnsAddress string, service *
 		address = service.Address
 	}
 
-	ipAddresses := getIpAddresses(ctx, address, dnsAddress)
+	ipAddresses := getIpAddresses(ctx, address, resolver)
 
 	var endpoints []*v1.Endpoint
 	for _, ipAddr := range ipAddresses {
@@ -212,7 +241,7 @@ func buildEndpoints(ctx context.Context, namespace, dnsAddress string, service *
 	return endpoints
 }
 
-func getIpAddresses(ctx context.Context, address, dnsAddress string) []string {
+func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) []string {
 	addr := net.ParseIP(address)
 	if addr != nil {
 		// the consul service address is an IP address, no need to resolve it!
@@ -223,24 +252,15 @@ func getIpAddresses(ctx context.Context, address, dnsAddress string) []string {
 
 	// we're assuming the consul service returned a hostname instead of an IP
 	// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
-	if len(dnsAddress) == 0 {
+	if resolver == nil {
 		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
 			"would have resolved as a hostname but the configured Consul DNS Address was empty", address)
 		return nil
 	}
 
-	res := net.Resolver{
-		PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
-		Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
-			// DNS typically uses UDP and falls back to TCP if the response size is greater than one packet
-			// (originally 512 bytes). we use TCP to ensure we receive all IPs in a large DNS response
-			return net.Dial("tcp", dnsAddress)
-		},
-	}
-	ipAddrs, err := res.LookupIPAddr(context.Background(), address)
-	if err != nil || len(ipAddrs) == 0 {
-		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
-			"resolved as a hostname at %s but the DNS server returned no results, error: %v", address, dnsAddress, err)
+	ipAddrs, err := resolver.Resolve(address)
+	if err != nil {
+		logger.Warn(err)
 		return nil
 	}
 
