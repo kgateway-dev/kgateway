@@ -173,15 +173,17 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $global.glooMtls.enabled }}
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+{{- end}} # $global.glooMtls.enabled
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- end }} # $spec.extraContainersHelper
 {{- if $global.glooMtls.enabled }}
-        - mountPath: /etc/envoy/ssl
-          name: gloo-mtls-certs
-          readOnly: true
       - name: sds
         image: "{{ $image.registry }}/sds:{{ $image.tag }}"
         imagePullPolicy: {{ $image.pullPolicy }}
