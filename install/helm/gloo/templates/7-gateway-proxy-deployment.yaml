@@ -173,6 +173,10 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraContainersHelper }}
+        - mountPath: /usr/share/shared-data
+          name: shared-data
+{{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -185,10 +189,6 @@ spec:
           name: gloo-mtls-certs
           readOnly: true
 {{- end}}
-{{- if $spec.extraContainersHelper }}
-        - mountPath: /usr/share/shared-data
-          name: shared-data
-{{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- end }}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
