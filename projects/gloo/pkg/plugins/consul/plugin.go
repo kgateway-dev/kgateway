@@ -1,7 +1,6 @@
 package consul
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -57,7 +56,10 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
-			ipAddresses := getIpAddresses(context.Background(), inst.ServiceAddress, p.resolver)
+			ipAddresses, err := getIpAddresses(inst.ServiceAddress, p.resolver)
+			if err != nil {
+				return nil, err
+			}
 			if len(ipAddresses) == 0 {
 				return nil, eris.Errorf("DNS result for %s returned an empty list of IPs", inst.ServiceAddress)
 			}

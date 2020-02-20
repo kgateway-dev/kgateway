@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/kubeutils"
@@ -124,10 +126,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
 					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoints(ctx, writeNamespace, p.resolver, spec, upstreams)...)
-						for _, us := range upstreams {
-							ref := us.Metadata.Ref()
-							trackedSpecs[ref.String()] = spec
+						if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, upstreams); err == nil {
+							endpoints = append(endpoints, eps...)
+							for _, us := range upstreams {
+								ref := us.Metadata.Ref()
+								trackedSpecs[ref.String()] = spec
+							}
 						}
 					}
 				}
@@ -147,7 +151,13 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					for _, consulUs := range consulUpstreams {
 						if consulUsSpec := consulUs.GetConsul(); consulUsSpec != nil {
 							ref := consulUs.Metadata.Ref()
-							endpoints = append(endpoints, buildEndpoints(opts.Ctx, writeNamespace, p.resolver, trackedSpecs[ref.String()], consulUpstreams)...)
+							spec, ok := trackedSpecs[ref.String()]
+							if !ok {
+								continue
+							}
+							if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, consulUpstreams); err == nil {
+								endpoints = append(endpoints, eps...)
+							}
 						}
 					}
 				}
@@ -232,7 +242,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) []*v1.Endpoint {
+func buildEndpoints(namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -241,43 +251,42 @@ func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver,
 		address = service.Address
 	}
 
-	ipAddresses := getIpAddresses(ctx, address, resolver)
+	ipAddresses, err := getIpAddresses(address, resolver)
+	if err != nil {
+		return nil, err
+	}
 
 	var endpoints []*v1.Endpoint
 	for _, ipAddr := range ipAddresses {
 		endpoints = append(endpoints, buildEndpoint(namespace, ipAddr, service, upstreams))
 	}
-	return endpoints
+	return endpoints, nil
 }
 
-func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) []string {
+func getIpAddresses(address string, resolver DnsResolver) ([]string, error) {
 	addr := net.ParseIP(address)
 	if addr != nil {
 		// the consul service address is an IP address, no need to resolve it!
-		return []string{address}
+		return []string{address}, nil
 	}
-
-	logger := contextutils.LoggerFrom(ctx)
 
 	// we're assuming the consul service returned a hostname instead of an IP
 	// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
 	if resolver == nil {
-		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
+		return nil, eris.Errorf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
 			"would have resolved as a hostname but the configured Consul DNS resolver was nil", address)
-		return nil
 	}
 
 	ipAddrs, err := resolver.Resolve(address)
 	if err != nil {
-		logger.Warn(err)
-		return nil
+		return nil, err
 	}
 
 	var ipAddresses []string
 	for _, ipAddr := range ipAddrs {
 		ipAddresses = append(ipAddresses, ipAddr.String())
 	}
-	return ipAddresses
+	return ipAddresses, nil
 }
 
 func buildEndpoint(namespace, address string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
