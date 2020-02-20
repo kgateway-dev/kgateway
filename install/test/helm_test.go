@@ -600,6 +600,16 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectService(gatewayProxyService)
 					})
+
+					It("sets custom service name", func() {
+						gatewayProxyService.ObjectMeta.Name = "gateway-proxy-custom"
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.service.name=gateway-proxy-custom",
+							},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
 				})
 
 				Context("gateway-proxy deployment", func() {

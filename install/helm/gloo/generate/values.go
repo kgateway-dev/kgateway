@@ -246,6 +246,7 @@ type GatewayProxyService struct {
 	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
+	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
 }
 
 type Tracing struct {
