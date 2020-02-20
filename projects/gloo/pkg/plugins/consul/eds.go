@@ -122,19 +122,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 					}
 				}
 
-				var endpoints v1.EndpointList
-				for _, spec := range specs.Get() {
-					if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
-						if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, upstreams); err == nil {
-							endpoints = append(endpoints, eps...)
-						}
-					}
-				}
-
-				// Sort by name in ascending order for idempotency
-				sort.SliceStable(endpoints, func(i, j int) bool {
-					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
-				})
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs.Get(), trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs.Get()
@@ -143,19 +131,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
-				var endpoints v1.EndpointList
-				for _, spec := range previousSpecs {
-					if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
-						if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, upstreams); err == nil {
-							endpoints = append(endpoints, eps...)
-						}
-					}
-				}
-
-				// Sort by name in ascending order for idempotency
-				sort.SliceStable(endpoints, func(i, j int) bool {
-					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
-				})
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
 
 				currentHash := hashutils.MustHash(endpoints)
 				if previousHash == currentHash {
@@ -178,6 +154,25 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	}()
 
 	return endpointsChan, errChan, nil
+}
+
+func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
+	var endpoints v1.EndpointList
+	for _, spec := range specs {
+		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
+			if eps, err := buildEndpoints(writeNamespace, resolver, spec, upstreams); err != nil {
+				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
+			} else {
+				endpoints = append(endpoints, eps...)
+			}
+		}
+	}
+
+	// Sort by name in ascending order for idempotency
+	sort.SliceStable(endpoints, func(i, j int) bool {
+		return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
+	})
+	return endpoints
 }
 
 // The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
@@ -253,6 +248,7 @@ func buildEndpoints(namespace string, resolver DnsResolver, service *consulapi.C
 	return endpoints, nil
 }
 
+// only returns an error if the consul service address is a hostname and we can't resolve it
 func getIpAddresses(address string, resolver DnsResolver) ([]string, error) {
 	addr := net.ParseIP(address)
 	if addr != nil {
