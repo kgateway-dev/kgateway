@@ -162,19 +162,17 @@ func virtualServiceNamespaceValidForGateway(gateway *v1.Gateway, virtualService 
 		return false
 	}
 
-	// by default, virtual services live in the same namespace as the referencing gateway
-	virtualServiceNamespaces := []string{gateway.Metadata.Namespace}
-
 	if len(httpGateway.VirtualServiceNamespaces) > 0 {
-		virtualServiceNamespaces = httpGateway.VirtualServiceNamespaces
+		for _, ns := range httpGateway.VirtualServiceNamespaces {
+			if ns == "*" || virtualService.Metadata.Namespace == ns {
+				return true
+			}
+		}
+		return false
 	}
 
-	for _, ns := range virtualServiceNamespaces {
-		if ns == "*" || virtualService.Metadata.Namespace == ns {
-			return true
-		}
-	}
-	return false
+	// by default, virtual services will be discovered in all namespaces
+	return true
 }
 
 func hasSsl(vs *v1.VirtualService) bool {

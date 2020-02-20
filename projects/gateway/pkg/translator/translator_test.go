@@ -398,27 +398,14 @@ var _ = Describe("Translator", func() {
 				}
 			})
 
-			var findVsInNamespace = func(ns string, snap *v1.ApiSnapshot) v1.VirtualServiceList {
-				var result v1.VirtualServiceList
-				for _, vs := range snap.VirtualServices {
-					if vs.Metadata.Namespace == ns {
-						result = append(result, vs)
-					}
-				}
-
-				return result
-			}
-
-			It("should translate an empty gateway to have all virtual services in the same namespace", func() {
+			It("should translate an empty gateway to have all virtual services", func() {
 
 				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
-				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have as many virtual hosts as virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 			})
 
 			It("omitting matchers should default to '/' prefix matcher", func() {
@@ -430,9 +417,7 @@ var _ = Describe("Translator", func() {
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
-				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[1].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -495,14 +480,14 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
+					Expect(listener.VirtualHosts).To(HaveLen(2))
 				})
 
-				It("should allow a gateway to match virtual services outside its own namespace if so configured", func() {
+				It("should prevent a gateway from matching virtual services outside its own namespace if so configured", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServiceSelector:   labelSet,
-							VirtualServiceNamespaces: []string{"*"},
+							VirtualServiceNamespaces: []string{"gloo-system"},
 						},
 					}
 
@@ -512,9 +497,8 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(2))
+					Expect(listener.VirtualHosts).To(HaveLen(1))
 					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[0].VirtualHost.Domains))
-					Expect(listener.VirtualHosts[1].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
 				})
 
 			})
@@ -526,18 +510,17 @@ var _ = Describe("Translator", func() {
 
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
 				var vsWithoutSsl v1.VirtualServiceList
-				for _, vs := range vsInSameNamespace {
+				for _, vs := range snap.VirtualServices {
 					if vs.SslConfig == nil {
 						vsWithoutSsl = append(vsWithoutSsl, vs)
 					}
 				}
-				Expect(proxy.Listeners).To(HaveLen(len(vsWithoutSsl)))
+				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts).To(HaveLen(len(vsWithoutSsl)))
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name2"))
+				Expect(listener.VirtualHosts[1].Name).To(ContainSubstring("name3"))
 			})
 
 			It("should not have vhosts without ssl", func() {
