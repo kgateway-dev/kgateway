@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"net"
+	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 
@@ -40,8 +41,9 @@ type Opts struct {
 }
 
 type Consul struct {
-	ConsulWatcher consul.ConsulWatcher
-	DnsServer     string
+	ConsulWatcher      consul.ConsulWatcher
+	DnsServer          string
+	DnsPollingInterval *time.Duration
 }
 
 type ControlPlane struct {

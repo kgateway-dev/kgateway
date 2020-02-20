@@ -31,7 +31,7 @@ var _ = Describe("Resolve", func() {
 	})
 
 	It("can resolve consul service addresses that are IPs", func() {
-		plug := NewPlugin(consulWatcherMock, nil)
+		plug := NewPlugin(consulWatcherMock, nil, nil)
 
 		svcName := "my-svc"
 		tag := "tag"
@@ -68,7 +68,7 @@ var _ = Describe("Resolve", func() {
 		mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
 		mockDnsResolver.EXPECT().Resolve("test.service.consul").Return(ips, nil).Times(1)
 
-		plug := NewPlugin(consulWatcherMock, mockDnsResolver)
+		plug := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
 		svcName := "my-svc"
 		tag := "tag"

@@ -26,8 +26,9 @@ var (
 )
 
 type plugin struct {
-	client   consul.ConsulWatcher
-	resolver DnsResolver
+	client             consul.ConsulWatcher
+	resolver           DnsResolver
+	dnsPollingInterval time.Duration
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -72,8 +73,12 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
-func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver) *plugin {
-	return &plugin{client: client, resolver: resolver}
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
+	pollingInterval := DefaultDnsPollingInterval
+	if dnsPollingInterval != nil {
+		pollingInterval = *dnsPollingInterval
+	}
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

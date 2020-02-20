@@ -139,7 +139,7 @@ var _ = Describe("Consul EDS", func() {
 			// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
 			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(updatedIps, nil).Times(2)
 
-			eds := NewPlugin(consulWatcherMock, mockDnsResolver)
+			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 
@@ -405,7 +405,7 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		It("works as expected", func() {
-			eds := NewPlugin(consulWatcherMock, nil)
+			eds := NewPlugin(consulWatcherMock, nil, nil)
 
 			endpointsChan, errorChan, err := eds.WatchEndpoints(writeNamespace, upstreamsToTrack, clients.WatchOpts{Ctx: ctx})
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -282,6 +284,18 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.KubeClient = clientset
 	opts.DevMode = settings.DevMode
 	opts.Settings = settings
+
+	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
+	if len(opts.Consul.DnsServer) == 0 {
+		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
+	}
+	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
+		dnsPollingInterval, err := types.DurationFromProto(pollingInterval)
+		if err != nil {
+			return err
+		}
+		opts.Consul.DnsPollingInterval = &dnsPollingInterval
+	}
 
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {

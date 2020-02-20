@@ -208,6 +208,12 @@ message Settings {
         // Defaults to 127.0.0.1:8600.
         string dns_address = 14;
 
+        // The polling interval for the Consul DNS server, if configured.
+        // If there is a consul service with a hostname instead of an IP, Gloo will resolve the hostname with
+        // the configured frequency to update endpoints with any changes to DNS resolution.
+        // Defaults to 5s.
+        google.protobuf.Duration dns_polling_interval = 15;
+
         // Datacenter to use. If not provided, the default agent datacenter is used.
         string datacenter = 2;
 
