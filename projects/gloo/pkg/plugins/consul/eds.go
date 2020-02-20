@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/rotisserie/eris"
-
 	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/kubeutils"
@@ -39,13 +38,13 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(opts.Ctx, "consul_eds"))
 
 	// Filter out non-consul upstreams
-	trackedServices := make(map[string][]*v1.Upstream)
-	trackedSpecs := make(map[string]*consulapi.CatalogService)
+	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
+	var previousSpecs []*consulapi.CatalogService
 	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
-			trackedServices[consulUsSpec.ServiceName] = append(trackedServices[consulUsSpec.ServiceName], us)
+			trackedServiceToUpstreams[consulUsSpec.ServiceName] = append(trackedServiceToUpstreams[consulUsSpec.ServiceName], us)
 		}
 	}
 
@@ -125,13 +124,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 				var endpoints v1.EndpointList
 				for _, spec := range specs.Get() {
-					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
+					if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
 						if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, upstreams); err == nil {
 							endpoints = append(endpoints, eps...)
-							for _, us := range upstreams {
-								ref := us.Metadata.Ref()
-								trackedSpecs[ref.String()] = spec
-							}
 						}
 					}
 				}
@@ -142,22 +137,17 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				})
 
 				previousHash = hashutils.MustHash(endpoints)
+				previousSpecs = specs.Get()
+
 				endpointsChan <- endpoints
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
 				var endpoints v1.EndpointList
-				for _, consulUpstreams := range trackedServices {
-					for _, consulUs := range consulUpstreams {
-						if consulUsSpec := consulUs.GetConsul(); consulUsSpec != nil {
-							ref := consulUs.Metadata.Ref()
-							spec, ok := trackedSpecs[ref.String()]
-							if !ok {
-								continue
-							}
-							if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, consulUpstreams); err == nil {
-								endpoints = append(endpoints, eps...)
-							}
+				for _, spec := range previousSpecs {
+					if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
+						if eps, err := buildEndpoints(writeNamespace, p.resolver, spec, upstreams); err == nil {
+							endpoints = append(endpoints, eps...)
 						}
 					}
 				}
