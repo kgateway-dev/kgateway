@@ -956,8 +956,8 @@ var _ = Describe("Helm Test", func() {
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testIstioVolume",
-								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testIstioVolumeMount",
+								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testVolume",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testVolumeMount",
 							},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)

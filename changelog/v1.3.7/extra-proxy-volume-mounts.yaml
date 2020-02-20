@@ -1,4 +1,4 @@
 changelog:
 - type: HELM
-  description: Allow helm to install extra volume mounts on the proxy container such as with istio integration.
+  description: Added a new extraProxyVolumeMountHelper Helm value that allows users to define additional volume mounts on the gateway proxy container.
   issueLink: https://github.com/solo-io/gloo/issues/2469
