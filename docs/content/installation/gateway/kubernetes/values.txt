@@ -136,12 +136,17 @@
 |gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
 |gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|gatewayProxies.NAME.gatewaySettings.customProxyNames[]|string||list of gateway proxies if you have more than just one|
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.NAME.extraContainersHelper|string|||
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
+|gatewayProxies.NAME.createConfigMap|bool||whether to create a configmap for the gateway proxy or not|
+|gatewayProxies.NAME.createDeployment|bool||whether to create a deployment for the gateway proxy or not|
+|gatewayProxies.NAME.createService|bool||whether to create a service for the gateway proxy or not|
+|gatewayProxies.NAME.customProxyID|string||alters name of the gateway proxy if other resources (e.g. service) have custom names|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
@@ -187,12 +192,17 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.useProxyProto|bool|false|use proxy protocol|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
 |gatewayProxies.gatewayProxy.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|gatewayProxies.gatewayProxy.gatewaySettings.customProxyNames[]|string||list of gateway proxies if you have more than just one|
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
 |gatewayProxies.gatewayProxy.extraContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
 |gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
+|gatewayProxies.gatewayProxy.createConfigMap|bool|true|whether to create a configmap for the gateway proxy or not|
+|gatewayProxies.gatewayProxy.createDeployment|bool|true|whether to create a deployment for the gateway proxy or not|
+|gatewayProxies.gatewayProxy.createService|bool|true|whether to create a service for the gateway proxy or not|
+|gatewayProxies.gatewayProxy.customProxyID|string||alters name of the gateway proxy if other resources (e.g. service) have custom names|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
