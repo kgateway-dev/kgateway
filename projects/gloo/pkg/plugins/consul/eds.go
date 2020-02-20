@@ -356,19 +356,23 @@ type specCollector interface {
 
 type collector struct {
 	mutex sync.Mutex
-	specs map[string]map[string]*consulapi.CatalogService
+	specs servicesByNode
 }
+
+type servicesByNode map[string]servicesByServiceId
+
+type servicesByServiceId map[string]*consulapi.CatalogService
 
 // implementation of a Set
 func (c *collector) Add(specs []*consulapi.CatalogService) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	if c.specs == nil {
-		c.specs = make(map[string]map[string]*consulapi.CatalogService)
+		c.specs = make(servicesByNode)
 	}
 	for _, spec := range specs {
 		if c.specs[spec.Node] == nil {
-			c.specs[spec.Node] = make(map[string]*consulapi.CatalogService)
+			c.specs[spec.Node] = make(servicesByServiceId)
 		}
 		// Consul enforces that service IDs must be unique per node
 		c.specs[spec.Node][spec.ServiceID] = spec
