@@ -76,9 +76,9 @@ and the routing configuration to upstreams that are reachable via a specific por
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Names & namespace refs of the virtual services which contain the actual routes for the gateway. If the list is empty, all virtual services in all namespaces will apply, with accordance to `ssl` flag on `Gateway` above. The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |  |
+| `virtualServices` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Names & namespace refs of the virtual services which contain the actual routes for the gateway. If the list is empty, all virtual services in all namespaces that Gloo watches will apply, with accordance to `ssl` flag on `Gateway` above. The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |  |
 | `virtualServiceSelector` | `map<string, string>` | Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only to virtual services in the namespaces specified. Only one of `virtualServices` or `virtualServiceSelector` should be provided. |  |
-| `virtualServiceNamespaces` | `[]string` | Restrict the search by providing a list of valid search namespaces here. |  |
+| `virtualServiceNamespaces` | `[]string` | Restrict the search by providing a list of valid search namespaces here. Setting '*' will search all namespaces, equivalent to omitting this value. |  |
 | `options` | [.gloo.solo.io.HttpListenerOptions](../../../../gloo/api/v1/options.proto.sk/#httplisteneroptions) | HTTP Gateway configuration. |  |
 
 
