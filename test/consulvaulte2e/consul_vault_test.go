@@ -88,7 +88,7 @@ var _ = Describe("Consul + Vault Configuration Happy Path e2e", func() {
 		settings, err := writeSettings(settingsDir, glooPort, validationPort, writeNamespace)
 		Expect(err).NotTo(HaveOccurred())
 
-		consulClient, err = bootstrap.ConsulClientForSettings(settings)
+		consulClient, err = bootstrap.ConsulClientForSettings(ctx, settings)
 		Expect(err).NotTo(HaveOccurred())
 
 		vaultClient, err = bootstrap.VaultClientForSettings(settings.GetVaultSecretSource())

@@ -245,7 +245,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousValidationServer.addr = validationAddr
 	}
 
-	consulClient, err := bootstrap.ConsulClientForSettings(settings)
+	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}

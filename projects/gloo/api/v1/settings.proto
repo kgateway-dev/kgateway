@@ -193,15 +193,18 @@ message Settings {
     message ConsulConfiguration {
 
         // Deprecated: prefer http_address.
-        // The address of the Consul server.
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
         string address = 1 [deprecated=true];
 
         // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
         string http_address = 13;
 
         // The address of the Consul DNS server.
+        // Used by service discovery (required when consul service instances are stored as DNS names).
         // Defaults to 127.0.0.1:8600.
         string dns_address = 14;
 

@@ -852,13 +852,16 @@ func (m *Settings_DiscoveryOptions) GetFdsMode() Settings_DiscoveryOptions_FdsMo
 // need to be set on the Gloo container.
 type Settings_ConsulConfiguration struct {
 	// Deprecated: prefer http_address.
-	// The address of the Consul server.
+	// The address of the Consul HTTP server.
+	// Used by service discovery and key-value storage (if-enabled).
 	// Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"` // Deprecated: Do not use.
 	// The address of the Consul HTTP server.
+	// Used by service discovery and key-value storage (if-enabled).
 	// Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
 	HttpAddress string `protobuf:"bytes,13,opt,name=http_address,json=httpAddress,proto3" json:"http_address,omitempty"`
 	// The address of the Consul DNS server.
+	// Used by service discovery (required when consul service instances are stored as DNS names).
 	// Defaults to 127.0.0.1:8600.
 	DnsAddress string `protobuf:"bytes,14,opt,name=dns_address,json=dnsAddress,proto3" json:"dns_address,omitempty"`
 	// Datacenter to use. If not provided, the default agent datacenter is used.

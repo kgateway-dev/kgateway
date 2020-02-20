@@ -316,9 +316,9 @@ need to be set on the Gloo container.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `address` | `string` | Deprecated: prefer http_address. The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `httpAddress` | `string` | The address of the Consul HTTP server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `dnsAddress` | `string` | The address of the Consul DNS server. Defaults to 127.0.0.1:8600. |  |
+| `address` | `string` | Deprecated: prefer http_address. The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dnsAddress` | `string` | The address of the Consul DNS server. Used by service discovery (required when consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. |  |
 | `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
 | `username` | `string` | Username to use for HTTP Basic Authentication. |  |
 | `password` | `string` | Password to use for HTTP Basic Authentication. |  |
