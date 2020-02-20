@@ -1,8 +1,3 @@
 changelog:
-  - type: FIX
-    description: >
-      When a Gateway has an empty `httpGateway.virtualServiceNamespaces` list,
-      it will now search for virtual services in all the namespaces watched by Gloo.
-      Previously the behavior was to include only virtual services in the same namespace as the gateway,
-      which has proven unintuitive to users.
-    issueLink: https://github.com/solo-io/gloo/issues/2156
+  - type: NON_USER_FACING
+    description: Fix helm templating for the the extauth sidecar usecase.
