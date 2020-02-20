@@ -29,8 +29,11 @@ func (c *ConsulDnsResolver) Resolve(address string) ([]net.IPAddr, error) {
 		},
 	}
 	ipAddrs, err := res.LookupIPAddr(context.Background(), address)
-	if err != nil || len(ipAddrs) == 0 {
-		return nil, eris.Wrapf(err, "Consul service returned an address that couldn't be parsed as an IP (%s), "+
+	if err != nil {
+		return nil, err
+	}
+	if len(ipAddrs) == 0 {
+		return nil, eris.Errorf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
 			"resolved as a hostname at %s but the DNS server returned no results", address, c.DnsAddress)
 	}
 	return ipAddrs, nil
