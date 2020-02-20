@@ -9,6 +9,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -34,8 +36,6 @@ import (
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	endpointsChan := make(chan v1.EndpointList)
 	errChan := make(chan error)
-
-	logger := contextutils.LoggerFrom(contextutils.WithLogger(opts.Ctx, "consul_eds"))
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
@@ -83,49 +83,11 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				ctx, newCancel := context.WithCancel(opts.Ctx)
 				cancel = newCancel
 
-				specs := newSpecCollector()
-
-				// Get complete service information for every dataCenter:service tuple in separate goroutines
-				var eg errgroup.Group
-				for _, service := range serviceMeta {
-					for _, dataCenter := range service.DataCenters {
-
-						// Copy iterator variables before passing them to goroutines!
-						svc := service
-						dcName := dataCenter
-
-						// Get complete spec for each service in parallel
-						eg.Go(func() error {
-							queryOpts := &consulapi.QueryOptions{Datacenter: dcName, RequireConsistent: true}
-
-							services, _, err := p.client.Service(svc.Name, "", queryOpts.WithContext(ctx))
-							if err != nil {
-								return err
-							}
-
-							specs.Add(services)
-
-							return nil
-						})
-					}
-				}
-
-				// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
-				//
-				// Don't return if an error occurred. We still want to propagate the endpoints for the requests that
-				// succeeded. Any inconsistencies will be caught by the Gloo translator.
-				if err := eg.Wait(); err != nil {
-					select {
-					case errChan <- err:
-					default:
-						logger.Errorf("write error channel is full! could not propagate err: %v", err)
-					}
-				}
-
-				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs.Get(), trackedServiceToUpstreams)
+				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
 				previousHash = hashutils.MustHash(endpoints)
-				previousSpecs = specs.Get()
+				previousSpecs = specs
 
 				endpointsChan <- endpoints
 
@@ -154,6 +116,50 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	}()
 
 	return endpointsChan, errChan, nil
+}
+
+func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error) []*consulapi.CatalogService {
+	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
+
+	specs := newSpecCollector()
+
+	// Get complete service information for every dataCenter:service tuple in separate goroutines
+	var eg errgroup.Group
+	for _, service := range serviceMeta {
+		for _, dataCenter := range service.DataCenters {
+
+			// Copy iterator variables before passing them to goroutines!
+			svc := service
+			dcName := dataCenter
+
+			// Get complete spec for each service in parallel
+			eg.Go(func() error {
+				queryOpts := &consulapi.QueryOptions{Datacenter: dcName, RequireConsistent: true}
+
+				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
+				if err != nil {
+					return err
+				}
+
+				specs.Add(services)
+
+				return nil
+			})
+		}
+	}
+
+	// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
+	//
+	// Don't return if an error occurred. We still want to propagate the endpoints for the requests that
+	// succeeded. Any inconsistencies will be caught by the Gloo translator.
+	if err := eg.Wait(); err != nil {
+		select {
+		case errChan <- err:
+		default:
+			logger.Errorf("write error channel is full! could not propagate err: %v", err)
+		}
+	}
+	return specs.Get()
 }
 
 func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
