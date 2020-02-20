@@ -177,6 +177,7 @@ spec:
         - mountPath: /usr/share/shared-data
           name: shared-data
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
+{{- end }} # $spec.extraContainersHelper
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -188,8 +189,7 @@ spec:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- end}}
-{{- end }}
+{{- end}} # $global.glooMtls.enabled
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
