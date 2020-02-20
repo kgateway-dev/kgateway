@@ -81,7 +81,7 @@ message Gateway {
 
 message HttpGateway {
     // Names & namespace refs of the virtual services which contain the actual routes for the gateway.
-    // If the list is empty, all virtual services in all namespaces will apply,
+    // If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
     // with accordance to `ssl` flag on `Gateway` above.
     // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
@@ -94,10 +94,10 @@ message HttpGateway {
 
     // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
     // via `virtual_service_selector` on the `HttpGateway` object.
-    // By default, virtual services match if they are in any namespace,
-    // unless gloo is installed with the `singleNamespace` setting set to true.
+    // By default, virtual services match if they are in any namespace watched by Gloo.
 
-    // Restrict the search by providing a list of valid search namespaces here
+    // Restrict the search by providing a list of valid search namespaces here.
+    // Setting '*' will search all namespaces, equivalent to omitting this value.
     repeated string virtual_service_namespaces = 3;
 
     // HTTP Gateway configuration
