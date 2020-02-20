@@ -851,6 +851,7 @@ func (m *Settings_DiscoveryOptions) GetFdsMode() Settings_DiscoveryOptions_FdsMo
 // described [here](https://www.consul.io/docs/commands/index.html#environment-variables). These
 // need to be set on the Gloo container.
 type Settings_ConsulConfiguration struct {
+	// Deprecated: prefer http_address.
 	// The address of the Consul server.
 	// Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"` // Deprecated: Do not use.

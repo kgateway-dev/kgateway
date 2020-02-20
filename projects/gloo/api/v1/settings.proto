@@ -192,6 +192,7 @@ message Settings {
     // need to be set on the Gloo container.
     message ConsulConfiguration {
 
+        // Deprecated: prefer http_address.
         // The address of the Consul server.
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
         string address = 1 [deprecated=true];
