@@ -263,7 +263,7 @@ func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) [
 	// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
 	if resolver == nil {
 		logger.Warnf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
-			"would have resolved as a hostname but the configured Consul DNS Address was empty", address)
+			"would have resolved as a hostname but the configured Consul DNS resolver was nil", address)
 		return nil
 	}
 
