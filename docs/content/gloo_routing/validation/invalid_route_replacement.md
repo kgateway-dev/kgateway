@@ -14,7 +14,7 @@ Instead, the last valid configuration for that Virtual Service will be used.
 This behavior is used in order to ensure that invalid configuration does not lead to service outages.
 
 In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. 
-This is particularly useful when [delegating to Route Tables]({{< ref "/gloo_routing/virtual_services/delegation/_index.md">}}))
+This is particularly useful when [delegating to Route Tables]({{< versioned_link_path "/gloo_routing/virtual_services/delegation/_index.md">}}))
 as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. 
 
 For this reason, Gloo supports the ability to enable *automatic replacement of invalid routes* (specifically, routes which point to a misssing **Upstream**
@@ -26,8 +26,8 @@ This document demonstrates how to enable and use this feature.
 
 Make sure before starting you have:
 
-- [Installed Gloo in Gateway Mode]({{< ref "/installation/gateway/kubernetes/_index.md">}}))
-- [Deployed the Petstore example App]({{< ref "/gloo_routing/hello_world/_index.md">}}))
+- [Installed Gloo in Gateway Mode]({{< versioned_link_path "/installation/gateway/kubernetes/_index.md">}}))
+- [Deployed the Petstore example App]({{< versioned_link_path "/gloo_routing/hello_world/_index.md">}}))
 
 # Create a Partially Valid Virtual Service 
 
@@ -39,7 +39,7 @@ Consider the following Virtual Service:
 {{< readfile file="gloo_routing/validation/partially_invalid_vs.yaml">}}
 ```
 
-The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< ref "/gloo_routing/hello_world">}})), while `/bad-route` points to an invalid destination.
+The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< versioned_link_path "/gloo_routing/hello_world">}})), while `/bad-route` points to an invalid destination.
 
 Let's try applying this configuration to the cluster before enabling route replacement:
 
@@ -74,7 +74,7 @@ curl $(glooctl proxy url)/good-route
 
 The route will not be accepted and we'll see a `Connection Refused` error (if Gloo had no prior config):
 
-```bash
+```noop
 curl: (7) Failed to connect to 36.190.183.55 port 80: Connection refused
 ```
 
