@@ -102,7 +102,7 @@ EOF
 
 We should see the request was rejected:
 
-```bash
+```noop
 Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Route Error: InvalidMatcherError. Reason: no path specifier provided]
 ```
 
