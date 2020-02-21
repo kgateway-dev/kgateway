@@ -9,3 +9,10 @@ Expand the name of the chart.
   ports:
   - containerPort: 80
 {{- end }}
+
+{{/*
+Test that extraListenersHelper is rendered correctly
+*/}}
+{{- define "gloo.testlistener" -}}
+- name: test_listener
+{{- end -}}
