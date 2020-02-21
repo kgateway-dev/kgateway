@@ -1,5 +1,5 @@
 changelog:
   - type: NON_USER_FACING
     description: |
-      If we enable gloo MTLS, we add a gateway-proxy listener at 127.0.0.1:9955 that will route
-      to the gloo xds config cluster.
+      Allow additional listeners to be added to the gateway-proxy config map using the
+      `$spec.extraListenersHelper` helm template variable.
