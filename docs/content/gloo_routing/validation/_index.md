@@ -26,7 +26,9 @@ Validation in Gloo is comprised of a four step process:
 1. First, resources are admitted (or rejected) via a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/). Configuration options for the webhook live
 in the `settings.gloo.solo.io` custom resource.
 
-2. Once the resource is admitted, it is joined together with the other configuration objects to produce a finalized configuration snapshot, in the form of the internally-facing [**Proxy** config object]({{< protobuf name="gloo.solo.io.Proxy">}}). 
+2. Once a resource is admitted, Gloo processes it in a batch with all other admitted resources. If any errors are detected 
+in the admitted objects, Gloo will report the errors on the `status` of those objects. At this point, Envoy configuration will 
+not be updated until the errors are resolved.
 
     * If any admitted virtual service has invalid configuration, it will be omitted from the **Proxy**.
     
@@ -102,26 +104,6 @@ to learn how to configure and use Gloo's admission control feature.
 
 Gloo can be configured to pass partially config to Envoy by admitting it through an internal process referred to as *sanitizing*.
 
-{{< highlight yaml "hl_lines=10-12" >}}
-apiVersion: gloo.solo.io/v1
-kind: Settings
-metadata:
-  labels:
-    app: gloo
-  name: default
-  namespace: gloo-system
-spec:
-  discoveryNamespace: gloo-system
-  gateway:
-    validation:
-      alwaysAccept: false
-  gloo:
-    xdsBindAddr: 0.0.0.0:9977
-  kubernetesArtifactSource: {}
-  kubernetesConfigSource: {}
-  kubernetesSecretSource: {}
-  refreshRate: 60s
-{{< /highlight >}}
 Rather than refuse to update Envoy with invalid config, Gloo can replace the invalid pieces of configuration with preconfigured 
 defaults.
 
