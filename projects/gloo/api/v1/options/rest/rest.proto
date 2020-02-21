@@ -1,0 +1,32 @@
+syntax = "proto3";
+package rest.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
+import "gloo/projects/gloo/api/v1/options/transformation/parameters.proto";
+
+message ServiceSpec {
+    map<string, envoy.api.v2.filter.http.TransformationTemplate> transformations = 1;
+    message SwaggerInfo {
+        oneof swagger_spec {
+            string url = 1;
+            string inline = 2;
+        }
+    }
+    SwaggerInfo swagger_info = 2;
+}
+
+// This is only for upstream with REST service spec
+message DestinationSpec {
+    string function_name = 1;
+
+    transformation.options.gloo.solo.io.Parameters parameters = 2;
+
+    envoy.api.v2.filter.http.TransformationTemplate response_transformation = 3;
+}

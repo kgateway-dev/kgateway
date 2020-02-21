@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-//go:generate mockgen -destination ./mock_watcher.go -source watcher.go -package consul -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
+//go:generate mockgen -destination ./mocks/mock_watcher.go -source watcher.go -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
 
 type ServiceMeta struct {
 	Name        string
@@ -139,8 +139,9 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 
 						return err
 					},
-					retry.Attempts(5),
-					retry.Delay(1*time.Second),
+					retry.Attempts(6),
+					//  Last delay is 2^6 * 100ms = 3.2s
+					retry.Delay(100*time.Millisecond),
 					retry.DelayType(retry.BackOffDelay),
 				)
 

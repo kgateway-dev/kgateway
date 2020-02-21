@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: Revamp the Plugin Auth user and developer guides.
+  issueLink: https://github.com/solo-io/gloo/issues/1655
+  resolvesIssue: false

@@ -1,0 +1,10 @@
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: json-upstream
+  namespace: gloo-system
+spec:
+  static:
+    hosts:
+      - addr: echo.jsontest.com
+        port: 80

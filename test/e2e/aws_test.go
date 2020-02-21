@@ -8,6 +8,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/solo-io/gloo/test/helpers"
+
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+
 	"github.com/solo-io/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -22,7 +26,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	aws_plugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
@@ -74,23 +78,21 @@ var _ = Describe("AWS Lambda", func() {
 				Namespace: "default",
 				Name:      region,
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UpstreamType: &gloov1.UpstreamSpec_Aws{
-					Aws: &aws_plugin.UpstreamSpec{
-						LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{{
-							LambdaFunctionName: "uppercase",
-							Qualifier:          "",
-							LogicalName:        "uppercase",
-						},
-							{
-								LambdaFunctionName: "contact-form",
-								Qualifier:          "",
-								LogicalName:        "contact-form",
-							},
-						},
-						Region:    region,
-						SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
+			UpstreamType: &gloov1.Upstream_Aws{
+				Aws: &aws_plugin.UpstreamSpec{
+					LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{{
+						LambdaFunctionName: "uppercase",
+						Qualifier:          "",
+						LogicalName:        "uppercase",
 					},
+						{
+							LambdaFunctionName: "contact-form",
+							Qualifier:          "",
+							LogicalName:        "contact-form",
+						},
+					},
+					Region:    region,
+					SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
 				},
 			},
 		}
@@ -125,7 +127,7 @@ var _ = Describe("AWS Lambda", func() {
 			}
 
 			return string(body), nil
-		}, "10s", "1s").Should(ContainSubstring(substring))
+		}, "20s", "1s").Should(ContainSubstring(substring))
 	}
 	validateLambdaUppercase := func(envoyPort uint32) {
 		validateLambda(envoyPort, "SOLO.IO")
@@ -138,7 +140,9 @@ var _ = Describe("AWS Lambda", func() {
 
 		testClients = services.RunGateway(ctx, false)
 
-		var err error
+		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
@@ -257,13 +261,13 @@ var _ = Describe("AWS Lambda", func() {
 	})
 
 	It("be able to call lambda via gateway", func() {
-		err := envoyInstance.RunWithRole("gloo-system~gateway-proxy-v2", testClients.GlooPort)
+		err := envoyInstance.RunWithRole("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
 		vs := &gw1.VirtualService{
 			Metadata: core.Metadata{
 				Name:      "app",
-				Namespace: "default",
+				Namespace: "gloo-system",
 			},
 			VirtualHost: &gw1.VirtualHost{
 				Domains: []string{"*"},

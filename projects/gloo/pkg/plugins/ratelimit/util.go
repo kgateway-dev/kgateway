@@ -5,6 +5,7 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -27,7 +28,7 @@ func GenerateEnvoyConfigForFilterWith(ref core.ResourceRef, domain string, curre
 		Domain:          domain,
 		Stage:           currentState,
 		RequestType:     requestType,
-		Timeout:         &curtimeout,
+		Timeout:         gogoutils.DurationStdToProto(&curtimeout),
 		FailureModeDeny: denyOnFail,
 
 		RateLimitService: &rlconfig.RateLimitServiceConfig{

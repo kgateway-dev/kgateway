@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Allow the gateway-proxy pod to optionally receive both init containers to run and extra volumes to define through helm
+    issueLink: https://github.com/solo-io/gloo/issues/1537

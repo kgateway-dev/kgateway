@@ -1,11 +1,11 @@
 ---
 title: Multi Destinations
 weight: 10
-description: This is where multiple upstreams are configured on a route, with weights associated with them. 
+description: This is where multiple Upstreams are configured on a route, with weights associated with them.
 ---
 
-The [MultiDestination]({{% protobuf name="gloo.solo.io.MultiDestination" %}})
-has an array of one or more [WeightedDestination]({{% protobuf name="gloo.solo.io.WeightedDestination" %}})
+The {{% protobuf name="gloo.solo.io.MultiDestination" display="MultiDestination" %}}
+has an array of one or more {{% protobuf name="gloo.solo.io.WeightedDestination" display="WeightedDestination" %}}
 specs that are a single destination plus a `weight`. The weight is the percentage of request traffic forwarded to that
 destination where the percentage is: `weight` divided by sum of all weights in `MultiDestination`.
 
@@ -16,8 +16,8 @@ decommissioning the original version. Here's what a route would look like with 9
 
 {{< highlight yaml "hl_lines=5-16" >}}
 routes:
-- matcher:
-    prefix: /myservice
+- matchers:
+   - prefix: /myservice
   routeAction:
     multi:
       destinations:

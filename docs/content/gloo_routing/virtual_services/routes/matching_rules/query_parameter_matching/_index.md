@@ -4,9 +4,7 @@ weight: 30
 description: Request to route matching based on query parameters
 ---
 
-When configuring the matcher on a route, you may want to specify one or more 
-[Query Parameter Matcher]({{< protobuf name="gloo.solo.io.QueryParameterMatcher">}})
-to require query parameters with matching values be present on the request. Each query parameter matcher has three attributes:
+The route rules in a *Virtual Service* can use query parameter matching rules to match requests to routes based on the values stored in parameters submitted with the request. When configuring the matcher on a route, you may want to specify one or more {{< protobuf name="gloo.solo.io.QueryParameterMatcher">}} to require query parameters with matching values be present on the request. Each query parameter matcher has three attributes:
 
 * `name` - the name of the query parameter
 * `regex` - boolean (true|false) defaults to `false`. Indicates how to interpret the `value` attribute:
@@ -20,7 +18,19 @@ to require query parameters with matching values be present on the request. Each
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-Let's create a simple upstream for testing called `json-upstream`, that routes to a static site:
+If you have not yet deployed Gloo, you can start by following the directions contained within the guide [Installing Gloo Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+
+This guide also assumes that you are running Gloo Gateway in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
+
+---
+
+## Create an Upstream
+
+First we are going to create a simple upstream for testing called `json-upstream`, that routes to a static site.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_createupstream.mp4" type="video/mp4">
+</video>
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -31,9 +41,17 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tab >}}
 {{< /tabs >}}
 
-## Example
+The site referenced in the Upstream is JSONPlaceholder - a fake online REST API for testing and prototyping. 
 
-Now let's create a virtual service with a query parameter match. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths: 
+---
+
+## Query parameter matching
+
+Now let's create a Virtual Service with a query parameter match. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_createvs.mp4" type="video/mp4">
+</video>
                                                                  
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -44,35 +62,66 @@ Now let's create a virtual service with a query parameter match. For simplicity,
 We've created a virtual service that will match if the request contains a query param called `param1` with an exact value of `value1`. 
 The request must also have a query parameter `param2` with any value, and `param3` set to a single lowercase letter. 
 
-To test we can run the following command. Note that the URL must have quotes around it for curl to accept query parameters. 
+To test we can run several curl commands with different parameter combinations. Note that the URL must have quotes around it for curl to accept query parameters. 
+
+### Correct parameters
+
+In the first request, we will set the parameters to the expected values in our Virtual Service. The response will be a list of blog posts from the Upstream.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test1.mp4" type="video/mp4">
+</video>
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=value2&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&param3=v"
 ```
 
-This should return a large json response. We can set an incorrect value for query param 1, and see the curl command return a 404:
+### Testing the first parameter
+
+For our next request, we will set an incorrect value for query param 1. The response will be a 404 from the Virtual Service since it has no valid route for the request.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test2.mp4" type="video/mp4">
+</video>
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=othervalue&param2=value2&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=othervalue&param2=value2&param3=v"
 ```
 
-If we set a different value for query param 2, the command should work:
+### Testing the second parameter
+
+The second parameter (`param2`) does not have a required value specified. If we set a different value for query param 2, the response will be successfully sourced from the Upstream.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test3.mp4" type="video/mp4">
+</video>
+
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=othervalue&param3=v"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=othervalue&param3=v"
 ```
 
-Finally, if we set an invalid value for query param 3, the command will return a 404:
+### Testing the third parameter
+
+The third parameter (`param3`) is expecting a single lower case letter. If we set it to more than one character, the request will return a 404 response.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test4.mp4" type="video/mp4">
+</video>
 
 ```shell
-curl -v -H "Host: foo" "$GATEWAY_URL/posts?param1=value1&param2=value2&param3=vv"
+curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&param3=vv"
 ```
 
 ## Summary
 
-In this guide, we created a virtual service that utilized query parameter matching and showed how to match on an exact value, 
+In this tutorial, we created a static Upstream and Virtual Service that utilized query parameter matching. We saw how the route rules matched on an exact value, 
 any value, and a regex. 
 
-Let's cleanup the virtual service and upstream we used:
+Let's cleanup the Virtual Service and Upstream we used.
+
+<video controls loop>
+  <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_delete.mp4" type="video/mp4">
+</video>
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -85,7 +134,12 @@ glooctl delete upstream json-upstream
 {{< /tab >}}
 {{< /tabs >}}
 
-<br /> 
-<br />
 
+### Next Steps
+
+Query parameter matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
+
+* [Path Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" >}})
+* [Header Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" >}})
+* [HTTP Method Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" >}})
 

@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 )
 
 type ServiceSpecGetter interface {
@@ -19,34 +19,34 @@ type ServiceSpecMutator interface {
 	Add these two methods to any upstream spec that supports a ServiceSpec
 	describing the service represented by the upstream
 */
-func (us *UpstreamSpec_Kube) GetServiceSpec() *plugins.ServiceSpec {
+func (us *Upstream_Kube) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Kube.ServiceSpec
 }
 
-func (us *UpstreamSpec_Kube) SetServiceSpec(spec *plugins.ServiceSpec) {
+func (us *Upstream_Kube) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Kube.ServiceSpec = spec
 }
 
-func (us *UpstreamSpec_Static) GetServiceSpec() *plugins.ServiceSpec {
+func (us *Upstream_Static) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Static.ServiceSpec
 }
 
-func (us *UpstreamSpec_Static) SetServiceSpec(spec *plugins.ServiceSpec) {
+func (us *Upstream_Static) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Static.ServiceSpec = spec
 }
 
-func (us *UpstreamSpec_Pipe) GetServiceSpec() *plugins.ServiceSpec {
+func (us *Upstream_Pipe) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Pipe.ServiceSpec
 }
 
-func (us *UpstreamSpec_Pipe) SetServiceSpec(spec *plugins.ServiceSpec) {
+func (us *Upstream_Pipe) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Pipe.ServiceSpec = spec
 }
 
-func (us *UpstreamSpec_Consul) GetServiceSpec() *plugins.ServiceSpec {
+func (us *Upstream_Consul) GetServiceSpec() *plugins.ServiceSpec {
 	return us.Consul.ServiceSpec
 }
 
-func (us *UpstreamSpec_Consul) SetServiceSpec(spec *plugins.ServiceSpec) {
+func (us *Upstream_Consul) SetServiceSpec(spec *plugins.ServiceSpec) {
 	us.Consul.ServiceSpec = spec
 }

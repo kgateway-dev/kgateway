@@ -14,7 +14,7 @@ Gloo was built to support the difficult challenges of monolith to microservice m
 
 Other use cases Gloo can solve:
 
-* Kubernetes cluster Ingress (supporting both [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) as well as a [more powerful API]({{< ref "/api" >}}))
+* Kubernetes cluster Ingress (supporting both [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) as well as a [more powerful API]({{< versioned_link_path fromRoot="/api" >}}))
 * API Gateway functionality running *outside* Kubernetes
 * GraphQL endpoint for the services that Gloo can discover
 
@@ -24,13 +24,13 @@ Envoy Proxy is a data-plane component with powerful routing, observability, and 
 
 * A [flexible control plane]({{< versioned_link_path fromRoot="/dev" >}}) with extensibility in mind
 * More ergonomic, [domain-specific APIs]({{< versioned_link_path fromRoot="/introduction/concepts" >}}) to drive Envoy configuration
-* [Function-level routing]({{< ref "/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
+* [Function-level routing]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
 * [Transformation of request/response](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/transformation) via a super-fast C++ templating filter [built on Inja](https://github.com/pantor/inja)
 * Envoy filters to call [AWS Lambda directly](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/aws_lambda), handling the complex security handshaking
 * [Discovery of services running in a hybrid platform]({{< versioned_link_path fromRoot="/introduction/architecture#discovery-architecture" >}}) (like VMs, containers, infrastructure as code, function as a service, etc)
 * Out of the box caching filters - enterprise feature
-* [Rate-limiting service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/simple">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/rate_limiting/envoy">}}), depending on what you need) - enterprise feature
-* [OIDC integration]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security/oauth/oidc" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/security" >}}) - enterprise feature
+* [Rate-limiting service]({{< versioned_link_path fromRoot="/security/rate_limiting/simple/">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/security/rate_limiting/envoy/">}}), depending on what you need) - enterprise feature
+* [OIDC integration]({{< versioned_link_path fromRoot="/security/auth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/security/auth/" >}}) - enterprise feature
 
 
 #### What's the difference between Gloo and Istio
@@ -62,34 +62,33 @@ kubectl --namespace gloo-system get gateway
 ```
 
 ```noop
-NAME          AGE
-gateway       8h
-gateway-ssl   8h
+NAME                AGE
+gateway-proxy       61s
+gateway-proxy-ssl   61s
 ```
 
 Each Gateway object specifies a `bindPort` that ultimately gets converted to an Envoy listener:
 
 ```shell
-kubectl --namespace gloo-system get gateway gateway-ssl --output yaml
+kubectl --namespace gloo-system get gateway gateway-proxy-ssl --output yaml
 ```
 
-{{< highlight yaml "hl_lines=6-9" >}}
-apiVersion: gateway.solo.io.v2/v2
+{{< highlight yaml "hl_lines=13-14" >}}
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gateway-ssl
+  labels:
+    app: gloo
+  name: gateway-proxy-ssl
   namespace: gloo-system
 spec:
   bindAddress: '::'
   bindPort: 8443
+  httpGateway: {}
+  proxyNames:
+  - gateway-proxy
   ssl: true
-status:
-  reported_by: gateway
-  state: 1
-  subresource_statuses:
-    '*v1.Proxy gloo-system gateway-proxy':
-      reported_by: gloo
-      state: 1
+  useProxyProto: false
 {{< /highlight >}}
 
 You can change the bindPort in the Gateway resource.
@@ -144,10 +143,10 @@ If you create a VirtualService and assign it TLS/SSL configuration, it will be b
 In the event you have multiple Gateways/listeners or you want more fine-grained control over how a VirtualService gets associated with a Gateway, you can explicitly add the VirtualService name to the Gateway resource like this:
 
 {{< highlight yaml "hl_lines=9-11" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  name: gateway
+  name: gateway-proxy
   namespace: gloo-system
 spec:
   bindAddress: '::'
@@ -223,30 +222,28 @@ items:
           - animalstore.example.com
           name: gloo-system.animal
           routes:
-          - matcher:
-              exact: /animals
+          - matchers:
+             - exact: /animals
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
         - domains:
           - '*'
           name: gloo-system.default
           routes:
-          - matcher:
-              exact: /sample-route-1
+          - matchers:
+             - exact: /sample-route-1
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
       name: listener-::-8443
       sslConfiguations:
       - secretRef:
@@ -389,11 +386,11 @@ glooctl get virtualservice default
 ```
 
 ```noop
-+-----------------|--------------|---------|------|----------|---------|--------+
-| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  |  STATUS  | PLUGINS | ROUTES |
-+-----------------|--------------|---------|------|----------|---------|--------+
-| default         | default      | *       | none | Accepted |         |        |
-+-----------------|--------------|---------|------|----------|---------|--------+
++-----------------|--------------|---------|------|----------|-----------------|--------+
+| VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  |  STATUS  | LISTENERPLUGINS | ROUTES |
++-----------------|--------------|---------|------|----------|-----------------|--------+
+| default         | default      | *       | none | Accepted |                 |        |
++-----------------|--------------|---------|------|----------|-----------------|--------+
 ```
 
 This is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
@@ -407,7 +404,7 @@ When you create multiple VirtualServices that have TLS/SSL configuration, Gloo w
 This is similar to the previous FAQ: if you use wildcard domains on all your VirtualServices, they will be merged. If you happen to have wildcard domain on both an HTTP-intended VirtualService (ie, one without TLS/SSL config) and wildcard on the HTTPS-intended VirtualService (ie, one WITH TLS/SSL config), then you need to be explicit about which Gateway should serve which VirtualService. Using the examples from another FAQ in this document, we can explicitly list the VirtualServices for a Gateway:
 
 {{< highlight yaml "hl_lines=9-11" >}}
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: gateway

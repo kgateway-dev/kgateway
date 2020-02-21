@@ -9,11 +9,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
@@ -34,7 +35,7 @@ func (t *testMetricsHandler) HandleMetrics(context.Context, *v2.StreamMetricsMes
 var _ = Describe("Gateway", func() {
 
 	var (
-		gw             *gatewayv2.Gateway
+		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
@@ -64,8 +65,11 @@ var _ = Describe("Gateway", func() {
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
+			err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv2.GatewayList, error) {
+			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
@@ -116,7 +120,7 @@ var _ = Describe("Gateway", func() {
 					contextutils.SetFallbackLogger(logger.Sugar())
 
 					envoyInstance.MetricsPort = metricsPort
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
@@ -130,11 +134,6 @@ var _ = Describe("Gateway", func() {
 					opts := metricsservice.Options{
 						Ctx: ctx,
 					}
-
-					//usageMerger := metricsservice.NewUsageMerger(time.Now)
-					//storage := metricsservice.NewConfigMapStorage(writeNamespace, helpers.MustKubeClient().CoreV1().ConfigMaps(writeNamespace))
-					//
-					//defaulthandler := metricsservice.NewDefaultMetricsHandler(storage, usageMerger)
 
 					channel = make(chan *struct{}, 1000)
 					testHandler = &testMetricsHandler{channel: channel}
@@ -153,13 +152,13 @@ var _ = Describe("Gateway", func() {
 					var err error
 					gw, err = gatewaycli.Read("gloo-system", gatewaydefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("can stream metrics", func() {
-					vs := getTrivialVirtualServiceForUpstream("default", tu.Upstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
 					_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 

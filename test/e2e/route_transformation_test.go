@@ -14,7 +14,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -56,7 +56,7 @@ var _ = Describe("Transformations", func() {
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
-		envoyPort = services.NextBindPort()
+		envoyPort = defaults.HttpPort
 
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 
@@ -112,7 +112,7 @@ var _ = Describe("Transformations", func() {
 			}
 			b, err := ioutil.ReadAll(res.Body)
 			return string(b), err
-		}, "10s", ".5s").Should(Equal("test"))
+		}, "20s", ".5s").Should(Equal("test"))
 	}
 
 	WriteVhost := func(vs *gloov1.VirtualHost) {
@@ -124,7 +124,7 @@ var _ = Describe("Transformations", func() {
 			},
 			Listeners: []*gloov1.Listener{{
 				Name:        "listener",
-				BindAddress: "127.0.0.1",
+				BindAddress: "0.0.0.0",
 				BindPort:    envoyPort,
 				ListenerType: &gloov1.Listener_HttpListener{
 					HttpListener: &gloov1.HttpListener{
@@ -140,7 +140,7 @@ var _ = Describe("Transformations", func() {
 
 	It("should should transform json to html response on vhost", func() {
 		WriteVhost(&gloov1.VirtualHost{
-			VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+			Options: &gloov1.VirtualHostOptions{
 				Transformations: transform,
 			},
 			Name:    "virt1",
@@ -168,7 +168,7 @@ var _ = Describe("Transformations", func() {
 			Name:    "virt1",
 			Domains: []string{"*"},
 			Routes: []*gloov1.Route{{
-				RoutePlugins: &gloov1.RoutePlugins{
+				Options: &gloov1.RouteOptions{
 					Transformations: transform,
 				},
 				Action: &gloov1.Route_RouteAction{
@@ -200,7 +200,7 @@ var _ = Describe("Transformations", func() {
 								Destinations: []*gloov1.WeightedDestination{
 									{
 										Weight: 1,
-										WeighedDestinationPlugins: &gloov1.WeightedDestinationPlugins{
+										Options: &gloov1.WeightedDestinationOptions{
 											Transformations: transform,
 										},
 										Destination: &gloov1.Destination{

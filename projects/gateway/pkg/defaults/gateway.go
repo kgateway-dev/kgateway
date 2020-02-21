@@ -3,27 +3,27 @@ package defaults
 import (
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 const (
-	GatewayProxyName   = "gateway-proxy-v2"
+	GatewayProxyName   = "gateway-proxy"
 	GatewayBindAddress = "::"
 )
 
-func DefaultGateway(writeNamespace string) *v2.Gateway {
-	return &v2.Gateway{
+func DefaultGateway(writeNamespace string) *v1.Gateway {
+	return &v1.Gateway{
 		Metadata: core.Metadata{
 			Name:        GatewayProxyName,
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
 		ProxyNames: []string{GatewayProxyName},
-		GatewayType: &v2.Gateway_HttpGateway{
-			HttpGateway: &v2.HttpGateway{},
+		GatewayType: &v1.Gateway_HttpGateway{
+			HttpGateway: &v1.HttpGateway{},
 		},
 		BindAddress:   GatewayBindAddress,
 		BindPort:      defaults.HttpPort,
@@ -31,7 +31,7 @@ func DefaultGateway(writeNamespace string) *v2.Gateway {
 	}
 }
 
-func DefaultSslGateway(writeNamespace string) *v2.Gateway {
+func DefaultSslGateway(writeNamespace string) *v1.Gateway {
 	defaultgw := DefaultGateway(writeNamespace)
 	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
@@ -42,15 +42,15 @@ func DefaultSslGateway(writeNamespace string) *v2.Gateway {
 
 // The default TCP gateways are currently only used for testing purposes
 // but could be included later if we decide they should be.
-func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
-	return &v2.Gateway{
+func DefaultTcpGateway(writeNamespace string) *v1.Gateway {
+	return &v1.Gateway{
 		Metadata: core.Metadata{
 			Name:        "gateway-tcp",
 			Namespace:   writeNamespace,
 			Annotations: map[string]string{defaults.OriginKey: defaults.DefaultValue},
 		},
-		GatewayType: &v2.Gateway_TcpGateway{
-			TcpGateway: &v2.TcpGateway{},
+		GatewayType: &v1.Gateway_TcpGateway{
+			TcpGateway: &v1.TcpGateway{},
 		},
 		ProxyNames:    []string{GatewayProxyName},
 		BindAddress:   GatewayBindAddress,
@@ -59,7 +59,7 @@ func DefaultTcpGateway(writeNamespace string) *v2.Gateway {
 	}
 }
 
-func DefaultTcpSslGateway(writeNamespace string) *v2.Gateway {
+func DefaultTcpSslGateway(writeNamespace string) *v1.Gateway {
 	defaultgw := DefaultTcpGateway(writeNamespace)
 	defaultgw.Metadata.Name = defaultgw.Metadata.Name + "-ssl"
 	defaultgw.BindPort = defaults.HttpsPort
@@ -77,7 +77,7 @@ func DefaultVirtualService(namespace, name string) *v1.VirtualService {
 		VirtualHost: &v1.VirtualHost{
 			Domains: []string{"*"},
 			Routes: []*v1.Route{{
-				Matchers: []*gloov1.Matcher{DefaultMatcher()},
+				Matchers: []*matchers.Matcher{DefaultMatcher()},
 				Action: &v1.Route_DirectResponseAction{DirectResponseAction: &gloov1.DirectResponseAction{
 					Status: 200,
 					Body: `Gloo and Envoy are configured correctly!
@@ -90,6 +90,6 @@ Delete the '` + name + ` Virtual Service to get started.
 	}
 }
 
-func DefaultMatcher() *gloov1.Matcher {
-	return &gloov1.Matcher{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/"}}
+func DefaultMatcher() *matchers.Matcher {
+	return &matchers.Matcher{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"}}
 }

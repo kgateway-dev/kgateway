@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/solo-projects/issues/1266
+    description: >
+      Update install script to honor `GLOO_VERSION` env var for desired version, if set. Also update to sort located
+      releases in semver order so that if desired version is omitted, we try to download the largest release rather
+      than the most recent release. (for example, we backport a fix and release a 0.x.x after 1.0.0 is already out).
+    resolvesIssue: false

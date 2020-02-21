@@ -1,10 +1,10 @@
 ---
 title: Upstream Groups
 weight: 20
-description: This is an abstraction where the upstreams and weights are stored in a separate UpstreamGroup CRD. This makes it easier to reuse the same set of upstreams across multiple routes, and modify the membership of the group without changing the VirtualService definition. 
+description: This is an abstraction where the Upstreams and weights are stored in a separate Upstream Group CRD.
 ---
 
-An [UpstreamGroup]({{< protobuf name="gloo.solo.io.UpstreamGroup">}}) addresses
+An {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} addresses
 an issue of how do you have multiple routes or virtual services referencing the same multiple weighted destinations where
 you want to change the weighting consistently for all calling routes. This is a common need for Canary deployments
 where you want all calling routes to forward traffic consistently across the two service versions.
@@ -13,10 +13,10 @@ For example, if I'm doing a Canary deployment of a new shopping cart service, I 
 to call the same weighted destinations consistently, AND I want the ability to update the destination weights, e.g. go
 from 90% v3 and 10% v4 => 50% v3 and 50% v4 **without** needing to know what routes are referencing my upstream destinations.
 
-![Upstream Group example](/img/inv2.png)
+![Upstream Group example]({{% versioned_link_path fromRoot="/img/inv2.png" %}})
 
 There are two steps to using an upstream group. First, you need to create an Upstream Group custom resource, and then you
-need to reference that Upstream Group from your one or more route actions. Let's build on our [Multiple Destination](../multi_destination)
+need to reference that Upstream Group from your one or more route actions. Let's build on our [Multiple Destination]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/multi_destination/" %}})
 example.
 
 #### Create Upstream Group
@@ -43,16 +43,16 @@ spec:
 
 #### Reference Upstream Group in your Route Actions
 
-{{< highlight yaml "hl_lines=5-8 12-15" >}}
+{{< highlight yaml "hl_lines=5-7 11-15" >}}
 routes:
-- matcher:
-    prefix: /myservice
+- matchers:
+   - prefix: /myservice
   routeAction:
     upstreamGroup:
       name: my-service-group
       namespace: gloo-system
-- matcher:
-    prefix: /some/other/path
+- matchers:
+   - prefix: /some/other/path
   routeAction:
     upstreamGroup:
       name: my-service-group

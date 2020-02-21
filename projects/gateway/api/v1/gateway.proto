@@ -2,52 +2,111 @@ syntax = "proto3";
 package gateway.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
-import "google/protobuf/wrappers.proto";
-
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "google/protobuf/wrappers.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/solo-kit.proto";
+
+import "gloo/projects/gloo/api/v1/proxy.proto";
+import "gloo/projects/gloo/api/v1/options.proto";
 
 /*
-A gateway describes the routes to upstreams that are reachable via a specific port on the Gateway Proxy itself.
-
-Deprecated: see gateway.solo.io.v2.Gateway
+A Gateway describes a single Listener (bind address:port)
+and the routing configuration to upstreams that are reachable via a specific port on the Gateway Proxy itself.
 */
 message Gateway {
-    option deprecated = true;
+
     option (core.solo.io.resource).short_name = "gw";
     option (core.solo.io.resource).plural_name = "gateways";
-    // if set to false, only use virtual services with no ssl configured.
+
+    // if set to false, only use virtual services without ssl configured.
     // if set to true, only use virtual services with ssl configured.
     bool ssl = 1;
-
-    // names of the the virtual services, which contain the actual routes for the gateway
-    // if the list is empty, all virtual services will apply to this gateway (with accordance to tls flag above).
-    repeated core.solo.io.ResourceRef virtual_services = 2 [(gogoproto.nullable) = false];
 
     // the bind address the gateway should serve traffic on
     string bind_address = 3;
 
-    // bind ports must not conflict across gateways in a namespace
+    // bind ports must not conflict across gateways for a single proxy
     uint32 bind_port = 4;
 
-    // top level plugin configuration for all routes on the gateway
-    gloo.solo.io.HttpListenerPlugins plugins = 5;
+    // top level optional configuration for all routes on the gateway
+    gloo.solo.io.ListenerOptions options = 5;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
 
     // Enable ProxyProtocol support for this listener
     google.protobuf.BoolValue use_proxy_proto = 8;
+
+    // The type of gateway being created
+    // HttpGateway creates a listener with an http_connection_manager
+    // TcpGateway creates a listener with a tcp proxy filter
+    oneof GatewayType {
+        HttpGateway http_gateway = 9;
+        TcpGateway tcp_gateway = 10;
+    }
+
+    /*
+    * Names of the [`Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/)
+    * resources to generate from this gateway. If other gateways exist which point to the same proxy,
+    * Gloo will join them together.
+    *
+    * Proxies have a one-to-many relationship with Envoy bootstrap configuration.
+    * In order to connect to Gloo, the Envoy bootstrap configuration sets a `role` in
+    * the [node metadata](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/base.proto#envoy-api-msg-core-node)
+    * Envoy instances announce their `role` to Gloo, which maps to the  `{{ .Namespace }}~{{ .Name }}`
+    * of the Proxy resource.
+    *
+    * The template for this value can be seen in the [Gloo Helm chart](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/9-gateway-proxy-configmap.yaml#L22)
+    *
+    * Note: this field also accepts fields written in camel-case. They will be converted
+    * to kebab-case in the Proxy name. This allows use of the [Gateway Name Helm value](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/values-gateway-template.yaml#L47)
+    * for this field
+    *
+    * Defaults to `["gateway-proxy"]`
+    */
+    repeated string proxy_names = 12;
+}
+
+message HttpGateway {
+    // Names & namespace refs of the virtual services which contain the actual routes for the gateway.
+    // If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
+    // with accordance to `ssl` flag on `Gateway` above.
+    // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
+
+    // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
+    // to virtual services in the namespaces specified.
+    // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
+    map<string, string> virtual_service_selector = 2;
+
+    // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
+    // via `virtual_service_selector` on the `HttpGateway` object.
+    // By default, virtual services match if they are in any namespace watched by Gloo.
+
+    // Restrict the search by providing a list of valid search namespaces here.
+    // Setting '*' will search all namespaces, equivalent to omitting this value.
+    repeated string virtual_service_namespaces = 3;
+
+    // HTTP Gateway configuration
+    gloo.solo.io.HttpListenerOptions options = 8;
+}
+
+message TcpGateway {
+    // TCP hosts that the gateway can route to
+    repeated gloo.solo.io.TcpHost tcp_hosts = 1;
+    // TCP Gateway configuration
+    gloo.solo.io.TcpListenerOptions options = 8;
 }

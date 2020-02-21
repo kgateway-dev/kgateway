@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Move pin_repos out of top-level directory so that gomod will work.
+  issueLink: https://github.com/solo-io/gloo/issues/1854

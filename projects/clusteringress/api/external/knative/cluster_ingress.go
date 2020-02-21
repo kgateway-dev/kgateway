@@ -8,7 +8,7 @@ import (
 	"knative.dev/serving/pkg/apis/networking/v1alpha1"
 )
 
-type ClusterIngress v1alpha1.ClusterIngress
+type ClusterIngress v1alpha1.Ingress
 
 func (p *ClusterIngress) GetMetadata() core.Metadata {
 	return kubeutils.FromKubeMeta(p.ObjectMeta)
@@ -23,8 +23,8 @@ func (p *ClusterIngress) Equal(that interface{}) bool {
 }
 
 func (p *ClusterIngress) Clone() *ClusterIngress {
-	ci := v1alpha1.ClusterIngress(*p)
-	copy := ci.DeepCopy()
-	newCi := ClusterIngress(*copy)
+	ci := v1alpha1.Ingress(*p)
+	ciCopy := ci.DeepCopy()
+	newCi := ClusterIngress(*ciCopy)
 	return &newCi
 }

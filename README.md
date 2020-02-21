@@ -1,7 +1,7 @@
 
 
 <h1 align="center">
-    <img src="https://gloo.solo.io/img/Gloo-01.png" alt="Gloo" width="200" height="242">
+    <img src="https://docs.solo.io/gloo/latest/img/Gloo-01.png" alt="Gloo" width="200" height="242">
   <br>
   An Envoy-Powered API Gateway
 </h1>
@@ -13,10 +13,10 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 &nbsp; [**Documentation**](https://gloo.solo.io) &nbsp; |
 &nbsp; [**Blog**](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600) &nbsp; |
 &nbsp; [**Slack**](https://slack.solo.io) &nbsp; |
-&nbsp; [**Twitter**](https://twitter.com/soloio_inc)
-&nbsp; [**Enterprise Trial**](https://www.solo.io/glooe)
+&nbsp; [**Twitter**](https://twitter.com/soloio_inc) |
+&nbsp; [**Enterprise Trial**](https://www.solo.io/products/gloo/#enterprise-trial)
 
-<BR><center><img src="https://gloo.solo.io/introduction/gloo_diagram.png" alt="Gloo Architecture" width="906"></center>
+<BR><center><img src="https://docs.solo.io/gloo/latest/img/gloo-architecture-envoys.png" alt="Gloo Architecture" width="906"></center>
 
 ## Summary
 
@@ -42,7 +42,7 @@ Gloo is a feature-rich, Kubernetes-native ingress controller, and next-generatio
 - Follow us on Twitter: [https://twitter.com/soloio_inc](https://twitter.com/soloio_inc)
 - Check out the docs: [https://gloo.solo.io](https://gloo.solo.io)
 - Check out the code and contribute: [Contribution Guide](CONTRIBUTING.md)
-- Contribute to the [Docs](https://github.com/solo-io/solo-docs)
+- Contribute to the [Docs](docs/)
 
 ### Thanks
 

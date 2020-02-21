@@ -8,8 +8,8 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+         - prefix: /
         directResponseAction:
           status: 200
           body: "Hello, world!"

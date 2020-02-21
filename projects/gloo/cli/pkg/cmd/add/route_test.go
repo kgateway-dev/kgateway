@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
@@ -79,8 +80,8 @@ var _ = Describe("Routes", func() {
 		rt, err := helpers.MustRouteTableClient().Read("gloo-system", "my-routes", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(rt.Routes[0]).To(Equal(&v1.Route{
-			Matchers: []*gloov1.Matcher{{
-				PathSpecifier: &gloov1.Matcher_Exact{
+			Matchers: []*matchers.Matcher{{
+				PathSpecifier: &matchers.Matcher_Exact{
 					Exact: "/sample-route-a",
 				},
 			}},
@@ -109,15 +110,19 @@ var _ = Describe("Routes", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(vs.GetVirtualHost().GetRoutes()).To(Equal([]*v1.Route{
 			{
-				Matchers: []*gloov1.Matcher{{
-					PathSpecifier: &gloov1.Matcher_Prefix{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
 						Prefix: "/a",
 					},
 				}},
 				Action: &v1.Route_DelegateAction{
-					DelegateAction: &core.ResourceRef{
-						Name:      "my-delegate",
-						Namespace: "gloo-system",
+					DelegateAction: &v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "my-delegate",
+								Namespace: "gloo-system",
+							},
+						},
 					},
 				},
 			},

@@ -1,5 +1,25 @@
 {
   "name": "gateway.solo.io",
   "version": "v1",
-  "docs_dir": "docs/content/api"
+  "docs_dir": "docs/content/api",
+  "resource_groups": {
+    "api.gateway.solo.io": [
+      {
+        "name": "VirtualService",
+        "package": "gateway.solo.io",
+        "version": "v1"
+      },
+      {
+        "name": "RouteTable",
+        "package": "gateway.solo.io",
+        "version": "v1"
+      },
+      {
+        "name": "Gateway",
+        "package": "gateway.solo.io",
+        "version": "v1"
+      }
+    ]
+  },
+  "gen_kube_types": true
 }

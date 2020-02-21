@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -28,15 +27,12 @@ func (r *Secret) SetMetadata(meta core.Metadata) {
 	r.Metadata = meta
 }
 
-func (r *Secret) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	return hashutils.HashAll(
-		metaCopy,
-		r.Kind,
-	)
+func (r *Secret) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *Secret) GroupVersionKind() schema.GroupVersionKind {
@@ -125,6 +121,11 @@ func (o *Secret) GetObjectKind() schema.ObjectKind {
 
 func (o *Secret) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Secret)
+}
+
+func (o *Secret) DeepCopyInto(out *Secret) {
+	clone := resources.Clone(o).(*Secret)
+	*out = *clone
 }
 
 var (

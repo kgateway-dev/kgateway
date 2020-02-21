@@ -9,9 +9,10 @@ import (
 	"reflect"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/go-utils/protoutils"
-	"k8s.io/kubernetes/pkg/kubectl/cmd/util/editor"
+
+	"k8s.io/kubectl/pkg/cmd/util/editor"
 
 	"github.com/ghodss/yaml"
 )

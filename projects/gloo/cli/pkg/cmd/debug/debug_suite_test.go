@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAdd(t *testing.T) {
+func TestDebug(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Debug Suite")
 }

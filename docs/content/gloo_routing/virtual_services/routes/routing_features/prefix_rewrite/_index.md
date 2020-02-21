@@ -4,7 +4,7 @@ weight: 30
 description: Prefix-rewriting when routing to upstreams
 ---
 
-[PrefixRewrite]({{< protobuf name="gloo.solo.io.RoutePlugins" >}})
+{{< protobuf name="gloo.solo.io.RouteOptions" display="PrefixRewrite" >}}
 is a route feature that allows you to replace (rewrite) the matched request path with a specified value before sending it upstream.
 
 Routes are processed in order, so the first matching request path is the only one that will be processed.
@@ -23,7 +23,7 @@ glooctl install gateway
 
 Install the petstore demo
 ```shell script
-kubectl apply -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 Create a virtual service with routes for `/foo` and `/bar`
@@ -39,26 +39,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/invalid'
-    - matcher:
-        prefix: '/bar'
+      options:
+        prefixRewrite: '/api/invalid'
+    - matchers:
+       - prefix: '/bar'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/api/pets'
+      options:
+        prefixRewrite: '/api/pets'
 status: {}
 EOF
 ```
@@ -78,7 +76,9 @@ Meanwhile the following command rewrites the `/bar` to the `/api/pets` endpoint,
 ```shell script
 curl "$(glooctl proxy url)/bar"
 ```
+
 returns
+
 ```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
@@ -101,16 +101,15 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
+      options:
+        prefixRewrite: '/'
 status: {}
 EOF
 ```
@@ -146,26 +145,24 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/foo/'
+    - matchers:
+       - prefix: '/foo/'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
-    - matcher:
-        prefix: '/foo'
+      options:
+        prefixRewrite: '/'
+    - matchers:
+       - prefix: '/foo'
       routeAction:
         single:
           upstream:
             name: 'default-petstore-8080'
             namespace: 'gloo-system'
-      routePlugins:
-        prefixRewrite:
-          prefixRewrite: '/'
+      options:
+        prefixRewrite: '/'
 status: {}
 EOF
 ```
@@ -183,5 +180,5 @@ returns
 
 ```shell script
 glooctl uninstall
-kubectl delete -f https://raw.githubusercontent.com/sololabs/demos2/master/resources/petstore.yaml
+kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```

@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/healthcheck"
@@ -30,13 +32,14 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 )
 
 type registry struct {
 	plugins []plugins.Plugin
 }
 
-var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) *registry {
+var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugins.Plugin) *registry {
 	transformationPlugin := transformation.NewPlugin()
 	hcmPlugin := hcm.NewPlugin()
 	reg := &registry{}
@@ -54,6 +57,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		tcp.NewPlugin(),
 		static.NewPlugin(),
 		transformationPlugin,
+		grpcweb.NewPlugin(),
 		grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		faultinjection.NewPlugin(),
 		basicroute.NewPlugin(),
@@ -67,21 +71,20 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...plugins.Plugi
 		healthcheck.NewPlugin(),
 		extauth.NewCustomAuthPlugin(),
 		ratelimit.NewPlugin(),
+		wasm.NewPlugin(),
+		gzip.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
 	}
-	if opts.ConsulWatcher != nil {
-		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.ConsulWatcher))
-	}
-	for _, pluginExtension := range pluginExtensions {
-		reg.plugins = append(reg.plugins, pluginExtension)
+	if opts.Consul.ConsulWatcher != nil {
+		reg.plugins = append(reg.plugins, consul.NewPlugin(opts.Consul.ConsulWatcher, &consul.ConsulDnsResolver{DnsAddress: opts.Consul.DnsServer}, opts.Consul.DnsPollingInterval))
 	}
 	hcmPlugin.RegisterHcmPlugins(reg.plugins)
 
 	return reg
 }
 
-func Plugins(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) []plugins.Plugin {
-	return globalRegistry(opts, pluginExtensions...).plugins
+func Plugins(opts bootstrap.Opts) []plugins.Plugin {
+	return globalRegistry(opts).plugins
 }

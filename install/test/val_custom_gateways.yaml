@@ -1,5 +1,5 @@
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     gatewaySettings:
       useProxyProto: true
       customHttpGateway:
@@ -45,6 +45,7 @@ gatewayProxies:
       httpPort: 80
       httpsPort: 443
       type: LoadBalancer
-    stats: true
+    stats:
+      enabled: true
     configMap:
       data: null

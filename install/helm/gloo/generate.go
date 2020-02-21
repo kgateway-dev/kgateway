@@ -1,58 +1,136 @@
 package main
 
 import (
+	"flag"
 	"io/ioutil"
 	"os"
 
 	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/install/helm/gloo/generate"
+	glooVersion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/go-utils/installutils/helmchart"
 	"github.com/solo-io/go-utils/log"
 )
 
 var (
-	valuesTemplate        = "install/helm/gloo/values-gateway-template.yaml"
-	valuesOutput          = "install/helm/gloo/values.yaml"
-	docsOutput            = "docs/helm-values.md"
-	knativeValuesTemplate = "install/helm/gloo/values-knative-template.yaml"
-	knativeValuesOutput   = "install/helm/gloo/values-knative.yaml"
-	ingressValuesTemplate = "install/helm/gloo/values-ingress-template.yaml"
-	ingressValuesOutput   = "install/helm/gloo/values-ingress.yaml"
-	chartTemplate         = "install/helm/gloo/Chart-template.yaml"
-	chartOutput           = "install/helm/gloo/Chart.yaml"
+	valuesTemplate = "install/helm/gloo/values-template.yaml"
+	valuesOutput   = "install/helm/gloo/values.yaml"
+	docsOutput     = "docs/content/installation/gateway/kubernetes/values.txt"
+	chartTemplate  = "install/helm/gloo/Chart-template.yaml"
+	chartOutput    = "install/helm/gloo/Chart.yaml"
+	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.
+	// Provide an example to clarify format (1.2.3, not v1.2.3).
+	helmDocsVersionText = "<release_version, ex: 1.2.3>"
 
 	always = "Always"
+
+	flagOpts = defaultFlagOptions
 )
 
-func main() {
-	var version, repoPrefixOverride, globalPullPolicy string
-	if len(os.Args) < 2 {
-		panic("Must provide version as argument")
-	} else {
-		version = os.Args[1]
+type flagOptions struct {
+	version string
+	// If set, will generate helm docs. Note that some helm values are parameterized within this script to help testing.
+	// When generating helm values for test purposes you should not set this flag, otherwise you will dirty the repo
+	// with the test-specific helm values diff.
+	generateHelmDocs   bool
+	repoPrefixOverride string
+	globalPullPolicy   string
+}
 
-		if len(os.Args) >= 3 {
-			repoPrefixOverride = os.Args[2]
-		}
-		if len(os.Args) >= 4 {
-			globalPullPolicy = os.Args[3]
-		}
+const (
+	versionFlag            = "version"
+	generateHelmDocsFlag   = "generate-helm-docs"
+	repoPrefixOverrideFlag = "repo-prefix-override"
+	globalPullPolicyFlag   = "global-pull-policy-override"
+)
+
+var defaultFlagOptions = flagOptions{
+	version:            "",
+	generateHelmDocs:   false,
+	repoPrefixOverride: "",
+	globalPullPolicy:   "",
+}
+
+func ingestFlags() {
+	flag.StringVar(&flagOpts.version, versionFlag, "", "required, version to use for generated helm files")
+	flag.BoolVar(&flagOpts.generateHelmDocs, generateHelmDocsFlag, false, "(for release) if set, will generate docs for the helm values")
+	flag.StringVar(&flagOpts.repoPrefixOverride, repoPrefixOverrideFlag, "", "(for tests) if set, will override container repo")
+	flag.StringVar(&flagOpts.globalPullPolicy, globalPullPolicyFlag, "", "(for tests) if set, will override all image pull policies")
+	flag.Parse()
+}
+
+func main() {
+	ingestFlags()
+	if flagOpts.version == "" {
+		log.Fatalf("must pass a version with flag: %v", versionFlag)
 	}
 
 	log.Printf("Generating helm files.")
-	if err := generateGatewayValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
+	if err := generateValuesYaml(flagOpts.version, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
 		log.Fatalf("generating values.yaml failed!: %v", err)
 	}
-	if err := generateKnativeValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
-		log.Fatalf("generating values-knative.yaml failed!: %v", err)
+	if flagOpts.generateHelmDocs {
+		log.Printf("Generating helm value docs in file: %v", docsOutput)
+		if err := generateValueDocs(helmDocsVersionText, flagOpts.repoPrefixOverride, flagOpts.globalPullPolicy); err != nil {
+			log.Fatalf("generating values.yaml docs failed!: %v", err)
+		}
+	} else {
+		log.Printf("NOT generating helm value docs, set %v to produce helm value docs", generateHelmDocsFlag)
 	}
-	if err := generateIngressValuesYaml(version, repoPrefixOverride, globalPullPolicy); err != nil {
-		log.Fatalf("generating values-ingress.yaml failed!: %v", err)
-	}
-	if err := generateChartYaml(version); err != nil {
+	if err := generateChartYaml(flagOpts.version); err != nil {
 		log.Fatalf("generating Chart.yaml failed!: %v", err)
 	}
+}
+
+func generateValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
+	cfg, err := generateValuesConfig(version, repositoryPrefix, globalPullPolicy)
+	if err != nil {
+		return err
+	}
+
+	// customize config as needed for dev builds
+	if !glooVersion.IsReleaseVersion() {
+		cfg.Gloo.Deployment.Image.PullPolicy = always
+		cfg.Discovery.Deployment.Image.PullPolicy = always
+		cfg.Gateway.Deployment.Image.PullPolicy = always
+		cfg.Gateway.CertGenJob.Image.PullPolicy = always
+
+		cfg.AccessLogger.Image.PullPolicy = always
+
+		cfg.Ingress.Deployment.Image.PullPolicy = always
+		cfg.IngressProxy.Deployment.Image.PullPolicy = always
+		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = always
+
+		for _, v := range cfg.GatewayProxies {
+			v.PodTemplate.Image.PullPolicy = always
+		}
+	}
+
+	return writeYaml(cfg, valuesOutput)
+}
+
+func generateValueDocs(version, repositoryPrefix, globalPullPolicy string) error {
+	cfg, err := generateValuesConfig(version, repositoryPrefix, globalPullPolicy)
+	if err != nil {
+		return err
+	}
+
+	// customize config as needed for docs
+	// (currently only the version text differs, and this is passed as a function argument)
+
+	return writeDocs(helmchart.Doc(cfg), docsOutput)
+}
+
+func generateChartYaml(version string) error {
+	var chart generate.Chart
+	if err := readYaml(chartTemplate, &chart); err != nil {
+		return err
+	}
+
+	chart.Version = version
+
+	return writeYaml(&chart, chartOutput)
 }
 
 func readYaml(path string, obj interface{}) error {
@@ -89,7 +167,7 @@ func writeDocs(docs helmchart.HelmValues, path string) error {
 	return nil
 }
 
-func readGatewayConfig() (*generate.HelmConfig, error) {
+func readValuesTemplate() (*generate.HelmConfig, error) {
 	var config generate.HelmConfig
 	if err := readYaml(valuesTemplate, &config); err != nil {
 		return nil, err
@@ -97,40 +175,27 @@ func readGatewayConfig() (*generate.HelmConfig, error) {
 	return &config, nil
 }
 
-// install with gateway only
-func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
-	cfg, err := readGatewayConfig()
+func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*generate.HelmConfig, error) {
+	cfg, err := readValuesTemplate()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cfg.Gloo.Deployment.Image.Tag = version
 	cfg.Discovery.Deployment.Image.Tag = version
 	cfg.Gateway.Deployment.Image.Tag = version
-	if cfg.Gateway.CertGenJob != nil {
-		cfg.Gateway.CertGenJob.Image.Tag = version
-	}
-	cfg.Gateway.ConversionJob.Image.Tag = version
+	cfg.Gateway.CertGenJob.Image.Tag = version
+
 	cfg.AccessLogger.Image.Tag = version
+
+	cfg.Ingress.Deployment.Image.Tag = version
+	cfg.IngressProxy.Deployment.Image.Tag = version
+	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
 		v.PodTemplate.Image.Tag = version
 	}
 
-	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = always
-		cfg.Discovery.Deployment.Image.PullPolicy = always
-		cfg.Gateway.Deployment.Image.PullPolicy = always
-		cfg.Gateway.ConversionJob.Image.PullPolicy = always
-		cfg.AccessLogger.Image.PullPolicy = always
-		for _, v := range cfg.GatewayProxies {
-			v.PodTemplate.Image.PullPolicy = always
-		}
-		if cfg.Gateway.CertGenJob != nil {
-			cfg.Gateway.CertGenJob.Image.PullPolicy = always
-		}
-	}
-
 	if repositoryPrefix != "" {
 		cfg.Global.Image.Registry = repositoryPrefix
 	}
@@ -139,88 +204,5 @@ func generateGatewayValuesYaml(version, repositoryPrefix, globalPullPolicy strin
 		cfg.Global.Image.PullPolicy = globalPullPolicy
 	}
 
-	if err := writeDocs(helmchart.Doc(cfg), docsOutput); err != nil {
-		return err
-	}
-
-	return writeYaml(cfg, valuesOutput)
-}
-
-// install with knative only
-func generateKnativeValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
-	cfg, err := readGatewayConfig()
-	if err != nil {
-		return err
-	}
-	// overwrite any non-zero values
-	if err := readYaml(knativeValuesTemplate, &cfg); err != nil {
-		return err
-	}
-
-	cfg.Gloo.Deployment.Image.Tag = version
-	cfg.Discovery.Deployment.Image.Tag = version
-	cfg.Ingress.Deployment.Image.Tag = version
-	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
-
-	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = always
-		cfg.Discovery.Deployment.Image.PullPolicy = always
-		cfg.Ingress.Deployment.Image.PullPolicy = always
-		cfg.Settings.Integrations.Knative.Proxy.Image.PullPolicy = always
-	}
-
-	if repositoryPrefix != "" {
-		cfg.Global.Image.Registry = repositoryPrefix
-	}
-
-	if globalPullPolicy != "" {
-		cfg.Global.Image.PullPolicy = globalPullPolicy
-	}
-
-	return writeYaml(&cfg, knativeValuesOutput)
-}
-
-// install with ingress only
-func generateIngressValuesYaml(version, repositoryPrefix, globalPullPolicy string) error {
-	cfg, err := readGatewayConfig()
-	if err != nil {
-		return err
-	}
-	// overwrite any non-zero values
-	if err := readYaml(ingressValuesTemplate, &cfg); err != nil {
-		return err
-	}
-
-	cfg.Gloo.Deployment.Image.Tag = version
-	cfg.Discovery.Deployment.Image.Tag = version
-	cfg.Ingress.Deployment.Image.Tag = version
-	cfg.IngressProxy.Deployment.Image.Tag = version
-
-	if version == "dev" {
-		cfg.Gloo.Deployment.Image.PullPolicy = always
-		cfg.Discovery.Deployment.Image.PullPolicy = always
-		cfg.Ingress.Deployment.Image.PullPolicy = always
-		cfg.IngressProxy.Deployment.Image.PullPolicy = always
-	}
-
-	if repositoryPrefix != "" {
-		cfg.Global.Image.Registry = repositoryPrefix
-	}
-
-	if globalPullPolicy != "" {
-		cfg.Global.Image.PullPolicy = globalPullPolicy
-	}
-
-	return writeYaml(&cfg, ingressValuesOutput)
-}
-
-func generateChartYaml(version string) error {
-	var chart generate.Chart
-	if err := readYaml(chartTemplate, &chart); err != nil {
-		return err
-	}
-
-	chart.Version = version
-
-	return writeYaml(&chart, chartOutput)
+	return cfg, nil
 }

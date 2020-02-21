@@ -8,16 +8,17 @@ import (
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/gogo/protobuf/types"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 )
 
-func (t *translator) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
+func (t *translatorInstance) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
@@ -36,7 +37,7 @@ func (t *translator) computeClusters(params plugins.Params, reports reporter.Res
 	return clusters
 }
 
-func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
 	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports)
 
@@ -51,13 +52,13 @@ func (t *translator) computeCluster(params plugins.Params, upstream *v1.Upstream
 		}
 	}
 	if err := validateCluster(out); err != nil {
-		reports.AddError(upstream, errors.Wrapf(err, "cluster was configured improperly "+
+		reports.AddError(upstream, eris.Wrapf(err, "cluster was configured improperly "+
 			"by one or more plugins: %v", out))
 	}
 	return out
 }
 
-func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
 	hcConfig, err := createHealthCheckConfig(upstream)
 	if err != nil {
 		reports.AddError(upstream, err)
@@ -68,20 +69,16 @@ func (t *translator) initializeCluster(upstream *v1.Upstream, endpoints []*v1.En
 	}
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
-	if circuitBreakers == nil {
-		circuitBreakers = t.settings.GetCircuitBreakers()
-	}
-
 	out := &envoyapi.Cluster{
 		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
 		Metadata:         new(envoycore.Metadata),
-		CircuitBreakers:  getCircuitBreakers(upstream.UpstreamSpec.CircuitBreakers, circuitBreakers),
+		CircuitBreakers:  getCircuitBreakers(upstream.CircuitBreakers, circuitBreakers),
 		LbSubsetConfig:   createLbConfig(upstream),
 		HealthChecks:     hcConfig,
 		OutlierDetection: detectCfg,
 		// this field can be overridden by plugins
-		ConnectTimeout:       ClusterConnectionTimeout,
-		Http2ProtocolOptions: getHttp2ptions(upstream.UpstreamSpec),
+		ConnectTimeout:       gogoutils.DurationStdToProto(&ClusterConnectionTimeout),
+		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
@@ -98,17 +95,16 @@ var (
 	}
 
 	NilFieldError = func(fieldName string) error {
-		return errors.Errorf("The field %s cannot be nil", fieldName)
+		return eris.Errorf("The field %s cannot be nil", fieldName)
 	}
 )
 
 func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, error) {
-
-	if upstream.GetUpstreamSpec() == nil {
+	if upstream == nil {
 		return nil, nil
 	}
-	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetUpstreamSpec().GetHealthChecks()))
-	for i, hc := range upstream.GetUpstreamSpec().GetHealthChecks() {
+	result := make([]*envoycore.HealthCheck, 0, len(upstream.GetHealthChecks()))
+	for i, hc := range upstream.GetHealthChecks() {
 		// These values are required by envoy, but not explicitly
 		if hc.HealthyThreshold == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].HealthyThreshold", i))
@@ -116,31 +112,33 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 		if hc.UnhealthyThreshold == nil {
 			return nil, NilFieldError(fmt.Sprintf("HealthCheck[%d].UnhealthyThreshold", i))
 		}
-
-		if err := hc.Validate(); err != nil {
+		if hc.GetHealthChecker() == nil {
+			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
+		}
+		converted, err := gogoutils.ToEnvoyHealthCheck(hc)
+		if err != nil {
 			return nil, err
 		}
-
-		result = append(result, hc)
+		result = append(result, converted)
 	}
 	return result, nil
 }
 
 func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierDetection, error) {
-	spec := upstream.GetUpstreamSpec()
-	if spec == nil {
+	if upstream == nil {
 		return nil, nil
 	}
-	// This should be enough validation as nothing implicitly needs to be set
-	if err := spec.GetOutlierDetection().Validate(); err != nil {
-		return nil, err
+	if upstream.GetOutlierDetection() == nil {
+		return nil, nil
 	}
-
-	return spec.GetOutlierDetection(), nil
+	if upstream.GetOutlierDetection().GetInterval() == nil {
+		return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("OutlierDetection.HealthChecker")))
+	}
+	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
 func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
-	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -170,7 +168,7 @@ func validateCluster(c *envoyapi.Cluster) error {
 	clusterType := c.GetType()
 	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
 		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
-			return errors.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
+			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
 	return nil
@@ -182,10 +180,10 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 		if cfg != nil {
 			envoyCfg := &envoycluster.CircuitBreakers{}
 			envoyCfg.Thresholds = []*envoycluster.CircuitBreakers_Thresholds{{
-				MaxConnections:     cfg.MaxConnections,
-				MaxPendingRequests: cfg.MaxPendingRequests,
-				MaxRequests:        cfg.MaxRequests,
-				MaxRetries:         cfg.MaxRetries,
+				MaxConnections:     gogoutils.UInt32GogoToProto(cfg.MaxConnections),
+				MaxPendingRequests: gogoutils.UInt32GogoToProto(cfg.MaxPendingRequests),
+				MaxRequests:        gogoutils.UInt32GogoToProto(cfg.MaxRequests),
+				MaxRetries:         gogoutils.UInt32GogoToProto(cfg.MaxRetries),
 			}}
 			return envoyCfg
 		}
@@ -193,8 +191,8 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 	return nil
 }
 
-func getHttp2ptions(spec *v1.UpstreamSpec) *envoycore.Http2ProtocolOptions {
-	if spec.GetUseHttp2() {
+func getHttp2ptions(us *v1.Upstream) *envoycore.Http2ProtocolOptions {
+	if us.GetUseHttp2() {
 		return &envoycore.Http2ProtocolOptions{}
 	}
 	return nil

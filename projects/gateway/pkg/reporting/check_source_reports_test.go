@@ -5,8 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	errors "github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/samples"
@@ -19,14 +19,14 @@ import (
 var _ = Describe("CheckSourceReports", func() {
 
 	var (
-		snap    *v2.ApiSnapshot
+		snap    *v1.ApiSnapshot
 		proxy   *gloov1.Proxy
 		reports reporter.ResourceReports
 		ignored = "ignored"
 	)
 	BeforeEach(func() {
 		snap = samples.SimpleGatewaySnapshot(core.ResourceRef{ignored, ignored}, ignored)
-		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}})
+		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), ignored, ignored, snap, snap.Gateways)
 	})
 	It("returns true when all the sources for the config object are error-free", func() {

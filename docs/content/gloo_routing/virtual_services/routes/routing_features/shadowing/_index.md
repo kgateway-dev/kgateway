@@ -10,14 +10,14 @@ When releasing changes to a service, you want to finely control how those change
 ## What is traffic shadowing with Gloo?
 Traffic shadowing with Gloo makes a copy of an incoming request and proxies the real request to the appropriate backend (the normal request path) and sends the copy to another upstream. The copied message is ignored for failures or responses. In this case, you can deploy `v2` of a service and shadow traffic to it *in production* without affecting user traffic. This ability to shadow is incredibly important because it allows you to begin your release or canary process with zero production impact. 
 
-![Gloo traffic shadowing diagram](/img/gloo-traffic-shadowing.png)
+![Gloo traffic shadowing diagram]({{% versioned_link_path fromRoot="/img/gloo-traffic-shadowing.png" %}})
 
 When shadowing traffic, you can use tools like [Open Diffy](https://github.com/opendiffy/diffy), or [Diferencia](https://github.com/lordofthejars/diferencia) to do diff-compares on the responses of the traffic. This way you can verify the response is correct (these tools do a diff between the real response and the new service's response) in a way that can also detect API forward/backward compatibility problems. 
 
 
 ## How to shadow traffic with Gloo
 
-To enable traffic shadowing in Gloo, we need to add a `routePlugin` to the VirtualService as seen below. We configure the new service to which to shadow as well as how much of the original live traffic to shadow. For example, you may wish to only shadow 5% of all traffic and observe how it behaves. The following fields control those variables:
+To enable traffic shadowing in Gloo, we need to add a route option to the VirtualService as seen below. We configure the new service to which to shadow as well as how much of the original live traffic to shadow. For example, you may wish to only shadow 5% of all traffic and observe how it behaves. The following fields control those variables:
 
 * `upstream` : Indicates the upstream to which to send the shadowed traffic.
 * `percentage` : Percent of traffic to shadow (must be an integer between 0 and 100).
@@ -34,14 +34,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: '/petstore'
+    - matchers:
+       - prefix: '/petstore'
       routeAction:
         single:
           upstream:
             name: 'petstore'
             namespace: 'gloo-system'
-      routePlugins:
+      options:
         shadowing:
           upstream:
             name: 'petstore-v2'

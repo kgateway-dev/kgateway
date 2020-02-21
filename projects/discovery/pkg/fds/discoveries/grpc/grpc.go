@@ -11,20 +11,18 @@ import (
 	"github.com/golang/protobuf/protoc-gen-go/descriptor"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/grpcreflect"
-	"google.golang.org/grpc"
-	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
-
-	"github.com/pkg/errors"
-
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	grpc_plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/grpc"
+	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
 
 func getgrpcspec(u *v1.Upstream) *grpc_plugins.ServiceSpec {
-	upstreamType, ok := u.UpstreamSpec.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := u.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}

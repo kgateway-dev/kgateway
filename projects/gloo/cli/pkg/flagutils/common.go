@@ -3,10 +3,10 @@ package flagutils
 import (
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/pflag"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -28,6 +28,12 @@ func AddFileFlag(set *pflag.FlagSet, strptr *string) {
 func AddDryRunFlag(set *pflag.FlagSet, dryRun *bool) {
 	set.BoolVarP(dryRun, DryRunFlag, "", false, "print kubernetes-formatted yaml "+
 		"rather than creating or updating a resource")
+}
+
+// currently only used by install/uninstall/dashboard but should be changed if it gets shared by more
+func AddVerboseFlag(set *pflag.FlagSet, opts *options.Options) {
+	set.BoolVarP(&opts.Top.Verbose, "verbose", "v", false,
+		"If true, output from kubectl commands will print to stdout/stderr")
 }
 
 func AddKubeConfigFlag(set *pflag.FlagSet, kubeConfig *string) {
@@ -88,13 +94,13 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 			tlsCfg.TLSServerName != "" ||
 			tlsCfg.Insecure {
 			if err := config.ConfigureTLS(tlsCfg); err != nil {
-				return nil, errors.Wrapf(err, "failed to configure vault client tls")
+				return nil, eris.Wrapf(err, "failed to configure vault client tls")
 			}
 		}
 
 		vaultClient, err := vaultapi.NewClient(config)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to configure vault client")
+			return nil, eris.Wrapf(err, "failed to configure vault client")
 		}
 
 		vaultClient.SetToken(token)

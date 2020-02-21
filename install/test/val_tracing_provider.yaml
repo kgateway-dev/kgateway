@@ -1,5 +1,5 @@
 gatewayProxies:
-  gatewayProxyV2:
+  gatewayProxy:
     tracing:
       provider:
         trace: spec

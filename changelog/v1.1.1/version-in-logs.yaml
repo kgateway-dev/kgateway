@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add Gloo version in its JSON log statements.
+    issueLink: https://github.com/solo-io/gloo/issues/1745

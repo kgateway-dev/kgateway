@@ -5,20 +5,28 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/samples"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("VirtualService", func() {
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
+		_, err := helpers.MustKubeClient().CoreV1().Namespaces().Create(&corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: defaults.GlooSystem,
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	getVs := func() *gatewayv1.VirtualService {
@@ -32,9 +40,10 @@ var _ = Describe("VirtualService", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matchers: []*gloov1.Matcher{
-							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/foo"}},
-							{PathSpecifier: &gloov1.Matcher_Prefix{Prefix: "/bar"}},
+						Name: "testRouteName",
+						Matchers: []*matchers.Matcher{
+							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo"}},
+							{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/bar"}},
 						},
 						Action: &gatewayv1.Route_RouteAction{
 							RouteAction: &gloov1.RouteAction{
@@ -65,8 +74,8 @@ var _ = Describe("VirtualService", func() {
 			Expect(out).To(Equal(`+-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
 | VIRTUAL SERVICE | DISPLAY NAME | DOMAINS | SSL  | STATUS  | LISTENERPLUGINS |             ROUTES             |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+
-| default         |              | *       | none | Pending |                 | /foo, /bar -> gloo-system.test |
-|                 |              |         |      |         |                 | (upstream)                     |
+| default         |              | *       | none | Pending |                 | testRouteName: /foo, /bar ->   |
+|                 |              |         |      |         |                 | gloo-system.test (upstream)    |
 +-----------------+--------------+---------+------+---------+-----------------+--------------------------------+`))
 		})
 
@@ -78,12 +87,12 @@ var _ = Describe("VirtualService", func() {
 			out, err := testutils.GlooctlOut("get vs route default")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`Route Action
-+----+----------+-------------+-------+---------+--------------+---------+---------+
-| ID | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
-+----+----------+-------------+-------+---------+--------------+---------+---------+
-| 1  | /foo     | Path Prefix | *     |         | route action |
-|    | /bar     | Path Prefix | *     |         |              |
-+----+----------+-------------+-------+---------+--------------+---------+---------+`))
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+
+| ID |     NAME      | MATCHERS |    TYPES    | VERBS | HEADERS |    ACTION    | CUSTOM1 | CUSTOM2 |
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+
+| 1  | testRouteName | /foo     | Path Prefix | *     |         | route action |
+|    |               | /bar     | Path Prefix | *     |         |              |
++----+---------------+----------+-------------+-------+---------+--------------+---------+---------+`))
 		})
 	})
 })

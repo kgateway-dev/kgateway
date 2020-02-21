@@ -1,195 +1,231 @@
 package install_test
 
 import (
-	"io"
+	"bytes"
+	"fmt"
 	"strings"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	installutil "github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install/mocks"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/spf13/pflag"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"helm.sh/helm/v3/pkg/chart"
+	"helm.sh/helm/v3/pkg/release"
 )
 
-type MockKubectl struct {
-	expected []string
-	next     int
-}
-
-func NewMockKubectl(cmds ...string) *MockKubectl {
-	return &MockKubectl{
-		expected: cmds,
-		next:     0,
-	}
-}
-
-func (k *MockKubectl) Kubectl(stdin io.Reader, args ...string) error {
-	// If this fails then the CLI tried to run commands we didn't account for in the mock
-	Expect(k.next < len(k.expected)).To(BeTrue())
-	Expect(stdin).To(BeNil())
-	cmd := strings.Join(args, " ")
-	Expect(cmd).To(BeEquivalentTo(k.expected[k.next]))
-	k.next = k.next + 1
-	return nil
-}
-
 var _ = Describe("Uninstall", func() {
+	var (
+		ctrl                   *gomock.Controller
+		mockHelmClient         *mocks.MockHelmClient
+		mockHelmUninstallation *mocks.MockHelmUninstallation
+		mockReleaseListRunner  *mocks.MockHelmReleaseListRunner
+		crdName                = "authconfigs.enterprise.gloo.solo.io"
 
-	const (
-		deleteCrds = `delete crd gateways.gateway.solo.io.v2 proxies.gloo.solo.io settings.gloo.solo.io upstreams.gloo.solo.io upstreamgroups.gloo.solo.io virtualservices.gateway.solo.io routetables.gateway.solo.io authconfigs.enterprise.gloo.solo.io`
+		testCRD = `
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: ` + crdName + `
+spec:
+  group: enterprise.gloo.solo.io
+  names:
+    kind: AuthConfig
+    listKind: AuthConfigList
+    plural: authconfigs
+    shortNames:
+      - ac
+    singular: authconfig
+  scope: Namespaced
+  version: v1
+  versions:
+    - name: v1
+      served: true
+      storage: true
+`
 	)
 
-	var flagSet *pflag.FlagSet
-	var opts options.Options
-
 	BeforeEach(func() {
-		flagSet = pflag.NewFlagSet("uninstall", pflag.ContinueOnError)
-		opts = options.Options{}
-		flagutils.AddUninstallFlags(flagSet, &opts.Uninstall)
+		ctrl = gomock.NewController(GinkgoT())
+
+		mockHelmClient = mocks.NewMockHelmClient(ctrl)
+		mockHelmUninstallation = mocks.NewMockHelmUninstallation(ctrl)
+		mockReleaseListRunner = mocks.NewMockHelmReleaseListRunner(ctrl)
 	})
 
-	uninstall := func(cli *MockKubectl) {
-		install.UninstallGloo(&opts, cli)
-		// If this fails, then the mock CLI had extra commands that were expected to run but weren't
-		Expect(cli.next).To(BeEquivalentTo(len(cli.expected)))
-	}
+	AfterEach(func() {
+		ctrl.Finish()
+	})
 
-	It("works with no args", func() {
-		flagSet.Parse([]string{})
-		cli := NewMockKubectl(
-			"delete Deployment -l app=gloo -n gloo-system",
-			"delete Deployment -l app=glooe-grafana -n gloo-system",
-			"delete Deployment -l app=glooe-prometheus -n gloo-system",
-			"delete Service -l app=gloo -n gloo-system",
-			"delete Service -l app=glooe-grafana -n gloo-system",
-			"delete Service -l app=glooe-prometheus -n gloo-system",
-			"delete ServiceAccount -l app=gloo -n gloo-system",
-			"delete ServiceAccount -l app=glooe-grafana -n gloo-system",
-			"delete ServiceAccount -l app=glooe-prometheus -n gloo-system",
-			"delete ConfigMap -l app=gloo -n gloo-system",
-			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
-			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
-			"delete Job -l app=gloo -n gloo-system",
-			"delete Job -l app=glooe-grafana -n gloo-system",
-			"delete Job -l app=glooe-prometheus -n gloo-system",
+	When("a Gloo release object exists", func() {
+
+		BeforeEach(func() {
+			mockHelmClient.EXPECT().NewUninstall(defaults.GlooSystem).Return(mockHelmUninstallation, nil)
+			mockHelmClient.EXPECT().ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).Return(true, nil)
+			mockHelmClient.EXPECT().ReleaseList(defaults.GlooSystem).Return(mockReleaseListRunner, nil).Times(1)
+			mockReleaseListRunner.EXPECT().Run().Return([]*release.Release{{
+				Name: constants.GlooReleaseName,
+				Chart: &chart.Chart{
+					Files: []*chart.File{{
+						Name: "crds/crdA.yaml",
+						Data: []byte(testCRD),
+					}},
+				},
+			}}, nil).Times(1)
+			mockHelmUninstallation.EXPECT().Run(constants.GlooReleaseName).Return(nil, nil)
+		})
+
+		It("can uninstall", func() {
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{Namespace: defaults.GlooSystem, HelmReleaseName: constants.GlooReleaseName},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("can uninstall CRDs when requested", func() {
+			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + crdName}, []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteCrds:      true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("can remove namespace when requested", func() {
+			mockKubectl := installutil.NewMockKubectl([]string{
+				"delete namespace " + defaults.GlooSystem,
+			}, []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteNamespace: true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("--all flag behaves as expected", func() {
+			mockKubectl := installutil.NewMockKubectl([]string{
+				"delete crd " + crdName,
+				"delete namespace " + defaults.GlooSystem,
+			}, []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteAll:       true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	When("no Gloo release object exists", func() {
+
+		var (
+			namespacedDeleteCmds,
+			clusterScopedDeleteCmds []string
+			crdDeleteCmd string
 		)
-		uninstall(cli)
+
+		BeforeEach(func() {
+			namespacedDeleteCmds, clusterScopedDeleteCmds = nil, nil // important!
+
+			mockHelmClient.EXPECT().ReleaseExists(defaults.GlooSystem, constants.GlooReleaseName).Return(false, nil)
+
+			glooAppFlags := install.LabelsToFlagString(install.GlooComponentLabels)
+			for _, kind := range install.GlooNamespacedKinds {
+				namespacedDeleteCmds = append(namespacedDeleteCmds,
+					fmt.Sprintf("delete %s -n %s -l %s", kind, defaults.GlooSystem, glooAppFlags))
+			}
+			for _, kind := range install.GlooClusterScopedKinds {
+				clusterScopedDeleteCmds = append(clusterScopedDeleteCmds,
+					fmt.Sprintf("delete %s -l %s", kind, glooAppFlags))
+			}
+			crdDeleteCmd = fmt.Sprintf("delete crd %s", strings.Join(install.GlooCrdNames, " "))
+		})
+
+		It("deletes all resources with the app=gloo label in the given namespace", func() {
+			mockKubectl := installutil.NewMockKubectl(namespacedDeleteCmds, []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+				},
+			})
+
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("removes the Gloo CRDs when the appropriate flag is provided", func() {
+			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, crdDeleteCmd), []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteCrds:      true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("removes namespace when the appropriate flag is provided", func() {
+			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, "delete namespace "+defaults.GlooSystem), []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteNamespace: true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("--all flag behaves as expected", func() {
+			commands := append(namespacedDeleteCmds, clusterScopedDeleteCmds...)
+			commands = append(commands, crdDeleteCmd)
+			commands = append(commands, "delete namespace "+defaults.GlooSystem)
+			mockKubectl := installutil.NewMockKubectl(commands, []string{})
+
+			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
+			err := uninstaller.Uninstall(&options.Options{
+				Uninstall: options.Uninstall{
+					Namespace:       defaults.GlooSystem,
+					HelmReleaseName: constants.GlooReleaseName,
+					DeleteAll:       true,
+				},
+			})
+			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
+			Expect(err).NotTo(HaveOccurred())
+		})
+
 	})
 
-	It("works with namespace", func() {
-		flagSet.Parse([]string{"-n", "foo"})
-		cli := NewMockKubectl(
-			"delete Deployment -l app=gloo -n foo",
-			"delete Deployment -l app=glooe-grafana -n foo",
-			"delete Deployment -l app=glooe-prometheus -n foo",
-			"delete Service -l app=gloo -n foo",
-			"delete Service -l app=glooe-grafana -n foo",
-			"delete Service -l app=glooe-prometheus -n foo",
-			"delete ServiceAccount -l app=gloo -n foo",
-			"delete ServiceAccount -l app=glooe-grafana -n foo",
-			"delete ServiceAccount -l app=glooe-prometheus -n foo",
-			"delete ConfigMap -l app=gloo -n foo",
-			"delete ConfigMap -l app=glooe-grafana -n foo",
-			"delete ConfigMap -l app=glooe-prometheus -n foo",
-			"delete Job -l app=gloo -n foo",
-			"delete Job -l app=glooe-grafana -n foo",
-			"delete Job -l app=glooe-prometheus -n foo",
-		)
-		uninstall(cli)
-	})
-
-	It("works with delete crds", func() {
-		flagSet.Parse([]string{"--delete-crds"})
-		cli := NewMockKubectl(
-			"delete Deployment -l app=gloo -n gloo-system",
-			"delete Deployment -l app=glooe-grafana -n gloo-system",
-			"delete Deployment -l app=glooe-prometheus -n gloo-system",
-			"delete Service -l app=gloo -n gloo-system",
-			"delete Service -l app=glooe-grafana -n gloo-system",
-			"delete Service -l app=glooe-prometheus -n gloo-system",
-			"delete ServiceAccount -l app=gloo -n gloo-system",
-			"delete ServiceAccount -l app=glooe-grafana -n gloo-system",
-			"delete ServiceAccount -l app=glooe-prometheus -n gloo-system",
-			"delete ConfigMap -l app=gloo -n gloo-system",
-			"delete ConfigMap -l app=glooe-grafana -n gloo-system",
-			"delete ConfigMap -l app=glooe-prometheus -n gloo-system",
-			"delete Job -l app=gloo -n gloo-system",
-			"delete Job -l app=glooe-grafana -n gloo-system",
-			"delete Job -l app=glooe-prometheus -n gloo-system",
-			deleteCrds)
-		uninstall(cli)
-	})
-
-	It("works with delete crds and namespace", func() {
-		flagSet.Parse([]string{"-n", "foo", "--delete-crds"})
-		cli := NewMockKubectl(
-			"delete Deployment -l app=gloo -n foo",
-			"delete Deployment -l app=glooe-grafana -n foo",
-			"delete Deployment -l app=glooe-prometheus -n foo",
-			"delete Service -l app=gloo -n foo",
-			"delete Service -l app=glooe-grafana -n foo",
-			"delete Service -l app=glooe-prometheus -n foo",
-			"delete ServiceAccount -l app=gloo -n foo",
-			"delete ServiceAccount -l app=glooe-grafana -n foo",
-			"delete ServiceAccount -l app=glooe-prometheus -n foo",
-			"delete ConfigMap -l app=gloo -n foo",
-			"delete ConfigMap -l app=glooe-grafana -n foo",
-			"delete ConfigMap -l app=glooe-prometheus -n foo",
-			"delete Job -l app=gloo -n foo",
-			"delete Job -l app=glooe-grafana -n foo",
-			"delete Job -l app=glooe-prometheus -n foo",
-			deleteCrds)
-		uninstall(cli)
-	})
-
-	It("works with delete namespace", func() {
-		flagSet.Parse([]string{"--delete-namespace"})
-		cli := NewMockKubectl(
-			"delete namespace gloo-system")
-		uninstall(cli)
-	})
-
-	It("works with delete namespace with custom namespace", func() {
-		flagSet.Parse([]string{"--delete-namespace", "-n", "foo"})
-		cli := NewMockKubectl(
-			"delete namespace foo")
-		uninstall(cli)
-	})
-
-	It("works with delete namespace and crds", func() {
-		flagSet.Parse([]string{"--delete-namespace", "--delete-crds"})
-		cli := NewMockKubectl(
-			"delete namespace gloo-system",
-			deleteCrds)
-		uninstall(cli)
-	})
-
-	It("works with delete crds and namespace with custom namespace", func() {
-		flagSet.Parse([]string{"--delete-namespace", "--delete-crds", "-n", "foo"})
-		cli := NewMockKubectl(
-			"delete namespace foo",
-			deleteCrds)
-		uninstall(cli)
-	})
-
-	It("works with delete all", func() {
-		flagSet.Parse([]string{"--all"})
-		cli := NewMockKubectl(
-			"delete namespace gloo-system",
-			deleteCrds,
-			"delete ClusterRole -l app=gloo",
-			"delete ClusterRoleBinding -l app=gloo")
-		uninstall(cli)
-	})
-
-	It("works with delete all custom namespace", func() {
-		flagSet.Parse([]string{"--all", "-n", "foo"})
-		cli := NewMockKubectl(
-			"delete namespace foo",
-			deleteCrds,
-			"delete ClusterRole -l app=gloo",
-			"delete ClusterRoleBinding -l app=gloo")
-		uninstall(cli)
-	})
 })

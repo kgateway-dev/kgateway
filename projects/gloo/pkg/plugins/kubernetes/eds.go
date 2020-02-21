@@ -9,7 +9,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -41,7 +41,7 @@ func newEndpointWatcherForUpstreams(kubeFactoryFactory func(ns []string) KubePlu
 	} else {
 		nsSet := map[string]bool{}
 		for _, upstream := range upstreamsToTrack {
-			svcNs := upstream.GetUpstreamSpec().GetKube().GetServiceNamespace()
+			svcNs := upstream.GetKube().GetServiceNamespace()
 			// only care about kube upstreams
 			if svcNs == "" {
 				continue
@@ -73,7 +73,7 @@ type edsWatcher struct {
 func newEndpointsWatcher(kubeCoreCache corecache.KubeCoreCache, namespaces []string, kubeShareFactory KubePluginSharedFactory, upstreams v1.UpstreamList) *edsWatcher {
 	upstreamSpecs := make(map[core.ResourceRef]*kubeplugin.UpstreamSpec)
 	for _, us := range upstreams {
-		kubeUpstream, ok := us.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
+		kubeUpstream, ok := us.UpstreamType.(*v1.Upstream_Kube)
 		// only care about kube upstreams
 		if !ok {
 			continue
@@ -273,7 +273,7 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			}
 			return '-'
 		}, addr.Address)
-		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum(nil))
+		endpointName := fmt.Sprintf("ep-%v-%v-%x", dnsname, addr.Port, hasher.Sum64())
 		pod, _ := getPodForIp(addr.Address, addr.PodName, addr.PodNamespace, pods)
 		ep := createEndpoint(writeNamespace, endpointName, refs, addr.Address, addr.Port, pod)
 		endpoints = append(endpoints, ep)

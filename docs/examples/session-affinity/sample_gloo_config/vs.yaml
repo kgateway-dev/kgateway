@@ -9,8 +9,8 @@ spec:
     - '*'
     name: gloo-system.default
     routes:
-    - matcher:
-        exact: /p1
+    - matchers:
+      - exact: /p1
       routeAction:
         single:
           upstream:

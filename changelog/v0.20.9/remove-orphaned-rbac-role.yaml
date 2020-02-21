@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  description: >
+    The Helm chart contained a `Role`/`ClusterRole` named `kube-crd-creator` which was unused. This role caused
+    problems to users with limited privileges and effectively prevented them from installing Gloo in namespace-scoped mode.
+    This fix removes the `kube-crd-creator` resource from the Helm chart.
+  issueLink: https://github.com/solo-io/gloo/issues/1491

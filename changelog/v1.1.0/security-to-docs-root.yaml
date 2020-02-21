@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Move all security-related docs pages to a common section at the root of the docs tree.
+  issueLink: https://github.com/solo-io/gloo/issues/1655

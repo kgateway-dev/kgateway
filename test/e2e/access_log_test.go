@@ -15,29 +15,30 @@ import (
 	. "github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/runner"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/als"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	alsplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-var _ = Describe("Gateway", func() {
+var _ = Describe("Access Log", func() {
 
 	var (
-		gw             *gatewayv2.Gateway
+		gw             *gatewayv1.Gateway
 		ctx            context.Context
 		cancel         context.CancelFunc
 		testClients    services.TestClients
-		settings       runner.Settings
 		writeNamespace string
 
 		baseAccessLogPort = uint32(27000)
@@ -63,8 +64,11 @@ var _ = Describe("Gateway", func() {
 
 			testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
+			err := helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
+
 			// wait for the two gateways to be created.
-			Eventually(func() (gatewayv2.GatewayList, error) {
+			Eventually(func() (gatewayv1.GatewayList, error) {
 				return testClients.GatewayClient.List(writeNamespace, clients.ListOpts{})
 			}, "10s", "0.1s").Should(HaveLen(2))
 		})
@@ -105,72 +109,39 @@ var _ = Describe("Gateway", func() {
 			Context("Grpc", func() {
 
 				var (
-					msgChan chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
+					msgChan <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry
 				)
 
 				BeforeEach(func() {
-					msgChan = make(chan *envoy_data_accesslog_v2.HTTPAccessLogEntry, 20)
 					accessLogPort := atomic.AddUint32(&baseAccessLogPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
 
 					logger := zaptest.LoggerWriter(GinkgoWriter)
 					contextutils.SetFallbackLogger(logger.Sugar())
 
 					envoyInstance.AccessLogPort = accessLogPort
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					settings = runner.Settings{
-						DebugPort:  0,
-						ServerPort: int(accessLogPort),
-					}
-
-					opts := loggingservice.Options{
-						Ordered: true,
-						Callbacks: loggingservice.AlsCallbackList{
-							func(ctx context.Context, message *envoyals.StreamAccessLogsMessage) error {
-								httpLogs := message.GetHttpLogs()
-								Expect(httpLogs).NotTo(BeNil())
-								for _, v := range httpLogs.LogEntry {
-									select {
-									case msgChan <- v:
-										return nil
-									case <-time.After(time.Second):
-										Fail("unable to send log message on channel")
-									}
-								}
-								return nil
-							},
-						},
-						Ctx: ctx,
-					}
-
-					service := loggingservice.NewServer(opts)
-					go func(testctx context.Context) {
-						defer GinkgoRecover()
-						err := runner.RunWithSettings(testctx, service, settings)
-						if testctx.Err() == nil {
-							Expect(err).NotTo(HaveOccurred())
-						}
-					}(ctx)
+					msgChan = runAccessLog(ctx, accessLogPort)
 				})
 
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 
 				It("can stream access logs", func() {
 					logName := "test-log"
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -191,7 +162,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 
-					vs := getTrivialVirtualServiceForUpstream("default", tu.Upstream.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", tu.Upstream.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
@@ -243,11 +214,11 @@ var _ = Describe("Gateway", func() {
 				}
 
 				BeforeEach(func() {
-					err := envoyInstance.RunWithRole(writeNamespace+"~gateway-proxy-v2", testClients.GlooPort)
+					err := envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 					Expect(err).NotTo(HaveOccurred())
 
 					gatewaycli := testClients.GatewayClient
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					path = "/dev/stdout"
 					if !envoyInstance.UseDocker {
@@ -260,14 +231,14 @@ var _ = Describe("Gateway", func() {
 				AfterEach(func() {
 					gatewaycli := testClients.GatewayClient
 					var err error
-					gw, err = gatewaycli.Read("gloo-system", "gateway-proxy-v2", clients.ReadOpts{})
+					gw, err = gatewaycli.Read("gloo-system", gwdefaults.GatewayProxyName, clients.ReadOpts{})
 					Expect(err).NotTo(HaveOccurred())
-					gw.Plugins = nil
+					gw.Options = nil
 					_, err = gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 				})
 				It("can create string access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -288,7 +259,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 					TestUpstreamReachable()
@@ -301,7 +272,7 @@ var _ = Describe("Gateway", func() {
 					}, time.Second*30, time.Second/2).ShouldNot(HaveOccurred())
 				})
 				It("can create json access logs", func() {
-					gw.Plugins = &gloov1.ListenerPlugins{
+					gw.Options = &gloov1.ListenerOptions{
 						AccessLoggingService: &als.AccessLoggingService{
 							AccessLog: []*als.AccessLog{
 								{
@@ -334,7 +305,7 @@ var _ = Describe("Gateway", func() {
 					_, err := gatewaycli.Write(gw, clients.WriteOpts{OverwriteExisting: true})
 					Expect(err).NotTo(HaveOccurred())
 					up := tu.Upstream
-					vs := getTrivialVirtualServiceForUpstream("default", up.Metadata.Ref())
+					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
@@ -351,3 +322,45 @@ var _ = Describe("Gateway", func() {
 		})
 	})
 })
+
+func runAccessLog(ctx context.Context, accessLogPort uint32) <-chan *envoy_data_accesslog_v2.HTTPAccessLogEntry {
+	msgChan := make(chan *envoy_data_accesslog_v2.HTTPAccessLogEntry, 10)
+
+	opts := loggingservice.Options{
+		Ordered: true,
+		Callbacks: loggingservice.AlsCallbackList{
+			func(ctx context.Context, message *envoyals.StreamAccessLogsMessage) error {
+				defer GinkgoRecover()
+				httpLogs := message.GetHttpLogs()
+				Expect(httpLogs).NotTo(BeNil())
+				for _, v := range httpLogs.LogEntry {
+					select {
+					case msgChan <- v:
+						return nil
+					case <-time.After(time.Second):
+						Fail("unable to send log message on channel")
+					}
+				}
+				return nil
+			},
+		},
+		Ctx: ctx,
+	}
+
+	service := loggingservice.NewServer(opts)
+
+	settings := runner.Settings{
+		DebugPort:   0,
+		ServerPort:  int(accessLogPort),
+		ServiceName: "AccessLog",
+	}
+
+	go func(testctx context.Context) {
+		defer GinkgoRecover()
+		err := runner.RunWithSettings(testctx, service, settings)
+		if testctx.Err() == nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+	}(ctx)
+	return msgChan
+}

@@ -1,4 +1,5 @@
 {{- $image := .Values.gloo.deployment.image }}
+{{- $statsConfig := coalesce .Values.gloo.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gloo.deployment.image .Values.global.image }}
 {{- end }}
@@ -19,7 +20,7 @@ spec:
     metadata:
       labels:
         gloo: gloo
-      {{- if .Values.gloo.deployment.stats }}
+      {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -27,7 +28,54 @@ spec:
       {{- end}}
     spec:
       serviceAccountName: gloo
+      volumes:
+{{- if .Values.global.glooMtls.enabled }}
+      - name: gloo-mtls-certs
+        secret:
+          defaultMode: 420
+          secretName: gloo-mtls-certs
+      - name: envoy-sidecar-config
+        configMap:
+          name: envoy-sidecar-config
+{{- end }}
+      - name: labels-volume
+        downwardAPI:
+          items:
+            - path: "labels"
+              fieldRef:
+                fieldPath: metadata.labels
       containers:
+{{- if .Values.global.glooMtls.enabled }}
+      - env:
+        - name: ENVOY_SIDECAR
+          value: "true"
+        name: envoy-sidecar
+        image: "{{ $image.registry }}/gloo-envoy-wrapper:{{ $image.tag }}"
+        imagePullPolicy: {{ $image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.gloo.deployment.xdsPort }}
+          name: grpc-xds
+          protocol: TCP
+        readinessProbe:
+          tcpSocket:
+            port: {{ .Values.gloo.deployment.xdsPort }}
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          failureThreshold: 10
+        volumeMounts:
+        - mountPath: /etc/envoy
+          name: envoy-sidecar-config
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+      - name: sds
+        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
+        imagePullPolicy: {{ $image.pullPolicy }}
+        volumeMounts:
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+{{- end }}
       - image: {{template "gloo.image" $image }}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: gloo
@@ -54,18 +102,27 @@ spec:
             drop:
             - ALL
         ports:
+{{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
           protocol: TCP
+{{- end }}
         - containerPort: {{ .Values.gloo.deployment.validationPort }}
           name: grpc-validation
           protocol: TCP
+        - containerPort: 9979
+          name: wasm-cache
+          protocol: TCP
+        volumeMounts:
+        - name: labels-volume
+          mountPath: /etc/gloo
+          readOnly: true
         env:
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if .Values.gloo.deployment.stats }}
+        {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
@@ -73,12 +130,18 @@ spec:
           - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
+        {{- if .Values.global.wasm.enabled }}
+          - name: WASM_ENABLED
+            value: "true"
+        {{- end }}
+{{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
           initialDelaySeconds: 1
           periodSeconds: 2
           failureThreshold: 10
+{{- end }}
       {{- if $image.pullSecret }}
       imagePullSecrets:
         - name: {{ $image.pullSecret }}

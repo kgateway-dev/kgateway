@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Explain regex grammar used in CORS domain match, remove stray files from docs dir.
+    issueLink: https://github.com/solo-io/gloo/issues/1582

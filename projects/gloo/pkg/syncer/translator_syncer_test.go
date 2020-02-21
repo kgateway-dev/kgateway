@@ -28,6 +28,7 @@ var _ = Describe("Translate Proxy", func() {
 		sanitizer   *mockXdsSanitizer
 		syncer      v1.ApiSyncer
 		snap        *v1.ApiSnapshot
+		settings    *v1.Settings
 		proxyClient v1.ProxyClient
 		proxyName   = "proxy-name"
 		ref         = "syncer-test"
@@ -54,10 +55,12 @@ var _ = Describe("Translate Proxy", func() {
 			},
 		}
 
+		settings = &v1.Settings{}
+
 		rep := reporter.NewReporter(ref, proxyClient.BaseClient(), upstreamClient)
 
 		xdsHasher := &xds.ProxyKeyHasher{}
-		syncer = NewTranslatorSyncer(&mockTranslator{true}, xdsCache, xdsHasher, sanitizer, rep, false, nil)
+		syncer = NewTranslatorSyncer(&mockTranslator{true}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 		snap = &v1.ApiSnapshot{
 			Proxies: v1.ProxyList{
 				proxy,
@@ -84,7 +87,7 @@ var _ = Describe("Translate Proxy", func() {
 		Expect(err).NotTo(HaveOccurred())
 		snap.Proxies[0] = p1
 
-		syncer = NewTranslatorSyncer(&mockTranslator{false}, xdsCache, xdsHasher, sanitizer, rep, false, nil)
+		syncer = NewTranslatorSyncer(&mockTranslator{false}, xdsCache, xdsHasher, sanitizer, rep, false, nil, settings)
 
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
@@ -121,7 +124,7 @@ var _ = Describe("Translate Proxy", func() {
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("", nil),
 			envoycache.NewResources("old listeners from before the war", []envoycache.Resource{
-				xds.NewEnvoyResource(&v2.RouteConfiguration{}),
+				xds.NewEnvoyResource(&v2.Listener{}),
 			}),
 		)
 
@@ -180,8 +183,8 @@ func (*mockXdsCache) GetStatusInfo(string) envoycache.StatusInfo {
 	panic("implement me")
 }
 
-func (*mockXdsCache) GetStatusKeys() []string {
-	panic("implement me")
+func (c *mockXdsCache) GetStatusKeys() []string {
+	return []string{}
 }
 
 func (c *mockXdsCache) SetSnapshot(node string, snapshot envoycache.Snapshot) error {

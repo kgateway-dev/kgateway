@@ -3,9 +3,10 @@ package consul
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/hashicorp/consul/api"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 
@@ -19,12 +20,19 @@ import (
 
 var _ discovery.DiscoveryPlugin = new(plugin)
 
+var (
+	DefaultDnsAddress         = "127.0.0.1:8600"
+	DefaultDnsPollingInterval = 5 * time.Second
+)
+
 type plugin struct {
-	client consul.ConsulWatcher
+	client             consul.ConsulWatcher
+	resolver           DnsResolver
+	dnsPollingInterval time.Duration
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	consulSpec, ok := u.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	consulSpec, ok := u.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return nil, nil
 	}
@@ -39,25 +47,38 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	instances, _, err := p.client.Service(spec.ServiceName, "", &api.QueryOptions{Datacenter: dc, RequireConsistent: true})
 	if err != nil {
-		return nil, errors.Wrapf(err, "getting service from catalog")
+		return nil, eris.Wrapf(err, "getting service from catalog")
 	}
 
 	scheme := "http"
-	if u.UpstreamSpec.SslConfig != nil {
+	if u.SslConfig != nil {
 		scheme = "https"
 	}
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
-			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, inst.ServiceAddress, inst.ServicePort))
+			ipAddresses, err := getIpAddresses(inst.ServiceAddress, p.resolver)
+			if err != nil {
+				return nil, err
+			}
+			if len(ipAddresses) == 0 {
+				return nil, eris.Errorf("DNS result for %s returned an empty list of IPs", inst.ServiceAddress)
+			}
+			// arbitrarily default to the first result
+			ipAddr := ipAddresses[0]
+			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, ipAddr, inst.ServicePort))
 		}
 	}
 
-	return nil, errors.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
+	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
-func NewPlugin(client consul.ConsulWatcher) *plugin {
-	return &plugin{client: client}
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
+	pollingInterval := DefaultDnsPollingInterval
+	if dnsPollingInterval != nil {
+		pollingInterval = *dnsPollingInterval
+	}
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
@@ -65,7 +86,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul)
+	_, ok := in.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return nil
 	}

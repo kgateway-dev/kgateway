@@ -6,7 +6,7 @@ description: Understanding how to set up Server-side TLS for Gloo
 
 ## Configuring TLS for Gloo
 
-Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well](../client_tls). In this document, we'll explore configuring Gloo for server TLS.
+Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls/" %}}). In this document, we'll explore configuring Gloo for server TLS.
 
 ## Server TLS
 
@@ -19,8 +19,7 @@ Before we walk through setting up TLS for our virtual hosts, let's deploy our sa
 To start, let's make sure the `petstore` application is deployed:
 
 ```bash
-kubectl apply -f \
-   https://raw.githubusercontent.com/solo-io/gloo/master/example/petstore/petstore.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
 If we query the gloo upstreams we should see it:
@@ -46,7 +45,7 @@ glooctl get upstream default-petstore-8080
 +-----------------------|------------|----------|-------------------------+
 ```
 
-Now let's create a route to the petstore like [we did in the hello world tutorial](../../../gloo_routing/hello_world/ )
+Now let's create a route to the petstore like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
 
 ```bash
 glooctl add route \
@@ -55,7 +54,7 @@ glooctl add route \
     --prefix-rewrite /api/pets
 ```
 
-Since we didn't explicitly create a VirtualSerivce, adding this route will create a default VirtualService named `default`.
+Since we didn't explicitly create a VirtualService, adding this route will create a default VirtualService named `default`.
 
 ```bash
 glooctl get virtualservice default -o yaml
@@ -78,23 +77,24 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 ```
 
 If we want to query the service to verify routing is working, we can like this:
 
 ```bash
 curl $(glooctl proxy url --port http)/sample-route-1
+```
 
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
@@ -158,16 +158,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /sample-route-1
+  - matchers:
+     - exact: /sample-route-1
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 {{< /highlight >}}
 
 If we try query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
@@ -184,8 +183,10 @@ curl $(glooctl proxy url --port https)/sample-route-1
 It's possible that if you used self-signed certs, `curl` cannot validate the certificate. In this case, SPECIFICALLY FOR THIS EXAMPLE, you can skip certificate validation with `curl -k ...`(note this is not secure):
 
 ```bash
-curl -k https://192.168.64.50:31767/sample-route-1
+curl -k $(glooctl proxy url --port https)/sample-route-1
+```
 
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
@@ -265,16 +266,15 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /animals
+  - matchers:
+     - exact: /animals
     routeAction:
       single:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-    routePlugins:
-      prefixRewrite:
-        prefixRewrite: /api/pets
+    options:
+      prefixRewrite: /api/pets
 {{< /highlight >}}     
 
 If everything up to this point looks good, let's try to query the service and make sure to pass in the qualifying `Host` information so that Envoy can serve the correct certificates.
@@ -283,7 +283,9 @@ If everything up to this point looks good, let's try to query the service and ma
 ```bash
 curl -k -H "Host: animalstore.example.com"  \
 $(glooctl proxy url --port https)/animals
+```
 
+```json
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
@@ -320,16 +322,15 @@ items:
           - '*'
           name: gloo-system.default
           routes:
-          - matcher:
-              exact: /sample-route-1
+          - matchers:
+             - exact: /sample-route-1
             routeAction:
               single:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            routePlugins:
-              prefixRewrite:
-                prefixRewrite: /api/pets
+            options:
+              prefixRewrite: /api/pets
       name: listener-::-8443
       sslConfiguations:
       - secretRef:

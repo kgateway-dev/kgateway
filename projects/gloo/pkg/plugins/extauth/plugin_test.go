@@ -5,16 +5,17 @@ import (
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -112,14 +113,12 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 			Name:      "extauth",
 			Namespace: "default",
 		},
-		UpstreamSpec: &gloov1.UpstreamSpec{
-			UpstreamType: &gloov1.UpstreamSpec_Static{
-				Static: &static.UpstreamSpec{
-					Hosts: []*static.Host{{
-						Addr: "test",
-						Port: 1234,
-					}},
-				},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static.UpstreamSpec{
+				Hosts: []*static.Host{{
+					Addr: "test",
+					Port: 1234,
+				}},
 			},
 		},
 	}
@@ -153,16 +152,16 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 				Upstream: utils.ResourceRefPtr(extAuthServerUpstream.Metadata.Ref()),
 			},
 		},
-		Weight:                     1,
-		WeightedDestinationPlugins: &gloov1.WeightedDestinationPlugins{}, // will be set below
+		Weight:  1,
+		Options: &gloov1.WeightedDestinationOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
 	// Route
 	// ----------------------------------------------------------------------------
 	route := &gloov1.Route{
-		Matchers: []*gloov1.Matcher{{
-			PathSpecifier: &gloov1.Matcher_Prefix{
+		Matchers: []*matchers.Matcher{{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: "/",
 			},
 		}},
@@ -175,17 +174,17 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 				},
 			},
 		},
-		RoutePlugins: &gloov1.RoutePlugins{}, // will be set below
+		Options: &gloov1.RouteOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
 	// Virtual Host
 	// ----------------------------------------------------------------------------
 	virtualHost := &gloov1.VirtualHost{
-		Name:               "virt1",
-		Domains:            []string{"*"},
-		Routes:             []*gloov1.Route{route},
-		VirtualHostPlugins: &gloov1.VirtualHostPlugins{}, // will be set below
+		Name:    "virt1",
+		Domains: []string{"*"},
+		Routes:  []*gloov1.Route{route},
+		Options: &gloov1.VirtualHostOptions{}, // will be set below
 	}
 
 	// ----------------------------------------------------------------------------
@@ -194,23 +193,23 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 
 	switch authOnWeightedDest {
 	case Enabled:
-		weightedDestination.WeightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{Extauth: enableCustomAuth}
+		weightedDestination.Options = &gloov1.WeightedDestinationOptions{Extauth: enableCustomAuth}
 	case Disabled:
-		weightedDestination.WeightedDestinationPlugins = &gloov1.WeightedDestinationPlugins{Extauth: disableAuth}
+		weightedDestination.Options = &gloov1.WeightedDestinationOptions{Extauth: disableAuth}
 	}
 
 	switch authOnRoute {
 	case Enabled:
-		route.RoutePlugins.Extauth = enableCustomAuth
+		route.Options.Extauth = enableCustomAuth
 	case Disabled:
-		route.RoutePlugins.Extauth = disableAuth
+		route.Options.Extauth = disableAuth
 	}
 
 	switch authOnVirtualHost {
 	case Enabled:
-		virtualHost.VirtualHostPlugins.Extauth = enableCustomAuth
+		virtualHost.Options.Extauth = enableCustomAuth
 	case Disabled:
-		virtualHost.VirtualHostPlugins.Extauth = disableAuth
+		virtualHost.Options.Extauth = disableAuth
 	}
 
 	// ----------------------------------------------------------------------------
@@ -275,7 +274,7 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 }
 
 type envoyPerFilterConfig interface {
-	GetPerFilterConfig() map[string]*types.Struct
+	GetPerFilterConfig() map[string]*structpb.Struct
 }
 
 // Returns true if the ext_authz filter is explicitly disabled
@@ -287,7 +286,7 @@ func IsDisabled(e envoyPerFilterConfig) bool {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := util.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	return cfg.GetDisabled()
@@ -302,7 +301,7 @@ func IsEnabled(e envoyPerFilterConfig) bool {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := util.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	if cfg.GetCheckSettings() == nil {

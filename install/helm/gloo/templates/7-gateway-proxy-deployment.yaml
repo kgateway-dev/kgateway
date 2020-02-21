@@ -2,7 +2,6 @@
 {{- include "gloo.updatevalues" . -}}
 {{- end -}}
 {{- if .Values.gateway.enabled }}
-{{- $topScope := . }}
 {{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
@@ -10,6 +9,7 @@
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
 {{- end }}
+{{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
@@ -48,7 +48,7 @@ spec:
         {{ $key }}: {{ $value | quote }}
       {{- end }}
 {{- end }}
-{{- if $spec.stats }}
+{{- if $statsConfig.enabled }}
 {{- if not $annotationExist }}
 {{- $annotationExist = true}}
       annotations:
@@ -68,7 +68,7 @@ spec:
 {{- end}}
     spec:
 {{- if $spec.kind.deployment }}
-{{- if $spec.kind.deployment.antiAffinity }}
+{{- if $spec.antiAffinity }}
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -81,8 +81,18 @@ spec:
 {{- end}}
 {{- end}}
       serviceAccountName: gateway-proxy
+      {{- if $spec.extraInitContainersHelper }}
+      initContainers:
+      {{- include $spec.extraInitContainersHelper $ | nindent 6 }}
+      {{- end }}
       containers:
-      - args: ["--disable-hot-restart"]
+      - args:
+          - --disable-hot-restart
+          {{- with $spec.extraEnvoyArgs}}
+            {{- range . }}
+          - {{ . }}
+            {{- end }}
+          {{- end}}
         env:
         - name: POD_NAMESPACE
           valueFrom:
@@ -92,7 +102,11 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- if not $global.wasm.enabled }}
         image: {{ template "gloo.image" $image }}
+        {{- else }}
+        image: "{{ $image.registry }}/gloo-envoy-wasm-wrapper:{{ $image.tag }}"
+        {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: {{ $name | kebabcase }}
         securityContext:
@@ -159,11 +173,25 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $global.glooMtls.enabled }}
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+{{- end}} # $global.glooMtls.enabled
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
-{{- include $spec.extraContainersHelper $topScope | nindent 6 }}
-{{- end }}
+{{- include $spec.extraContainersHelper $ | nindent 6 }}
+{{- end }} # $spec.extraContainersHelper
+{{- if $global.glooMtls.enabled }}
+      - name: sds
+        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
+        imagePullPolicy: {{ $image.pullPolicy }}
+        volumeMounts:
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+{{- end}} # $global.glooMtls.enabled
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
@@ -190,9 +218,18 @@ spec:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
+{{- if $global.glooMtls.enabled }}
+      - name: gloo-mtls-certs
+        secret:
+          defaultMode: 420
+          secretName: gloo-mtls-certs
+{{- end }}
       {{- if $spec.extraContainersHelper }}
       - name: shared-data
         emptyDir: {}
+      {{- end }}
+      {{- if $spec.extraVolumeHelper }}
+      {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
 {{- end }}
 {{- end }}

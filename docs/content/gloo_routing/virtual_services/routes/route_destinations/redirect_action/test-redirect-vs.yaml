@@ -8,7 +8,7 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+         - prefix: /
         redirectAction:
           hostRedirect: "google.com"

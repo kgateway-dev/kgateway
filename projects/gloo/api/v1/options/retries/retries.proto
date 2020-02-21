@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package retries.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries";
+
+import "google/protobuf/duration.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+// Retry Policy applied at the Route and/or Virtual Hosts levels.
+message RetryPolicy {
+    // Specifies the conditions under which retry takes place. These are the same
+    // conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
+    string retry_on = 1;
+
+    // Specifies the allowed number of retries. This parameter is optional and
+    // defaults to 1. These are the same conditions [documented for Envoy](https://www.envoyproxy.io/docs/envoy/latest/configuration/http_filters/router_filter#config-http-filters-router-x-envoy-retry-on)
+    uint32 num_retries = 2;
+
+    // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional.
+    google.protobuf.Duration per_try_timeout = 3 [(gogoproto.stdduration) = true];
+}

@@ -19,7 +19,6 @@ IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 
 # this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
 PRODUCT_SCOPE := gloo
-DOCS_VERSION := latest
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -28,27 +27,27 @@ DOCS_VERSION := latest
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/fa7f1e95a84fe54bef7df578d4f1a1989582e06b
-	git -C themes/hugo-theme-soloio checkout fa7f1e95a84fe54bef7df578d4f1a1989582e06b
-	go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
-	go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
+	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/e0c50784a92fb7f61c635ff9a6e3a010f636f550
+	git -C themes/hugo-theme-soloio checkout a9c18a63d56bea026a9e241ce0078caf56eabbc5
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
 .PHONY: site-test
 site-test: site-common
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	cat site/index.json | jq "." > /dev/null
 
 .PHONY: site-release
 site-release: site-common
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
 	cat site/index.json | jq "." > /dev/null
 	mv site site-latest
-	go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
 	hugo --config docs.toml
 	mv site site-versioned
 
@@ -63,7 +62,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it
@@ -80,23 +79,27 @@ install-tools:
 	gem install html-proofer
 
 
-# use vx.y.z-latest as the tag for images that are serving version x.y.z of the docs under the docs.solo.io/gloo/latest/ path
-SERVE_AS_LATEST_TAG:=$(VERSION)-latest
+# use "current" instead of the default "latest" so we don't accidentally push something with this tag 
+CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
+ifeq ($(ON_DEFAULT_BRANCH), true)
 	docker build \
 		--build-arg VERSION=latest \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-latest \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(SERVE_AS_LATEST_TAG)
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG)
+endif
+ifeq ($(RELEASE),true)
 	docker build \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-versioned \
 		-t $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION) .
 	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION)
+endif
 
 .PHONY: manifest
 manifest:
@@ -107,6 +110,6 @@ manifest:
 		> install/manifest-versioned.yaml
 	helm template install/helm \
 		--set docsVersion=latest \
-		--set image.tag=$(SERVE_AS_LATEST_TAG) \
+		--set image.tag=$(CURRENT_TAG) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-latest.yaml

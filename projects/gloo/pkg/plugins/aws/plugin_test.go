@@ -3,16 +3,16 @@ package aws
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	gogoproto "github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	awsapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -44,19 +44,17 @@ var _ = Describe("Plugin", func() {
 				Name:      upstreamName,
 				Namespace: "ns",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Aws{
-					Aws: &aws.UpstreamSpec{
-						LambdaFunctions: []*aws.LambdaFunctionSpec{{
-							LogicalName:        funcName,
-							LambdaFunctionName: "foo",
-							Qualifier:          "v1",
-						}},
-						Region: "us-east1",
-						SecretRef: &core.ResourceRef{
-							Namespace: "ns",
-							Name:      "secretref",
-						},
+			UpstreamType: &v1.Upstream_Aws{
+				Aws: &aws.UpstreamSpec{
+					LambdaFunctions: []*aws.LambdaFunctionSpec{{
+						LogicalName:        funcName,
+						LambdaFunctionName: "foo",
+						Qualifier:          "v1",
+					}},
+					Region: "us-east1",
+					SecretRef: &core.ResourceRef{
+						Namespace: "ns",
+						Name:      "secretref",
 					},
 				},
 			},
@@ -115,7 +113,8 @@ var _ = Describe("Plugin", func() {
 	})
 
 	processProtocolOptions := func() {
-		err := util.StructToMessage(out.ExtensionProtocolOptions[filterName], lpe)
+		anyExt := out.TypedExtensionProtocolOptions[filterName]
+		err := gogoproto.Unmarshal(anyExt.Value, lpe)
 		Expect(err).NotTo(HaveOccurred())
 	}
 
@@ -124,8 +123,8 @@ var _ = Describe("Plugin", func() {
 		It("should process upstream with secrets", func() {
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.ExtensionProtocolOptions).NotTo(BeEmpty())
-			Expect(out.ExtensionProtocolOptions).To(HaveKey(filterName))
+			Expect(out.TypedExtensionProtocolOptions).NotTo(BeEmpty())
+			Expect(out.TypedExtensionProtocolOptions).To(HaveKey(filterName))
 			processProtocolOptions()
 
 			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
@@ -147,7 +146,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should error upstream with no secret ref", func() {
-			upstream.GetUpstreamSpec().GetAws().SecretRef = nil
+			upstream.GetAws().SecretRef = nil
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).To(MatchError("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment"))
 		})
@@ -174,7 +173,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should not process and not error with non aws upstream", func() {
-			upstream.UpstreamSpec.UpstreamType = nil
+			upstream.UpstreamType = nil
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.ExtensionProtocolOptions).To(BeEmpty())
@@ -273,7 +272,7 @@ var _ = Describe("Plugin", func() {
 				},
 			})
 			// remove secrets from upstream
-			upstream.GetUpstreamSpec().GetAws().SecretRef = nil
+			upstream.GetAws().SecretRef = nil
 		})
 
 		process := func() {
@@ -284,7 +283,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			err = util.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
+			err = conversion.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}
@@ -295,7 +294,7 @@ var _ = Describe("Plugin", func() {
 		})
 
 		It("should enable default but still use secret ref if it is there", func() {
-			upstream.GetUpstreamSpec().GetAws().SecretRef = &core.ResourceRef{
+			upstream.GetAws().SecretRef = &core.ResourceRef{
 				Namespace: "ns",
 				Name:      "secretref",
 			}

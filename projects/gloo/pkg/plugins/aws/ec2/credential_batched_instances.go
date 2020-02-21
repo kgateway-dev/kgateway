@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -68,7 +68,7 @@ type credentialGroup struct {
 func getCredGroupsFromUpstreams(upstreams v1.UpstreamList) (map[CredentialKey]*credentialGroup, error) {
 	credGroups := make(map[CredentialKey]*credentialGroup)
 	for _, upstream := range upstreams {
-		cred := NewCredentialSpecFromEc2UpstreamSpec(upstream.UpstreamSpec.GetAwsEc2())
+		cred := NewCredentialSpecFromEc2UpstreamSpec(upstream.GetAwsEc2())
 		key := cred.GetKey()
 		if _, ok := credGroups[key]; ok {
 			credGroups[key].upstreams = append(credGroups[key].upstreams, upstream)
@@ -109,7 +109,7 @@ func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, cred
 		logger.Debugw("considering instance for upstream", "upstream", upstream.Metadata.Ref().Key(), "instance-tags", candidateInstance.Tags, "instance-id", candidateInstance.InstanceId)
 		matchesAll := true
 	ScanFilters: // label so that we can break out of the for loop rather than the switch
-		for _, filter := range upstream.UpstreamSpec.GetAwsEc2().Filters {
+		for _, filter := range upstream.GetAwsEc2().Filters {
 			switch filterSpec := filter.Spec.(type) {
 			case *glooec2.TagFilter_Key:
 				if _, ok := fm[awsKeyCase(filterSpec.Key)]; !ok {
@@ -136,17 +136,17 @@ func filterInstancesForUpstream(ctx context.Context, upstream *v1.Upstream, cred
 // NOTE: assumes that upstreams are EC2 upstreams
 func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upstream *v1.Upstream, instance *ec2.Instance) *v1.Endpoint {
 	ipAddr := instance.PrivateIpAddress
-	if upstream.UpstreamSpec.GetAwsEc2().GetPublicIp() {
+	if upstream.GetAwsEc2().GetPublicIp() {
 		ipAddr = instance.PublicIpAddress
 	}
 	if ipAddr == nil {
 		contextutils.LoggerFrom(ctx).Warnw("no ip found for config",
 			zap.Any("upstreamRef", upstream.GetMetadata().Ref()),
 			zap.Any("instanceId", aws.StringValue(instance.InstanceId)),
-			zap.Any("upstream.usePublicIp", upstream.UpstreamSpec.GetAwsEc2().GetPublicIp()))
+			zap.Any("upstream.usePublicIp", upstream.GetAwsEc2().GetPublicIp()))
 		return nil
 	}
-	port := upstream.UpstreamSpec.GetAwsEc2().GetPort()
+	port := upstream.GetAwsEc2().GetPort()
 	if port == 0 {
 		port = DefaultPort
 	}

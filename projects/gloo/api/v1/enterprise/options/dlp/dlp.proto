@@ -1,0 +1,173 @@
+syntax = "proto3";
+package dlp.options.gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/dlp";
+
+import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
+
+import "envoy/type/percent.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+/*
+    DLP (data loss prevention)
+    The purpose of this filter is to prevent sensitive data from being exposed.
+    This is accomplished by doing a series of regex replacements on the response body.
+*/
+
+// Listener level config for dlp filter
+message FilterConfig {
+    // The list of transformation, matcher pairs.
+    // The first rule which matches will be applied.
+    repeated DlpRule dlp_rules = 1;
+}
+
+// Rule which applies a given set of actions to a matching route.
+// The route matching functions exactly the same as the envoy routes in the virtual host.
+message DlpRule {
+    // Matcher by which to determine if the given transformation should be applied
+    // if omitted, will it match all (i.e., default to / prefix matcher)
+    matchers.core.gloo.solo.io.Matcher matcher = 1;
+    // List of data loss prevention actions to be applied.
+    // These actions will be applied in order, one at a time.
+    repeated Action actions = 2;
+}
+
+/*
+    Route/Vhost level config for dlp filter
+
+    If a config is present on the route or vhost level it will completely overwrite the
+    listener level config.
+*/
+message Config {
+    // List of data loss prevention actions to be applied.
+    // These actions will be applied in order, one at a time.
+    repeated Action actions = 1;
+}
+/*
+    A single action meant to mask sensitive data.
+    The action type represents a set of pre configured actions,
+    as well as the ability to create custom actions.
+    These actions can also be shadowed, a shadowed action will be recorded
+    in the statistics, and debug logs, but not actually committed in the response body.
+
+    To use a pre-made action simply set the action type to anything other than `CUSTOM`
+
+    ``` yaml
+    actionType: VISA
+    ```
+
+    To create a custom action set the custom action field. The default enum value
+    is custom, so that can be left empty.
+
+    ``` yaml
+    customAction:
+        name: test
+        regex:
+            - "hello"
+            - "world"
+        maskChar: Y
+        percent: 60
+    ```
+
+
+*/
+message Action {
+    /*
+        The following pre-made action types map to the following regex matchers:
+
+        SSN:
+			- '(?!\D)[0-9]{9}(?=\D|$)'
+			- '(?!\D)[0-9]{3}\-[0-9]{2}\-[0-9]{4}(?=\D|$)'
+			- '(?!\D)[0-9]{3}\ [0-9]{2}\ [0-9]{4}(?=\D|$)'
+
+		MASTERCARD:
+		    - '(?!\D)5[1-5][0-9]{2}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+
+		VISA:
+		    - '(?!\D)4[0-9]{3}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+
+		AMEX:
+		    - '(?!\D)(34|37)[0-9]{2}(\ |\-|)[0-9]{6}(\ |\-|)[0-9]{5}(?=\D|$)'
+
+		DISCOVER:
+		    - '(?!\D)6011(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+
+		JCB:
+		    - '(?!\D)3[0-9]{3}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(\ |\-|)[0-9]{4}(?=\D|$)'
+			- '(?!\D)(2131|1800)[0-9]{11}(?=\D|$)'
+
+		DINERS_CLUB:
+		    - '(?!\D)30[0-5][0-9](\ |\-|)[0-9]{6}(\ |\-|)[0-9]{4}(?=\D|$)'
+			- '(?!\D)(36|38)[0-9]{2}(\ |\-|)[0-9]{6}(\ |\-|)[0-9]{4}(?=\D|$)'
+
+		CREDIT_CARD_TRACKERS:
+			- '[1-9][0-9]{2}\-[0-9]{2}\-[0-9]{4}\^\d'
+			- '(?!\D)\%?[Bb]\d{13,19}\^[\-\/\.\w\s]{2,26}\^[0-9][0-9][01][0-9][0-9]{3}'
+			- '(?!\D)\;\d{13,19}\=(\d{3}|)(\d{4}|\=)'
+
+		ALL_CREDIT_CARDS:
+		    - (All credit card related regexes from above)
+
+    */
+    enum ActionType {
+        CUSTOM = 0;
+        SSN = 1;
+        MASTERCARD = 2;
+        VISA = 3;
+        AMEX = 4;
+        DISCOVER = 5;
+        JCB = 6;
+        DINERS_CLUB = 7;
+        CREDIT_CARD_TRACKERS = 8;
+        ALL_CREDIT_CARDS = 9;
+    }
+
+    // The action type to implement.
+    ActionType action_type = 1;
+    // The custom user action to be applied.
+    // This field will only be used if the custom action type is specified above.
+    CustomAction custom_action = 2;
+    // Shadow represents whether the action should be taken, or just recorded.
+    bool shadow = 3;
+}
+
+/*
+    A user defined custom action to carry out on the response body.
+
+    The list of regex strings are applied in order. So for instance, if there is a response body with the content:
+    `hello world`
+
+    And there is a custom action
+    ``` yaml
+    customAction:
+        name: test
+        regex:
+            - "hello"
+            - "world"
+        maskChar: Y
+        percent: 60
+    ```
+
+    the result would be:
+    `YYYlo YYYld`
+
+    If the mask_char, and percent were left to default, the result would be:
+    `XXXXo XXXXd`
+
+*/
+message CustomAction {
+    // The name of the custom action.
+    // This name is used for logging and debugging purposes.
+    string name = 1;
+    // The list of regex strings which will be applied in order.
+    repeated string regex = 2;
+    // The masking character for the sensitive data.
+    // default value: X
+    string mask_char = 3;
+    // The percent of the string which will be masked by the mask_char
+    // default value: 75%
+    // rounds ratio (percent/100) by std::round http://www.cplusplus.com/reference/cmath/round/
+    envoy.type.Percent percent = 4;
+}

@@ -8,10 +8,12 @@ spec:
     domains:
       - 'foo'
     routes:
-      - matcher:
-          prefix: /
+      - matchers:
+         - prefix: /posts
         routeAction:
           single:
             upstream:
               name: json-upstream
               namespace: gloo-system
+        options:
+          autoHostRewrite: true

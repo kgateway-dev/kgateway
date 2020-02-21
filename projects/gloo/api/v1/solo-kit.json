@@ -64,5 +64,6 @@
         "package": "gloo.solo.io"
       }
     ]
-  }
+  },
+  "gen_kube_types": true
 }

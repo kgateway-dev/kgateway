@@ -5,8 +5,8 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
 /*
 @solo-kit:resource.short_name=art
@@ -14,7 +14,7 @@ import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
 
 Gloo Artifacts are used by Gloo to store small bits of binary or file data.
 
-Certain plugins such as the gRPC plugin read and write artifacts to one of Gloo's configured
+Certain options such as the gRPC option read and write artifacts to one of Gloo's configured
 storage layer.
 
 Artifacts can be backed by files on disk, Kubernetes ConfigMaps, and Consul Key/Value pairs.

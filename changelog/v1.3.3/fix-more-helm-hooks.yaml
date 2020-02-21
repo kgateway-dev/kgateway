@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Remove unnecessary `post-upgrade` Helm hooks.
+  issueLink: https://github.com/solo-io/gloo/issues/2212

@@ -6,9 +6,11 @@ import (
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
-	"github.com/gogo/protobuf/types"
-	gloorl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	gloorl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -20,7 +22,7 @@ func generateCustomEnvoyConfigForVhost(rlactions []*gloorl.RateLimitActions) []*
 	var ret []*envoyvhostratelimit.RateLimit
 	for _, rlaction := range rlactions {
 		rl := &envoyvhostratelimit.RateLimit{
-			Stage: &types.UInt32Value{Value: customStage},
+			Stage: &wrappers.UInt32Value{Value: customStage},
 		}
 		rl.Actions = ConvertActions(rlaction.Actions)
 		ret = append(ret, rl)
@@ -73,7 +75,7 @@ func convertAction(action *gloorl.Action) *envoyvhostratelimit.RateLimit_Action 
 	case *gloorl.Action_HeaderValueMatch_:
 		retAction.ActionSpecifier = &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch_{
 			HeaderValueMatch: &envoyvhostratelimit.RateLimit_Action_HeaderValueMatch{
-				ExpectMatch:     specificAction.HeaderValueMatch.GetExpectMatch(),
+				ExpectMatch:     gogoutils.BoolGogoToProto(specificAction.HeaderValueMatch.GetExpectMatch()),
 				DescriptorValue: specificAction.HeaderValueMatch.GetDescriptorValue(),
 				Headers:         convertHeaders(specificAction.HeaderValueMatch.GetHeaders()),
 			},
@@ -103,8 +105,11 @@ func convertHeader(header *gloorl.HeaderMatcher) *envoyvhostratelimit.HeaderMatc
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
 		}
 	case *gloorl.HeaderMatcher_RegexMatch:
-		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RegexMatch{
-			RegexMatch: specificHeaderSpecifier.RegexMatch,
+		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
+			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
+				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
+				Regex:      specificHeaderSpecifier.RegexMatch,
+			},
 		}
 	case *gloorl.HeaderMatcher_RangeMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RangeMatch{

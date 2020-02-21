@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -8,16 +9,23 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/test/setup"
+	"go.uber.org/zap"
+	"helm.sh/helm/v3/pkg/chartutil"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,7 +37,6 @@ const (
 	installedByUsAnnotationKey = "gloo.solo.io/glooctl_install_info"
 
 	servingReleaseUrlTemplate    = "https://github.com/knative/serving/releases/download/v%v/serving.yaml"
-	buildReleaseUrlTemplate      = "https://github.com/knative/build/releases/download/v%v/build.yaml"
 	eventingReleaseUrlTemplate   = "https://github.com/knative/eventing/releases/download/v%v/release.yaml"
 	monitoringReleaseUrlTemplate = "https://github.com/knative/serving/releases/download/v%v/monitoring.yaml"
 
@@ -39,41 +46,83 @@ const (
 	yamlJoiner = "\n---\n"
 )
 
+func waitKnativeApiserviceReady() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	for {
+		stdout, err := setup.KubectlOut("get", "apiservice", "-ojsonpath='{.items[*].status.conditions[*].status}'")
+		if err != nil {
+			contextutils.CliLogErrorw(ctx, "error getting apiserverice", "err", err)
+		}
+		if !strings.Contains(stdout, "False") {
+			// knative apiservice is ready, we can attempt gloo installation now!
+			break
+		}
+		if ctx.Err() != nil {
+			return eris.Errorf("timed out waiting for knative apiservice to be ready: %v", ctx.Err())
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return nil
+}
+
 func knativeCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:    "knative",
-		Short:  "install Knative with Gloo on kubernetes",
+		Short:  "install Knative with Gloo on Kubernetes",
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
+
 			if opts.Install.Knative.InstallKnative {
 				if !opts.Install.DryRun {
 					installed, _, err := checkKnativeInstallation()
 					if err != nil {
-						return errors.Wrapf(err, "checking for existing knative installation")
+						return eris.Wrapf(err, "checking for existing knative installation")
 					}
 					if installed {
-						return errors.Errorf("knative-serving namespace found. please " +
+						return eris.Errorf("knative-serving namespace found. please " +
 							"uninstall the previous version of knative, or re-run this command with --install-knative=false")
 					}
 				}
 
 				if err := installKnativeServing(opts); err != nil {
-					return errors.Wrapf(err, "installing knative components failed. "+
+					return eris.Wrapf(err, "installing knative components failed. "+
 						"options used: %#v", opts.Install.Knative)
 				}
 			}
 
 			if !opts.Install.Knative.SkipGlooInstall {
-				if err := installGloo(opts, constants.KnativeValuesFileName); err != nil {
-					return errors.Wrapf(err, "installing gloo in knative mode")
+				// wait for knative apiservice (autoscaler metrics) to be healthy before attempting gloo installation
+				// if we try to install before it's ready, helm is unhappy because it can't get apiservice endpoints
+				// we don't care about this if we're doing a dry run installation
+				if !opts.Install.DryRun {
+					if err := waitKnativeApiserviceReady(); err != nil {
+						return err
+					}
+				}
+
+				knativeValues, err := RenderKnativeValues(opts.Install.Knative.InstallKnativeVersion)
+				if err != nil {
+					return err
+				}
+				knativeOverrides, err := chartutil.ReadValues([]byte(knativeValues))
+				if err != nil {
+					return eris.Wrapf(err, "parsing override values for knative mode")
+				}
+
+				if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
+					InstallCliArgs: &opts.Install,
+					ExtraValues:    knativeOverrides,
+					Verbose:        opts.Top.Verbose,
+				}); err != nil {
+					return eris.Wrapf(err, "installing gloo in knative mode")
 				}
 			}
 			return nil
 		},
 	}
 	pflags := cmd.PersistentFlags()
-	flagutils.AddInstallFlags(pflags, &opts.Install)
 	flagutils.AddKnativeInstallFlags(pflags, &opts.Install.Knative)
 	return cmd
 }
@@ -107,28 +156,34 @@ func installKnativeServing(opts *options.Options) error {
 	// install crds first
 	fmt.Fprintln(os.Stderr, "installing Knative CRDs...")
 	if err := install.KubectlApply([]byte(knativeCrdManifests)); err != nil {
-		return errors.Wrapf(err, "installing knative crds with kubectl apply")
+		return eris.Wrapf(err, "installing knative crds with kubectl apply")
 	}
 
 	if err := waitForCrdsToBeRegistered(opts.Top.Ctx, knativeCrdNames); err != nil {
-		return errors.Wrapf(err, "waiting for knative CRDs to be registered")
+		return eris.Wrapf(err, "waiting for knative CRDs to be registered")
 	}
 
 	fmt.Fprintln(os.Stderr, "installing Knative...")
+
 	if err := install.KubectlApply([]byte(manifests)); err != nil {
-		return errors.Wrapf(err, "installing knative resources with kubectl apply")
+		// may need to retry the apply once in order to work around webhook race issue
+		// https://github.com/knative/serving/issues/6353
+		// https://knative.slack.com/archives/CA9RHBGJX/p1577458311043200
+		if err2 := install.KubectlApply([]byte(manifests)); err2 != nil {
+			return eris.Wrapf(err, "installing knative resources failed with retried kubectl apply: %v", err2)
+		}
 	}
 	// label the knative-serving namespace as belonging to us
 	if err := install.Kubectl(nil, "annotate", "namespace",
 		"knative-serving", installedByUsAnnotationKey+"="+string(knativeOptsJson)); err != nil {
-		return errors.Wrapf(err, "annotating installation namespace")
+		return eris.Wrapf(err, "annotating installation namespace")
 	}
 
 	fmt.Fprintln(os.Stderr, "Knative successfully installed!")
 	return nil
 }
 
-// if knative is present but was not installed by us, the resturn values will be true, nil, nil
+// if knative is present but was not installed by us, the return values will be true, nil, nil
 func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *options.Knative, error) {
 	var kc kubernetes.Interface
 	if len(kubeclient) > 0 {
@@ -146,7 +201,7 @@ func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *option
 				installOpts := ns.Annotations[installedByUsAnnotationKey]
 				var opts options.Knative
 				if err := yaml.Unmarshal([]byte(installOpts), &opts); err != nil {
-					return false, nil, errors.Wrapf(err, "parsing install opts "+
+					return false, nil, eris.Wrapf(err, "parsing install opts "+
 						"from knative-serving namespace annotation %v", installedByUsAnnotationKey)
 				}
 				return true, &opts, nil
@@ -160,7 +215,6 @@ func checkKnativeInstallation(kubeclient ...kubernetes.Interface) (bool, *option
 // used by e2e test
 func RenderKnativeManifests(opts options.Knative) (string, error) {
 	knativeVersion := opts.InstallKnativeVersion
-	build := opts.InstallKnativeBuild
 	eventing := opts.InstallKnativeEventing
 	monitoring := opts.InstallKnativeMonitoring
 
@@ -170,15 +224,6 @@ func RenderKnativeManifests(opts options.Knative) (string, error) {
 		return "", err
 	}
 	outputManifests := []string{servingManifest}
-
-	if build {
-		buildReleaseUrl := fmt.Sprintf(buildReleaseUrlTemplate, opts.InstallKnativeBuildVersion)
-		buildManifest, err := getManifestForInstallation(buildReleaseUrl)
-		if err != nil {
-			return "", err
-		}
-		outputManifests = append(outputManifests, buildManifest)
-	}
 
 	if eventing {
 		eventingReleaseUrl := fmt.Sprintf(eventingReleaseUrlTemplate, opts.InstallKnativeEventingVersion)
@@ -207,7 +252,7 @@ func getManifestForInstallation(url string) (string, error) {
 		return "", err
 	}
 	if resp.StatusCode != 200 {
-		return "", errors.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
+		return "", eris.Errorf("returned non-200 status code: %v %v", resp.StatusCode, resp.Status)
 	}
 	raw, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -352,4 +397,17 @@ func getCrdManifests(manifests string) ([]string, string, error) {
 
 	// re-join the objects into a single manifest
 	return crdNames, strings.Join(crdManifests, yamlJoiner), nil
+}
+
+func waitForCrdsToBeRegistered(ctx context.Context, crds []string) error {
+	apiExts := helpers.MustApiExtsClient()
+	logger := contextutils.LoggerFrom(ctx)
+	for _, crdName := range crds {
+		logger.Debugw("waiting for crd to be registered", zap.String("crd", crdName))
+		if err := kubeutils.WaitForCrdActive(apiExts, crdName); err != nil {
+			return eris.Wrapf(err, "waiting for crd %v to become registered", crdName)
+		}
+	}
+
+	return nil
 }

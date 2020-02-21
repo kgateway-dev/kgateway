@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: >
+      Update docs as part of fix to standard DLP SSN and credit card regexes to ignore boundary characters during regex
+      match. This fixes potential issues where DLP masks characters outside the interesting part of the match, for
+      example, the opening quote if the SSN/Credit Card is part of a JSON response. Before this fix, DLP would
+      incorrectly transform this response into invalid JSON by masking the opening parenthesis.
+    issueLink: https://github.com/solo-io/gloo/issues/1591
+    resolvesIssue: false

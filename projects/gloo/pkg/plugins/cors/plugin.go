@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -41,21 +42,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	corsPlugin := in.VirtualHostPlugins.GetCors()
-
-	// remove this block when deprecated v1.CorsPolicy API is removed
-	if in.CorsPolicy != nil {
-		if corsPlugin == nil {
-			out.Cors = &envoyroute.CorsPolicy{}
-			return p.translateCommonUserCorsConfig(convertDeprecatedCorsPolicy(in.CorsPolicy), out.Cors)
-		} else {
-			contextutils.LoggerFrom(params.Ctx).Warnw("multiple CorsPolicies specified. Ignoring deprecated"+
-				" CorsPolicy field and using VirtualHostPlugins.Cors spec",
-				zap.Any("virtual host", in.Name))
-			// fallthrough and use the virtual host plugin spec instead of the deprecated field
-		}
-	}
-
+	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
@@ -68,7 +55,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	corsPlugin := in.RoutePlugins.GetCors()
+	corsPlugin := in.Options.GetCors()
 	if corsPlugin == nil {
 		return nil
 	}
@@ -86,10 +73,10 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 	outRa.Cors = &envoyroute.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(in.RoutePlugins.Cors, outRa.Cors); err != nil {
+	if err := p.translateCommonUserCorsConfig(in.Options.Cors, outRa.Cors); err != nil {
 		return err
 	}
-	p.translateRouteSpecificCorsConfig(in.RoutePlugins.Cors, outRa.Cors)
+	p.translateRouteSpecificCorsConfig(in.Options.Cors, outRa.Cors)
 	return nil
 }
 
@@ -97,14 +84,25 @@ func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyro
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
-	out.AllowOrigin = in.AllowOrigin
-	out.AllowOriginRegex = in.AllowOriginRegex
+	for _, ao := range in.AllowOrigin {
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: ao},
+		})
+	}
+	for _, ao := range in.AllowOriginRegex {
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: &envoymatcher.RegexMatcher{
+				EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+				Regex:      ao,
+			}},
+		})
+	}
 	out.AllowMethods = strings.Join(in.AllowMethods, ",")
 	out.AllowHeaders = strings.Join(in.AllowHeaders, ",")
 	out.ExposeHeaders = strings.Join(in.ExposeHeaders, ",")
 	out.MaxAge = in.MaxAge
 	if in.AllowCredentials {
-		out.AllowCredentials = &types.BoolValue{Value: in.AllowCredentials}
+		out.AllowCredentials = &wrappers.BoolValue{Value: in.AllowCredentials}
 	}
 	return nil
 }
@@ -128,23 +126,6 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(envoyutil.CORS, pluginStage),
+		plugins.NewStagedFilter(util.CORS, pluginStage),
 	}, nil
-}
-
-func convertDeprecatedCorsPolicy(in *v1.CorsPolicy) *cors.CorsPolicy {
-	out := &cors.CorsPolicy{}
-	if in == nil {
-		return out
-	}
-	out.AllowCredentials = in.AllowCredentials
-	out.AllowHeaders = in.AllowHeaders
-	out.AllowOrigin = in.AllowOrigin
-	out.AllowOriginRegex = in.AllowOriginRegex
-	out.AllowMethods = in.AllowMethods
-	out.AllowHeaders = in.AllowHeaders
-	out.ExposeHeaders = in.ExposeHeaders
-	out.MaxAge = in.MaxAge
-	out.AllowCredentials = in.AllowCredentials
-	return out
 }

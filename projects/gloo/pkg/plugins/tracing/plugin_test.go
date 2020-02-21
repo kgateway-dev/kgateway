@@ -5,8 +5,8 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/hcm"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/tracing"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -35,7 +35,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				OperationName:         envoyhttp.INGRESS,
+				OperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				RequestHeadersForTags: []string{"header1", "header2"},
 				ClientSampling:        &envoy_type.Percent{Value: 10},
 				RandomSampling:        &envoy_type.Percent{Value: 20},
@@ -56,7 +56,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				OperationName:   envoyhttp.INGRESS,
+				OperationName:   envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				ClientSampling:  &envoy_type.Percent{Value: 100},
 				RandomSampling:  &envoy_type.Percent{Value: 100},
 				OverallSampling: &envoy_type.Percent{Value: 100},
@@ -74,7 +74,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 				},
@@ -97,7 +97,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inFull := &v1.Route{
-			RoutePlugins: &v1.RoutePlugins{
+			Options: &v1.RouteOptions{
 				Tracing: &tracing.RouteTracingSettings{
 					RouteDescriptor: "hello",
 					TracePercentages: &tracing.TracePercentages{

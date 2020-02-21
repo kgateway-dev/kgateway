@@ -1,13 +1,13 @@
 package translator
 
 import (
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-func (t *translator) verifyUpstreamGroups(params plugins.Params, reports reporter.ResourceReports) {
+func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports reporter.ResourceReports) {
 
 	upstreams := params.Snapshot.Upstreams
 	upstreamGroups := params.Snapshot.UpstreamGroups

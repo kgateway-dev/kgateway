@@ -1,18 +1,18 @@
 ---
 title: Subsets
 weight: 30
-description: Routing to subsets of an upstream
+description: Routing to subsets of an Upstream.
 ---
 
 ## Subset
 
-[Subset]({{< protobuf name="gloo.solo.io.Subset">}}) currently lets you
+{{< protobuf name="gloo.solo.io.Subset">}} currently lets you
 provide a Kubernetes selector to allow request forwarding to a subset of Kubernetes Pods within the upstream associated
 Kubernetes Service. There are currently two steps required to get subsetting to work for Kubernetes upstreams, which are
 the only upstream type currently supported. 
 
-**First**, you need to edit the [Spec]({{< protobuf name="kubernetes.plugins.gloo.solo.io.UpstreamSpec">}})
-of the Kubernetes Upstream that you want to define subsets for by adding a [`subsetSpec`]({{< protobuf name="plugins.gloo.solo.io.SubsetSpec">}}). 
+**First**, you need to edit the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec">}}
+of the Kubernetes Upstream that you want to define subsets for by adding a {{< protobuf name="plugins.gloo.solo.io.SubsetSpec">}}. 
 The `subsetSpec` contains a list of `selectors`, each of which consist of a set of `keys`. Each key represents a Kubernetes 
 label key. These selectors determine how the subsets for the upstream are to be calculated. For example, the following 
 `subsetSpec`:
@@ -32,8 +32,8 @@ labels, and on the value of the `size` label alone. Envoy requires this informat
 that it needs to compute. The [Envoy documentation](https://github.com/envoyproxy/envoy/blob/master/source/docs/subset_load_balancer.md) 
 contains a great explanation of how on subset load balancing works and we strongly recommend that you read it if you plan to use this feature.
 
-**Second**, you need to add a [`subset`]({{< protobuf name="gloo.solo.io.Subset">}})
-within the [`Destination` spec]({{< protobuf name="gloo.solo.io.Destination">}})
+**Second**, you need to add a {{< protobuf name="gloo.solo.io.Subset">}}
+within the {{< protobuf name="gloo.solo.io.Destination">}}
 of the Route Action. This will determine which of the upstream subsets should be selected as destination for this route.
 
 Following is an example of using a label, e.g. `color: blue`, to subset pods handling requests.
@@ -49,26 +49,25 @@ apiVersion: gloo.solo.io/v1
     name: default-petstore-8080
     namespace: gloo-system
   spec:
-    upstreamSpec:
-      kube:
-        selector:
-          app: petstore
-        serviceName: petstore
-        serviceNamespace: default
-        subsetSpec:
-          selectors:
-          - keys:
-            - color
-        servicePort: 8080
-        serviceSpec:
-          rest:
+    kube:
+      selector:
+        app: petstore
+      serviceName: petstore
+      serviceNamespace: default
+      subsetSpec:
+        selectors:
+        - keys:
+          - color
+      servicePort: 8080
+      serviceSpec:
+        rest:
 ...
 {{< /highlight >}}
 
 And then you need to configure the subset within the Virtual Service route action, e.g. the following will only forward
 requests to a subset of the Petstore Service pods that have a label, `color: blue`.
 
-{{< highlight yaml "hl_lines=22-24" >}}
+{{< highlight yaml "hl_lines=21-23" >}}
 apiVersion: gateway.solo.io/v1
   kind: VirtualService
   metadata:
@@ -79,8 +78,8 @@ apiVersion: gateway.solo.io/v1
       domains:
       - '*'
       routes:
-      - matcher:
-          prefix: /petstore/findPetById
+      - matchers:
+         - prefix: /petstore/findPetById
         routeAction:
           single:
             destinationSpec:

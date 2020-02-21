@@ -25,7 +25,7 @@ type plugin struct {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	kubeSpec, ok := u.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
+	kubeSpec, ok := u.UpstreamType.(*v1.Upstream_Kube)
 	if !ok {
 		return nil, nil
 	}
@@ -47,7 +47,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	// not ours
-	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
+	_, ok := in.UpstreamType.(*v1.Upstream_Kube)
 	if !ok {
 		return nil
 	}

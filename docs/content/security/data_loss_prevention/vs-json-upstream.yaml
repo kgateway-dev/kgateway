@@ -1,0 +1,17 @@
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: vs
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - '*'
+    routes:
+      - routeAction:
+          single:
+            upstream:
+              name: json-upstream
+              namespace: gloo-system
+        options:
+          autoHostRewrite: true

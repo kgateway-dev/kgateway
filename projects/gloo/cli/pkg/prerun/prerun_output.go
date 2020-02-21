@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/solo-io/reporting-client/pkg/signature"
+
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"github.com/solo-io/gloo/pkg/utils/usage"
 
@@ -36,6 +38,8 @@ func ReportUsage(opts *options.Options, cmd *cobra.Command) error {
 		return nil
 	}
 
-	_ = setuputils.StartReportingUsage(context.Background(), &usage.CliUsageReader{}, "glooctl")
+	signatureManager := &signature.FileBackedSignatureManager{}
+
+	_ = setuputils.StartReportingUsage(context.Background(), &usage.CliUsageReader{}, "glooctl", signatureManager)
 	return nil
 }

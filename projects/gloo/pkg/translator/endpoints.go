@@ -3,12 +3,12 @@ package translator
 import (
 	"context"
 
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.opencensus.io/trace"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -36,7 +36,7 @@ func computeClusterEndpoints(ctx context.Context, upstreams []*v1.Upstream, endp
 
 func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.Endpoint) *envoyapi.ClusterLoadAssignment {
 	clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
-	var endpoints []envoyendpoints.LbEndpoint
+	var endpoints []*envoyendpoints.LbEndpoint
 	for _, addr := range clusterEndpoints {
 		metadata := getLbMetadata(upstream, addr.Metadata.Labels, "")
 		metadata = addAnnotations(metadata, addr.Metadata.Annotations)
@@ -47,7 +47,7 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 					Address: &envoycore.Address{
 						Address: &envoycore.Address_SocketAddress{
 							SocketAddress: &envoycore.SocketAddress{
-								Protocol: envoycore.TCP,
+								Protocol: envoycore.SocketAddress_TCP,
 								Address:  addr.Address,
 								PortSpecifier: &envoycore.SocketAddress_PortValue{
 									PortValue: uint32(addr.Port),
@@ -58,12 +58,12 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 				},
 			},
 		}
-		endpoints = append(endpoints, lbEndpoint)
+		endpoints = append(endpoints, &lbEndpoint)
 	}
 
 	return &envoyapi.ClusterLoadAssignment{
 		ClusterName: clusterName,
-		Endpoints: []envoyendpoints.LocalityLbEndpoints{{
+		Endpoints: []*envoyendpoints.LocalityLbEndpoints{{
 			LbEndpoints: endpoints,
 		}},
 	}
@@ -87,24 +87,24 @@ func addAnnotations(metadata *envoycore.Metadata, annotations map[string]string)
 	}
 	if metadata == nil {
 		metadata = &envoycore.Metadata{
-			FilterMetadata: map[string]*types.Struct{},
+			FilterMetadata: map[string]*structpb.Struct{},
 		}
 	}
 
 	if metadata.FilterMetadata == nil {
-		metadata.FilterMetadata = map[string]*types.Struct{}
+		metadata.FilterMetadata = map[string]*structpb.Struct{}
 	}
 
-	fields := map[string]*types.Value{}
+	fields := map[string]*structpb.Value{}
 	for k, v := range annotations {
-		fields[k] = &types.Value{
-			Kind: &types.Value_StringValue{
+		fields[k] = &structpb.Value{
+			Kind: &structpb.Value_StringValue{
 				StringValue: v,
 			},
 		}
 	}
 
-	metadata.FilterMetadata[SoloAnnotations] = &types.Struct{
+	metadata.FilterMetadata[SoloAnnotations] = &structpb.Struct{
 		Fields: fields,
 	}
 	return metadata
@@ -113,17 +113,17 @@ func addAnnotations(metadata *envoycore.Metadata, annotations map[string]string)
 func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue string) *envoycore.Metadata {
 
 	meta := &envoycore.Metadata{
-		FilterMetadata: map[string]*types.Struct{},
+		FilterMetadata: map[string]*structpb.Struct{},
 	}
 
-	labelsStruct := &types.Struct{
-		Fields: map[string]*types.Value{},
+	labelsStruct := &structpb.Struct{
+		Fields: map[string]*structpb.Value{},
 	}
 
 	if upstream != nil {
 		for _, k := range allKeys(upstream) {
-			labelsStruct.Fields[k] = &types.Value{
-				Kind: &types.Value_StringValue{
+			labelsStruct.Fields[k] = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: zeroValue,
 				},
 			}
@@ -132,8 +132,8 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 
 	if labels != nil {
 		for k, v := range labels {
-			labelsStruct.Fields[k] = &types.Value{
-				Kind: &types.Value_StringValue{
+			labelsStruct.Fields[k] = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: v,
 				},
 			}
@@ -149,7 +149,7 @@ func getLbMetadata(upstream *v1.Upstream, labels map[string]string, zeroValue st
 }
 
 func allKeys(upstream *v1.Upstream) []string {
-	specGetter, ok := upstream.UpstreamSpec.UpstreamType.(v1.SubsetSpecGetter)
+	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
 	}

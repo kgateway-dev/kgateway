@@ -22,7 +22,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -38,6 +38,21 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: wasm-cache
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9979
+    name: wasm-cache
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -136,7 +151,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -152,6 +167,21 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: wasm-cache
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9979
+    name: wasm-cache
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -254,7 +284,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -270,6 +300,21 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: wasm-cache
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9979
+    name: wasm-cache
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -388,7 +433,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -404,6 +449,21 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: wasm-cache
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9979
+    name: wasm-cache
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -544,7 +604,7 @@ node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
   metadata:
-    role: '{{.PodNamespace}}~gateway-proxy-v2'
+    role: '{{.PodNamespace}}~gateway-proxy'
 static_resources:
   clusters:
   - alt_stat_name: xds_cluster
@@ -560,6 +620,21 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: wasm-cache
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9979
+    name: wasm-cache
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -587,7 +662,7 @@ static_resources:
         - endpoint:
             address:
               socket_address:
-                address: gateway-proxy-v2-access-logger.gloo-system.svc.cluster.local
+                address: gateway-proxy-access-logger.gloo-system.svc.cluster.local
                 port_value: 8083
     name: access_log_cluster
     type: STRICT_DNS

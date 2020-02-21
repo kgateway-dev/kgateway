@@ -4,13 +4,24 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
+	"github.com/golang/protobuf/ptypes/duration"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -38,10 +49,10 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	v1kubernetes "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
@@ -60,7 +71,7 @@ var _ = Describe("Translator", func() {
 		proxy             *v1.Proxy
 		params            plugins.Params
 		registeredPlugins []plugins.Plugin
-		matcher           *v1.Matcher
+		matcher           *matchers.Matcher
 		routes            []*v1.Route
 
 		snapshot           envoycache.Snapshot
@@ -71,7 +82,7 @@ var _ = Describe("Translator", func() {
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
 
-	BeforeEach(func() {
+	beforeEach := func() {
 
 		ctrl = gomock.NewController(T)
 
@@ -81,10 +92,12 @@ var _ = Describe("Translator", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings:      settings,
-			Secrets:       memoryClientFactory,
-			Upstreams:     memoryClientFactory,
-			ConsulWatcher: consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			Settings:  settings,
+			Secrets:   memoryClientFactory,
+			Upstreams: memoryClientFactory,
+			Consul: bootstrap.Consul{
+				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			},
 		}
 		registeredPlugins = registry.Plugins(opts)
 
@@ -94,14 +107,12 @@ var _ = Describe("Translator", func() {
 		}
 		upstream = &v1.Upstream{
 			Metadata: upName,
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Static{
-					Static: &v1static.UpstreamSpec{
-						Hosts: []*v1static.Host{
-							{
-								Addr: "Test",
-								Port: 124,
-							},
+			UpstreamType: &v1.Upstream_Static{
+				Static: &v1static.UpstreamSpec{
+					Hosts: []*v1static.Host{
+						{
+							Addr: "Test",
+							Port: 124,
 						},
 					},
 				},
@@ -127,13 +138,14 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}
-		matcher = &v1.Matcher{
-			PathSpecifier: &v1.Matcher_Prefix{
+		matcher = &matchers.Matcher{
+			PathSpecifier: &matchers.Matcher_Prefix{
 				Prefix: "/",
 			},
 		}
 		routes = []*v1.Route{{
-			Matchers: []*v1.Matcher{matcher},
+			Name:     "testRouteName",
+			Matchers: []*matchers.Matcher{matcher},
 			Action: &v1.Route_RouteAction{
 				RouteAction: &v1.RouteAction{
 					Destination: &v1.RouteAction_Single{
@@ -146,10 +158,14 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}}
-	})
+	}
+	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
-		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, registeredPlugins...)
+		getPlugins := func() []plugins.Plugin {
+			return registeredPlugins
+		}
+		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -227,7 +243,7 @@ var _ = Describe("Translator", func() {
 
 		hcmFilter := listener.FilterChains[0].Filters[0]
 		hcmCfg = &envoyhttp.HttpConnectionManager{}
-		err = ParseConfig(&hcmFilter, hcmCfg)
+		err = ParseConfig(hcmFilter, hcmCfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
@@ -271,7 +287,7 @@ var _ = Describe("Translator", func() {
 					Grpc: &v1grpc.ServiceSpec{},
 				},
 			}
-			upstream.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).SetServiceSpec(svcSpec)
+			upstream.UpstreamType.(*v1.Upstream_Static).SetServiceSpec(svcSpec)
 			translate()
 			newVersion := snapshot.GetResources(xds.ClusterType).Version
 			Expect(oldVersion).ToNot(Equal(newVersion))
@@ -281,7 +297,7 @@ var _ = Describe("Translator", func() {
 	Context("route no path", func() {
 		BeforeEach(func() {
 			matcher.PathSpecifier = nil
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name: "test",
 				},
@@ -331,10 +347,11 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
 	Context("route header match", func() {
 		It("should translate header matcher with no value to a PresentMatch", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name: "test",
 				},
@@ -342,13 +359,14 @@ var _ = Describe("Translator", func() {
 			translate()
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			presentMatch := headerMatch.GetPresentMatch()
 			Expect(presentMatch).To(BeTrue())
 		})
 
 		It("should translate header matcher with value to exact match", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name:  "test",
 					Value: "testvalue",
@@ -358,13 +376,14 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
 			exactMatch := headerMatch.GetExactMatch()
 			Expect(exactMatch).To(Equal("testvalue"))
 		})
 
 		It("should translate header matcher with regex becomes regex match", func() {
 
-			matcher.Headers = []*v1.HeaderMatcher{
+			matcher.Headers = []*matchers.HeaderMatcher{
 				{
 					Name:  "test",
 					Value: "testvalue",
@@ -375,8 +394,23 @@ var _ = Describe("Translator", func() {
 
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
-			regex := headerMatch.GetRegexMatch()
+			Expect(headerMatch.InvertMatch).To(Equal(false))
+			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+		It("should translate header matcher logic inversion flag", func() {
+
+			matcher.Headers = []*matchers.HeaderMatcher{
+				{
+					Name:        "test",
+					InvertMatch: true,
+				},
+			}
+			translate()
+
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.InvertMatch).To(Equal(true))
 		})
 
 		It("should default to '/' prefix matcher if none is provided", func() {
@@ -389,14 +423,14 @@ var _ = Describe("Translator", func() {
 
 		Context("Multiple matchers", func() {
 			BeforeEach(func() {
-				routes[0].Matchers = []*v1.Matcher{
+				routes[0].Matchers = []*matchers.Matcher{
 					{
-						PathSpecifier: &v1.Matcher_Prefix{
+						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/foo",
 						},
 					},
 					{
-						PathSpecifier: &v1.Matcher_Prefix{
+						PathSpecifier: &matchers.Matcher_Prefix{
 							Prefix: "/bar",
 						},
 					},
@@ -405,27 +439,33 @@ var _ = Describe("Translator", func() {
 
 			It("should translate multiple matchers on a single Gloo route to multiple Envoy routes", func() {
 				translate()
-				fooPrefix := routeConfiguration.VirtualHosts[0].Routes[0].Match.GetPrefix()
-				barPrefix := routeConfiguration.VirtualHosts[0].Routes[1].Match.GetPrefix()
+				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
+				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
+
+				fooPrefix := fooRoute.Match.GetPrefix()
+				barPrefix := barRoute.Match.GetPrefix()
 
 				Expect(fooPrefix).To(Equal("/foo"))
 				Expect(barPrefix).To(Equal("/bar"))
 
-				// the routes should be otherwise identical. wipe the matchers and compare them
-				fooRoute := routeConfiguration.VirtualHosts[0].Routes[0]
-				barRoute := routeConfiguration.VirtualHosts[0].Routes[1]
-				fooRoute.Match = envoyrouteapi.RouteMatch{}
-				barRoute.Match = envoyrouteapi.RouteMatch{}
+				Expect(fooRoute.Name).To(MatchRegexp("testRouteName-[0-9]*"))
+				Expect(barRoute.Name).To(MatchRegexp("testRouteName-[0-9]*"))
+
+				// the routes should be otherwise identical. wipe the matchers and names and compare them
+				fooRoute.Match = &envoyrouteapi.RouteMatch{}
+				barRoute.Match = &envoyrouteapi.RouteMatch{}
+				fooRoute.Name = ""
+				barRoute.Name = ""
 
 				Expect(fooRoute).To(Equal(barRoute))
 			})
 		})
-
 	})
 
 	Context("Health check config", func() {
+
 		It("will error if required field is nil", func() {
-			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*gloo_envoy_core.HealthCheck{
 				{
 					Interval: &DefaultHealthCheckInterval,
 				},
@@ -436,7 +476,7 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("will error if no health checker is supplied", func() {
-			upstream.UpstreamSpec.HealthChecks = []*envoycore.HealthCheck{
+			upstream.HealthChecks = []*gloo_envoy_core.HealthCheck{
 				{
 					Timeout:            &DefaultHealthCheckTimeout,
 					Interval:           &DefaultHealthCheckInterval,
@@ -451,21 +491,26 @@ var _ = Describe("Translator", func() {
 		It("can translate the http health check", func() {
 			expectedResult := []*envoycore.HealthCheck{
 				{
-					Timeout:            &DefaultHealthCheckTimeout,
-					Interval:           &DefaultHealthCheckInterval,
-					HealthyThreshold:   DefaultThreshold,
-					UnhealthyThreshold: DefaultThreshold,
+					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
+					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
+					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
+					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
 						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
-							Host:        "host",
-							Path:        "path",
-							ServiceName: "svc",
-							UseHttp2:    true,
+							Host:                   "host",
+							Path:                   "path",
+							ServiceName:            "svc",
+							RequestHeadersToAdd:    []*envoycore.HeaderValueOption{},
+							RequestHeadersToRemove: []string{},
+							UseHttp2:               true,
+							ExpectedStatuses:       []*envoy_type.Int64Range{},
 						},
 					},
 				},
 			}
-			upstream.UpstreamSpec.HealthChecks = expectedResult
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
@@ -473,10 +518,10 @@ var _ = Describe("Translator", func() {
 		It("can translate the grpc health check", func() {
 			expectedResult := []*envoycore.HealthCheck{
 				{
-					Timeout:            &DefaultHealthCheckTimeout,
-					Interval:           &DefaultHealthCheckInterval,
-					HealthyThreshold:   DefaultThreshold,
-					UnhealthyThreshold: DefaultThreshold,
+					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
+					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
+					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
+					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
 					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
 						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
 							ServiceName: "svc",
@@ -485,41 +530,40 @@ var _ = Describe("Translator", func() {
 					},
 				},
 			}
-			upstream.UpstreamSpec.HealthChecks = expectedResult
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
 			translate()
 			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
 		})
 
 		It("can properly translate outlier detection config", func() {
-			dur := &types.Duration{Seconds: 1}
+			dur := &duration.Duration{Seconds: 1}
 			expectedResult := &envoycluster.OutlierDetection{
-				Consecutive_5Xx:                        DefaultThreshold,
+				Consecutive_5Xx:                        gogoutils.UInt32GogoToProto(DefaultThreshold),
 				Interval:                               dur,
 				BaseEjectionTime:                       dur,
-				MaxEjectionPercent:                     DefaultThreshold,
-				EnforcingConsecutive_5Xx:               DefaultThreshold,
-				EnforcingSuccessRate:                   DefaultThreshold,
-				SuccessRateMinimumHosts:                DefaultThreshold,
-				SuccessRateRequestVolume:               DefaultThreshold,
+				MaxEjectionPercent:                     gogoutils.UInt32GogoToProto(DefaultThreshold),
+				EnforcingConsecutive_5Xx:               gogoutils.UInt32GogoToProto(DefaultThreshold),
+				EnforcingSuccessRate:                   gogoutils.UInt32GogoToProto(DefaultThreshold),
+				SuccessRateMinimumHosts:                gogoutils.UInt32GogoToProto(DefaultThreshold),
+				SuccessRateRequestVolume:               gogoutils.UInt32GogoToProto(DefaultThreshold),
 				SuccessRateStdevFactor:                 nil,
-				ConsecutiveGatewayFailure:              DefaultThreshold,
+				ConsecutiveGatewayFailure:              gogoutils.UInt32GogoToProto(DefaultThreshold),
 				EnforcingConsecutiveGatewayFailure:     nil,
 				SplitExternalLocalOriginErrors:         true,
 				ConsecutiveLocalOriginFailure:          nil,
 				EnforcingConsecutiveLocalOriginFailure: nil,
 				EnforcingLocalOriginSuccessRate:        nil,
 			}
-			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
 			translate()
 			Expect(cluster.OutlierDetection).To(BeEquivalentTo(expectedResult))
 		})
 
 		It("can properly validate outlier detection config", func() {
-			dur := &types.Duration{Seconds: 0}
-			expectedResult := &envoycluster.OutlierDetection{
-				Interval: dur,
-			}
-			upstream.UpstreamSpec.OutlierDetection = expectedResult
+			expectedResult := &envoycluster.OutlierDetection{}
+			upstream.OutlierDetection = gogoutils.ToGlooOutlierDetection(expectedResult)
 			report := translateWithError()
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
@@ -535,7 +579,7 @@ var _ = Describe("Translator", func() {
 
 		It("should translate circuit breakers on upstream", func() {
 
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 1},
 				MaxPendingRequests: &types.UInt32Value{Value: 2},
 				MaxRequests:        &types.UInt32Value{Value: 3},
@@ -545,10 +589,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -570,10 +614,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -592,7 +636,7 @@ var _ = Describe("Translator", func() {
 				MaxRetries:         &types.UInt32Value{Value: 14},
 			}
 
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxConnections:     &types.UInt32Value{Value: 1},
 				MaxPendingRequests: &types.UInt32Value{Value: 2},
 				MaxRequests:        &types.UInt32Value{Value: 3},
@@ -602,10 +646,10 @@ var _ = Describe("Translator", func() {
 			expectedCircuitBreakers := &envoycluster.CircuitBreakers{
 				Thresholds: []*envoycluster.CircuitBreakers_Thresholds{
 					{
-						MaxConnections:     &types.UInt32Value{Value: 1},
-						MaxPendingRequests: &types.UInt32Value{Value: 2},
-						MaxRequests:        &types.UInt32Value{Value: 3},
-						MaxRetries:         &types.UInt32Value{Value: 4},
+						MaxConnections:     &wrappers.UInt32Value{Value: 1},
+						MaxPendingRequests: &wrappers.UInt32Value{Value: 2},
+						MaxRequests:        &wrappers.UInt32Value{Value: 3},
+						MaxRetries:         &wrappers.UInt32Value{Value: 4},
 					},
 				},
 			}
@@ -621,13 +665,113 @@ var _ = Describe("Translator", func() {
 			translate()
 			version1 := endpoints.Version
 			// change the cluster
-			upstream.UpstreamSpec.CircuitBreakers = &v1.CircuitBreakerConfig{
+			upstream.CircuitBreakers = &v1.CircuitBreakerConfig{
 				MaxRetries: &types.UInt32Value{Value: 5},
 			}
 			translate()
 			version2 := endpoints.Version
 			Expect(version2).ToNot(Equal(version1))
 		})
+	})
+
+	Context("lds", func() {
+
+		var (
+			localUpstream1 *v1.Upstream
+			localUpstream2 *v1.Upstream
+		)
+
+		BeforeEach(func() {
+
+			Expect(params.Snapshot.Upstreams).To(HaveLen(1))
+
+			buildLocalUpstream := func(descriptors string) *v1.Upstream {
+				return &v1.Upstream{
+					Metadata: core.Metadata{
+						Name:      "test2",
+						Namespace: "gloo-system",
+					},
+					UpstreamType: &v1.Upstream_Static{
+						Static: &v1static.UpstreamSpec{
+							ServiceSpec: &v1plugins.ServiceSpec{
+								PluginType: &v1plugins.ServiceSpec_Grpc{
+									Grpc: &v1grpc.ServiceSpec{
+										GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
+											PackageName: "foo",
+											ServiceName: "bar",
+										}},
+										Descriptors: []byte(descriptors),
+									},
+								},
+							},
+							Hosts: []*v1static.Host{
+								{
+									Addr: "Test2",
+									Port: 124,
+								},
+							},
+						},
+					},
+				}
+			}
+
+			localUpstream1 = buildLocalUpstream("")
+			localUpstream2 = buildLocalUpstream("randomString")
+
+		})
+
+		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
+			translate()
+
+			By("get the original version and http filters")
+
+			// get version
+			originalVersion := snapshot.GetResources(xds.ListenerType).Version
+
+			// get http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+
+			By("add the upstreams and compare the new version and http filters")
+
+			// add upstreams with same name
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			upstreamsVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
+
+			// reset modified global variables
+			beforeEach()
+
+			By("add the upstreams in the opposite order and compare the version and http filters")
+
+			// add upstreams in the opposite order
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			flipOrderVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
+		})
+
 	})
 
 	Context("when handling upstream groups", func() {
@@ -643,14 +787,12 @@ var _ = Describe("Translator", func() {
 					Name:      "test2",
 					Namespace: "gloo-system",
 				},
-				UpstreamSpec: &v1.UpstreamSpec{
-					UpstreamType: &v1.UpstreamSpec_Static{
-						Static: &v1static.UpstreamSpec{
-							Hosts: []*v1static.Host{
-								{
-									Addr: "Test2",
-									Port: 124,
-								},
+				UpstreamType: &v1.Upstream_Static{
+					Static: &v1static.UpstreamSpec{
+						Hosts: []*v1static.Host{
+							{
+								Addr: "Test2",
+								Port: 124,
 							},
 						},
 					},
@@ -686,7 +828,7 @@ var _ = Describe("Translator", func() {
 			}
 			ref := upstreamGroup.Metadata.Ref()
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_UpstreamGroup{
@@ -729,6 +871,7 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(expectedReport))
 		})
 	})
+
 	Context("when handling endpoints", func() {
 		var (
 			claConfiguration *envoyapi.ClusterLoadAssignment
@@ -738,7 +881,7 @@ var _ = Describe("Translator", func() {
 			claConfiguration = nil
 			annotations = map[string]string{"testkey": "testvalue"}
 
-			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+			upstream.UpstreamType = &v1.Upstream_Kube{
 				Kube: &v1kubernetes.UpstreamSpec{},
 			}
 			ref := upstream.Metadata.Ref()
@@ -786,7 +929,7 @@ var _ = Describe("Translator", func() {
 		BeforeEach(func() {
 			claConfiguration = nil
 
-			upstream.UpstreamSpec.UpstreamType = &v1.UpstreamSpec_Kube{
+			upstream.UpstreamType = &v1.Upstream_Kube{
 				Kube: &v1kubernetes.UpstreamSpec{
 					SubsetSpec: &v1plugins.SubsetSpec{
 						Selectors: []*v1plugins.Selector{{
@@ -814,7 +957,7 @@ var _ = Describe("Translator", func() {
 			}
 
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -892,7 +1035,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matchers: []*v1.Matcher{matcher},
+					Matchers: []*matchers.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -932,7 +1075,7 @@ var _ = Describe("Translator", func() {
 
 			BeforeEach(func() {
 				routes = []*v1.Route{{
-					Matchers: []*v1.Matcher{matcher},
+					Matchers: []*matchers.Matcher{matcher},
 					Action: &v1.Route_RouteAction{
 						RouteAction: &v1.RouteAction{
 							Destination: &v1.RouteAction_Single{
@@ -1028,7 +1171,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -1080,13 +1223,13 @@ var _ = Describe("Translator", func() {
 				return constants.ConsulTagKeyPrefix + tagName
 			}
 
-			trueValue = &types.Value{
-				Kind: &types.Value_StringValue{
+			trueValue = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: constants.ConsulEndpointMetadataMatchTrue,
 				},
 			}
-			falseValue = &types.Value{
-				Kind: &types.Value_StringValue{
+			falseValue = &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: constants.ConsulEndpointMetadataMatchFalse,
 				},
 			}
@@ -1181,7 +1324,7 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			routes = []*v1.Route{{
-				Matchers: []*v1.Matcher{matcher},
+				Matchers: []*matchers.Matcher{matcher},
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -1270,6 +1413,63 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("Route option on direct response actions", func() {
+
+		BeforeEach(func() {
+			routes = []*v1.Route{{
+				Matchers: []*matchers.Matcher{matcher},
+				Action: &v1.Route_DirectResponseAction{
+					DirectResponseAction: &v1.DirectResponseAction{
+						Status: 405,
+						Body:   "Unsupported HTTP method",
+					},
+				},
+				Options: &v1.RouteOptions{
+					HeaderManipulation: &headers.HeaderManipulation{
+						ResponseHeadersToAdd: []*headers.HeaderValueOption{{
+							Header: &headers.HeaderValue{
+								Key:   "client-id",
+								Value: "%REQ(client-id)%",
+							},
+							Append: &types.BoolValue{
+								Value: false,
+							},
+						}},
+					},
+				},
+			}}
+		})
+
+		It("should have the virtual host when processing route", func() {
+			translate()
+
+			// A route to the kube service has been configured
+			routes := snapshot.GetResources(xds.RouteType)
+			Expect(routes.Items).To(HaveKey("http-listener-routes"))
+			routeResource := routes.Items["http-listener-routes"]
+			routeConfiguration = routeResource.ResourceProto().(*envoyapi.RouteConfiguration)
+			Expect(routeConfiguration).NotTo(BeNil())
+			Expect(routeConfiguration.VirtualHosts).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Domains[0]).To(Equal("*"))
+
+			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(HaveLen(1))
+			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(ConsistOf(
+				&envoycore.HeaderValueOption{
+					Header: &envoycore.HeaderValue{
+						Key:   "client-id",
+						Value: "%REQ(client-id)%",
+					},
+					Append: &wrappers.BoolValue{
+						Value: false,
+					},
+				},
+			))
+		})
+
+	})
+
 	Context("TCP", func() {
 		It("can properly create a tcp listener", func() {
 			translate()
@@ -1287,7 +1487,7 @@ var _ = Describe("Translator", func() {
 			cfg := tcpFilter.GetConfig()
 			Expect(cfg).NotTo(BeNil())
 			var typedCfg envoytcp.TcpProxy
-			Expect(ParseConfig(&tcpFilter, &typedCfg)).NotTo(HaveOccurred())
+			Expect(ParseConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
 			clusterSpec := typedCfg.GetCluster()
 			Expect(clusterSpec).To(Equal("test_gloo-system"))
 		})
@@ -1327,6 +1527,12 @@ var _ = Describe("Translator", func() {
 			Expect(found).To(BeTrue())
 			listener = val.ResourceProto().(*envoyapi.Listener)
 		}
+		tlsContext := func(fc *envoylistener.FilterChain) *envoyauth.DownstreamTlsContext {
+			if fc.TransportSocket == nil {
+				return nil
+			}
+			return pluginutils.MustAnyToMessage(fc.TransportSocket.GetTypedConfig()).(*envoyauth.DownstreamTlsContext)
+		}
 		Context("files", func() {
 
 			It("should translate ssl correctly", func() {
@@ -1342,7 +1548,7 @@ var _ = Describe("Translator", func() {
 				})
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
 			It("should not merge 2 ssl config if they are different", func() {
@@ -1389,7 +1595,7 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 			It("should combine sni matches", func() {
 				prep([]*v1.SslConfig{
@@ -1415,8 +1621,8 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetFilename()).To(Equal("cert"))
 				Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
@@ -1445,7 +1651,7 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(BeEmpty())
 			})
 		})
@@ -1488,8 +1694,8 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
@@ -1545,30 +1751,48 @@ var _ = Describe("Translator", func() {
 				Expect(listener.GetFilterChains()).To(HaveLen(2))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
-				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
 				By("checking second filter chain")
 				fc = listener.GetFilterChains()[1]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert = fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
-				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
 			})
 		})
 	})
 
+	It("Should report an error for virtual services with empty domains", func() {
+		virtualHosts := []*v1.VirtualHost{
+			{
+				Domains: []string{"*"},
+			},
+			{
+				Name:    "problem-vhost",
+				Domains: []string{"", "nonempty-url.com"},
+			},
+		}
+		report := &validation.HttpListenerReport{VirtualHostReports: []*validation.VirtualHostReport{{}, {}}}
+
+		ValidateVirtualHostDomains(virtualHosts, report)
+
+		Expect(report.VirtualHostReports[0].Errors).To(BeEmpty(), "The virtual host with domain * should not have an error")
+		Expect(report.VirtualHostReports[1].Errors).NotTo(BeEmpty(), "The virtual host with an empty domain should report errors")
+		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
+	})
 })
 
-func sv(s string) *types.Value {
-	return &types.Value{
-		Kind: &types.Value_StringValue{
+func sv(s string) *structpb.Value {
+	return &structpb.Value{
+		Kind: &structpb.Value_StringValue{
 			StringValue: s,
 		},
 	}

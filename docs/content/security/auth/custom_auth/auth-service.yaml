@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-auth
+  namespace: gloo-system
+  labels:
+    app: sample-auth
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sample-auth
+  template:
+    metadata:
+      labels:
+        app: sample-auth
+    spec:
+      containers:
+      - name: sample-auth
+        image: quay.io/solo-io/sample-auth
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: auth-service
+  namespace: gloo-system
+spec:
+  selector:
+    app: sample-auth
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+---
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  name: auth-server
+  namespace: gloo-system
+spec:
+  static:
+    hosts:
+    - addr: auth-service.gloo-system.svc.cluster.local
+      port: 80

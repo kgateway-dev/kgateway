@@ -1,5 +1,5 @@
 {{- if .Values.settings.integrations.knative.enabled }}
-{{- if (regexMatch "[0-9]+[.][8-9]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
+{{- if (semverCompare ">= 0.8.0" .Values.settings.integrations.knative.version ) }}
 {{- $image := .Values.settings.integrations.knative.proxy.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.settings.integrations.knative.proxy.image .Values.global.image }}

@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Improve the existing documentation of Gloo's transformation features.
+  issueLink: https://github.com/solo-io/gloo/issues/1565

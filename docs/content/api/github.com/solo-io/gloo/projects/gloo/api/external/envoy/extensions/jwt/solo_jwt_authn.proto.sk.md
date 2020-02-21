@@ -82,7 +82,7 @@ and the route cache will be cleared.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `claims` | [[]envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute.ClaimToHeader](../solo_jwt_authn.proto.sk#claimtoheader) |  |  |
+| `claims` | [[]envoy.config.filter.http.solo_jwt_authn.v2.SoloJwtAuthnPerRoute.ClaimToHeader](../solo_jwt_authn.proto.sk/#claimtoheader) |  |  |
 
 
 

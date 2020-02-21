@@ -165,7 +165,7 @@ var (
 func gencerts() {
 
 	cert, privKey = GetCerts(Params{
-		Hosts: "gateway-proxy-v2,knative-proxy,ingress-proxy",
+		Hosts: "gateway-proxy,knative-proxy,ingress-proxy",
 		IsCA:  true,
 	})
 }

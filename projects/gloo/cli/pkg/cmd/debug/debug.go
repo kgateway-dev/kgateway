@@ -3,7 +3,12 @@ package debug
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"strings"
+
+	"github.com/solo-io/gloo/pkg/cliutil/install"
+	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -18,7 +23,8 @@ import (
 )
 
 const (
-	Filename = "/tmp/gloo-system-logs.tgz"
+	Filename        = "/tmp/gloo-system-logs.tgz"
+	filePermissions = 0644
 )
 
 func DebugLogs(opts *options.Options, w io.Writer) error {
@@ -78,6 +84,39 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 	}
 
 	return nil
+}
+
+func DebugYaml(opts *options.Options, w io.Writer) error {
+	return DumpYaml(opts.Top.File, opts.Metadata.Namespace, &install.CmdKubectl{})
+}
+
+// visible for testing
+func DumpYaml(fileToWrite, namespace string, kubeCli install.KubeCli) error {
+
+	var manifests []string
+	for _, kind := range installcmd.GlooNamespacedKinds {
+		output, err := kubeCli.KubectlOut(nil, "get", kind, "-oyaml", "-n", namespace)
+		if err != nil {
+			return err
+		}
+		manifests = append(manifests, string(output))
+	}
+
+	for _, crd := range installcmd.GlooCrdNames {
+		output, err := kubeCli.KubectlOut(nil, "get", crd, "-oyaml", "-n", namespace)
+		if err != nil {
+			return err
+		}
+		manifests = append(manifests, string(output))
+	}
+
+	allOutput := strings.Join(manifests, "\n---\n")
+	if fileToWrite == "" {
+		_, err := fmt.Fprint(os.Stdout, allOutput)
+		return err
+	} else {
+		return ioutil.WriteFile(fileToWrite, []byte(allOutput), filePermissions)
+	}
 }
 
 func zip(fs afero.Fs, dir string, file string) error {

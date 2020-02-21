@@ -1,7 +1,7 @@
 ---
 title: Kubernetes Services
 weight: 30
-description: Routing to services that are registered as Kubernetes Services by querying the Kubernetes API
+description: Routing to services that are registered as Kubernetes Services by querying the Kubernetes API.
 ---
 
 If you are running Gloo in a Kubernetes cluster, it is possible to directly specify 
@@ -16,8 +16,8 @@ The following configuration will forward all requests to `/petstore` to port `80
 
 {{< highlight yaml "hl_lines=6-10" >}}
 routes:
-- matcher:
-    prefix: /petstore
+- matchers:
+   - prefix: /petstore
   routeAction:
     single:
       kube:

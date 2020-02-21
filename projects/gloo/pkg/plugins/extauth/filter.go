@@ -8,23 +8,23 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/gogo/protobuf/types"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var (
 	DefaultTimeout = 200 * time.Millisecond
-	NoServerRefErr = errors.New("no extauth server reference configured")
+	NoServerRefErr = eris.New("no extauth server reference configured")
 	ServerNotFound = func(usRef *core.ResourceRef) error {
-		return errors.Errorf("extauth server upstream not found %s", usRef.String())
+		return eris.Errorf("extauth server upstream not found %s", usRef.String())
 	}
 	InvalidStatusOnErrorErr = func(code uint32) error {
-		return errors.Errorf("invalid statusOnError code", code)
+		return eris.Errorf("invalid statusOnError code: %d", code)
 	}
 )
 
@@ -52,7 +52,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, filterStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +75,7 @@ func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamR
 		if timeout == nil {
 			timeout = &DefaultTimeout
 		}
-		svc.Timeout = types.DurationProto(*timeout)
+		svc.Timeout = gogoutils.DurationStdToProto(timeout)
 
 		cfg.Services = &envoyauth.ExtAuthz_GrpcService{
 			GrpcService: svc,
@@ -84,14 +84,14 @@ func generateEnvoyConfigForFilter(settings *extauthv1.Settings, extauthUpstreamR
 		httpURI := &envoycore.HttpUri{
 			// This uri is not used by the filter but is required because of envoy validation.
 			Uri:     HttpServerUri,
-			Timeout: settings.GetRequestTimeout(),
+			Timeout: gogoutils.DurationStdToProto(settings.GetRequestTimeout()),
 			HttpUpstreamType: &envoycore.HttpUri_Cluster{
 				Cluster: translator.UpstreamToClusterName(extauthUpstreamRef),
 			},
 		}
 		if httpURI.Timeout == nil {
 			// Set to the default. This is required by envoy validation.
-			httpURI.Timeout = &DefaultTimeout
+			httpURI.Timeout = gogoutils.DurationStdToProto(&DefaultTimeout)
 		}
 
 		cfg.Services = &envoyauth.ExtAuthz_HttpService{

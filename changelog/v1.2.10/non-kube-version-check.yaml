@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/1893
+    description: >
+      glooctl assumed a kube-based environment when checking for a client/Server version
+      mismtach. When using Consul, this caused a delay in the glooctl command while the connection
+      to kubernetes timed out and a kubernetes error message. The version check for non-kubernetes
+      environments is now disabled. 

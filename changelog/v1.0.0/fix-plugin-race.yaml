@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix potential race where plugins may be called across translates invoked by the Validation server at the same time as the Translation sync.
+    issueLink: https://github.com/solo-io/gloo/issues/1616

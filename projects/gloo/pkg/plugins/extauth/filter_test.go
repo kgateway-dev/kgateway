@@ -7,15 +7,17 @@ import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -45,7 +47,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			}
 			_, err := BuildHttpFilters(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil)
 			Expect(err).To(HaveOccurred())
-			Expect(err).To(Equal(ServerNotFound(invalidUs)))
+			Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
 		})
 	})
 
@@ -75,14 +77,12 @@ var _ = Describe("Extauth Http filter builder function", func() {
 					Name:      "extauth",
 					Namespace: "default",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &static.UpstreamSpec{
-							Hosts: []*static.Host{{
-								Addr: "test",
-								Port: 1234,
-							}},
-						},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &static.UpstreamSpec{
+						Hosts: []*static.Host{{
+							Addr: "test",
+							Port: 1234,
+						}},
 					},
 				},
 			}
@@ -100,7 +100,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				expectedConfig = &envoyauth.ExtAuthz{
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
-							Timeout: &types.Duration{
+							Timeout: &duration.Duration{
 								Nanos: int32(DefaultTimeout),
 							},
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -145,7 +145,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				expectedConfig = &envoyauth.ExtAuthz{
 					Services: &envoyauth.ExtAuthz_GrpcService{
 						GrpcService: &envoycore.GrpcService{
-							Timeout: &types.Duration{
+							Timeout: &duration.Duration{
 								Nanos: int32(customTimeout),
 							},
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -190,7 +190,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			It("returns an error", func() {
 				_, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
 				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(InvalidStatusOnErrorErr(999)))
+				Expect(err).To(HaveInErrorChain(InvalidStatusOnErrorErr(999)))
 			})
 		})
 
@@ -242,7 +242,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 							},
 							PathPrefix: "/foo",
 							ServerUri: &envoycore.HttpUri{
-								Timeout: &DefaultTimeout,
+								Timeout: gogoutils.DurationStdToProto(&DefaultTimeout),
 								Uri:     HttpServerUri,
 								HttpUpstreamType: &envoycore.HttpUri_Cluster{
 									Cluster: translator.UpstreamToClusterName(usRef),

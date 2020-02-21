@@ -12,6 +12,7 @@ import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -22,7 +23,7 @@ func NewPlugin() plugins.Plugin {
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
-	staticSpec, ok := u.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static)
+	staticSpec, ok := u.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
 		return nil, nil
 	}
@@ -38,7 +39,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	staticSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static)
+	staticSpec, ok := in.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
 		// not ours
 		return nil
@@ -73,18 +74,18 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		if out.LoadAssignment == nil {
 			out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 				ClusterName: out.Name,
-				Endpoints:   []envoyendpoint.LocalityLbEndpoints{{}},
+				Endpoints:   []*envoyendpoint.LocalityLbEndpoints{{}},
 			}
 		}
 
 		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
-			envoyendpoint.LbEndpoint{
+			&envoyendpoint.LbEndpoint{
 				HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 					Endpoint: &envoyendpoint.Endpoint{
 						Address: &envoycore.Address{
 							Address: &envoycore.Address_SocketAddress{
 								SocketAddress: &envoycore.SocketAddress{
-									Protocol: envoycore.TCP,
+									Protocol: envoycore.SocketAddress_TCP,
 									Address:  host.Addr,
 									PortSpecifier: &envoycore.SocketAddress_PortValue{
 										PortValue: host.Port,
@@ -101,9 +102,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if spec.UseTls || foundSslPort {
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
-		if out.TlsContext == nil {
-			out.TlsContext = &envoyauth.UpstreamTlsContext{
+		if out.TransportSocket == nil {
+			tlsContext := &envoyauth.UpstreamTlsContext{
+				// TODO(yuval-k): Add verification context
 				Sni: hostname,
+			}
+			out.TransportSocket = &envoycore.TransportSocket{
+				Name:       pluginutils.TlsTransportSocket,
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 			}
 		}
 	}

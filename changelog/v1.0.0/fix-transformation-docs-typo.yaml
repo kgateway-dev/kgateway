@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Fix typo in transformation doc.
+  issueLink: https://github.com/solo-io/gloo/issues/1622

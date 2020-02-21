@@ -6,7 +6,7 @@ import v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 // copies parts of the UpstreamSpec that are not
 // set by discovery but may be set by the user or function discovery
 // so they are not overwritten when UDS resyncs
-func UpdateUpstreamSpec(original, desired *v1.UpstreamSpec) {
+func UpdateUpstream(original, desired *v1.Upstream) {
 
 	// do not override ssl and subset config if none specified by discovery
 	if desired.SslConfig == nil {

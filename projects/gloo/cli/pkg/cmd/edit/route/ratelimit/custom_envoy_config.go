@@ -5,7 +5,7 @@ import (
 	editRouteOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/route/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmdutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +34,7 @@ func RateLimitCustomConfig(opts *editRouteOptions.RouteEditInput, optionsFunc ..
 func editRoute(opts *editRouteOptions.RouteEditInput) error {
 	return editRouteOptions.UpdateRoute(opts, func(route *gatewayv1.Route) error {
 		ratelimitRouteExtension := new(ratelimitpb.RateLimitRouteExtension)
-		if rlExt := route.GetRoutePlugins().GetRatelimit(); rlExt != nil {
+		if rlExt := route.GetOptions().GetRatelimit(); rlExt != nil {
 			ratelimitRouteExtension = rlExt
 		}
 
@@ -44,11 +44,11 @@ func editRoute(opts *editRouteOptions.RouteEditInput) error {
 			return err
 		}
 		ratelimitRouteExtension = ratelimitRouteExtensionProto.(*ratelimitpb.RateLimitRouteExtension)
-		if route.RoutePlugins == nil {
-			route.RoutePlugins = &gloov1.RoutePlugins{}
+		if route.Options == nil {
+			route.Options = &gloov1.RouteOptions{}
 		}
 
-		route.RoutePlugins.Ratelimit = ratelimitRouteExtension
+		route.Options.Ratelimit = ratelimitRouteExtension
 		return nil
 	})
 }

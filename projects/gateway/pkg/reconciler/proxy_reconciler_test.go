@@ -8,7 +8,6 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	. "github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -25,7 +24,7 @@ import (
 
 	"context"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -34,7 +33,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	var (
 		ctx = context.TODO()
 
-		snap         *v2.ApiSnapshot
+		snap         *v1.ApiSnapshot
 		proxy        *gloov1.Proxy
 		reports      reporter.ResourceReports
 		proxyToWrite GeneratedProxies
@@ -51,7 +50,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 	)
 
 	genProxy := func() {
-		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}})
+		tx := translator.NewTranslator([]translator.ListenerFactory{&translator.HttpTranslator{}, &translator.TcpTranslator{}}, translator.Opts{})
 		proxy, reports = tx.Translate(context.TODO(), "proxy-name", ns, snap, snap.Gateways)
 
 		proxyToWrite = GeneratedProxies{proxy: reports}
@@ -153,7 +152,7 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		Context("a gateway has been removed", func() {
 			It("removes the listener", func() {
 				gw := snap.Gateways[0]
-				snap.Gateways = v2.GatewayList{gw}
+				snap.Gateways = v1.GatewayList{gw}
 				genProxy()
 				reconcile()
 

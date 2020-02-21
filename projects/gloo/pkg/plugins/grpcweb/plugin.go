@@ -1,7 +1,7 @@
 package grpcweb
 
 import (
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -18,32 +18,40 @@ var _ plugins.Plugin = new(Plugin)
 var _ plugins.HttpFilterPlugin = new(Plugin)
 
 type Plugin struct {
+	disabled bool
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
+	maybeDisabled := params.Settings.GetGloo().GetDisableGrpcWeb()
+	if maybeDisabled != nil {
+		p.disabled = maybeDisabled.GetValue()
+	} else {
+		// default to true if not specified
+		p.disabled = false
+	}
 	return nil
 }
 
-func isDisabled(httplistener *v1.HttpListener) bool {
+func (p *Plugin) isDisabled(httplistener *v1.HttpListener) bool {
 	if httplistener == nil {
-		return false
+		return p.disabled
 	}
-	listenerplugins := httplistener.GetListenerPlugins()
+	listenerplugins := httplistener.GetOptions()
 	if listenerplugins == nil {
-		return false
+		return p.disabled
 	}
 	grpcweb := listenerplugins.GetGrpcWeb()
 	if grpcweb == nil {
-		return false
+		return p.disabled
 	}
 	return grpcweb.Disable
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if isDisabled(listener) {
+	if p.isDisabled(listener) {
 		return nil, nil
 	}
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(envoyutil.GRPCWeb, pluginStage),
+		plugins.NewStagedFilter(util.GRPCWeb, pluginStage),
 	}, nil
 }

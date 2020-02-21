@@ -6,8 +6,9 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	"github.com/gogo/protobuf/proto"
+	_go "github.com/prometheus/client_model/go"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
-	io_prometheus_client2 "istio.io/gogo-genproto/prometheus"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
@@ -47,22 +48,22 @@ var _ = Describe("Metrics service", func() {
 			Identifier: &v2.StreamMetricsMessage_Identifier{
 				Node: &envoycore.Node{Id: envoyInstanceId},
 			},
-			EnvoyMetrics: []*io_prometheus_client2.MetricFamily{
+			EnvoyMetrics: []*_go.MetricFamily{
 				{
-					Name: "http.http.downstream_rq_total",
-					Metric: []*io_prometheus_client2.Metric{
+					Name: proto.String("http.http.downstream_rq_total"),
+					Metric: []*_go.Metric{
 						{
-							Counter: &io_prometheus_client2.Counter{
-								Value: 123,
+							Counter: &_go.Counter{
+								Value: proto.Float64(123),
 							},
 						},
 					},
 				},
 				{
-					Name: metricsservice.ServerUptime,
-					Metric: []*io_prometheus_client2.Metric{
+					Name: proto.String(metricsservice.ServerUptime),
+					Metric: []*_go.Metric{
 						{
-							Gauge: &io_prometheus_client2.Gauge{Value: 2},
+							Gauge: &_go.Gauge{Value: proto.Float64(2)},
 						},
 					},
 				},
@@ -105,20 +106,20 @@ var _ = Describe("Metrics service", func() {
 			Identifier: &v2.StreamMetricsMessage_Identifier{
 				Node: &envoycore.Node{Id: envoyInstanceId},
 			},
-			EnvoyMetrics: []*io_prometheus_client2.MetricFamily{
+			EnvoyMetrics: []*_go.MetricFamily{
 				{
-					Name: "http.http.downstream_rq_total",
-					Metric: []*io_prometheus_client2.Metric{
+					Name: proto.String("http.http.downstream_rq_total"),
+					Metric: []*_go.Metric{
 						{
-							Counter: &io_prometheus_client2.Counter{Value: 123},
+							Counter: &_go.Counter{Value: proto.Float64(123)},
 						},
 					},
 				},
 				{
-					Name: metricsservice.ServerUptime,
-					Metric: []*io_prometheus_client2.Metric{
+					Name: proto.String(metricsservice.ServerUptime),
+					Metric: []*_go.Metric{
 						{
-							Gauge: &io_prometheus_client2.Gauge{Value: 10},
+							Gauge: &_go.Gauge{Value: proto.Float64(10)},
 						},
 					},
 				},

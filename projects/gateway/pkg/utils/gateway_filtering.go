@@ -3,11 +3,11 @@ package utils
 import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 )
 
-func GatewaysByProxyName(gateways v2.GatewayList) map[string]v2.GatewayList {
-	result := make(map[string]v2.GatewayList)
+func GatewaysByProxyName(gateways v1.GatewayList) map[string]v1.GatewayList {
+	result := make(map[string]v1.GatewayList)
 	for _, gw := range gateways {
 		proxyNames := GetProxyNamesForGateway(gw)
 		for _, name := range proxyNames {
@@ -17,14 +17,10 @@ func GatewaysByProxyName(gateways v2.GatewayList) map[string]v2.GatewayList {
 	return result
 }
 
-func GetProxyNamesForGateway(gw *v2.Gateway) []string {
+func GetProxyNamesForGateway(gw *v1.Gateway) []string {
 	proxyNames := gw.ProxyNames
 	if len(proxyNames) == 0 {
-		if gw.GatewayProxyName != "" {
-			proxyNames = []string{gw.GatewayProxyName}
-		} else {
-			proxyNames = []string{defaults.GatewayProxyName}
-		}
+		proxyNames = []string{defaults.GatewayProxyName}
 	}
 	return proxyNames
 }

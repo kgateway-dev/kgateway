@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// best effort - write to a file for debug purposes.
-	// this might fail if root fs is ready only
+	// this might fail if root fs is read only
 	writeConfig(outCfg)
 
 	env := os.Environ()
@@ -50,7 +50,6 @@ func main() {
 	if err := syscall.Exec(args[0], args, env); err != nil {
 		panic(err)
 	}
-
 }
 
 func envoy() string {

@@ -1,7 +1,7 @@
 package ec2
 
 import (
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -49,14 +49,10 @@ func (cs *CredentialSpec) Clone() *CredentialSpec {
 }
 
 func NewCredentialSpecFromEc2UpstreamSpec(spec *glooec2.UpstreamSpec) *CredentialSpec {
-	roleArn := spec.GetRoleArn()
-	if roleArn == "" && len(spec.GetRoleArns()) > 0 {
-		roleArn = spec.GetRoleArns()[0]
-	}
 	return &CredentialSpec{
 		secretRef: spec.SecretRef,
 		region:    spec.Region,
-		roleArn:   roleArn,
+		roleArn:   spec.GetRoleArn(),
 	}
 }
 

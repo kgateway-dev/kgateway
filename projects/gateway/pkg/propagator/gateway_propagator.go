@@ -2,7 +2,6 @@ package propagator
 
 import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/propagator"
@@ -11,13 +10,13 @@ import (
 
 type Propagator struct {
 	controller  string
-	gwClient    v2.GatewayClient
+	gwClient    v1.GatewayClient
 	vsClient    v1.VirtualServiceClient
 	proxyClient gloov1.ProxyClient
 	writeErrs   chan error
 }
 
-func NewPropagator(controller string, gwClient v2.GatewayClient, vsClient v1.VirtualServiceClient, proxyClient gloov1.ProxyClient, writeErrs chan error) *Propagator {
+func NewPropagator(controller string, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, proxyClient gloov1.ProxyClient, writeErrs chan error) *Propagator {
 	return &Propagator{
 		controller:  controller,
 		gwClient:    gwClient,
@@ -27,7 +26,7 @@ func NewPropagator(controller string, gwClient v2.GatewayClient, vsClient v1.Vir
 	}
 }
 
-func (p *Propagator) PropagateStatuses(snap *v2.ApiSnapshot,
+func (p *Propagator) PropagateStatuses(snap *v1.ApiSnapshot,
 	proxy *gloov1.Proxy,
 	opts clients.WatchOpts) error {
 	parents := append(snap.Gateways.AsInputResources(), snap.VirtualServices.AsInputResources()...)

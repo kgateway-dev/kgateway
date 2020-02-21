@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"github.com/olekukonko/tablewriter"
@@ -181,20 +182,24 @@ func routeList(routeList []*v1.Route) []string {
 	}
 	var routes []string
 	for _, route := range routeList {
-		routes = append(routes, fmt.Sprintf("%v -> %v", matchersString(route.Matchers), destinationString(route)))
+		var namePrefix string
+		if route.Name != "" {
+			namePrefix = route.Name + ": "
+		}
+		routes = append(routes, fmt.Sprintf("%s%v -> %v", namePrefix, matchersString(route.Matchers), destinationString(route)))
 	}
 	return routes
 }
 
 func vhPlugins(v *v1.VirtualService) string {
 	var pluginStr string
-	if v.VirtualHost.VirtualHostPlugins != nil {
+	if v.VirtualHost.Options != nil {
 		// TODO: fill this when there are vhost plugins
 	}
 	return pluginStr
 }
 
-func matchersString(matchers []*gloov1.Matcher) string {
+func matchersString(matchers []*matchers.Matcher) string {
 	var matchersStrings []string
 	for _, matcher := range matchers {
 		matchersStrings = append(matchersStrings, matcherString(matcher))
@@ -202,13 +207,13 @@ func matchersString(matchers []*gloov1.Matcher) string {
 	return strings.Join(matchersStrings, ", ")
 }
 
-func matcherString(matcher *gloov1.Matcher) string {
+func matcherString(matcher *matchers.Matcher) string {
 	switch ps := matcher.PathSpecifier.(type) {
-	case *gloov1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		return ps.Exact
-	case *gloov1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		return ps.Prefix
-	case *gloov1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		return ps.Regex
 	}
 	return ""
@@ -235,8 +240,9 @@ func destinationString(route *v1.Route) string {
 	case *v1.Route_RedirectAction:
 		return action.RedirectAction.HostRedirect
 	case *v1.Route_DelegateAction:
-		return fmt.Sprintf("%s (route table)", action.DelegateAction.Key())
-
+		if delegateSingle := action.DelegateAction.GetRef(); delegateSingle != nil {
+			return fmt.Sprintf("%s (route table)", delegateSingle.Key())
+		}
 	}
 	return ""
 }

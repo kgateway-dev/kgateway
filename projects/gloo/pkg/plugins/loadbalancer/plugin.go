@@ -4,12 +4,13 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/lbhash"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/errors"
 )
 
 var _ plugins.Plugin = new(Plugin)
@@ -19,7 +20,7 @@ type Plugin struct{}
 
 var (
 	InvalidRouteTypeError = func(e error) error {
-		return errors.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
+		return eris.Wrapf(e, "cannot use lbhash plugin on non-Route_Route route actions")
 	}
 )
 
@@ -32,7 +33,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	lbPlugin := in.RoutePlugins.GetLbHash()
+	lbPlugin := in.Options.GetLbHash()
 	if lbPlugin == nil {
 		return nil
 	}
@@ -61,7 +62,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteActio
 			policy.PolicySpecifier = &envoyroute.RouteAction_HashPolicy_Cookie_{
 				Cookie: &envoyroute.RouteAction_HashPolicy_Cookie{
 					Name: keyType.Cookie.Name,
-					Ttl:  keyType.Cookie.Ttl,
+					Ttl:  gogoutils.DurationStdToProto(keyType.Cookie.Ttl),
 					Path: keyType.Cookie.Path,
 				},
 			}
@@ -79,7 +80,7 @@ func getHashPoliciesFromSpec(spec []*lbhash.HashPolicy) []*envoyroute.RouteActio
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 
-	cfg := in.GetUpstreamSpec().GetLoadBalancerConfig()
+	cfg := in.GetLoadBalancerConfig()
 	if cfg == nil {
 		return nil
 	}
@@ -92,7 +93,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		}
 		if cfg.UpdateMergeWindow != nil {
-			out.CommonLbConfig.UpdateMergeWindow = types.DurationProto(*cfg.UpdateMergeWindow)
+			out.CommonLbConfig.UpdateMergeWindow = gogoutils.DurationStdToProto(cfg.UpdateMergeWindow)
 		}
 	}
 
@@ -105,7 +106,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			if lbtype.LeastRequest.ChoiceCount != 0 {
 				out.LbConfig = &envoyapi.Cluster_LeastRequestLbConfig_{
 					LeastRequestLbConfig: &envoyapi.Cluster_LeastRequestLbConfig{
-						ChoiceCount: &types.UInt32Value{
+						ChoiceCount: &wrappers.UInt32Value{
 							Value: lbtype.LeastRequest.ChoiceCount,
 						},
 					},
@@ -130,12 +131,12 @@ func setRingHashLbConfig(out *envoyapi.Cluster, userConfig *v1.LoadBalancerConfi
 	}
 	if userConfig != nil {
 		if userConfig.MinimumRingSize != 0 {
-			cfg.RingHashLbConfig.MinimumRingSize = &types.UInt64Value{
+			cfg.RingHashLbConfig.MinimumRingSize = &wrappers.UInt64Value{
 				Value: userConfig.MinimumRingSize,
 			}
 		}
 		if userConfig.MaximumRingSize != 0 {
-			cfg.RingHashLbConfig.MaximumRingSize = &types.UInt64Value{
+			cfg.RingHashLbConfig.MaximumRingSize = &wrappers.UInt64Value{
 				Value: userConfig.MaximumRingSize,
 			}
 		}

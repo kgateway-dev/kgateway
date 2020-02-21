@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	skerrors "github.com/solo-io/solo-kit/pkg/errors"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/services/k8sadmisssion"
@@ -24,9 +25,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/rotisserie/eris"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/errors"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,8 +128,8 @@ var _ = Describe("Robustness tests", func() {
 				Domains: []string{"*"},
 				Routes: []*gatewayv1.Route{
 					{
-						Matchers: []*gloov1.Matcher{{
-							PathSpecifier: &gloov1.Matcher_Prefix{
+						Matchers: []*matchers.Matcher{{
+							PathSpecifier: &matchers.Matcher_Prefix{
 								Prefix: "/1",
 							},
 						}},
@@ -164,7 +165,7 @@ var _ = Describe("Robustness tests", func() {
 			if proxy.Status.State == core.Status_Accepted {
 				return nil
 			}
-			return errors.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
+			return eris.Errorf("waiting for proxy to be accepted, but status is %v", proxy.Status)
 		}, 60*time.Second, 1*time.Second).Should(BeNil())
 
 		By("verify that we can route to the service")
@@ -185,8 +186,8 @@ var _ = Describe("Robustness tests", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		virtualService.VirtualHost.Routes = append(virtualService.VirtualHost.Routes, &gatewayv1.Route{
-			Matchers: []*gloov1.Matcher{{
-				PathSpecifier: &gloov1.Matcher_Prefix{
+			Matchers: []*matchers.Matcher{{
+				PathSpecifier: &matchers.Matcher_Prefix{
 					Prefix: "/3",
 				},
 			}},
@@ -212,7 +213,8 @@ var _ = Describe("Robustness tests", func() {
 		// required to prevent gateway webhook from rejecting
 		virtualService.Metadata.Annotations = map[string]string{k8sadmisssion.SkipValidationKey: k8sadmisssion.SkipValidationValue}
 
-		virtualService, err = virtualServiceClient.Write(virtualService, clients.WriteOpts{Ctx: ctx, OverwriteExisting: true})
+		virtualServiceReconciler := gatewayv1.NewVirtualServiceReconciler(virtualServiceClient)
+		err = virtualServiceReconciler.Reconcile(testHelper.InstallNamespace, gatewayv1.VirtualServiceList{virtualService}, nil, clients.ListOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
 		By("wait for proxy to enter warning state")
@@ -224,7 +226,7 @@ var _ = Describe("Robustness tests", func() {
 			if proxy.Status.State == core.Status_Warning {
 				return nil
 			}
-			return errors.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
+			return eris.Errorf("waiting for proxy to be warning, but status is %v", proxy.Status)
 		}, 20*time.Second, 1*time.Second).Should(BeNil())
 
 		By("force an update of the service endpoints")
@@ -369,11 +371,11 @@ func scaleDeploymentTo(kubeClient kubernetes.Interface, deployment *appsv1.Deplo
 		if len(pods.Items) == int(replicas) {
 			for _, pod := range pods.Items {
 				if pod.Status.Phase != corev1.PodRunning {
-					return errors.Errorf("expected pod %v to be %s but was %s", pod.Name, corev1.PodRunning, pod.Status.Phase)
+					return eris.Errorf("expected pod %v to be %s but was %s", pod.Name, corev1.PodRunning, pod.Status.Phase)
 				}
 			}
 			return nil
 		}
-		return errors.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
+		return eris.Errorf("expected %d pods but found %d", replicas, len(pods.Items))
 	}, 60*time.Second, 1*time.Second).Should(BeNil())
 }

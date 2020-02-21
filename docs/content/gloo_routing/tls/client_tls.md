@@ -76,7 +76,7 @@ glooctl get upstream default-example-tls-server-8080
 +---------------------------------|------------|----------|--------------------------------+
 ```
 
-Now let's create a route to the example tls server like [we did in the hello world tutorial](../../../gloo_routing/hello_world/ )
+Now let's create a route to the example tls server like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
 
 ```bash
 glooctl add route \
@@ -179,16 +179,25 @@ secret/upstream-tls created
 
 Now we've got to configure the `default-example-tls-server-8080` upstream to reference this secret in its `sslConfig`.
 
-This can be done easily with `glooctl`:
+This can be done using either `glooctl` to modify the Upstream directly, or adding an annotation to the the service:
 
-
-```bash
+{{< tabs >}}
+{{< tab name="glooctl" codelang="bash">}}
 glooctl edit upstream \
     --name default-example-tls-server-8080 \
     --namespace gloo-system \
     --ssl-secret-name upstream-tls \
     --ssl-secret-namespace default
-```
+{{< /tab >}}
+{{< tab name="kubectl" codelang="bash">}}
+kubectl annotate service -n default example-tls-server gloo.solo.io/sslService.secret=upstream-tls
+{{< /tab >}}
+{{< /tabs >}}
+
+{{% notice note %}}
+See the [guide on using Service annotations to configure SSL]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls_service_annotations">}}) for
+the full set of options when using Service annotations to configure upstream SSL.
+{{% /notice %}}
 
 Now if we get the `default-example-tls-server-8080` Upstream, we should see the new SSL configuration:
 
@@ -208,17 +217,16 @@ metadata:
   namespace: gloo-system
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: example-tls-server
-      serviceName: example-tls-server
-      serviceNamespace: default
-      servicePort: 8080
-    sslConfig:
-      secretRef:
-        name: upstream-tls
-        namespace: default
+  kube:
+    selector:
+      app: example-tls-server
+    serviceName: example-tls-server
+    serviceNamespace: default
+    servicePort: 8080
+  sslConfig:
+    secretRef:
+      name: upstream-tls
+      namespace: default
 status:
   reported_by: gloo
   state: 1
@@ -231,7 +239,7 @@ status:
 curl $(glooctl proxy url)/hello
 ```
 
-The response should be an error:
+Now you should see the following response:
 
 ```bash
 Hello, world!

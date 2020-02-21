@@ -6,12 +6,12 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -46,7 +46,7 @@ var _ = Describe("linkerd plugin", func() {
 					Value: host,
 					Key:   HeaderKey,
 				},
-				Append: &types.BoolValue{
+				Append: &wrappers.BoolValue{
 					Value: false,
 				},
 			}))
@@ -54,25 +54,21 @@ var _ = Describe("linkerd plugin", func() {
 	})
 
 	var createUpstream = func(ref core.ResourceRef, spec *kubernetes.UpstreamSpec) *v1.Upstream {
-		usSpec := &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_Static{
-				Static: &static.UpstreamSpec{},
-			},
-		}
-		if spec != nil {
-			usSpec = &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Kube{
-					Kube: spec,
-				},
-			}
-		}
-		return &v1.Upstream{
+		upstream := &v1.Upstream{
 			Metadata: core.Metadata{
 				Name:      ref.Name,
 				Namespace: ref.Namespace,
 			},
-			UpstreamSpec: usSpec,
 		}
+		upstream.UpstreamType = &v1.Upstream_Static{
+			Static: &static.UpstreamSpec{},
+		}
+		if spec != nil {
+			upstream.UpstreamType = &v1.Upstream_Kube{
+				Kube: spec,
+			}
+		}
+		return upstream
 	}
 
 	var clustersAndDestinationsForUpstreams = func(upstreamRefs []core.ResourceRef) ([]*envoyroute.WeightedCluster_ClusterWeight, []*v1.WeightedDestination) {

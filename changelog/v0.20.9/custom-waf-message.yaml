@@ -1,0 +1,4 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add Enterprise API to allow for customization of waf intervention message.
+  issueLink: https://github.com/solo-io/solo-projects/issues/1235

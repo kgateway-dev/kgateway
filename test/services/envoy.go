@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -19,7 +20,8 @@ import (
 
 	"github.com/onsi/ginkgo"
 	"github.com/onsi/ginkgo/config"
-	"github.com/pkg/errors"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/go-utils/log"
 )
@@ -32,7 +34,11 @@ var adminPort = uint32(20000)
 var bindPort = uint32(10080)
 
 func NextBindPort() uint32 {
-	return atomic.AddUint32(&bindPort, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
+	return AdvanceBindPort(&bindPort)
+}
+
+func AdvanceBindPort(p *uint32) uint32 {
+	return atomic.AddUint32(p, 1) + uint32(config.GinkgoConfig.ParallelNode*1000)
 }
 
 func (ei *EnvoyInstance) buildBootstrap() string {
@@ -160,17 +166,17 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 
 		envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 		if envoyImageTag == "" {
-			envoyImageTag = "latest"
+			panic("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 		}
 		log.Printf("Using envoy docker image tag: %s", envoyImageTag)
 
 		bash := fmt.Sprintf(`
 set -ex
-CID=$(docker run -d  soloio/envoy:%s /bin/bash -c exit)
+CID=$(docker run -d  quay.io/solo-io/envoy-gloo:%s /bin/bash -c exit)
 
 # just print the image sha for repoducibility
 echo "Using Envoy Image:"
-docker inspect soloio/envoy:%s -f "{{.RepoDigests}}"
+docker inspect quay.io/solo-io/envoy-gloo:%s -f "{{.RepoDigests}}"
 
 docker cp $CID:/usr/local/bin/envoy .
 docker rm $CID
@@ -237,6 +243,12 @@ type EnvoyInstance struct {
 	AccessLogs string
 }
 
+func (ef *EnvoyFactory) MustEnvoyInstance() *EnvoyInstance {
+	envoyInstance, err := ef.NewEnvoyInstance()
+	Expect(err).NotTo(HaveOccurred())
+	return envoyInstance
+}
+
 func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 	gloo := "127.0.0.1"
@@ -266,17 +278,31 @@ func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.ID = id
 	ei.Role = "default~proxy"
 
-	return ei.runWithPort(8081)
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), 8081)
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
 	ei.Role = "default~proxy"
 
-	return ei.runWithPort(uint32(port))
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), uint32(port))
 }
 func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 	ei.Role = role
-	return ei.runWithPort(uint32(port))
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), uint32(port))
+}
+
+type EnvoyInstanceConfig interface {
+	Role() string
+	Port() uint32
+	Context() context.Context
+}
+
+func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
+	ei.Role = eic.Role()
+	return ei.runWithPort(eic.Context(), eic.Port())
 }
 
 /*
@@ -287,7 +313,11 @@ func (ei *EnvoyInstance) DebugMode() error {
 	return err
 }
 */
-func (ei *EnvoyInstance) runWithPort(port uint32) error {
+func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32) error {
+	go func() {
+		<-ctx.Done()
+		ei.Clean()
+	}()
 	if ei.ID == "" {
 		ei.ID = "ingress~for-testing"
 	}
@@ -295,7 +325,7 @@ func (ei *EnvoyInstance) runWithPort(port uint32) error {
 
 	ei.envoycfg = ei.buildBootstrap()
 	if ei.UseDocker {
-		err := ei.runContainer()
+		err := ei.runContainer(ctx)
 		if err != nil {
 			return err
 		}
@@ -305,7 +335,7 @@ func (ei *EnvoyInstance) runWithPort(port uint32) error {
 	args := []string{"--config-yaml", ei.envoycfg, "--disable-hot-restart", "--log-level", "debug"}
 
 	// run directly
-	cmd := exec.Command(ei.envoypath, args...)
+	cmd := exec.CommandContext(ctx, ei.envoypath, args...)
 
 	buf := &bytes.Buffer{}
 	ei.logs = buf
@@ -336,6 +366,9 @@ func (ei *EnvoyInstance) SetPanicThreshold() error {
 }
 
 func (ei *EnvoyInstance) Clean() error {
+	if ei == nil {
+		return nil
+	}
 	http.Post(fmt.Sprintf("http://localhost:%d/quitquitquit", ei.AdminPort), "", nil)
 	if ei.cmd != nil {
 		ei.cmd.Process.Kill()
@@ -350,10 +383,10 @@ func (ei *EnvoyInstance) Clean() error {
 	return nil
 }
 
-func (ei *EnvoyInstance) runContainer() error {
+func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
-		return errors.New("Must set the ENVOY_IMAGE_TAG env var")
+		return errors.New("Must set the ENVOY_IMAGE_TAG env var. Find valid tag names here https://quay.io/repository/solo-io/gloo-envoy-wrapper?tab=tags")
 	}
 
 	image := "quay.io/solo-io/gloo-envoy-wrapper:" + envoyImageTag
@@ -368,7 +401,7 @@ func (ei *EnvoyInstance) runContainer() error {
 	}
 
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
-	cmd := exec.Command("docker", args...)
+	cmd := exec.CommandContext(ctx, "docker", args...)
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
 	if err := cmd.Start(); err != nil {

@@ -6,9 +6,9 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
@@ -57,10 +57,8 @@ var _ = Describe("Plugin", func() {
 				Name:      "test",
 				Namespace: "default",
 			},
-			UpstreamSpec: &v1.UpstreamSpec{
-				UpstreamType: &v1.UpstreamSpec_Static{
-					Static: upstreamSpec,
-				},
+			UpstreamType: &v1.Upstream_Static{
+				Static: upstreamSpec,
 			},
 		}
 
@@ -104,7 +102,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			routeOut := &envoyroute.Route{
-				Match: envoyroute.RouteMatch{
+				Match: &envoyroute.RouteMatch{
 					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
 				},
 				Action: &envoyroute.Route_Route{

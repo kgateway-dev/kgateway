@@ -4,21 +4,20 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
-// opinionated method to sort routes by convention
+// Opinionated method to sort routes by convention.
 //
-// for each route, find the "smallest" matcher
-// (i.e., the most-specific one) and use that
-// to sort the entire route
+// For each route, find the "smallest" matcher (i.e., the most-specific one) and use that to sort the entire route.
 
-// matchers sort according to the following rules:
+// Matchers sort according to the following rules:
 // 1. exact path < regex path < prefix path
-// 2. longer path string < shorter path string
+// 2. lexicographically greater path string < lexicographically greater path string
 func SortRoutesByPath(routes []*v1.Route) {
 	sort.SliceStable(routes, func(i, j int) bool {
 		smallest1 := *defaults.DefaultMatcher()
@@ -67,7 +66,7 @@ func SortGatewayRoutesByPath(routes []*gatewayv1.Route) {
 	})
 }
 
-func lessMatcher(m1, m2 *v1.Matcher) bool {
+func lessMatcher(m1, m2 *matchers.Matcher) bool {
 	if len(m1.Methods) != len(m2.Methods) {
 		return len(m1.Methods) > len(m2.Methods)
 	}
@@ -86,13 +85,13 @@ const (
 	pathPriorityPrefix
 )
 
-func pathTypePriority(m *v1.Matcher) int {
+func pathTypePriority(m *matchers.Matcher) int {
 	switch m.PathSpecifier.(type) {
-	case *v1.Matcher_Exact:
+	case *matchers.Matcher_Exact:
 		return pathPriorityExact
-	case *v1.Matcher_Regex:
+	case *matchers.Matcher_Regex:
 		return pathPriorityRegex
-	case *v1.Matcher_Prefix:
+	case *matchers.Matcher_Prefix:
 		return pathPriorityPrefix
 	default:
 		return pathPriorityEmpty

@@ -4,26 +4,29 @@ option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/ref.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/ref.proto";
+import "solo-kit/api/v1/solo-kit.proto";
+import "gloo/projects/gloo/api/v1/ssl.proto";
+import "gloo/projects/gloo/api/v1/proxy.proto";
+import "gloo/projects/gloo/api/v1/options.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
+import "gloo/projects/gloo/api/v1/core/matchers/matchers.proto";
 
 /*
 *
-* The **VirtualService** is the root Routing object for the Gloo Gateway.
+* The **VirtualService** is the root routing object for the Gloo Gateway.
 * A virtual service describes the set of routes to match for a set of domains.
 *
 * It defines:
 * - a set of domains
 * - the root set of routes for those domains
 * - an optional SSL configuration for server TLS Termination
-* - VirtualHostPlugins that will apply configuration to all routes that live on the VirtualService.
+* - VirtualHostOptions that will apply configuration to all routes that live on the VirtualService.
 *
 * Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 *
@@ -45,12 +48,13 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 *     - '*.mydomain.com'
 *     - 'mydomain.com'
 *     routes:
-*     - matcher:
-*         prefix: '/'
+*     - matchers:
+*       - prefix: '/'
 *       # delegate all traffic to the `shared-routes` RouteTable
 *       delegateAction:
-*         name: 'shared-routes'
-*         namespace: 'usernamespace'
+*         ref:
+*           name: 'shared-routes'
+*           namespace: 'usernamespace'
 *
 * ```
 *
@@ -67,12 +71,13 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 *     - '*.mydomain.com'
 *     - 'mydomain.com'
 *     routes:
-*     - matcher:
-*         prefix: '/'
+*     - matchers:
+*       - prefix: '/'
 *       # delegate all traffic to the `shared-routes` RouteTable
 *       delegateAction:
-*         name: 'shared-routes'
-*         namespace: 'usernamespace'
+*         ref:
+*           name: 'shared-routes'
+*           namespace: 'usernamespace'
 *   sslConfig:
 *     secretRef:
 *       name: gateway-tls
@@ -89,8 +94,8 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 *   namespace: 'usernamespace'
 * spec:
 *   routes:
-*     - matcher:
-*         prefix: '/some-route'
+*     - matchers:
+*       - prefix: '/some-route'
 *       routeAction:
 *         single:
 *           upstream:
@@ -103,7 +108,7 @@ import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins.proto";
 *
 * - delegate routes must use `prefix` path matchers
 * - delegated routes cannot specify header, query, or methods portion of the normal route matcher.
-* - `routePlugin` configuration will be inherited from parent routes, but can be overridden by the child
+* - `routeOptions` configuration will be inherited from parent routes, but can be overridden by the child
 *
 */
 message VirtualService {
@@ -124,11 +129,11 @@ message VirtualService {
     // Display only, optional descriptive name.
     // Unlike metadata.name, DisplayName can be any string
     // and can be changed after creating the resource.
-    string display_name = 3 [(core.solo.io.skip_hashing) = true];
+    string display_name = 3 [(extproto.skip_hashing) = true];
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
@@ -147,9 +152,6 @@ Unlike the [Gloo Virtual Host]({{< ref "/api/github.com/solo-io/gloo/projects/gl
 
  */
 message VirtualHost {
-    // deprecated. this field is ignored
-    string name = 1;
-
     // The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host.
     // Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com”
     // but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header.
@@ -163,35 +165,27 @@ message VirtualHost {
     // If the list of routes is empty, the virtual host will be ignored by Gloo.
     repeated Route routes = 3;
 
-    // Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
-    // Some configuration here can be overridden by Route Plugins.
-    gloo.solo.io.VirtualHostPlugins virtual_host_plugins = 4;
-
-    // Defines a CORS policy for the virtual host
-    // If a CORS policy is also defined on the route matched by the request, the policies are merged.
-    // DEPRECATED set cors policy through the Virtual Host Plugin
-    gloo.solo.io.CorsPolicy cors_policy = 5;
+    // Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
+    // Some configuration here can be overridden by Route Options.
+    gloo.solo.io.VirtualHostOptions options = 4;
 }
 
 /*
-*
 * A route specifies how to match a request and what action to take when the request is matched.
-*
 *
 * When a request matches on a route, the route can perform one of the following actions:
 * - *Route* the request to a destination
 * - Reply with a *Direct Response*
 * - Send a *Redirect* response to the client
-* - *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
+* - *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 * DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
-* a top-level `RouteTable` resource.
-*
+* top-level `RouteTable` resources.
 */
 message Route {
     // Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
     // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
     // For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
-    repeated gloo.solo.io.Matcher matchers = 1;
+    repeated matchers.core.gloo.solo.io.Matcher matchers = 1;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {
@@ -205,13 +199,50 @@ message Route {
         // Return an arbitrary HTTP response directly, without proxying.
         gloo.solo.io.DirectResponseAction direct_response_action = 4;
 
-        // delegate routing actions for the given matcher to a RouteTable
-        // the delegateAction config is simply the `name` and `namespace` of the delegated `RouteTable` resource
-        core.solo.io.ResourceRef delegate_action = 5;
+        // Delegate routing actions for the given matcher to one or more RouteTables.
+        DelegateAction delegate_action = 5;
     }
 
-    // Route Plugins extend the behavior of routes.
-    // Route plugins include configuration such as retries, rate limiting, and request/response transformation.
-    // RoutePlugin behavior will be inherited by delegated routes which do not specify their own `routePlugins`
-    gloo.solo.io.RoutePlugins route_plugins = 6;
+    // Route Options extend the behavior of routes.
+    // Route options include configuration such as retries, rate limiting, and request/response transformation.
+    // RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
+    gloo.solo.io.RouteOptions options = 6;
+
+    // The name provides a convenience for users to be able to refer to a route by name.
+    string name = 7;
+}
+
+// DelegateActions are used to delegate routing decisions to Route Tables.
+message DelegateAction {
+
+    // The name of the Route Table to delegate to.
+    // Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
+    // and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+    string name = 1 [deprecated = true];
+
+    // The namespace of the Route Table to delegate to.
+    // Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
+    // and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+    string namespace = 2 [deprecated = true];
+
+    oneof delegation_type {
+        // Delegate to the Route Table resource with the given `name` and `namespace.
+        core.solo.io.ResourceRef ref = 3;
+
+        // Delegate to the Route Tables that match the given selector.
+        RouteTableSelector selector = 4;
+    }
+}
+
+// Select route tables for delegation by namespace, labels, or both.
+message RouteTableSelector {
+
+    // Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace
+    // as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to
+    // select Route Tables in all namespaces watched by Gloo.
+    repeated string namespaces = 1;
+
+    // Delegate to Route Tables whose labels match the ones specified here.
+    map<string, string> labels = 2;
+
 }

@@ -6,7 +6,6 @@ import (
 	"log"
 	"sort"
 
-	"github.com/solo-io/go-utils/hashutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -32,35 +31,12 @@ func (r *Settings) SetStatus(status core.Status) {
 	r.Status = status
 }
 
-func (r *Settings) Hash() uint64 {
-	metaCopy := r.GetMetadata()
-	metaCopy.ResourceVersion = ""
-	metaCopy.Generation = 0
-	// investigate zeroing out owner refs as well
-	return hashutils.HashAll(
-		metaCopy,
-		r.DiscoveryNamespace,
-		r.WatchNamespaces,
-		r.BindAddr,
-		r.RefreshRate,
-		r.DevMode,
-		r.Linkerd,
-		r.CircuitBreakers,
-		r.Knative,
-		r.Discovery,
-		r.Gloo,
-		r.Gateway,
-		r.Consul,
-		r.Kubernetes,
-		r.Extensions,
-		r.Ratelimit,
-		r.RatelimitServer,
-		r.Rbac,
-		r.Extauth,
-		r.ConfigSource,
-		r.SecretSource,
-		r.ArtifactSource,
-	)
+func (r *Settings) MustHash() uint64 {
+	hashVal, err := r.Hash(nil)
+	if err != nil {
+		log.Panicf("error while hashing: (%s) this should never happen", err)
+	}
+	return hashVal
 }
 
 func (r *Settings) GroupVersionKind() schema.GroupVersionKind {
@@ -157,6 +133,11 @@ func (o *Settings) GetObjectKind() schema.ObjectKind {
 
 func (o *Settings) DeepCopyObject() runtime.Object {
 	return resources.Clone(o).(*Settings)
+}
+
+func (o *Settings) DeepCopyInto(out *Settings) {
+	clone := resources.Clone(o).(*Settings)
+	*out = *clone
 }
 
 var (

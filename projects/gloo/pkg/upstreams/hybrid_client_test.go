@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
+	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 
 	"github.com/golang/mock/gomock"
 	"github.com/hashicorp/consul/api"
@@ -28,7 +29,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 
 		svcClient        skkube.ServiceClient
 		baseUsClient     v1.UpstreamClient
-		mockConsulClient *consul.MockConsulClient
+		mockConsulClient *mock_consul.MockConsulClient
 
 		hybridClient v1.UpstreamClient
 
@@ -69,7 +70,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 		svcClient, err = skkube.NewServiceClient(inMemoryFactory)
 		Expect(err).NotTo(HaveOccurred())
 
-		mockConsulClient = consul.NewMockConsulClient(ctrl)
+		mockConsulClient = mock_consul.NewMockConsulClient(ctrl)
 		mockConsulClient.EXPECT().DataCenters().Return([]string{"dc1"}, nil).AnyTimes()
 		mockConsulClient.EXPECT().Services(gomock.Any()).Return(
 			map[string][]string{"svc-1": {}},
@@ -113,7 +114,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 			case list := <-usChan:
 				return list, nil
 			case <-time.After(500 * time.Millisecond):
-				return nil, errors.Errorf("timed out waiting for next upstream list")
+				return nil, eris.Errorf("timed out waiting for next upstream list")
 			}
 		}, "3s").Should(HaveLen(4))
 		Consistently(errChan).Should(Not(Receive()))
@@ -140,7 +141,7 @@ var _ = Describe("Hybrid Upstream Client", func() {
 				case list := <-usChan:
 					return list, nil
 				case <-time.After(500 * time.Millisecond):
-					return nil, errors.Errorf("timed out waiting for next upstream list")
+					return nil, eris.Errorf("timed out waiting for next upstream list")
 				}
 			}, "3s").Should(HaveLen(4))
 

@@ -6,7 +6,7 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubepluginapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	kubecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"k8s.io/client-go/kubernetes/fake"
@@ -148,8 +148,7 @@ var _ = Describe("Kubernetes", func() {
 			}
 		})
 
-		// TODO: why is this not working?
-		PIt("uses json keys when serializing", func() {
+		It("uses json keys when serializing", func() {
 			plug := kubeplugin.NewPlugin(kubeClient, kubeCoreCache).(discovery.DiscoveryPlugin)
 			upstreams, errs, err := plug.DiscoverUpstreams([]string{svcNamespace}, svcNamespace, clients.WatchOpts{
 				Ctx:         context.TODO(),
@@ -157,18 +156,17 @@ var _ = Describe("Kubernetes", func() {
 			}, discovery.Opts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			for {
-				select {
-				case <-time.After(time.Second * 2):
-					Fail("no upstreams detected after 2s")
-				case upstreamList := <-upstreams:
-					Expect(upstreamList).To(HaveLen(4)) // two pods, two ports per pod
-				case err, ok := <-errs:
-					if !ok {
-						return
-					}
-					Expect(err).NotTo(HaveOccurred())
+			select {
+			case <-time.After(time.Second * 2):
+				Fail("no upstreams detected after 2s")
+			case upstreamList := <-upstreams:
+				Expect(upstreamList).To(HaveLen(4)) // two pods, two ports per pod
+				break
+			case err, ok := <-errs:
+				if !ok {
+					return
 				}
+				Expect(err).NotTo(HaveOccurred())
 			}
 		})
 
@@ -176,13 +174,11 @@ var _ = Describe("Kubernetes", func() {
 			makeUpstream := func(name string) *v1.Upstream {
 				return &v1.Upstream{
 					Metadata: core.Metadata{Name: name},
-					UpstreamSpec: &v1.UpstreamSpec{
-						UpstreamType: &v1.UpstreamSpec_Kube{
-							Kube: &kubepluginapi.UpstreamSpec{
-								ServiceNamespace: svcNamespace,
-								ServiceName:      svcName,
-								ServicePort:      8080,
-							},
+					UpstreamType: &v1.Upstream_Kube{
+						Kube: &kubepluginapi.UpstreamSpec{
+							ServiceNamespace: svcNamespace,
+							ServiceName:      svcName,
+							ServicePort:      8080,
 						},
 					},
 				}

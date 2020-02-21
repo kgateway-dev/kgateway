@@ -7,29 +7,29 @@ import "google/protobuf/struct.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/ssl.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/connection.proto";
+import "gloo/projects/gloo/api/v1/ssl.proto";
+import "gloo/projects/gloo/api/v1/extensions.proto";
+import "gloo/projects/gloo/api/v1/circuit_breaker.proto";
+import "gloo/projects/gloo/api/v1/load_balancer.proto";
+import "gloo/projects/gloo/api/v1/connection.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/tcp/tcp.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/static/static.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
+import "gloo/projects/gloo/api/v1/plugins/aws/aws.proto";
+import "gloo/projects/gloo/api/v1/plugins/rest/rest.proto";
+import "gloo/projects/gloo/api/v1/plugins/grpc/grpc.proto";
+import "gloo/projects/gloo/api/v1/plugins/grpc_web/grpc_web.proto";
+import "gloo/projects/gloo/api/v1/plugins/hcm/hcm.proto";
+import "gloo/projects/gloo/api/v1/plugins/tcp/tcp.proto";
+import "gloo/projects/gloo/api/v1/plugins/azure/azure.proto";
+import "gloo/projects/gloo/api/v1/plugins/consul/consul.proto";
+import "gloo/projects/gloo/api/v1/plugins/kubernetes/kubernetes.proto";
+import "gloo/projects/gloo/api/v1/plugins/retries/retries.proto";
+import "gloo/projects/gloo/api/v1/plugins/static/static.proto";
+import "gloo/projects/gloo/api/v1/plugins/stats/stats.proto";
+import "gloo/projects/gloo/api/v1/plugins/transformation/prefix_rewrite.proto";
+import "gloo/projects/gloo/api/v1/plugins/transformation/transformation.proto";
+import "gloo/projects/gloo/api/v1/plugins/faultinjection/fault.proto";
 // add the following line:
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/gce/gce.proto";
+import "gloo/projects/gloo/api/v1/plugins/gce/gce.proto";
 
 import "google/protobuf/duration.proto";
 
@@ -87,8 +87,8 @@ message DestinationSpec {
     }
 }
 
-// Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo plugin.
+// Each upstream in Gloo has a type. Supported types include `static`, `kube`, `aws`, `consul`, and more.
+// Each upstream type is handled by a corresponding Gloo plugin. (plugins currently need to be compiled into Gloo)
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
@@ -105,7 +105,7 @@ message UpstreamSpec {
     // with a grpc service spec
     bool use_http2 = 10;
 
-    // Note to developers: new Upstream Plugins must be added to this oneof field
+    // Note to developers: new Upstream plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
         kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;

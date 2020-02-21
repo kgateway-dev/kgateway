@@ -15,10 +15,13 @@ weight: 5
 - [Node](#node)
 - [Metadata](#metadata)
 - [RuntimeUInt32](#runtimeuint32)
+- [RuntimeFeatureFlag](#runtimefeatureflag)
 - [HeaderValue](#headervalue)
 - [HeaderValueOption](#headervalueoption)
 - [HeaderMap](#headermap)
 - [DataSource](#datasource)
+- [RemoteDataSource](#remotedatasource)
+- [AsyncDataSource](#asyncdatasource)
 - [TransportSocket](#transportsocket)
 - [SocketOption](#socketoption)
 - [SocketState](#socketstate)
@@ -33,6 +36,7 @@ weight: 5
 
 	- [RoutingPriority](#routingpriority)
 	- [RequestMethod](#requestmethod)
+	- [TrafficDirection](#trafficdirection)
 
 
 
@@ -57,8 +61,8 @@ Identifies location of where either Envoy runs or where upstream hosts run.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `region` | `string` | Region this :ref:`zone <envoy_api_field_core.Locality.zone>` belongs to. |  |
-| `zone` | `string` | Defines the local service zone where Envoy is running. Though optional, it should be set if discovery service routing is used and the discovery service exposes :ref:`zone data <envoy_api_field_endpoint.LocalityLbEndpoints.locality>`, either in this message or via :option:`--service-zone`. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |  |
+| `region` | `string` | Region this `zone (envoy_api_field_core.Locality.zone)` belongs to. |  |
+| `zone` | `string` | Defines the local service zone where Envoy is running. Though optional, it should be set if discovery service routing is used and the discovery service exposes `zone data (envoy_api_field_endpoint.LocalityLbEndpoints.locality)`, either in this message or via :option:`--service-zone`. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |  |
 | `subZone` | `string` | When used for locality of upstream hosts, this field further splits zone into smaller chunks of sub-zones so they can be load balanced independently. |  |
 
 
@@ -83,10 +87,10 @@ configuration for serving.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-node`. |  |
-| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: :ref:`statsd <arch_overview_statistics>`, :ref:`health check cluster verification <envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name>`, :ref:`runtime override directory <envoy_api_msg_config.bootstrap.v2.Runtime>`, :ref:`user agent addition <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent>`, :ref:`HTTP global rate limiting <config_http_filters_rate_limit>`, :ref:`CDS <config_cluster_manager_cds>`, and :ref:`HTTP tracing <arch_overview_tracing>`, either in this message or via :option:`--service-cluster`. |  |
+| `id` | `string` | An opaque node identifier for the Envoy node. This also provides the local service node name. It should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-node`. |  |
+| `cluster` | `string` | Defines the local service cluster name where Envoy is running. Though optional, it should be set if any of the following features are used: `statsd (arch_overview_statistics)`, `health check cluster verification (envoy_api_field_core.HealthCheck.HttpHealthCheck.service_name)`, `runtime override directory (envoy_api_msg_config.bootstrap.v2.Runtime)`, `user agent addition (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.add_user_agent)`, `HTTP global rate limiting (config_http_filters_rate_limit)`, `CDS (config_cluster_manager_cds)`, and `HTTP tracing (arch_overview_tracing)`, either in this message or via :option:`--service-cluster`. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Opaque metadata extending the node identifier. Envoy will pass this directly to the management server. |  |
-| `locality` | [.envoy.api.v2.core.Locality](../base.proto.sk#locality) | Locality specifying where the Envoy instance is running. |  |
+| `locality` | [.envoy.api.v2.core.Locality](../base.proto.sk/#locality) | Locality specifying where the Envoy instance is running. |  |
 | `buildVersion` | `string` | This is motivated by informing a management server during canary which version of Envoy is being tested in a heterogeneous fleet. This will be set by Envoy in management server RPCs. |  |
 
 
@@ -151,6 +155,26 @@ Runtime derived uint32 with a default when not specified.
 
 
 ---
+### RuntimeFeatureFlag
+
+ 
+Runtime derived bool with a default when not specified.
+
+```yaml
+"defaultValue": .google.protobuf.BoolValue
+"runtimeKey": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `defaultValue` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default value if runtime value is not available. |  |
+| `runtimeKey` | `string` | Runtime key to get value for comparison. This value is used if defined. The boolean value must be represented via its `canonical JSON encoding <https://developers.google.com/protocol-buffers/docs/proto3#json>`_. |  |
+
+
+
+
+---
 ### HeaderValue
 
  
@@ -165,7 +189,7 @@ Header name/value pair.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `key` | `string` | Header name. |  |
-| `value` | `string` | Header value. The same :ref:`format specifier <config_access_log_format>` as used for :ref:`HTTP access logging <config_access_log>` applies here, however unknown header values are replaced with the empty string instead of `-`. |  |
+| `value` | `string` | Header value. The same `format specifier (config_access_log_format)` as used for `HTTP access logging (config_access_log)` applies here, however unknown header values are replaced with the empty string instead of `-`. |  |
 
 
 
@@ -184,7 +208,7 @@ Header name/value pair plus option to control append behavior.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `header` | [.envoy.api.v2.core.HeaderValue](../base.proto.sk#headervalue) | Header name/value pair that this option applies to. |  |
+| `header` | [.envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) | Header name/value pair that this option applies to. |  |
 | `append` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should the value be appended? If true (default), the value is appended to existing values. |  |
 
 
@@ -203,7 +227,7 @@ Wrapper for a set of headers.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headers` | [[]envoy.api.v2.core.HeaderValue](../base.proto.sk#headervalue) |  |  |
+| `headers` | [[]envoy.api.v2.core.HeaderValue](../base.proto.sk/#headervalue) |  |  |
 
 
 
@@ -231,11 +255,51 @@ Data source consisting of either a file or an inline value.
 
 
 ---
+### RemoteDataSource
+
+ 
+The message specifies how to fetch data from remote and how to verify it.
+
+```yaml
+"httpUri": .envoy.api.v2.core.HttpUri
+"sha256": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `httpUri` | [.envoy.api.v2.core.HttpUri](../http_uri.proto.sk/#httpuri) | The HTTP URI to fetch the remote data. |  |
+| `sha256` | `string` | SHA256 string for verifying data. |  |
+
+
+
+
+---
+### AsyncDataSource
+
+ 
+Async data source which support async data fetch.
+
+```yaml
+"local": .envoy.api.v2.core.DataSource
+"remote": .envoy.api.v2.core.RemoteDataSource
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `local` | [.envoy.api.v2.core.DataSource](../base.proto.sk/#datasource) | Local async data source. Only one of `local` or `remote` can be set. |  |
+| `remote` | [.envoy.api.v2.core.RemoteDataSource](../base.proto.sk/#remotedatasource) | Remote async data source. Only one of `remote` or `local` can be set. |  |
+
+
+
+
+---
 ### TransportSocket
 
  
-Configuration for transport socket in :ref:`listeners <config_listeners>` and
-:ref:`clusters <envoy_api_msg_Cluster>`. If the configuration is
+Configuration for transport socket in `listeners (config_listeners)` and
+`clusters (envoy_api_msg_Cluster)`. If the configuration is
 empty, a default transport socket implementation and configuration will be
 chosen based on the platform and existence of tls_context.
 
@@ -279,7 +343,7 @@ might not exist in upstream kernels or precompiled Envoy binaries.
 | `name` | `int` | The numeric name as passed to setsockopt. |  |
 | `intValue` | `int` | Because many sockopts take an int value. Only one of `intValue` or `bufValue` can be set. |  |
 | `bufValue` | `bytes` | Otherwise it's a byte buffer. Only one of `bufValue` or `intValue` can be set. |  |
-| `state` | [.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
+| `state` | [.envoy.api.v2.core.SocketOption.SocketState](../base.proto.sk/#socketstate) | The state in which the option will be applied. When used in BindConfig STATE_PREBIND is currently the only valid value. |  |
 
 
 
@@ -313,7 +377,7 @@ specified via a runtime key.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `defaultValue` | [.envoy.type.FractionalPercent](../../../../type/percent.proto.sk#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
+| `defaultValue` | [.envoy.type.FractionalPercent](../../../../type/percent.proto.sk/#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
 | `runtimeKey` | `string` | Runtime key for a YAML representation of a FractionalPercent. |  |
 
 
@@ -339,8 +403,8 @@ Identifies a specific ControlPlane instance that Envoy is connected to.
   
 ### RoutingPriority
 
-Description: Envoy supports :ref:`upstream priority routing
-<arch_overview_http_routing_priority>` both at the route and the virtual
+Description: Envoy supports `upstream priority routing
+(arch_overview_http_routing_priority)` both at the route and the virtual
 cluster level. The current priority implementation uses different connection
 pool and circuit breaking settings for each priority level. This means that
 even for HTTP/2 requests, two physical connections will be used to an
@@ -367,6 +431,17 @@ Description: HTTP request method.
 | CONNECT |  |
 | OPTIONS |  |
 | TRACE |  |
+| PATCH |  |
+  
+### TrafficDirection
+
+Description: Identifies the direction of the traffic relative to the local Envoy.
+
+| Name | Description |
+| ----- | ----------- | 
+| UNSPECIFIED | Default option is unspecified. |
+| INBOUND | The transport is used for incoming traffic. |
+| OUTBOUND | The transport is used for outgoing traffic. |
 
 
 <!-- Start of HubSpot Embed Code -->

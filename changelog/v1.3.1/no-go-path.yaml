@@ -1,0 +1,17 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Make Gloo fully compatible with go.mod, so that it can be run outside of the GOPATH. As a result of this all of
+    the proto import paths needed to be stripped of the `github.com/solo-io` prefix, as that is no longer assured
+    outside of the GOPATH.
+  issueLink: https://github.com/solo-io/gloo/issues/835
+- type: FIX
+  description: >
+    undo change to /docs/.gitignore which was failing to commit new generated docs, therefore producing broken links
+  issueLink: https://github.com/solo-io/gloo/issues/2077
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: solo-kit
+  dependencyTag: v0.12.1
+  description: >
+    Update solo-kit to version 0.12.1. This is the version which supports running outside the GOPATH

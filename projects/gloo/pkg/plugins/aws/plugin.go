@@ -10,15 +10,16 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
-	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -62,7 +63,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	upstreamSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws)
+	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Aws)
 	if !ok {
 		// not ours
 		return nil
@@ -80,9 +81,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
-	out.TlsContext = &envoyauth.UpstreamTlsContext{
+	tlsContext := &envoyauth.UpstreamTlsContext{
 		// TODO(yuval-k): Add verification context
 		Sni: lambdaHostname,
+	}
+	out.TransportSocket = &envoycore.TransportSocket{
+		Name:       pluginutils.TlsTransportSocket,
+		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 	}
 
 	accessKey := ""

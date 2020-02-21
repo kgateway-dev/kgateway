@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    description: >
+      Fix casing of helm value global.glooRbac.namespaced in the generated docs. The value global.glooRbac.namespaced has always been supported but we had been generating docs that have the value capitalized (global.glooRbac.Namespaced), incorrectly.
+    issueLink: https://github.com/solo-io/gloo/issues/1569
+  - type: NON_USER_FACING
+    description: >
+      "Update helm values docs during docs generation"

@@ -1,4 +1,4 @@
-{{- if and  .Values.gateway.enabled .Values.accessLogger.enabled }}
+{{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
 {{- if .Values.global  }}
 {{- $image = merge .Values.accessLogger.image .Values.global.image }}
@@ -9,20 +9,20 @@ kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: gateway-proxy-v2-access-logger
-  name: gateway-proxy-v2-access-logger
+    gloo: gateway-proxy-access-logger
+  name: gateway-proxy-access-logger
   namespace: {{ $.Release.Namespace }}
 spec:
   replicas: {{ .Values.accessLogger.replicas }}
   selector:
     matchLabels:
       app: gloo
-      gloo: gateway-proxy-v2-access-logger
+      gloo: gateway-proxy-access-logger
   template:
     metadata:
       labels:
         app: gloo
-        gloo: gateway-proxy-v2-access-logger
+        gloo: gateway-proxy-access-logger
     spec:
       serviceAccountName: gateway-proxy
       containers:

@@ -4,8 +4,7 @@ weight: 10
 description: Routing to explicitly and statically defined upstream (ie, not automatically discovered)
 ---
 
-Let's configure Gloo to route to a single, static upstream. In this case, we'll route requests through Gloo 
-to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
+Let's configure Gloo to route to a single, static Upstream. In this case, we'll route requests through Gloo to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
@@ -30,10 +29,6 @@ Now let's create a virtual service that routes all requests to the `foo` domain 
 {{< tab name="kubectl" codelang="yaml">}}
 {{< readfile file="gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream/virtual-service.yaml">}}
 {{< /tab >}}
-{{< tab name="glooctl" codelang="shell">}}
-glooctl create vs --name test-static --namespace gloo-system --domains foo 
-glooctl add route --name test-static --path-prefix / --dest-name json-upstream
-{{< /tab >}}
 {{< /tabs >}}
 
 ## Test routes
@@ -41,7 +36,7 @@ glooctl add route --name test-static --path-prefix / --dest-name json-upstream
 Now we can verify that the proxy was updated to support routing to this upstream using curl:
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/posts
+curl -H "Host: foo" $(glooctl proxy url)/posts
 ```
 
 ```json

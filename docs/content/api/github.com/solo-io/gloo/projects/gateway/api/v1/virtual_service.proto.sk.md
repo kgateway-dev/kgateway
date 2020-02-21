@@ -14,6 +14,8 @@ weight: 5
 - [VirtualService](#virtualservice) **Top-Level Resource**
 - [VirtualHost](#virtualhost)
 - [Route](#route)
+- [DelegateAction](#delegateaction)
+- [RouteTableSelector](#routetableselector)
   
 
 
@@ -28,14 +30,14 @@ weight: 5
 ### VirtualService
 
  
-The **VirtualService** is the root Routing object for the Gloo Gateway.
+The **VirtualService** is the root routing object for the Gloo Gateway.
 A virtual service describes the set of routes to match for a set of domains.
 
 It defines:
 - a set of domains
 - the root set of routes for those domains
 - an optional SSL configuration for server TLS Termination
-- VirtualHostPlugins that will apply configuration to all routes that live on the VirtualService.
+- VirtualHostOptions that will apply configuration to all routes that live on the VirtualService.
 
 Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 
@@ -57,12 +59,13 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
-        name: 'shared-routes'
-        namespace: 'usernamespace'
+        ref:
+          name: 'shared-routes'
+          namespace: 'usernamespace'
 
 ```
 
@@ -79,12 +82,13 @@ spec:
     - '*.mydomain.com'
     - 'mydomain.com'
     routes:
-    - matcher:
-        prefix: '/'
+    - matchers:
+      - prefix: '/'
       # delegate all traffic to the `shared-routes` RouteTable
       delegateAction:
-        name: 'shared-routes'
-        namespace: 'usernamespace'
+        ref:
+          name: 'shared-routes'
+          namespace: 'usernamespace'
   sslConfig:
     secretRef:
       name: gateway-tls
@@ -101,8 +105,8 @@ metadata:
   namespace: 'usernamespace'
 spec:
   routes:
-    - matcher:
-        prefix: '/some-route'
+    - matchers:
+      - prefix: '/some-route'
       routeAction:
         single:
           upstream:
@@ -115,7 +119,7 @@ constraints:
 
 - delegate routes must use `prefix` path matchers
 - delegated routes cannot specify header, query, or methods portion of the normal route matcher.
-- `routePlugin` configuration will be inherited from parent routes, but can be overridden by the child
+- `routeOptions` configuration will be inherited from parent routes, but can be overridden by the child
 
 ```yaml
 "virtualHost": .gateway.solo.io.VirtualHost
@@ -128,11 +132,11 @@ constraints:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk#virtualhost) | The VirtualHost contains the The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
+| `virtualHost` | [.gateway.solo.io.VirtualHost](../virtual_service.proto.sk/#virtualhost) | The VirtualHost contains the The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../../../../gloo/api/v1/ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
 | `displayName` | `string` | Display only, optional descriptive name. Unlike metadata.name, DisplayName can be any string and can be changed after creating the resource. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 
@@ -151,21 +155,17 @@ Unlike the [Gloo Virtual Host]({{< ref "/api/github.com/solo-io/gloo/projects/gl
 Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 
 ```yaml
-"name": string
 "domains": []string
 "routes": []gateway.solo.io.Route
-"virtualHostPlugins": .gloo.solo.io.VirtualHostPlugins
-"corsPolicy": .gloo.solo.io.CorsPolicy
+"options": .gloo.solo.io.VirtualHostOptions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | deprecated. this field is ignored. |  |
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host on a gateway can match on “*”. A domain must be unique across all virtual hosts on a gateway or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |  |
-| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../../../../gloo/api/v1/plugins.proto.sk#virtualhostplugins) | Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Plugins. |  |
-| `corsPolicy` | [.gloo.solo.io.CorsPolicy](../../../../gloo/api/v1/proxy.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. DEPRECATED set cors policy through the Virtual Host Plugin. |  |
+| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
+| `options` | [.gloo.solo.io.VirtualHostOptions](../../../../gloo/api/v1/options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |  |
 
 
 
@@ -176,33 +176,78 @@ Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
  
 A route specifies how to match a request and what action to take when the request is matched.
 
-
 When a request matches on a route, the route can perform one of the following actions:
 - *Route* the request to a destination
 - Reply with a *Direct Response*
 - Send a *Redirect* response to the client
-- *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
+- *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
-a top-level `RouteTable` resource.
+top-level `RouteTable` resources.
 
 ```yaml
-"matchers": []gloo.solo.io.Matcher
+"matchers": []matchers.core.gloo.solo.io.Matcher
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
-"delegateAction": .core.solo.io.ResourceRef
-"routePlugins": .gloo.solo.io.RoutePlugins
+"delegateAction": .gateway.solo.io.DelegateAction
+"options": .gloo.solo.io.RouteOptions
+"name": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `matchers` | [[]gloo.solo.io.Matcher](../../../../gloo/api/v1/proxy.proto.sk#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |  |
-| `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
-| `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
-| `delegateAction` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | delegate routing actions for the given matcher to a RouteTable the delegateAction config is simply the `name` and `namespace` of the delegated `RouteTable` resource. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
-| `routePlugins` | [.gloo.solo.io.RoutePlugins](../../../../gloo/api/v1/plugins.proto.sk#routeplugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries, rate limiting, and request/response transformation. RoutePlugin behavior will be inherited by delegated routes which do not specify their own `routePlugins`. |  |
+| `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../../../../gloo/api/v1/core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher) For delegated routes, the matcher must contain only a `prefix` path matcher and no other config. |  |
+| `routeAction` | [.gloo.solo.io.RouteAction](../../../../gloo/api/v1/proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, `redirectAction`, or `delegateAction` can be set. |  |
+| `redirectAction` | [.gloo.solo.io.RedirectAction](../../../../gloo/api/v1/proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, `routeAction`, or `delegateAction` can be set. |  |
+| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../../../../gloo/api/v1/proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, `routeAction`, or `delegateAction` can be set. |  |
+| `delegateAction` | [.gateway.solo.io.DelegateAction](../virtual_service.proto.sk/#delegateaction) | Delegate routing actions for the given matcher to one or more RouteTables. Only one of `delegateAction`, `routeAction`, or `directResponseAction` can be set. |  |
+| `options` | [.gloo.solo.io.RouteOptions](../../../../gloo/api/v1/options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. RouteOption behavior will be inherited by delegated routes which do not specify their own `options`. |  |
+| `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. |  |
+
+
+
+
+---
+### DelegateAction
+
+ 
+DelegateActions are used to delegate routing decisions to Route Tables.
+
+```yaml
+"name": string
+"namespace": string
+"ref": .core.solo.io.ResourceRef
+"selector": .gateway.solo.io.RouteTableSelector
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `name` | `string` | The name of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `namespace` | `string` | The namespace of the Route Table to delegate to. Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name` and/or `namespace` have been specified, Gloo will ignore `single` and `selector`. |  |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Delegate to the Route Table resource with the given `name` and `namespace. Only one of `ref` or `selector` can be set. |  |
+| `selector` | [.gateway.solo.io.RouteTableSelector](../virtual_service.proto.sk/#routetableselector) | Delegate to the Route Tables that match the given selector. Only one of `selector` or `ref` can be set. |  |
+
+
+
+
+---
+### RouteTableSelector
+
+ 
+Select route tables for delegation by namespace, labels, or both.
+
+```yaml
+"namespaces": []string
+"labels": map<string, string>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
+| `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
 
 
 

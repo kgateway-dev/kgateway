@@ -3,6 +3,7 @@ package linkerd
 import (
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -10,9 +11,8 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 )
@@ -62,7 +62,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return nil
 		}
-		kubeUs := us.GetUpstreamSpec().GetKube()
+		kubeUs := us.GetKube()
 		if kubeUs == nil {
 			return nil
 		}
@@ -117,7 +117,7 @@ func configForMultiDestination(destinations []*v1.WeightedDestination, upstreams
 		if err != nil {
 			continue
 		}
-		kubeUs := us.GetUpstreamSpec().GetKube()
+		kubeUs := us.GetKube()
 		if kubeUs == nil {
 			continue
 		}
@@ -152,7 +152,7 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 	destination := fmt.Sprintf("%s.%s.svc.cluster.local:%v",
 		us.ServiceName, us.ServiceNamespace, us.ServicePort)
 	header := &envoycore.HeaderValueOption{
-		Append: &types.BoolValue{
+		Append: &wrappers.BoolValue{
 			Value: false,
 		},
 		Header: &envoycore.HeaderValue{

@@ -3,6 +3,10 @@ package translator
 import (
 	"context"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
+	"go.uber.org/zap/zapcore"
+
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/ingress/pkg/api/v1"
@@ -34,16 +38,22 @@ func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressCli
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v ingresses)", snap.Hash(),
+	logger.Infof("begin sync %v (%v ingresses)", snapHash,
 		len(snap.Ingresses))
-	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
+	defer logger.Infof("end sync %v", snapHash)
+
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	proxy, err := translateProxy(s.writeNamespace, snap, s.requireIngressClass)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"ingress proxy will not be updated.", snap.Hash(), err)
+			"ingress proxy will not be updated.", snapHash, err)
 		return err
 	}
 

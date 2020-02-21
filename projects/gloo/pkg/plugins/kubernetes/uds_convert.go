@@ -15,7 +15,7 @@ import (
 	sanitizer "github.com/solo-io/go-utils/kubeutils"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/kubernetes"
+	kubeplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
@@ -118,8 +118,9 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 	}
 	coremeta.Name = strings.ToLower(UpstreamName(meta.Namespace, meta.Name, port.Port, extraLabels))
 
-	spec := &v1.UpstreamSpec{
-		UpstreamType: &v1.UpstreamSpec_Kube{
+	us := &v1.Upstream{
+		Metadata: coremeta,
+		UpstreamType: &v1.Upstream_Kube{
 			Kube: &kubeplugin.UpstreamSpec{
 				ServiceName:      meta.Name,
 				ServiceNamespace: meta.Namespace,
@@ -127,19 +128,16 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 				Selector:         labels,
 			},
 		},
+		DiscoveryMetadata: &v1.DiscoveryMetadata{},
 	}
 
 	for _, sc := range uc.serviceConverters {
-		if err := sc.ConvertService(svc, port, spec); err != nil {
+		if err := sc.ConvertService(svc, port, us); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("error: failed to process service options with err %v", err)
 		}
 	}
 
-	return &v1.Upstream{
-		Metadata:          coremeta,
-		UpstreamSpec:      spec,
-		DiscoveryMetadata: &v1.DiscoveryMetadata{},
-	}
+	return us
 }
 
 func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
@@ -204,25 +202,32 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	return UpdateUpstream(original, desired)
 }
 
-func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
+func UpdateUpstream(original, desired *v1.Upstream) (didChange bool, err error) {
+	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Kube)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_Kube, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.UpstreamType).Name())
 	}
-	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube)
+	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Kube)
 	if !ok {
-		return false, errors.Errorf("internal error: expected *v1.UpstreamSpec_Kube, got %v", reflect.TypeOf(original.UpstreamSpec.UpstreamType).Name())
+		return false, errors.Errorf("internal error: expected *v1.Upstream_Kube, got %v", reflect.TypeOf(original.UpstreamType).Name())
 	}
 	// copy service spec, we don't want to overwrite that
 	desiredSpec.Kube.ServiceSpec = originalSpec.Kube.ServiceSpec
 	// copy labels; user may have written them over. cannot be auto-discovered
 	desiredSpec.Kube.Selector = originalSpec.Kube.Selector
 
-	utils.UpdateUpstreamSpec(original.UpstreamSpec, desired.UpstreamSpec)
+	utils.UpdateUpstream(original, desired)
 
-	if originalSpec.Equal(desiredSpec) {
-		return false, nil
-	}
+	return !upstreamsEqual(original, desired), nil
+}
 
-	return true, nil
+// we want to know if the upstreams are equal apart from their Status and Metadata
+func upstreamsEqual(original, desired *v1.Upstream) bool {
+	copyOriginal := *original
+	copyDesired := *desired
+
+	copyOriginal.Metadata = copyDesired.Metadata
+	copyOriginal.Status = copyDesired.Status
+
+	return copyOriginal.Equal(copyDesired)
 }

@@ -21,8 +21,8 @@ type StorageClient interface {
 }
 
 type EnvoyMetrics struct {
-	HttpRequests   uint64
-	TcpConnections uint64
+	HttpRequests   float64
+	TcpConnections float64
 	Uptime         time.Duration
 }
 
@@ -49,7 +49,7 @@ type configMapStorageClient struct {
 var _ StorageClient = &configMapStorageClient{}
 
 const (
-	metricsConfigMapName = "gloo-usage"
+	MetricsConfigMapName = "gloo-usage"
 	usageDataKey         = "USAGE_DATA"
 
 	// allow this much time between what we estimate for envoy's uptime and what it actually reports
@@ -120,7 +120,7 @@ func (s *configMapStorageClient) GetUsage() (*GlobalUsage, error) {
 // the config map is nil if and only if an error occurs
 // the old usage is nil if it has not been written yet or if there was an error reading it
 func (s *configMapStorageClient) getExistingUsage() (*GlobalUsage, *corev1.ConfigMap, error) {
-	cm, err := s.configMapClient.Get(metricsConfigMapName, v1.GetOptions{})
+	cm, err := s.configMapClient.Get(MetricsConfigMapName, v1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
 	}

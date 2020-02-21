@@ -3,11 +3,11 @@ package run
 import (
 	"context"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/jobs/pkg/certgen"
 	"github.com/solo-io/gloo/jobs/pkg/kube"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 )
 
 type Options struct {
@@ -17,48 +17,55 @@ type Options struct {
 	SecretName      string
 	SecretNamespace string
 
-	ServerCertSecretKey string
-	ServerKeySecretKey  string
+	ServerCertSecretFileName    string
+	ServerCertAuthorityFileName string
+	ServerKeySecretFileName     string
 
 	ValidatingWebhookConfigurationName string
 }
 
 func Run(ctx context.Context, opts Options) error {
 	if opts.SvcNamespace == "" {
-		return errors.Errorf("must provide svc-namespace")
+		return eris.Errorf("must provide svc-namespace")
 	}
 	if opts.SvcName == "" {
-		return errors.Errorf("must provide svc-name")
+		return eris.Errorf("must provide svc-name")
 	}
 	if opts.SecretNamespace == "" {
-		return errors.Errorf("must provide secret-namespace")
+		return eris.Errorf("must provide secret-namespace")
 	}
 	if opts.SecretName == "" {
-		return errors.Errorf("must provide secret-name")
+		return eris.Errorf("must provide secret-name")
 	}
-	if opts.ServerCertSecretKey == "" {
-		return errors.Errorf("must provide secret data key for server cert")
+	if opts.ServerCertSecretFileName == "" {
+		return eris.Errorf("must provide name for the server cert entry in the secret data")
 	}
-	if opts.ServerKeySecretKey == "" {
-		return errors.Errorf("must provide secret data key for server key")
+	if opts.ServerCertAuthorityFileName == "" {
+		return eris.Errorf("must provide name for the cert authority entry in the secret data")
+	}
+	if opts.ServerKeySecretFileName == "" {
+		return eris.Errorf("must provide name for the server key entry in the secret data")
 	}
 	certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
 	if err != nil {
-		return errors.Wrapf(err, "generating self-signed certs and key")
+		return eris.Wrapf(err, "generating self-signed certs and key")
 	}
 	kubeClient := helpers.MustKubeClient()
 
+	caCert := append(certs.ServerCertificate, certs.CaCertificate...)
 	secretConfig := kube.TlsSecret{
-		SecretName:      opts.SecretName,
-		SecretNamespace: opts.SecretNamespace,
-		PrivateKeyKey:   opts.ServerKeySecretKey,
-		CaCertKey:       opts.ServerCertSecretKey,
-		PrivateKey:      certs.ServerCertKey,
-		CaCert:          certs.ServerCertificate,
+		SecretName:         opts.SecretName,
+		SecretNamespace:    opts.SecretNamespace,
+		PrivateKeyFileName: opts.ServerKeySecretFileName,
+		CertFileName:       opts.ServerCertSecretFileName,
+		CaBundleFileName:   opts.ServerCertAuthorityFileName,
+		PrivateKey:         certs.ServerCertKey,
+		Cert:               caCert,
+		CaBundle:           certs.CaCertificate,
 	}
 
 	if err := kube.CreateTlsSecret(ctx, kubeClient, secretConfig); err != nil {
-		return errors.Wrapf(err, "failed creating secret")
+		return eris.Wrapf(err, "failed creating secret")
 	}
 
 	vwcName := opts.ValidatingWebhookConfigurationName
@@ -74,7 +81,7 @@ func Run(ctx context.Context, opts Options) error {
 	}
 
 	if err := kube.UpdateValidatingWebhookConfigurationCaBundle(ctx, kubeClient, vwcName, vwcConfig); err != nil {
-		return errors.Wrapf(err, "failed patching validating webhook config")
+		return eris.Wrapf(err, "failed patching validating webhook config")
 	}
 
 	contextutils.LoggerFrom(ctx).Infof("finished successfully.")

@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: |
+    Fix serialization of grpc protobuf descriptors to byte arrays by moving away from the `2gobytes` library in favor of `2goarray`.

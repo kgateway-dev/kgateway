@@ -4,12 +4,16 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/utils/syncutil"
+	"github.com/solo-io/go-utils/hashutils"
+	"go.uber.org/zap/zapcore"
+
+	"github.com/rotisserie/eris"
 	v1alpha1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	knativev1alpha1 "knative.dev/serving/pkg/apis/networking/v1alpha1"
@@ -17,22 +21,22 @@ import (
 )
 
 type translatorSyncer struct {
-	proxyAddress         string
-	writeNamespace       string
-	writeErrs            chan error
-	proxyClient          gloov1.ProxyClient
-	proxyReconciler      gloov1.ProxyReconciler
-	clusterIngressClient knativeclient.ClusterIngressInterface
+	proxyAddress    string
+	writeNamespace  string
+	writeErrs       chan error
+	proxyClient     gloov1.ProxyClient
+	proxyReconciler gloov1.ProxyReconciler
+	ingressClient   knativeclient.IngressesGetter
 }
 
-func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, clusterIngressClient knativeclient.ClusterIngressInterface, writeErrs chan error) v1.TranslatorSyncer {
+func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient knativeclient.IngressesGetter, writeErrs chan error) v1.TranslatorSyncer {
 	return &translatorSyncer{
-		proxyAddress:         proxyAddress,
-		writeNamespace:       writeNamespace,
-		writeErrs:            writeErrs,
-		proxyClient:          proxyClient,
-		clusterIngressClient: clusterIngressClient,
-		proxyReconciler:      gloov1.NewProxyReconciler(proxyClient),
+		proxyAddress:    proxyAddress,
+		writeNamespace:  writeNamespace,
+		writeErrs:       writeErrs,
+		proxyClient:     proxyClient,
+		ingressClient:   ingressClient,
+		proxyReconciler: gloov1.NewProxyReconciler(proxyClient),
 	}
 }
 
@@ -40,18 +44,23 @@ func NewSyncer(proxyAddress, writeNamespace string, proxyClient gloov1.ProxyClie
 func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot) error {
 	ctx = contextutils.WithLogger(ctx, "translatorSyncer")
 
+	snapHash := hashutils.MustHash(snap)
 	logger := contextutils.LoggerFrom(ctx)
-	logger.Infof("begin sync %v (%v cluster ingresses, %v secrets)", snap.Hash(),
+	logger.Infof("begin sync %v (%v cluster ingresses )", snapHash,
 		len(snap.Clusteringresses),
-		len(snap.Secrets),
 	)
-	defer logger.Infof("end sync %v", snap.Hash())
-	logger.Debugf("%v", snap)
+	defer logger.Infof("end sync %v", snapHash)
+
+	// stringifying the snapshot may be an expensive operation, so we'd like to avoid building the large
+	// string if we're not even going to log it anyway
+	if contextutils.GetLogLevel() == zapcore.DebugLevel {
+		logger.Debug(syncutil.StringifySnapshot(snap))
+	}
 
 	proxy, err := translateProxy(ctx, s.writeNamespace, snap)
 	if err != nil {
 		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"knative ingress proxy will not be updated.", snap.Hash(), err)
+			"knative ingress proxy will not be updated.", snapHash, err)
 		return err
 	}
 
@@ -74,7 +83,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 	}
 
 	if err := s.propagateProxyStatus(ctx, proxy, snap.Clusteringresses); err != nil {
-		return errors.Wrapf(err, "failed to propagate proxy status "+
+		return eris.Wrapf(err, "failed to propagate proxy status "+
 			"to clusteringress objects")
 	}
 
@@ -93,7 +102,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 		case <-ctx.Done():
 			return nil
 		case <-timeout:
-			return errors.Errorf("timed out waiting for proxy status to be updated")
+			return eris.Errorf("timed out waiting for proxy status to be updated")
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
 			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})
@@ -115,9 +124,9 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 }
 
 func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, clusterIngresses v1alpha1.ClusterIngressList) error {
-	var updatedClusterIngresses []*knativev1alpha1.ClusterIngress
+	var updatedClusterIngresses []*knativev1alpha1.Ingress
 	for _, wrappedCi := range clusterIngresses {
-		ci := knativev1alpha1.ClusterIngress(wrappedCi.ClusterIngress)
+		ci := knativev1alpha1.Ingress(wrappedCi.ClusterIngress)
 		if ci.Status.ObservedGeneration == ci.ObjectMeta.Generation {
 			continue
 		}
@@ -131,7 +140,7 @@ func (s *translatorSyncer) markClusterIngressesReady(ctx context.Context, cluste
 		updatedClusterIngresses = append(updatedClusterIngresses, &ci)
 	}
 	for _, ci := range updatedClusterIngresses {
-		if _, err := s.clusterIngressClient.UpdateStatus(ci); err != nil {
+		if _, err := s.ingressClient.Ingresses(ci.Namespace).UpdateStatus(ci); err != nil {
 			contextutils.LoggerFrom(ctx).Errorf("failed to update ClusterIngress %v status with error %v", ci.Name, err)
 		}
 	}

@@ -1,0 +1,23 @@
+changelog:
+- type: NEW_FEATURE
+  description: >
+    Update the Delegation API to support delegating routing decisions to multiple `RouteTables`. `RouteTables` to
+    delegate to can be selected by either namespaces, labels, or both, using the new `RouteTableSelector` field.
+    The routes of all matching `RouteTables` will be merged and the resulting route set will be sorted by descending
+    specificity of the matchers on each route, e.g. matchers with longer prefixes will appear first.
+    This feature is meant to replace the __virtual service merging__ feature that we deprecated with the stable v1
+    release of Gloo. __Virtual service merging__ allowed users to define multiple `VirtualServices` for the same domain,
+    which Gloo would then merge into a single `VirtualHost` on the `Proxy` resource. Although useful to many users,
+    this feature could lead to confusion: the API is not self-documenting with respect to the merging behavior and
+    multiple users could inadvertently step on each other's toes when defining routes for the same domain.
+    As of this release, __virtual service merging__ is not supported anymore; defining two virtual services with
+    overlapping domain sets **will result in an error**. To be able to define the routes for a given domain on different
+    resources, users can now use the Delegation API. With the new `RouteTableSelector` attribute, the Delegation API
+    now enables the same use cases as __virtual service merging__ and has the advantage of surfacing the fact that
+    multiple resources define routes for the same domains to the API.
+    To give a simple example, a Gloo administrator can define a `VirtualService` with a single route that delegates
+    all requests for a domain to any `RouteTables` that have the `domain: example.com` label (namespaces to search
+    can be configured as well); this will allow users to add routes for that domain by creating their own `RouteTables`
+    (with a `domain: example.com` label) without having to request updates to the parent `VirtualService`.
+  issueLink: https://github.com/solo-io/gloo/issues/2054
+  resolvesIssue: false

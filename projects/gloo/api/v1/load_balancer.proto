@@ -2,13 +2,15 @@ syntax = "proto3";
 package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/plugins/lbhash/lbhash.proto";
+import "gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
 
 import "gogoproto/gogo.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 
@@ -17,7 +19,7 @@ option (gogoproto.equal_all) = true;
 message LoadBalancerConfig {
     // Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
     // reaches this percentage, envoy disregards health information.
-    // see more info [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
+    // see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
     google.protobuf.DoubleValue healthy_panic_threshold = 1;
 
     // This allows batch updates of endpoints health/weight/metadata that happen during a time window.

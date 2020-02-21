@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Bump default version of Knative Serving installed via glooctl install to 0.10.0
+    issueLink: https://github.com/solo-io/gloo/issues/1761
+  - type: NON_USER_FACING
+    description: Remove deprecated knative/build from install.
+    issueLink: https://github.com/solo-io/gloo/issues/1761

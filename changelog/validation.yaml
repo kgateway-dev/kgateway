@@ -1,0 +1,4 @@
+relaxSemverValidation: true
+allowedLabels:
+  - rc
+  - beta

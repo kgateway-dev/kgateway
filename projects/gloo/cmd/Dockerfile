@@ -1,9 +1,10 @@
-FROM alpine
+FROM alpine:3.11.3
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \
     && rm -rf /var/cache/apk/*
 
 COPY gloo-linux-amd64 /usr/local/bin/gloo
+COPY third_party_licenses.txt /etc/third_party_licenses.txt
 
 ENTRYPOINT ["/usr/local/bin/gloo"]

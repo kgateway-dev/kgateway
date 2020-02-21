@@ -1,12 +1,12 @@
 package constants
 
 import (
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/spf13/cobra"
 )
 
 var (
-	SubcommandError = errors.New("please select a subcommand")
+	SubcommandError = eris.New("please select a subcommand")
 )
 
 var (
@@ -45,6 +45,11 @@ var (
 		Aliases: []string{"s", "secret"},
 	}
 
+	AUTH_CONFIG_COMMAND = cobra.Command{
+		Use:     "authconfig",
+		Aliases: []string{"ac", "authconfig"},
+	}
+
 	ADD_COMMAND = cobra.Command{
 		Use:     "add",
 		Aliases: []string{"a"},
@@ -72,6 +77,11 @@ var (
 		Use:     "logs",
 		Aliases: []string{"log"},
 		Short:   "Debug Gloo logs (requires Gloo running on Kubernetes)",
+	}
+
+	DEBUG_YAML_COMMAND = cobra.Command{
+		Use:   "yaml",
+		Short: "Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)",
 	}
 
 	DELETE_COMMAND = cobra.Command{
@@ -137,5 +147,12 @@ var (
 		Aliases: []string{"v"},
 		Short:   "Print current version",
 		Long:    "Get the version of Glooctl and Gloo",
+	}
+
+	DASHBOARD_COMMAND = cobra.Command{
+		Use:     "dashboard",
+		Aliases: []string{"ui"},
+		Short:   "Open Gloo dashboard",
+		Long:    "Open the Gloo dashboard/UI in your default browser",
 	}
 )

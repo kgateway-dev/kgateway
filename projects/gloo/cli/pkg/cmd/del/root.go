@@ -1,7 +1,7 @@
 package del
 
 import (
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -21,7 +21,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.CallParentPrerun(cmd, args); err != nil {
 				return err
 			}
-			if err := prerun.EnableConsulClients(opts.Delete.Consul); err != nil {
+			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
 			return nil
@@ -32,7 +32,6 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 	pflags := cmd.PersistentFlags()
 	flagutils.AddMetadataFlags(pflags, &opts.Metadata)
-	flagutils.AddConsulConfigFlags(cmd.PersistentFlags(), &opts.Delete.Consul)
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))
 	cmd.AddCommand(VirtualService(opts))

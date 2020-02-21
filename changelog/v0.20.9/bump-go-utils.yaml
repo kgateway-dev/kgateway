@@ -1,0 +1,8 @@
+changelog:
+- type: NON_USER_FACING
+  description: Add some cleanup during kube2e test.
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: go-utils
+  dependencyTag: v0.10.20
+  description: Update go-utils to version 0.10.20.

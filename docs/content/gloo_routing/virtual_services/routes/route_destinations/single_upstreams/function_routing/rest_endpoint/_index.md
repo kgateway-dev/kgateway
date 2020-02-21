@@ -15,7 +15,7 @@ to the JSON testing API available at `http://jsonplaceholder.typicode.com/`.
 
 ## 
 
-If you haven't already deployed Gloo and the example swagger service on kubernetes, [go back to the first tutorial](../../../../../../hello_world) 
+If you haven't already deployed Gloo and the example swagger service on kubernetes, [go back to the first tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
 
 Now that we've seen the traditional routing functionality of Gloo (i.e. API-to-service), let's try doing some function routing.
 
@@ -79,7 +79,7 @@ glooctl get upstream default-petstore-8080 --output yaml
 We can see there are functions on our `default-petstore-8080` upstream. These functions were populated automatically by
 the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery`.
 
-The [function spec]({{< protobuf name="gloo.solo.io.Upstream" >}}) you see on the functions
+The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions
 listed above belongs to the transformation plugin. <!--(TODO)-->
 
 This powerful plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation)
@@ -107,8 +107,7 @@ Let's see how this plugin works by creating some routes to these functions in th
     Let's go ahead and test the route using `curl`:
 
     ```shell
-    export GATEWAY_URL=$(glooctl proxy url)
-    curl ${GATEWAY_URL}/petstore/findPet
+    curl $(glooctl proxy url)/petstore/findPet
     ```
 
     ```json
@@ -129,7 +128,7 @@ Let's see how this plugin works by creating some routes to these functions in th
 1. Try the request again, but now add a JSON body which includes the `id` parameter:
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findPet -d '{"id": 1}'
+    curl $(glooctl proxy url)/petstore/findPet -d '{"id": 1}'
     ```
 
     ```json
@@ -137,7 +136,7 @@ Let's see how this plugin works by creating some routes to these functions in th
     ```
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findPet -d '{"id": 2}'
+    curl $(glooctl proxy url)/petstore/findPet -d '{"id": 2}'
     ```
 
     ```json
@@ -171,8 +170,8 @@ virtualHost:
   domains:
   - '*'
   routes:
-  - matcher:
-      exact: /petstore/findPet
+  - matchers:
+     - exact: /petstore/findPet
     routeAction:
       single:
         destinationSpec:
@@ -197,7 +196,7 @@ virtualHost:
     Try `curl` again, this time with the new header:
 
     ```shell
-    curl ${GATEWAY_URL}/petstore/findWithId/1
+    curl $(glooctl proxy url)/petstore/findWithId/1
     ```
 
     ```json

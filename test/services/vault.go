@@ -17,7 +17,7 @@ import (
 	"strings"
 
 	"github.com/onsi/ginkgo"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 )
 
 const defaultVaultDockerImage = "vault:1.1.3"

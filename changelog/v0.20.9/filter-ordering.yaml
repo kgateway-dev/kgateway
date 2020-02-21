@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Allow running the rate limit filter before the auth filters. *NOTE* that, when this new setting is used,
+      it will result in the loss of the extauth-aware rate limiting feature (ie, different rate limits for
+      authenticated vs unauthenticated users)
+    issueLink: https://github.com/solo-io/gloo/issues/1445

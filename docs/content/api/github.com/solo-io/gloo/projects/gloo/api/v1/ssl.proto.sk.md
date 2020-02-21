@@ -47,12 +47,12 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. Only one of `secretRef`, or `sds` can be set. |  |
-| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#sslfiles) | SSLFiles reference paths to certificates which are local to the proxy. Only one of `sslFiles`, or `sds` can be set. |  |
-| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#sdsconfig) | Use secret discovery service. Only one of `sds`, or `sslFiles` can be set. |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. Only one of `secretRef`, or `sds` can be set. |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk/#sslfiles) | SSLFiles reference paths to certificates which are local to the proxy. Only one of `sslFiles`, or `sds` can be set. |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk/#sdsconfig) | Use secret discovery service. Only one of `sds`, or `sslFiles` can be set. |  |
 | `sniDomains` | `[]string` | optional. the SNI domains that should be considered for TLS connections. |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
-| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk#sslparameters) |  |  |
+| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |  |
 
 
 
@@ -97,12 +97,12 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. Only one of `secretRef`, or `sds` can be set. |  |
-| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk#sslfiles) | SSLFiles reference paths to certificates which are local to the proxy. Only one of `sslFiles`, or `sds` can be set. |  |
-| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk#sdsconfig) | Use secret discovery service. Only one of `sds`, or `sslFiles` can be set. |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | SecretRef contains the secret ref to a gloo tls secret or a kubernetes tls secret. gloo tls secret can contain a root ca as well if verification is needed. Only one of `secretRef`, or `sds` can be set. |  |
+| `sslFiles` | [.gloo.solo.io.SSLFiles](../ssl.proto.sk/#sslfiles) | SSLFiles reference paths to certificates which are local to the proxy. Only one of `sslFiles`, or `sds` can be set. |  |
+| `sds` | [.gloo.solo.io.SDSConfig](../ssl.proto.sk/#sdsconfig) | Use secret discovery service. Only one of `sds`, or `sslFiles` can be set. |  |
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections. |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
-| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk#sslparameters) |  |  |
+| `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |  |
 
 
 
@@ -123,7 +123,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `targetUri` | `string` | Target uri for the sds channel. currently only a unix domain socket is supported. |  |
-| `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk#callcredentials) | Call credentials. |  |
+| `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk/#callcredentials) | Call credentials. |  |
 | `certificatesSecretName` | `string` | The name of the secret containing the certificate. |  |
 | `validationContextName` | `string` | The name of secret containing the validation context (i.e. root ca). |  |
 
@@ -142,7 +142,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `fileCredentialSource` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk#filecredentialsource) | Call credentials are coming from a file,. |  |
+| `fileCredentialSource` | [.gloo.solo.io.CallCredentials.FileCredentialSource](../ssl.proto.sk/#filecredentialsource) | Call credentials are coming from a file,. |  |
 
 
 
@@ -183,8 +183,8 @@ for more information on the meaning of these values.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `minimumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk#protocolversion) |  |  |
-| `maximumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk#protocolversion) |  |  |
+| `minimumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk/#protocolversion) |  |  |
+| `maximumProtocolVersion` | [.gloo.solo.io.SslParameters.ProtocolVersion](../ssl.proto.sk/#protocolversion) |  |  |
 | `cipherSuites` | `[]string` |  |  |
 | `ecdhCurves` | `[]string` |  |  |
 

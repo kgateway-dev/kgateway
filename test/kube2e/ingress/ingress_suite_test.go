@@ -1,6 +1,7 @@
 package ingress_test
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -43,9 +44,11 @@ var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
 	Expect(err).NotTo(HaveOccurred())
 
+	randomNumber := time.Now().Unix() % 10000
 	testHelper, err = helper.NewSoloTestHelper(func(defaults helper.TestConfig) helper.TestConfig {
 		defaults.RootDir = filepath.Join(cwd, "../../..")
 		defaults.HelmChartName = "gloo"
+		defaults.InstallNamespace = "ingress-test-" + fmt.Sprintf("%d-%d", randomNumber, GinkgoParallelNode())
 		return defaults
 	})
 	Expect(err).NotTo(HaveOccurred())

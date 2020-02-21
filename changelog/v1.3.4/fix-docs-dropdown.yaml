@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix docs link dropdown.
+    issueLink: https://github.com/solo-io/gloo/issues/2322

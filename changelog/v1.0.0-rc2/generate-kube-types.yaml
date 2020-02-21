@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add native generated Kubernetes types for Gloo config resources
+    issueLink: https://github.com/solo-io/gloo/issues/1520

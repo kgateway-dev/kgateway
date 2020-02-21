@@ -12,13 +12,13 @@ import (
 )
 
 type Cache interface {
-	ClusterIngressLister() knativelisters.ClusterIngressLister
+	ClusterIngressLister() knativelisters.IngressLister
 	Subscribe() <-chan struct{}
 	Unsubscribe(<-chan struct{})
 }
 
 type knativeCache struct {
-	clusterIngress knativelisters.ClusterIngressLister
+	clusterIngress knativelisters.IngressLister
 
 	cacheUpdatedWatchers      []chan struct{}
 	cacheUpdatedWatchersMutex sync.Mutex
@@ -30,7 +30,7 @@ func NewClusterIngreessCache(ctx context.Context, knativeClient knativeclient.In
 	resyncDuration := 12 * time.Hour
 	sharedInformerFactory := knativeinformers.NewSharedInformerFactory(knativeClient, resyncDuration)
 
-	clusterIngress := sharedInformerFactory.Networking().V1alpha1().ClusterIngresses()
+	clusterIngress := sharedInformerFactory.Networking().V1alpha1().Ingresses()
 
 	k := &knativeCache{
 		clusterIngress: clusterIngress.Lister(),
@@ -49,7 +49,7 @@ func NewClusterIngreessCache(ctx context.Context, knativeClient knativeclient.In
 	return k, nil
 }
 
-func (k *knativeCache) ClusterIngressLister() knativelisters.ClusterIngressLister {
+func (k *knativeCache) ClusterIngressLister() knativelisters.IngressLister {
 	return k.clusterIngress
 }
 

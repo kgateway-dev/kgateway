@@ -6,13 +6,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/k0kubun/pp"
@@ -36,12 +38,12 @@ func GetYaml(pb proto.Message) []byte {
 }
 
 func main() {
-	role := flag.String("r", "gloo-system~gateway-proxy-v2", "role to register with")
+	role := flag.String("r", "gloo-system~"+defaults.GatewayProxyName, "role to register with")
 	port := flag.String("p", "9977", "gloo port")
 	//out := flag.String("o", "gostructs", "output fmt gostructs|yaml")
 	flag.Parse()
-	dr.Node.Metadata = &types.Struct{
-		Fields: map[string]*types.Value{"role": {Kind: &types.Value_StringValue{StringValue: *role}}}}
+	dr.Node.Metadata = &structpb.Struct{
+		Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: *role}}}}
 
 	conn, err := grpc.Dial("localhost:"+*port, grpc.WithInsecure())
 	if err != nil {
@@ -62,7 +64,7 @@ func main() {
 							hcms = append(hcms, hcm)
 						}
 					case *envoylistener.Filter_TypedConfig:
-						if err := types.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+						if err := ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
 							hcms = append(hcms, hcm)
 						}
 					}
@@ -110,7 +112,7 @@ func listClusters(ctx context.Context, conn *grpc.ClientConn) []v2.Cluster {
 	for _, anyCluster := range dresp.Resources {
 
 		var cluster v2.Cluster
-		cluster.Unmarshal(anyCluster.Value)
+		ptypes.UnmarshalAny(anyCluster, &cluster)
 		clusters = append(clusters, cluster)
 		pp.Printf("%v\n", cluster)
 	}
@@ -129,7 +131,7 @@ func listendpoints(ctx context.Context, conn *grpc.ClientConn) []v2.ClusterLoadA
 	for _, anyCla := range dresp.Resources {
 
 		var cla v2.ClusterLoadAssignment
-		cla.Unmarshal(anyCla.Value)
+		ptypes.UnmarshalAny(anyCla, &cla)
 		pp.Printf("%v\n", cla)
 		class = append(class, cla)
 	}
@@ -148,7 +150,7 @@ func listListeners(ctx context.Context, conn *grpc.ClientConn) []v2.Listener {
 
 	for _, anylistener := range dresp.Resources {
 		var listener v2.Listener
-		listener.Unmarshal(anylistener.Value)
+		ptypes.UnmarshalAny(anylistener, &listener)
 		pp.Printf("%v\n", listener)
 		listeners = append(listeners, listener)
 	}
@@ -172,7 +174,7 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, routenames []string)
 
 	for _, anyRoute := range dresp.Resources {
 		var route v2.RouteConfiguration
-		route.Unmarshal(anyRoute.Value)
+		ptypes.UnmarshalAny(anyRoute, &route)
 		pp.Printf("%v\n", route)
 		routes = append(routes, route)
 	}

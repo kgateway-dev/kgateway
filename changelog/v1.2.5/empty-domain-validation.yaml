@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Previously, virtual service validation treated a virtual host with a domain of `""` (empty string)
+      as having a domain of `"*"`. This then had the potential to conflict with virtual services that
+      legitimately have a domain of `"*"`. Now we report an error from virtual service validation
+      when a domain is the empty string.
+    issueLink: https://github.com/solo-io/gloo/issues/1885

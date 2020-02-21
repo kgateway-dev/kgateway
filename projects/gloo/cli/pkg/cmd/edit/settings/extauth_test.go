@@ -4,15 +4,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-
 	"github.com/solo-io/gloo/pkg/cliutil/testutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -33,19 +30,10 @@ var _ = Describe("Extauth", func() {
 	})
 
 	extAuthExtension := func() *extauthpb.Settings {
-		var extAuthSettings extauthpb.Settings
 		var err error
 		settings, err = settingsClient.Read(settings.Metadata.Namespace, settings.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
-
-		err = utils.UnmarshalExtension(settings, constants.ExtAuthExtensionName, &extAuthSettings)
-		if err != nil {
-			if err == utils.NotFoundError {
-				return nil
-			}
-			Expect(err).NotTo(HaveOccurred())
-		}
-		return &extAuthSettings
+		return settings.Extauth
 	}
 
 	DescribeTable("should edit extauth config",
@@ -60,7 +48,7 @@ var _ = Describe("Extauth", func() {
 			Expect(extension).To(Equal(expected))
 
 			// check that the rest of the settings were not changed.
-			delete(settings.Extensions.Configs, constants.ExtAuthExtensionName)
+			settings.Extauth = nil
 			settings.Metadata.ResourceVersion = ""
 			Expect(*settings).To(Equal(originalSettings))
 
@@ -97,14 +85,12 @@ var _ = Describe("Extauth", func() {
 					Name:      "extauth",
 					Namespace: "gloo-system",
 				},
-				UpstreamSpec: &gloov1.UpstreamSpec{
-					UpstreamType: &gloov1.UpstreamSpec_Static{
-						Static: &static_plugin_gloo.UpstreamSpec{
-							Hosts: []*static_plugin_gloo.Host{{
-								Addr: "test",
-								Port: 1234,
-							}},
-						},
+				UpstreamType: &gloov1.Upstream_Static{
+					Static: &static_plugin_gloo.UpstreamSpec{
+						Hosts: []*static_plugin_gloo.Host{{
+							Addr: "test",
+							Port: 1234,
+						}},
 					},
 				},
 			}

@@ -1,0 +1,37 @@
+syntax = "proto3";
+package waf.options.gloo.solo.io;
+
+import "gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto";
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+message Settings {
+    // Disable waf on this resource (if omitted defaults to false).
+    // If a route/virtual host is configured with WAF, you must explicitly disable its WAF,
+    // i.e., it will not inherit the disabled status of its parent
+    bool disabled = 1;
+    // Custom massage to display if an intervention occurs.
+    string custom_intervention_message = 2;
+    // Add OWASP core rule set
+    // if nil will not be added
+    CoreRuleSet core_rule_set = 3;
+    // Custom rule sets rules to add
+    repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
+}
+
+message CoreRuleSet {
+    // Optional custom settings for the OWASP core rule set.
+    // For an example on the configuration options see: https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example
+    // The same rules apply to these options as do to the `RuleSet`s. The file option is better if possible.
+    oneof CustomSettingsType {
+        // String representing the core rule set custom config options
+        string custom_settings_string = 2;
+        // String representing the core rule set custom config options
+        string custom_settings_file = 3;
+    }
+}

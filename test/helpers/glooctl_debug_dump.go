@@ -15,10 +15,10 @@ func RegisterGlooDebugLogPrintHandlerAndClearLogs() {
 }
 
 func RegisterGlooDebugLogPrintHandler() {
-	testutils.RegisterPreFailHandler(printGlooDebugLogs)
+	testutils.RegisterPreFailHandler(PrintGlooDebugLogs)
 }
 
-func printGlooDebugLogs() {
+func PrintGlooDebugLogs() {
 	logs, _ := ioutil.ReadFile(cliutil.GetLogsPath())
 	fmt.Println("*** Gloo debug logs ***")
 	fmt.Println(string(logs))

@@ -5,15 +5,16 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -141,8 +142,8 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		return errors.Errorf("internal error: upstream map not populated")
 	}
 	dest.Upstream = us.Metadata.Ref()
-	switch ut := us.UpstreamSpec.UpstreamType.(type) {
-	case *v1.UpstreamSpec_Aws:
+	switch ut := us.UpstreamType.(type) {
+	case *v1.Upstream_Aws:
 		if err := getAwsDestinationSpecInteractive(&dest.DestinationSpec.Aws, ut.Aws); err != nil {
 			return err
 		}
@@ -342,7 +343,7 @@ func SelectRouteFromVirtualServiceInteractive(vs *gatewayv1.VirtualService, rout
 	return 0, errors.Errorf("can't find route")
 }
 
-func matchersString(matchers []*v1.Matcher) string {
+func matchersString(matchers []*matchers.Matcher) string {
 	var matchersStrings []string
 	for _, matcher := range matchers {
 		matchersStrings = append(matchersStrings, fmt.Sprintf("%+v", matcher))

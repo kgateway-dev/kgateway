@@ -6,10 +6,13 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
+
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
@@ -18,7 +21,7 @@ import (
 
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -173,10 +176,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 
 	xdsAddr := settings.GetGloo().GetXdsBindAddr()
 	if xdsAddr == "" {
-		xdsAddr = settings.GetBindAddr()
-		if xdsAddr == "" {
-			xdsAddr = DefaultXdsBindAddr
-		}
+		xdsAddr = DefaultXdsBindAddr
 	}
 	xdsTcpAddress, err := getAddr(xdsAddr)
 	if err != nil {
@@ -192,9 +192,12 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		return errors.Wrapf(err, "parsing validation addr")
 	}
 
-	refreshRate, err := types.DurationFromProto(settings.RefreshRate)
-	if err != nil {
-		return err
+	refreshRate := time.Minute
+	if settings.GetRefreshRate() != nil {
+		refreshRate, err = types.DurationFromProto(settings.GetRefreshRate())
+		if err != nil {
+			return err
+		}
 	}
 
 	writeNamespace := settings.DiscoveryNamespace
@@ -244,7 +247,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousValidationServer.addr = validationAddr
 	}
 
-	consulClient, err := bootstrap.ConsulClientForSettings(settings)
+	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}
@@ -282,6 +285,18 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.DevMode = settings.DevMode
 	opts.Settings = settings
 
+	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
+	if len(opts.Consul.DnsServer) == 0 {
+		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
+	}
+	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
+		dnsPollingInterval, err := types.DurationFromProto(pollingInterval)
+		if err != nil {
+			return err
+		}
+		opts.Consul.DnsPollingInterval = &dnsPollingInterval
+	}
+
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
 		// Set up Consul client
@@ -289,7 +304,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		if err != nil {
 			return err
 		}
-		opts.ConsulWatcher = consulClientWrapper
+		opts.Consul.ConsulWatcher = consulClientWrapper
 	}
 
 	err = s.runFunc(opts)
@@ -301,12 +316,32 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 }
 
 type Extensions struct {
-	PluginExtensions []plugins.Plugin
-	SyncerExtensions []TranslatorSyncerExtensionFactory
-	XdsCallbacks     xdsserver.Callbacks
+	// Deprecated. Use PluginExtensionsFuncs instead.
+	PluginExtensions      []plugins.Plugin
+	PluginExtensionsFuncs []func() plugins.Plugin
+	SyncerExtensions      []TranslatorSyncerExtensionFactory
+	XdsCallbacks          xdsserver.Callbacks
 
 	// optional custom handler for envoy usage metrics that get pushed to the gloo pod
 	MetricsHandler metricsservice.MetricsHandler
+}
+
+func GetPluginsWithExtensionsAndRegistry(opts bootstrap.Opts, registryPlugins func(opts bootstrap.Opts) []plugins.Plugin, extensions Extensions) func() []plugins.Plugin {
+	pluginfuncs := extensions.PluginExtensionsFuncs
+	for _, p := range extensions.PluginExtensions {
+		p := p
+		pluginfuncs = append(pluginfuncs, func() plugins.Plugin { return p })
+	}
+	return func() []plugins.Plugin {
+		plugins := registryPlugins(opts)
+		for _, pluginExtension := range pluginfuncs {
+			plugins = append(plugins, pluginExtension())
+		}
+		return plugins
+	}
+}
+func GetPluginsWithExtensions(opts bootstrap.Opts, extensions Extensions) func() []plugins.Plugin {
+	return GetPluginsWithExtensionsAndRegistry(opts, registry.Plugins, extensions)
 }
 
 func RunGloo(opts bootstrap.Opts) error {
@@ -334,7 +369,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
 		kubeServiceClient = nil
 	}
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher)
 	if err != nil {
 		return err
 	}
@@ -381,11 +416,9 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
-
-	allPlugins := registry.Plugins(opts, extensions.PluginExtensions...)
-
+	getPlugins := GetPluginsWithExtensions(opts, extensions)
 	var discoveryPlugins []discovery.DiscoveryPlugin
-	for _, plug := range allPlugins {
+	for _, plug := range getPlugins() {
 		disc, ok := plug.(discovery.DiscoveryPlugin)
 		if ok {
 			discoveryPlugins = append(discoveryPlugins, disc)
@@ -395,7 +428,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
-		SettingExtensions: opts.Settings.Extensions,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
 		},
@@ -441,18 +473,24 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
 	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
 
-	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, allPlugins...)
+	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
-	validator := validation.NewValidator(t)
+	validator := validation.NewValidator(watchOpts.Ctx, t)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}
 
-	xdsSanitizer := sanitizer.XdsSanitizers{
-		sanitizer.NewInvalidUpstreamRemovingSanitizer(),
+	routeReplacingSanitizer, err := sanitizer.NewRouteReplacingSanitizer(opts.Settings.GetGloo().GetInvalidConfigPolicy())
+	if err != nil {
+		return err
 	}
 
-	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions)
+	xdsSanitizer := sanitizer.XdsSanitizers{
+		sanitizer.NewUpstreamRemovingSanitizer(),
+		routeReplacingSanitizer,
+	}
+
+	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
 
 	syncers := v1.ApiSyncers{
 		translationSync,
@@ -523,7 +561,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		if extensions.MetricsHandler == nil {
 			handler, err = metricsservice.NewConfigMapBackedDefaultHandler(opts.WatchOpts.Ctx)
 			if err != nil {
-				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Fatalw("Error starting metrics watcher", zap.Error(err))
+				contextutils.LoggerFrom(opts.WatchOpts.Ctx).Errorw("Error starting metrics watcher", zap.Error(err))
+				return
 			}
 		} else {
 			handler = extensions.MetricsHandler

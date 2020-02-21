@@ -1,6 +1,7 @@
 ---
 title: Open Source Gloo
 weight: 7
+description: Changelogs for Open Source Gloo
 ---
 
 <br>

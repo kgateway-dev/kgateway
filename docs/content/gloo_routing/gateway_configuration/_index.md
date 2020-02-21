@@ -1,6 +1,6 @@
 ---
 title: Gateway Configuration
-weight: 30
+weight: 40
 description: Gloo allows you to configure properties of your listeners with the Gateway resource and accompanying plugins. These guides show you how to apply these advanced listener configurations to refine your gateways' behavior.
 ---
 
@@ -17,9 +17,9 @@ You can list and edit gateways with `kubectl`.
 
 ```bash
 kubectl get gateway --all-namespaces
-NAMESPACE     NAME          AGE
-gloo-system   gateway       2d
-gloo-system   gateway-ssl   2d
+NAMESPACE     NAME                AGE
+gloo-system   gateway-proxy       2d
+gloo-system   gateway-proxy-ssl   2d
 ```
 
 `kubectl edit gateway -n gloo-system gateway`
@@ -35,7 +35,7 @@ metadata: # collapsed for brevity
 spec:
   bindAddress: '::'
   bindPort: 8080
-  plugins:
+  options:
     grpcWeb:
       disable: true
     httpConnectionManagerSettings:
@@ -64,7 +64,7 @@ items:
     - bindAddress: '::'
       bindPort: 8080
       httpListener:
-        listenerPlugins:
+        options:
           grpcWeb:
             disable: true
           httpConnectionManagerSettings:
@@ -87,4 +87,3 @@ items:
 kind: List
 metadata: # collapsed for brevity
 {{< /highlight >}}
-

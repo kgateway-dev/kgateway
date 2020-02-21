@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add `name` field to Route object for convenience of naming routes.
+    issueLink: https://github.com/solo-io/gloo/issues/2234

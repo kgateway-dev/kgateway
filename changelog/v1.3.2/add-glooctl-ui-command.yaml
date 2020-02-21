@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add `glooctl ui` command to open Gloo UI from the command line. 
+    issueLink: https://github.com/solo-io/gloo/issues/1706 

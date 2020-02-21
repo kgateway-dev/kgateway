@@ -1,4 +1,4 @@
-{{- if and .Values.gateway.enabled .Values.gateway.validation }}
+{{- if and .Values.gateway.enabled .Values.gateway.validation.enabled }}
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
@@ -8,22 +8,55 @@ metadata:
     gloo: gateway
   annotations:
     "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5" # should come before cert-gen job
+    "helm.sh/hook-weight": "5" # must be executed before cert-gen job
 webhooks:
-  - name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
-    clientConfig:
-      service:
-        name: gateway
-        namespace: {{ .Release.Namespace }}
-        path: "/validation"
-      caBundle: "" # update manually or use certgen job
-    rules:
-      - operations: [ "CREATE", "UPDATE", "DELETE" ]
-        apiGroups: ["gateway.solo.io", "gateway.solo.io.v2"]
-        apiVersions: ["v1", "v2"]
-        resources: ["*"]
+- name: gateway.{{ .Release.Namespace }}.svc  # must be a domain with at least three segments separated by dots
+  clientConfig:
+    service:
+      name: gateway
+      namespace: {{ .Release.Namespace }}
+      path: "/validation"
+    caBundle: "" # update manually or use certgen job
+  rules:
+  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["*"]
 {{- if .Values.gateway.validation.failurePolicy }}
-    failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
 {{- end }}
 
+---
+
+# Resources created as hooks are not considered part of a release by Helm. This means that they
+# will not be cleaned up when running `helm uninstall`.
+# See https://helm.sh/docs/topics/charts_hooks/#hook-resources-are-not-managed-with-corresponding-releases).
+# To be able to clean up the above hook resource, we redefine it as a `post-delete` hook with a `hook-delete-policy`.
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: gloo-gateway-validation-webhook-{{ .Release.Namespace }}
+  labels:
+    app: gloo
+    gloo: gateway
+  annotations:
+    "helm.sh/hook": post-delete
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+    "solo.io/hook-cleanup": "true" # Used internally to mark "hook cleanup" resources
+webhooks:
+- name: gateway.{{ .Release.Namespace }}.svc
+  clientConfig:
+    service:
+      name: gateway
+      namespace: {{ .Release.Namespace }}
+      path: "/validation"
+    caBundle: ""
+  rules:
+  - operations: [ "CREATE", "UPDATE", "DELETE" ]
+    apiGroups: ["gateway.solo.io"]
+    apiVersions: ["v1"]
+    resources: ["*"]
+{{- if .Values.gateway.validation.failurePolicy }}
+  failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
+{{- end }}
 {{- end }}

@@ -1,11 +1,11 @@
 package healthcheck
 
 import (
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	evnoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
-	"github.com/gogo/protobuf/types"
-	"github.com/pkg/errors"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
+	"github.com/golang/protobuf/ptypes/wrappers"
+	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -30,7 +30,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 
-	healthCheck := listener.GetListenerPlugins().GetHealthCheck()
+	healthCheck := listener.GetOptions().GetHealthCheck()
 
 	if healthCheck == nil {
 		return nil, nil
@@ -42,8 +42,8 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, errors.Errorf("health check path cannot be \"\"")
 	}
 
-	hc := &evnoyhealthcheck.HealthCheck{
-		PassThroughMode: &types.BoolValue{Value: false},
+	hc := &envoyhealthcheck.HealthCheck{
+		PassThroughMode: &wrappers.BoolValue{Value: false},
 		Headers: []*route.HeaderMatcher{{
 			Name: ":path",
 			HeaderMatchSpecifier: &route.HeaderMatcher_ExactMatch{
@@ -52,7 +52,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}},
 	}
 
-	healthCheckFilter, err := plugins.NewStagedFilterWithConfig(envoyutil.HealthCheck, hc, pluginStage)
+	healthCheckFilter, err := plugins.NewStagedFilterWithConfig(util.HealthCheck, hc, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}

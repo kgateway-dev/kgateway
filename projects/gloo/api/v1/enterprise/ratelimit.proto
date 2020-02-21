@@ -4,11 +4,13 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise
 
 import "envoy/api/v2/discovery.proto";
 import "google/api/annotations.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
 
 /*
@@ -18,7 +20,7 @@ option (gogoproto.equal_all) = true;
 message RateLimitConfig {
     // @solo-kit:resource.name
     string domain = 1;
-    repeated ratelimit.plugins.gloo.solo.io.Descriptor descriptors = 2;
+    repeated ratelimit.options.gloo.solo.io.Descriptor descriptors = 2;
 }
 
 /*

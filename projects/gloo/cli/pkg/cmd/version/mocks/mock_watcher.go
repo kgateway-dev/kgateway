@@ -8,7 +8,6 @@ import (
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
-	options "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	version "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 )
 
@@ -36,16 +35,16 @@ func (m *MockServerVersion) EXPECT() *MockServerVersionMockRecorder {
 }
 
 // Get mocks base method
-func (m *MockServerVersion) Get(opts *options.Options) ([]*version.ServerVersion, error) {
+func (m *MockServerVersion) Get() ([]*version.ServerVersion, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Get", opts)
+	ret := m.ctrl.Call(m, "Get")
 	ret0, _ := ret[0].([]*version.ServerVersion)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Get indicates an expected call of Get
-func (mr *MockServerVersionMockRecorder) Get(opts interface{}) *gomock.Call {
+func (mr *MockServerVersionMockRecorder) Get() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockServerVersion)(nil).Get), opts)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockServerVersion)(nil).Get))
 }

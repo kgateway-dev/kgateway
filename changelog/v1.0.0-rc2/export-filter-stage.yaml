@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Export rate limiting filter stage info from gloo so solo-projects can consume it
+    issueLink: https://github.com/solo-io/gloo/issues/1521
+    resolvesIssue: false

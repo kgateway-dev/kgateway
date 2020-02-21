@@ -4,16 +4,18 @@ option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/solo-kit.proto";
 
-import "github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/ratelimit/ratelimit.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/extauth/v1/extauth.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/plugins/rbac/rbac.proto";
-import "github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto";
+import "gloo/projects/gloo/api/v1/extensions.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
+import "gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
+import "gloo/projects/gloo/api/v1/circuit_breaker.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -56,10 +58,6 @@ message Settings {
         Directory directory_artifact_source = 10;
         ConsulKv consul_kv_artifact_source = 23;
     };
-
-    // Where the Gloo xDS server should bind (should not need configuration by user)
-    // Deprecated: use gloo.xdsBindAddr
-    string bind_addr = 11 [deprecated=true];
 
     // How frequently to resync watches, etc
     google.protobuf.Duration refresh_rate = 12;
@@ -114,7 +112,7 @@ message Settings {
         string root_key = 9;
     }
 
-    // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html) as storage for config data.
+    // Use [HashiCorp Consul Key-Value](https://www.consul.io/api/kv.html/) as storage for config data.
     // Configuration options for connecting to Consul can be configured in the Settings' root
     // `consul` field
     message ConsulKv {
@@ -133,10 +131,6 @@ message Settings {
     message Directory {
         string directory = 1;
     } // watch a directory
-
-    // Default circuit breakers when not set in a specific upstream.
-    // Deprecated: use gloo.circuitBreakers
-    CircuitBreakerConfig circuit_breakers = 3 [deprecated=true];
 
     message KnativeOptions {
         // Address of the clusteringress proxy.
@@ -198,9 +192,27 @@ message Settings {
     // need to be set on the Gloo container.
     message ConsulConfiguration {
 
-        // The address of the Consul server.
+        // Deprecated: prefer http_address.
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
-        string address = 1;
+        string address = 1 [deprecated=true];
+
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
+        string http_address = 13;
+
+        // The address of the Consul DNS server.
+        // Used by service discovery (required when consul service instances are stored as DNS names).
+        // Defaults to 127.0.0.1:8600.
+        string dns_address = 14;
+
+        // The polling interval for the Consul DNS server, if configured.
+        // If there is a consul service with a hostname instead of an IP, Gloo will resolve the hostname with
+        // the configured frequency to update endpoints with any changes to DNS resolution.
+        // Defaults to 5s.
+        google.protobuf.Duration dns_polling_interval = 15;
 
         // Datacenter to use. If not provided, the default agent datacenter is used.
         string datacenter = 2;
@@ -272,21 +284,27 @@ message Settings {
     // Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/).
     KubernetesConfiguration kubernetes = 22;
 
-    // Deprecated: Opaque settings config for Gloo extensions
-    Extensions extensions = 16 [deprecated = true];
+    // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
+    // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
+    //
+    // Some sample use cases:
+    // * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata.
+    // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
+    // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
+    Extensions extensions = 16;
 
     // Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service;
     // supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
     // Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors.
     // Configure rate-limits (composed of *actions*, which define how request characteristics get translated into
     // descriptors) on the VirtualHost or its routes
-    ratelimit.plugins.gloo.solo.io.ServiceSettings ratelimit = 26;
+    ratelimit.options.gloo.solo.io.ServiceSettings ratelimit = 26;
 
     // Enterprise-only: Settings for the rate limiting server itself
-    ratelimit.plugins.gloo.solo.io.Settings ratelimit_server = 27;
+    ratelimit.options.gloo.solo.io.Settings ratelimit_server = 27;
 
     // Enterprise-only: Settings for RBAC across all Gloo resources (VirtualServices, Routes, etc.)
-    rbac.plugins.gloo.solo.io.Settings rbac = 28;
+    rbac.options.gloo.solo.io.Settings rbac = 28;
 
     // Enterprise-only: External auth related settings
     enterprise.gloo.solo.io.Settings extauth = 29;
@@ -296,7 +314,7 @@ message Settings {
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 15 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 15 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 }
 
 // Settings specific to the gloo (Envoy xDS server) controller
@@ -332,7 +350,8 @@ message GlooOptions {
 
         // if set to `true`, Gloo removes any routes from the provided configuration
         // which point to a missing destination. Routes that are removed in this way
-        // will instead return a configurable direct response to clients.
+        // will instead return a configurable direct response to clients. When routes are replaced,
+        // Gloo will configure Envoy with a special listener which serves direct responses.
         //
         // Note: enabling this option allows Gloo to accept partially valid proxy configurations
         bool replace_invalid_routes = 1;
@@ -354,14 +373,25 @@ message GlooOptions {
     // If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result
     // in significant overhead. If you do not plan on using this feature, you can use this flag to turn it off.
     bool disable_kubernetes_destinations = 7;
+
+    // Default policy for grpc-web.
+    // set to true if you do not wish grpc-web to be automatically enabled.
+    // set to false if you wish grpc-web enabled unless disabled on the listener level.
+    // If not specified, defaults to `false`.
+    google.protobuf.BoolValue disable_grpc_web = 8;
+
+    // Set this option to determine the state of the envoy configuration when a virtual service is deleted, resulting in a
+    // proxy with no configured routes.
+    // set to true if you wish to keep envoy serving the routes from the latest valid configuration.
+    // set to false if you wish to reset the envoy configuration to a clean slate with no routes.
+    // If not specified, defaults to `false`.
+    google.protobuf.BoolValue disable_proxy_garbage_collection = 9;
 }
 
 // Settings specific to the Gateway controller
 message GatewayOptions {
     // Address of the `gloo` config validation server. Defaults to `gloo:9988`
     string validation_server_addr = 1;
-    // Disable auto generation of default gateways from gateway pod
-    bool disable_auto_gen_gateways = 2;
 
     // options for configuring admission control / validation
     message ValidationOptions {
@@ -387,7 +417,11 @@ message GatewayOptions {
         google.protobuf.BoolValue always_accept = 6;
     }
 
-    // if provided, the Gateway will perform[Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+    // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
     // of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
     ValidationOptions validation = 3;
+
+    // When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
+    // than just the Gateway CRDs in its own namespace
+    bool read_gateways_from_all_namespaces = 4;
 }

@@ -1,11 +1,11 @@
 package extauth
 
 import (
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
@@ -18,7 +18,7 @@ const (
 
 // Note that although this configures the "envoy.ext_authz" filter, we still want the ordering to be within the
 // AuthNStage because we are using this filter for authentication purposes
-var filterStage = plugins.DuringStage(plugins.AuthNStage)
+var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
 var _ plugins.Plugin = &Plugin{}
 
@@ -36,7 +36,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	// Delegate to a function with a simpler signature,will make it easier to reuse
+	// Delegate to a function with a simpler signature, will make it easier to reuse
 	return BuildHttpFilters(p.extAuthSettings, params.Snapshot.Upstreams)
 }
 
@@ -53,11 +53,11 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	}
 
 	// If extauth is explicitly disabled on this virtual host, disable it
-	if in.GetVirtualHostPlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markVirtualHostNoAuth(out)
 	}
 
-	customAuthConfig := in.GetVirtualHostPlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No extauth config on this virtual host, disable it
 	if customAuthConfig == nil {
@@ -87,11 +87,11 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *rou
 	}
 
 	// Extauth is explicitly disabled, disable it on route
-	if in.GetRoutePlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markRouteNoAuth(out)
 	}
 
-	customAuthConfig := in.GetRoutePlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {
@@ -121,11 +121,11 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 	}
 
 	// Extauth is explicitly disabled, disable it on weighted destination
-	if in.GetWeightedDestinationPlugins().GetExtauth().GetDisable() {
+	if in.GetOptions().GetExtauth().GetDisable() {
 		return markWeightedClusterNoAuth(out)
 	}
 
-	customAuthConfig := in.GetWeightedDestinationPlugins().GetExtauth().GetCustomAuth()
+	customAuthConfig := in.GetOptions().GetExtauth().GetCustomAuth()
 
 	// No custom config, do nothing
 	if customAuthConfig == nil {

@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Introduce script and build step for incorporating third party licenses with published images.
+    issueLink: https://github.com/solo-io/solo-projects/issues/1479

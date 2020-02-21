@@ -1,10 +1,20 @@
 package version
 
+import (
+	"github.com/solo-io/go-utils/versionutils"
+	"github.com/solo-io/go-utils/versionutils/git"
+)
+
 var UndefinedVersion = "undefined"
-var DevVersion = "dev" // default version set if running "make glooctl"
+
 // This will be set by the linker during build
 var Version = UndefinedVersion
 
 func IsReleaseVersion() bool {
-	return Version != UndefinedVersion && Version != DevVersion
+	if Version == UndefinedVersion {
+		return false
+	}
+	tag := git.AppendTagPrefix(Version)
+	_, err := versionutils.ParseVersion(tag)
+	return err == nil
 }

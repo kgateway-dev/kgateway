@@ -24,7 +24,7 @@ Let's create a virtual service with a direct response action instead of a route 
 Now if we curl the route, we should get the 200 response and see the message: 
 
 ```shell
-curl -H "Host: foo" $GATEWAY_URL/
+curl -H "Host: foo" $(glooctl proxy url)
 ```
 
 This will return the following message:

@@ -7,16 +7,19 @@ metadata:
     app: gloo
   name: default
   namespace: {{ .Release.Namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
-    "helm.sh/hook-weight": "5"
 spec:
   gloo:
-    xdsBindAddr: 0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}
+{{- if .Values.global.glooMtls.enabled }}
+    xdsBindAddr: "127.0.0.1:9999"
+{{- else }}
+    xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
+{{- end }}
 {{- if .Values.settings.invalidConfigPolicy }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
+    disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
+    disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
@@ -27,9 +30,12 @@ spec:
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
   refreshRate: 60s
+{{- if .Values.settings.linkerd }}
+  linkerd: true
+{{- end }}
 {{- if .Values.settings.integrations.knative.enabled }}
   knative:
-{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
+{{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- else }}
     knativeExternalProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
@@ -37,8 +43,9 @@ spec:
 {{- end }}
 {{- end }}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
   gateway:
+    readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}

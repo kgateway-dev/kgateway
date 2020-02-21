@@ -2,8 +2,16 @@
 
 set -eu
 
+if ! [ -x "$(command -v python)" ]; then
+     echo Python is required to install glooctl
+     exit 1
+ fi
 
-GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python -c "import sys; from json import loads as l; releases = l(sys.stdin.read()); print('\n'.join(release['tag_name'] for release in releases))")
+if [ -z "${GLOO_VERSION:-}" ]; then
+  GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python -c "import sys; from distutils.version import LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  releases.sort(key=LooseVersion, reverse=True); print('\n'.join(releases))")
+else
+  GLOO_VERSIONS="${GLOO_VERSION}"
+fi
 
 if [ "$(uname -s)" = "Darwin" ]; then
   OS=darwin
@@ -11,14 +19,14 @@ else
   OS=linux
 fi
 
-for GLOO_VERSION in $GLOO_VERSIONS; do
+for gloo_version in $GLOO_VERSIONS; do
 
 tmp=$(mktemp -d /tmp/gloo.XXXXXX)
 filename="glooctl-${OS}-amd64"
-url="https://github.com/solo-io/gloo/releases/download/${GLOO_VERSION}/${filename}"
+url="https://github.com/solo-io/gloo/releases/download/${gloo_version}/${filename}"
 
 if curl -f ${url} >/dev/null 2>&1; then
-  echo "Attempting to download glooctl version ${GLOO_VERSION}"
+  echo "Attempting to download glooctl version ${gloo_version}"
 else
   continue
 fi

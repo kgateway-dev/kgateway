@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: knative helm charts use compareSemver
+    issueLink: https://github.com/solo-io/gloo/pull/1623

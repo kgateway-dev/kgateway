@@ -22,7 +22,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	// not ours
-	pipeSpec, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Pipe)
+	pipeSpec, ok := in.UpstreamType.(*v1.Upstream_Pipe)
 	if !ok {
 		return nil
 	}
@@ -37,11 +37,11 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 		ClusterName: out.Name,
-		Endpoints:   []envoyendpoint.LocalityLbEndpoints{{}},
+		Endpoints:   []*envoyendpoint.LocalityLbEndpoints{{}},
 	}
 
 	out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
-		envoyendpoint.LbEndpoint{
+		&envoyendpoint.LbEndpoint{
 			HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 				Endpoint: &envoyendpoint.Endpoint{
 					Address: &envoycore.Address{

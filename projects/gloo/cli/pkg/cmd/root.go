@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/dashboard"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
@@ -64,6 +65,7 @@ func GlooCli() *cobra.Command {
 		pflags := app.PersistentFlags()
 		pflags.BoolVarP(&opts.Top.Interactive, "interactive", "i", false, "use interactive mode")
 		pflags.StringVarP(&opts.Top.ConfigFilePath, "config", "c", DefaultConfigPath, "set the path to the glooctl config file")
+		flagutils.AddConsulConfigFlags(pflags, &opts.Top.Consul)
 
 		app.SuggestionsMinimumDistance = 1
 		app.AddCommand(
@@ -81,6 +83,7 @@ func GlooCli() *cobra.Command {
 			check.RootCmd(opts),
 			debug.RootCmd(opts),
 			versioncmd.RootCmd(opts),
+			dashboard.RootCmd(opts),
 			completionCmd(),
 		)
 	}
@@ -90,6 +93,7 @@ func GlooCli() *cobra.Command {
 		ReadConfigFile,
 		prerun.SetKubeConfigEnv,
 		prerun.ReportUsage,
+		prerun.VersionMismatchWarning,
 	}
 
 	return App(opts, preRunFuncs, optionsFunc)

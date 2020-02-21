@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws/ec2"
+	glooec2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
@@ -222,43 +222,41 @@ var (
 	testPrivateIp1        = "111-111-111-111"
 	testPublicIp1         = "222.222.222.222"
 	testUpstream1         = v1.Upstream{
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_AwsEc2{
-				AwsEc2: &glooec2.UpstreamSpec{
-					Region:    "us-east-1",
-					SecretRef: testSecretRef1,
-					Filters: []*glooec2.TagFilter{{
-						Spec: &glooec2.TagFilter_Key{
-							Key: "k1",
-						},
-					}},
-					PublicIp: false,
-					Port:     testPort1,
-				},
-			}},
+		UpstreamType: &v1.Upstream_AwsEc2{
+			AwsEc2: &glooec2.UpstreamSpec{
+				Region:    "us-east-1",
+				SecretRef: testSecretRef1,
+				Filters: []*glooec2.TagFilter{{
+					Spec: &glooec2.TagFilter_Key{
+						Key: "k1",
+					},
+				}},
+				PublicIp: false,
+				Port:     testPort1,
+			},
+		},
 		Metadata: core.Metadata{
 			Name:      "u1",
 			Namespace: "default",
 		},
 	}
 	testUpstream2 = v1.Upstream{
-		UpstreamSpec: &v1.UpstreamSpec{
-			UpstreamType: &v1.UpstreamSpec_AwsEc2{
-				AwsEc2: &glooec2.UpstreamSpec{
-					Region:    "us-east-1",
-					SecretRef: testSecretRef2,
-					Filters: []*glooec2.TagFilter{{
-						Spec: &glooec2.TagFilter_KvPair_{
-							KvPair: &glooec2.TagFilter_KvPair{
-								Key:   "k2",
-								Value: "v2",
-							},
+		UpstreamType: &v1.Upstream_AwsEc2{
+			AwsEc2: &glooec2.UpstreamSpec{
+				Region:    "us-east-1",
+				SecretRef: testSecretRef2,
+				Filters: []*glooec2.TagFilter{{
+					Spec: &glooec2.TagFilter_KvPair_{
+						KvPair: &glooec2.TagFilter_KvPair{
+							Key:   "k2",
+							Value: "v2",
 						},
-					}},
-					PublicIp: true,
-					Port:     testPort1,
-				},
-			}},
+					},
+				}},
+				PublicIp: true,
+				Port:     testPort1,
+			},
+		},
 		Metadata: core.Metadata{
 			Name:      "u2",
 			Namespace: "default",

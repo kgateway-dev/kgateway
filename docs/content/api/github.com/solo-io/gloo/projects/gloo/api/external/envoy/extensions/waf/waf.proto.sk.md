@@ -39,7 +39,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable all rules on the current route. |  |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Global rule sets for the current http connection manager. |  |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Global rule sets for the current http connection manager. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
 
@@ -79,7 +79,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable all rules on the current route. |  |
-| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk#ruleset) | Overwrite the global rules on this route. |  |
+| `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Overwrite the global rules on this route. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 
 

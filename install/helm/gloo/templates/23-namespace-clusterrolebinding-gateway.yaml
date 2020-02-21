@@ -4,16 +4,13 @@
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: kube-resource-watcher-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: kube-resource-watcher-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -23,66 +20,57 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: kube-resource-watcher
+  name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-upstream-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: gloo-upstream-mutator-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: discovery
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-upstream-mutator
+  name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: gloo-resource-reader-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-resource-reader
+  name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: settings-user-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: settings-user-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gloo
@@ -95,78 +83,46 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: settings-user
+  name: settings-user{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-resource-mutator-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: gloo-resource-mutator-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gloo-resource-mutator
+  name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
 ---
 kind: {{ include "gloo.roleKind" . }}Binding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gateway-resource-reader-binding{{ include "gloo.rolebindingsuffix" . }}
+  name: gateway-resource-reader-binding{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
   namespace: {{ .Release.Namespace }}
 {{- end }}
   labels:
     app: gloo
     gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "15"
 subjects:
 - kind: ServiceAccount
   name: gateway
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: {{ include "gloo.roleKind" . }}
-  name: gateway-resource-reader
+  name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
   apiGroup: rbac.authorization.k8s.io
-
-
-{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
----
-# this role requires access to cluster-scoped resources
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
-  labels:
-    app: gloo
-    gloo: rbac
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
-subjects:
-- kind: ServiceAccount
-  name: gateway-certgen
-  namespace: {{ .Release.Namespace }}
-roleRef:
-  kind: ClusterRole
-  name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
-  apiGroup: rbac.authorization.k8s.io
-
-{{- end -}}
-
 
 {{- end -}}
 {{- end -}}

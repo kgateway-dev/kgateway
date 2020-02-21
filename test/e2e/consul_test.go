@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"time"
 
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	gatewaydefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	"github.com/hashicorp/consul/api"
 
@@ -53,7 +55,7 @@ var _ = Describe("Consul e2e", func() {
 			return "", err
 		}
 		if response.StatusCode != 200 {
-			return "", errors.Errorf("bad status code: %v (%v)", response.StatusCode, string(body))
+			return "", eris.Errorf("bad status code: %v (%v)", response.StatusCode, string(body))
 		}
 		return string(body), nil
 	}
@@ -86,12 +88,13 @@ var _ = Describe("Consul e2e", func() {
 				DisableUds:     true,
 				DisableFds:     true,
 			},
-			ConsulClient: consulClient,
+			ConsulClient:     consulClient,
+			ConsulDnsAddress: consul2.DefaultDnsAddress,
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
 		// Start Envoy
-		envoyPort = uint32(defaults.HttpPort)
+		envoyPort = defaults.HttpPort
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gatewaydefaults.GatewayProxyName, testClients.GlooPort)
@@ -128,7 +131,7 @@ var _ = Describe("Consul e2e", func() {
 		// Wait for proxy to be accepted
 		var proxy *gloov1.Proxy
 		Eventually(func() bool {
-			proxy, err = testClients.ProxyClient.Read(writeNamespace, "gateway-proxy-v2", clients.ReadOpts{Ctx: ctx})
+			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 			if err != nil {
 				return false
 			}
@@ -172,12 +175,43 @@ var _ = Describe("Consul e2e", func() {
 		}, "10s", "0.2s").Should(Receive())
 
 	})
+
+	It("resolves consul services with hostname addresses (as opposed to IPs addresses)", func() {
+		err = consulInstance.RegisterService("my-svc", "my-svc-1", "my-svc.service.dc1.consul", []string{"svc", "1"}, svc1.Port)
+		Expect(err).NotTo(HaveOccurred())
+
+		_, err := testClients.ProxyClient.Write(getProxyWithConsulRoute(writeNamespace, envoyPort), clients.WriteOpts{Ctx: ctx})
+		Expect(err).NotTo(HaveOccurred())
+
+		// Wait for proxy to be accepted
+		var proxy *gloov1.Proxy
+		Eventually(func() bool {
+			proxy, err = testClients.ProxyClient.Read(writeNamespace, gatewaydefaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
+			if err != nil {
+				return false
+			}
+			return proxy.Status.State == core.Status_Accepted
+		}, "10s", "0.2s").Should(BeTrue())
+
+		time.Sleep(3 * time.Second)
+
+		By("requests only go to service with tag '1'")
+
+		// Service 2 does not match the tags on the route, so we should get only requests from service 1
+		Consistently(func() (<-chan *v1helpers.ReceivedRequest, error) {
+			_, err := queryService()
+			if err != nil {
+				return svc1.C, err
+			}
+			return svc1.C, nil
+		}, "2s", "0.2s").Should(Receive())
+	})
 })
 
 func getProxyWithConsulRoute(ns string, bindPort uint32) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
-			Name:      "gateway-proxy-v2",
+			Name:      gatewaydefaults.GatewayProxyName,
 			Namespace: ns,
 		},
 		Listeners: []*gloov1.Listener{{

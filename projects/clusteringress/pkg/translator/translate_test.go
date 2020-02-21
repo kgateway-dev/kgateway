@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	"github.com/solo-io/gloo/projects/clusteringress/api/external/knative"
 	v1alpha12 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
@@ -13,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/clusteringress/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/retries"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -28,7 +29,7 @@ var _ = Describe("Translate", func() {
 		serviceNamespace := "peteszah-service-namespace"
 		servicePort := int32(80)
 		secretName := "areallygreatsecret"
-		ingress := &v1alpha1.ClusterIngress{
+		ingress := &v1alpha1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ing",
 				Namespace: namespace,
@@ -94,7 +95,7 @@ var _ = Describe("Translate", func() {
 				},
 			},
 		}
-		ingressTls := &v1alpha1.ClusterIngress{
+		ingressTls := &v1alpha1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "ing-tls",
 				Namespace: namespace,
@@ -140,15 +141,8 @@ var _ = Describe("Translate", func() {
 		}
 		ingressRes := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingress)}
 		ingressResTls := &v1alpha12.ClusterIngress{ClusterIngress: knative.ClusterIngress(*ingressTls)}
-		secret := &gloov1.Secret{
-			Metadata: core.Metadata{Name: secretName, Namespace: namespace},
-			Kind: &gloov1.Secret_Tls{
-				Tls: &gloov1.TlsSecret{},
-			},
-		}
 		snap := &v1.TranslatorSnapshot{
 			Clusteringresses: v1alpha12.ClusterIngressList{ingressRes, ingressResTls},
-			Secrets:          gloov1.SecretList{secret},
 		}
 		proxy, errs := translateProxy(context.TODO(), namespace, snap)
 		Expect(errs).NotTo(HaveOccurred())
@@ -176,8 +170,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/",
 												},
 											}},
@@ -205,7 +199,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -237,8 +231,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/hay",
 												},
 											}},
@@ -266,7 +260,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,
@@ -307,8 +301,8 @@ var _ = Describe("Translate", func() {
 									},
 									Routes: []*gloov1.Route{
 										{
-											Matchers: []*gloov1.Matcher{{
-												PathSpecifier: &gloov1.Matcher_Regex{
+											Matchers: []*matchers.Matcher{{
+												PathSpecifier: &matchers.Matcher_Regex{
 													Regex: "/",
 												},
 											}},
@@ -336,7 +330,7 @@ var _ = Describe("Translate", func() {
 													},
 												},
 											},
-											RoutePlugins: &gloov1.RoutePlugins{
+											Options: &gloov1.RouteOptions{
 												Timeout: durptr(1),
 												Retries: &retries.RetryPolicy{
 													NumRetries:    0x0000000e,

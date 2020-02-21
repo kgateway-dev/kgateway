@@ -5,12 +5,17 @@ import (
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+// returns the name of the cluster created for a given upstream
 func UpstreamToClusterName(upstream core.ResourceRef) string {
 
 	// For non-namespaced resources, return only name
@@ -22,9 +27,9 @@ func UpstreamToClusterName(upstream core.ResourceRef) string {
 	return fmt.Sprintf("%s_%s", upstream.Name, upstream.Namespace)
 }
 
-func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filter, error) {
+func NewFilterWithConfig(name string, config proto.Message) (*envoylistener.Filter, error) {
 
-	s := envoylistener.Filter{
+	s := &envoylistener.Filter{
 		Name: name,
 	}
 
@@ -32,7 +37,7 @@ func NewFilterWithConfig(name string, config proto.Message) (envoylistener.Filte
 		marshalledConf, err := envoyutil.MessageToStruct(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
-			return envoylistener.Filter{}, err
+			return &envoylistener.Filter{}, err
 		}
 
 		s.ConfigType = &envoylistener.Filter_Config{
@@ -63,10 +68,27 @@ func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLo
 	return s, nil
 }
 
-func ParseConfig(c configObject, config proto.Message) error {
+func ParseGogoConfig(c gogoConfigObject, config proto.Message) error {
 	any := c.GetTypedConfig()
 	if any != nil {
 		return types.UnmarshalAny(any, config)
+	}
+	structt := c.GetConfig()
+	if structt != nil {
+		return util.StructToMessage(structt, config)
+	}
+	return nil
+}
+
+type gogoConfigObject interface {
+	GetConfig() *types.Struct
+	GetTypedConfig() *types.Any
+}
+
+func ParseConfig(c configObject, config proto.Message) error {
+	any := c.GetTypedConfig()
+	if any != nil {
+		return ptypes.UnmarshalAny(any, config)
 	}
 	structt := c.GetConfig()
 	if structt != nil {
@@ -76,6 +98,6 @@ func ParseConfig(c configObject, config proto.Message) error {
 }
 
 type configObject interface {
-	GetConfig() *types.Struct
-	GetTypedConfig() *types.Any
+	GetConfig() *structpb.Struct
+	GetTypedConfig() *any.Any
 }

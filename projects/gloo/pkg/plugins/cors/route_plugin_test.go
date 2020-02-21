@@ -4,13 +4,14 @@ import (
 	"strings"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
-	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
@@ -61,13 +62,35 @@ var _ = Describe("Route Plugin", func() {
 				},
 			}
 			expected := &envoyroute.CorsPolicy{
-				AllowOrigin:      allowOrigin1,
-				AllowOriginRegex: allowOriginRegex1,
+				AllowOriginStringMatch: []*envoymatcher.StringMatcher{
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+					},
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+					},
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+							SafeRegex: &envoymatcher.RegexMatcher{
+								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+								Regex:      allowOriginRegex1[0],
+							},
+						},
+					},
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+							SafeRegex: &envoymatcher.RegexMatcher{
+								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+								Regex:      allowOriginRegex1[1],
+							},
+						},
+					},
+				},
 				AllowMethods:     strings.Join(allowMethods1, ","),
 				AllowHeaders:     strings.Join(allowHeaders1, ","),
 				ExposeHeaders:    strings.Join(exposeHeaders1, ","),
 				MaxAge:           maxAge1,
-				AllowCredentials: &types.BoolValue{Value: allowCredentials1},
+				AllowCredentials: &wrappers.BoolValue{Value: allowCredentials1},
 				EnabledSpecifier: &envoyroute.CorsPolicy_FilterEnabled{
 					FilterEnabled: &envoycore.RuntimeFractionalPercent{
 						DefaultValue: &envoy_type.FractionalPercent{
@@ -91,7 +114,14 @@ var _ = Describe("Route Plugin", func() {
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(params, inRoute, outRoute)
 			Expect(err).NotTo(HaveOccurred())
 			cSpec := &envoyroute.CorsPolicy{
-				AllowOrigin: allowOrigin1,
+				AllowOriginStringMatch: []*envoymatcher.StringMatcher{
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+					},
+					&envoymatcher.StringMatcher{
+						MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+					},
+				},
 			}
 			expected := basicEnvoyRouteWithCors(cSpec)
 			Expect(outRoute.Action.(*envoyroute.Route_Route).Route.Cors).To(Equal(cSpec))
@@ -141,7 +171,7 @@ func routeWithoutCors() *v1.Route {
 
 func routeWithCors(cSpec *cors.CorsPolicy) *v1.Route {
 	route := routeWithoutCors()
-	route.RoutePlugins = &v1.RoutePlugins{
+	route.Options = &v1.RouteOptions{
 		Cors: cSpec,
 	}
 	return route

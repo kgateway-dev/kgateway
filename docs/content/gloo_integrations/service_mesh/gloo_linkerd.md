@@ -3,29 +3,19 @@ title: Gloo and Linkerd
 weight: 3
 ---
 
-## Motivation
+If you're planning on injecting Linkerd into the Gloo proxy pods, there is some configuration required. Linkerd discovers services based on the `:authority` or `Host` header. This allows Linkerd to understand what service a request is destined for without being dependent on DNS or IPs.
 
-If you're planning on injecting Linkerd into the Gloo proxy pods, there is some configuration required. Linkerd discovers services based on the
-`:authority` or `Host` header. This allows Linkerd to understand what service a
-request is destined for without being dependent on DNS or IPs.
-
-Gloo does not rewrite the
-incoming header (`example.com`) to the internal service name
-(`example.default.svc.cluster.local`) by default. In this example, when Linkerd
-receives the outgoing request it thinks the request is destined for
-`example.com` and not `example.default.svc.cluster.local`. This creates an
-infinite loop that can be pretty frustrating!
+Gloo does not rewrite the incoming header (`example.com`) to the internal service name (`example.default.svc.cluster.local`) by default. In this example, when Linkerd receives the outgoing request it thinks the request is destined for `example.com` and not `example.default.svc.cluster.local`. This creates an infinite loop that can be pretty frustrating!
 
 Gloo can be configured to automatically or manually modify the `Host` header to satisfy Linkerd's requirement. 
 
+---
+
 ## Tutorial
 
-This uses `books` as an example, take a look at
-[Demo: Books](https://linkerd.io/2/tasks/books/) for instructions on how to run it.
+This uses `books` as an example, take a look at [Demo: Books](https://linkerd.io/2/tasks/books/) for instructions on how to run it.
 
-If you installed Gloo using the Gateway method (`gloo install gateway`), then
-you'll need a VirtualService to be able to route traffic to your **Books**
-application.
+If you installed Gloo using the Gateway method (`gloo install gateway`), then you'll need a VirtualService to be able to route traffic to your **Books** application.
 
 To use Gloo with Linkerd, you can choose one of two options:
 
@@ -52,8 +42,7 @@ glooctl add route --path-prefix=/ --dest-name booksapp-webapp-7000
 
 ### Manual
 
-As explained in the beginning of this document, you'll need to instruct Gloo to
-add a header which will allow Linkerd to identify where to send traffic to.
+As explained in the beginning of this document, you'll need to instruct Gloo to add a header which will allow Linkerd to identify where to send traffic to.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -71,14 +60,14 @@ spec:
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /
+    - matchers:
+       - prefix: /
       routeAction:
         single:
           upstream:
             name: booksapp-webapp-7000
             namespace: gloo-system
-      routePlugins:
+      options:
         headerManipulation:
           requestHeadersToAdd:
           - header:
@@ -89,7 +78,7 @@ spec:
 The important stanza here is:
 
 ```yaml
-      routePlugins:
+      options:
         headerManipulation:
           requestHeadersToAdd:
           - header:
@@ -97,7 +86,4 @@ The important stanza here is:
               value: webapp.booksapp.svc.cluster.local:7000
 ```
 
-Using the content transformation engine built-in in Gloo, you can instruct it to
-add the needed `l5d-dst-override` header which in the example above is pointing
-to the service's FDQN and port: `webapp.booksapp.svc.cluster.local:7000`
-
+Using the content transformation engine built-in in Gloo, you can instruct it to add the needed `l5d-dst-override` header which in the example above is pointing to the service's FDQN and port: `webapp.booksapp.svc.cluster.local:7000`

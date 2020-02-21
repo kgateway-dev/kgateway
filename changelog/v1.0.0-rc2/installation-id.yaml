@@ -1,0 +1,15 @@
+changelog:
+  - type: HELM
+    description: >
+      At install time, set an installation ID on all resources. This ID is determined by using the value
+      of the new Helm setting "installConfig.installationId", or selecting an ID at random if that
+      setting is not provided. If providing your own installation ID, the value you provide must be
+      a valid kubernetes label (refer to
+      https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set).
+    issueLink: https://github.com/solo-io/gloo/issues/1589
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.10.25
+    description: Update go-utils to version 0.10.25
+    issueLink: https://github.com/solo-io/gloo/issues/1589

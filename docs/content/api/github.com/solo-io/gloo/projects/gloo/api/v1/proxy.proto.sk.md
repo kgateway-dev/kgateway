@@ -18,9 +18,6 @@ weight: 5
 - [HttpListener](#httplistener)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
-- [Matcher](#matcher)
-- [HeaderMatcher](#headermatcher)
-- [QueryParameterMatcher](#queryparametermatcher)
 - [RouteAction](#routeaction)
 - [Destination](#destination)
 - [KubernetesServiceDestination](#kubernetesservicedestination)
@@ -31,7 +28,6 @@ weight: 5
 - [RedirectAction](#redirectaction)
 - [RedirectResponseCode](#redirectresponsecode)
 - [DirectResponseAction](#directresponseaction)
-- [CorsPolicy](#corspolicy)
   
 
 
@@ -67,9 +63,9 @@ Node ID can be specified in Envoy with the `--service-node` flag, or in the Envo
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `listeners` | [[]gloo.solo.io.Listener](../proxy.proto.sk#listener) | Define here each listener the proxy should create. Listeners define the a set of behaviors for a single bind address/port where the proxy will listen If no listeners are specified, the instances configured with the proxy resource will not accept connections. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `listeners` | [[]gloo.solo.io.Listener](../proxy.proto.sk/#listener) | Define here each listener the proxy should create. Listeners define the a set of behaviors for a single bind address/port where the proxy will listen If no listeners are specified, the instances configured with the proxy resource will not accept connections. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 
@@ -90,7 +86,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 "tcpListener": .gloo.solo.io.TcpListener
 "sslConfigurations": []gloo.solo.io.SslConfig
 "useProxyProto": .google.protobuf.BoolValue
-"plugins": .gloo.solo.io.ListenerPlugins
+"options": .gloo.solo.io.ListenerOptions
 "metadata": .google.protobuf.Struct
 
 ```
@@ -100,11 +96,11 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | `name` | `string` | the name of the listener. names must be unique for each listener within a proxy. |  |
 | `bindAddress` | `string` | the bind address for the listener. both ipv4 and ipv6 formats are supported. |  |
 | `bindPort` | `int` | the port to bind on ports numbers must be unique for listeners within a proxy. |  |
-| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |  |
-| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk#tcplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing. Only one of `tcpListener` or `httpListener` can be set. |  |
-| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |  |
+| `httpListener` | [.gloo.solo.io.HttpListener](../proxy.proto.sk/#httplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for Gloo's HTTP-level features including request-based routing. Only one of `httpListener` or `tcpListener` can be set. |  |
+| `tcpListener` | [.gloo.solo.io.TcpListener](../proxy.proto.sk/#tcplistener) | The HTTP Listener is currently the only supported listener type. It contains configuration options for GLoo's HTTP-level features including request-based routing. Only one of `tcpListener` or `httpListener` can be set. |  |
+| `sslConfigurations` | [[]gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | SSL Config is optional for the listener. If provided, the listener will serve TLS for connections on this port. Multiple SslConfigs are supported for the purpose of SNI. Be aware that the SNI domain provided in the SSL Config. |  |
 | `useProxyProto` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Enable ProxyProtocol support for this listener. |  |
-| `plugins` | [.gloo.solo.io.ListenerPlugins](../plugins.proto.sk#listenerplugins) | top level plugins. |  |
+| `options` | [.gloo.solo.io.ListenerOptions](../options.proto.sk/#listeneroptions) | top level options. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Metadata for the individual listener This data is opaque to Gloo, used by controllers to track ownership of listeners within a proxy as they are typically generated by a controller (such as the gateway). |  |
 
 
@@ -117,15 +113,15 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 
 ```yaml
 "tcpHosts": []gloo.solo.io.TcpHost
-"plugins": .gloo.solo.io.TcpListenerPlugins
+"options": .gloo.solo.io.TcpListenerOptions
 "statPrefix": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk#tcphost) | List of filter chains to match on for this listener. |  |
-| `plugins` | [.gloo.solo.io.TcpListenerPlugins](../plugins.proto.sk#tcplistenerplugins) | Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration. |  |
+| `tcpHosts` | [[]gloo.solo.io.TcpHost](../proxy.proto.sk/#tcphost) | List of filter chains to match on for this listener. |  |
+| `options` | [.gloo.solo.io.TcpListenerOptions](../options.proto.sk/#tcplisteneroptions) | Options contains top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Options configuration or Route Options configuration. |  |
 | `statPrefix` | `string` | prefix for addressing envoy stats for the tcp proxy. |  |
 
 
@@ -146,8 +142,8 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the tcp host. names must be unique for each tcp host within a listener. |  |
-| `destination` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | Name of the destinations the gateway can route to. Note: the destination spec and subsets are not supported in this context and will be ignored. |  |
-| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
+| `destination` | [.gloo.solo.io.RouteAction](../proxy.proto.sk/#routeaction) | Name of the destinations the gateway can route to. Note: the destination spec and subsets are not supported in this context and will be ignored. |  |
+| `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
 
 
 
@@ -157,20 +153,20 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 
  
 Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
-HttpListeners also contain plugin configuration that applies globally across all virtual hosts on the listener.
-Some plugins can be configured to work both on the listener and virtual host level (such as the rate limit plugin)
+HttpListeners also contain optional configuration that applies globally across all virtual hosts on the listener.
+Some traffic policies can be configured to work both on the listener and virtual host level (e.g., the rate limit feature)
 
 ```yaml
 "virtualHosts": []gloo.solo.io.VirtualHost
-"listenerPlugins": .gloo.solo.io.HttpListenerPlugins
+"options": .gloo.solo.io.HttpListenerOptions
 "statPrefix": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid. |  |
-| `listenerPlugins` | [.gloo.solo.io.HttpListenerPlugins](../plugins.proto.sk#httplistenerplugins) | Listener Plugins contains top-level plugin configuration to be applied to a listener Listener config is applied to traffic for the given listener. Some configuration here can be overridden in Virtual Host Plugin configuration or Route Plugin configuration. |  |
+| `virtualHosts` | [[]gloo.solo.io.VirtualHost](../proxy.proto.sk/#virtualhost) | the set of virtual hosts that will be accessible by clients connecting to this listener. at least one virtual host must be specified for this listener to be active (else connections will be refused) the set of domains for each virtual host must be unique, or the config will be considered invalid. |  |
+| `options` | [.gloo.solo.io.HttpListenerOptions](../options.proto.sk/#httplisteneroptions) | HttpListenerOptions contains optional top-level configuration to be applied to a listener. Listener config is applied to traffic for the given listener. Some configuration here can be overridden in VirtualHostOptions configuration, RouteOptions configuration, or WeightedDestinationOptions configuration. |  |
 | `statPrefix` | `string` | prefix for addressing envoy stats for the http connection manager. |  |
 
 
@@ -189,8 +185,7 @@ If a request is not matched to any virtual host or a route therein, the target p
 "name": string
 "domains": []string
 "routes": []gloo.solo.io.Route
-"virtualHostPlugins": .gloo.solo.io.VirtualHostPlugins
-"corsPolicy": .gloo.solo.io.CorsPolicy
+"options": .gloo.solo.io.VirtualHostOptions
 "metadata": .google.protobuf.Struct
 
 ```
@@ -199,9 +194,8 @@ If a request is not matched to any virtual host or a route therein, the target p
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the virtual host. names must be unique for each virtual host within a listener. |  |
 | `domains` | `[]string` | The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host. Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com” but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header. Only a single virtual host in the entire route configuration can match on “*”. A domain must be unique across all virtual hosts or the config will be invalidated by Gloo Domains on virtual hosts obey the same rules as [Envoy Virtual Hosts](https://github.com/envoyproxy/envoy/blob/master/api/envoy/api/v2/route/route.proto). |  |
-| `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
-| `virtualHostPlugins` | [.gloo.solo.io.VirtualHostPlugins](../plugins.proto.sk#virtualhostplugins) | Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Plugins. |  |
-| `corsPolicy` | [.gloo.solo.io.CorsPolicy](../proxy.proto.sk#corspolicy) | Defines a CORS policy for the virtual host If a CORS policy is also defined on the route matched by the request, the policies are merged. DEPRECATED set cors policy through the Virtual Host Plugin. |  |
+| `routes` | [[]gloo.solo.io.Route](../proxy.proto.sk/#route) | The list of HTTP routes define routing actions to be taken for incoming HTTP requests whose host header matches this virtual host. If the request matches more than one route in the list, the first route matched will be selected. If the list of routes is empty, the virtual host will be ignored by Gloo. |  |
+| `options` | [.gloo.solo.io.VirtualHostOptions](../options.proto.sk/#virtualhostoptions) | Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host. Some configuration here can be overridden by Route Options. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Metadata for the individual virtual host This data is opaque to Gloo, used by controllers to track ownership of virtual hosts within a proxy as they are typically generated by a controller (such as the gateway). |  |
 
 
@@ -215,101 +209,25 @@ If a request is not matched to any virtual host or a route therein, the target p
 Routes declare the entry points on virtual hosts and the action to take for matched requests.
 
 ```yaml
-"matchers": []gloo.solo.io.Matcher
+"matchers": []matchers.core.gloo.solo.io.Matcher
 "routeAction": .gloo.solo.io.RouteAction
 "redirectAction": .gloo.solo.io.RedirectAction
 "directResponseAction": .gloo.solo.io.DirectResponseAction
-"routePlugins": .gloo.solo.io.RoutePlugins
+"options": .gloo.solo.io.RouteOptions
 "metadata": .google.protobuf.Struct
+"name": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `matchers` | [[]gloo.solo.io.Matcher](../proxy.proto.sk#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher). |  |
-| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, or `directResponseAction` can be set. |  |
-| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, or `directResponseAction` can be set. |  |
-| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, or `redirectAction` can be set. |  |
-| `routePlugins` | [.gloo.solo.io.RoutePlugins](../plugins.proto.sk#routeplugins) | Route Plugins extend the behavior of routes. Route plugins include configuration such as retries,rate limiting, and request/response transformation. |  |
+| `matchers` | [[]matchers.core.gloo.solo.io.Matcher](../core/matchers/matchers.proto.sk/#matcher) | Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.) If empty, the route will match all requests (i.e, a single "/" path prefix matcher). |  |
+| `routeAction` | [.gloo.solo.io.RouteAction](../proxy.proto.sk/#routeaction) | This action is the primary action to be selected for most routes. The RouteAction tells the proxy to route requests to an upstream. Only one of `routeAction`, or `directResponseAction` can be set. |  |
+| `redirectAction` | [.gloo.solo.io.RedirectAction](../proxy.proto.sk/#redirectaction) | Redirect actions tell the proxy to return a redirect response to the downstream client. Only one of `redirectAction`, or `directResponseAction` can be set. |  |
+| `directResponseAction` | [.gloo.solo.io.DirectResponseAction](../proxy.proto.sk/#directresponseaction) | Return an arbitrary HTTP response directly, without proxying. Only one of `directResponseAction`, or `redirectAction` can be set. |  |
+| `options` | [.gloo.solo.io.RouteOptions](../options.proto.sk/#routeoptions) | Route Options extend the behavior of routes. Route options include configuration such as retries, rate limiting, and request/response transformation. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Metadata for the individual route This data is opaque to Gloo, used by controllers to track ownership of routes within a proxy as they are typically generated by a controller (such as the gateway). |  |
-
-
-
-
----
-### Matcher
-
- 
-Parameters for matching routes to requests received by a Gloo-managed proxy
-
-```yaml
-"prefix": string
-"exact": string
-"regex": string
-"headers": []gloo.solo.io.HeaderMatcher
-"queryParameters": []gloo.solo.io.QueryParameterMatcher
-"methods": []string
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `prefix` | `string` | If specified, the route is a prefix rule meaning that the prefix must match the beginning of the *:path* header. Only one of `prefix`, or `regex` can be set. |  |
-| `exact` | `string` | If specified, the route is an exact path rule meaning that the path must exactly match the *:path* header once the query string is removed. Only one of `exact`, or `regex` can be set. |  |
-| `regex` | `string` | If specified, the route is a regular expression rule meaning that the regex must match the *:path* header once the query string is removed. The entire path (without the query string) must match the regex. The rule will not match if only a sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here <http://en.cppreference.com/w/cpp/regex/ecmascript>`_. Examples: * The regex */b[io]t* matches the path */bit* * The regex */b[io]t* matches the path */bot* * The regex */b[io]t* does not match the path */bite* * The regex */b[io]t* does not match the path */bit/bot*. Only one of `regex`, or `exact` can be set. |  |
-| `headers` | [[]gloo.solo.io.HeaderMatcher](../proxy.proto.sk#headermatcher) | Specifies a set of headers that the route should match on. The router will check the request’s headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
-| `queryParameters` | [[]gloo.solo.io.QueryParameterMatcher](../proxy.proto.sk#queryparametermatcher) | Specifies a set of URL query parameters on which the route should match. The router will check the query string from the *path* header against all the specified query parameters. If the number of specified query parameters is nonzero, they all must match the *path* header's query string for a match to occur. |  |
-| `methods` | `[]string` | HTTP Method/Verb(s) to match on. If none specified, the matcher will ignore the HTTP Method. |  |
-
-
-
-
----
-### HeaderMatcher
-
- 
-Internally, Gloo always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
-  header. Thus, if attempting to match on *Host*, match on *:authority* instead.
-
-  In the absence of any header match specifier, match will default to `present_match`
-  i.e, a request that has the `name` header will match, regardless of the header's
-  value.
-
-```yaml
-"name": string
-"value": string
-"regex": bool
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Specifies the name of the header in the request. |  |
-| `value` | `string` | Specifies the value of the header. If the value is absent a request that has the name header will match, regardless of the header’s value. |  |
-| `regex` | `bool` | Specifies whether the header value should be treated as regex or not. |  |
-
-
-
-
----
-### QueryParameterMatcher
-
- 
-Query parameter matching treats the query string of a request's :path header
-as an ampersand-separated list of keys and/or key=value elements.
-
-```yaml
-"name": string
-"value": string
-"regex": bool
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `name` | `string` | Specifies the name of a key that must be present in the requested *path*'s query string. |  |
-| `value` | `string` | Specifies the value of the key. If the value is absent, a request that contains the key in its query string will match, whether the key appears with a value (e.g., "?debug=true") or not (e.g., "?debug"). |  |
-| `regex` | `bool` | Specifies whether the query parameter value is a regular expression. Defaults to false. The entire query parameter value (i.e., the part to the right of the equals sign in "key=value") must match the regex. E.g., the regex "\d+$" will match "123" but not "a123" or "123a". |  |
+| `name` | `string` | The name provides a convenience for users to be able to refer to a route by name. It includes names of vs, route, and route table ancestors of the route. |  |
 
 
 
@@ -329,9 +247,9 @@ RouteActions are used to route matched requests to upstreams.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, or `upstreamGroup` can be set. |  |
-| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, or `upstreamGroup` can be set. |  |
-| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, or `multi` can be set. |  |
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, or `upstreamGroup` can be set. |  |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, or `upstreamGroup` can be set. |  |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, or `multi` can be set. |  |
 
 
 
@@ -353,11 +271,11 @@ Destinations define routable destinations for proxied requests.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, or `consul` can be set. |  |
-| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, or `consul` can be set. |  |
-| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk#consulservicedestination) | Route requests to a consul service. Only one of `consul`, or `kube` can be set. |  |
-| `destinationSpec` | [.gloo.solo.io.DestinationSpec](../plugins.proto.sk#destinationspec) | Some upstreams utilize plugins which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
-| `subset` | [.gloo.solo.io.Subset](../subset.proto.sk#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
+| `upstream` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Route requests to a Gloo upstream. Only one of `upstream`, or `consul` can be set. |  |
+| `kube` | [.gloo.solo.io.KubernetesServiceDestination](../proxy.proto.sk/#kubernetesservicedestination) | Route requests to a kubernetes service. Only one of `kube`, or `consul` can be set. |  |
+| `consul` | [.gloo.solo.io.ConsulServiceDestination](../proxy.proto.sk/#consulservicedestination) | Route requests to a consul service. Only one of `consul`, or `kube` can be set. |  |
+| `destinationSpec` | [.gloo.solo.io.DestinationSpec](../options.proto.sk/#destinationspec) | Some upstreams utilize options which require or permit additional configuration on routes targeting them. gRPC upstreams, for example, allow specifying REST-style parameters for JSON-to-gRPC transcoding in the destination config. If the destination config is required for the upstream and not provided by the user, Gloo will invalidate the destination and its parent resources. |  |
+| `subset` | [.gloo.solo.io.Subset](../subset.proto.sk/#subset) | If specified, traffic will only be routed to a subset of the upstream. If upstream doesn't contain the specified subset, we will fallback to normal upstream routing. |  |
 
 
 
@@ -376,7 +294,7 @@ Identifies a port on a kubernetes service to route traffic to.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk#resourceref) | The target service. |  |
+| `ref` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The target service. |  |
 | `port` | `int` | The port attribute of the service. |  |
 
 
@@ -422,9 +340,9 @@ IP addresses and ports and load balance traffic between them.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk#weighteddestination) | The destinations that are part of this upstream group. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk/#weighteddestination) | The destinations that are part of this upstream group. |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 
@@ -443,7 +361,7 @@ route across multiple destinations according to their specified weights.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk#weighteddestination) | This list must contain at least one destination or the listener housing this route will be invalid, causing Gloo to error the parent proxy resource. |  |
+| `destinations` | [[]gloo.solo.io.WeightedDestination](../proxy.proto.sk/#weighteddestination) | This list must contain at least one destination or the listener housing this route will be invalid, causing Gloo to error the parent proxy resource. |  |
 
 
 
@@ -457,17 +375,15 @@ WeightedDestination attaches a weight to a single destination.
 ```yaml
 "destination": .gloo.solo.io.Destination
 "weight": int
-"weighedDestinationPlugins": .gloo.solo.io.WeightedDestinationPlugins
-"weightedDestinationPlugins": .gloo.solo.io.WeightedDestinationPlugins
+"options": .gloo.solo.io.WeightedDestinationOptions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk#destination) |  |  |
+| `destination` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) |  |  |
 | `weight` | `int` | Weight must be greater than zero Routing to each destination will be balanced by the ratio of the destination's weight to the total weight on a route. |  |
-| `weighedDestinationPlugins` | [.gloo.solo.io.WeightedDestinationPlugins](../plugins.proto.sk#weighteddestinationplugins) | Deprecated: use weighted_destination_plugins Apply configuration to traffic that is sent to this weighted destination. |  |
-| `weightedDestinationPlugins` | [.gloo.solo.io.WeightedDestinationPlugins](../plugins.proto.sk#weighteddestinationplugins) | Apply configuration to traffic that is sent to this weighted destination. |  |
+| `options` | [.gloo.solo.io.WeightedDestinationOptions](../options.proto.sk/#weighteddestinationoptions) | Apply configuration to traffic that is sent to this weighted destination. |  |
 
 
 
@@ -493,7 +409,7 @@ Notice: RedirectAction is copied directly from https://github.com/envoyproxy/env
 | `hostRedirect` | `string` | The host portion of the URL will be swapped with this value. |  |
 | `pathRedirect` | `string` | The path portion of the URL will be swapped with this value. Only one of `pathRedirect` or `prefixRewrite` can be set. |  |
 | `prefixRewrite` | `string` | Indicates that during redirection, the matched prefix (or path) should be swapped with this value. This option allows redirect URLs be dynamically created based on the request. Pay attention to the use of trailing slashes as mentioned in `RouteAction`'s `prefix_rewrite`. Only one of `prefixRewrite` or `pathRedirect` can be set. |  |
-| `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk#redirectresponsecode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |  |
+| `responseCode` | [.gloo.solo.io.RedirectAction.RedirectResponseCode](../proxy.proto.sk/#redirectresponsecode) | The HTTP status code to use in the redirect response. The default response code is MOVED_PERMANENTLY (301). |  |
 | `httpsRedirect` | `bool` | The scheme portion of the URL will be swapped with "https". |  |
 | `stripQuery` | `bool` | Indicates that during redirection, the query portion of the URL will be removed. Default value is false. |  |
 
@@ -531,38 +447,7 @@ DirectResponseAction is copied directly from https://github.com/envoyproxy/envoy
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `status` | `int` | Specifies the HTTP response status to be returned. |  |
-| `body` | `string` | Specifies the content of the response body. If this setting is omitted, no body is included in the generated response. Note: Headers can be specified using the Header Modification plugin in the enclosing Route, Virtual Host, or Listener. |  |
-
-
-
-
----
-### CorsPolicy
-
- 
-CorsPolicy defines Cross-Origin Resource Sharing for a virtual service.
-DEPRECATED set cors policy through the Virtual Host Plugin
-
-```yaml
-"allowOrigin": []string
-"allowOriginRegex": []string
-"allowMethods": []string
-"allowHeaders": []string
-"exposeHeaders": []string
-"maxAge": string
-"allowCredentials": bool
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `allowOrigin` | `[]string` | Specifies the origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allowOriginRegex` | `[]string` | Specifies regex patterns that match origins that will be allowed to make CORS requests. An origin is allowed if either allow_origin or allow_origin_regex match. |  |
-| `allowMethods` | `[]string` | Specifies the content for the *access-control-allow-methods* header. |  |
-| `allowHeaders` | `[]string` | Specifies the content for the *access-control-allow-headers* header. |  |
-| `exposeHeaders` | `[]string` | Specifies the content for the *access-control-expose-headers* header. |  |
-| `maxAge` | `string` | Specifies the content for the *access-control-max-age* header. |  |
-| `allowCredentials` | `bool` | Specifies whether the resource allows credentials. |  |
+| `body` | `string` | Specifies the content of the response body. If this setting is omitted, no body is included in the generated response. Note: Headers can be specified using the Header Modification feature in the enclosing Route, Virtual Host, or Listener options. |  |
 
 
 

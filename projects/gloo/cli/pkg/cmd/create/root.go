@@ -5,16 +5,18 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/authconfig"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create/secret"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/common"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +40,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var reader io.ReadCloser
 			if opts.Top.File == "" {
-				return errors.Errorf(EmptyCreateError)
+				return eris.Errorf(EmptyCreateError)
 			}
 			if opts.Top.File == "-" {
 				reader = os.Stdin
@@ -65,6 +67,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(Upstream(opts))
 	cmd.AddCommand(UpstreamGroup(opts))
 	cmd.AddCommand(secret.CreateCmd(opts))
+	cmd.AddCommand(authconfig.AuthConfigCreate(opts))
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

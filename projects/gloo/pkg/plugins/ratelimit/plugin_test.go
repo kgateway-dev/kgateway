@@ -3,6 +3,11 @@ package ratelimit_test
 import (
 	"time"
 
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -13,9 +18,8 @@ import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -40,7 +44,10 @@ var _ = Describe("Plugin", func() {
 		rlSettings = &ratelimitpb.Settings{
 			RatelimitServerRef: &ref,
 		}
-		initParams = plugins.InitParams{}
+		initParams = plugins.InitParams{
+			Settings: &gloov1.Settings{},
+		}
+		params.Snapshot = &gloov1.ApiSnapshot{}
 	})
 
 	JustBeforeEach(func() {
@@ -63,7 +70,7 @@ var _ = Describe("Plugin", func() {
 			Domain:          "custom",
 			FailureModeDeny: false,
 			Stage:           1,
-			Timeout:         &hundredms,
+			Timeout:         gogoutils.DurationStdToProto(&hundredms),
 			RequestType:     "both",
 			RateLimitService: &rlconfig.RateLimitServiceConfig{
 				GrpcService: &envoycore.GrpcService{TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
@@ -85,8 +92,52 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
 			cfg := getConfig(f.HttpFilter)
-			Expect(*cfg.Timeout).To(Equal(timeout))
+			Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&timeout)))
 		}
+	})
+
+	Context("rate limit ordering", func() {
+		JustBeforeEach(func() {
+			timeout := time.Second
+			params.Snapshot.Upstreams = []*gloov1.Upstream{
+				{
+					Metadata: core.Metadata{
+						Name:      "extauth-upstream",
+						Namespace: "ns",
+					},
+				},
+			}
+			rlSettings.RateLimitBeforeAuth = true
+			initParams.Settings = &gloov1.Settings{
+				RatelimitServer: rlSettings,
+				Extauth: &extauthv1.Settings{
+					ExtauthzServerRef: &core.ResourceRef{
+						Name:      "extauth-upstream",
+						Namespace: "ns",
+					},
+					RequestTimeout: &timeout,
+				},
+			}
+			rlPlugin.Init(initParams)
+		})
+
+		It("should be ordered before ext auth", func() {
+			filters, err := rlPlugin.HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
+			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
+
+			customStagedFilter := filters[0]
+			extAuthPlugin := extauth.NewCustomAuthPlugin()
+			err = extAuthPlugin.Init(initParams)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to initialize the ext auth plugin")
+			extAuthFilters, err := extAuthPlugin.HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to build the ext auth filters")
+			Expect(extAuthFilters).NotTo(BeEmpty(), "Should have actually created more than zero ext auth filters")
+
+			for _, extAuthFilter := range extAuthFilters {
+				Expect(plugins.FilterStageComparison(extAuthFilter.Stage, customStagedFilter.Stage)).To(Equal(1), "Ext auth filters should occur after rate limiting")
+			}
+		})
 	})
 
 	Context("fail mode deny", func() {
@@ -121,7 +172,8 @@ var _ = Describe("Plugin", func() {
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
 				cfg := getConfig(f.HttpFilter)
-				Expect(*cfg.Timeout).To(Equal(time.Second))
+				t := time.Second
+				Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
 			}
 		})
 	})
@@ -131,7 +183,7 @@ var _ = Describe("Plugin", func() {
 func getConfig(f *envoyhttp.HttpFilter) *envoyratelimit.RateLimit {
 	cfg := f.GetConfig()
 	rcfg := new(envoyratelimit.RateLimit)
-	err := util.StructToMessage(cfg, rcfg)
+	err := conversion.StructToMessage(cfg, rcfg)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return rcfg
 }

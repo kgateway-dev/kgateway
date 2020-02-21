@@ -12,6 +12,7 @@ import (
 )
 
 func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+
 	cmd := &cobra.Command{
 		Use:   constants.INSTALL_COMMAND.Use,
 		Short: constants.INSTALL_COMMAND.Short,
@@ -23,7 +24,10 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		knativeCmd(opts),
 	)
 	cliutils.ApplyOptions(cmd, optionsFunc)
-	flagutils.AddVerboseFlag(cmd.PersistentFlags(), opts)
+
+	pFlags := cmd.PersistentFlags()
+	flagutils.AddVerboseFlag(pFlags, opts)
+	flagutils.AddInstallFlags(pFlags, &opts.Install)
 	return cmd
 }
 
@@ -53,6 +57,7 @@ func UninstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *c
 
 func setVerboseMode(opts *options.Options) func(cmd *cobra.Command, args []string) {
 	return func(cmd *cobra.Command, args []string) {
-		install.SetVerbose(opts.Top.Verbose)
+		install.SetVerbose(opts.Top.Verbose) // Sets kubectl verbose flag
+		setVerbose(opts.Top.Verbose)         // Sets helm library's debug flag
 	}
 }

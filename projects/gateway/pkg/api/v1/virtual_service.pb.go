@@ -11,6 +11,8 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	matchers "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -27,14 +29,14 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 //
 //
-// The **VirtualService** is the root Routing object for the Gloo Gateway.
+// The **VirtualService** is the root routing object for the Gloo Gateway.
 // A virtual service describes the set of routes to match for a set of domains.
 //
 // It defines:
 // - a set of domains
 // - the root set of routes for those domains
 // - an optional SSL configuration for server TLS Termination
-// - VirtualHostPlugins that will apply configuration to all routes that live on the VirtualService.
+// - VirtualHostOptions that will apply configuration to all routes that live on the VirtualService.
 //
 // Domains must be unique across all virtual services within a gateway (i.e. no overlap between sets).
 //
@@ -56,12 +58,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
-//         name: 'shared-routes'
-//         namespace: 'usernamespace'
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
 //
 // ```
 //
@@ -78,12 +81,13 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //     - '*.mydomain.com'
 //     - 'mydomain.com'
 //     routes:
-//     - matcher:
-//         prefix: '/'
+//     - matchers:
+//       - prefix: '/'
 //       # delegate all traffic to the `shared-routes` RouteTable
 //       delegateAction:
-//         name: 'shared-routes'
-//         namespace: 'usernamespace'
+//         ref:
+//           name: 'shared-routes'
+//           namespace: 'usernamespace'
 //   sslConfig:
 //     secretRef:
 //       name: gateway-tls
@@ -100,8 +104,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //   namespace: 'usernamespace'
 // spec:
 //   routes:
-//     - matcher:
-//         prefix: '/some-route'
+//     - matchers:
+//       - prefix: '/some-route'
 //       routeAction:
 //         single:
 //           upstream:
@@ -114,7 +118,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 //
 // - delegate routes must use `prefix` path matchers
 // - delegated routes cannot specify header, query, or methods portion of the normal route matcher.
-// - `routePlugin` configuration will be inherited from parent routes, but can be overridden by the child
+// - `routeOptions` configuration will be inherited from parent routes, but can be overridden by the child
 //
 type VirtualService struct {
 	// The VirtualHost contains the
@@ -209,8 +213,6 @@ func (m *VirtualService) GetMetadata() core.Metadata {
 //Gateway* Virtual Hosts can **delegate** their routes to `RouteTables`.
 //
 type VirtualHost struct {
-	// deprecated. this field is ignored
-	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The list of domains (i.e.: matching the `Host` header of a request) that belong to this virtual host.
 	// Note that the wildcard will not match the empty string. e.g. “*-bar.foo.com” will match “baz-bar.foo.com”
 	// but not “-bar.foo.com”. Additionally, a special entry “*” is allowed which will match any host/authority header.
@@ -222,16 +224,12 @@ type VirtualHost struct {
 	// this virtual host. If the request matches more than one route in the list, the first route matched will be selected.
 	// If the list of routes is empty, the virtual host will be ignored by Gloo.
 	Routes []*Route `protobuf:"bytes,3,rep,name=routes,proto3" json:"routes,omitempty"`
-	// Virtual host plugins contain additional configuration to be applied to all traffic served by the Virtual Host.
-	// Some configuration here can be overridden by Route Plugins.
-	VirtualHostPlugins *v1.VirtualHostPlugins `protobuf:"bytes,4,opt,name=virtual_host_plugins,json=virtualHostPlugins,proto3" json:"virtual_host_plugins,omitempty"`
-	// Defines a CORS policy for the virtual host
-	// If a CORS policy is also defined on the route matched by the request, the policies are merged.
-	// DEPRECATED set cors policy through the Virtual Host Plugin
-	CorsPolicy           *v1.CorsPolicy `protobuf:"bytes,5,opt,name=cors_policy,json=corsPolicy,proto3" json:"cors_policy,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
-	XXX_unrecognized     []byte         `json:"-"`
-	XXX_sizecache        int32          `json:"-"`
+	// Virtual host options contain additional configuration to be applied to all traffic served by the Virtual Host.
+	// Some configuration here can be overridden by Route Options.
+	Options              *v1.VirtualHostOptions `protobuf:"bytes,4,opt,name=options,proto3" json:"options,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
+	XXX_unrecognized     []byte                 `json:"-"`
+	XXX_sizecache        int32                  `json:"-"`
 }
 
 func (m *VirtualHost) Reset()         { *m = VirtualHost{} }
@@ -258,13 +256,6 @@ func (m *VirtualHost) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_VirtualHost proto.InternalMessageInfo
 
-func (m *VirtualHost) GetName() string {
-	if m != nil {
-		return m.Name
-	}
-	return ""
-}
-
 func (m *VirtualHost) GetDomains() []string {
 	if m != nil {
 		return m.Domains
@@ -279,38 +270,28 @@ func (m *VirtualHost) GetRoutes() []*Route {
 	return nil
 }
 
-func (m *VirtualHost) GetVirtualHostPlugins() *v1.VirtualHostPlugins {
+func (m *VirtualHost) GetOptions() *v1.VirtualHostOptions {
 	if m != nil {
-		return m.VirtualHostPlugins
+		return m.Options
 	}
 	return nil
 }
 
-func (m *VirtualHost) GetCorsPolicy() *v1.CorsPolicy {
-	if m != nil {
-		return m.CorsPolicy
-	}
-	return nil
-}
-
-//
 //
 // A route specifies how to match a request and what action to take when the request is matched.
-//
 //
 // When a request matches on a route, the route can perform one of the following actions:
 // - *Route* the request to a destination
 // - Reply with a *Direct Response*
 // - Send a *Redirect* response to the client
-// - *Delegate* the action for the request to a top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resource
+// - *Delegate* the action for the request to one or more top-level [`RouteTable`]({{< ref "/api/github.com/solo-io/gloo/projects/gateway/api/v1/route_table.proto.sk.md" >}}) resources
 // DelegateActions can be used to delegate the behavior for a set out routes with a given *prefix* to
-// a top-level `RouteTable` resource.
-//
+// top-level `RouteTable` resources.
 type Route struct {
 	// Matchers contain parameters for matching requests (i.e., based on HTTP path, headers, etc.)
 	// If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
 	// For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
-	Matchers []*v1.Matcher `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
+	Matchers []*matchers.Matcher `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
 	// The Route Action Defines what action the proxy should take when a request matches the route.
 	//
 	// Types that are valid to be assigned to Action:
@@ -319,13 +300,15 @@ type Route struct {
 	//	*Route_DirectResponseAction
 	//	*Route_DelegateAction
 	Action isRoute_Action `protobuf_oneof:"action"`
-	// Route Plugins extend the behavior of routes.
-	// Route plugins include configuration such as retries, rate limiting, and request/response transformation.
-	// RoutePlugin behavior will be inherited by delegated routes which do not specify their own `routePlugins`
-	RoutePlugins         *v1.RoutePlugins `protobuf:"bytes,6,opt,name=route_plugins,json=routePlugins,proto3" json:"route_plugins,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
-	XXX_unrecognized     []byte           `json:"-"`
-	XXX_sizecache        int32            `json:"-"`
+	// Route Options extend the behavior of routes.
+	// Route options include configuration such as retries, rate limiting, and request/response transformation.
+	// RouteOption behavior will be inherited by delegated routes which do not specify their own `options`
+	Options *v1.RouteOptions `protobuf:"bytes,6,opt,name=options,proto3" json:"options,omitempty"`
+	// The name provides a convenience for users to be able to refer to a route by name.
+	Name                 string   `protobuf:"bytes,7,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *Route) Reset()         { *m = Route{} }
@@ -367,7 +350,7 @@ type Route_DirectResponseAction struct {
 	DirectResponseAction *v1.DirectResponseAction `protobuf:"bytes,4,opt,name=direct_response_action,json=directResponseAction,proto3,oneof" json:"direct_response_action,omitempty"`
 }
 type Route_DelegateAction struct {
-	DelegateAction *core.ResourceRef `protobuf:"bytes,5,opt,name=delegate_action,json=delegateAction,proto3,oneof" json:"delegate_action,omitempty"`
+	DelegateAction *DelegateAction `protobuf:"bytes,5,opt,name=delegate_action,json=delegateAction,proto3,oneof" json:"delegate_action,omitempty"`
 }
 
 func (*Route_RouteAction) isRoute_Action()          {}
@@ -382,7 +365,7 @@ func (m *Route) GetAction() isRoute_Action {
 	return nil
 }
 
-func (m *Route) GetMatchers() []*v1.Matcher {
+func (m *Route) GetMatchers() []*matchers.Matcher {
 	if m != nil {
 		return m.Matchers
 	}
@@ -410,18 +393,25 @@ func (m *Route) GetDirectResponseAction() *v1.DirectResponseAction {
 	return nil
 }
 
-func (m *Route) GetDelegateAction() *core.ResourceRef {
+func (m *Route) GetDelegateAction() *DelegateAction {
 	if x, ok := m.GetAction().(*Route_DelegateAction); ok {
 		return x.DelegateAction
 	}
 	return nil
 }
 
-func (m *Route) GetRoutePlugins() *v1.RoutePlugins {
+func (m *Route) GetOptions() *v1.RouteOptions {
 	if m != nil {
-		return m.RoutePlugins
+		return m.Options
 	}
 	return nil
+}
+
+func (m *Route) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
 }
 
 // XXX_OneofWrappers is for the internal use of the proto package.
@@ -434,10 +424,167 @@ func (*Route) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// DelegateActions are used to delegate routing decisions to Route Tables.
+type DelegateAction struct {
+	// The name of the Route Table to delegate to.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"` // Deprecated: Do not use.
+	// The namespace of the Route Table to delegate to.
+	// Deprecated: these fields have been added for backwards-compatibility. Please use the `single` field. If `name`
+	// and/or `namespace` have been specified, Gloo will ignore `single` and `selector`.
+	Namespace string `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"` // Deprecated: Do not use.
+	// Types that are valid to be assigned to DelegationType:
+	//	*DelegateAction_Ref
+	//	*DelegateAction_Selector
+	DelegationType       isDelegateAction_DelegationType `protobuf_oneof:"delegation_type"`
+	XXX_NoUnkeyedLiteral struct{}                        `json:"-"`
+	XXX_unrecognized     []byte                          `json:"-"`
+	XXX_sizecache        int32                           `json:"-"`
+}
+
+func (m *DelegateAction) Reset()         { *m = DelegateAction{} }
+func (m *DelegateAction) String() string { return proto.CompactTextString(m) }
+func (*DelegateAction) ProtoMessage()    {}
+func (*DelegateAction) Descriptor() ([]byte, []int) {
+	return fileDescriptor_93fa9472926a2049, []int{3}
+}
+func (m *DelegateAction) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DelegateAction.Unmarshal(m, b)
+}
+func (m *DelegateAction) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DelegateAction.Marshal(b, m, deterministic)
+}
+func (m *DelegateAction) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DelegateAction.Merge(m, src)
+}
+func (m *DelegateAction) XXX_Size() int {
+	return xxx_messageInfo_DelegateAction.Size(m)
+}
+func (m *DelegateAction) XXX_DiscardUnknown() {
+	xxx_messageInfo_DelegateAction.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DelegateAction proto.InternalMessageInfo
+
+type isDelegateAction_DelegationType interface {
+	isDelegateAction_DelegationType()
+	Equal(interface{}) bool
+}
+
+type DelegateAction_Ref struct {
+	Ref *core.ResourceRef `protobuf:"bytes,3,opt,name=ref,proto3,oneof" json:"ref,omitempty"`
+}
+type DelegateAction_Selector struct {
+	Selector *RouteTableSelector `protobuf:"bytes,4,opt,name=selector,proto3,oneof" json:"selector,omitempty"`
+}
+
+func (*DelegateAction_Ref) isDelegateAction_DelegationType()      {}
+func (*DelegateAction_Selector) isDelegateAction_DelegationType() {}
+
+func (m *DelegateAction) GetDelegationType() isDelegateAction_DelegationType {
+	if m != nil {
+		return m.DelegationType
+	}
+	return nil
+}
+
+// Deprecated: Do not use.
+func (m *DelegateAction) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+// Deprecated: Do not use.
+func (m *DelegateAction) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
+func (m *DelegateAction) GetRef() *core.ResourceRef {
+	if x, ok := m.GetDelegationType().(*DelegateAction_Ref); ok {
+		return x.Ref
+	}
+	return nil
+}
+
+func (m *DelegateAction) GetSelector() *RouteTableSelector {
+	if x, ok := m.GetDelegationType().(*DelegateAction_Selector); ok {
+		return x.Selector
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*DelegateAction) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*DelegateAction_Ref)(nil),
+		(*DelegateAction_Selector)(nil),
+	}
+}
+
+// Select route tables for delegation by namespace, labels, or both.
+type RouteTableSelector struct {
+	// Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace
+	// as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to
+	// select Route Tables in all namespaces watched by Gloo.
+	Namespaces []string `protobuf:"bytes,1,rep,name=namespaces,proto3" json:"namespaces,omitempty"`
+	// Delegate to Route Tables whose labels match the ones specified here.
+	Labels               map[string]string `protobuf:"bytes,2,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
+	XXX_unrecognized     []byte            `json:"-"`
+	XXX_sizecache        int32             `json:"-"`
+}
+
+func (m *RouteTableSelector) Reset()         { *m = RouteTableSelector{} }
+func (m *RouteTableSelector) String() string { return proto.CompactTextString(m) }
+func (*RouteTableSelector) ProtoMessage()    {}
+func (*RouteTableSelector) Descriptor() ([]byte, []int) {
+	return fileDescriptor_93fa9472926a2049, []int{4}
+}
+func (m *RouteTableSelector) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RouteTableSelector.Unmarshal(m, b)
+}
+func (m *RouteTableSelector) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RouteTableSelector.Marshal(b, m, deterministic)
+}
+func (m *RouteTableSelector) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RouteTableSelector.Merge(m, src)
+}
+func (m *RouteTableSelector) XXX_Size() int {
+	return xxx_messageInfo_RouteTableSelector.Size(m)
+}
+func (m *RouteTableSelector) XXX_DiscardUnknown() {
+	xxx_messageInfo_RouteTableSelector.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RouteTableSelector proto.InternalMessageInfo
+
+func (m *RouteTableSelector) GetNamespaces() []string {
+	if m != nil {
+		return m.Namespaces
+	}
+	return nil
+}
+
+func (m *RouteTableSelector) GetLabels() map[string]string {
+	if m != nil {
+		return m.Labels
+	}
+	return nil
+}
+
 func init() {
 	proto.RegisterType((*VirtualService)(nil), "gateway.solo.io.VirtualService")
 	proto.RegisterType((*VirtualHost)(nil), "gateway.solo.io.VirtualHost")
 	proto.RegisterType((*Route)(nil), "gateway.solo.io.Route")
+	proto.RegisterType((*DelegateAction)(nil), "gateway.solo.io.DelegateAction")
+	proto.RegisterType((*RouteTableSelector)(nil), "gateway.solo.io.RouteTableSelector")
+	proto.RegisterMapType((map[string]string)(nil), "gateway.solo.io.RouteTableSelector.LabelsEntry")
 }
 
 func init() {
@@ -445,50 +592,59 @@ func init() {
 }
 
 var fileDescriptor_93fa9472926a2049 = []byte{
-	// 680 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x41, 0x4f, 0xdb, 0x3c,
-	0x18, 0x26, 0x6d, 0x28, 0xd4, 0xe5, 0x83, 0x6f, 0x56, 0xc7, 0x02, 0x9a, 0xa0, 0xea, 0x65, 0x1c,
-	0xb6, 0x44, 0x0c, 0x09, 0x01, 0x87, 0xa1, 0x15, 0x26, 0xb8, 0x30, 0x21, 0x23, 0xed, 0xc0, 0xa5,
-	0x32, 0x89, 0x1b, 0x3c, 0xd2, 0xbc, 0x91, 0xed, 0x76, 0xeb, 0x6d, 0xe2, 0xd7, 0xec, 0xb8, 0x9f,
-	0xb1, 0x3f, 0xb0, 0x2b, 0x87, 0xfd, 0x03, 0x76, 0xdc, 0x69, 0x8a, 0x63, 0x07, 0xc2, 0x90, 0x06,
-	0xa7, 0xfa, 0xcd, 0xfb, 0x3c, 0x8f, 0x5f, 0x3f, 0x8f, 0x6b, 0xf4, 0x2e, 0xe6, 0xea, 0x7c, 0x74,
-	0xe6, 0x87, 0x30, 0x0c, 0x24, 0x24, 0xf0, 0x8a, 0x43, 0x10, 0x27, 0x00, 0x41, 0x26, 0xe0, 0x23,
-	0x0b, 0x95, 0x0c, 0x62, 0xaa, 0xd8, 0x27, 0x3a, 0x09, 0x68, 0xc6, 0x83, 0xf1, 0x7a, 0x30, 0xe6,
-	0x42, 0x8d, 0x68, 0xd2, 0x97, 0x4c, 0x8c, 0x79, 0xc8, 0xfc, 0x4c, 0x80, 0x02, 0xbc, 0x60, 0x50,
-	0x7e, 0xae, 0xe1, 0x73, 0x58, 0x6e, 0xc7, 0x10, 0x83, 0xee, 0x05, 0xf9, 0xaa, 0x80, 0x2d, 0xaf,
-	0xdf, 0xb3, 0x9b, 0xfe, 0xbd, 0xe0, 0xca, 0x6e, 0x30, 0x64, 0x8a, 0x46, 0x54, 0x51, 0x43, 0x09,
-	0x1e, 0x40, 0x91, 0x8a, 0xaa, 0x91, 0x34, 0x84, 0x97, 0x0f, 0x20, 0x08, 0x36, 0x78, 0xc4, 0x44,
-	0xb6, 0x36, 0x94, 0xcd, 0x7f, 0x5b, 0x96, 0x57, 0x96, 0x2c, 0x13, 0xc3, 0xdb, 0x7a, 0x14, 0x2f,
-	0x13, 0xf0, 0x79, 0x62, 0x98, 0x3b, 0x8f, 0x63, 0x26, 0xa3, 0x98, 0xa7, 0xc6, 0x8e, 0xee, 0x8f,
-	0x1a, 0x9a, 0xff, 0x50, 0x64, 0x76, 0x52, 0x44, 0x86, 0x77, 0xd1, 0x9c, 0x4d, 0xf1, 0x1c, 0xa4,
-	0xf2, 0x9c, 0x8e, 0xb3, 0xd6, 0x7a, 0xfd, 0xdc, 0xbf, 0x93, 0xa1, 0x6f, 0x68, 0x87, 0x20, 0x15,
-	0x69, 0x8d, 0x6f, 0x0a, 0xbc, 0x89, 0x90, 0x94, 0x49, 0x3f, 0x84, 0x74, 0xc0, 0x63, 0xaf, 0xa6,
-	0xe9, 0xcf, 0xfc, 0x7c, 0x86, 0x92, 0x7b, 0x22, 0x93, 0x3d, 0xdd, 0x26, 0x4d, 0x69, 0x97, 0xf8,
-	0x05, 0x9a, 0x8b, 0xb8, 0xcc, 0x12, 0x3a, 0xe9, 0xa7, 0x74, 0xc8, 0xbc, 0x7a, 0xc7, 0x59, 0x6b,
-	0xf6, 0xdc, 0x2f, 0xd7, 0xae, 0x43, 0x5a, 0xa6, 0xf3, 0x9e, 0x0e, 0x19, 0x3e, 0x40, 0x8d, 0x22,
-	0x53, 0xaf, 0xa1, 0xc5, 0xdb, 0x7e, 0x08, 0x82, 0xdd, 0x88, 0xeb, 0x5e, 0x6f, 0xe9, 0xfb, 0xd5,
-	0xea, 0xd4, 0xaf, 0xab, 0xd5, 0x27, 0x8a, 0x49, 0x15, 0xf1, 0xc1, 0x60, 0xa7, 0xcb, 0xe3, 0x14,
-	0x04, 0xeb, 0x12, 0x43, 0xc7, 0x5b, 0x68, 0xd6, 0xde, 0x27, 0x6f, 0x46, 0x4b, 0x2d, 0x56, 0xa5,
-	0x8e, 0x4c, 0xb7, 0xe7, 0xe6, 0x62, 0xa4, 0x44, 0xef, 0xac, 0x5c, 0x5e, 0xbb, 0x2e, 0xaa, 0x8d,
-	0xe5, 0xe5, 0xb5, 0x8b, 0xf1, 0xff, 0x77, 0xae, 0xbd, 0xec, 0xfe, 0x76, 0x50, 0xeb, 0x96, 0x41,
-	0x18, 0x23, 0x57, 0x9f, 0x29, 0x37, 0xb3, 0x49, 0xf4, 0x1a, 0x7b, 0x68, 0x26, 0x82, 0x21, 0xe5,
-	0xa9, 0xf4, 0x6a, 0x9d, 0xfa, 0x5a, 0x93, 0xd8, 0x12, 0xfb, 0xa8, 0x21, 0x60, 0xa4, 0x98, 0xf4,
-	0xea, 0x9d, 0xba, 0x9e, 0xea, 0xae, 0xf9, 0x24, 0x6f, 0x13, 0x83, 0xc2, 0x04, 0xb5, 0x6f, 0x47,
-	0xd6, 0x37, 0x19, 0x7b, 0xae, 0x3e, 0x53, 0xa7, 0xea, 0xfd, 0xad, 0xb1, 0x8e, 0x0b, 0x1c, 0xc1,
-	0xe3, 0xbf, 0xbe, 0xe1, 0x6d, 0xd4, 0x0a, 0x41, 0xc8, 0x7e, 0x06, 0x09, 0x0f, 0x27, 0xde, 0xb4,
-	0x96, 0xf2, 0xaa, 0x52, 0x7b, 0x20, 0xe4, 0xb1, 0xee, 0x13, 0x14, 0x96, 0xeb, 0xee, 0xb7, 0x3a,
-	0x9a, 0xd6, 0x03, 0xe2, 0x75, 0x34, 0x3b, 0xa4, 0x2a, 0x3c, 0x67, 0x42, 0x7a, 0x8e, 0x3e, 0xca,
-	0xd3, 0xaa, 0xc2, 0x51, 0xd1, 0x25, 0x25, 0x0c, 0xbf, 0x41, 0x73, 0xfa, 0x54, 0x7d, 0x1a, 0x2a,
-	0x0e, 0xa9, 0xb9, 0x3f, 0x4b, 0x55, 0x9a, 0x56, 0x7f, 0xab, 0x01, 0x87, 0x53, 0xa4, 0x25, 0x6e,
-	0x4a, 0x7c, 0x80, 0x16, 0x04, 0x8b, 0xb8, 0x60, 0xa1, 0xb2, 0x12, 0x75, 0x7b, 0x83, 0x2b, 0x12,
-	0x06, 0x54, 0xaa, 0xcc, 0x8b, 0xca, 0x17, 0x7c, 0x8a, 0x16, 0x8d, 0x8c, 0x60, 0x32, 0x83, 0x54,
-	0x96, 0x23, 0x15, 0xb6, 0x76, 0xab, 0x7a, 0xfb, 0x1a, 0x4b, 0x0c, 0xb4, 0x54, 0x6d, 0x47, 0xf7,
-	0x7c, 0xc7, 0xfb, 0x68, 0x21, 0x62, 0x09, 0xcb, 0x53, 0xb5, 0xa2, 0xd3, 0xe6, 0x9c, 0x95, 0xfb,
-	0x47, 0x98, 0x84, 0x91, 0x08, 0x19, 0x61, 0x83, 0x7c, 0x42, 0xcb, 0x31, 0x2a, 0xbb, 0xe8, 0xbf,
-	0xc2, 0x2a, 0x9b, 0x77, 0xf1, 0x77, 0x58, 0xbe, 0xc7, 0x2b, 0x9b, 0x74, 0xe1, 0xad, 0xa9, 0x7a,
-	0xb3, 0xa8, 0x51, 0xec, 0xde, 0xdb, 0xfe, 0xfa, 0x73, 0xc5, 0x39, 0xdd, 0x78, 0xf0, 0x73, 0x9f,
-	0x5d, 0xc4, 0xe6, 0x41, 0x39, 0x6b, 0xe8, 0x97, 0x64, 0xe3, 0x4f, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0x9a, 0x6b, 0xb6, 0x41, 0x2c, 0x06, 0x00, 0x00,
+	// 829 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x55, 0x4f, 0x6f, 0xdb, 0x36,
+	0x14, 0x8f, 0x2c, 0xc5, 0xb1, 0x9f, 0x83, 0xa4, 0x25, 0x8c, 0x4c, 0x31, 0x3a, 0xc7, 0x50, 0x30,
+	0x34, 0x97, 0x4a, 0x58, 0x3b, 0x14, 0x9d, 0x81, 0xad, 0xa8, 0xd7, 0xa2, 0xc6, 0xb6, 0x6e, 0x00,
+	0x33, 0xec, 0xd0, 0x8b, 0x41, 0x4b, 0xb4, 0xa2, 0x45, 0x16, 0x05, 0x92, 0xf6, 0xe2, 0x6b, 0xbf,
+	0xc2, 0xbe, 0xc4, 0x3e, 0x42, 0x3f, 0xc2, 0x2e, 0xc3, 0xce, 0xbb, 0xf4, 0xb0, 0x6f, 0xd0, 0x01,
+	0xbb, 0x0f, 0x22, 0x29, 0xd9, 0x72, 0x63, 0xa0, 0x27, 0x93, 0xef, 0xf7, 0x87, 0x4f, 0xef, 0x3d,
+	0xd2, 0xf0, 0x22, 0x4e, 0xe4, 0xd5, 0x62, 0xea, 0x87, 0x6c, 0x1e, 0x08, 0x96, 0xb2, 0x07, 0x09,
+	0x0b, 0xe2, 0x94, 0xb1, 0x20, 0xe7, 0xec, 0x17, 0x1a, 0x4a, 0x11, 0xc4, 0x44, 0xd2, 0x5f, 0xc9,
+	0x2a, 0x20, 0x79, 0x12, 0x2c, 0x3f, 0x0f, 0x96, 0x09, 0x97, 0x0b, 0x92, 0x4e, 0x04, 0xe5, 0xcb,
+	0x24, 0xa4, 0x7e, 0xce, 0x99, 0x64, 0xe8, 0xd8, 0xb0, 0xfc, 0xc2, 0xc3, 0x4f, 0x58, 0xaf, 0x1b,
+	0xb3, 0x98, 0x29, 0x2c, 0x28, 0x56, 0x9a, 0xd6, 0x43, 0xf4, 0x46, 0xea, 0x20, 0xbd, 0x91, 0x26,
+	0xd6, 0x57, 0xc7, 0x5e, 0x27, 0xb2, 0x3c, 0x61, 0x4e, 0x25, 0x89, 0x88, 0x24, 0x06, 0xbf, 0xb7,
+	0x8d, 0x0b, 0x49, 0xe4, 0x42, 0x18, 0xf4, 0x74, 0x1b, 0xe5, 0x74, 0xb6, 0xcb, 0xb8, 0xdc, 0x1b,
+	0xfc, 0x7c, 0xeb, 0x3b, 0x8b, 0x5d, 0xc9, 0x14, 0xa9, 0x21, 0x7d, 0xb6, 0x9b, 0x94, 0x73, 0x76,
+	0xb3, 0x32, 0xb4, 0xfb, 0xbb, 0x69, 0x2c, 0x97, 0x09, 0xcb, 0xca, 0x7c, 0x1f, 0xef, 0x26, 0x86,
+	0x8c, 0xd3, 0x60, 0x4e, 0x64, 0x78, 0x45, 0xb9, 0xa8, 0x16, 0x5a, 0xe7, 0xfd, 0xdd, 0x80, 0xa3,
+	0x9f, 0x75, 0xe9, 0x2f, 0x75, 0xe5, 0xd1, 0x53, 0x38, 0x2c, 0x9b, 0x71, 0xc5, 0x84, 0x74, 0xad,
+	0x81, 0x75, 0xd1, 0x79, 0x78, 0xcf, 0xdf, 0x6a, 0x85, 0x6f, 0x64, 0x63, 0x26, 0x24, 0xee, 0x2c,
+	0xd7, 0x1b, 0xf4, 0x18, 0x40, 0x88, 0x74, 0x12, 0xb2, 0x6c, 0x96, 0xc4, 0x6e, 0x43, 0xc9, 0x3f,
+	0xf1, 0x8b, 0x94, 0x2a, 0xed, 0xa5, 0x48, 0xbf, 0x51, 0x30, 0x6e, 0x8b, 0x72, 0x89, 0xee, 0xc3,
+	0x61, 0x94, 0x88, 0x3c, 0x25, 0xab, 0x49, 0x46, 0xe6, 0xd4, 0xb5, 0x07, 0xd6, 0x45, 0x7b, 0xe4,
+	0xbc, 0xfd, 0xcf, 0xb1, 0x70, 0xc7, 0x20, 0x3f, 0x90, 0x39, 0x45, 0xdf, 0x41, 0x53, 0x37, 0xcb,
+	0x6d, 0x2a, 0xf3, 0xae, 0x5f, 0x7c, 0xe3, 0xda, 0x5c, 0x61, 0xa3, 0x4f, 0x0b, 0xe1, 0x1f, 0xef,
+	0xce, 0xf6, 0xfe, 0x7d, 0x77, 0x76, 0x57, 0x52, 0x21, 0xa3, 0x64, 0x36, 0x1b, 0x7a, 0x49, 0x9c,
+	0x31, 0x4e, 0x3d, 0x6c, 0x2c, 0xd0, 0x13, 0x68, 0x95, 0x93, 0xe1, 0x1e, 0x28, 0xbb, 0x93, 0xba,
+	0xdd, 0x2b, 0x83, 0x8e, 0x9c, 0xc2, 0x0c, 0x57, 0xec, 0x61, 0xff, 0xcd, 0x7b, 0xc7, 0x81, 0xc6,
+	0x52, 0xbc, 0x79, 0xef, 0x20, 0x74, 0x67, 0x6b, 0x82, 0x85, 0xf7, 0x9b, 0x05, 0x9d, 0x8d, 0x22,
+	0x21, 0x17, 0x0e, 0x22, 0x36, 0x27, 0x49, 0x26, 0xdc, 0xc6, 0xc0, 0xbe, 0x68, 0xe3, 0x72, 0x8b,
+	0x7c, 0x68, 0x72, 0xb6, 0x90, 0x54, 0xb8, 0xf6, 0xc0, 0x56, 0x19, 0x6c, 0x17, 0x1b, 0x17, 0x30,
+	0x36, 0x2c, 0x34, 0x84, 0x03, 0xd3, 0x7e, 0xd7, 0x51, 0x29, 0x0f, 0xea, 0xe5, 0xdd, 0x38, 0xf5,
+	0x47, 0xcd, 0xc3, 0xa5, 0xc0, 0xfb, 0xd3, 0x86, 0x7d, 0xe5, 0x86, 0x9e, 0x42, 0xab, 0x9c, 0x06,
+	0xd7, 0x52, 0xe7, 0x9e, 0xfb, 0xd5, 0x78, 0xa8, 0x12, 0xd4, 0x4c, 0x5f, 0x69, 0x08, 0x57, 0x22,
+	0xf4, 0x35, 0x1c, 0xaa, 0x84, 0x26, 0x24, 0x2c, 0xbc, 0x4d, 0xab, 0x4f, 0xeb, 0x32, 0x75, 0xd6,
+	0x33, 0x45, 0x18, 0xef, 0xe1, 0x0e, 0x5f, 0x6f, 0xd1, 0x4b, 0x38, 0xe6, 0x34, 0x4a, 0x38, 0x0d,
+	0x65, 0x69, 0x61, 0x97, 0xc3, 0x56, 0xb3, 0x30, 0xa4, 0xca, 0xe5, 0x88, 0xd7, 0x22, 0xe8, 0x35,
+	0x9c, 0x18, 0x1b, 0x4e, 0x45, 0xce, 0x32, 0x51, 0xa5, 0xa4, 0xcb, 0xe3, 0xd5, 0xfd, 0x9e, 0x2b,
+	0x2e, 0x36, 0xd4, 0xca, 0xb5, 0x1b, 0xdd, 0x12, 0x47, 0xdf, 0xc2, 0x71, 0x44, 0x53, 0x5a, 0x34,
+	0xa4, 0x34, 0xdd, 0x57, 0xa6, 0x67, 0x1f, 0x34, 0xe9, 0xb9, 0xe1, 0xad, 0xf3, 0x8c, 0x6a, 0x11,
+	0xf4, 0xc5, 0xba, 0x6f, 0x7a, 0x72, 0x7b, 0xb7, 0xd4, 0x6a, 0xbb, 0x63, 0x08, 0x81, 0xa3, 0xee,
+	0x43, 0x31, 0x9d, 0x6d, 0xac, 0xd6, 0xa3, 0x16, 0x34, 0x75, 0x32, 0xde, 0x5f, 0x16, 0x1c, 0xd5,
+	0x0f, 0x46, 0x27, 0x46, 0x60, 0xa9, 0x0b, 0xd4, 0x70, 0x2d, 0x2d, 0x42, 0x03, 0x68, 0x17, 0xbf,
+	0x22, 0x27, 0x21, 0x55, 0xcd, 0xd2, 0xe0, 0x3a, 0x88, 0x1e, 0x80, 0xcd, 0xe9, 0xcc, 0x74, 0xe1,
+	0xb4, 0x7e, 0x0f, 0x30, 0x15, 0x6c, 0xc1, 0x43, 0x8a, 0xe9, 0x6c, 0xbc, 0x87, 0x0b, 0x1e, 0x7a,
+	0x06, 0x2d, 0x41, 0x53, 0x1a, 0x4a, 0xc6, 0x4d, 0xa5, 0xcf, 0x6f, 0x9f, 0xdc, 0x9f, 0xc8, 0x34,
+	0xa5, 0x97, 0x86, 0x3a, 0xde, 0xc3, 0x95, 0x6c, 0x74, 0xb7, 0x2a, 0x6f, 0xc2, 0xb2, 0x89, 0x5c,
+	0xe5, 0xd4, 0x7b, 0x6b, 0x01, 0xfa, 0x50, 0x85, 0xfa, 0x00, 0x55, 0xa2, 0x7a, 0x60, 0xdb, 0x78,
+	0x23, 0x82, 0x5e, 0x42, 0x33, 0x25, 0x53, 0x9a, 0xea, 0xdb, 0xd5, 0x79, 0x18, 0x7c, 0x44, 0x2a,
+	0xfe, 0xf7, 0x4a, 0xf1, 0x22, 0x93, 0x7c, 0x85, 0x8d, 0xbc, 0xf7, 0x25, 0x74, 0x36, 0xc2, 0xe8,
+	0x0e, 0xd8, 0xd7, 0x74, 0xa5, 0x8b, 0x89, 0x8b, 0x25, 0xea, 0xc2, 0xfe, 0x92, 0xa4, 0x0b, 0x53,
+	0x43, 0xac, 0x37, 0xc3, 0xc6, 0x13, 0x6b, 0xf4, 0x55, 0xf1, 0xe6, 0xfc, 0xfe, 0x4f, 0xdf, 0x7a,
+	0xfd, 0xe8, 0xa3, 0xff, 0x00, 0xf3, 0xeb, 0xd8, 0x3c, 0xd5, 0xd3, 0xa6, 0x7a, 0x94, 0x1f, 0xfd,
+	0x1f, 0x00, 0x00, 0xff, 0xff, 0x21, 0xb5, 0xee, 0xc2, 0x3e, 0x07, 0x00, 0x00,
 }
 
 func (this *VirtualService) Equal(that interface{}) bool {
@@ -549,9 +705,6 @@ func (this *VirtualHost) Equal(that interface{}) bool {
 	} else if this == nil {
 		return false
 	}
-	if this.Name != that1.Name {
-		return false
-	}
 	if len(this.Domains) != len(that1.Domains) {
 		return false
 	}
@@ -568,10 +721,7 @@ func (this *VirtualHost) Equal(that interface{}) bool {
 			return false
 		}
 	}
-	if !this.VirtualHostPlugins.Equal(that1.VirtualHostPlugins) {
-		return false
-	}
-	if !this.CorsPolicy.Equal(that1.CorsPolicy) {
+	if !this.Options.Equal(that1.Options) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -615,7 +765,10 @@ func (this *Route) Equal(that interface{}) bool {
 	} else if !this.Action.Equal(that1.Action) {
 		return false
 	}
-	if !this.RoutePlugins.Equal(that1.RoutePlugins) {
+	if !this.Options.Equal(that1.Options) {
+		return false
+	}
+	if this.Name != that1.Name {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -715,6 +868,133 @@ func (this *Route_DelegateAction) Equal(that interface{}) bool {
 		return false
 	}
 	if !this.DelegateAction.Equal(that1.DelegateAction) {
+		return false
+	}
+	return true
+}
+func (this *DelegateAction) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DelegateAction)
+	if !ok {
+		that2, ok := that.(DelegateAction)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Namespace != that1.Namespace {
+		return false
+	}
+	if that1.DelegationType == nil {
+		if this.DelegationType != nil {
+			return false
+		}
+	} else if this.DelegationType == nil {
+		return false
+	} else if !this.DelegationType.Equal(that1.DelegationType) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *DelegateAction_Ref) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DelegateAction_Ref)
+	if !ok {
+		that2, ok := that.(DelegateAction_Ref)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Ref.Equal(that1.Ref) {
+		return false
+	}
+	return true
+}
+func (this *DelegateAction_Selector) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*DelegateAction_Selector)
+	if !ok {
+		that2, ok := that.(DelegateAction_Selector)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Selector.Equal(that1.Selector) {
+		return false
+	}
+	return true
+}
+func (this *RouteTableSelector) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTableSelector)
+	if !ok {
+		that2, ok := that.(RouteTableSelector)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Namespaces) != len(that1.Namespaces) {
+		return false
+	}
+	for i := range this.Namespaces {
+		if this.Namespaces[i] != that1.Namespaces[i] {
+			return false
+		}
+	}
+	if len(this.Labels) != len(that1.Labels) {
+		return false
+	}
+	for i := range this.Labels {
+		if this.Labels[i] != that1.Labels[i] {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
 	}
 	return true

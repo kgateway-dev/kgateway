@@ -4,16 +4,13 @@
 {{- if not $gatewaySettings.disableGeneratedGateways}}
 
 ---
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpPort }}
@@ -30,16 +27,13 @@ spec:
 
 ---
 
-apiVersion: gateway.solo.io.v2/v2
+apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
   name: {{ $name | kebabcase }}-ssl
   namespace: {{ $.Release.Namespace }}
   labels:
     app: gloo
-  annotations:
-    "helm.sh/hook": "pre-install"
-    "helm.sh/hook-weight": "5"
 spec:
   bindAddress: "::"
   bindPort: {{ $spec.podTemplate.httpsPort }}

@@ -12,9 +12,8 @@ import (
 )
 
 type InitParams struct {
-	Ctx                context.Context
-	ExtensionsSettings *v1.Extensions
-	Settings           *v1.Settings
+	Ctx      context.Context
+	Settings *v1.Settings
 }
 
 type Plugin interface {
@@ -87,7 +86,7 @@ type ListenerFilterPlugin interface {
 }
 
 type StagedListenerFilter struct {
-	ListenerFilter envoylistener.Filter
+	ListenerFilter *envoylistener.Filter
 	Stage          FilterStage
 }
 
@@ -108,6 +107,15 @@ func (s StagedListenerFilterList) Less(i, j int) bool {
 	if s[i].ListenerFilter.Name < s[j].ListenerFilter.Name {
 		return true
 	}
+	if s[i].ListenerFilter.Name > s[j].ListenerFilter.Name {
+		return false
+	}
+	if s[i].ListenerFilter.String() < s[j].ListenerFilter.String() {
+		return true
+	}
+	if s[i].ListenerFilter.String() > s[j].ListenerFilter.String() {
+		return false
+	}
 	// ensure stability
 	return i < j
 }
@@ -119,7 +127,7 @@ func (s StagedListenerFilterList) Swap(i, j int) {
 // Currently only supported for TCP listeners, plan to change this in the future
 type ListenerFilterChainPlugin interface {
 	Plugin
-	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]envoylistener.FilterChain, error)
+	ProcessListenerFilterChain(params Params, in *v1.Listener) ([]*envoylistener.FilterChain, error)
 }
 
 type HttpFilterPlugin interface {
@@ -153,6 +161,15 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 	}
 	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
 		return true
+	}
+	if s[i].HttpFilter.Name > s[j].HttpFilter.Name {
+		return false
+	}
+	if s[i].HttpFilter.String() < s[j].HttpFilter.String() {
+		return true
+	}
+	if s[i].HttpFilter.String() > s[j].HttpFilter.String() {
+		return false
 	}
 	// ensure stability
 	return i < j

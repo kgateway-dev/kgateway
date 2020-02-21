@@ -1,4 +1,5 @@
 {{- $image := .Values.gateway.deployment.image }}
+{{- $statsConfig := coalesce .Values.gateway.deployment.stats .Values.global.glooStats -}}
 {{- if .Values.global  }}
 {{- $image = merge .Values.gateway.deployment.image .Values.global.image }}
 {{- end }}
@@ -9,7 +10,7 @@ metadata:
   labels:
     app: gloo
     gloo: gateway
-  name: gateway-v2
+  name: gateway
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: {{ .Values.gateway.deployment.replicas }}
@@ -20,7 +21,7 @@ spec:
     metadata:
       labels:
         gloo: gateway
-      {{- if .Values.gateway.deployment.stats }}
+      {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics
         prometheus.io/port: "9091"
@@ -37,7 +38,7 @@ spec:
 {{ toYaml .Values.gateway.deployment.resources | indent 10}}
 {{- end}}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
         ports:
           - containerPort: 8443
             name: https
@@ -59,16 +60,16 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-        {{- if .Values.gateway.deployment.stats }}
+        {{- if $statsConfig.enabled }}
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
-        {{- if .Values.gateway.validation }}
+        {{- if .Values.gateway.validation.enabled }}
           - name: VALIDATION_MUST_START
             value: "true"
         {{- end}}
 
-{{- if .Values.gateway.validation }}
+{{- if .Values.gateway.validation.enabled }}
         volumeMounts:
           - mountPath: /etc/gateway/validation-certs
             name: validation-certs

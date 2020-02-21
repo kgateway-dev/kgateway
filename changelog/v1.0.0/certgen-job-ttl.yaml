@@ -1,0 +1,10 @@
+changelog:
+  - type: HELM
+    description: >
+      Allow the gateway certgen job to have a ttlSecondsAfterFinished set on it, defaulting to 60 seconds. A new
+      Helm value "gateway.certGenJob.ttlSecondsAfterFinished" is provided to configure the value.
+      This setting is currently in k8s Alpha (https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/#ttl-mechanism-for-finished-jobs)
+      so you may disable it entirely by setting "gateway.certGenJob.setTtlAfterFinished" to false. See
+      https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/#feature-gates for information
+      on the k8s feature flag corresponding to this setting ("TTLAfterFinished").
+    issueLink: https://github.com/solo-io/gloo/issues/1631

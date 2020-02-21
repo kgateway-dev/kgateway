@@ -6,14 +6,14 @@ import (
 	"io"
 	"os/exec"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 )
 
 var dumpCommands = func(namespace string) []string {
 	return []string{
 		fmt.Sprintf("echo PODS FROM %s: && kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name", namespace, namespace),
 		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo STATUS FOR %s.$i: $(kubectl get pod -n %s $i -o go-template=\"{{range .status.containerStatuses}}{{.state}}{{end}}\"); done", namespace, namespace, namespace),
-		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i: $(kubectl logs -n %s $i --all-containers) | grep {\"level\":\"error\" ; done", namespace, namespace, namespace),
+		fmt.Sprintf("for i in $(kubectl get pod -n %s --no-headers -o custom-columns=:metadata.name); do echo LOGS FROM %s.$i: $(kubectl logs -n %s $i --all-containers); done", namespace, namespace, namespace),
 	}
 }
 

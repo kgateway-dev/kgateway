@@ -21,11 +21,12 @@ import (
 	"encoding/base64"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
-	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/grpc"
-	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
+	grpcapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
@@ -42,7 +43,6 @@ type ServicesAndDescriptor struct {
 func NewPlugin(transformsAdded *bool) *plugin {
 	return &plugin{
 		recordedUpstreams: make(map[core.ResourceRef]*v1.Upstream),
-		upstreamServices:  make(map[string]ServicesAndDescriptor),
 		transformsAdded:   transformsAdded,
 	}
 }
@@ -50,7 +50,7 @@ func NewPlugin(transformsAdded *bool) *plugin {
 type plugin struct {
 	transformsAdded   *bool
 	recordedUpstreams map[core.ResourceRef]*v1.Upstream
-	upstreamServices  map[string]ServicesAndDescriptor
+	upstreamServices  []ServicesAndDescriptor
 
 	ctx context.Context
 }
@@ -67,7 +67,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	upstreamType, ok := in.UpstreamSpec.UpstreamType.(v1.ServiceSpecGetter)
+	upstreamType, ok := in.UpstreamType.(v1.ServiceSpecGetter)
 	if !ok {
 		return nil
 	}
@@ -105,10 +105,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	addWellKnownProtos(descriptors)
 
 	p.recordedUpstreams[in.Metadata.Ref()] = in
-	p.upstreamServices[in.Metadata.Name] = ServicesAndDescriptor{
+	p.upstreamServices = append(p.upstreamServices, ServicesAndDescriptor{
 		Descriptors: descriptors,
 		Spec:        grpcSpec,
-	}
+	})
+	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.Metadata.Namespace, in.Metadata.Name)
 
 	return nil
 }
@@ -180,7 +181,7 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outPath += `?{{ default(query_string, "")}}`
 
 		// Add param extractors back
-		var extractors map[string]*transformapi.Extraction
+		var extractors map[string]*envoy_transform.Extraction
 		if grpcDestinationSpec.Parameters != nil {
 			extractors, err = transformutils.CreateRequestExtractors(params.Ctx, grpcDestinationSpec.Parameters)
 			if err != nil {
@@ -190,17 +191,17 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 		// we always choose post
 		httpMethod := "POST"
-		return &transformapi.RouteTransformations{
-			RequestTransformation: &transformapi.Transformation{
-				TransformationType: &transformapi.Transformation_TransformationTemplate{
-					TransformationTemplate: &transformapi.TransformationTemplate{
+		return &envoy_transform.RouteTransformations{
+			RequestTransformation: &envoy_transform.Transformation{
+				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+					TransformationTemplate: &envoy_transform.TransformationTemplate{
 						Extractors: extractors,
-						Headers: map[string]*transformapi.InjaTemplate{
+						Headers: map[string]*envoy_transform.InjaTemplate{
 							":method": {Text: httpMethod},
 							":path":   {Text: outPath},
 						},
-						BodyTransformation: &transformapi.TransformationTemplate_MergeExtractorsToBody{
-							MergeExtractorsToBody: &transformapi.MergeExtractorsToBody{},
+						BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
+							MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
 						},
 					},
 				},

@@ -5,24 +5,24 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/stats"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/go-utils/errors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var (
 	invalidVirtualClusterErr = func(err error, vcName string) error {
-		return errors.Wrapf(err, "failed to process virtual cluster [%s]", vcName)
+		return eris.Wrapf(err, "failed to process virtual cluster [%s]", vcName)
 	}
-	missingNameErr    = errors.Errorf("name is required")
-	missingPatternErr = errors.Errorf("pattern is required")
+	missingNameErr    = eris.Errorf("name is required")
+	missingPatternErr = eris.Errorf("pattern is required")
 	invalidMethodErr  = func(methodName string) error {
-		return errors.Errorf("invalid method name [%s]. Allowed values: %s", methodName, validMethodNames())
+		return eris.Errorf("invalid method name [%s]. Allowed values: %s", methodName, validMethodNames())
 	}
 )
 
@@ -40,11 +40,11 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if in.GetVirtualHostPlugins() == nil || in.GetVirtualHostPlugins().GetStats() == nil {
+	if in.GetOptions() == nil || in.GetOptions().GetStats() == nil {
 		return nil
 	}
 
-	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(in.GetVirtualHostPlugins().GetStats())
+	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(in.GetOptions().GetStats())
 	if err != nil {
 		return err
 	}
@@ -75,10 +75,31 @@ func (c converter) convertVirtualClusters(statsConfig *stats.Stats) ([]*envoyrou
 			return nil, invalidVirtualClusterErr(err, virtualCluster.Name)
 		}
 
+		headermatcher := []*envoyroute.HeaderMatcher{{
+			Name: ":path",
+			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_SafeRegexMatch{
+				SafeRegexMatch: &envoymatcher.RegexMatcher{
+					EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: virtualCluster.Pattern,
+				},
+			},
+		}}
+
+		if method != "" {
+			headermatcher = append(headermatcher, &envoyroute.HeaderMatcher{
+				Name: ":method",
+				HeaderMatchSpecifier: &envoyroute.HeaderMatcher_ExactMatch{
+					ExactMatch: method,
+				},
+			})
+		}
+
+		// method and path must be not empty
 		result = append(result, &envoyroute.VirtualCluster{
 			Name:    name,
-			Pattern: virtualCluster.Pattern,
-			Method:  method,
+			Headers: headermatcher,
 		})
 	}
 	return result, nil
@@ -91,15 +112,16 @@ func (c converter) validateName(name string) (string, error) {
 	return utils.SanitizeForEnvoy(c.ctx, name, "virtual cluster"), nil
 }
 
-func (c converter) validateHttpMethod(methodName string) (envoycore.RequestMethod, error) {
+func (c converter) validateHttpMethod(methodName string) (string, error) {
 	if methodName == "" {
-		return envoycore.METHOD_UNSPECIFIED, nil
+		return "", nil
 	}
-	method, ok := envoycore.RequestMethod_value[strings.ToUpper(methodName)]
+	key := strings.ToUpper(methodName)
+	_, ok := envoycore.RequestMethod_value[key]
 	if !ok {
-		return 0, invalidMethodErr(methodName)
+		return "", invalidMethodErr(methodName)
 	}
-	return envoycore.RequestMethod(method), nil
+	return key, nil
 }
 
 func validMethodNames() string {

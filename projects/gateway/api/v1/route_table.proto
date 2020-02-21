@@ -4,26 +4,27 @@ option go_package = "github.com/solo-io/gloo/projects/gateway/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
 
-import "github.com/solo-io/solo-kit/api/v1/metadata.proto";
-import "github.com/solo-io/solo-kit/api/v1/status.proto";
-import "github.com/solo-io/solo-kit/api/v1/solo-kit.proto";
+import "google/protobuf/wrappers.proto";
 
-import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
+import "solo-kit/api/v1/metadata.proto";
+import "solo-kit/api/v1/status.proto";
+import "solo-kit/api/v1/solo-kit.proto";
+
+import "gloo/projects/gateway/api/v1/virtual_service.proto";
 
 /*
 *
-* The **RouteTable** is a child Routing object for the Gloo Gateway.
+* The **RouteTable** is a child routing object for the Gloo Gateway.
 *
-* A **RouteTable** gets built into the complete routing configuration
-* when it is referenced by a `delegateAction`, either
-* in a parent VirtualService or another RouteTable.
+* A **RouteTable** gets built into the complete routing configuration when it is referenced by a `delegateAction`,
+* either in a parent VirtualService or another RouteTable.
 *
-* Routes specified in a RouteTable must have their paths start with the prefix provided in the
-* parent's matcher.
+* Routes specified in a RouteTable must have their paths start with the prefix provided in the parent's matcher.
 *
 * For example, the following configuration:
-*
 *
 * ```
 * virtualService: mydomain.com
@@ -63,16 +64,18 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
 *     domains:
 *     - 'any.com'
 *     routes:
-*     - matcher:
-*         prefix: '/a' # delegate ownership of routes for `any.com/a`
+*     - matchers:
+*       - prefix: '/a' # delegate ownership of routes for `any.com/a`
 *       delegateAction:
-*         name: 'a-routes'
-*         namespace: 'a'
-*     - matcher:
-*         prefix: '/b' # delegate ownership of routes for `any.com/b`
+*         ref:
+*           name: 'a-routes'
+*           namespace: 'a'
+*     - matchers:
+*       - prefix: '/b' # delegate ownership of routes for `any.com/b`
 *       delegateAction:
-*         name: 'b-routes'
-*         namespace: 'b'
+*         ref:
+*           name: 'b-routes'
+*           namespace: 'b'
 * ```
 *
 * * A root-level **VirtualService** which delegates routing to to the `a-routes` and `b-routes` **RouteTables**.
@@ -86,16 +89,16 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
 *   namespace: 'a'
 * spec:
 *   routes:
-*     - matcher:
-*         # the path matchers in this RouteTable must begin with the prefix `/a/`
-*         prefix: '/a/1'
+*     - matchers:
+*       # the path matchers in this RouteTable must begin with the prefix `/a/`
+*       - prefix: '/a/1'
 *       routeAction:
 *         single:
 *           upstream:
 *             name: 'foo-upstream'
 *
-*     - matcher:
-*         prefix: '/a/2'
+*     - matchers:
+*       - prefix: '/a/2'
 *       routeAction:
 *         single:
 *           upstream:
@@ -112,19 +115,20 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
 *   namespace: 'b'
 * spec:
 *   routes:
-*     - matcher:
-*         # the path matchers in this RouteTable must begin with the prefix `/b/`
-*         regex: '/b/3'
+*     - matchers:
+*       # the path matchers in this RouteTable must begin with the prefix `/b/`
+*       - regex: '/b/3'
 *       routeAction:
 *         single:
 *           upstream:
 *             name: 'bar-upstream'
-*     - matcher:
-*         prefix: '/b/c/'
+*     - matchers:
+*       - prefix: '/b/c/'
 *       # routes in the RouteTable can perform any action, including a delegateAction
 *       delegateAction:
-*         name: 'c-routes'
-*         namespace: 'c'
+*         ref:
+*           name: 'c-routes'
+*           namespace: 'c'
 
 * ```
 *
@@ -139,8 +143,8 @@ import "github.com/solo-io/gloo/projects/gateway/api/v1/virtual_service.proto";
 *   namespace: 'c'
 * spec:
 *   routes:
-*     - matcher:
-*         exact: '/b/c/4'
+*     - matchers:
+*       - exact: '/b/c/4'
 *       routeAction:
 *         single:
 *           upstream:
@@ -165,12 +169,24 @@ message RouteTable {
     option (core.solo.io.resource).short_name = "rt";
     option (core.solo.io.resource).plural_name = "route_tables";
 
-    // the list of routes for the route table
+    // The list of routes for the route table
     repeated Route routes = 1;
+
+    // When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this
+    // field to determine the order in which the route tables are to be evaluated. This determines the order in which
+    // the routes will appear on the final `Proxy` resource. The field is optional; if no value is specified, the weight
+    // defaults to 0 (zero).
+    //
+    // Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of
+    // each route table in the order they are defined. If multiple route tables define the same weight, Gloo will sort the
+    // routes which belong to those tables to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`).
+    // In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource
+    // (the one that specifies the `RouteTableSelector`).
+    google.protobuf.Int32Value weight = 2;
 
     // Status indicates the validation status of this resource.
     // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\"", (extproto.skip_hashing) = true];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];

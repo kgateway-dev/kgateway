@@ -4,14 +4,13 @@ description: How to install Gloo to run in Ingress Mode on Kubernetes.
 weight: 4
 ---
 
-## Installing the Gloo Ingress Controller on Kubernetes
+Gloo can be used as a simple ingress controller on Kubernetes. This guide will take you through the process of deploying Gloo as an ingress controller using either `glooctl` or Helm.
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" >}}).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
-### Installing on Kubernetes with `glooctl`
+## Installing on Kubernetes with `glooctl`
 
 Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Ingress Controller to the `gloo-system` namespace:
 
@@ -19,42 +18,62 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install ingress
 ```
 
-> Note: You can run the command with the flag `--dry-run` to output
-the Kubernetes manifests (as `yaml`) that `glooctl` will
-apply to the cluster instead of installing them.
+{{% notice note %}}
+You can run the command with the flag `--dry-run` to output the Kubernetes manifests (as `yaml`) that `glooctl` will apply to the cluster instead of installing them.
+{{% /notice %}}
 
-### Installing on Kubernetes with Helm
+---
 
+## Installing on Kubernetes with Helm
 
-This is the recommended method for installing Gloo to your production environment as it offers rich customization to
-the Gloo control plane and the proxies Gloo manages.
+This is the recommended method for installing Gloo to your production environment as it offers rich customization to the Gloo control plane and the proxies Gloo manages. This guide assumes that you are using Helm version 3, and have already installed the Helm client on your local machine.
 
-As a first step, you have to add the Gloo repository to the list of known chart repositories:
+As a first step, you have to add the Gloo repository to the list of known chart repositories and update the repository:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
+helm repo update
 ```
 
-The Gloo chart archive contains the necessary value files for the Ingress deployment option. Run the
-following command to download and extract the archive to the current directory:
+In the values for the Helm chart, you are going to set `gateway.enabled` to `false` and `ingress.enabled` to `true`. You can do this either by creating a `values.yaml` file with the proper settings or by defining the settings in line.
 
-```shell
-helm fetch --untar=true --untardir=. gloo/gloo
+### Install using a values.yaml file
+
+If you would like to define the settings with a file, create a `values.yaml` file with the following overrides:
+
+```yaml
+gateway:
+  enabled: false
+ingress:
+  enabled: true
 ```
 
-Finally, install Gloo using the following command:
+Then install Gloo using the following command:
 
 ```shell
-helm install gloo --namespace gloo-system -f gloo/values-ingress.yaml
+kubectl create namespace gloo-system
+helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
 ```
 
 Gloo can be installed to a namespace of your choosing with the `--namespace` flag.
 
+#### Install using in-line settings
+
+Instead of creating a `values.yaml` file, you can simply define the settings in-line. This is useful for a small number of values, but quickly becomes impractical if you want to override several values.
+
+Run the following commands to install the Gloo ingress controller.
+
+```shell
+kubectl create namespace gloo-system
+helm install gloo gloo/gloo --namespace gloo-system \
+  --set gateway.enabled=false,ingress.enabled=true
+```
+
+---
+
 ## Verify your Installation
 
-Check that the Gloo pods and services have been created. Depending on your install option, you may see some differences
-from the following example. And if you choose to install Gloo into a different namespace than the default `gloo-system`,
-then you will need to query your chosen namespace instead.
+Check that the Gloo pods and services have been created. Depending on your install option, you may see some differences from the following example. And if you chose to install Gloo into a different namespace than the default `gloo-system`, you will need to query your chosen namespace instead.
 
 ```shell
 kubectl get all -n gloo-system

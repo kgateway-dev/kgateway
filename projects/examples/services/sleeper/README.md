@@ -20,8 +20,8 @@ curl localhost:8080/?time=100s
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /sleep
+    - matchers:
+      - prefix: /sleep
       routeAction:
         single:
           upstream:
@@ -52,8 +52,8 @@ curl localhost:8080/?time=100s
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /sleep
+    - matchers:
+      - prefix: /sleep
       routeAction:
         single:
           upstream:
@@ -68,8 +68,8 @@ curl localhost:8080/?time=100s
     domains:
     - '*'
     routes:
-    - matcher:
-        prefix: /sleep
+    - matchers:
+      - prefix: /sleep
       redirectAction:
         hostRedirect: solo.io
 ```

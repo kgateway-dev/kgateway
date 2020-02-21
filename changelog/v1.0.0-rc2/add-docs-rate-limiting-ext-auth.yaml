@@ -1,0 +1,7 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add docs for running ext auth as both sidecar and standalone
+    issueLink: https://github.com/solo-io/gloo/issues/1537
+  - type: NON_USER_FACING
+    description: Add docs for running rate limiting before ext auth
+    issueLink: https://github.com/solo-io/gloo/issues/1445

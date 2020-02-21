@@ -1,0 +1,24 @@
+changelog:
+- type: HELM
+  description: >
+    Allow RBAC resource names to receive custom suffixes through the introduction of the new
+    Helm setting "global.glooRbac.nameSuffix". This enables, for example, blue/green
+    deployments of Gloo to different namespaces within the same cluster when using
+    cluster-scoped RBAC resources. This change is backwards compatible. However, if you are
+    performing an upgrade of Gloo from a version prior to this change and plan to use the new
+    Helm value, then you may end up with duplicate RBAC resources in your cluster (e.g.
+    Roles/RoleBindings with and without the suffix). If this is the case, the old resources
+    (without the suffix) can be safely cleaned up.
+  issueLink: https://github.com/solo-io/gloo/issues/1459
+- type: BREAKING_CHANGE
+  description: >
+    This release changes the names of Gloo's ClusterRoles. By default, cluster-scoped roles
+    will have the namespace of the associated Gloo installation appended to their name
+    (i.e., the cluster-scoped role "gloo-resource-reader" created along with a Gloo installation
+    to the gloo-system namespace will now become "gloo-resource-reader-gloo-system"). This
+    may cause a problem during upgrades from Gloo <0.21.0 to Gloo >=0.21.0 for both
+    open-source and enterprise Gloo, as the role ref in a ClusterRoleBinding is immutable.
+    To resolve this, you can delete the existing ClusterRoleBindings with
+    "kubectl delete clusterrolebinding -l app=gloo" and they will be recreated correctly by
+    the rest of the upgrade process.
+  issueLink: https://github.com/solo-io/gloo/issues/1459

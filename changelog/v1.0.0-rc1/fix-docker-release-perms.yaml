@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix docker permissions to push docs images during release.
+    issueLink: https://github.com/solo-io/gloo/issues/1516

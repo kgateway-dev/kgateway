@@ -5,9 +5,9 @@ import (
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
 )
 
-//go:generate sh -c "2gobytes -p grpc -a annotationsDescriptorBytes -i google/api/annotations.proto.descriptor  | sed 's@// date.*@@g' > annotations.google.descriptor.go"
-//go:generate sh -c "2gobytes -p grpc -a httpDescriptorBytes -i google/api/http.proto.descriptor | sed 's@// date.*@@g' > http.google.descriptor.go"
-//go:generate sh -c "2gobytes -p grpc -a descriptorsDescriptorBytes -i google/api/descriptors.proto.descriptor | sed 's@// date.*@@g' > descriptors.google.descriptor.go"
+//go:generate sh -c "2goarray annotationsDescriptorBytes grpc < google/api/annotations.proto.descriptor  | sed 's@// date.*@@g' > annotations.google.descriptor.go"
+//go:generate sh -c "2goarray httpDescriptorBytes grpc < google/api/http.proto.descriptor | sed 's@// date.*@@g' > http.google.descriptor.go"
+//go:generate sh -c "2goarray descriptorsDescriptorBytes grpc < google/api/descriptors.proto.descriptor | sed 's@// date.*@@g' > descriptors.google.descriptor.go"
 
 var annotationsDescriptor, httpDescriptor, descriptorsDescriptor descriptor.FileDescriptorProto
 

@@ -39,7 +39,7 @@ A simple wrapper for a Kubernetes Service Object.
 | ----- | ---- | ----------- |----------- | 
 | `kubeServiceSpec` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the kubernetes service this resource wraps. |  |
 | `kubeServiceStatus` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | a raw byte representation of the service status of the kubernetes service object. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

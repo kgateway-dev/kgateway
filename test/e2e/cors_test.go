@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
+
 	"github.com/solo-io/gloo/pkg/utils"
 
 	. "github.com/onsi/ginkgo"
@@ -62,7 +64,9 @@ var _ = Describe("CORS", func() {
 			var err error
 			td.per.envoyInstance, err = envoyFactory.NewEnvoyInstance()
 			Expect(err).NotTo(HaveOccurred())
-			td.per.envoyAdminUrl = fmt.Sprintf("http://%s:%d/config_dump", "localhost", td.per.envoyInstance.AdminPort)
+			td.per.envoyAdminUrl = fmt.Sprintf("http://%s:%d/config_dump",
+				td.per.envoyInstance.LocalAddr(),
+				td.per.envoyInstance.AdminPort)
 
 			err = td.per.envoyInstance.Run(td.testClients.GlooPort)
 			Expect(err).NotTo(HaveOccurred())
@@ -81,14 +85,9 @@ var _ = Describe("CORS", func() {
 			allowedOrigins := []string{"allowThisOne.solo.io"}
 			// allowedOrigin := "*"
 			allowedMethods := []string{"GET", "POST"}
-			cors := &gloov1.CorsPolicy{
-				AllowOrigin:      allowedOrigins,
-				AllowOriginRegex: nil,
-				AllowMethods:     allowedMethods,
-				AllowHeaders:     nil,
-				ExposeHeaders:    nil,
-				MaxAge:           "",
-				AllowCredentials: false,
+			cors := &cors.CorsPolicy{
+				AllowOrigin:  allowedOrigins,
+				AllowMethods: allowedMethods,
 			}
 
 			td.setupInitialProxy(cors)
@@ -127,7 +126,7 @@ var _ = Describe("CORS", func() {
 	})
 })
 
-func (td *corsTestData) getGlooCorsProxy(cors *gloov1.CorsPolicy) (*gloov1.Proxy, error) {
+func (td *corsTestData) getGlooCorsProxy(cors *cors.CorsPolicy) (*gloov1.Proxy, error) {
 	readProxy, err := td.testClients.ProxyClient.Read("default", "proxy", clients.ReadOpts{})
 	if err != nil {
 		return nil, err
@@ -135,7 +134,7 @@ func (td *corsTestData) getGlooCorsProxy(cors *gloov1.CorsPolicy) (*gloov1.Proxy
 	return td.per.getGlooCorsProxyWithVersion(readProxy.Metadata.ResourceVersion, cors), nil
 }
 
-func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, cors *gloov1.CorsPolicy) *gloov1.Proxy {
+func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, cors *cors.CorsPolicy) *gloov1.Proxy {
 	return &gloov1.Proxy{
 		Metadata: core.Metadata{
 			Name:            "proxy",
@@ -144,7 +143,7 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 		},
 		Listeners: []*gloov1.Listener{{
 			Name:        "listener",
-			BindAddress: "127.0.0.1",
+			BindAddress: "0.0.0.0",
 			BindPort:    ptd.envoyPort,
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
@@ -164,8 +163,9 @@ func (ptd *perCorsTestData) getGlooCorsProxyWithVersion(resourceVersion string, 
 								},
 							},
 						}},
-						VirtualHostPlugins: &gloov1.VirtualHostPlugins{},
-						CorsPolicy:         cors,
+						Options: &gloov1.VirtualHostOptions{
+							Cors: cors,
+						},
 					}},
 				},
 			},
@@ -179,7 +179,7 @@ func (td *corsTestData) setupProxy(proxy *gloov1.Proxy) error {
 	return err
 }
 
-func (td *corsTestData) setupInitialProxy(cors *gloov1.CorsPolicy) {
+func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
 	By("Setup proxy")
 	td.per.envoyPort = services.NextBindPort()
 	proxy := td.per.getGlooCorsProxyWithVersion("", cors)

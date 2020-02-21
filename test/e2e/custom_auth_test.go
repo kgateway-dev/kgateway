@@ -6,22 +6,23 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/gogo/protobuf/types"
-
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/auth/v2"
 	"github.com/gogo/googleapis/google/rpc"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/grpc"
 )
 
@@ -40,7 +41,8 @@ var _ = Describe("CustomAuth", func() {
 		ctx, cancel = context.WithCancel(context.Background())
 
 		// Initialize Envoy instance
-		envoyInstance, err := envoyFactory.NewEnvoyInstance()
+		var err error
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
 		// Start custom extauth server and create upstream for it
@@ -52,16 +54,14 @@ var _ = Describe("CustomAuth", func() {
 				Name:      "custom-auth",
 				Namespace: "default",
 			},
-			UpstreamSpec: &gloov1.UpstreamSpec{
-				UseHttp2: true,
-				UpstreamType: &gloov1.UpstreamSpec_Static{
-					Static: &static.UpstreamSpec{
-						Hosts: []*static.Host{{
-							// this is a safe way of referring to localhost
-							Addr: envoyInstance.GlooAddr,
-							Port: 8095,
-						}},
-					},
+			UseHttp2: true,
+			UpstreamType: &gloov1.Upstream_Static{
+				Static: &static.UpstreamSpec{
+					Hosts: []*static.Host{{
+						// this is a safe way of referring to localhost
+						Addr: envoyInstance.GlooAddr,
+						Port: 8095,
+					}},
 				},
 			},
 		}
@@ -183,7 +183,7 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 						{
 							Name:    "gloo-system.virt1",
 							Domains: []string{"*"},
-							VirtualHostPlugins: &gloov1.VirtualHostPlugins{
+							Options: &gloov1.VirtualHostOptions{
 								Extauth: &v1.ExtAuthExtension{
 									Spec: &v1.ExtAuthExtension_CustomAuth{
 										CustomAuth: &v1.CustomAuth{
@@ -196,12 +196,12 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 							},
 							Routes: []*gloov1.Route{
 								{ // This route can be accessed by users
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/user",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 									},
 									Action: &gloov1.Route_RouteAction{
@@ -217,12 +217,12 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed only by admins
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/admin",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_CustomAuth{
@@ -247,12 +247,12 @@ func getProxyExtAuth(namespace, name string, envoyPort uint32, upstream core.Res
 									},
 								},
 								{ // This route can be accessed by anyone
-									Matchers: []*gloov1.Matcher{{
-										PathSpecifier: &gloov1.Matcher_Prefix{
+									Matchers: []*matchers.Matcher{{
+										PathSpecifier: &matchers.Matcher_Prefix{
 											Prefix: "/public",
 										},
 									}},
-									RoutePlugins: &gloov1.RoutePlugins{
+									Options: &gloov1.RouteOptions{
 										PrefixRewrite: &types.StringValue{Value: "/"},
 										Extauth: &v1.ExtAuthExtension{
 											Spec: &v1.ExtAuthExtension_Disable{
@@ -306,8 +306,8 @@ func startCustomExtauthServer(port uint) (*grpc.Server, error) {
 }
 
 var (
-	deny  = &pb.CheckResponse{Status: &rpc.Status{Code: int32(rpc.PERMISSION_DENIED)}}
-	allow = &pb.CheckResponse{Status: &rpc.Status{Code: int32(rpc.OK)}}
+	deny  = &pb.CheckResponse{Status: &status.Status{Code: int32(rpc.PERMISSION_DENIED)}}
+	allow = &pb.CheckResponse{Status: &status.Status{Code: int32(rpc.OK)}}
 )
 
 // This custom auth server expects requests to provide the username in a "user" header.

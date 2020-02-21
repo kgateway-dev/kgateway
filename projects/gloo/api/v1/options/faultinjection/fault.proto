@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package fault.options.gloo.solo.io;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection";
+
+import "google/protobuf/duration.proto";
+
+import "validate/validate.proto";
+import "gogoproto/gogo.proto";
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+option (gogoproto.equal_all) = true;
+
+message RouteAbort {
+    // Percentage of requests that should be aborted, defaulting to 0.
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float percentage = 1;
+    // This should be a standard HTTP status, i.e. 503. Defaults to 0.
+    uint32 http_status = 2;
+}
+
+message RouteDelay {
+    // Percentage of requests that should be delayed, defaulting to 0.
+    // This should be a value between 0.0 and 100.0, with up to 6 significant digits.
+    float percentage = 1;
+    // Fixed delay, defaulting to 0.
+    google.protobuf.Duration fixed_delay = 2
+        [(validate.rules).duration.gt = {}, (gogoproto.stdduration) = true];
+}
+
+message RouteFaults {
+    RouteAbort abort = 1;
+    RouteDelay delay = 2;
+}

@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/1513
+    description: >
+      Glooctl will now print a warning if the version of the binary differs by either major or minor version from
+      the Gloo server components. In the same message, it will also suggest a command to run to bring glooctl's version
+      in line with the server version.

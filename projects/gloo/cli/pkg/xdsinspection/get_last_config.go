@@ -8,32 +8,43 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	"go.uber.org/zap"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_core1 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/util"
+	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
 	"google.golang.org/grpc"
 	"sigs.k8s.io/yaml"
 )
 
+const (
+	envoySidecarConfig = "envoy-sidecar-config"
+)
+
 func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErrors bool) (*XdsDump, error) {
+
 	xdsPort := strconv.Itoa(int(defaults.GlooXdsPort))
+	// If gloo is in MTLS mode
+	glooMtlsCheck := exec.Command("kubectl", "get", "configmap", envoySidecarConfig, "-n", namespace)
+	if err := glooMtlsCheck.Run(); err == nil {
+		xdsPort = strconv.Itoa(int(defaults.GlooMtlsModeXdsPort))
+	}
 	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
 		"deployment/gloo", xdsPort)
 	mergedPortForwardOutput := bytes.NewBuffer([]byte{})
 	portFwd.Stdout = mergedPortForwardOutput
 	portFwd.Stderr = mergedPortForwardOutput
 	if err := portFwd.Start(); err != nil {
-		return nil, errors.Wrapf(err, "failed to start port-forward")
+		return nil, eris.Wrapf(err, "failed to start port-forward")
 	}
 	defer func() {
 		if portFwd.Process != nil {
@@ -49,10 +60,10 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 				return
 			default:
 			}
+			time.Sleep(time.Millisecond * 250)
 			out, err := getXdsDump(ctx, xdsPort, proxyName, namespace)
 			if err != nil {
 				errs <- err
-				time.Sleep(time.Millisecond * 250)
 				continue
 			}
 			result <- out
@@ -65,7 +76,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, errors.Errorf("cancelled")
+			return nil, eris.Errorf("cancelled")
 		case err := <-errs:
 			if verboseErrors {
 				contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v", err.Error())
@@ -75,7 +86,7 @@ func GetGlooXdsDump(ctx context.Context, proxyName, namespace string, verboseErr
 		case <-timer:
 			contextutils.LoggerFrom(ctx).Errorf("connecting to gloo failed with err %v",
 				zap.Any("cmdErrors", string(mergedPortForwardOutput.Bytes())))
-			return nil, errors.Errorf("timed out trying to connect to Envoy admin port")
+			return nil, eris.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}
 
@@ -94,8 +105,8 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 		Role: fmt.Sprintf("%v~%v", proxyNamespace, proxyName),
 	}
 	dr := &v2.DiscoveryRequest{Node: &envoy_api_v2_core1.Node{
-		Metadata: &types.Struct{
-			Fields: map[string]*types.Value{"role": {Kind: &types.Value_StringValue{StringValue: xdsDump.Role}}}},
+		Metadata: &structpb.Struct{
+			Fields: map[string]*structpb.Value{"role": {Kind: &structpb.Value_StringValue{StringValue: xdsDump.Role}}}},
 	}}
 
 	conn, err := grpc.Dial("localhost:"+xdsPort, grpc.WithInsecure())
@@ -131,7 +142,7 @@ func getXdsDump(ctx context.Context, xdsPort, proxyName, proxyNamespace string) 
 							hcms = append(hcms, hcm)
 						}
 					case *envoylistener.Filter_TypedConfig:
-						if err := types.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
+						if err := ptypes.UnmarshalAny(config.TypedConfig, &hcm); err == nil {
 							hcms = append(hcms, hcm)
 						}
 					}
@@ -165,7 +176,7 @@ func listClusters(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clien
 	for _, anyCluster := range dresp.Resources {
 
 		var cluster v2.Cluster
-		if err := cluster.Unmarshal(anyCluster.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyCluster, &cluster); err != nil {
 			return nil, err
 		}
 		clusters = append(clusters, cluster)
@@ -177,14 +188,14 @@ func listEndpoints(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	eds := v2.NewEndpointDiscoveryServiceClient(conn)
 	dresp, err := eds.FetchEndpoints(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("endpoints err: %v", err)
+		return nil, eris.Errorf("endpoints err: %v", err)
 	}
 	var class []v2.ClusterLoadAssignment
 
 	for _, anyCla := range dresp.Resources {
 
 		var cla v2.ClusterLoadAssignment
-		if err := cla.Unmarshal(anyCla.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyCla, &cla); err != nil {
 			return nil, err
 		}
 		class = append(class, cla)
@@ -198,13 +209,13 @@ func listListeners(ctx context.Context, dr *v2.DiscoveryRequest, conn *grpc.Clie
 	ldsc := v2.NewListenerDiscoveryServiceClient(conn)
 	dresp, err := ldsc.FetchListeners(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("listeners err: %v", err)
+		return nil, eris.Errorf("listeners err: %v", err)
 	}
 	var listeners []v2.Listener
 
 	for _, anylistener := range dresp.Resources {
 		var listener v2.Listener
-		if err := listener.Unmarshal(anylistener.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anylistener, &listener); err != nil {
 			return nil, err
 		}
 		listeners = append(listeners, listener)
@@ -221,13 +232,13 @@ func listRoutes(ctx context.Context, conn *grpc.ClientConn, dr *v2.DiscoveryRequ
 
 	dresp, err := ldsc.FetchRoutes(ctx, dr)
 	if err != nil {
-		return nil, errors.Errorf("routes err: %v", err)
+		return nil, eris.Errorf("routes err: %v", err)
 	}
 	var routes []v2.RouteConfiguration
 
 	for _, anyRoute := range dresp.Resources {
 		var route v2.RouteConfiguration
-		if err := route.Unmarshal(anyRoute.Value); err != nil {
+		if err := ptypes.UnmarshalAny(anyRoute, &route); err != nil {
 			return nil, err
 		}
 		routes = append(routes, route)

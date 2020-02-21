@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Mute logging of kubernetes health check in gateway
+    issueLink: https://github.com/solo-io/gloo/issues/1435

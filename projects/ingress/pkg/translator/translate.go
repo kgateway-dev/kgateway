@@ -4,8 +4,9 @@ import (
 	"sort"
 
 	"github.com/solo-io/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
-	"github.com/pkg/errors"
+	errors "github.com/rotisserie/eris"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
@@ -25,9 +26,8 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot, requireIngres
 		ingresses = append(ingresses, kubeIngress)
 	}
 	upstreams := snap.Upstreams
-	secrets := snap.Secrets
 
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, secrets, requireIngressClass)
+	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, requireIngressClass)
 	if err != nil {
 		return nil, errors.Wrapf(err, "computing virtual hosts")
 	}
@@ -83,13 +83,13 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, ingressNamespace string, 
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream
 	for _, us := range upstreams {
-		switch spec := us.UpstreamSpec.UpstreamType.(type) {
-		case *gloov1.UpstreamSpec_Kube:
+		switch spec := us.UpstreamType.(type) {
+		case *gloov1.Upstream_Kube:
 			if spec.Kube.ServiceNamespace == ingressNamespace &&
 				spec.Kube.ServiceName == backend.ServiceName &&
 				spec.Kube.ServicePort == uint32(backend.ServicePort.IntVal) {
 				if matchingUpstream != nil {
-					originalSelectorLength := len(matchingUpstream.UpstreamSpec.UpstreamType.(*gloov1.UpstreamSpec_Kube).Kube.Selector)
+					originalSelectorLength := len(matchingUpstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.Selector)
 					newSelectorLength := len(spec.Kube.Selector)
 					if newSelectorLength > originalSelectorLength {
 						continue
@@ -110,7 +110,7 @@ type secureVirtualHost struct {
 	secret core.ResourceRef
 }
 
-func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, secrets gloov1.SecretList, requireIngressClass bool) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, requireIngressClass bool) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
@@ -128,12 +128,11 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 			defaultBackend = spec.Backend
 		}
 		for _, tls := range spec.TLS {
-			secret, err := secrets.Find(ing.Namespace, tls.SecretName)
-			if err != nil {
-				return nil, nil, errors.Wrapf(err, "invalid secret for ingress %v", ing.Name)
-			}
 
-			ref := secret.Metadata.Ref()
+			ref := core.ResourceRef{
+				Name:      tls.SecretName,
+				Namespace: ing.Namespace,
+			}
 			for _, host := range tls.Hosts {
 				if existing, alreadySet := secretsByHost[host]; alreadySet {
 					if existing.Name != ref.Name || existing.Namespace != ref.Namespace {
@@ -166,8 +165,8 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, s
 					pathRegex = ".*"
 				}
 				route := &gloov1.Route{
-					Matchers: []*gloov1.Matcher{{
-						PathSpecifier: &gloov1.Matcher_Regex{
+					Matchers: []*matchers.Matcher{{
+						PathSpecifier: &matchers.Matcher_Regex{
 							Regex: pathRegex,
 						},
 					}},

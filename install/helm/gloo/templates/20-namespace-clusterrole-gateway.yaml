@@ -4,16 +4,13 @@
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-resource-watcher
+    name: kube-resource-watcher{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: [""]
   resources: ["pods", "services", "secrets", "endpoints", "configmaps", "namespaces"]
@@ -22,16 +19,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-upstream-mutator
+    name: gloo-upstream-mutator{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["upstreams"]
@@ -41,34 +35,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: kube-crd-creator
+    name: gloo-resource-reader{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
-rules:
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs: ["get", "create", "update"]
----
-kind: {{ include "gloo.roleKind" . }}
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-    name: gloo-resource-reader
-{{- if .Values.global.glooRbac.namespaced }}
-    namespace: {{ .Release.Namespace }}
-{{- end }}
-    labels:
-        app: gloo
-        gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io", "enterprise.gloo.solo.io"]
   resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
@@ -81,16 +54,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: settings-user
+    name: settings-user{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["settings"]
@@ -100,16 +70,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-resource-mutator
+    name: gloo-resource-mutator{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gloo.solo.io"]
   resources: ["proxies"]
@@ -118,16 +85,13 @@ rules:
 kind: {{ include "gloo.roleKind" . }}
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gateway-resource-reader
+    name: gateway-resource-reader{{ include "gloo.rbacNameSuffix" . }}
 {{- if .Values.global.glooRbac.namespaced }}
     namespace: {{ .Release.Namespace }}
 {{- end }}
     labels:
         app: gloo
         gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "10"
 rules:
 - apiGroups: ["gateway.solo.io"]
   resources: ["virtualservices", "routetables"]
@@ -137,36 +101,6 @@ rules:
   resources: ["gateways"]
   # update is needed for status updates, create for creating the default ones.
   verbs: ["get", "list", "watch", "create", "update"]
-- apiGroups: ["gateway.solo.io.v2"]
-  resources: ["gateways"]
-  # update is needed for status updates
-  verbs: ["get", "list", "watch", "create", "update"]
-
-
-{{- if and .Values.gateway.validation .Values.gateway.certGenJob }}
----
-# this role requires access to cluster-scoped resources
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1
-metadata:
-    name: gloo-gateway-secret-create-vwc-update{{ include "gloo.rolebindingsuffix" . }}
-    labels:
-        app: gloo
-        gloo: rbac
-    annotations:
-      "helm.sh/hook": "pre-install"
-      "helm.sh/hook-weight": "5"
-rules:
-- apiGroups: [""]
-  resources: ["secrets"]
-  verbs: ["create", "get", "update"]
-- apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingwebhookconfigurations"]
-  verbs: ["get", "update"]
-
-{{- end -}}
-
-
 
 {{- end -}}
 {{- end -}}

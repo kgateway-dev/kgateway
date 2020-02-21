@@ -1,5 +1,5 @@
 {{- if .Values.settings.integrations.knative.enabled }}
-{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
+{{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
 apiVersion: v1
 kind: Service
 metadata:

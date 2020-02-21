@@ -1,4 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  description: Allow for customization of waf intervention message.
-  issueLink: https://github.com/solo-io/solo-projects/issues/1235

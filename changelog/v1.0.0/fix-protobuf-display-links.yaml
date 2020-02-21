@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Fix protobuf display links.
+  issueLink: https://github.com/solo-io/solo-docs/issues/648

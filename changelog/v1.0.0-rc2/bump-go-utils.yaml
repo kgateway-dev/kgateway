@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyTag: v0.10.22
+  dependencyRepo: go-utils
+  description: Update go-utils to version v0.10.22 to get the new `HELM` and `UPGRADE` changelog entry types.

@@ -16,9 +16,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type ReceivedRequest struct {
@@ -95,11 +98,9 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 			Name:      fmt.Sprintf("local-%d", id),
 			Namespace: "default",
 		},
-		UpstreamSpec: &gloov1.UpstreamSpec{
-			UpstreamType: &gloov1.UpstreamSpec_Static{
-				Static: &static_plugin_gloo.UpstreamSpec{
-					Hosts: hosts,
-				},
+		UpstreamType: &gloov1.Upstream_Static{
+			Static: &static_plugin_gloo.UpstreamSpec{
+				Hosts: hosts,
 			},
 		},
 	}
@@ -181,7 +182,7 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
 
-	timeout := time.After(5 * time.Second)
+	timeout := time.After(15 * time.Second)
 	var receivedRequest *ReceivedRequest
 	for {
 		select {
@@ -237,7 +238,7 @@ func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string
 		}
 
 		return nil
-	}, "10s", ".5s").Should(BeNil())
+	}, "30s", "1s").Should(BeNil())
 
 	if response != "" {
 		body, err := ioutil.ReadAll(res.Body)
@@ -245,4 +246,42 @@ func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string
 		defer res.Body.Close()
 		ExpectWithOffset(2, string(body)).To(Equal(response))
 	}
+}
+
+func ExpectGrpcHealthOK(rootca *string, envoyPort uint32, service string) {
+	EventuallyWithOffset(2, func() error {
+		// send a request with a body
+
+		opts := []grpc.DialOption{grpc.WithBlock()}
+		if rootca != nil {
+			caCertPool := x509.NewCertPool()
+			ok := caCertPool.AppendCertsFromPEM([]byte(*rootca))
+			if !ok {
+				Fail("ca cert is not OK")
+			}
+			creds := credentials.NewTLS(&tls.Config{
+				ClientCAs:          caCertPool,
+				InsecureSkipVerify: true,
+			})
+
+			opts = append(opts, grpc.WithTransportCredentials(creds))
+		} else {
+			opts = append(opts, grpc.WithInsecure())
+		}
+		conn, err := grpc.Dial(fmt.Sprintf("%s:%d", "localhost", envoyPort), opts...)
+		ExpectWithOffset(2, err).NotTo(HaveOccurred())
+		defer conn.Close()
+
+		c := healthpb.NewHealthClient(conn)
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		resp, err := c.Check(ctx, &healthpb.HealthCheckRequest{Service: service})
+		cancel()
+		if err != nil {
+			return err
+		}
+		if resp.GetStatus() != healthpb.HealthCheckResponse_SERVING {
+			return fmt.Errorf("%v is not SERVING", resp.GetStatus())
+		}
+		return nil
+	}, "30s", "1s").Should(BeNil())
 }

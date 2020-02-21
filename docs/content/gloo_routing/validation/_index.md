@@ -1,11 +1,11 @@
 ---
-menuTitle: Config Validation
-title: Config Reporting & Validation in Gloo
-weight: 45
+menuTitle: Configuration Validation
+title: Config Reporting & Validation
+weight: 60
 description: (Kubernetes Only) Gloo can be configured to validate configuration before it is applied to the cluster. With validation enabled, any attempt to apply invalid configuration to the cluster will be rejected.
 ---
 
-# Motivation
+## Motivation
 
 When configuring an API gateway or edge proxy, invalid configuration can quickly lead to bugs, service outages, and 
 security vulnerabilities. 
@@ -13,11 +13,11 @@ security vulnerabilities.
 This document explains features in Gloo designed to prevent invalid configuration from propagating to the 
 data plane (the Gateway Proxies).
 
-# How Gloo Validates Configuration
+## How Gloo Validates Configuration
 
 Gloo's configuration takes the form of **Virtual Services** written by users.
-Users may also  write **Gateways** (to configure [listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) 
-and **Route Tables** (to decentralize routing configurations from Virtual Services).
+Users may also  write {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resources">}} (to configure [listeners](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners) 
+and {{< protobuf name="gateway.solo.io.RouteTable" display="RouteTables">}} (to decentralize routing configurations from Virtual Services).
 
 Whenever Gloo configuration objects are updated, Gloo validates and processes the new configuration.
 
@@ -42,7 +42,7 @@ If configuration errors are encountered at this point, Gloo will report them to 
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
-  the [`Gateway` resource]({{< protobuf name="gateway.solo.io.v2.Gateway">}}).
+  the {{< protobuf name="gateway.solo.io.Gateway" display="Gateway resource">}}.
 
 {{% notice note %}}
 
@@ -50,7 +50,7 @@ The proxy that *Gateways* and their *Virtual Services* will be applied to can be
 
 {{% /notice %}}
 
-# Warnings and Errors
+## Warnings and Errors
 
 Gloo processes an admitted config resource, it can report one of three status types on the resource:
 
@@ -60,12 +60,40 @@ Gloo processes an admitted config resource, it can report one of three status ty
 
 When a resource is in *Rejected* or *Warning* state, its configuration is not propagated to the proxy.
 
-# Using the Validating Webhook
+## Using the Validating Webhook
 
-Admission Validation provides a safeguard to ensure invalid config does not make its way 
-into the Gloo snapshot, which would otherwise block updates from reaching the proxy. If a 
-resource would be written or modified in such a way to cause Gloo to report an error, it is 
-instead rejected by the Kubernetes API Server before it is written to persistent storage.
+Admission Validation provides a safeguard to ensure Gloo does not halt processing of configuration. If a resource 
+would be written or modified in such a way to cause Gloo to report an error, it is instead rejected by the Kubernetes 
+API Server before it is written to persistent storage.
+
+Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
+which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
+{{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
+{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
+and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
+
+The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
+by removing the `ValidatingWebhookConfiguration`.
+
+The webhook can be configured to perform strict or permissive validation, depending on the `gateway.validation.alwaysAccept` setting in the 
+{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
+
+When `alwaysAccept` is `true` (currently the default is `true`), resources will only be rejected when Gloo fails to 
+deserialize them (due to invalid JSON/YAML).
+
+To enable "strict" admission control (rejection of resources with invalid config), set `alwaysAccept` to false.
+
+When strict admission control is enabled, any resource that would produce a `Rejected` status will be rejected on admission.
+Resources that would produce a `Warning` status are still admitted.
+
+## Enabling Strict Validation Webhook 
+ 
+ 
+By default, the Validation Webhook only logs the validation result, but always admits resources with valid YAML (even if the 
+configuration options are inconsistent/invalid).
+
+The webhook can be configured to reject invalid resources via the 
+{{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
 See [the Admission Controller Guide]({{< ref "/gloo_routing/validation/admission_control">}}) 
 to learn how to configure and use Gloo's admission control feature.
@@ -74,6 +102,26 @@ to learn how to configure and use Gloo's admission control feature.
 
 Gloo can be configured to pass partially config to Envoy by admitting it through an internal process referred to as *sanitizing*.
 
+{{< highlight yaml "hl_lines=10-12" >}}
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: gloo-system
+spec:
+  discoveryNamespace: gloo-system
+  gateway:
+    validation:
+      alwaysAccept: false
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+{{< /highlight >}}
 Rather than refuse to update Envoy with invalid config, Gloo can replace the invalid pieces of configuration with preconfigured 
 defaults.
 

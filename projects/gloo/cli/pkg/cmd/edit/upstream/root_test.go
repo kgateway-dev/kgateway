@@ -50,7 +50,7 @@ var _ = Describe("Root", func() {
 
 		It("should update ssl config", func() {
 			Glooctl("edit upstream --name up --namespace gloo-system --ssl-secret-name sslname --ssl-secret-namespace sslnamespace")
-			ref := upstream.GetUpstreamSpec().GetSslConfig().GetSecretRef()
+			ref := upstream.GetSslConfig().GetSecretRef()
 			Expect(ref).NotTo(BeNil())
 			Expect(ref.Name).To(Equal("sslname"))
 			Expect(ref.Namespace).To(Equal("sslnamespace"))
@@ -58,7 +58,7 @@ var _ = Describe("Root", func() {
 
 		It("should update sni config", func() {
 			Glooctl("edit upstream --name up --namespace gloo-system --ssl-secret-name sslname --ssl-secret-namespace sslnamespace --ssl-sni sniname")
-			sslconfig := upstream.GetUpstreamSpec().GetSslConfig()
+			sslconfig := upstream.GetSslConfig()
 			Expect(sslconfig).NotTo(BeNil())
 			Expect(sslconfig.Sni).To(Equal("sniname"))
 		})
@@ -66,22 +66,20 @@ var _ = Describe("Root", func() {
 		Context("with existing config", func() {
 
 			BeforeEach(func() {
-				upstream.UpstreamSpec = &gloov1.UpstreamSpec{
-					SslConfig: &gloov1.UpstreamSslConfig{
-						Sni: "somesni",
-					},
+				upstream.SslConfig = &gloov1.UpstreamSslConfig{
+					Sni: "somesni",
 				}
 			})
 
 			It("should remove ssl config", func() {
 				Glooctl("edit upstream --name up --namespace gloo-system --ssl-remove")
-				sslconfig := upstream.GetUpstreamSpec().GetSslConfig()
+				sslconfig := upstream.GetSslConfig()
 				Expect(sslconfig).To(BeNil())
 			})
 
 			It("should update existing ssl config with resource version", func() {
 				Glooctl("edit upstream --resource-version " + upstream.Metadata.ResourceVersion + " --name up --namespace gloo-system --ssl-secret-name sslname --ssl-secret-namespace sslnamespace")
-				sslconfig := upstream.GetUpstreamSpec().GetSslConfig()
+				sslconfig := upstream.GetSslConfig()
 				ref := sslconfig.GetSecretRef()
 				Expect(ref).NotTo(BeNil())
 				Expect(ref.Name).To(Equal("sslname"))
@@ -141,7 +139,7 @@ var _ = Describe("Root", func() {
 				c.ExpectEOF()
 			}, func() {
 				Glooctl("edit upstream -i")
-				sslconfig := upstream.GetUpstreamSpec().GetSslConfig()
+				sslconfig := upstream.GetSslConfig()
 				ref := sslconfig.GetSecretRef()
 
 				Expect(ref.Name).To(Equal("sslname"))

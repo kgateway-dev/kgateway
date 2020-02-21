@@ -6,15 +6,14 @@ weight: 10
 
 ## Installing the Gloo Gateway on Kubernetes
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](../cluster_setup).
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" %}}).
 
 Note: For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 {{% notice note %}}
-To install Gloo Enterprise you need a License Key. If you don't have one, go to **https://solo.io/glooe-trial** and
+To install Gloo Enterprise you need a License Key. If you don't have one, go to [**https://solo.io/gloo**](https://www.solo.io/products/gloo/#enterprise-trial) and
 request a trial now. Once you request a trial, an e-mail will be sent to you with your unique License Key that you will
 need as part of installing Gloo.
 {{% /notice %}}
@@ -26,7 +25,7 @@ your unique key.
 {{% /notice %}}
 
 Before starting installation, please ensure that you've prepared your Kubernetes cluster per the community
-[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/cluster_setup" >}}) instructions.
+[Prep Kubernetes]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup" >}}) instructions.
 
 
 ### Installing on Kubernetes with `glooctl`
@@ -37,9 +36,15 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
-> Note: You can run the command with the flag `--dry-run` to output 
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/enterprise/#verify-your-installation" %}}).
+
+
+{{% notice note %}}
+You can run the command with the flag `--dry-run` to output 
 the Kubernetes manifests (as `yaml`) that `glooctl` will 
 apply to the cluster instead of installing them.
+{{% /notice %}}
+
 
 ### Installing on Kubernetes with Helm
 
@@ -60,6 +65,8 @@ helm install glooe/gloo-ee --name glooe --namespace gloo-system \
   --set-string license_key=YOUR_LICENSE_KEY
 ```
 
+Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/enterprise/#verify-your-installation" %}}).
+
 #### Customizing your installation with Helm
 
 You can customize the Gloo installation by providing your own value file.
@@ -67,9 +74,10 @@ You can customize the Gloo installation by providing your own value file.
 For example, you can create a file named `value-overrides.yaml` with the following content:
 
 ```yaml
-rbac:
-  # do not create kubernetes rbac resources
-  create: false
+global:
+  glooRbac:
+    # do not create kubernetes rbac resources
+    create: false
 settings:
   # configure gloo to write generated custom resources to a custom namespace
   writeNamespace: my-custom-namespace
@@ -83,22 +91,28 @@ helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f valu
 
 #### List of Gloo Helm chart values
 
-The table below describes all the enterprise-only values that you can override in your custom values file.
+The table below describes the most important enterprise-only values that you can override in your custom values file.
 
-The table for gloo open-source overrides (also available in enterprise) is [here](../gateway/kubernetes/#list-of-gloo-helm-chart-values).
+The table for gloo open-source overrides (also available in enterprise) is [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}).
+
+{{% notice note %}}
+Open source helm values in Gloo enterprise must be prefixed with `gloo`, unless they are the Gloo settings (i.e., `settings.<rest of helm value>`).
+{{% /notice %}}
 
 | option                                                    | type     | description                                                                                                                                                                                                                                                    |
 | --------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | grafana.defaultInstallationEnabled                        | bool     | deploy grafana in your gloo system namespace. default is `true` |
 | prometheus.enabled                                        | bool     | deploy prometheus in your gloo system namespace. default is `true` |
 | rateLimit.enabled                                         | bool     | deploy rate-limiting in your gloo system namespace. default is `true` |
+| global.extensions.extAuth.enabled                         | bool     | deploy ext-auth in your gloo system namespace. default is `true` |
 | global.extensions.extAuth.envoySidecar                    | bool     | deploy ext-auth in the gateway-proxy pod, as a sidecar to envoy. communicates over unix domain socket instead of TCP. default is `false` |
+| observability.enabled                                     | bool     | deploy observability in your gloo system namespace. default is `true` |
 | observability.customGrafana.enabled                       | bool     | indicate you'll be using your own instance of grafana rather than the one shipped with Gloo. default is `false`
 | observability.customGrafana.username                      | string   | set this and the `password` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.password                      | string   | set this and the `username` field to authenticate to the custom grafana instance using basic auth
 | observability.customGrafana.apiKey                        | string   | authenticate to the custom grafana instance using this api key
 | observability.customGrafana.url                           | string   | the URL for the custom grafana instance
-
+| apiServer.enterprise                                      | bool     | deploy UI with permissions to modify Gloo resources. default is `true`
 ---
 ## Verify your Installation
 
@@ -165,6 +179,12 @@ replicaset.apps/rate-limit-6b847b95c8                            1         1    
 replicaset.apps/redis-7f6954b84d                                 1         1         1       5m21s
 ```
 
+#### Looking for opened ports?
+You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}). 
+
+{{% notice note %}}
+NOT opening the listener ports when there are no listeners (routes) is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
+{{% /notice %}}
 
 ## Uninstall {#uninstall}
 

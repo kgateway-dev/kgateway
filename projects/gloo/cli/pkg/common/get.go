@@ -5,6 +5,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -121,6 +122,29 @@ func GetProxies(name string, opts *options.Options) (gloov1.ProxyList, error) {
 	}
 
 	return list, nil
+}
+
+func GetAuthConfigs(name string, opts *options.Options) (extauthv1.AuthConfigList, error) {
+	var authConfigList extauthv1.AuthConfigList
+
+	authConfigClient := helpers.MustAuthConfigClient()
+	if name == "" {
+		authConfigs, err := authConfigClient.List(opts.Metadata.Namespace,
+			clients.ListOpts{Ctx: opts.Top.Ctx, Selector: opts.Get.Selector.MustMap()})
+		if err != nil {
+			return nil, err
+		}
+		authConfigList = append(authConfigList, authConfigs...)
+	} else {
+		authConfig, err := authConfigClient.Read(opts.Metadata.Namespace, name, clients.ReadOpts{Ctx: opts.Top.Ctx})
+		if err != nil {
+			return nil, err
+		}
+		opts.Metadata.Name = name
+		authConfigList = append(authConfigList, authConfig)
+	}
+
+	return authConfigList, nil
 }
 
 func GetName(args []string, opts *options.Options) string {

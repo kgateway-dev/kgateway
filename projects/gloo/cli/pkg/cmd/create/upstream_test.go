@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/testutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/static"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -48,7 +48,7 @@ var _ = Describe("Upstream", func() {
 		It("should error when hosts not provided", func() {
 			err := testutils.Glooctl("create upstream static jsonplaceholder-80")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("invalid upstream spec: must provide at least 1 host for static upstream"))
+			Expect(err.Error()).To(Equal("must provide at least 1 host for static upstream"))
 		})
 
 		It("should work", func() {
@@ -57,7 +57,7 @@ var _ = Describe("Upstream", func() {
 
 			up := getUpstream("jsonplaceholder-80")
 
-			staticSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Static).Static
+			staticSpec := up.UpstreamType.(*v1.Upstream_Static).Static
 			expectedHosts := []*static.Host{{Addr: "jsonplaceholder.typicode.com", Port: 80}}
 			Expect(staticSpec.Hosts).To(Equal(expectedHosts))
 		})
@@ -73,12 +73,12 @@ var _ = Describe("Upstream", func() {
 		It("should error out when no secret name provided", func() {
 			err := testutils.Glooctl("create upstream aws --name aws-us-east-1")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("invalid upstream spec: aws secret name must not be empty"))
+			Expect(err.Error()).To(Equal("aws secret name must not be empty"))
 		})
 
 		expectAwsUpstream := func(name, region, secretName, secretNamespace string) {
 			up := getUpstream(name)
-			awsSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Aws).Aws
+			awsSpec := up.UpstreamType.(*v1.Upstream_Aws).Aws
 			Expect(awsSpec.Region).To(Equal(region))
 			Expect(awsSpec.SecretRef.Name).To(Equal(secretName))
 			Expect(awsSpec.SecretRef.Namespace).To(Equal(secretNamespace))
@@ -107,13 +107,13 @@ var _ = Describe("Upstream", func() {
 		It("should error out when no secret name provided", func() {
 			err := testutils.Glooctl("create upstream azure --name azure-upstream")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("invalid upstream spec: azure secret name must not be empty"))
+			Expect(err.Error()).To(Equal("azure secret name must not be empty"))
 		})
 
 		expectAzureUpstream := func(name, functionAppName, secretName, secretNamespace string) {
 			up := getUpstream(name)
 
-			azureSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Azure).Azure
+			azureSpec := up.UpstreamType.(*v1.Upstream_Azure).Azure
 			Expect(azureSpec.FunctionAppName).To(Equal(functionAppName))
 			Expect(azureSpec.SecretRef.Name).To(Equal(secretName))
 			Expect(azureSpec.SecretRef.Namespace).To(Equal(secretNamespace))
@@ -141,7 +141,7 @@ var _ = Describe("Upstream", func() {
 
 		expectKubeUpstream := func(name, namespace string, port uint32, selector map[string]string) {
 			up := getUpstream("kube-upstream")
-			kubeSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Kube).Kube
+			kubeSpec := up.UpstreamType.(*v1.Upstream_Kube).Kube
 			Expect(kubeSpec.ServiceName).To(Equal(name))
 			Expect(kubeSpec.ServiceNamespace).To(Equal(namespace))
 			Expect(kubeSpec.ServicePort).To(Equal(port))
@@ -176,14 +176,13 @@ metadata:
   name: kube-upstream
   namespace: gloo-system
 spec:
-  upstreamSpec:
-    kube:
-      selector:
-        foo: bar
-        gloo: baz
-      serviceName: kube-service
-      serviceNamespace: default
-      servicePort: 80
+  kube:
+    selector:
+      foo: bar
+      gloo: baz
+    serviceName: kube-service
+    serviceNamespace: default
+    servicePort: 80
 status: {}
 `))
 		})
@@ -192,18 +191,17 @@ status: {}
 			out, err := testutils.GlooctlOut("create upstream kube --dry-run -oyaml --name kube-upstream --kube-service kube-service --kube-service-labels foo=bar,gloo=baz")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`---
+kube:
+  selector:
+    foo: bar
+    gloo: baz
+  serviceName: kube-service
+  serviceNamespace: default
+  servicePort: 80
 metadata:
   name: kube-upstream
   namespace: gloo-system
 status: {}
-upstreamSpec:
-  kube:
-    selector:
-      foo: bar
-      gloo: baz
-    serviceName: kube-service
-    serviceNamespace: default
-    servicePort: 80
 `))
 		})
 
@@ -219,12 +217,12 @@ upstreamSpec:
 		It("should error out when no consul service name provided", func() {
 			err := testutils.Glooctl("create upstream consul --name consul-upstream")
 			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(Equal("invalid upstream spec: must provide consul service name"))
+			Expect(err.Error()).To(Equal("must provide consul service name"))
 		})
 
 		expectConsulUpstream := func(name, consulService string, tags []string) {
 			up := getUpstream(name)
-			consulSpec := up.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Consul).Consul
+			consulSpec := up.UpstreamType.(*v1.Upstream_Consul).Consul
 			Expect(consulSpec.ServiceName).To(Equal(consulService))
 			Expect(consulSpec.ServiceTags).To(Equal(tags))
 		}

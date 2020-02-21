@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Deflake CI by ensuring we cleanup Envoy after each test (e2e custom auth didn't clean up after itself)
+    issueLink: https://github.com/solo-io/gloo/issues/2245

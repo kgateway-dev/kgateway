@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >
+      By default, glooctl install will now attempt to create the namespace to install gloo into.
+      This is a prerequisite for actually installing gloo, but can be turned off with the install flag
+      --create-namespace=false.
+    issueLink: https://github.com/solo-io/gloo/issues/1871

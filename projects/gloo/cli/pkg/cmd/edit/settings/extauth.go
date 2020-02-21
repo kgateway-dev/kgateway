@@ -1,18 +1,14 @@
 package settings
 
 import (
-	"github.com/gogo/protobuf/types"
 	editOptions "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	flagutilsExt "github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	surveyutilsExt "github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
-	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils"
+	extauthpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -56,36 +52,23 @@ func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, 
 		return errors.Wrapf(err, "Error reading settings")
 	}
 
-	var extAuthSettings extauthpb.Settings
-	err = utils.UnmarshalExtension(settings, constants.ExtAuthExtensionName, &extAuthSettings)
-	if err != nil {
-		if err != utils.NotFoundError {
-			return err
-		}
+	extAuthSettings := settings.Extauth
+	if extAuthSettings == nil {
+		extAuthSettings = new(extauthpb.Settings)
 	}
 	if extAuthSettings.ExtauthzServerRef == nil {
 		extAuthSettings.ExtauthzServerRef = new(core.ResourceRef)
 	}
-	if optsExt.ExtAtuhServerUpstreamRef.Name != "" {
-		extAuthSettings.ExtauthzServerRef.Name = optsExt.ExtAtuhServerUpstreamRef.Name
+	if optsExt.ExtAuthServerUpstreamRef.Name != "" {
+		extAuthSettings.ExtauthzServerRef.Name = optsExt.ExtAuthServerUpstreamRef.Name
 	}
-	if optsExt.ExtAtuhServerUpstreamRef.Namespace != "" {
-		extAuthSettings.ExtauthzServerRef.Namespace = optsExt.ExtAtuhServerUpstreamRef.Namespace
-	}
-
-	if settings.Extensions == nil {
-		settings.Extensions = &gloov1.Extensions{}
+	if optsExt.ExtAuthServerUpstreamRef.Namespace != "" {
+		extAuthSettings.ExtauthzServerRef.Namespace = optsExt.ExtAuthServerUpstreamRef.Namespace
 	}
 
-	if settings.Extensions.Configs == nil {
-		settings.Extensions.Configs = make(map[string]*types.Struct)
+	if settings.Extauth == nil {
+		settings.Extauth = extAuthSettings
 	}
-
-	extStruct, err := protoutils.MarshalStruct(&extAuthSettings)
-	if err != nil {
-		return err
-	}
-	settings.Extensions.Configs[constants.ExtAuthExtensionName] = extStruct
 
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	return err

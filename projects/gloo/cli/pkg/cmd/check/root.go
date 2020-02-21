@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
@@ -12,7 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/spf13/cobra"
@@ -326,7 +326,7 @@ func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
 
 func checkGateways(namespaces []string) (bool, error) {
 	fmt.Printf("Checking gateways... ")
-	client := helpers.MustGatewayV2Client()
+	client := helpers.MustGatewayClient()
 	for _, ns := range namespaces {
 		gateways, err := client.List(ns, clients.ListOpts{})
 		if err != nil {
@@ -395,11 +395,11 @@ func renderNamespaceName(namespace, name string) string {
 func checkConnection() error {
 	client, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
 	if err != nil {
-		return errors.Wrapf(err, "Could not get kubernetes client")
+		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
 	_, err = client.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		return errors.Wrapf(err, "Could not communicate with kubernetes cluster")
+		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
 	return nil
 }

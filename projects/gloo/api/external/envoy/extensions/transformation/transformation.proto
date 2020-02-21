@@ -1,0 +1,162 @@
+syntax = "proto3";
+
+package envoy.api.v2.filter.http;
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation";
+
+import "google/protobuf/empty.proto";
+import "envoy/api/v2/route/route.proto";
+import "validate/validate.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+
+message FilterTransformations {
+  // Specifies transformations based on the route matches. The first matched transformation will be
+  // applied. If there are overlapped match conditions, please put the most specific match first.
+  repeated TransformationRule transformations = 1;
+}
+
+message TransformationRule {
+  // The route matching parameter. Only when the match is satisfied, the "requires" field will
+  // apply.
+  //
+  // For example: following match will match all requests.
+  //
+  // .. code-block:: yaml
+  //
+  //    match:
+  //      prefix: /
+  //
+  api.v2.route.RouteMatch match = 1 [(validate.rules).message = {required: true}];
+  // transformation to perform
+  RouteTransformations route_transformations = 2;
+}
+
+message RouteTransformations {
+
+  // Apply a transformation to requests.
+  Transformation request_transformation = 1;
+
+  // Clear the route cache if the request transformation was applied.
+  bool clear_route_cache = 3;
+
+  // Apply a transformation to responses.
+  Transformation response_transformation = 2;
+}
+
+// This message defines a transformation.
+message Transformation {
+  // The type of transformation to apply.
+  oneof transformation_type {
+    // Apply transformation templates.
+    TransformationTemplate transformation_template = 1;
+    // This type of transformation will make all the headers available in the response body. The resulting JSON body
+    // will consist of two attributes: 'headers', containing the headers, and 'body', containing the original body.
+    HeaderBodyTransform header_body_transform = 2;
+  }
+}
+
+// Extractions can be used to extract information from the request/response.
+// The extracted information can then be referenced in template fields.
+message Extraction {
+
+  // The source of the extraction
+  oneof source {
+    // Extract information from headers
+    string header = 1;
+    // Extract information from the request/response body
+    google.protobuf.Empty body = 4;
+  }
+
+  // Only strings matching this regular expression will be part of the extraction.
+  // The most simple value for this field is '.*', which matches the whole source.
+  // The field is required. If extraction fails the result is an empty value.
+  string regex = 2;
+
+  // If your regex contains capturing groups, use this field to determine which group should be selected.
+  uint32 subgroup = 3;
+}
+
+// Defines a transformation template.
+message TransformationTemplate {
+
+  // If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to
+  // access JSON elements. Defaults to false.
+  //
+  // Please note that, if set to 'true', you will need to use the `extraction` function to access extractors in the
+  // template (e.g. '{{ extraction("my_extractor") }}'); if the default value of 'false' is used,  extractors will
+  // simply be available by their name (e.g. '{{ my_extractor }}').
+  bool advanced_templates = 1;
+
+  // Use this attribute to extract information from the request. It consists of a map of strings to extractors.
+  // The extractor will defines which information will be extracted, while the string key will provide the extractor
+  // with a name. You can reference extractors by their name in templates, e.g. "{{ my-extractor }}" will render to the
+  // value of the "my-extractor" extractor.
+  map<string, Extraction> extractors = 2;
+
+  // Use this attribute to transform request/response headers. It consists of a map of strings to templates.
+  // The string key determines the name of the resulting header, the rendered template will determine the value.
+  map<string, InjaTemplate> headers = 3;
+
+  // Determines the type of transformation to apply to the request/response body
+  oneof body_transformation {
+    // Apply a template to the body
+    InjaTemplate body = 4;
+    // This will cause the transformation filter not to buffer the body.
+    // Use this setting if the response body is large and you don't need to transform nor extract information from it.
+    Passthrough passthrough = 5;
+    // Merge all defined extractors to the request/response body.
+    // If you want to nest elements inside the body, use dot separator in the extractor name.
+    MergeExtractorsToBody merge_extractors_to_body = 6;
+  }
+
+  // Determines how the body will be parsed.
+  RequestBodyParse parse_body_behavior = 7;
+
+  // If set to true, Envoy will not throw an exception in case the body parsing fails.
+  bool ignore_error_on_parse = 8;
+
+  // Use this field to set Dynamic Metadata.
+  repeated DynamicMetadataValue dynamic_metadata_values = 9;
+
+  enum RequestBodyParse {
+    // Will attempt to parse the request/response body as JSON
+    ParseAsJson = 0;
+    // The request/response body will be treated as plain text
+    DontParse = 1;
+  }
+
+  // Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
+  message DynamicMetadataValue {
+
+    // The metadata namespace. Defaults to the filter namespace.
+    string metadata_namespace = 1;
+
+    // The metadata key.
+    string key = 2 [(validate.rules).string = {min_bytes: 1}];
+
+    // A template that determines the metadata value.
+    InjaTemplate value = 3;
+  }
+}
+
+// Defines an [Inja template](https://github.com/pantor/inja) that will be rendered by Gloo.
+// In addition to the core template functions, the Gloo transformation filter defines the following custom functions:
+// - header(header_name): returns the value of the header with the given name
+// - extraction(extractor_name): returns the value of the extractor with the given name
+// - env(env_var_name): returns the value of the environment variable with the given name
+// - body(): returns the request/response body
+// - context(): returns the base JSON context (allowing for example to range on a JSON body that is an array)
+message InjaTemplate {
+  string text = 1;
+}
+
+message Passthrough {
+}
+
+message MergeExtractorsToBody {
+}
+
+message HeaderBodyTransform {
+}

@@ -8,9 +8,9 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
-	"github.com/solo-io/go-utils/errors"
 	"golang.org/x/sync/errgroup"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -34,7 +34,7 @@ func NewHybridUpstreamClient(
 	clientMap := make(map[string]v1.UpstreamClient)
 
 	if upstreamClient == nil {
-		return nil, errors.New("required upstream client is nil")
+		return nil, eris.New("required upstream client is nil")
 	}
 	clientMap[sourceGloo] = upstreamClient
 

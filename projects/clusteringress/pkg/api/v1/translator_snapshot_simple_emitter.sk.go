@@ -8,10 +8,11 @@ import (
 	"time"
 
 	github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative "github.com/solo-io/gloo/projects/clusteringress/pkg/api/external/knative"
-	gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"go.opencensus.io/stats"
+	"go.uber.org/zap"
 
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
@@ -52,7 +53,10 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 		timer := time.NewTicker(time.Second * 1)
 		var previousHash uint64
 		sync := func() {
-			currentHash := currentSnapshot.Hash()
+			currentHash, err := currentSnapshot.Hash(nil)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Panicw("error while hashing, this should never happen", zap.Error(err))
+			}
 			if previousHash == currentHash {
 				return
 			}
@@ -86,8 +90,6 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 				currentSnapshot = TranslatorSnapshot{}
 				for _, res := range untypedList {
 					switch typed := res.(type) {
-					case *gloo_solo_io.Secret:
-						currentSnapshot.Secrets = append(currentSnapshot.Secrets, typed)
 					case *github_com_solo_io_gloo_projects_clusteringress_pkg_api_external_knative.ClusterIngress:
 						currentSnapshot.Clusteringresses = append(currentSnapshot.Clusteringresses, typed)
 					default:

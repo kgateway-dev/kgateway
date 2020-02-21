@@ -9,6 +9,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gogo/protobuf/proto"
 	"github.com/olekukonko/tablewriter"
+	"github.com/rotisserie/eris"
 	linkedversion "github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -16,7 +17,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/spf13/cobra"
 )
@@ -26,7 +26,7 @@ const (
 )
 
 var (
-	NoNamespaceAllError = errors.New("single namespace must be specified, cannot be namespace all for version command")
+	NoNamespaceAllError = eris.New("single namespace must be specified, cannot be namespace all for version command")
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -45,7 +45,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printVersion(NewKube(), os.Stdout, opts)
+			return printVersion(NewKube(opts.Metadata.Namespace), os.Stdout, opts)
 		},
 	}
 
@@ -56,12 +56,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func getVersion(sv ServerVersion, opts *options.Options) (*version.Version, error) {
+func GetClientServerVersions(sv ServerVersion) (*version.Version, error) {
 	clientVersion, err := getClientVersion()
 	if err != nil {
 		return nil, err
 	}
-	serverVersion, err := sv.Get(opts)
+	serverVersion, err := sv.Get()
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func getClientVersion() (*version.ClientVersion, error) {
 }
 
 func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
-	vrs, err := getVersion(sv, opts)
+	vrs, err := GetClientServerVersions(sv)
 	if err != nil {
 		return err
 	}

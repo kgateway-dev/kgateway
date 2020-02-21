@@ -3,7 +3,7 @@ package ec2
 import (
 	"reflect"
 
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
@@ -63,11 +63,11 @@ func (p *plugin) Init(params plugins.InitParams) error {
 
 // we do not need to update any fields, just check that the input is valid
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	originalSpec, ok := original.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	originalSpec, ok := original.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return false, WrongUpstreamTypeError(original)
 	}
-	desiredSpec, ok := desired.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return false, WrongUpstreamTypeError(desired)
 	}
@@ -78,7 +78,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 }
 
 func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	_, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_AwsEc2)
+	_, ok := in.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return nil
 	}
@@ -90,22 +90,22 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 var (
 	ConstructorInputError = func(factoryType string) error {
-		return errors.Errorf("must provide %v factory for EC2 plugin", factoryType)
+		return eris.Errorf("must provide %v factory for EC2 plugin", factoryType)
 	}
 
 	ConstructorGetClientError = func(name string, err error) error {
-		return errors.Wrapf(err, "unable to get %v client for EC2 plugin", name)
+		return eris.Wrapf(err, "unable to get %v client for EC2 plugin", name)
 	}
 
 	ConstructorRegisterClientError = func(name string, err error) error {
-		return errors.Wrapf(err, "unable to register %v client for EC2 plugin", name)
+		return eris.Wrapf(err, "unable to register %v client for EC2 plugin", name)
 	}
 
 	WrongUpstreamTypeError = func(upstream *v1.Upstream) error {
-		return errors.Errorf("internal error: expected *v1.UpstreamSpec_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamSpec.UpstreamType).Name())
+		return eris.Errorf("internal error: expected *v1.Upstream_AwsEc2, got %v", reflect.TypeOf(upstream.UpstreamType).Name())
 	}
 
 	UpstreamDeltaError = func() error {
-		return errors.New("expected no difference between *v1.UpstreamSpec_AwsEc2 upstreams")
+		return eris.New("expected no difference between *v1.Upstream_AwsEc2 upstreams")
 	}
 )

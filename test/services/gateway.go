@@ -4,6 +4,10 @@ import (
 	"net"
 	"time"
 
+	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
+
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/solo-kit/test/helpers"
@@ -13,7 +17,6 @@ import (
 
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 
-	gatewaysyncer "github.com/solo-io/gloo/projects/gateway/pkg/syncer"
 	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 
 	"context"
@@ -25,7 +28,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	gatewayv2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"google.golang.org/grpc"
@@ -49,7 +51,7 @@ import (
 )
 
 type TestClients struct {
-	GatewayClient        gatewayv2.GatewayClient
+	GatewayClient        gatewayv1.GatewayClient
 	VirtualServiceClient gatewayv1.VirtualServiceClient
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
@@ -90,11 +92,11 @@ type RunOptions struct {
 	GlooPort         int32
 	ValidationPort   int32
 	Settings         *gloov1.Settings
-	ExtensionConfigs *gloov1.Extensions
 	Extensions       syncer.Extensions
 	Cache            memory.InMemoryResourceCache
 	KubeClient       kubernetes.Interface
 	ConsulClient     consul.ConsulWatcher
+	ConsulDnsAddress string
 }
 
 //noinspection GoUnhandledErrorResult
@@ -120,20 +122,22 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 
 	glooOpts.ControlPlane.BindAddr.(*net.TCPAddr).Port = int(runOptions.GlooPort)
 	glooOpts.ValidationServer.BindAddr.(*net.TCPAddr).Port = int(runOptions.ValidationPort)
-	if !runOptions.WhatToRun.DisableGateway {
-		opts := defaultTestConstructOpts(ctx, runOptions)
-		go gatewaysyncer.RunGateway(opts)
-	}
 
 	glooOpts.Settings = runOptions.Settings
 	if glooOpts.Settings == nil {
 		glooOpts.Settings = &gloov1.Settings{}
 	}
-	glooOpts.Settings.Extensions = runOptions.ExtensionConfigs
 
 	glooOpts.ControlPlane.StartGrpcServer = true
 	glooOpts.ValidationServer.StartGrpcServer = true
 	go syncer.RunGlooWithExtensions(glooOpts, runOptions.Extensions)
+
+	// gloo is dependency of gateway, needs to run second if we want to test validation
+	if !runOptions.WhatToRun.DisableGateway {
+		opts := defaultTestConstructOpts(ctx, runOptions)
+		go gatewaysyncer.RunGateway(opts)
+	}
+
 	if !runOptions.WhatToRun.DisableFds {
 		go func() {
 			defer GinkgoRecover()
@@ -159,7 +163,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		Cache: cache,
 	}
 
-	gatewayClient, err := gatewayv2.NewGatewayClient(memFactory)
+	gatewayClient, err := gatewayv1.NewGatewayClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
 	virtualServiceClient, err := gatewayv1.NewVirtualServiceClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
@@ -180,14 +184,14 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 	}
 }
 
-func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) gatewaysyncer.Opts {
+func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) translator.Opts {
 	ctx = contextutils.WithLogger(ctx, "gateway")
 	ctx = contextutils.SilenceLogger(ctx)
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
 
-	return gatewaysyncer.Opts{
+	return translator.Opts{
 		WriteNamespace:  runOptions.NsToWrite,
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,
@@ -261,7 +265,10 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,
-		ConsulWatcher: runOptions.ConsulClient,
+		Consul: bootstrap.Consul{
+			ConsulWatcher: runOptions.ConsulClient,
+			DnsServer:     runOptions.ConsulDnsAddress,
+		},
 	}
 }
 

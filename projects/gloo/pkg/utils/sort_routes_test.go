@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/test/helpers"
 
 	. "github.com/onsi/ginkgo"
@@ -155,11 +156,78 @@ var _ = Describe("PathAsString", func() {
 	It("sorts routes with nil matchers (they default to `/` prefix matcher) as largest", func() {
 		routes := []*v1.Route{
 			{Matchers: nil},
-			{Matchers: []*v1.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
+			{Matchers: []*matchers.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
 		}
 		sortedRoutes := []*v1.Route{
-			{Matchers: []*v1.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
+			{Matchers: []*matchers.Matcher{helpers.MakeMatcher(helpers.ExactPath, 10)}},
 			{Matchers: nil},
+		}
+		SortRoutesByPath(routes)
+		Expect(routes).To(Equal(sortedRoutes))
+	})
+
+	It("all else being equal, paths are sorted lexicographically in descending order", func() {
+		routes := []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a/hello",
+					}},
+				},
+			},
+			{
+				// This one is lexicographically greater than the previous one,
+				// so it should come first even though it's longer
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/b",
+					}},
+				},
+			},
+		}
+		sortedRoutes := []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/b",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a/hello",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/",
+					}},
+				},
+			},
 		}
 		SortRoutesByPath(routes)
 		Expect(routes).To(Equal(sortedRoutes))

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: fix nil pointer when validating nil proxy
+    issueLink: https://github.com/solo-io/gloo/issues/1369

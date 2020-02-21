@@ -39,15 +39,15 @@ Let's begin.
 
 ## Adding the new Upstream Type to Gloo's API
 
-The first step we'll take will be to add a new [**UpstreamType**]({{% protobuf name="gloo.solo.io.Upstream" %}}) to Gloo. 
+The first step we'll take will be to add a new {{% protobuf name="gloo.solo.io.Upstream" display="UpstreamType" %}} to Gloo. 
 
-All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the [plugins.proto]({{% protobuf name="gloo.solo.io.UpstreamSpec" %}}) file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
+All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
 
 We'll write a simple `UpstreamSpec` proto for the new `gce` upstream type:
 
 ```proto
 syntax = "proto3";
-package gce.plugins.gloo.solo.io;
+package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
@@ -80,7 +80,7 @@ mkdir -p projects/gloo/api/v1/plugins/gce
 # paste the proto code from above to projects/gloo/api/v1/plugins/gce/gce.proto 
 cat > projects/gloo/api/v1/plugins/gce/gce.proto <<EOF
 syntax = "proto3";
-package gce.plugins.gloo.solo.io;
+package gce.options.gloo.solo.io;
 
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/gce";
 
@@ -109,7 +109,7 @@ You can view the complete `gce.proto` here: [gce.proto](../gce.proto).
 
 
 Now we need to add the new GCE `UpstreamSpec` to Gloo's list of Upstream Types. This can be found in 
-the [plugins.proto]({{% protobuf name="gloo.solo.io.UpstreamSpec" %}}) file at the API root (projects/gloo/api/v1)/
+the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/
 
 First, we'll add an import to the top of the file
 
@@ -174,11 +174,11 @@ message UpstreamSpec {
     // Note to developers: new Upstream Plugins must be added to this oneof field
     // to be usable by Gloo.
     oneof upstream_type {
-        kubernetes.plugins.gloo.solo.io.UpstreamSpec kube = 1;
-        static.plugins.gloo.solo.io.UpstreamSpec static = 4;
-        aws.plugins.gloo.solo.io.UpstreamSpec aws = 2;
-        azure.plugins.gloo.solo.io.UpstreamSpec azure = 3;
-        consul.plugins.gloo.solo.io.UpstreamSpec consul = 5;
+        kubernetes.options.gloo.solo.io.UpstreamSpec kube = 1;
+        static.options.gloo.solo.io.UpstreamSpec static = 4;
+        aws.options.gloo.solo.io.UpstreamSpec aws = 2;
+        azure.options.gloo.solo.io.UpstreamSpec azure = 3;
+        consul.options.gloo.solo.io.UpstreamSpec consul = 5;
         // add the following line
         gce.plugins.gloo.solo.io.UpstreamSpec gce = 11;
     }
@@ -310,7 +310,7 @@ import (
 
 func (*plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *v2.Cluster) error {
 	// check that the upstream is our type (GCE)
-	if _, ok := in.UpstreamSpec.UpstreamType.(*v1.UpstreamSpec_Gce); !ok {
+	if _, ok := in.UpstreamType.(*v1.UpstreamSpec_Gce); !ok {
 		// not gce, return early
 		return nil
 	}
@@ -360,7 +360,8 @@ import (
 )
 ```
 
-We can download these imports to our project with `dep ensure`:
+Gloo now uses go modules, so these should automatically be pulled into your IDE. However, 
+on older versions of Gloo that use dep, we can download these imports to our project with `dep ensure`:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo
@@ -434,7 +435,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 	// for each upstream, retrieve its endpoints
 	for _, us := range upstreams {
 	  // check that the upstream uses the GCE Spec
-		gceSpec := us.UpstreamSpec.GetGce()
+		gceSpec := us.GetGce()
 		if gceSpec == nil {
 			// skip non-GCE upstreams
 			continue
@@ -501,7 +502,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 	// for each upstream, retrieve its endpoints
 	for _, us := range upstreams {
 	  // check that the upstream uses the GCE Spec
-		gceSpec := us.UpstreamSpec.GetGce()
+		gceSpec := us.GetGce()
 		if gceSpec == nil {
 			// skip non-GCE upstreams
 			continue
@@ -549,7 +550,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 	// for each upstream, retrieve its endpoints
 	for _, us := range upstreams {
 	  // check that the upstream uses the GCE Spec
-		gceSpec := us.UpstreamSpec.GetGce()
+		gceSpec := us.GetGce()
 		if gceSpec == nil {
 			// skip non-GCE upstreams
 			continue
@@ -603,7 +604,7 @@ func getLatestEndpoints(instancesClient *compute.InstancesService, upstreams v1.
 	// for each upstream, retrieve its endpoints
 	for _, us := range upstreams {
 	  // check that the upstream uses the GCE Spec
-		gceSpec := us.UpstreamSpec.GetGce()
+		gceSpec := us.GetGce()
 		if gceSpec == nil {
 			// skip non-GCE upstreams
 			continue

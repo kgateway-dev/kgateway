@@ -272,7 +272,7 @@ node:
   id: gateway~{{ env "NOMAD_ALLOC_ID" }}
   metadata:
     # this line must match !
-    role: "[[.config.namespace]]~gateway-proxy-v2"
+    role: "[[.config.namespace]]~gateway-proxy"
 
 static_resources:
   clusters:
@@ -290,6 +290,8 @@ static_resources:
                 port_value: {{ .Port }}
 {{- end }}
     http2_protocol_options: {}
+    upstream_connection_options:
+      tcp_keepalive: {}
     type: STATIC
 
   - name: admin_port_cluster
@@ -333,13 +335,6 @@ static_resources:
                           route:
                             cluster: admin_port_cluster
                         - match:
-                            path: "/server_info"
-                            headers:
-                            - name: ":method"
-                              exact_match: GET
-                          route:
-                            cluster: admin_port_cluster
-                        - match:
                             prefix: "/metrics"
                             headers:
                             - name: ":method"
@@ -354,6 +349,7 @@ static_resources:
 dynamic_resources:
   ads_config:
     api_type: GRPC
+    rate_limit_settings: {}
     grpc_services:
     - envoy_grpc: {cluster_name: xds_cluster}
   cds_config:
@@ -406,12 +402,12 @@ EOF
         "http",
       ]
       port = "http"
-      check {
-        name = "alive"
-        type = "tcp"
-        interval = "10s"
-        timeout = "2s"
-      }
+      //check {
+      //  name = "alive"
+      //  type = "tcp"
+      //  interval = "10s"
+      //  timeout = "2s"
+      //}
     }
 
     service {
@@ -421,12 +417,12 @@ EOF
         "https",
       ]
       port = "https"
-      check {
-        name = "alive"
-        type = "tcp"
-        interval = "10s"
-        timeout = "2s"
-      }
+      // check {
+      //   name = "alive"
+      //   type = "tcp"
+      //   interval = "10s"
+      //   timeout = "2s"
+      // }
     }
 
     service {
@@ -447,4 +443,4 @@ EOF
 
   }
 
- }
+}

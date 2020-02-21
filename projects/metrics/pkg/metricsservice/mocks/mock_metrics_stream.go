@@ -8,7 +8,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
+	envoy_service_metrics_v2 "github.com/envoyproxy/go-control-plane/envoy/service/metrics/v2"
 	gomock "github.com/golang/mock/gomock"
 	metadata "google.golang.org/grpc/metadata"
 )
@@ -51,10 +51,10 @@ func (mr *MockMetricsService_StreamMetricsServerMockRecorder) Context() *gomock.
 }
 
 // Recv mocks base method
-func (m *MockMetricsService_StreamMetricsServer) Recv() (*v2.StreamMetricsMessage, error) {
+func (m *MockMetricsService_StreamMetricsServer) Recv() (*envoy_service_metrics_v2.StreamMetricsMessage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Recv")
-	ret0, _ := ret[0].(*v2.StreamMetricsMessage)
+	ret0, _ := ret[0].(*envoy_service_metrics_v2.StreamMetricsMessage)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -80,7 +80,7 @@ func (mr *MockMetricsService_StreamMetricsServerMockRecorder) RecvMsg(arg0 inter
 }
 
 // SendAndClose mocks base method
-func (m *MockMetricsService_StreamMetricsServer) SendAndClose(arg0 *v2.StreamMetricsResponse) error {
+func (m *MockMetricsService_StreamMetricsServer) SendAndClose(arg0 *envoy_service_metrics_v2.StreamMetricsResponse) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendAndClose", arg0)
 	ret0, _ := ret[0].(error)

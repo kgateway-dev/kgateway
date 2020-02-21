@@ -13,9 +13,9 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins"
+	plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var errorUndetectableUpstream = errors.New("upstream type cannot be detected")
@@ -36,7 +36,7 @@ type updaterUpdater struct {
 
 type Updater struct {
 	functionalPlugins []FunctionDiscoveryFactory
-	activeupstreams   map[string]*updaterUpdater
+	activeupstreams   map[core.ResourceRef]*updaterUpdater
 	ctx               context.Context
 	resolver          Resolver
 	logger            *zap.SugaredLogger
@@ -69,7 +69,7 @@ func NewUpdater(ctx context.Context, resolver Resolver, upstreamclient UpstreamW
 		ctx:                    ctx,
 		resolver:               resolver,
 		functionalPlugins:      functionalPlugins,
-		activeupstreams:        make(map[string]*updaterUpdater),
+		activeupstreams:        make(map[core.ResourceRef]*updaterUpdater),
 		maxInParallelSemaphore: getConcurrencyChan(maxconncurrency),
 		upstreamWriter:         upstreamclient,
 	}
@@ -110,7 +110,7 @@ func (u *Updater) UpstreamUpdated(upstream *v1.Upstream) {
 
 func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 	// upstream already tracked. ignore.
-	key := resources.Key(upstream)
+	key := upstream.GetMetadata().Ref()
 	if _, ok := u.activeupstreams[key]; ok {
 		return
 	}
@@ -132,7 +132,7 @@ func (u *Updater) UpstreamAdded(upstream *v1.Upstream) {
 }
 
 func (u *Updater) UpstreamRemoved(upstream *v1.Upstream) {
-	key := resources.Key(upstream)
+	key := upstream.GetMetadata().Ref()
 	if upstreamState, ok := u.activeupstreams[key]; ok {
 		upstreamState.cancel()
 		delete(u.activeupstreams, key)
@@ -276,7 +276,7 @@ func (u *updaterUpdater) Run() error {
 
 	if discoveryForUpstream == nil {
 		// TODO: this is probably not going to work unless the upstream type will also have the method required
-		_, ok := u.upstream.UpstreamSpec.UpstreamType.(v1.ServiceSpecSetter)
+		_, ok := u.upstream.UpstreamType.(v1.ServiceSpecSetter)
 		if !ok {
 			// can't set a service spec - which is required from this point on, as heuristic detection requires spec
 			return errors.New("discovery not possible for upstream")
@@ -297,7 +297,7 @@ func (u *updaterUpdater) Run() error {
 		}
 		discoveryForUpstream = res.fp
 		upstreamSave(func(upstream *v1.Upstream) error {
-			servicespecupstream, ok := upstream.UpstreamSpec.UpstreamType.(v1.ServiceSpecSetter)
+			servicespecupstream, ok := upstream.UpstreamType.(v1.ServiceSpecSetter)
 			if !ok {
 				return errors.New("can't set spec")
 			}

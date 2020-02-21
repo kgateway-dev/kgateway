@@ -26,11 +26,11 @@ grafana:
 The envoy pod publishes its fairly comprehensive metrics on port 19000. You can view the available ones by running:
 ```bash
 # Port-forward to envoy's admin port:
-kubectl port-forward deployment/gateway-proxy-v2 19000
+kubectl port-forward deployment/gateway-proxy 19000
 
 curl http://localhost:19000/stats/prometheus
 ```
 
-You can use these to customize the dashboards that get created for every upstream, as described [here](../grafana/dashboards/#dynamically-generated-dashboards)
+You can use these to customize the dashboards that get created for every upstream, as described [here]({{% versioned_link_path fromRoot="/observability/grafana/dashboards/#dynamically-generated-dashboards" %}}).
 
 {{% children description="true" %}}

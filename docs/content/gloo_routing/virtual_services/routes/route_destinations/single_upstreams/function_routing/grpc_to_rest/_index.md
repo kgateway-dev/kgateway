@@ -1,7 +1,7 @@
 ---
 title: gRPC to REST
 weight: 30
-description: Routing gRPC to REST
+description: Routing gRPC to REST.
 ---
 
 ## Motivation
@@ -43,6 +43,9 @@ In this guide we are going to:
 
 Let's get started!
 
+## Prereqs
+1. Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+
 ## Deploy the demo gRPC store
 
 Create a deployment and a service:
@@ -69,24 +72,23 @@ metadata:
   namespace: gloo-system
 spec:
   discoveryMetadata: {}
-  upstreamSpec:
-    kube:
-      selector:
-        app: grpcstore-demo
-      serviceName: grpcstore-demo
-      serviceNamespace: default
-      servicePort: 80
-      serviceSpec:
-        grpc:
-          descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE…bTkwYnpNPQ==
-          grpcServices:
-          - functionNames:
-            - CreateItem
-            - ListItems
-            - DeleteItem
-            - GetItem
-            packageName: solo.examples.v1
-            serviceName: StoreService
+  kube:
+    selector:
+      app: grpcstore-demo
+    serviceName: grpcstore-demo
+    serviceNamespace: default
+    servicePort: 80
+    serviceSpec:
+      grpc:
+        descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE…bTkwYnpNPQ==
+        grpcServices:
+        - functionNames:
+          - CreateItem
+          - ListItems
+          - DeleteItem
+          - GetItem
+          packageName: solo.examples.v1
+          serviceName: StoreService
 status:
   reported_by: gloo
   state: 1
@@ -111,75 +113,75 @@ metadata:
 spec:
   virtualHost:
     routes:
-    - matcher:
-        methods:
-        - GET
-        prefix: /items/
+    - matchers:
+       - methods:
+         - GET
+         prefix: /items/
       routeAction:
-        single:
-          destinationSpec:
-            grpc:
-              function: GetItem
-              package: solo.examples.v1
-              parameters:
-                path: /items/{name}
-              service: StoreService
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
-    - matcher:
-        methods:
-        - DELETE
-        prefix: /items/
+       single:
+         destinationSpec:
+           grpc:
+             function: GetItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
+    - matchers:
+       - methods:
+         - DELETE
+         prefix: /items/
       routeAction:
-        single:
-          destinationSpec:
-            grpc:
-              function: DeleteItem
-              package: solo.examples.v1
-              parameters:
-                path: /items/{name}
-              service: StoreService
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
-    - matcher:
-        methods:
-        - GET
-        exact: /items
+       single:
+         destinationSpec:
+           grpc:
+             function: DeleteItem
+             package: solo.examples.v1
+             parameters:
+               path: /items/{name}
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
+    - matchers:
+       - methods:
+         - GET
+         exact: /items
       routeAction:
-        single:
-          destinationSpec:
-            grpc:
-              function: ListItems
-              package: solo.examples.v1
-              service: StoreService
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
-    - matcher:
-        methods:
-        - POST
-        exact: /items
+       single:
+         destinationSpec:
+           grpc:
+             function: ListItems
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
+    - matchers:
+       - methods:
+         - POST
+         exact: /items
       routeAction:
-        single:
-          destinationSpec:
-            grpc:
-              function: CreateItem
-              package: solo.examples.v1
-              service: StoreService
-          upstream:
-            name: default-grpcstore-demo-80
-            namespace: gloo-system
+       single:
+         destinationSpec:
+           grpc:
+             function: CreateItem
+             package: solo.examples.v1
+             service: StoreService
+         upstream:
+           name: default-grpcstore-demo-80
+           namespace: gloo-system
 EOF
 ```
 
-An explanation for the VirtalService above:
+An explanation for the VirtualService above:
 We have defined four routes. Each route uses
-a [gRPC destinationSpec]({{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec">}}) to define REST routes to a gRPC service.
+a {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec" >}} to define REST routes to a gRPC service.
 When translating a REST API to a gRPC API the JSON body is automatically used to fill in the proto
 message fields. If you have some parameters in the path or in headers, your can specify them using 
-the [parameters]({{< protobuf name="transformation.plugins.gloo.solo.io.Parameters">}})  block in the [gRPC destinationSpec]({{< protobuf name="grpc.plugins.gloo.solo.io.DestinationSpec">}}) (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
+the {{< protobuf name="transformation.options.gloo.solo.io.Parameters" display="parameters">}}  block in the {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec">}} (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
 
 ## Test
 

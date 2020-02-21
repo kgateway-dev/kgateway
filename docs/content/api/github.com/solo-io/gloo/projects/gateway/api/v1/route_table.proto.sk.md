@@ -26,17 +26,14 @@ weight: 5
 ### RouteTable
 
  
-The **RouteTable** is a child Routing object for the Gloo Gateway.
+The **RouteTable** is a child routing object for the Gloo Gateway.
 
-A **RouteTable** gets built into the complete routing configuration
-when it is referenced by a `delegateAction`, either
-in a parent VirtualService or another RouteTable.
+A **RouteTable** gets built into the complete routing configuration when it is referenced by a `delegateAction`,
+either in a parent VirtualService or another RouteTable.
 
-Routes specified in a RouteTable must have their paths start with the prefix provided in the
-parent's matcher.
+Routes specified in a RouteTable must have their paths start with the prefix provided in the parent's matcher.
 
 For example, the following configuration:
-
 
 ```
 virtualService: mydomain.com
@@ -76,16 +73,18 @@ spec:
     domains:
     - 'any.com'
     routes:
-    - matcher:
-        prefix: '/a' # delegate ownership of routes for `any.com/a`
+    - matchers:
+      - prefix: '/a' # delegate ownership of routes for `any.com/a`
       delegateAction:
-        name: 'a-routes'
-        namespace: 'a'
-    - matcher:
-        prefix: '/b' # delegate ownership of routes for `any.com/b`
+        ref:
+          name: 'a-routes'
+          namespace: 'a'
+    - matchers:
+      - prefix: '/b' # delegate ownership of routes for `any.com/b`
       delegateAction:
-        name: 'b-routes'
-        namespace: 'b'
+        ref:
+          name: 'b-routes'
+          namespace: 'b'
 ```
 
 * A root-level **VirtualService** which delegates routing to to the `a-routes` and `b-routes` **RouteTables**.
@@ -99,16 +98,16 @@ metadata:
   namespace: 'a'
 spec:
   routes:
-    - matcher:
-        # the path matchers in this RouteTable must begin with the prefix `/a/`
-        prefix: '/a/1'
+    - matchers:
+      # the path matchers in this RouteTable must begin with the prefix `/a/`
+      - prefix: '/a/1'
       routeAction:
         single:
           upstream:
             name: 'foo-upstream'
 
-    - matcher:
-        prefix: '/a/2'
+    - matchers:
+      - prefix: '/a/2'
       routeAction:
         single:
           upstream:
@@ -125,19 +124,20 @@ metadata:
   namespace: 'b'
 spec:
   routes:
-    - matcher:
-        # the path matchers in this RouteTable must begin with the prefix `/b/`
-        regex: '/b/3'
+    - matchers:
+      # the path matchers in this RouteTable must begin with the prefix `/b/`
+      - regex: '/b/3'
       routeAction:
         single:
           upstream:
             name: 'bar-upstream'
-    - matcher:
-        prefix: '/b/c/'
+    - matchers:
+      - prefix: '/b/c/'
       # routes in the RouteTable can perform any action, including a delegateAction
       delegateAction:
-        name: 'c-routes'
-        namespace: 'c'
+        ref:
+          name: 'c-routes'
+          namespace: 'c'
 
 ```
 
@@ -152,8 +152,8 @@ metadata:
   namespace: 'c'
 spec:
   routes:
-    - matcher:
-        exact: '/b/c/4'
+    - matchers:
+      - exact: '/b/c/4'
       routeAction:
         single:
           upstream:
@@ -174,6 +174,7 @@ Would produce the following route config for `mydomain.com`:
 
 ```yaml
 "routes": []gateway.solo.io.Route
+"weight": .google.protobuf.Int32Value
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 
@@ -181,9 +182,10 @@ Would produce the following route config for `mydomain.com`:
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk#route) | the list of routes for the route table. |  |
-| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
-| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk#metadata) | Metadata contains the object metadata for this resource. |  |
+| `routes` | [[]gateway.solo.io.Route](../virtual_service.proto.sk/#route) | The list of routes for the route table. |  |
+| `weight` | [.google.protobuf.Int32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/int-32-value) | When a delegated route defines a `RouteTableSelector` that matches multiple route tables, Gloo will inspect this field to determine the order in which the route tables are to be evaluated. This determines the order in which the routes will appear on the final `Proxy` resource. The field is optional; if no value is specified, the weight defaults to 0 (zero). Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of each route table in the order they are defined. If multiple route tables define the same weight, Gloo will sort the routes which belong to those tables to avoid short-circuiting (e.g. making sure `/foo/bar` comes before `/foo`). In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource (the one that specifies the `RouteTableSelector`). |  |
+| `status` | [.core.solo.io.Status](../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
+| `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 
 
 

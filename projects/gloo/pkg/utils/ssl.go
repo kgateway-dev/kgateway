@@ -3,11 +3,13 @@ package utils
 import (
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	gogo_types "github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/go-utils/errors"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -17,18 +19,18 @@ const (
 
 var (
 	TlsVersionNotFoundError = func(v v1.SslParameters_ProtocolVersion) error {
-		return errors.Errorf("tls version %v not found", v)
+		return eris.Errorf("tls version %v not found", v)
 	}
 
 	SslSecretNotFoundError = func(err error) error {
-		return errors.Wrapf(err, "SSL secret not found")
+		return eris.Wrapf(err, "SSL secret not found")
 	}
 
 	NotTlsSecretError = func(ref core.ResourceRef) error {
-		return errors.Errorf("%v is not a TLS secret", ref)
+		return eris.Errorf("%v is not a TLS secret", ref)
 	}
 
-	NoCertificateFoundError = errors.New("no certificate information found")
+	NoCertificateFoundError = eris.New("no certificate information found")
 )
 
 type SslConfigTranslator interface {
@@ -68,7 +70,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	common.AlpnProtocols = []string{"h2", "http/1.1"}
 	return &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
-		RequireClientCertificate: requireClientCert,
+		RequireClientCertificate: gogoutils.BoolGogoToProto(requireClientCert),
 	}, nil
 }
 
@@ -106,7 +108,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 		},
 		HeaderKey: sslSecrets.CallCredentials.FileCredentialSource.Header,
 	}
-	any, _ := gogo_types.MarshalAny(config)
+	any, _ := ptypes.MarshalAny(config)
 
 	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
 		TargetUri:  sslSecrets.TargetUri,
@@ -151,10 +153,10 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 
 func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []string) (*envoyauth.CommonTlsContext, error) {
 	if sslSecrets.CertificatesSecretName == "" && sslSecrets.ValidationContextName == "" {
-		return nil, errors.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
+		return nil, eris.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
 	if len(verifySan) != 0 && sslSecrets.ValidationContextName == "" {
-		return nil, errors.Errorf("must provide validation context name if verifying SAN")
+		return nil, eris.Errorf("must provide validation context name if verifying SAN")
 	}
 	tlsContext := &envoyauth.CommonTlsContext{
 		// default params
@@ -233,7 +235,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			},
 		}
 	} else if certChainData != nil || privateKeyData != nil {
-		return nil, errors.Errorf("both or none of cert chain and private key must be provided")
+		return nil, eris.Errorf("both or none of cert chain and private key must be provided")
 	}
 
 	sanList := cs.GetVerifySubjectAltName()
@@ -250,7 +252,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		tlsContext.ValidationContextType = validationCtx
 
 	} else if len(sanList) != 0 {
-		return nil, errors.Errorf("a root_ca must be provided if verify_subject_alt_name is not empty")
+		return nil, eris.Errorf("a root_ca must be provided if verify_subject_alt_name is not empty")
 
 	}
 

@@ -4,8 +4,9 @@ import (
 	"context"
 	"sort"
 
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/plugins/ratelimit"
+	"github.com/rotisserie/eris"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
@@ -40,25 +41,26 @@ type Top struct {
 	ErrorsOnly             bool
 	DisableUsageStatistics bool
 	ConfigFilePath         string
+	Consul                 Consul // use consul as config backend
 }
 
 type Install struct {
-	DryRun            bool
-	Upgrade           bool
-	Namespace         string
-	HelmChartOverride string
-	HelmChartValues   string
-	Knative           Knative
-	LicenseKey        string
-	WithUi            bool
+	DryRun                  bool
+	CreateNamespace         bool
+	Namespace               string
+	HelmChartOverride       string
+	HelmChartValueFileNames []string
+	HelmReleaseName         string
+	Version                 string
+	Knative                 Knative
+	LicenseKey              string
+	WithUi                  bool
 }
 
 type Knative struct {
 	InstallKnativeVersion         string `json:"version"`
 	InstallKnative                bool   `json:"-"`
 	SkipGlooInstall               bool   `json:"-"`
-	InstallKnativeBuild           bool   `json:"build"`
-	InstallKnativeBuildVersion    string `json:"buildVersion"`
 	InstallKnativeMonitoring      bool   `json:"monitoring"`
 	InstallKnativeEventing        bool   `json:"eventing"`
 	InstallKnativeEventingVersion string `json:"eventingVersion"`
@@ -66,6 +68,7 @@ type Knative struct {
 
 type Uninstall struct {
 	Namespace       string
+	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
@@ -87,21 +90,17 @@ type Upgrade struct {
 
 type Get struct {
 	Selector InputMapStringString
-	Consul   Consul // use consul as config backend
 }
 
 type Delete struct {
 	Selector InputMapStringString
 	All      bool
-	Consul   Consul // use consul as config backend
 }
 
 type Edit struct {
-	Consul Consul // use consul as config backend
 }
 
 type Route struct {
-	Consul Consul // use consul as config backend
 }
 
 type Consul struct {
@@ -121,9 +120,9 @@ type Create struct {
 	InputUpstream      InputUpstream
 	InputUpstreamGroup InputUpstreamGroup
 	InputSecret        Secret
-	DryRun             bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul             Consul // use consul as config backend
-	Vault              Vault  // use vault as secrets backend
+	AuthConfig         InputAuthConfig
+	DryRun             bool  // print resource as a kubernetes style yaml and exit without writing to storage
+	Vault              Vault // use vault as secrets backend
 }
 
 type RouteMatchers struct {
@@ -137,8 +136,7 @@ type RouteMatchers struct {
 
 type Add struct {
 	Route  InputRoute
-	DryRun bool   // print resource as a kubernetes style yaml and exit without writing to storage
-	Consul Consul // use consul as config backend
+	DryRun bool // print resource as a kubernetes style yaml and exit without writing to storage
 }
 
 type InputRoute struct {
@@ -154,7 +152,7 @@ type InputRoute struct {
 
 type Destination struct {
 	Upstream        core.ResourceRef
-	Delegate        core.ResourceRef
+	Delegate        Delegate
 	DestinationSpec DestinationSpec
 }
 
@@ -179,7 +177,7 @@ func (p *PrefixRewrite) String() string {
 
 func (p *PrefixRewrite) Set(s string) error {
 	if p == nil {
-		p = &PrefixRewrite{}
+		return eris.New("nil pointer")
 	}
 	p.Value = &s
 	return nil
@@ -194,6 +192,16 @@ type DestinationSpec struct {
 	Rest RestDestinationSpec
 }
 
+type DelegateSelector struct {
+	Labels     map[string]string
+	Namespaces []string
+}
+
+type Delegate struct {
+	Single   core.ResourceRef
+	Selector DelegateSelector
+}
+
 type AwsDestinationSpec struct {
 	LogicalName            string
 	ResponseTransformation bool
@@ -205,8 +213,7 @@ type RestDestinationSpec struct {
 }
 
 type Remove struct {
-	Route  RemoveRoute
-	Consul Consul // use consul as config backend
+	Route RemoveRoute
 }
 
 type RemoveRoute struct {
@@ -217,9 +224,13 @@ type InputVirtualService struct {
 	Domains     []string
 	DisplayName string
 	RateLimit   RateLimit
-	OIDCAuth    OIDCAuth
-	ApiKeyAuth  ApiKeyAuth
-	OpaAuth     OpaAuth
+	AuthConfig  AuthConfig
+}
+
+type InputAuthConfig struct {
+	OIDCAuth   OIDCAuth
+	ApiKeyAuth ApiKeyAuth
+	OpaAuth    OpaAuth
 }
 
 const (
@@ -346,6 +357,11 @@ var RateLimit_TimeUnits = func() []string {
 	return vals
 }()
 
+type AuthConfig struct {
+	Name      string
+	Namespace string
+}
+
 type RateLimit struct {
 	Enable              bool
 	TimeUnit            string
@@ -370,7 +386,7 @@ type ApiKeyAuth struct {
 }
 
 type OIDCSettings struct {
-	ExtAtuhServerUpstreamRef core.ResourceRef
+	ExtAuthServerUpstreamRef core.ResourceRef
 }
 
 type OpaAuth struct {

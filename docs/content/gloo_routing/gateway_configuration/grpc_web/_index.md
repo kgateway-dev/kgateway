@@ -12,9 +12,10 @@ metadata: # collapsed for brevity
 spec:
   bindAddress: '::'
   bindPort: 8080
-  plugins:
-    grpcWeb:
-      disable: true
+  httpGateway:
+    options:
+      grpcWeb:
+        disable: true
   useProxyProto: false
 status: # collapsed for brevity
 {{< /highlight >}}

@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
 	"github.com/solo-io/gloo/pkg/utils/selectionutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
@@ -12,9 +13,9 @@ import (
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/aws"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/rest"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/transformation"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
@@ -70,13 +71,17 @@ func addRoute(opts *options.Options) error {
 	}
 
 	v1Route := &gatewayv1.Route{
-		Matchers:     []*v1.Matcher{match}, // currently we only support adding a single matcher via glooctl
-		RoutePlugins: plugins,
+		Matchers: []*matchers.Matcher{match}, // currently we only support adding a single matcher via glooctl
+		Options:  plugins,
 	}
 
-	if opts.Add.Route.Destination.Delegate.Name != "" {
+	if opts.Add.Route.Destination.Delegate.Single.Name != "" {
 		v1Route.Action = &gatewayv1.Route_DelegateAction{
-			DelegateAction: &opts.Add.Route.Destination.Delegate,
+			DelegateAction: &gatewayv1.DelegateAction{
+				DelegationType: &gatewayv1.DelegateAction_Ref{
+					Ref: &opts.Add.Route.Destination.Delegate.Single,
+				},
+			},
 		}
 	} else {
 		v1Route.Action, err = routeActionFromInput(opts.Add.Route)
@@ -144,35 +149,35 @@ func addRoute(opts *options.Options) error {
 	return nil
 }
 
-func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
-	m := &v1.Matcher{}
+func matcherFromInput(input options.RouteMatchers) (*matchers.Matcher, error) {
+	m := &matchers.Matcher{}
 	switch {
 	case input.PathExact != "":
 		if input.PathRegex != "" || input.PathPrefix != "" {
 			return nil, errors.Errorf("can only set one of path-regex, path-prefix, or path-exact")
 		}
-		m.PathSpecifier = &v1.Matcher_Exact{
+		m.PathSpecifier = &matchers.Matcher_Exact{
 			Exact: input.PathExact,
 		}
 	case input.PathRegex != "":
 		if input.PathExact != "" || input.PathPrefix != "" {
 			return nil, errors.Errorf("can only set one of path-regex, path-prefix, or path-exact")
 		}
-		m.PathSpecifier = &v1.Matcher_Regex{
+		m.PathSpecifier = &matchers.Matcher_Regex{
 			Regex: input.PathRegex,
 		}
 	case input.PathPrefix != "":
 		if input.PathExact != "" || input.PathRegex != "" {
 			return nil, errors.Errorf("can only set one of path-regex, path-prefix, or path-exact")
 		}
-		m.PathSpecifier = &v1.Matcher_Prefix{
+		m.PathSpecifier = &matchers.Matcher_Prefix{
 			Prefix: input.PathPrefix,
 		}
 	default:
 		return nil, errors.Errorf("must provide path prefix, path exact, or path regex for route matcher")
 	}
 	for k, v := range input.QueryParameterMatcher.MustMap() {
-		m.QueryParameters = append(m.QueryParameters, &v1.QueryParameterMatcher{
+		m.QueryParameters = append(m.QueryParameters, &matchers.QueryParameterMatcher{
 			Name:  k,
 			Value: v,
 			Regex: true,
@@ -185,7 +190,7 @@ func matcherFromInput(input options.RouteMatchers) (*v1.Matcher, error) {
 		m.Methods = input.Methods
 	}
 	for k, v := range input.HeaderMatcher.MustMap() {
-		m.Headers = append(m.Headers, &v1.HeaderMatcher{
+		m.Headers = append(m.Headers, &matchers.HeaderMatcher{
 			Name:  k,
 			Value: v,
 			Regex: true,
@@ -234,11 +239,11 @@ func routeActionFromInput(input options.InputRoute) (*gatewayv1.Route_RouteActio
 	return a, nil
 }
 
-func pluginsFromInput(input options.RoutePlugins) (*v1.RoutePlugins, error) {
+func pluginsFromInput(input options.RoutePlugins) (*v1.RouteOptions, error) {
 	if input.PrefixRewrite.Value == nil {
 		return nil, nil
 	}
-	return &v1.RoutePlugins{
+	return &v1.RouteOptions{
 		PrefixRewrite: &types.StringValue{Value: *input.PrefixRewrite.Value},
 	}, nil
 }

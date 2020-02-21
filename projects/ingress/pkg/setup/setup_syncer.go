@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"knative.dev/serving/pkg/network"
+	"knative.dev/pkg/network"
 
 	clusteringressclient "github.com/solo-io/gloo/projects/clusteringress/pkg/api/custom/knative"
 
@@ -157,10 +157,6 @@ func RunIngress(opts Opts) error {
 	if err != nil {
 		return errors.Wrapf(err, "getting kube config")
 	}
-	secretClient, err := gloov1.NewSecretClient(opts.Secrets)
-	if err != nil {
-		return err
-	}
 
 	proxyClient, err := gloov1.NewProxyClient(opts.Proxies)
 	if err != nil {
@@ -188,7 +184,7 @@ func RunIngress(opts Opts) error {
 		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
 		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
 
-		translatorEmitter := v1.NewTranslatorEmitter(secretClient, upstreamClient, ingressClient)
+		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, ingressClient)
 		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs, opts.RequireIngressClass)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
@@ -233,12 +229,12 @@ func RunIngress(opts Opts) error {
 			}
 			baseClient := clusteringressclient.NewResourceClient(knative, knativeCache)
 			ingressClient := clusteringressv1alpha1.NewClusterIngressClientWithBase(baseClient)
-			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(secretClient, ingressClient)
+			clusterIngTranslatorEmitter := clusteringressv1.NewTranslatorEmitter(ingressClient)
 			clusterIngTranslatorSync := clusteringresstranslator.NewSyncer(
 				opts.ClusterIngressProxyAddress,
 				opts.WriteNamespace,
 				proxyClient,
-				knative.NetworkingV1alpha1().ClusterIngresses(),
+				knative.NetworkingV1alpha1(),
 				writeErrs,
 			)
 			clusterIngTranslatorEventLoop := clusteringressv1.NewTranslatorEventLoop(clusterIngTranslatorEmitter, clusterIngTranslatorSync)
@@ -255,7 +251,7 @@ func RunIngress(opts Opts) error {
 			}
 			baseClient := knativeclient.NewResourceClient(knative, knativeCache)
 			ingressClient := knativev1alpha1.NewIngressClientWithBase(baseClient)
-			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(secretClient, ingressClient)
+			knativeTranslatorEmitter := knativev1.NewTranslatorEmitter(ingressClient)
 			knativeTranslatorSync := knativetranslator.NewSyncer(
 				opts.KnativeExternalProxyAddress,
 				opts.KnativeInternalProxyAddress,
@@ -263,6 +259,7 @@ func RunIngress(opts Opts) error {
 				proxyClient,
 				knative.NetworkingV1alpha1(),
 				writeErrs,
+				opts.RequireIngressClass,
 			)
 			knativeTranslatorEventLoop := knativev1.NewTranslatorEventLoop(knativeTranslatorEmitter, knativeTranslatorSync)
 			knativeTranslatorEventLoopErrs, err := knativeTranslatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)

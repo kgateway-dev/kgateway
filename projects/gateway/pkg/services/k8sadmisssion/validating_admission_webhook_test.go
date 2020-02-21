@@ -14,7 +14,6 @@ import (
 	"github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	v2 "github.com/solo-io/gloo/projects/gateway/pkg/api/v2"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -51,8 +50,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 		if !valid {
 			switch resource.(type) {
-			case *v2.Gateway:
-				mv.fValidateGateway = func(ctx context.Context, gw *v2.Gateway) (validation.ProxyReports, error) {
+			case *v1.Gateway:
+				mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
 					return nil, fmt.Errorf(errMsg)
 				}
 			case *v1.VirtualService:
@@ -81,13 +80,34 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
 		}
 	},
-		table.Entry("invalid gateway", false, v2.GatewayCrd, gateway),
-		table.Entry("valid gateway", true, v2.GatewayCrd, gateway),
+		table.Entry("valid gateway", true, v1.GatewayCrd, gateway),
+		table.Entry("invalid gateway", false, v1.GatewayCrd, gateway),
 		table.Entry("valid virtual service", true, v1.VirtualServiceCrd, vs),
 		table.Entry("invalid virtual service", false, v1.VirtualServiceCrd, vs),
 		table.Entry("valid route table", true, v1.RouteTableCrd, routeTable),
 		table.Entry("invalid route table", false, v1.RouteTableCrd, routeTable),
 	)
+
+	Context("invalid yaml", func() {
+		It("rejects the resource even when alwaysAccept=true", func() {
+			wh.alwaysAccept = true
+
+			req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd, v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace, []byte(`{"metadata": [1, 2, 3]}`))
+			Expect(err).NotTo(HaveOccurred())
+
+			res, err := srv.Client().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			review, err := parseReviewResponse(res)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(review.Response).NotTo(BeNil())
+
+			Expect(review.Response.Allowed).To(BeFalse())
+			Expect(review.Response.Result).NotTo(BeNil())
+			Expect(review.Response.Result.Message).To(ContainSubstring("could not unmarshal raw object: unmarshalling from raw json: json: cannot unmarshal array into Go struct field Resource.metadata of type v1.ObjectMeta"))
+
+		})
+	})
 })
 
 func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, resource resources.InputResource) (*http.Request, error) {
@@ -99,6 +119,11 @@ func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, res
 		return nil, err
 	}
 
+	return makeReviewRequestRaw(url, crd, operation, resource.GetMetadata().Name, resource.GetMetadata().Namespace, raw)
+}
+
+func makeReviewRequestRaw(url string, crd crd.Crd, operation v1beta1.Operation, name, namespace string, raw []byte) (*http.Request, error) {
+
 	review := v1beta1.AdmissionReview{
 		Request: &v1beta1.AdmissionRequest{
 			UID: "1234",
@@ -107,8 +132,8 @@ func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, res
 				Version: crd.GroupVersionKind().Version,
 				Kind:    crd.GroupVersionKind().Kind,
 			},
-			Name:      resource.GetMetadata().Name,
-			Namespace: resource.GetMetadata().Namespace,
+			Name:      name,
+			Namespace: namespace,
 			Operation: operation,
 			Object: runtime.RawExtension{
 				Raw: raw,
@@ -140,22 +165,22 @@ func parseReviewResponse(resp *http.Response) (*v1beta1.AdmissionReview, error) 
 }
 
 type mockValidator struct {
-	fSync                         func(context.Context, *v2.ApiSnapshot) error
-	fValidateGateway              func(ctx context.Context, gw *v2.Gateway) (validation.ProxyReports, error)
+	fSync                         func(context.Context, *v1.ApiSnapshot) error
+	fValidateGateway              func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error)
 	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error)
 	fValidateDeleteVirtualService func(ctx context.Context, vs core.ResourceRef) error
 	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error)
 	fValidateDeleteRouteTable     func(ctx context.Context, rt core.ResourceRef) error
 }
 
-func (v *mockValidator) Sync(ctx context.Context, snap *v2.ApiSnapshot) error {
+func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	if v.fSync == nil {
 		return nil
 	}
 	return v.fSync(ctx, snap)
 }
 
-func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v2.Gateway) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
 	if v.fValidateGateway == nil {
 		return nil, nil
 	}

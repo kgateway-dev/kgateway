@@ -27,19 +27,24 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
+	Wasm       Wasm        `json:"wasm,omitempty"`
+	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
 }
 
 type Namespace struct {
 	Create bool `json:"create" desc:"create the installation namespace"`
 }
 
-type Rbac struct {
-	Create     bool `json:"create" desc:"create rbac rules for the gloo-system service account"`
-	Namespaced bool `json:"Namespaced" desc:"use Roles instead of ClusterRoles"`
+type Crds struct {
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
-type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a cluster that already has Gloo CRDs)"`
+type Rbac struct {
+	Create     bool   `json:"create" desc:"create rbac rules for the gloo-system service account"`
+	Namespaced bool   `json:"namespaced" desc:"use Roles instead of ClusterRoles"`
+	NameSuffix string `json:"nameSuffix" desc:"When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'"`
 }
 
 // Common
@@ -70,7 +75,7 @@ type JobSpec struct {
 
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
-	Resources *ResourceRequirements `json:"resources,omitEmpty" desc:"resources for the main pod in the deployment"`
+	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
 }
 
 type Integrations struct {
@@ -78,9 +83,10 @@ type Integrations struct {
 }
 
 type Knative struct {
-	Enabled *bool         `json:"enabled" desc:"enabled knative components"`
-	Version *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
-	Proxy   *KnativeProxy `json:"proxy,omitempty"`
+	Enabled             *bool         `json:"enabled" desc:"enabled knative components"`
+	Version             *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Proxy               *KnativeProxy `json:"proxy,omitempty"`
+	RequireIngressClass *bool         `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
 }
 
 type KnativeProxy struct {
@@ -92,13 +98,16 @@ type KnativeProxy struct {
 }
 
 type Settings struct {
-	WatchNamespaces     []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace      string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
-	Integrations        *Integrations        `json:"integrations,omitempty"`
-	Create              bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
-	Extensions          interface{}          `json:"extensions,omitempty"`
-	SingleNamespace     bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy *InvalidConfigPolicy `json:"invalidConfigPolicy" desc:"Define policies for Gloo to handle invalid configuration"`
+	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace                string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
+	Integrations                  *Integrations        `json:"integrations,omitempty"`
+	Create                        bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
+	Extensions                    interface{}          `json:"extensions,omitempty"`
+	SingleNamespace               bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
+	Linkerd                       bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
+	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
+	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
 }
 
 type InvalidConfigPolicy struct {
@@ -115,7 +124,7 @@ type GlooDeployment struct {
 	Image                  *Image  `json:"image,omitempty"`
 	XdsPort                int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
 	ValidationPort         int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats                  bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats                  *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	FloatingUserId         bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser              float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	ExternalTrafficPolicy  string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
@@ -131,21 +140,20 @@ type Discovery struct {
 
 type DiscoveryDeployment struct {
 	Image          *Image  `json:"image,omitempty"`
-	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
 	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
 }
 
 type Gateway struct {
-	Enabled             *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
-	Validation          *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
-	Upgrade             *bool              `json:"upgrade" desc:"Deploy a Job to convert (but not delete) v1 Gateway resources to v2 and not add a 'live' label to the gateway-proxy deployment's pod template. This allows for canary testing of gateway-v2 alongside an existing instance of gloo running with v1 gateway resources and controllers."`
-	Deployment          *GatewayDeployment `json:"deployment,omitempty"`
-	ConversionJob       *Job               `json:"conversionJob,omitempty"`
-	CertGenJob          *Job               `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
-	UpdateValues        bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
-	ProxyServiceAccount ServiceAccount     `json:"proxyServiceAccount" `
+	Enabled                       *bool              `json:"enabled" desc:"enable Gloo API Gateway features"`
+	Validation                    *GatewayValidation `json:"validation" desc:"enable Validation Webhook on the Gateway. This will cause requests to modify Gateway-related Custom Resources to be validated by the Gateway."`
+	Deployment                    *GatewayDeployment `json:"deployment,omitempty"`
+	CertGenJob                    *CertGenJob        `json:"certGenJob,omitempty" desc:"generate self-signed certs with this job to be used with the gateway validation webhook. this job will only run if validation is enabled for the gateway"`
+	UpdateValues                  bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
+	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount" `
+	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
 }
 
 type ServiceAccount struct {
@@ -153,6 +161,7 @@ type ServiceAccount struct {
 }
 
 type GatewayValidation struct {
+	Enabled               bool   `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
 	AlwaysAcceptResources *bool  `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
 	SecretName            string `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy         string `json:"failurePolicy" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
@@ -160,7 +169,7 @@ type GatewayValidation struct {
 
 type GatewayDeployment struct {
 	Image          *Image  `json:"image,omitempty"`
-	Stats          bool    `json:"stats" desc:"enable prometheus stats"`
+	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
 	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 	*DeploymentSpec
@@ -171,16 +180,27 @@ type Job struct {
 	*JobSpec
 }
 
+type CertGenJob struct {
+	Job
+	Enabled                 bool `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+}
+
 type GatewayProxy struct {
-	Kind                  *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
-	PodTemplate           *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
-	ConfigMap             *GatewayProxyConfigMap       `json:"configMap,omitempty"`
-	Service               *GatewayProxyService         `json:"service,omitempty"`
-	Tracing               *Tracing                     `json:"tracing,omitempty"`
-	GatewaySettings       *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
-	ExtraContainersHelper string                       `json:"extraContainersHelper,omitempty"`
-	Stats                 bool                         `json:"stats" desc:"enable prometheus stats"`
-	ReadConfig            bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	Kind                      *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
+	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	Service                   *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
+	Tracing                   *Tracing                     `json:"tracing,omitempty"`
+	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
+	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
+	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
+	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
+	Stats                     *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
+	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -195,7 +215,6 @@ type GatewayProxyKind struct {
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
-	AntiAffinity bool `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	*DeploymentSpec
 }
 
@@ -213,7 +232,7 @@ type GatewayProxyPodTemplate struct {
 	NodeSelector     map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
 	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
 	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
-	Resources        *ResourceRequirements `json:"resources"`
+	Resources        *ResourceRequirements `json:"resources,omitempty"`
 	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
@@ -227,6 +246,7 @@ type GatewayProxyService struct {
 	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
+	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
 }
 
 type Tracing struct {
@@ -278,4 +298,16 @@ type IngressProxyConfigMap struct {
 
 type K8s struct {
 	ClusterName string `json:"clusterName" desc:"cluster name to use when referencing services."`
+}
+
+type Wasm struct {
+	Enabled bool `json:"enabled" desc:"switch the gateway-proxy image to one which supports WASM"`
+}
+
+type Stats struct {
+	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
+}
+
+type Mtls struct {
+	Enabled bool `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
 }

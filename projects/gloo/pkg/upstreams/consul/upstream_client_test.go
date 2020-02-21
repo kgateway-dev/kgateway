@@ -1,4 +1,4 @@
-package consul
+package consul_test
 
 import (
 	"context"
@@ -10,7 +10,10 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/go-utils/errors"
+
+	"github.com/rotisserie/eris"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
@@ -144,7 +147,7 @@ var _ = Describe("ConsulClient", func() {
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
+				Eventually(upstreamChan, 500*time.Millisecond).Should(Receive(ConsistOf(
 					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
@@ -189,7 +192,7 @@ var _ = Describe("ConsulClient", func() {
 
 						// Simulate failure on the first attempt
 						if attemptNum == 1 {
-							return nil, nil, errors.New("flake")
+							return nil, nil, eris.New("flake")
 						}
 
 						return map[string][]string{"svc-1": nil, "svc-2": nil}, &consulapi.QueryMeta{LastIndex: 200}, nil
@@ -210,7 +213,8 @@ var _ = Describe("ConsulClient", func() {
 				upstreamChan, errChan, err := usClient.Watch(defaults.GlooSystem, clients.WatchOpts{Ctx: ctx})
 				Expect(err).NotTo(HaveOccurred())
 
-				Eventually(upstreamChan, 200*time.Millisecond).Should(Receive(ConsistOf(
+				// The retry delay in the consul client is 100ms
+				Eventually(upstreamChan, 300*time.Millisecond).Should(Receive(ConsistOf(
 					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}),
 					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
 				)))
@@ -275,7 +279,6 @@ var _ = Describe("ConsulClient", func() {
 type svcQueryFunc func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error)
 
 func returnWithDelay(newIndex uint64, services []string, delay time.Duration) svcQueryFunc {
-	time.Sleep(delay)
 
 	svcMap := make(map[string][]string, len(services))
 	for _, svc := range services {
@@ -283,6 +286,7 @@ func returnWithDelay(newIndex uint64, services []string, delay time.Duration) sv
 	}
 
 	return func(q *consulapi.QueryOptions) (map[string][]string, *consulapi.QueryMeta, error) {
+		time.Sleep(delay)
 		return svcMap, &consulapi.QueryMeta{LastIndex: newIndex}, nil
 	}
 }

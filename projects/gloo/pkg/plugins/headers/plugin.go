@@ -3,7 +3,8 @@ package headers
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/plugins/headers"
+	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -30,15 +31,10 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
-	headerManipulation := in.GetWeightedDestinationPlugins().GetHeaderManipulation()
+	headerManipulation := in.GetOptions().GetHeaderManipulation()
 	if headerManipulation == nil {
-		// Try deprecated field
-		headerManipulation = in.GetWeighedDestinationPlugins().GetHeaderManipulation()
-		if headerManipulation == nil {
-			return nil
-		}
+		return nil
 	}
-
 	envoyHeader, err := convertHeaderConfig(headerManipulation)
 	if err != nil {
 		return err
@@ -53,7 +49,7 @@ func (p *Plugin) ProcessWeightedDestination(_ plugins.RouteParams, in *v1.Weight
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	headerManipulation := in.GetVirtualHostPlugins().GetHeaderManipulation()
+	headerManipulation := in.GetOptions().GetHeaderManipulation()
 
 	if headerManipulation == nil {
 		return nil
@@ -73,7 +69,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	headerManipulation := in.GetRoutePlugins().GetHeaderManipulation()
+	headerManipulation := in.GetOptions().GetHeaderManipulation()
 
 	if headerManipulation == nil {
 		return nil
@@ -128,7 +124,7 @@ func convertHeaderValueOption(in []*headers.HeaderValueOption) ([]*envoycore.Hea
 				Key:   h.Header.Key,
 				Value: h.Header.Value,
 			},
-			Append: h.Append,
+			Append: gogoutils.BoolGogoToProto(h.Append),
 		})
 	}
 	return out, nil

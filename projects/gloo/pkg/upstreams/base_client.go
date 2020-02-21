@@ -1,7 +1,7 @@
 package upstreams
 
 import (
-	"github.com/solo-io/go-utils/errors"
+	"github.com/rotisserie/eris"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
@@ -34,7 +34,7 @@ func (c *readOnlyUpstreamBaseClient) Read(namespace, name string, opts clients.R
 	if isRealUpstream(name) {
 		return c.rc.Read(namespace, name, opts)
 	}
-	return nil, errors.New(notImplementedErrMsg)
+	return nil, eris.New(notImplementedErrMsg)
 }
 
 // TODO(marco): this will not write reports but still log an info message. Find a way of avoiding it.

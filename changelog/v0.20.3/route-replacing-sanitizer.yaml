@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add route replacing sanitizer to permit valid routes to propagate to Envoy when other routes are invalid
+    issueLink: https://github.com/solo-io/gloo/issues/1429

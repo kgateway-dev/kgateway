@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      A Dockerfile snippet had been interpreted as an invalid Hugo shortcode, causing site generation to fail.
+      Also fixes some `refs`, changing them to `versioned_link_path` shortcodes to handle product/version scope hosting.
