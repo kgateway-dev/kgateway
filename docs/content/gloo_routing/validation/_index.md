@@ -102,7 +102,7 @@ to learn how to configure and use Gloo's admission control feature.
 
 # Sanitizing Config
 
-Gloo can be configured to pass partially config to Envoy by admitting it through an internal process referred to as *sanitizing*.
+Gloo can be configured to pass partially-valid config to Envoy by admitting it through an internal process referred to as *sanitizing*.
 
 Rather than refuse to update Envoy with invalid config, Gloo can replace the invalid pieces of configuration with preconfigured 
 defaults.
@@ -115,5 +115,4 @@ to learn how to configure and use Gloo's sanitization feature.
 {{% children description="true" %}}
 
 We appreciate questions and feedback on Gloo validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).
-
 
