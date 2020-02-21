@@ -124,7 +124,7 @@ helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overr
 
 #### List of Gloo Helm chart values
 
-The [Helm Chart Values page](./helm_chart_values) describes all the values that you can override in your custom values file.
+The [Helm Chart Values page]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_chart_values" %}}) describes all the values that you can override in your custom values file.
 
 ---
 
