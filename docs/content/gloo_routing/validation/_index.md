@@ -40,7 +40,7 @@ not be updated until the errors are resolved.
 [Envoy xDS Snapshot](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol). 
 If configuration errors are encountered at this point, Gloo will report them to the Proxy as
  well as the user-facing config objects which produced the Proxy. At this point, Envoy
-  configuration will not be updated until the errors are resolved.
+configuration will not be updated until the errors are resolved.
 
 Each *Proxy* gets its own configuration; if config for an individual proxy is invalid, it does not affect the other proxies.
 The proxy that *Gateways* and their *Virtual Services* will be applied to can be configured via the `proxyNames` option on 
@@ -115,4 +115,3 @@ to learn how to configure and use Gloo's sanitization feature.
 {{% children description="true" %}}
 
 We appreciate questions and feedback on Gloo validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).
-
