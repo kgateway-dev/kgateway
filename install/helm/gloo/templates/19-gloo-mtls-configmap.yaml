@@ -16,7 +16,7 @@ data:
       cluster: sds_client
     static_resources:
       listeners:
-      - name: listener_0
+      - name: envoy_mtls_listener
         address: { socket_address: { address: "0.0.0.0", port_value: {{ .Values.gloo.deployment.xdsPort }} } }
         filter_chains:
         - filters:
