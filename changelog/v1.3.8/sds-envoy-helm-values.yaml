@@ -1,9 +1,9 @@
 changelog:
   - type: HELM
     description: >
-      Introducing several new Helm values `global.glooMtls.sds` and `global.glooMtls.envoy` to 
-      determine which images will be rendered in the gloo MTLS sds and envoy sidecars.
-      An example of a helm override file that enables MTLS authentication is:
+      Introducing the new `global.glooMtls.sds` and `global.glooMtls.envoy` Helm values to
+      determine which images will be rendered in the gloo mTLS sds and envoy sidecars.
+      An example of a helm override file that enables mTLS authentication is:
       ```
       global:
         glooMtls:
