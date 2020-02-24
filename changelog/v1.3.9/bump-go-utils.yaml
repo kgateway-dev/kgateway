@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.14.1
+    description: Update go-utils to version 0.14.1, which includes fixes to make our release asset logic more resilient to transient github failures.
