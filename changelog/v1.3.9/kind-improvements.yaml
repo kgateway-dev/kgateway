@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Use `PullIfNotPresent` image pull policy instead of `Always` for non-release chart value generation. `Always` is not needed anymore as we now use tags based on git commits, and not the constant `dev`.
