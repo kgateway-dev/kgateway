@@ -405,7 +405,7 @@ var _ = Describe("Helm Test", func() {
 								Value: "8083",
 							},
 						)
-						container.PullPolicy = "Always"
+						container.PullPolicy = "IfNotPresent"
 						svcBuilder := &ResourceBuilder{
 							Namespace:  namespace,
 							Name:       accessLoggerName,
@@ -1173,7 +1173,7 @@ spec:
       serviceAccountName: gateway
       containers:
       - image: quay.io/solo-io/gateway:` + version + `
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: gateway
         ports:
           - containerPort: 8443
@@ -1241,7 +1241,7 @@ spec:
       serviceAccountName: certgen
       containers:
         - image: quay.io/solo-io/certgen:` + version + `
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: certgen
           env:
             - name: POD_NAMESPACE
@@ -1877,7 +1877,7 @@ metadata:
 													v1.ResourceCPU:    resource.MustParse("500m"),
 												},
 											},
-											ImagePullPolicy: "Always",
+											ImagePullPolicy: "IfNotPresent",
 											SecurityContext: &v1.SecurityContext{
 												Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
 												RunAsUser:                pointer.Int64Ptr(10101),

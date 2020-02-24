@@ -52,11 +52,10 @@ var _ = BeforeSuite(func() {
 		Expect(err).NotTo(HaveOccurred())
 		// remove the "v" prefix
 		version = gitInfo.Tag[1:]
-		pullPolicy = v1.PullAlways
 	} else {
 		version = version[1:]
-		pullPolicy = v1.PullIfNotPresent
 	}
+	pullPolicy = v1.PullIfNotPresent
 	// generate the values.yaml and Chart.yaml files
 	MustMake(".", "-C", "../../", "generate-helm-files", "-B")
 })
