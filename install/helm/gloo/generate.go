@@ -191,6 +191,8 @@ func generateValuesConfig(version, repositoryPrefix, globalPullPolicy string) (*
 	cfg.Ingress.Deployment.Image.Tag = version
 	cfg.IngressProxy.Deployment.Image.Tag = version
 	cfg.Settings.Integrations.Knative.Proxy.Image.Tag = version
+	cfg.Global.GlooMtls.Sds.Image.Tag = version
+	cfg.Global.GlooMtls.EnvoySidecar.Image.Tag = version
 
 	for _, v := range cfg.GatewayProxies {
 		v.PodTemplate.Image.Tag = version

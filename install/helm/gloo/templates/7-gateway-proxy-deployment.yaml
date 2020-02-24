@@ -184,9 +184,10 @@ spec:
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- end }} # $spec.extraContainersHelper
 {{- if $global.glooMtls.enabled }}
+      {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
-        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
-        imagePullPolicy: {{ $image.pullPolicy }}
+        image: {{ template "gloo.image" $sdsImage }}
+        imagePullPolicy: {{ $sdsImage.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs

@@ -309,5 +309,16 @@ type Stats struct {
 }
 
 type Mtls struct {
-	Enabled bool `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
+	Enabled      bool                   `json:"enabled" desc:"Enables internal mtls authentication"`
+	Sds          SdsDeployment          `json:"sds,omitempty"`
+	EnvoySidecar EnvoySidecarDeployment `json:"envoy,omitempty"`
+}
+
+type SdsDeployment struct {
+	SdsServerAddress string `json:"sdsServerAddress,omitempty"`
+	Image            *Image `json:"image,omitempty"`
+}
+
+type EnvoySidecarDeployment struct {
+	Image *Image `json:"image,omitempty"`
 }

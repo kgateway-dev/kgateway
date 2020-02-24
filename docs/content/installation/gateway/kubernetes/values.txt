@@ -249,3 +249,14 @@
 |global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
 |global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
+|global.glooMtls.sds.sdsServerAddress|string|||
+|global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|global.glooMtls.sds.image.repository|string|sds|image name (repository) for the container.|
+|global.glooMtls.sds.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
+|global.glooMtls.sds.image.pullPolicy|string||image pull policy for the container|
+|global.glooMtls.sds.image.pullSecret|string||image pull policy for the container |
+|global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
+|global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
+|global.glooMtls.envoy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
+|global.glooMtls.envoy.image.pullPolicy|string||image pull policy for the container|
+|global.glooMtls.envoy.image.pullSecret|string||image pull policy for the container |

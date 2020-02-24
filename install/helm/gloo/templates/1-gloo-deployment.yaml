@@ -46,12 +46,14 @@ spec:
                 fieldPath: metadata.labels
       containers:
 {{- if .Values.global.glooMtls.enabled }}
+      {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}
+      {{- $envoyImage := merge .Values.global.glooMtls.envoy.image .Values.global.image}}
       - env:
         - name: ENVOY_SIDECAR
           value: "true"
         name: envoy-sidecar
-        image: "{{ $image.registry }}/gloo-envoy-wrapper:{{ $image.tag }}"
-        imagePullPolicy: {{ $image.pullPolicy }}
+        image: {{ template "gloo.image" $envoyImage }}
+        imagePullPolicy: {{ $envoyImage.pullPolicy }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -69,8 +71,8 @@ spec:
           name: gloo-mtls-certs
           readOnly: true
       - name: sds
-        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
-        imagePullPolicy: {{ $image.pullPolicy }}
+        image: {{ template "gloo.image" $sdsImage }}
+        imagePullPolicy: {{ $sdsImage.pullPolicy }}
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
