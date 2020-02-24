@@ -315,8 +315,7 @@ type Mtls struct {
 }
 
 type SdsDeployment struct {
-	SdsServerAddress string `json:"sdsServerAddress,omitempty"`
-	Image            *Image `json:"image,omitempty"`
+	Image *Image `json:"image,omitempty"`
 }
 
 type EnvoySidecarDeployment struct {

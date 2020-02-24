@@ -249,7 +249,6 @@
 |global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
 |global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
-|global.glooMtls.sds.sdsServerAddress|string|||
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |global.glooMtls.sds.image.repository|string|sds|image name (repository) for the container.|
 |global.glooMtls.sds.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
