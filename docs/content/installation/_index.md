@@ -1,5 +1,5 @@
 ---
-title: Installation
+title: Setup
 weight: 20
 ---
 

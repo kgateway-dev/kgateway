@@ -44,7 +44,7 @@ In this guide we are going to:
 Let's get started!
 
 ## Prereqs
-1. Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+1. Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
 
 ## Deploy the demo gRPC store
 

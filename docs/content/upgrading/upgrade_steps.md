@@ -137,7 +137,7 @@ Both installation methods allow you to provide overrides for the default chart v
 Helm may give you more flexibility as you are working directly with Helm rather than `glooctl`, which, for
 installation, is essentially just a wrapper around Helm.
 See our [open-source installation docs]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}) and
-our [enterprise installation docs]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}) for a complete list of Helm values that can be overridden.
+our [enterprise installation docs]({{% versioned_link_path fromRoot="/installation/gateway/enterprise/#list-of-gloo-helm-chart-values" %}}) for a complete list of Helm values that can be overridden.
 
 {{% notice note %}}
 We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook.
