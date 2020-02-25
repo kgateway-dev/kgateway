@@ -1,7 +1,7 @@
 ---
-title: Installing Gloo Gateway
+title: Gloo Gateway
 description: Guides for installing the Gloo Gateway.
-weight: 20
+weight: 30
 ---
 
 ## Install the Gloo Gateway

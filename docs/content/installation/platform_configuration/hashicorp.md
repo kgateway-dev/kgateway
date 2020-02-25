@@ -38,4 +38,4 @@ You should have the most recent version of Vault downloaded and deployed in a lo
 
 ## Next Steps
 
-Once you have prepared a suitable environment for the deployment of Gloo on HashiCorp's products, you can run through the  guide for getting Gloo Gateway deployed.
+Once you have prepared a suitable environment for the deployment of Gloo on HashiCorp's products, you can [run through the guide]({{% versioned_link_path fromRoot="/installation/gateway/nomad/" %}}) for getting Gloo Gateway deployed.

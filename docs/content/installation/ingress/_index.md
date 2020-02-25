@@ -1,5 +1,5 @@
 ---
-title: "Installing Gloo as an Ingress Controller"
+title: "Gloo as an Ingress Controller"
 description: How to install Gloo to run in Ingress Mode on Kubernetes.
 weight: 50
 ---

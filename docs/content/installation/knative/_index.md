@@ -1,5 +1,5 @@
 ---
-title: "Installing Gloo for Knative"
+title: "Gloo for Knative"
 description: How to install Gloo to run in Knative Mode on Kubernetes.
 weight: 40
 ---

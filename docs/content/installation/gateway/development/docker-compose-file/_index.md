@@ -1,6 +1,7 @@
 ---
 title: Run Gloo Gateway Locally
-weight: 5
+menuTitle: Local Files
+weight: 20
 description: How to run Gloo Locally using Docker-Compose
 ---
 

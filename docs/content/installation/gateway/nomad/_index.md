@@ -1,8 +1,8 @@
 ---
 title: "Installing Gloo Gateway on HashiCorp Nomad"
-menuTitle: "Installing on Nomad"
+menuTitle: "Nomad"
 description: How to install Gloo to run in Gateway Mode on Nomad, with routing example.
-weight: 6
+weight: 20
 ---
 
 Gloo Gateway can be used as an Ingress/Gateway for the Nomad platform. This guide walks through the process of installing Gloo on Nomad, using Consul for service discovery/configuration and Vault for secret storage.
