@@ -225,16 +225,16 @@ glooctl edit virtualservice --name animal --namespace gloo-system \
    --ssl-sni-domains animalstore.example.com
 ```
 
-{{% notice note %}}
+{{% notice warning %}}
 As you can see in the previous step, we need to specify the SNI domains that will match for this certificate with the `--ssl-sni-domains` parameter. If you do NOT specify this parameter, Envoy will become confused about which certificates to serve because there will effectively be two (or more) with no qualifying information. If that's the case, you can expect to see logs similar to the following in your `gateway-proxy` logs:
 
-{{< highlight bash "nowrap=false" >}}
+```shell
 gateway-proxy-9b55c99c7-x7r7c gateway-proxy [2019-03-20 19:01:01.763][6][warning][config] 
 [bazel-out/k8-opt/bin/external/envoy/source/common/config/_virtual_includes/grpc_mux_subscription_lib/common/config/grpc_mux_subscription_impl.h:70] 
 gRPC config for type.googleapis.com/envoy.api.v2.Listener 
 rejected: Error adding/updating listener listener-::-8443: error adding listener 
 '[::]:8443': multiple filter chains with the same matching rules are defined
-{{< /highlight >}}  
+```
 
 If you end up with logs like that, double check your SNI settings.
 
