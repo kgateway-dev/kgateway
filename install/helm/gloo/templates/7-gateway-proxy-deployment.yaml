@@ -173,23 +173,29 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+{{- if $spec.extraProxyVolumeMountHelper }}
+{{- include $spec.extraProxyVolumeMountHelper $ | nindent 8 }}
+{{- end }}
 {{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-      - name: sds
-        image: "{{ $image.registry }}/sds:{{ $image.tag }}"
-        imagePullPolicy: {{ $image.pullPolicy }}
-        volumeMounts:
-        - mountPath: /etc/envoy/ssl
-          name: gloo-mtls-certs
-          readOnly: true
-{{- end}}
+{{- end}} # $global.glooMtls.enabled
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
-{{- end }}
+{{- end }} # $spec.extraContainersHelper
+{{- if $global.glooMtls.enabled }}
+      {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
+      - name: sds
+        image: {{ template "gloo.image" $sdsImage }}
+        imagePullPolicy: {{ $sdsImage.pullPolicy }}
+        volumeMounts:
+        - mountPath: /etc/envoy/ssl
+          name: gloo-mtls-certs
+          readOnly: true
+{{- end}} # $global.glooMtls.enabled
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true

@@ -1,0 +1,4 @@
+changelog:
+- type: HELM
+  description: Added a new extraProxyVolumeMountHelper Helm value that allows users to define additional volume mounts on the gateway proxy container.
+  issueLink: https://github.com/solo-io/gloo/issues/2469

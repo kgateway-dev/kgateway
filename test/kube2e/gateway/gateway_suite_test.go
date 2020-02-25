@@ -199,7 +199,7 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 }
 
 func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "*.yaml")
+	values, err := ioutil.TempFile("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	// disabling usage statistics is not important to the functionality of the tests,
@@ -208,6 +208,8 @@ func getHelmValuesOverrideFile() (filename string, cleanup func()) {
 	// same cluster in CI.
 	_, err = values.Write([]byte(`
 global:
+  image:
+    pullPolicy: IfNotPresent
   glooRbac:
     namespaced: true
     nameSuffix: e2e-test-rbac-suffix

@@ -1,3 +1,6 @@
+{{- if .Values.gateway.updateValues -}}
+{{- include "gloo.updatevalues" . -}}
+{{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
@@ -28,10 +31,12 @@ data:
           grpc_service:
             envoy_grpc: {cluster_name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:9966}
     static_resources:
-
-{{- if or $statsConfig.enabled ($spec.readConfig) }}
+{{- if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) }}
       listeners:
-{{- end }} # if or ($spec.stats) ($spec.readConfig)
+{{- end }} # if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper)
+{{- if $spec.extraListenersHelper }}
+{{- include $spec.extraListenersHelper $ | nindent 8 }}
+{{- end }} # $spec.extraListenersHelper
 {{- if $statsConfig.enabled }}
         - name: prometheus_listener
           address:

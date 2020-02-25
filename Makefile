@@ -8,7 +8,7 @@ OUTPUT_DIR ?= $(ROOTDIR)/_output
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
-SOURCES := $(shell find . -name "*.go" | grep -v test.go | grep -v '\.\#*')
+SOURCES := $(shell find . -name "*.go" | grep -v test.go)
 RELEASE := "true"
 ifeq ($(TAGGED_VERSION),)
 	TAGGED_VERSION := $(shell git describe --tags --dirty)
@@ -539,13 +539,17 @@ docker-push: $(DOCKER_IMAGES)
 	docker push quay.io/solo-io/sds:$(VERSION) && \
 	docker push quay.io/solo-io/access-logger:$(VERSION)
 
+CLUSTER_NAME ?= kind
+
 push-kind-images: docker
 	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/ingress:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image quay.io/solo-io/certgen:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image quay.io/solo-io/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
@@ -576,6 +580,7 @@ build-test-chart:
 
 .PHONY: build-kind-chart
 build-kind-chart:
+	rm -rf $(TEST_ASSET_DIR)
 	mkdir -p $(TEST_ASSET_DIR)
 	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)

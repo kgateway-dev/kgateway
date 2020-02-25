@@ -315,6 +315,26 @@ var _ = Describe("Helm Test", func() {
 						}
 					})
 				})
+
+				It("should add an additional listener to the gateway-proxy-envoy-config if $spec.extraListenersHelper is defined", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.glooMtls.enabled=true,gatewayProxies.gatewayProxy.extraListenersHelper=gloo.testlistener"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedTestListener := "    - name: test_listener"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedTestListener))
+						}
+					})
+				})
 			})
 
 			Context("gateway", func() {
@@ -385,7 +405,7 @@ var _ = Describe("Helm Test", func() {
 								Value: "8083",
 							},
 						)
-						container.PullPolicy = "Always"
+						container.PullPolicy = "IfNotPresent"
 						svcBuilder := &ResourceBuilder{
 							Namespace:  namespace,
 							Name:       accessLoggerName,
@@ -596,6 +616,16 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.service.type=LoadBalancer",
 								"gatewayProxies.gatewayProxy.service.loadBalancerIP=test-lb-ip",
+							},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
+					It("sets custom service name", func() {
+						gatewayProxyService.ObjectMeta.Name = "gateway-proxy-custom"
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.service.name=gateway-proxy-custom",
 							},
 						})
 						testManifest.ExpectService(gatewayProxyService)
@@ -904,6 +934,34 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+							v1.VolumeMount{
+								Name:      "sds-uds-path",
+								MountPath: "/var/run/sds",
+							})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+							v1.Volume{
+								Name: "sds-uds-path",
+								VolumeSource: v1.VolumeSource{
+									HostPath: &v1.HostPathVolumeSource{
+										Path: "/var/run/sds",
+									},
+								},
+							})
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testVolume",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testVolumeMount",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1115,7 +1173,7 @@ spec:
       serviceAccountName: gateway
       containers:
       - image: quay.io/solo-io/gateway:` + version + `
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: gateway
         ports:
           - containerPort: 8443
@@ -1183,7 +1241,7 @@ spec:
       serviceAccountName: certgen
       containers:
         - image: quay.io/solo-io/certgen:` + version + `
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: certgen
           env:
             - name: POD_NAMESPACE
@@ -1819,7 +1877,7 @@ metadata:
 													v1.ResourceCPU:    resource.MustParse("500m"),
 												},
 											},
-											ImagePullPolicy: "Always",
+											ImagePullPolicy: "IfNotPresent",
 											SecurityContext: &v1.SecurityContext{
 												Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
 												RunAsUser:                pointer.Int64Ptr(10101),

@@ -107,6 +107,14 @@ With all the containers now running, it is time to configure the *Upstream* for 
 
 ---
 
+## Configuring the Gateway
+
+From the repo root:
+
+```shell script
+curl --request PUT --data-binary @./install/docker-compose-consul/data/gateways/gloo-system/gw-proxy.yaml http://127.0.0.1:8500/v1/kv/gloo/gateway.solo.io/v1/Gateway/gloo-system
+```
+
 ## Configuring Upstream and Virtual Services
 
 The next step is to expose the Pet Store's API through the Gloo gateway. We will do this by creating a service on Consul that Gloo will use as an *Upstream*. Then we will create a *Virtual Service* on Gloo with a routing rule. The configuration data for the *Virtual Service* will be stored in Consul.

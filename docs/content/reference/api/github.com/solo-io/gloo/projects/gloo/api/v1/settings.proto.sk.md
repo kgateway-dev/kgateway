@@ -298,6 +298,9 @@ need to be set on the Gloo container.
 
 ```yaml
 "address": string
+"httpAddress": string
+"dnsAddress": string
+"dnsPollingInterval": .google.protobuf.Duration
 "datacenter": string
 "username": string
 "password": string
@@ -314,7 +317,10 @@ need to be set on the Gloo container.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `address` | `string` | The address of the Consul server. Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `address` | `string` | Deprecated: prefer http_address. The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dnsAddress` | `string` | The address of the Consul DNS server. Used by service discovery (required when consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. |  |
+| `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the Consul DNS server, if configured. If there is a consul service with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
 | `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
 | `username` | `string` | Username to use for HTTP Basic Authentication. |  |
 | `password` | `string` | Password to use for HTTP Basic Authentication. |  |

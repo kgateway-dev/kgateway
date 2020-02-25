@@ -2,7 +2,7 @@ FROM quay.io/solo-io/envoy-gloo:0.1.20
 
 COPY envoyinit-linux-amd64 /usr/local/bin/envoyinit
 
-# SDS-specific setup, only used if GLOO_MTLS=true
+# SDS-specific setup, only used if ENVOY_SIDECAR=true
 COPY docker-entrypoint.sh /
 
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "/docker-entrypoint.sh"]

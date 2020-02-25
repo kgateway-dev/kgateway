@@ -1,17 +1,24 @@
 package bootstrap
 
 import (
+	"context"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/hashicorp/consul/api"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
-func ConsulClientForSettings(settings *v1.Settings) (*api.Client, error) {
+func ConsulClientForSettings(ctx context.Context, settings *v1.Settings) (*api.Client, error) {
 	cfg := api.DefaultConfig()
 
 	consulSettings := settings.GetConsul()
 	if consulSettings != nil {
 		if addr := consulSettings.GetAddress(); addr != "" {
+			contextutils.LoggerFrom(ctx).Warnf("Consul `address` (%s) is deprecated in favor of `http_address`", addr)
+			cfg.Address = addr
+		}
+		if addr := consulSettings.GetHttpAddress(); addr != "" {
 			cfg.Address = addr
 		}
 		if dc := consulSettings.GetDatacenter(); dc != "" {

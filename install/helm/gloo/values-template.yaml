@@ -128,3 +128,9 @@ global:
     enabled: true
   glooMtls:
     enabled: false
+    sds:
+      image:
+        repository: sds
+    envoy:
+      image:
+        repository: gloo-envoy-wrapper

@@ -3,6 +3,7 @@ package consul
 import (
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/hashicorp/consul/api"
 	"github.com/rotisserie/eris"
@@ -19,8 +20,15 @@ import (
 
 var _ discovery.DiscoveryPlugin = new(plugin)
 
+var (
+	DefaultDnsAddress         = "127.0.0.1:8600"
+	DefaultDnsPollingInterval = 5 * time.Second
+)
+
 type plugin struct {
-	client consul.ConsulWatcher
+	client             consul.ConsulWatcher
+	resolver           DnsResolver
+	dnsPollingInterval time.Duration
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -49,15 +57,28 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
-			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, inst.ServiceAddress, inst.ServicePort))
+			ipAddresses, err := getIpAddresses(inst.ServiceAddress, p.resolver)
+			if err != nil {
+				return nil, err
+			}
+			if len(ipAddresses) == 0 {
+				return nil, eris.Errorf("DNS result for %s returned an empty list of IPs", inst.ServiceAddress)
+			}
+			// arbitrarily default to the first result
+			ipAddr := ipAddresses[0]
+			return url.Parse(fmt.Sprintf("%v://%v:%v", scheme, ipAddr, inst.ServicePort))
 		}
 	}
 
 	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
 }
 
-func NewPlugin(client consul.ConsulWatcher) *plugin {
-	return &plugin{client: client}
+func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {
+	pollingInterval := DefaultDnsPollingInterval
+	if dnsPollingInterval != nil {
+		pollingInterval = *dnsPollingInterval
+	}
+	return &plugin{client: client, resolver: resolver, dnsPollingInterval: pollingInterval}
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {

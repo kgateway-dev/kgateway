@@ -192,9 +192,27 @@ message Settings {
     // need to be set on the Gloo container.
     message ConsulConfiguration {
 
-        // The address of the Consul server.
+        // Deprecated: prefer http_address.
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
-        string address = 1;
+        string address = 1 [deprecated=true];
+
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
+        string http_address = 13;
+
+        // The address of the Consul DNS server.
+        // Used by service discovery (required when consul service instances are stored as DNS names).
+        // Defaults to 127.0.0.1:8600.
+        string dns_address = 14;
+
+        // The polling interval for the Consul DNS server, if configured.
+        // If there is a consul service with a hostname instead of an IP, Gloo will resolve the hostname with
+        // the configured frequency to update endpoints with any changes to DNS resolution.
+        // Defaults to 5s.
+        google.protobuf.Duration dns_polling_interval = 15;
 
         // Datacenter to use. If not provided, the default agent datacenter is used.
         string datacenter = 2;

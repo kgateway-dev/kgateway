@@ -188,19 +188,21 @@ type CertGenJob struct {
 }
 
 type GatewayProxy struct {
-	Kind                      *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
-	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
-	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
-	Service                   *GatewayProxyService         `json:"service,omitempty"`
-	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
-	Tracing                   *Tracing                     `json:"tracing,omitempty"`
-	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
-	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
-	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
-	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
-	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
-	Stats                     *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
-	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	Kind                        *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate                 *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
+	ConfigMap                   *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	Service                     *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity                bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
+	Tracing                     *Tracing                     `json:"tracing,omitempty"`
+	GatewaySettings             *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	ExtraEnvoyArgs              []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
+	ExtraContainersHelper       string                       `json:"extraContainersHelper,omitempty"`
+	ExtraInitContainersHelper   string                       `json:"extraInitContainersHelper",omitempty`
+	ExtraVolumeHelper           string                       `json:"extraVolumeHelper",omitempty`
+	ExtraListenersHelper        string                       `json:"extraListenersHelper",omitempty`
+	Stats                       *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
+	ReadConfig                  bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	ExtraProxyVolumeMountHelper string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -246,6 +248,7 @@ type GatewayProxyService struct {
 	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
+	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
 }
 
 type Tracing struct {
@@ -308,5 +311,15 @@ type Stats struct {
 }
 
 type Mtls struct {
-	Enabled bool `json:"enabled,omitempty" desc:"Enables internal mtls authentication"`
+	Enabled      bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
+	Sds          SdsContainer          `json:"sds,omitempty"`
+	EnvoySidecar EnvoySidecarContainer `json:"envoy,omitempty"`
+}
+
+type SdsContainer struct {
+	Image *Image `json:"image,omitempty"`
+}
+
+type EnvoySidecarContainer struct {
+	Image *Image `json:"image,omitempty"`
 }
