@@ -128,7 +128,6 @@ $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
 	find * -type f | grep .sk.md | xargs rm
 	GO111MODULE=on go generate ./...
-	rm docs/content/cli/glooctl*
 	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
 	gofmt -w $(SUBDIRS)
 	goimports -w $(SUBDIRS)
