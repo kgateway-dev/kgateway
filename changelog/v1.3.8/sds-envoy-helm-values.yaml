@@ -1,10 +1,8 @@
 changelog:
-  - type: HELM
-    description: >
-      Introducing the new `global.glooMtls.sds` and `global.glooMtls.envoy` Helm values to
-      determine which images will be rendered in the gloo mTLS sds and envoy sidecars.
-      An example of a helm override file that enables mTLS authentication is:
-      ```
+- type: HELM
+  description: |
+    Introducing the new `global.glooMtls.sds` and `global.glooMtls.envoy` Helm values to determine which images will be rendered in the gloo mTLS sds and envoy sidecars. An example of a helm override file that enables mTLS authentication is:
+      ```yaml
       global:
         glooMtls:
           enabled: true
@@ -15,4 +13,5 @@ changelog:
             image:
               tag: test
       ```
-    issueLink: https://github.com/solo-io/gloo/issues/2134
+      For more information, check out the [corresponding documentation](https://docs.solo.io/gloo/latest/security/mtls/).
+  issueLink: https://github.com/solo-io/gloo/issues/2134
