@@ -860,13 +860,13 @@ type Settings_ConsulConfiguration struct {
 	// Used by service discovery and key-value storage (if-enabled).
 	// Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
 	HttpAddress string `protobuf:"bytes,13,opt,name=http_address,json=httpAddress,proto3" json:"http_address,omitempty"`
-	// The address of the Consul DNS server.
-	// Used by service discovery (required when consul service instances are stored as DNS names).
-	// Defaults to 127.0.0.1:8600.
+	// The address of the DNS server used to resolve hostnames in the Consul service address.
+	// Used by service discovery (required when Consul service instances are stored as DNS names).
+	// Defaults to 127.0.0.1:8600. (the default Consul DNS server)
 	DnsAddress string `protobuf:"bytes,14,opt,name=dns_address,json=dnsAddress,proto3" json:"dns_address,omitempty"`
-	// The polling interval for the Consul DNS server, if configured.
-	// If there is a consul service with a hostname instead of an IP, Gloo will resolve the hostname with
-	// the configured frequency to update endpoints with any changes to DNS resolution.
+	// The polling interval for the DNS server.
+	// If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the
+	// hostname with the configured frequency to update endpoints with any changes to DNS resolution.
 	// Defaults to 5s.
 	DnsPollingInterval *types.Duration `protobuf:"bytes,15,opt,name=dns_polling_interval,json=dnsPollingInterval,proto3" json:"dns_polling_interval,omitempty"`
 	// Datacenter to use. If not provided, the default agent datacenter is used.
