@@ -4,6 +4,10 @@ weight: 30
 description: Introduction to JWT and what they are used for
 ---
 
+{{% notice note %}}
+The JWT feature was introduced with **Gloo Enterprise**, release 0.13.16. If you are using an earlier version, this tutorial will not work.
+{{% /notice %}}
+
 ## What are JSON Web Tokens?
 [JSON Web Tokens](https://jwt.io/), or **JWT** for short, are a standard way to carry verifiable identity information.
 This can be used for authentication. The advantage of using JWTs is that since they are a standard
