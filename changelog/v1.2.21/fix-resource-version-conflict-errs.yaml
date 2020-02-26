@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: Fix reconciler and resource status reporter to retry more than once on resource version conflict errors.
+    issueLink: https://github.com/solo-io/gloo/issues/2498
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.11.18
