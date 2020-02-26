@@ -1,7 +1,7 @@
 ---
 title: "Installing Gloo Enterprise"
 description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
-weight: 10
+weight: 50
 ---
 
 ## Installing the Gloo Gateway on Kubernetes
@@ -93,7 +93,7 @@ helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f valu
 
 The table below describes the most important enterprise-only values that you can override in your custom values file.
 
-The table for gloo open-source overrides (also available in enterprise) is [here]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}).
+The table for gloo open-source overrides (also available in enterprise) is [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}).
 
 {{% notice note %}}
 Open source helm values in Gloo enterprise must be prefixed with `gloo`, unless they are the Gloo settings (i.e., `settings.<rest of helm value>`).

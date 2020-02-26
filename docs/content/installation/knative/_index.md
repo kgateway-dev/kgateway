@@ -1,7 +1,7 @@
 ---
 title: "Installing Gloo for Knative"
 description: How to install Gloo to run in Knative Mode on Kubernetes.
-weight: 3
+weight: 30
 ---
 
 For the purpose of running Knative, Gloo can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 

@@ -6,7 +6,7 @@ weight: 5
 
 ## Intro
 
-Gloo uses the [v1.Upstream]({{% versioned_link_path fromRoot="/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo. These are converted inside Gloo
+Gloo uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo. These are converted inside Gloo
 
 This tutorial will show how we can add an *Upstream Plugin* to Gloo to extend Gloo with service discovery data.
 

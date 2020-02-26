@@ -52,7 +52,7 @@ version: 1.2
 You can refer to other sections of the documentation by using a shortcode for a version link from root. This will refer to the document from the root of the docs site with versioning taken into consideration. For example, a link to this document would look like this:
 
 ```
-[Example Doc]({{</* versioned_link_path fromRoot="/contributing/example_doc/" */>}})
+[Example Doc]({{</* versioned_link_path fromRoot="/contributing/documentation/example_doc/" */>}})
 ```
 
 You can also use shortcode to add a **note** blurb to your document. For example the following shortcode:

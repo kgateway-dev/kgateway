@@ -1,3 +1,6 @@
+{{- if .Values.gateway.updateValues -}}
+{{- include "gloo.updatevalues" . -}}
+{{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}

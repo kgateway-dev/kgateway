@@ -1,6 +1,8 @@
 ---
-title: "Contributor Guide"
-weight: 20
+title: Developers
+menuTitle: Developers
+description: Ways to contribute to Gloo.
+weight: 10
 ---
 
 Excited about Gloo and want to help make it better? 
@@ -25,7 +27,7 @@ If you encounter a bug, please file an issue on GitHub. If an issue you have is 
 
 ### Improving the documentation
 
-Improving the documentation, adding examples or use cases can be the easiest way to contribute to Gloo. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
+[Improving the documentation]({{< versioned_link_path fromRoot="/contributing/documentation/" >}}), adding examples or use cases can be the easiest way to contribute to Gloo. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
 
 ### Small bug fixes
 

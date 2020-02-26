@@ -1,7 +1,7 @@
 ---
 title: "Helm Chart Values"
 description: Listing of Helm chart values for the Gloo Gateway chart.
-weight: 20
+weight: 30
 ---
 
 The table below describes all the values that you can override in your custom values file when working with the Helm 
@@ -25,4 +25,4 @@ For example, if you are installing Gloo Enterprise:
 but `settings.watchNamespaces` or `global.glooRbac.create` remain the same.
 {{% /notice %}}
 
-{{< readfile file="installation/gateway/kubernetes/values.txt" markdown="true" >}}
+{{< readfile file="reference/values.txt" markdown="true" >}}

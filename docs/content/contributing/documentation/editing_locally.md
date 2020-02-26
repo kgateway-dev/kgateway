@@ -81,7 +81,7 @@ In a browser, navigate to http://localhost:1313 and make sure that the site load
 
 ## Make changes and submit them
 
-You've got the docs site running locally, and now you're ready to make some changes. The process for creating and submitting changes is very similar to the steps outlined in the [Quickstart]({{< versioned_link_path fromRoot="/contributing/#quickstart" >}}) section of the main Contributing page.
+You've got the docs site running locally, and now you're ready to make some changes. The process for creating and submitting changes is very similar to the steps outlined in the [Quickstart]({{< versioned_link_path fromRoot="/contributing/documentation/#quickstart" >}}) section of the main Contributing page.
 
 1. Log an issue on the main Gloo repository 
 2. Create a new branch locally for your change
@@ -96,4 +96,4 @@ Please remember to keep changes small and focused on a particular section of the
 
 We want to **thank you** for helping make Gloo documentation the best it can be. Editing docs isn't the most glamorous task, but for the newbie trying to learn about Gloo they are absolutely essential.
 
-If you haven't already had a chance, please be sure to read the [style guide]({{< versioned_link_path fromRoot="/contributing/style_guide/" >}}) and take a look at the [example document]({{< versioned_link_path fromRoot="/contributing/example_doc/" >}}) before you start submitting updates.
+If you haven't already had a chance, please be sure to read the [style guide]({{< versioned_link_path fromRoot="/contributing/documentation/style_guide/" >}}) and take a look at the [example document]({{< versioned_link_path fromRoot="/contributing/documentation/example_doc/" >}}) before you start submitting updates.

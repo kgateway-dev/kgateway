@@ -90,7 +90,7 @@ status: {}
 
 ## Writing Config Objects to Consul
 
-Consul Values should be written using Gloo-style YAML, whose structure is described in the [`API Reference`]({{< versioned_link_path fromRoot="/api" >}}).
+Consul Values should be written using Gloo-style YAML, whose structure is described in the [`API Reference`]({{< versioned_link_path fromRoot="/reference/api" >}}).
 
 `glooctl` provides a convenience to get started writing Gloo resources for use with Consul.
 

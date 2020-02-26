@@ -15,7 +15,7 @@ import (
 var (
 	valuesTemplate = "install/helm/gloo/values-template.yaml"
 	valuesOutput   = "install/helm/gloo/values.yaml"
-	docsOutput     = "docs/content/installation/gateway/kubernetes/values.txt"
+	docsOutput     = "docs/content/reference/values.txt"
 	chartTemplate  = "install/helm/gloo/Chart-template.yaml"
 	chartOutput    = "install/helm/gloo/Chart.yaml"
 	// Helm docs are generated during builds. Since version changes each build, substitute with descriptive text.

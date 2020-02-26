@@ -14,7 +14,7 @@ Gloo was built to support the difficult challenges of monolith to microservice m
 
 Other use cases Gloo can solve:
 
-* Kubernetes cluster Ingress (supporting both [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) as well as a [more powerful API]({{< versioned_link_path fromRoot="/api" >}}))
+* Kubernetes cluster Ingress (supporting both [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) as well as a [more powerful API]({{< versioned_link_path fromRoot="/reference/api" >}}))
 * API Gateway functionality running *outside* Kubernetes
 * GraphQL endpoint for the services that Gloo can discover
 

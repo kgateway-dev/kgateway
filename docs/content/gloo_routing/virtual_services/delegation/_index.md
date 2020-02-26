@@ -103,7 +103,7 @@ graph LR;
     
 {{< /mermaid >}}
 
-Gloo will flatten the non-delegated routes defined in config tree down to a single [`Proxy`]({{< ref "/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk.md" >}}) object, such that:
+Gloo will flatten the non-delegated routes defined in config tree down to a single {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}} object, such that:
 
 
 {{<mermaid align="left">}}

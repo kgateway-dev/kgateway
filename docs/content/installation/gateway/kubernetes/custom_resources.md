@@ -98,5 +98,5 @@ The Settings Custom Resource is typically created through an installation proces
 
 ## Next Steps
 
-* Learn more about the [`glooctl` command line tool]({{< versioned_link_path fromRoot="/cli/" >}}) used to manipulate these Custom Resources
+* Learn more about the [`glooctl` command line tool]({{< versioned_link_path fromRoot="/reference/cli/" >}}) used to manipulate these Custom Resources
 * Experiment with your own Gloo environment using our [Getting Started guide]({{< versioned_link_path fromRoot="/getting_started/" >}})

@@ -55,7 +55,6 @@ The `requestTransformation` and `responseTransformation` attributes have the {{<
 - `transformationTemplate`: this type of transformation allows you to define transformation templates. This is the more powerful and flexible type of transformation. We will spend the rest of this guide to describe its properties.
 
 #### Transformation templates
-
 {{< protobuf display="Templates" name="envoy.api.v2.filter.http.TransformationTemplate" >}} are the core of Gloo's transformation API. They allow you to mutate the headers and bodies of requests and responses based on the properties of the headers and bodies themselves. The following snippet illustrates the structure of the `transformationTemplate` object:
 
 ```yaml
@@ -94,8 +93,7 @@ If set to `true`, Envoy will not throw an exception in case the body parsing fai
 Implicit in this setting is that the body will be buffered and available. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
 
 ##### extractors
-Use this attribute to extract information from a request or response. It consists of a set of mappings from a string 
-to an `extraction`: 
+Use this attribute to extract information from a request or response. It consists of a set of mappings from a string to an `extraction`: 
 
 - the `extraction` defines which information will be extracted
 - the string key will provide the extractor with a name it can be referred by.
@@ -137,9 +135,7 @@ extractors:
 
 Extracted values can be used in two ways:
 
-- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` 
-(or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of 
-  the `my-extractor` extractor.
+- You can reference extractors by their name in template strings, e.g. `{{ my-extractor }}` (or `{{ extraction(my-extractor) }}`, if you are setting `advancedTemplates` to `true`) will render to the value of the `my-extractor` extractor.
 - You can use them in conjunction with the `mergeExtractorsToBody` body transformation type to merge them into the body.
 
 ##### headers
@@ -184,7 +180,6 @@ transformationTemplate:
 If you're looking to parse the body, and either [ignore errors on parsing](#ignoreerroronparse), or just [disable JSON parsing](#parsebodybehavior), see those sections in this document, respectively. 
 
 ##### mergeExtractorsToBody
-
 Use this type of body transformation to merge all the `extractions` defined in the `transformationTemplate` to the body. The values of the extractions will be merged to a location in the body JSON determined by their names. You can use separators in the extractor names to nest elements inside the body.
 
 For an example, see the following configuration:
@@ -254,8 +249,6 @@ In addition to the standard functions available in the core _Inja_ library, you 
 You can use templates to mutate [headers](#headers), the [body](#body), and [dynamic metadata](#dynamicmetadatavalues).
 
 ### Common use cases
-On this page we have seen all the properties of the Gloo Transformation API as well as some simple example snippets. 
-If are looking for complete examples, please check out the following tutorials, which will guide you through 
-some of the most common transformation use cases.
+On this page we have seen all the properties of the Gloo Transformation API as well as some simple example snippets. If are looking for complete examples, please check out the following tutorials, which will guide you through some of the most common transformation use cases.
 
 {{% children description="true" %}}

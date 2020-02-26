@@ -51,7 +51,7 @@ In the above architecture, we can expose the sharded proxies directly to the edg
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/sharded-gateway2.png" %}})
 
-Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{< ref "api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk.md" >}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it. 
+Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk.md" %}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it. 
 
 ---
 
