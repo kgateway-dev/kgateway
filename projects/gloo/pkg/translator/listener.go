@@ -2,9 +2,10 @@ package translator
 
 import (
 	"fmt"
-	"github.com/gogo/protobuf/proto"
 	"sort"
 	"strings"
+
+	"github.com/gogo/protobuf/proto"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
