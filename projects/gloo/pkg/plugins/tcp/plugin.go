@@ -194,7 +194,7 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters: listenerFilters,
+		Filters: listenerFiltersCopy,
 		TransportSocket: &envoycore.TransportSocket{
 			Name:       pluginutils.TlsTransportSocket,
 			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(downstreamConfig)},
