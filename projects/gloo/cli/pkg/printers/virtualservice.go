@@ -147,8 +147,7 @@ func getStatus(res resources.InputResource) string {
 	if resourceStatus == core.Status_Accepted {
 		for k, v := range subresourceStatuses {
 			if v.State != core.Status_Accepted {
-				return fmt.Sprintf("%v\n%v is in a %v state. Updates to this resouce may be blocked by problems with another resource.",
-					resourceStatus.String(), k, v.State.String())
+				return resourceStatus.String() + "\n" + genericSubResourceMessage(k, v.State.String())
 			}
 		}
 		return resourceStatus.String()
@@ -166,7 +165,7 @@ func getStatus(res resources.InputResource) string {
 	switch len(subResourceErrorMessages) {
 	case 0:
 		// there are no errors with the subresources
-		break
+		return resourceStatus.String()
 	case 1:
 		// there is one error, try to pass a friendly error message
 		subResourceMessage = cleanSubResourceError(subResourceErrorMessages[0])
@@ -296,4 +295,8 @@ func genericErrorFormat(resourceName, statusString, reason string) string {
 }
 func subResourceErrorFormat(errorDetails string) string {
 	return fmt.Sprintf("Error with Route: %v: %v", strings.TrimSpace(gloov1.UpstreamListErrorTag), strings.TrimPrefix(errorDetails, ": "))
+}
+func genericSubResourceMessage(resourceName, statusString string) string {
+	return fmt.Sprintf("%v is in a %v state. Updates to this resouce may be blocked by problems with another resource.",
+		resourceName, statusString)
 }

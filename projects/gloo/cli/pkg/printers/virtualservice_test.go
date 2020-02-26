@@ -16,154 +16,203 @@ var _ = Describe("getStatus", func() {
 		thing1 = "thing1"
 		thing2 = "thing2"
 	)
-	It("handles non-Accepted resource state", func() {
+	It("handles Pending resource state", func() {
+		vs := &v1.VirtualService{
+			Status: core.Status{
+				State: core.Status_Pending,
+			},
+		}
+		Expect(getStatus(vs)).To(Equal(core.Status_Pending.String()))
+
+		// range through all possible sub resource states
+		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
+			subResourceStatusState := core.Status_State(subResourceStatusInt)
+			vs.Status.SubresourceStatuses = map[string]*core.Status{
+				thing1: {
+					State:  subResourceStatusState,
+					Reason: "any reason",
+				},
+			}
+			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
+			Expect(getStatus(vs)).To(Equal(core.Status_Pending.String()))
+		}
+	})
+	It("handles Accepted resource state", func() {
+		vs := &v1.VirtualService{
+			Status: core.Status{
+				State: core.Status_Accepted,
+			},
+		}
+		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
+
+		// range through all possible sub resource states
+		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
+			subResourceStatusState := core.Status_State(subResourceStatusInt)
+			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
+			vs.Status.SubresourceStatuses = map[string]*core.Status{
+				thing1: {
+					State:  subResourceStatusState,
+					Reason: "any reason",
+				},
+			}
+			if subResourceStatusString == core.Status_Accepted.String() {
+				Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
+			} else {
+				Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
+			}
+		}
+	})
+	It("handles simple non-Pending and non-Accepted resource states", func() {
 		// range through all possible resource states
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
 			resourceStatusState := core.Status_State(resourceStatusInt)
-			// check all values other than accepted
-			if resourceStatusString != core.Status_Accepted.String() {
-				By(fmt.Sprintf("resource: %v, subresource: %v", resourceStatusString, "not present"))
+			// check all values other than accepted and pending
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+				By(fmt.Sprintf("resource: %v", resourceStatusString))
 				vs := &v1.VirtualService{
 					Status: core.Status{
 						State: resourceStatusState,
 					},
 				}
 				Expect(getStatus(vs)).To(Equal(resourceStatusString))
-
-				// range through all possible sub resource states
-				for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
-					subResourceStatusState := core.Status_State(subResourceStatusInt)
-					vs.Status.SubresourceStatuses = map[string]*core.Status{
-						thing1: {
-							State:  subResourceStatusState,
-							Reason: "any reason",
-						},
-					}
-					By(fmt.Sprintf("resource: %v, subresource: %v", resourceStatusString, subResourceStatusString))
-					Expect(getStatus(vs)).To(Equal(resourceStatusString))
-				}
 			}
 		}
 	})
-	It("handles simple Accepted state", func() {
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State: core.Status_Accepted,
-			},
-		}
-		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
-	})
-	It("handles Accepted state - sub resources accepted", func() {
-		By("one accepted")
-		subStatuses := map[string]*core.Status{
-			thing1: {
-				State: core.Status_Accepted,
-			},
-		}
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State:               core.Status_Accepted,
-				SubresourceStatuses: subStatuses,
-			},
-		}
-		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
+	It("handles non-Pending and non-Accepted state - sub resources accepted", func() {
+		// range through all possible resource states
+		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
+			resourceStatusState := core.Status_State(resourceStatusInt)
+			// check all values other than accepted and pending
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+				By(fmt.Sprintf("resource: %v, one subresource accepted", resourceStatusString))
+				subStatuses := map[string]*core.Status{
+					thing1: {
+						State: core.Status_Accepted,
+					},
+				}
+				vs := &v1.VirtualService{
+					Status: core.Status{
+						State:               resourceStatusState,
+						SubresourceStatuses: subStatuses,
+					},
+				}
+				Expect(getStatus(vs)).To(Equal(resourceStatusString))
 
-		By("two accepted")
-		subStatuses = map[string]*core.Status{
-			thing1: {
-				State: core.Status_Accepted,
-			},
-			thing2: {
-				State: core.Status_Accepted,
-			},
+				By(fmt.Sprintf("resource: %v, two subresources accepted", resourceStatusString))
+				subStatuses = map[string]*core.Status{
+					thing1: {
+						State: core.Status_Accepted,
+					},
+					thing2: {
+						State: core.Status_Accepted,
+					},
+				}
+				vs.Status.SubresourceStatuses = subStatuses
+				Expect(getStatus(vs)).To(Equal(resourceStatusString))
+			}
 		}
-		vs.Status.SubresourceStatuses = subStatuses
-		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
 	})
-	It("handles Accepted state - sub resources rejected", func() {
+	It("handles non-Pending and non-Accepted state - sub resources rejected", func() {
 		reasonUntracked := "some reason that does not match a known criteria"
-		By("one rejected")
-		subStatuses := map[string]*core.Status{
-			thing1: {
-				State:  core.Status_Rejected,
-				Reason: reasonUntracked,
-			},
-		}
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State:               core.Status_Accepted,
-				SubresourceStatuses: subStatuses,
-			},
-		}
-		out := getStatus(vs)
-		Expect(out).To(Equal(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
+		// range through all possible resource states
+		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
+			resourceStatusState := core.Status_State(resourceStatusInt)
+			// check all values other than accepted and pending
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+				By(fmt.Sprintf("resource: %v, one subresource rejected", resourceStatusString))
+				subStatuses := map[string]*core.Status{
+					thing1: {
+						State:  core.Status_Rejected,
+						Reason: reasonUntracked,
+					},
+				}
+				vs := &v1.VirtualService{
+					Status: core.Status{
+						State:               resourceStatusState,
+						SubresourceStatuses: subStatuses,
+					},
+				}
+				out := getStatus(vs)
+				Expect(out).To(Equal(resourceStatusString + "\n" + genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
-		By("two rejected")
-		subStatuses = map[string]*core.Status{
-			thing1: {
-				State:  core.Status_Rejected,
-				Reason: reasonUntracked,
-			},
-			thing2: {
-				State:  core.Status_Rejected,
-				Reason: reasonUntracked,
-			},
+				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
+				subStatuses = map[string]*core.Status{
+					thing1: {
+						State:  core.Status_Rejected,
+						Reason: reasonUntracked,
+					},
+					thing2: {
+						State:  core.Status_Rejected,
+						Reason: reasonUntracked,
+					},
+				}
+				vs.Status.SubresourceStatuses = subStatuses
+				out = getStatus(vs)
+				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				// Use regex because order does not matter
+				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
+				Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUntracked)))
+			}
 		}
-		vs.Status.SubresourceStatuses = subStatuses
-		out = getStatus(vs)
-		// Use regex because order does not matter
-		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
-		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUntracked)))
 	})
 
-	It("handles Accepted state - sub resources errored in known way", func() {
+	It("handles non-Pending and non-Accepted state - sub resources errored in known way", func() {
 		erroredResourceIdentifier := "some_errored_resource_id"
 		reasonUpstreamList := fmt.Sprintf("%v: %v", strings.TrimSpace(gloov1.UpstreamListErrorTag), erroredResourceIdentifier)
-		By("one rejected")
-		subStatuses := map[string]*core.Status{
-			thing1: {
-				State:  core.Status_Rejected,
-				Reason: reasonUpstreamList,
-			},
-		}
-		vs := &v1.VirtualService{
-			Status: core.Status{
-				State:               core.Status_Accepted,
-				SubresourceStatuses: subStatuses,
-			},
-		}
-		out := getStatus(vs)
-		Expect(out).To(Equal(subResourceErrorFormat(erroredResourceIdentifier)))
+		// range through all possible resource states
+		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
+			resourceStatusState := core.Status_State(resourceStatusInt)
+			// check all values other than accepted and pending
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+				By(fmt.Sprintf("resource: %v, one subresource rejected", resourceStatusString))
+				subStatuses := map[string]*core.Status{
+					thing1: {
+						State:  core.Status_Rejected,
+						Reason: reasonUpstreamList,
+					},
+				}
+				vs := &v1.VirtualService{
+					Status: core.Status{
+						State:               resourceStatusState,
+						SubresourceStatuses: subStatuses,
+					},
+				}
+				out := getStatus(vs)
+				Expect(out).To(Equal(resourceStatusString + "\n" + subResourceErrorFormat(erroredResourceIdentifier)))
 
-		By("one accepted, one rejected")
-		subStatuses = map[string]*core.Status{
-			thing1: {
-				State:  core.Status_Rejected,
-				Reason: reasonUpstreamList,
-			},
-			thing2: {
-				State: core.Status_Accepted,
-			},
-		}
-		vs.Status.SubresourceStatuses = subStatuses
-		out = getStatus(vs)
-		Expect(out).To(MatchRegexp(reasonUpstreamList))
+				By(fmt.Sprintf("resource: %v, one subresource accepted and one rejected", resourceStatusString))
+				subStatuses = map[string]*core.Status{
+					thing1: {
+						State:  core.Status_Rejected,
+						Reason: reasonUpstreamList,
+					},
+					thing2: {
+						State:  core.Status_Accepted,
+					},
+				}
+				vs.Status.SubresourceStatuses = subStatuses
+				out = getStatus(vs)
+				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				Expect(out).To(MatchRegexp(reasonUpstreamList))
 
-		By("two rejected")
-		subStatuses = map[string]*core.Status{
-			thing1: {
-				State:  core.Status_Rejected,
-				Reason: reasonUpstreamList,
-			},
-			thing2: {
-				State:  core.Status_Rejected,
-				Reason: reasonUpstreamList,
-			},
+				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
+				subStatuses = map[string]*core.Status{
+					thing1: {
+						State:  core.Status_Rejected,
+						Reason: reasonUpstreamList,
+					},
+					thing2: {
+						State:  core.Status_Rejected,
+						Reason: reasonUpstreamList,
+					},
+				}
+				vs.Status.SubresourceStatuses = subStatuses
+				out = getStatus(vs)
+				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
+				// Use regex because order does not matter
+				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
+				Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))
+			}
 		}
-		vs.Status.SubresourceStatuses = subStatuses
-		out = getStatus(vs)
-		// Use regex because order does not matter
-		Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
-		Expect(out).To(MatchRegexp(genericErrorFormat(thing2, core.Status_Rejected.String(), reasonUpstreamList)))
 	})
 })
