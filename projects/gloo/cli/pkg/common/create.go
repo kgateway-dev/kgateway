@@ -12,7 +12,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 )
 
-func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
+func CreateAndPrintObject(yml []byte, outputType printers.OutputType, namespace string) error {
 	resource, err := resourceFromYaml(yml)
 	if err != nil {
 		return eris.Wrapf(err, "parsing resource from yaml")
@@ -29,7 +29,7 @@ func CreateAndPrintObject(yml []byte, outputType printers.OutputType) error {
 		if err != nil {
 			return eris.Wrapf(err, "saving VirtualService to storage")
 		}
-		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType)
+		_ = printers.PrintVirtualServices(v1.VirtualServiceList{vs}, outputType, namespace)
 	default:
 		return eris.Errorf("cli error: unimplemented resource type %v", resource)
 	}

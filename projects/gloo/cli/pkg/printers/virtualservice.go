@@ -2,6 +2,9 @@ package printers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"io"
 	"os"
 	"strconv"
@@ -17,13 +20,13 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
-func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType) error {
+func PrintVirtualServices(virtualServices v1.VirtualServiceList, outputType OutputType, namespace string) error {
 	if outputType == KUBE_YAML {
 		return PrintKubeCrdList(virtualServices.AsInputResources(), v1.VirtualServiceCrd)
 	}
 	return cliutils.PrintList(outputType.String(), "", virtualServices,
 		func(data interface{}, w io.Writer) error {
-			VirtualServiceTable(data.(v1.VirtualServiceList), w)
+			VirtualServiceTable(data.(v1.VirtualServiceList), w, namespace)
 			return nil
 		}, os.Stdout)
 }
@@ -40,7 +43,7 @@ func PrintRouteTables(routeTables v1.RouteTableList, outputType OutputType) erro
 }
 
 // PrintTable prints virtual services using tables to io.Writer
-func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
+func VirtualServiceTable(list []*v1.VirtualService, w io.Writer, namespace string) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Virtual Service", "Display Name", "Domains", "SSL", "Status", "ListenerPlugins", "Routes"})
 
@@ -49,7 +52,7 @@ func VirtualServiceTable(list []*v1.VirtualService, w io.Writer) {
 		displayName := v.GetDisplayName()
 		domains := domains(v)
 		ssl := sslConfig(v)
-		status := getStatus(v)
+		status := getStatus(v, namespace)
 		routes := routeList(v.GetVirtualHost().GetRoutes())
 		plugins := vhPlugins(v)
 
@@ -129,7 +132,7 @@ func getRouteTableStatus(vs *v1.RouteTable) string {
 	}
 }
 
-func getStatus(res resources.InputResource) string {
+func getStatus(res resources.InputResource, namespace string) string {
 
 	// If the virtual service is still pending and may yet be accepted, don't clutter the status with other errors.
 	resourceStatus := res.GetStatus().State
@@ -145,6 +148,11 @@ func getStatus(res resources.InputResource) string {
 
 	// If the virtual service was accepted, don't include confusing errors on subresources but note if there's another resource potentially blocking config updates.
 	if resourceStatus == core.Status_Accepted {
+		// if route replacement is turned on, don't say that updates to this resource may be blocked
+		settings, err := helpers.MustSettingsClient().Read(namespace, defaults.SettingsName, clients.ReadOpts{})
+		if err == nil && settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes {
+			return resourceStatus.String()
+		}
 		for k, v := range subresourceStatuses {
 			if v.State != core.Status_Accepted {
 				return resourceStatus.String() + "\n" + genericSubResourceMessage(k, v.State.String())
@@ -297,6 +305,6 @@ func subResourceErrorFormat(errorDetails string) string {
 	return fmt.Sprintf("Error with Route: %v: %v", strings.TrimSpace(gloov1.UpstreamListErrorTag), strings.TrimPrefix(errorDetails, ": "))
 }
 func genericSubResourceMessage(resourceName, statusString string) string {
-	return fmt.Sprintf("%v is in a %v state. Updates to this resouce may be blocked by problems with another resource.",
+	return fmt.Sprintf("%v is in a %v state. Updates to this resource may be blocked by problems with another resource.",
 		resourceName, statusString)
 }

@@ -2,6 +2,9 @@ package printers
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -15,6 +18,7 @@ var _ = Describe("getStatus", func() {
 	var (
 		thing1 = "thing1"
 		thing2 = "thing2"
+		namespace = "gloo-system"
 	)
 	It("handles Pending resource state", func() {
 		vs := &v1.VirtualService{
@@ -22,7 +26,7 @@ var _ = Describe("getStatus", func() {
 				State: core.Status_Pending,
 			},
 		}
-		Expect(getStatus(vs)).To(Equal(core.Status_Pending.String()))
+		Expect(getStatus(vs, namespace)).To(Equal(core.Status_Pending.String()))
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
@@ -34,7 +38,7 @@ var _ = Describe("getStatus", func() {
 				},
 			}
 			By(fmt.Sprintf("subresource: %v", subResourceStatusString))
-			Expect(getStatus(vs)).To(Equal(core.Status_Pending.String()))
+			Expect(getStatus(vs, namespace)).To(Equal(core.Status_Pending.String()))
 		}
 	})
 	It("handles Accepted resource state", func() {
@@ -43,7 +47,12 @@ var _ = Describe("getStatus", func() {
 				State: core.Status_Accepted,
 			},
 		}
-		Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
+		Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
+
+		// get settings
+		settingsClient := helpers.MustSettingsClient()
+		settings, _ := settingsClient.Read(namespace, defaults.SettingsName, clients.ReadOpts{})
+		replaceInvalidRoutes := settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes
 
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
@@ -55,12 +64,29 @@ var _ = Describe("getStatus", func() {
 					Reason: "any reason",
 				},
 			}
+
+			// check route replacement off case
+			settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false
+			settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
+
 			if subResourceStatusString == core.Status_Accepted.String() {
-				Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String()))
+				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
 			} else {
-				Expect(getStatus(vs)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
+				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
+			}
+
+			// check route replacement on case
+			settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
+			settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
+
+			if subResourceStatusString == core.Status_Accepted.String() {
+				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
 			}
 		}
+
+		// return replaceInvalidRoutes value in settings to its original value
+		settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = replaceInvalidRoutes
+		settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	})
 	It("handles simple non-Pending and non-Accepted resource states", func() {
 		// range through all possible resource states
@@ -74,7 +100,7 @@ var _ = Describe("getStatus", func() {
 						State: resourceStatusState,
 					},
 				}
-				Expect(getStatus(vs)).To(Equal(resourceStatusString))
+				Expect(getStatus(vs, namespace)).To(Equal(resourceStatusString))
 			}
 		}
 	})
@@ -96,7 +122,7 @@ var _ = Describe("getStatus", func() {
 						SubresourceStatuses: subStatuses,
 					},
 				}
-				Expect(getStatus(vs)).To(Equal(resourceStatusString))
+				Expect(getStatus(vs, namespace)).To(Equal(resourceStatusString))
 
 				By(fmt.Sprintf("resource: %v, two subresources accepted", resourceStatusString))
 				subStatuses = map[string]*core.Status{
@@ -108,7 +134,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs.Status.SubresourceStatuses = subStatuses
-				Expect(getStatus(vs)).To(Equal(resourceStatusString))
+				Expect(getStatus(vs, namespace)).To(Equal(resourceStatusString))
 			}
 		}
 	})
@@ -132,7 +158,7 @@ var _ = Describe("getStatus", func() {
 						SubresourceStatuses: subStatuses,
 					},
 				}
-				out := getStatus(vs)
+				out := getStatus(vs, namespace)
 				Expect(out).To(Equal(resourceStatusString + "\n" + genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
 
 				By(fmt.Sprintf("resource: %v, two subresources rejected", resourceStatusString))
@@ -147,7 +173,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs.Status.SubresourceStatuses = subStatuses
-				out = getStatus(vs)
+				out = getStatus(vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUntracked)))
@@ -177,7 +203,7 @@ var _ = Describe("getStatus", func() {
 						SubresourceStatuses: subStatuses,
 					},
 				}
-				out := getStatus(vs)
+				out := getStatus(vs, namespace)
 				Expect(out).To(Equal(resourceStatusString + "\n" + subResourceErrorFormat(erroredResourceIdentifier)))
 
 				By(fmt.Sprintf("resource: %v, one subresource accepted and one rejected", resourceStatusString))
@@ -191,7 +217,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs.Status.SubresourceStatuses = subStatuses
-				out = getStatus(vs)
+				out = getStatus(vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				Expect(out).To(MatchRegexp(reasonUpstreamList))
 
@@ -207,7 +233,7 @@ var _ = Describe("getStatus", func() {
 					},
 				}
 				vs.Status.SubresourceStatuses = subStatuses
-				out = getStatus(vs)
+				out = getStatus(vs, namespace)
 				Expect(out).To(HavePrefix(resourceStatusString + "\n"))
 				// Use regex because order does not matter
 				Expect(out).To(MatchRegexp(genericErrorFormat(thing1, core.Status_Rejected.String(), reasonUpstreamList)))
