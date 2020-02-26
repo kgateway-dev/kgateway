@@ -5,6 +5,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -182,6 +183,12 @@ func (p *Plugin) computerTcpFilterChain(snap *v1.ApiSnapshot, listener *v1.Liste
 }
 
 func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
+
+	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
+	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
+	for i, lf := range listenerFilters {
+		listenerFiltersCopy[i] = proto.Clone(lf).(*envoylistener.Filter)
+	}
 
 	return &envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{

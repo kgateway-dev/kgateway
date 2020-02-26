@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"github.com/gogo/protobuf/proto"
 	"sort"
 	"strings"
 
@@ -225,8 +226,7 @@ func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDoma
 	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
 	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
 	for i, lf := range listenerFilters {
-		tmp := *lf
-		listenerFiltersCopy[i] = &tmp
+		listenerFiltersCopy[i] = proto.Clone(lf).(*envoylistener.Filter)
 	}
 
 	return &envoylistener.FilterChain{
