@@ -53,8 +53,8 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 		return nil
 	}
 	hcmSettings := hl.HttpListener.GetOptions().GetHttpConnectionManagerSettings()
-	for _, f := range out.FilterChains {
-		for i, filter := range f.Filters {
+	for _, fc := range out.FilterChains {
+		for i, filter := range fc.Filters {
 			if filter.Name == util.HTTPConnectionManager {
 				// get config
 				var cfg envoyhttp.HttpConnectionManager
@@ -76,7 +76,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 				}
 
-				f.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &cfg)
+				fc.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &cfg)
 				// this should never error
 				if err != nil {
 					return err
