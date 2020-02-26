@@ -2,10 +2,11 @@ package printers
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,8 +17,8 @@ import (
 
 var _ = Describe("getStatus", func() {
 	var (
-		thing1 = "thing1"
-		thing2 = "thing2"
+		thing1    = "thing1"
+		thing2    = "thing2"
 		namespace = "gloo-system"
 	)
 	It("handles Pending resource state", func() {
