@@ -222,11 +222,18 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 
 func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
 
+	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
+	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
+	for i, lf := range listenerFilters {
+		tmp := *lf
+		listenerFiltersCopy[i] = &tmp
+	}
+
 	return &envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters: listenerFilters,
+		Filters: listenerFiltersCopy,
 
 		TransportSocket: &envoycore.TransportSocket{
 			Name:       pluginutils.TlsTransportSocket,
