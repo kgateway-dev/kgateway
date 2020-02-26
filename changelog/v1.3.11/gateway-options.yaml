@@ -1,0 +1,3 @@
+changelog:
+  - type: HELM
+    description: Allow for adding custom options for the default HTTP and HTTPS gateways
