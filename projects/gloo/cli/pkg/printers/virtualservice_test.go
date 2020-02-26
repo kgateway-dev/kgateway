@@ -67,7 +67,7 @@ var _ = Describe("getStatus", func() {
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
 			resourceStatusState := core.Status_State(resourceStatusInt)
 			// check all values other than accepted and pending
-			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v", resourceStatusString))
 				vs := &v1.VirtualService{
 					Status: core.Status{
@@ -83,7 +83,7 @@ var _ = Describe("getStatus", func() {
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
 			resourceStatusState := core.Status_State(resourceStatusInt)
 			// check all values other than accepted and pending
-			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v, one subresource accepted", resourceStatusString))
 				subStatuses := map[string]*core.Status{
 					thing1: {
@@ -118,7 +118,7 @@ var _ = Describe("getStatus", func() {
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
 			resourceStatusState := core.Status_State(resourceStatusInt)
 			// check all values other than accepted and pending
-			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v, one subresource rejected", resourceStatusString))
 				subStatuses := map[string]*core.Status{
 					thing1: {
@@ -163,7 +163,7 @@ var _ = Describe("getStatus", func() {
 		for resourceStatusString, resourceStatusInt := range core.Status_State_value {
 			resourceStatusState := core.Status_State(resourceStatusInt)
 			// check all values other than accepted and pending
-			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String()  {
+			if resourceStatusString != core.Status_Accepted.String() && resourceStatusString != core.Status_Pending.String() {
 				By(fmt.Sprintf("resource: %v, one subresource rejected", resourceStatusString))
 				subStatuses := map[string]*core.Status{
 					thing1: {
@@ -187,7 +187,7 @@ var _ = Describe("getStatus", func() {
 						Reason: reasonUpstreamList,
 					},
 					thing2: {
-						State:  core.Status_Accepted,
+						State: core.Status_Accepted,
 					},
 				}
 				vs.Status.SubresourceStatuses = subStatuses
