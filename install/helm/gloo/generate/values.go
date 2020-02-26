@@ -210,6 +210,7 @@ type GatewayProxyGatewaySettings struct {
 	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
 	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	GatewayOptions           string `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 }
 
 type GatewayProxyKind struct {
