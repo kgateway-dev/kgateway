@@ -1,4 +1,3 @@
 changelog:
   - type: NON_USER_FACING
     description: Added docs for Envoy gzip compression filter support. 
-    issueLink: https://app.asana.com/0/1148785095952953/1163962633437459/f
