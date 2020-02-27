@@ -13,27 +13,39 @@ Support for the Envoy Gzip filter was added to Open Source Gloo as of version 1.
 
 ## Configuration
 
-To get started with Gzip, modify the gateway:
+To get started with Gzip, modify the gateway and change the `httpGateway` object to include the gzip option. For example:
 ```shell
-kubectl edit gateway -n gloo-system gateway-proxy
+kubectl patch gateway -n gloo-system gateway-proxy --type merge -p '{"spec":{"httpGateway":{"options":{"gzip":{"compressionLevel":"BEST","contentType":["text/plain"]}}}}}'
 ```
 
-and change the `httpGateway` object to include the gzip option. For example:
-```yaml
+Here's an example of an edited gateway:
+{{< highlight yaml "hl_lines=11-16" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  labels:
+    app: gloo
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
   httpGateway:
     options:
       gzip:
         compressionLevel: BEST
         contentType:
         - text/plain
-```
+  proxyNames:
+  - gateway-proxy
+  useProxyProto: false
+{{< /highlight >}}
 
 Once that is saved, you're all set. Traffic on the http gateway will call the gzip filter.
 
 You can learn about the configuration options [here]({{< versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto.sk" >}}).
 
-More information about the Gzip filter can be found in the [relevant Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/gzip_filter).  
-If data is not being compressed, you may want to check that all the necessary conditions for the Envoy filter are met.
+More information about the Gzip filter can be found in the [relevant Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/gzip_filter). If data is not being compressed, you may want to check that all the necessary conditions for the Envoy filter are met.
 See the [How it works](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/gzip_filter#how-it-works)
 section for information on when compression will be skipped.
 
