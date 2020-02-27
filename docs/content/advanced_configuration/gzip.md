@@ -4,7 +4,12 @@ weight: 70
 description: Using Gzip filter in Envoy with Gloo
 ---
 
-This guide assumes you already have Gloo installed.
+Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request.
+Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
+
+This guide assumes you already have Gloo installed.  
+Support for the Envoy Gzip filter was added to Open Source Gloo as of version 1.3.4 and to Gloo Enterprise as of version 1.3.0-beta2.
+
 
 ## Configuration
 
@@ -36,9 +41,8 @@ section for information on when compression will be skipped.
 
 Let's see Gzip compression in action.
 
-First let's add a Virtual Service:
-```shell
-kubectl apply -f - <<EOF
+First let's add the following Virtual Service:
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -54,8 +58,10 @@ spec:
         directResponseAction:
           status: 200
           body: "Hello, world! It's me. I've been wondering if after all these years you'd like to meet."
-EOF
 ```
+
+This can be added by copying the Virtual Service definition and using the `pbpaste | kubectl apply -f -` command
+or by saving the Virtual Service definition to a file and using `kubectl apply -f myFile.yaml`, among other options.
 
 Now, we'll send a request to the route referenced in our virtual service:
 ```shell
