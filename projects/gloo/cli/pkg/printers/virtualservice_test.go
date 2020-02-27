@@ -4,10 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -50,11 +46,6 @@ var _ = Describe("getStatus", func() {
 		}
 		Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
 
-		// get settings
-		settingsClient := helpers.MustSettingsClient()
-		settings, _ := settingsClient.Read(namespace, defaults.SettingsName, clients.ReadOpts{})
-		replaceInvalidRoutes := settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes
-
 		// range through all possible sub resource states
 		for subResourceStatusString, subResourceStatusInt := range core.Status_State_value {
 			subResourceStatusState := core.Status_State(subResourceStatusInt)
@@ -66,28 +57,12 @@ var _ = Describe("getStatus", func() {
 				},
 			}
 
-			// check route replacement off case
-			settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false
-			settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
-
 			if subResourceStatusString == core.Status_Accepted.String() {
 				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
 			} else {
 				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String() + "\n" + genericSubResourceMessage(thing1, subResourceStatusString)))
 			}
-
-			// check route replacement on case
-			settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
-			settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
-
-			if subResourceStatusString == core.Status_Accepted.String() {
-				Expect(getStatus(vs, namespace)).To(Equal(core.Status_Accepted.String()))
-			}
 		}
-
-		// return replaceInvalidRoutes value in settings to its original value
-		settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = replaceInvalidRoutes
-		settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 	})
 	It("handles simple non-Pending and non-Accepted resource states", func() {
 		// range through all possible resource states
