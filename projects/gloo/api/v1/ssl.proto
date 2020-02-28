@@ -28,6 +28,10 @@ message SslConfig {
     repeated string verify_subject_alt_name = 5;
 
     SslParameters parameters = 6;
+
+    // Set Application Level Protocol Negotiation
+    // If empty, defaults to ["h2", "http/1.1"].
+    repeated string alpn_protocols = 7;
 }
 
 // SSLFiles reference paths to certificates which can be read by the proxy off of its local filesystem
