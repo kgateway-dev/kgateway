@@ -19,6 +19,25 @@
 |settings.integrations.knative.proxy.resources.limits.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.resources.requests.memory|string||amount of memory|
 |settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
+|settings.integrations.knative.proxy.customEnv[].name|string|||
+|settings.integrations.knative.proxy.customEnv[].value|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.name|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.key|string|||
+|settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
@@ -46,6 +65,25 @@
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
+|gloo.deployment.customEnv[].name|string|||
+|gloo.deployment.customEnv[].value|string|||
+|gloo.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|gloo.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gloo.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gloo.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|gloo.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|gloo.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|gloo.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|gloo.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|gloo.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |discovery.deployment.image.repository|string|discovery|image name (repository) for the container.|
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -59,6 +97,25 @@
 |discovery.deployment.resources.limits.cpu|string||amount of CPUs|
 |discovery.deployment.resources.requests.memory|string||amount of memory|
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
+|discovery.deployment.customEnv[].name|string|||
+|discovery.deployment.customEnv[].value|string|||
+|discovery.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|discovery.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|discovery.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|discovery.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|discovery.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|discovery.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|discovery.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|discovery.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|discovery.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
@@ -79,6 +136,25 @@
 |gateway.deployment.resources.limits.cpu|string||amount of CPUs|
 |gateway.deployment.resources.requests.memory|string||amount of memory|
 |gateway.deployment.resources.requests.cpu|string||amount of CPUs|
+|gateway.deployment.customEnv[].name|string|||
+|gateway.deployment.customEnv[].value|string|||
+|gateway.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|gateway.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gateway.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gateway.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|gateway.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|gateway.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|gateway.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|gateway.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|gateway.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |gateway.certGenJob.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gateway.certGenJob.image.repository|string|certgen|image name (repository) for the container.|
 |gateway.certGenJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -96,6 +172,25 @@
 |gatewayProxies.NAME.kind.deployment.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.NAME.kind.deployment.resources.requests.memory|string||amount of memory|
 |gatewayProxies.NAME.kind.deployment.resources.requests.cpu|string||amount of CPUs|
+|gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].value|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
 |gatewayProxies.NAME.podTemplate.image.repository|string||image name (repository) for the container.|
@@ -150,6 +245,25 @@
 |gatewayProxies.gatewayProxy.kind.deployment.resources.limits.cpu|string||amount of CPUs|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.requests.memory|string||amount of memory|
 |gatewayProxies.gatewayProxy.kind.deployment.resources.requests.cpu|string||amount of CPUs|
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].value|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|gatewayProxies.gatewayProxy.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |gatewayProxies.gatewayProxy.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
 |gatewayProxies.gatewayProxy.podTemplate.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
@@ -210,6 +324,25 @@
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingress.deployment.customEnv[].name|string|||
+|ingress.deployment.customEnv[].value|string|||
+|ingress.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|ingress.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|ingress.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|ingress.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|ingress.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|ingress.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|ingress.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|ingress.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|ingress.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
@@ -225,6 +358,25 @@
 |ingressProxy.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingressProxy.deployment.resources.requests.memory|string||amount of memory|
 |ingressProxy.deployment.resources.requests.cpu|string||amount of CPUs|
+|ingressProxy.deployment.customEnv[].name|string|||
+|ingressProxy.deployment.customEnv[].value|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |ingressProxy.configMap.data.NAME|string|||
 |ingressProxy.tracing|string|||
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
@@ -241,6 +393,25 @@
 |accessLogger.resources.limits.cpu|string||amount of CPUs|
 |accessLogger.resources.requests.memory|string||amount of memory|
 |accessLogger.resources.requests.cpu|string||amount of CPUs|
+|accessLogger.customEnv[].name|string|||
+|accessLogger.customEnv[].value|string|||
+|accessLogger.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|accessLogger.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|accessLogger.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|accessLogger.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|accessLogger.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|accessLogger.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|accessLogger.customEnv[].valueFrom.secretKeyRef.name|string|||
+|accessLogger.customEnv[].valueFrom.secretKeyRef.key|string|||
+|accessLogger.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |global.image.tag|string||tag for the container|
 |global.image.repository|string||image name (repository) for the container.|
 |global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|

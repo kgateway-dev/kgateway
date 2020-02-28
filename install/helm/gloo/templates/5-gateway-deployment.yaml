@@ -56,6 +56,9 @@ spec:
             drop:
             - ALL
         env:
+{{- if .Values.gateway.deployment.customEnv }}
+{{ toYaml .Values.gateway.deployment.customEnv | indent 10 }}
+{{- end }}
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:

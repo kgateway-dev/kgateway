@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Can add extra custom env vars to gloo, discovery, gateway, gateway-proxy, ingress, and ingress-proxy deployments
+    issueLink: https://github.com/solo-io/gloo/issues/2435

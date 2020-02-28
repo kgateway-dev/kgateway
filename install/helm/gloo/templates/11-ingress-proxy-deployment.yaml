@@ -30,6 +30,9 @@ spec:
       containers:
       - args: ["--disable-hot-restart"]
         env:
+{{- if .Values.ingressProxy.deployment.customEnv }}
+{{ toYaml .Values.ingressProxy.deployment.customEnv | indent 8 }}
+{{- end }}
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
