@@ -150,7 +150,7 @@ type Gateway struct {
 	UpdateValues                  bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount" `
 	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
-	AlwaysSortRouteTableRoutes    bool               `json:"alwaysSortRouteTableRoutes" desc:"if true, the Gateway will always sort routes originating from delegated route tables, rather than just when a route delegates to multiple route tables"`
+	AlwaysSortRouteTableRoutes    bool               `json:"alwaysSortRouteTableRoutes" desc:"if true, the Gateway will always sort routes originating from delegated route tables, rather than just when a route delegates to multiple route tables. Defaults to false."`
 }
 
 type ServiceAccount struct {
