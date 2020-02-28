@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Some docs updates to remove yaml with invalid CRDs and display examples with FDS off, as is now the default. 
+    issueLink: https://github.com/solo-io/gloo/issues/2520

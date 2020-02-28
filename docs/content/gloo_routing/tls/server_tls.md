@@ -35,12 +35,6 @@ glooctl get upstream default-petstore-8080
 | default-petstore-8080 | Kubernetes | Accepted | svc name:      petstore |
 |                       |            |          | svc namespace: default  |
 |                       |            |          | port:          8080     |
-|                       |            |          | REST service:           |
-|                       |            |          | functions:              |
-|                       |            |          | - addPet                |
-|                       |            |          | - deletePet             |
-|                       |            |          | - findPetById           |
-|                       |            |          | - findPets              |
 |                       |            |          |                         |
 +-----------------------|------------|----------|-------------------------+
 ```
@@ -57,35 +51,39 @@ glooctl add route \
 Since we didn't explicitly create a VirtualService, adding this route will create a default VirtualService named `default`.
 
 ```bash
-glooctl get virtualservice default -o yaml
+glooctl get virtualservice default -o kube-yaml
 ```
 
 ```yaml
----
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
 metadata:
+  creationTimestamp: null
+  generation: 3
   name: default
   namespace: gloo-system
-  resourceVersion: "21723"
+  resourceVersion: "100625"
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /sample-route-1
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
 status:
-  reportedBy: gateway
-  state: Accepted
-  subresourceStatuses:
-    '*v1.Proxy gloo-system gateway-proxy':
-      reportedBy: gloo
-      state: Accepted
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matchers:
-     - exact: /sample-route-1
-    routeAction:
-      single:
-        upstream:
-          name: default-petstore-8080
-          namespace: gloo-system
-    options:
-      prefixRewrite: /api/pets
+  reported_by: gateway
+  state: 1
+  subresource_statuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reported_by: gloo
+      state: 1
 ```
 
 If we want to query the service to verify routing is working, we can like this:
@@ -134,39 +132,43 @@ glooctl edit virtualservice --name default --namespace gloo-system \
 Now if we get the `default` VirtualService, we should see the new SSL configuration:
 
 ```bash
-glooctl get virtualservice default -o yaml
+glooctl get virtualservice default -o kube-yaml
 ```
 
-{{< highlight yaml "hl_lines=6-9" >}}
----
+{{< highlight yaml "hl_lines=10-13" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
 metadata:
+  creationTimestamp: null
+  generation: 4
   name: default
   namespace: gloo-system
-  resourceVersion: "22639"
-sslConfig:
-  secretRef:
-    name: gateway-tls
-    namespace: gloo-system
+  resourceVersion: "100886"
+spec:
+  sslConfig:
+    secretRef:
+      name: gateway-tls
+      namespace: gloo-system
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /sample-route-1
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
 status:
-  reportedBy: gateway
-  state: Accepted
-  subresourceStatuses:
-    '*v1.Proxy gloo-system gateway-proxy':
-      reportedBy: gloo
-      state: Accepted
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matchers:
-     - exact: /sample-route-1
-    routeAction:
-      single:
-        upstream:
-          name: default-petstore-8080
-          namespace: gloo-system
-    options:
-      prefixRewrite: /api/pets
+  reported_by: gateway
+  state: 1
+  subresource_statuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reported_by: gloo
+      state: 1
 {{< /highlight >}}
 
 If we try query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
@@ -249,32 +251,46 @@ Note, we're giving this service a different API, namely `/animals` instead of `/
 Now if we get the VirtualService, we should see this one set up with a different cert/secret:
 
 ```bash
-glooctl get virtualservice animal -o yaml
+glooctl get virtualservice animal -o kube-yaml
 ```
 
-{{< highlight yaml "hl_lines=2-5" >}}
----
-displayName: animal
-sslConfig:
-  secretRef:
-    name: animal-certs
-    namespace: gloo-system
+{{< highlight yaml "hl_lines=11-14" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  creationTimestamp: null
+  generation: 4
+  name: animal
+  namespace: gloo-system
+  resourceVersion: "101835"
+spec:
+  displayName: animal
+  sslConfig:
+    secretRef:
+      name: animal-certs
+      namespace: gloo-system
+    sniDomains:
+    - animalstore.example.com
+  virtualHost:
+    domains:
+    - animalstore.example.com
+    routes:
+    - matchers:
+      - exact: /animals
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
 status:
-  reportedBy: gateway
-  state: Accepted
-virtualHost:
-  domains:
-  - '*'
-  routes:
-  - matchers:
-     - exact: /animals
-    routeAction:
-      single:
-        upstream:
-          name: default-petstore-8080
-          namespace: gloo-system
-    options:
-      prefixRewrite: /api/pets
+  reported_by: gateway
+  state: 1
+  subresource_statuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reported_by: gloo
+      state: 1
 {{< /highlight >}}     
 
 If everything up to this point looks good, let's try to query the service and make sure to pass in the qualifying `Host` information so that Envoy can serve the correct certificates.
