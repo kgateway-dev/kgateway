@@ -201,11 +201,6 @@ glooctl get upstream default-petstore-8080 --output kube-yaml
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","kind":"Service","metadata":{"annotations":{},"labels":{"service":"petstore"},"name":"petstore","namespace":"default"},"spec":{"ports":[{"port":8080,"protocol":"TCP"}],"selector":{"app":"petstore"}}}
-  creationTimestamp: null
-  generation: 4
   labels:
     discovered_by: kubernetesplugin
     service: petstore

@@ -29,18 +29,17 @@ glooctl get upstream default-petstore-8080
 ```
 
 ```noop
-+-----------------------|------------|----------|-------------------------+
++-----------------------+------------+----------+-------------------------+
 |       UPSTREAM        |    TYPE    |  STATUS  |         DETAILS         |
-+-----------------------|------------|----------|-------------------------+
++-----------------------+------------+----------+-------------------------+
 | default-petstore-8080 | Kubernetes | Accepted | svc name:      petstore |
 |                       |            |          | svc namespace: default  |
 |                       |            |          | port:          8080     |
 |                       |            |          |                         |
-+-----------------------|------------|----------|-------------------------+
++-----------------------+------------+----------+-------------------------+
 ```
 
-Now let's create a route to the petstore like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
-
+Now let's create a route to the petstore like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}):
 ```bash
 glooctl add route \
     --path-exact /sample-route-1 \
