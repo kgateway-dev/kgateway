@@ -2,8 +2,8 @@ changelog:
 - type: FIX
   description: >
     Gloo currently sorts routes that originate from a single route table. This is not intended behavior. Gloo should
-    sort routes only when a route delegates to multiple route tables because in these cases we want to avoid
-    short-circuiting (e.g. having `/foo` come before `/foo/bar`. This change fixes the behavior and adds a new
+    sort routes only when a route delegates to multiple route tables, because in these cases we want to avoid
+    short-circuiting (e.g. having `/foo` come before `/foo/bar`). This change fixes the behavior and adds a new
     `alwaysSortRouteTableRoutes` setting for users who might be depending on the current behavior. If this flag is set
     to `true` (default is `false`), it will force Gloo to sort the routes even when they come from a single route table.
   issueLink: https://github.com/solo-io/gloo/issues/2529
