@@ -174,7 +174,10 @@ func (rv *routeVisitor) convertDelegateAction(route *gatewayv1.Route) ([]*gloov1
 		}
 	}
 
-	glooutils.SortRoutesByPath(delegatedRoutes)
+	// Only sort if we have more than one route table
+	if len(routeTables) > 1 {
+		glooutils.SortRoutesByPath(delegatedRoutes)
+	}
 
 	return delegatedRoutes, nil
 }
