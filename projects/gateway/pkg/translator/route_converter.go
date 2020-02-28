@@ -182,7 +182,7 @@ func (rv *routeVisitor) convertDelegateAction(route *gatewayv1.Route) ([]*gloov1
 		}
 	}
 
-	// Only sort if we have more than one route table
+	// Only sort if we have more than one route table OR we have an explicit setting to always sort
 	if len(routeTables) > 1 || rv.alwaysSortRouteTableRoutes {
 		glooutils.SortRoutesByPath(delegatedRoutes)
 	}
