@@ -141,6 +141,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		},
 		DevMode:                       true,
 		ReadGatewaysFromAllNamespaces: settings.GetGateway().GetReadGatewaysFromAllNamespaces(),
+		AlwaysSortRouteTableRoutes:    settings.GetGateway().GetAlwaysSortRouteTableRoutes(),
 		Validation:                    validation,
 	}
 

@@ -16,6 +16,7 @@ type Opts struct {
 	ValidationServerAddress       string
 	DevMode                       bool
 	ReadGatewaysFromAllNamespaces bool
+	AlwaysSortRouteTableRoutes    bool
 	Validation                    *ValidationOpts
 }
 

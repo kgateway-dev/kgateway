@@ -40,7 +40,12 @@ func NewTranslator(factories []ListenerFactory, opts Opts) *translator {
 }
 
 func NewDefaultTranslator(opts Opts) *translator {
-	return NewTranslator([]ListenerFactory{&HttpTranslator{}, &TcpTranslator{}}, opts)
+	return NewTranslator([]ListenerFactory{
+		&HttpTranslator{
+			alwaysSortRouteTableRoutes: opts.AlwaysSortRouteTableRoutes,
+		},
+		&TcpTranslator{},
+	}, opts)
 }
 
 func (t *translator) Translate(ctx context.Context, proxyName, namespace string, snap *v1.ApiSnapshot, gatewaysByProxy v1.GatewayList) (*gloov1.Proxy, reporter.ResourceReports) {

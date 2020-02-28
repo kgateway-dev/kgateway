@@ -147,7 +147,7 @@ var _ = Describe("route merge util", func() {
 					expectedErr: translator.MatcherCountErr,
 				},
 			} {
-				rv := translator.NewRouteConverter(&v1.VirtualService{}, nil, reporter.ResourceReports{})
+				rv := translator.NewRouteConverter(&v1.VirtualService{}, nil, reporter.ResourceReports{}, false)
 				_, err := rv.ConvertRoute(badRoute.route)
 				Expect(err).To(Equal(badRoute.expectedErr))
 			}
@@ -177,7 +177,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteConverter(vs, nil, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, nil, rpt, false).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted).To(HaveLen(0)) // nothing to return, no error
@@ -217,7 +217,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt, false).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -265,7 +265,7 @@ var _ = Describe("route merge util", func() {
 			rpt := reporter.ResourceReports{}
 			vs := &v1.VirtualService{}
 
-			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt).ConvertRoute(route)
+			converted, err := translator.NewRouteConverter(vs, v1.RouteTableList{&rt}, rpt, false).ConvertRoute(route)
 
 			Expect(err).NotTo(HaveOccurred())
 			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
@@ -277,10 +277,11 @@ var _ = Describe("route merge util", func() {
 	Describe("route table selection", func() {
 
 		var (
-			allRouteTables v1.RouteTableList
-			reports        reporter.ResourceReports
-			vs             *v1.VirtualService
-			visitor        translator.RouteConverter
+			allRouteTables             v1.RouteTableList
+			reports                    reporter.ResourceReports
+			vs                         *v1.VirtualService
+			visitor                    translator.RouteConverter
+			alwaysSortRouteTableRoutes bool
 		)
 
 		buildRouteTableWithSimpleAction := func(name, namespace, prefix string, labels map[string]string) *v1.RouteTable {
@@ -364,7 +365,7 @@ var _ = Describe("route merge util", func() {
 				},
 			}
 
-			visitor = translator.NewRouteConverter(vs, allRouteTables, reports)
+			visitor = translator.NewRouteConverter(vs, allRouteTables, reports, alwaysSortRouteTableRoutes)
 		})
 
 		When("selector has no matches", func() {
@@ -485,6 +486,56 @@ var _ = Describe("route merge util", func() {
 					[]string{"/foo/6", "/foo/6", "/foo/4", "/foo/3", "/foo/2", "/foo/2", "/foo/1"},
 				),
 			)
+		})
+
+		When("we match only one route table but alwaysSortRouteTableRoutes=true", func() {
+
+			BeforeEach(func() {
+				alwaysSortRouteTableRoutes = true
+				allRouteTables = v1.RouteTableList{
+					// If we didn't sort, the order in which routes are specified here would be respected
+					{
+						Metadata: core.Metadata{
+							Name:      "foo",
+							Namespace: "ns-1",
+						},
+						Routes: []*v1.Route{
+							{
+								Matchers: []*matchers.Matcher{
+									{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/foo",
+										},
+									},
+								},
+								Action: &v1.Route_DirectResponseAction{
+									DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
+							},
+							{
+								Matchers: []*matchers.Matcher{
+									{
+										PathSpecifier: &matchers.Matcher_Prefix{
+											Prefix: "/foo/bar",
+										},
+									},
+								},
+								Action: &v1.Route_DirectResponseAction{
+									DirectResponseAction: &gloov1.DirectResponseAction{Status: 200}},
+							},
+						},
+					},
+				}
+			})
+
+			It("sort routes even if they come from only one route table", func() {
+				converted, err := visitor.ConvertRoute(buildRoute(&v1.RouteTableSelector{}))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(2))
+
+				Expect(converted[0]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/bar")))
+				Expect(converted[1]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo")))
+
+			})
 		})
 
 		When("there are circular references", func() {

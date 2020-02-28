@@ -68,17 +68,25 @@ type routeVisitor struct {
 	visited gatewayv1.RouteTableList
 	// Used to store of errors and warnings for the root resource. This object will be passed to sub-visitors.
 	reports reporter.ResourceReports
+	// If true, routes originating from route tables will always be sorted
+	alwaysSortRouteTableRoutes bool
 }
 
 // Initializes and returns a route converter instance.
 // - root: root of the subtree of routes that we are going to visit; used primarily as a target to report errors and warnings on.
 // - tables: all the route tables that should be considered when resolving delegation chains.
 // - reports: this object will be updated with errors and warnings encountered during the conversion process.
-func NewRouteConverter(root resources.InputResource, tables gatewayv1.RouteTableList, reports reporter.ResourceReports) RouteConverter {
+// - alwaysSortRouteTableRoutes: if true, routes originating from route tables will always be sorted
+func NewRouteConverter(
+	root resources.InputResource,
+	tables gatewayv1.RouteTableList,
+	reports reporter.ResourceReports,
+	alwaysSortRouteTableRoutes bool) RouteConverter {
 	return &routeVisitor{
-		rootResource: root,
-		tables:       tables,
-		reports:      reports,
+		rootResource:               root,
+		tables:                     tables,
+		reports:                    reports,
+		alwaysSortRouteTableRoutes: alwaysSortRouteTableRoutes,
 	}
 }
 
@@ -175,7 +183,7 @@ func (rv *routeVisitor) convertDelegateAction(route *gatewayv1.Route) ([]*gloov1
 	}
 
 	// Only sort if we have more than one route table
-	if len(routeTables) > 1 {
+	if len(routeTables) > 1 || rv.alwaysSortRouteTableRoutes {
 		glooutils.SortRoutesByPath(delegatedRoutes)
 	}
 

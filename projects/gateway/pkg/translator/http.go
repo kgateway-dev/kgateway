@@ -41,7 +41,9 @@ var (
 	}
 )
 
-type HttpTranslator struct{}
+type HttpTranslator struct {
+	alwaysSortRouteTableRoutes bool
+}
 
 func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnapshot, filteredGateways []*v1.Gateway, reports reporter.ResourceReports) []*gloov1.Listener {
 	if len(snap.VirtualServices) == 0 {
@@ -57,7 +59,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
-		listener := desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
+		listener := t.desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
 	return result
@@ -179,7 +181,7 @@ func hasSsl(vs *v1.VirtualService) bool {
 	return vs.SslConfig != nil
 }
 
-func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, tables v1.RouteTableList, reports reporter.ResourceReports) *gloov1.Listener {
+func (t *HttpTranslator) desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.VirtualServiceList, tables v1.RouteTableList, reports reporter.ResourceReports) *gloov1.Listener {
 	var (
 		virtualHosts []*gloov1.VirtualHost
 		sslConfigs   []*gloov1.SslConfig
@@ -189,7 +191,7 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 		if virtualService.VirtualHost == nil {
 			virtualService.VirtualHost = &v1.VirtualHost{}
 		}
-		vh, err := virtualServiceToVirtualHost(virtualService, tables, reports)
+		vh, err := t.virtualServiceToVirtualHost(virtualService, tables, reports)
 		if err != nil {
 			reports.AddError(virtualService, err)
 			continue
@@ -221,8 +223,8 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 	return listener
 }
 
-func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
-	routes, err := convertRoutes(vs, tables, reports)
+func (t *HttpTranslator) virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
+	routes, err := t.convertRoutes(vs, tables, reports)
 	if err != nil {
 		return nil, err
 	}
@@ -246,11 +248,11 @@ func VirtualHostName(vs *v1.VirtualService) string {
 	return fmt.Sprintf("%v.%v", vs.Metadata.Namespace, vs.Metadata.Name)
 }
 
-func convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
+func (t *HttpTranslator) convertRoutes(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
 	for _, r := range vs.GetVirtualHost().GetRoutes() {
 
-		mergedRoutes, err := NewRouteConverter(vs, tables, reports).ConvertRoute(r)
+		mergedRoutes, err := NewRouteConverter(vs, tables, reports, t.alwaysSortRouteTableRoutes).ConvertRoute(r)
 		if err != nil {
 			return nil, err
 		}
