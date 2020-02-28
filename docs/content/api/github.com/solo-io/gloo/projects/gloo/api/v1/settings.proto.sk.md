@@ -466,6 +466,7 @@ Settings specific to the Gateway controller
 "validationServerAddr": string
 "validation": .gloo.solo.io.GatewayOptions.ValidationOptions
 "readGatewaysFromAllNamespaces": bool
+"alwaysSortRouteTableRoutes": bool
 
 ```
 
@@ -474,6 +475,7 @@ Settings specific to the Gateway controller
 | `validationServerAddr` | `string` | Address of the `gloo` config validation server. Defaults to `gloo:9988`. |  |
 | `validation` | [.gloo.solo.io.GatewayOptions.ValidationOptions](../settings.proto.sk/#validationoptions) | If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/) of Gateways, Virtual Services, and Route Tables when running in Kubernetes. |  |
 | `readGatewaysFromAllNamespaces` | `bool` | When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather than just the Gateway CRDs in its own namespace. |  |
+| `alwaysSortRouteTableRoutes` | `bool` | When using delegation with route table selectors, a route might delegate to multiple route tables. In these cases, Gloo will attempt to sort the routes by descending specificity to avoid short-circuiting (e.g. having `/foo` come before `/foo/bar`. Gloo will not sort routes when delegating to a single route table; you can set this flag to `true` to force Gloo to sort the routes in this case as well. Defaults to `false`. |  |
 
 
 

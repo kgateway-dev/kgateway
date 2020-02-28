@@ -150,6 +150,7 @@ type Gateway struct {
 	UpdateValues                  bool               `json:"updateValues" desc:"if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions"`
 	ProxyServiceAccount           ServiceAccount     `json:"proxyServiceAccount" `
 	ReadGatewaysFromAllNamespaces bool               `json:"readGatewaysFromAllNamespaces" desc:"if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller"`
+	AlwaysSortRouteTableRoutes    bool               `json:"alwaysSortRouteTableRoutes" desc:"if true, the Gateway will always sort routes originating from delegated route tables, rather than just when a route delegates to multiple route tables"`
 }
 
 type ServiceAccount struct {
@@ -193,8 +194,8 @@ type GatewayProxy struct {
 	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
 	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
 	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
-	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
-	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
+	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper,omitempty"`
+	ExtraVolumeHelper         string                       `json:"extraVolumeHelper,omitempty"`
 	Stats                     bool                         `json:"stats" desc:"enable prometheus stats"`
 	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 }

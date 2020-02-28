@@ -400,4 +400,10 @@ message GatewayOptions {
     // When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
     // than just the Gateway CRDs in its own namespace
     bool read_gateways_from_all_namespaces = 4;
+
+    // When using delegation with route table selectors, a route might delegate to multiple route tables. In these cases,
+    // Gloo will attempt to sort the routes by descending specificity to avoid short-circuiting (e.g. having `/foo` come
+    // before `/foo/bar`. Gloo will not sort routes when delegating to a single route table; you can set this flag to
+    // `true` to force Gloo to sort the routes in this case as well. Defaults to `false`.
+    bool always_sort_route_table_routes = 5;
 }

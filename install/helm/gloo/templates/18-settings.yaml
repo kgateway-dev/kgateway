@@ -44,6 +44,7 @@ spec:
 {{- if .Values.gateway.validation.enabled }}
   gateway:
     readGatewaysFromAllNamespaces: {{ .Values.gateway.readGatewaysFromAllNamespaces }}
+    alwaysSortRouteTableRoutes: {{ .Values.gateway.alwaysSortRouteTableRoutes | default false }}
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}

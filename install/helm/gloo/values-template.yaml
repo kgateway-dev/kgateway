@@ -52,6 +52,7 @@ discovery:
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
+  alwaysSortRouteTableRoutes: false
   validation:
     enabled: true
     failurePolicy: "Ignore"
