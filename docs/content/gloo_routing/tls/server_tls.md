@@ -57,7 +57,6 @@ glooctl get virtualservice default -o kube-yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  creationTimestamp: null
   name: default
   namespace: gloo-system
 spec:
@@ -136,7 +135,6 @@ glooctl get virtualservice default -o kube-yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  creationTimestamp: null
   name: default
   namespace: gloo-system
 spec:
@@ -253,7 +251,6 @@ glooctl get virtualservice animal -o kube-yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  creationTimestamp: null
   name: animal
   namespace: gloo-system
 spec:
