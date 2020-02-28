@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  description: Fix noisy logging on duplicate upgrade websocket config when using Gloo with SSL & SNI.
+  issueLink: https://github.com/solo-io/gloo/issues/2529
