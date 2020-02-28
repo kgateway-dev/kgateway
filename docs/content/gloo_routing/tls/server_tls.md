@@ -58,10 +58,8 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   creationTimestamp: null
-  generation: 3
   name: default
   namespace: gloo-system
-  resourceVersion: "100625"
 spec:
   virtualHost:
     domains:
@@ -139,10 +137,8 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   creationTimestamp: null
-  generation: 4
   name: default
   namespace: gloo-system
-  resourceVersion: "100886"
 spec:
   sslConfig:
     secretRef:
@@ -258,10 +254,8 @@ apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
   creationTimestamp: null
-  generation: 4
   name: animal
   namespace: gloo-system
-  resourceVersion: "101835"
 spec:
   displayName: animal
   sslConfig:

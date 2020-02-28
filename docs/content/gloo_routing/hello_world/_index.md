@@ -206,7 +206,6 @@ metadata:
     service: petstore
   name: default-petstore-8080
   namespace: gloo-system
-  resourceVersion: "95003"
 spec:
   discoveryMetadata: {}
   kube:
@@ -330,11 +329,9 @@ glooctl get virtualservice --output kube-yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  generation: "3"
   name: default
   namespace: gloo-system
   ownerReferences: []
-  resourceVersion: "1018063"
 status:
   reportedBy: gateway
   state: Accepted
