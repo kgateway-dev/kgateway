@@ -2,3 +2,6 @@ changelog:
   - type: NON_USER_FACING
     description: Some docs updates to remove yaml with invalid CRDs and display examples as they now look with FDS off by default.
     issueLink: https://github.com/solo-io/gloo/issues/2520
+  - type: NON_USER_FACING
+    description: Remove duplicate Server TLS docs.
+    issueLink: https://github.com/solo-io/gloo/issues/2522
