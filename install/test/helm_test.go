@@ -57,7 +57,7 @@ func GetPodNameEnvVar() v1.EnvVar {
 
 func GetTestExtraEnvVar() v1.EnvVar {
 	return v1.EnvVar{
-		Name: "TEST_EXTRA_ENV_VAR",
+		Name:  "TEST_EXTRA_ENV_VAR",
 		Value: "test",
 	}
 }
@@ -973,7 +973,7 @@ var _ = Describe("Helm Test", func() {
 					It("can accept extra env vars", func() {
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
-							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env...
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env...,
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -1514,7 +1514,7 @@ metadata:
 					It("can accept extra env vars", func() {
 						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
-							glooDeployment.Spec.Template.Spec.Containers[0].Env...
+							glooDeployment.Spec.Template.Spec.Containers[0].Env...,
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -1644,7 +1644,7 @@ metadata:
 					It("can accept extra env vars", func() {
 						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
-							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...
+							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...,
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -1749,7 +1749,7 @@ metadata:
 					It("can accept extra env vars", func() {
 						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
 							[]v1.EnvVar{GetTestExtraEnvVar()},
-							discoveryDeployment.Spec.Template.Spec.Containers[0].Env...
+							discoveryDeployment.Spec.Template.Spec.Containers[0].Env...,
 						)
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
