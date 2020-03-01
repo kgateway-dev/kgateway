@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Make ALPN configurable, so that you can configure gloo to only allow http 1.1 over TLS.
+    issueLink: https://github.com/solo-io/gloo/issues/2525

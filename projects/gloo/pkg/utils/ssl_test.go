@@ -166,10 +166,17 @@ var _ = Describe("Ssl", func() {
 			Expect(cfg.RequireClientCertificate.GetValue()).To(BeTrue())
 		})
 
-		It("should set alpn for downstream config", func() {
+		It("should set alpn default for downstream config", func() {
 			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{"h2", "http/1.1"}))
+		})
+
+		It("should set alpn for downstream config", func() {
+			downstreamCfg.AlpnProtocols = []string{"test"}
+			cfg, err := configTranslator.ResolveDownstreamSslConfig(secrets, downstreamCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(cfg.CommonTlsContext.AlpnProtocols).To(Equal([]string{"test"}))
 		})
 
 		It("should NOT set alpn for upstream config", func() {

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: When the gateway-proxy is in an unhealthy state, it will now display a clearer and more helpful "STATUS" in `glooctl get vs`.
+    issueLink: https://github.com/solo-io/gloo/issues/2228
