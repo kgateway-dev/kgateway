@@ -2,8 +2,14 @@ package check
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -95,7 +101,7 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
-	ok, err = checkProxies(namespaces)
+	ok, err = checkProxies(namespaces, opts.Metadata.Namespace)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -344,7 +350,7 @@ func checkGateways(namespaces []string) (bool, error) {
 	return true, nil
 }
 
-func checkProxies(namespaces []string) (bool, error) {
+func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	fmt.Printf("Checking proxies... ")
 	client := helpers.MustProxyClient()
 	for _, ns := range namespaces {
@@ -359,6 +365,42 @@ func checkProxies(namespaces []string) (bool, error) {
 				return false, nil
 			}
 		}
+	}
+	// check if any proxy instances are out of sync with the Gloo control plane
+	errMessage := "Problem while checking for out of sync proxies\n"
+
+	// port-forward gateway-proxy deployment
+	adminPort := int(defaults.EnvoyAdminPort)
+	localPort := adminPort + 1
+	err, portFwdCmd := cliutil.PortForward(glooNamespace, "deploy/gateway-proxy",
+		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, "")
+	defer portFwdCmd.Process.Release()
+	if err != nil {
+		fmt.Printf(errMessage)
+		return false, err
+	}
+
+	// GET /stats endpoint
+	res, err := http.Get("http://localhost:" + strconv.Itoa(localPort) + "/stats")
+	if err != nil {
+		fmt.Printf(errMessage)
+		return false, err
+	}
+	body, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	if err != nil {
+		fmt.Printf(errMessage)
+		return false, err
+	}
+	if portFwdCmd.Process != nil {
+		portFwdCmd.Process.Kill()
+	}
+
+	// look for control_plane.connected_state
+	if !strings.Contains(string(body), "control_plane.connected_state: 1") {
+		fmt.Printf("Proxies are out of sync with the Gloo control plane.\n") //
+		// TODO tell user to Check gloo or gateway-proxy logs. Or print the output of `glooct debug log`
+		return false, nil
 	}
 	fmt.Printf("OK\n")
 	return true, nil

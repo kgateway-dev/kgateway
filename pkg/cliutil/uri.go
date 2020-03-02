@@ -9,14 +9,14 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/solo-io/solo-kit/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-
-	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 // Get the resource identified by the given URI.
@@ -152,4 +152,36 @@ func minikubeIp(clusterName string) (string, error) {
 	err := minikubeCmd.Run()
 
 	return strings.TrimSuffix(hostname.String(), "\n"), err
+}
+
+// Call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
+func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool, pingUrl string) (error, *exec.Cmd) {
+
+	/** port-forward command **/
+
+	portFwd := exec.Command("kubectl", "port-forward", "-n", namespace,
+		resource, fmt.Sprintf("%s:%s", localPort, kubePort))
+
+	err := Initialize()
+	if err != nil {
+		return err, portFwd
+	}
+	logger := GetLogger()
+
+	portFwd.Stderr = io.MultiWriter(logger, os.Stderr)
+	if verbose {
+		portFwd.Stdout = io.MultiWriter(logger, os.Stdout)
+	} else {
+		portFwd.Stdout = logger
+	}
+
+	if err := portFwd.Start(); err != nil {
+		return err, portFwd
+	}
+
+	// TODO try http.Get("http://localhost:" + localPort) until you get a 200
+	time.Sleep(time.Second)
+
+	return nil, portFwd
+
 }
