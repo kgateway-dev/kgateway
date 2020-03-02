@@ -3,12 +3,40 @@ title: "Building a Proxy Controller for Gloo"
 weight: 2
 ---
 
-In this tutorial, we're going to show how to use Gloo's Proxy API to build a router which automatically creates 
-routes for every existing kubernetes service,
+In this tutorial, we're going to show how to use Gloo's {{< protobuf name="gloo.solo.io.Proxy" display="Proxy API">}}
+to build a router which automatically creates routes for every existing kubernetes service.
+
+## Why Write a Custom Proxy Controller
+
+Building a `Proxy` [controller](https://kubernetes.io/docs/concepts/architecture/controller/) allows you to add custom
+Gloo operational logic to your setup. In this example, we will write a proxy controller that creates and manages a
+second Gloo `Proxy` (`my-cool-proxy`) alongside the Gloo-managed one (`gateway-proxy`). The `my-cool-proxy` envoy
+proxy will route to Gloo-discovered kubernetes services using the host header alone, relieving the Gloo admin from
+creating virtual services or route tables to route to each discovered service.
+
+Other common use cases that can be solved with custom proxy controllers include:
+- automatically creating http routes that redirect to equivalent https routes
+- automatically routing to services based on service name and removing the service name prefix from the request path
+
+## How it will work
+
+A custom `Proxy` controller takes Gloo resources as input and writes the desired output to managed `Proxy` custom
+resources.
+
+In our case, we will write a controller that takes `Upstream`s and `Proxy`s as inputs and outputs a new `Proxy`. Then
+we will deploy the new controller to create and manage our new `my-cool-proxy` `Proxy` custom resource. Finally, we
+will deploy a second envoy proxy to kubernetes, have it register to Gloo with its role configured to match the
+name of our managed `Proxy` custom resource (`my-cool-proxy`), and configure it to receive configuration from Gloo.
 
 ## Writing the Code
 
-You can view the complete code written in this section here: [example-proxy-controller.go](../example-proxy-controller.go).
+{{% notice note %}}
+Tested with Gloo v1.2.12 and Gloo Enterprise v1.2.0.
+{{% /notice %}}
+
+You can view the complete code written in this section [here](https://github.com/solo-io/gloo/tree/master/example/proxycontroller).
+
+If you'd prefer, you can skip to [running the example](#run) and tinker with that as desired rather than follow along below.
 
 ## Dependencies
 
@@ -16,8 +44,7 @@ You can view the complete code written in this section here: [example-proxy-cont
 tested with go version 1.13.5
 {{% /notice %}}
 
-The first step will be initializing a new go module. This should be done in a new directory.
-The command to initialize an empty go module is:
+First, initialize a new go module. This should be done in a new directory. The command to initialize an empty go module is:
 ```shell script
 go mod init <your module name here>
 ```
@@ -572,10 +599,10 @@ While it's possible to package this application in a Docker container and deploy
 just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}}) in your cluster so 
 that Discovery will create some Upstreams for us.
 
-Once that's done, to see our code in action, simply run `go run main.go` !
+Once that's done, to see our code in action, simply run `go run example/proxycontroller/proxycontroller.go` from repo root!
 
 ```bash
-go run main.go
+go run example/proxycontroller/proxycontroller.go
 ```
 ```
 2019/02/11 11:27:30 wrote proxy object: listeners:<name:"my-amazing-listener" bind_address:"::" bind_port:8080 http_listener:<virtual_hosts:<name:"default-kubernetes-443" domains:"default-kubernetes-443" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"default-kubernetes-443" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gateway-proxy-8080" domains:"gloo-system-gateway-proxy-8080" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gateway-proxy-8080" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gloo-9977" domains:"gloo-system-gloo-9977" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gloo-9977" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-kube-dns-53" domains:"kube-system-kube-dns-53" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-kube-dns-53" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-tiller-deploy-44134" domains:"kube-system-tiller-deploy-44134" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-tiller-deploy-44134" namespace:"gloo-system" > > > > > > > status:<> metadata:<name:"my-cool-proxy" namespace:"gloo-system" resource_version:"455073" > 
@@ -746,7 +773,6 @@ kind: List
 metadata:
   resourceVersion: ""
   selfLink: ""
-
 ```
 
 Cool. Let's leave our controller running and watch it dynamically respond when we add a service to our cluster:
@@ -767,7 +793,6 @@ petstore-6fd84bc9-zdskz   1/1       Running   0          5s
 NAME         TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP    6d
 petstore     ClusterIP   10.109.34.250   <none>        8080/TCP   5s
-
 ```
 
 The upstream that was created:
@@ -832,7 +857,7 @@ metadata:
 
 ```
 
-The proxy should have been create with the `default-petstore-8080` virtualHost.
+The proxy should have been created with the `default-petstore-8080` virtualHost.
 
 Now that we have a proxy called `my-cool-proxy`, Gloo will be serving xDS configuration that matches this proxy CRD.
 However, we don't actually have an Envoy instance deployed that will receive this config. In the next section, 
@@ -972,7 +997,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        image: soloio/gloo-envoy-wrapper:1.2.10
+        # image: quay.io/solo-io/gloo-envoy-wrapper:1.2.12 # <- use this instead if using open-source Gloo
+        image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.2.0 # <- you must use closed-source envoy if using Gloo Enterprise
         imagePullPolicy: Always
         name: my-cool-proxy
         ports:
@@ -1006,17 +1032,19 @@ petstore-6fd84bc9-zdskz          1/1       Running   0          48m
 If you have `glooctl` installed, we can grab the HTTP endpoint of the proxy with the following command: 
 
 ```bash
-glooctl proxy url -n default -p my-cool-proxy
+glooctl proxy url -n default --name my-cool-proxy
 ```
 
-```
+returns
+
+```noop
 http://192.168.99.150:30751
 ```
 
 Using `curl`, we can connect to any service in our cluster by using the correct `Host` header:
 
 ```bash
-curl $(glooctl proxy url -n default -p my-cool-proxy)/api/pets -H "Host: default-petstore-8080"
+curl $(glooctl proxy url -n default --name my-cool-proxy)/api/pets -H "Host: default-petstore-8080"
 ```
 
 returns
@@ -1031,7 +1059,7 @@ Try any `Host` header for any upstream name:
 kubectl get upstream
 ```
 
-```
+```noop
 NAME                              AGE
 default-kubernetes-443            55m
 default-my-cool-proxy-8080        5m
@@ -1040,7 +1068,6 @@ gloo-system-gateway-proxy-8080    55m
 gloo-system-gloo-9977             54m
 kube-system-kube-dns-53           54m
 kube-system-tiller-deploy-44134   54m
-
 ```
 
 Sweet! You're an official Gloo developer! You've just seen how easy it is to extend Gloo to service one of many 
