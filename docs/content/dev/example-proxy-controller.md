@@ -614,6 +614,7 @@ Neat! Our proxy got created. We can view it with `kubectl`:
 kubectl get proxy -n gloo-system -o yaml
 ```
 
+{{% expand "Click to see the expected proxy" %}}
 ```yaml
 apiVersion: v1
 items:
@@ -774,6 +775,7 @@ metadata:
   resourceVersion: ""
   selfLink: ""
 ```
+{{% /expand %}}
 
 Cool. Let's leave our controller running and watch it dynamically respond when we add a service to our cluster:
 
@@ -847,7 +849,7 @@ items:
                 upstream:
                   name: default-petstore-8080
                   namespace: gloo-system
-            ...
+            ... # <- other virtual hosts omitted for brevity
       name: my-amazing-listener
   status: {}
 kind: List
