@@ -14,7 +14,7 @@ Gloo Open-Source runs in 3 different modes to enable different use cases:
       <a href="gateway"><img src='{{% versioned_link_path fromRoot="/img/Gloo-01.png" %}}' width="60"/></a>
     </td>
     <td>
-     Run Gloo in `gateway` mode to function as an API Gateway. This is the most fully-featured and customizable installation of Gloo, and is our <a href="gateway"><b>recommended install for first-time users</b></a>. The Gloo Gateway can be configured via Kubernetes Custom Resources, Consul Key-Value storage, or `.yaml` files on Gloo's local filesystem.
+     Run Gloo in `gateway` mode to function as an API Gateway. This is the most fully-featured and customizable installation of Gloo, and is our <a href="installation/gateway"><b>recommended install for first-time users</b></a>. The Gloo Gateway can be configured via Kubernetes Custom Resources, Consul Key-Value storage, or `.yaml` files on Gloo's local filesystem.
     </td>
   </tr>
   <tr height="100">
