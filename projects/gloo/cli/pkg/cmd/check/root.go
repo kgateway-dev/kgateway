@@ -2,8 +2,6 @@ package check
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -372,34 +370,21 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	// port-forward gateway-proxy deployment
 	adminPort := int(defaults.EnvoyAdminPort)
 	localPort := adminPort + 1
-	err, portFwdCmd := cliutil.PortForward(glooNamespace, "deploy/gateway-proxy",
-		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, "")
-	defer portFwdCmd.Process.Release()
-	if err != nil {
-		fmt.Printf(errMessage)
-		return false, err
-	}
-
-	// GET /stats endpoint
-	res, err := http.Get("http://localhost:" + strconv.Itoa(localPort) + "/stats")
-	if err != nil {
-		fmt.Printf(errMessage)
-		return false, err
-	}
-	body, err := ioutil.ReadAll(res.Body)
-	res.Body.Close()
-	if err != nil {
-		fmt.Printf(errMessage)
-		return false, err
-	}
+	err, portFwdCmd, statsResult := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
+		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, "/stats")
 	if portFwdCmd.Process != nil {
+		portFwdCmd.Process.Release()
 		portFwdCmd.Process.Kill()
+	}
+	if err != nil {
+		fmt.Printf(errMessage)
+		return false, err
 	}
 
 	// look for control_plane.connected_state
-	if !strings.Contains(string(body), "control_plane.connected_state: 1") {
-		fmt.Printf("Proxies are out of sync with the Gloo control plane.\n") //
-		// TODO tell user to Check gloo or gateway-proxy logs. Or print the output of `glooct debug log`
+	if !strings.Contains(statsResult, "control_plane.connected_state: 1") {
+		fmt.Printf("Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config.\n")
+		// TODO tell user to check gloo or gateway-proxy logs. Or print the output of `glooct debug log`
 		return false, nil
 	}
 	fmt.Printf("OK\n")

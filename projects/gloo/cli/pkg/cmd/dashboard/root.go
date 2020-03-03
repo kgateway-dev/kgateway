@@ -67,7 +67,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** port-forward command **/
 
-			err, portFwdCmd := cliutil.PortForward(opts.Metadata.Namespace, "deployment/api-server", staticPort, staticPort, opts.Top.Verbose, "")
+			err, portFwdCmd, _ := cliutil.PortForwardGet(opts.Metadata.Namespace, "deployment/api-server", staticPort, staticPort, opts.Top.Verbose, "")
 			defer portFwdCmd.Wait()
 			if err != nil {
 				return err

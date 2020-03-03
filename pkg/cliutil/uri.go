@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -155,7 +156,7 @@ func minikubeIp(clusterName string) (string, error) {
 }
 
 // Call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool, pingUrl string) (error, *exec.Cmd) {
+func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (error, *exec.Cmd) {
 
 	/** port-forward command **/
 
@@ -179,9 +180,61 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 		return err, portFwd
 	}
 
-	// TODO try http.Get("http://localhost:" + localPort) until you get a 200
-	time.Sleep(time.Second)
-
 	return nil, portFwd
+
+}
+
+// Call kubectl port-forward and make a GET request.
+// Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
+func PortForwardGet(namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (error, *exec.Cmd, string) {
+
+	/** port-forward command **/
+
+	err, portFwd := PortForward(namespace, resource, localPort, kubePort, verbose)
+	if err != nil {
+		return err, portFwd, ""
+	}
+
+	// wait for port-forward to be ready
+	result := make(chan string)
+	errs := make(chan error)
+	go func() {
+		for {
+			res, err := http.Get("http://localhost:" + localPort + getPath)
+			if err != nil {
+				errs <- err
+				time.Sleep(time.Millisecond * 250)
+				continue
+			}
+			if res.StatusCode != 200 {
+				errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
+				time.Sleep(time.Millisecond * 250)
+				continue
+			}
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				errs <- err
+				time.Sleep(time.Millisecond * 250)
+				continue
+			}
+			res.Body.Close()
+			result <- string(b)
+			return
+		}
+	}()
+
+	timer := time.Tick(time.Second * 5)
+
+	var errsList []string
+	for {
+		select {
+		case err := <-errs:
+			errsList = append(errsList, err.Error()+"\n")
+		case res := <-result:
+			return nil, portFwd, res
+		case <-timer:
+			return errors.Errorf("timed out trying to connect to Envoy admin port, errors: %v", errsList), portFwd, ""
+		}
+	}
 
 }
