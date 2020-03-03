@@ -1084,3 +1084,67 @@ potential use cases. Take a look at our
 {{< protobuf name="gloo.solo.io.Proxy" display="API Reference Documentation">}} to learn about the 
 wide range of configuration options Proxies expose such as request transformation, SSL termination, serverless computing, 
 and much more.
+
+## Appendix - Auto-routing with consul services
+
+The rest of this guide assumes you've been running on minikube, but this setup can be extrapolated to production/more
+complex setups.
+
+Run consul on your local machine:
+```shell script
+consul agent -dev --client=0.0.0.0
+```
+
+Get the Host IP address reachable from within minikube:
+```shell script
+minikube ssh "route -n | grep ^0.0.0.0 | awk '{ print \$2 }'"
+```
+
+Enable consul service discovery in Gloo, replacing address with the value you got before:
+```shell script
+kubectl patch settings -n gloo-system default --patch '{"spec": {"consul": {"address": "10.0.2.2:8500", "serviceDiscovery": {}}}}' --type=merge
+```
+
+Get the cluster IP for petstore service and register a consul service to point there:
+```shell script
+PETSTORE_IP=$(kubectl get svc -n default petstore -o=jsonpath='{.spec.clusterIP}')
+cat > petstore-service.json <<EOF
+{
+  "ID": "petstore1",
+  "Name": "petstore",
+  "Address": "${PETSTORE_IP}",
+  "Port": 8080
+}
+EOF
+```
+
+register the consul service:
+```shell script
+curl -v \
+    -XPUT \
+    --data @petstore-service.json \
+    "http://127.0.0.1:8500/v1/agent/service/register"
+```
+
+confirm the upstream was discovered:
+```shell script
+kubectl get us -n gloo-system petstore
+```
+returns
+```noop
+NAME       AGE
+petstore   8s
+```
+
+Hit the discovered consul service:
+```shell script
+curl $(glooctl proxy url -n default --name my-cool-proxy)/api/pets -H "Host: petstore"
+```
+
+returns
+
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+Nice! You've configured Gloo to auto-route to discovered consul services!
