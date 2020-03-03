@@ -77,6 +77,7 @@ type JobSpec struct {
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
 	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
+	CustomEnv []*appsv1.EnvVar      `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
 }
 
 type Integrations struct {

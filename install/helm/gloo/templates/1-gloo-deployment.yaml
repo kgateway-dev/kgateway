@@ -120,6 +120,9 @@ spec:
           mountPath: /etc/gloo
           readOnly: true
         env:
+{{- if .Values.gloo.deployment.customEnv }}
+{{ toYaml .Values.gloo.deployment.customEnv | indent 10 }}
+{{- end }}
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:

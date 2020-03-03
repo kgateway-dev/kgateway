@@ -55,6 +55,13 @@ func GetPodNameEnvVar() v1.EnvVar {
 	}
 }
 
+func GetTestExtraEnvVar() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "TEST_EXTRA_ENV_VAR",
+		Value: "test",
+	}
+}
+
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
@@ -962,6 +969,20 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("can accept extra env vars", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gatewayProxies.gatewayProxy.kind.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1489,6 +1510,20 @@ metadata:
 						})
 
 					})
+
+					It("can accept extra env vars", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							glooDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gloo.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gloo.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 				})
 
 				Context("gateway deployment", func() {
@@ -1605,6 +1640,20 @@ metadata:
 						})
 
 					})
+
+					It("can accept extra env vars", func() {
+						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gateway.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+					})
 				})
 
 				Context("discovery deployment", func() {
@@ -1695,6 +1744,20 @@ metadata:
 							},
 						})
 
+					})
+
+					It("can accept extra env vars", func() {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							discoveryDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"discovery.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 				})
 
