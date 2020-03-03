@@ -16,7 +16,8 @@ To enable automatic discovery of Consul services, update your {{< protobuf name=
 
 
 ```shell
-kubectl edit settings default -n gloo-system
+kubectl patch settings -n gloo-system default \
+    --patch '{"spec": {"consul": {"address": "gloo-consul-server.default:8500", "serviceDiscovery": {}}}}' --type=merge
 ```
 
 {{< highlight yaml "hl_lines=9-11" >}}

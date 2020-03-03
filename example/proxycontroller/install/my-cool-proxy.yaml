@@ -1,0 +1,108 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-cool-envoy-config
+  namespace: default
+data:
+  envoy.yaml: |
+    node:
+      cluster: "1"
+      id: "1"
+      metadata:
+
+        # this line is what connects this envoy instance to our Proxy crd
+        role: "gloo-system~my-cool-proxy"
+
+    static_resources:
+      clusters:
+      - name: xds_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: xds_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+
+                    # here's where we provide the hostname of the gloo service
+                    address: gloo.gloo-system.svc.cluster.local
+
+                    port_value: 9977
+        http2_protocol_options: {}
+        type: STRICT_DNS
+    dynamic_resources:
+      ads_config:
+        api_type: GRPC
+        grpc_services:
+        - envoy_grpc: {cluster_name: xds_cluster}
+      cds_config:
+        ads: {}
+      lds_config:
+        ads: {}
+    admin:
+      access_log_path: /dev/null
+      address:
+        socket_address:
+          address: 127.0.0.1
+          port_value: 19000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    gloo: my-cool-proxy
+  name: my-cool-proxy
+  namespace: default
+spec:
+  ports:
+    - port: 8080 # <- this port should match the port for the HttpListener in our Proxy CRD
+      protocol: TCP
+      name: http
+  selector:
+    gloo: my-cool-proxy
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    gloo: my-cool-proxy
+  name: my-cool-proxy
+  namespace: default
+spec:
+  replicas:
+  selector:
+    matchLabels:
+      gloo: my-cool-proxy
+  template:
+    metadata:
+      labels:
+        gloo: my-cool-proxy
+    spec:
+      containers:
+        - args: ["--disable-hot-restart"]
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          # image: quay.io/solo-io/gloo-envoy-wrapper:1.2.12 # <- use this instead if using open-source Gloo
+          image: quay.io/solo-io/gloo-ee-envoy-wrapper:1.2.0 # <- you must use closed-source envoy if using Gloo Enterprise
+          imagePullPolicy: Always
+          name: my-cool-proxy
+          ports:
+            - containerPort: 8080 # <- this port should match the port for the HttpListener in our Proxy CRD
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /etc/envoy
+              name: envoy-config
+      volumes:
+        - configMap:
+            name: my-cool-envoy-config
+          name: envoy-config

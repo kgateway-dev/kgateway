@@ -1,6 +1,7 @@
 package generate
 
 import (
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	appsv1 "k8s.io/api/core/v1"
 )
 
@@ -76,6 +77,7 @@ type JobSpec struct {
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
 	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
+	CustomEnv []*appsv1.EnvVar      `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
 }
 
 type Integrations struct {
@@ -206,10 +208,11 @@ type GatewayProxy struct {
 }
 
 type GatewayProxyGatewaySettings struct {
-	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
-	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
-	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	DisableGeneratedGateways bool              `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
+	UseProxyProto            bool              `json:"useProxyProto" desc:"use proxy protocol"`
+	CustomHttpGateway        string            `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
+	CustomHttpsGateway       string            `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	GatewayOptions           v1.GatewayOptions `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 }
 
 type GatewayProxyKind struct {

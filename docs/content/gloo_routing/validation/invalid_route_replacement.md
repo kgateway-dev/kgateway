@@ -8,16 +8,16 @@ description: (Kubernetes Only) Gloo can be configured to validate configuration 
 # Motivation
 
 When a Virtual Service (or one of its delegated route tables) contains invalid configuration, 
-its routes will no longer be propagated to the [**Proxy**]({{< protobuf name="gloo.solo.io.Proxy">}}).
+its routes will no longer be propagated to the {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}.
 Instead, the last valid configuration for that Virtual Service will be used.
 
 This behavior is used in order to ensure that invalid configuration does not lead to service outages.
 
 In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. 
-This is particularly useful when [delegating to Route Tables]({{< versioned_link_path "/gloo_routing/virtual_services/delegation/_index.md">}}))
+This is particularly useful when [delegating to Route Tables]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation">}})
 as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. 
 
-For this reason, Gloo supports the ability to enable *automatic replacement of invalid routes* (specifically, routes which point to a misssing **Upstream**
+For this reason, Gloo supports the ability to enable *automatic replacement of invalid routes* (specifically, routes which point to a missing **Upstream**
 or **UpstreamGroup**). 
 
 This document demonstrates how to enable and use this feature. 
@@ -26,12 +26,12 @@ This document demonstrates how to enable and use this feature.
 
 Make sure before starting you have:
 
-- [Installed Gloo in Gateway Mode]({{< versioned_link_path "/installation/gateway/kubernetes/_index.md">}}))
-- [Deployed the Petstore example App]({{< versioned_link_path "/gloo_routing/hello_world/_index.md">}}))
+- [Installed Gloo in Gateway Mode]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes">}})
+- [Deployed the Petstore example App]({{< versioned_link_path fromRoot="/gloo_routing/hello_world#deploy-the-pet-store-application">}})
 
 # Create a Partially Valid Virtual Service 
 
-Gloo can be configured to admit partially invalid config by enabling *invalid route replacement*. The options for this behavior live on the [Settings]({{< protobuf name="gloo.solo.io.Settings">}}) resource.
+Gloo can be configured to admit partially invalid config by enabling *invalid route replacement*. The options for this behavior live on the {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
 Consider the following Virtual Service:
 
@@ -39,7 +39,7 @@ Consider the following Virtual Service:
 {{< readfile file="gloo_routing/validation/partially_invalid_vs.yaml">}}
 ```
 
-The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< versioned_link_path "/gloo_routing/hello_world">}})), while `/bad-route` points to an invalid destination.
+The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< versioned_link_path fromRoot="/gloo_routing/hello_world">}}), while `/bad-route` points to an invalid destination.
 
 Let's try applying this configuration to the cluster before enabling route replacement:
 
