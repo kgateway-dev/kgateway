@@ -14,8 +14,39 @@ spec:
       labels:
         gloo: proxycontroller
     spec:
-      serviceAccountName: gloo # <- hijack the gloo service account rather than make a new one for this demo controller
+      serviceAccountName: proxycontroller
       containers:
-        - image: quay.io/solo-io/proxycontroller:1.2.12 # <- change this if you rebuild and push your controller to another registry
+        - image: quay.io/solo-io/proxycontroller:1.2.12
           imagePullPolicy: IfNotPresent
           name: proxycontroller
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: proxycontroller
+rules:
+  - apiGroups:
+      - "gloo.solo.io"
+    resources:
+      - proxies
+      - upstreams
+    verbs: ["get", "list", "watch", "create", "update", "delete"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: proxycontroller-binding
+subjects:
+  - kind: ServiceAccount
+    name: proxycontroller
+    namespace: gloo-system
+roleRef:
+  kind: ClusterRole
+  name: proxycontroller
+  apiGroup: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: proxycontroller
+  namespace: gloo-system
