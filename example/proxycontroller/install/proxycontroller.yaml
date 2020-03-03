@@ -14,8 +14,8 @@ spec:
       labels:
         gloo: proxycontroller
     spec:
-      # serviceAccountName: proxycontroller             # <- you'll likely need to create a service account and necessary permissions for your controller
+      serviceAccountName: gloo # <- hijack the gloo service account rather than make a new one for this demo controller
       containers:
         - image: quay.io/solo-io/proxycontroller:1.2.12 # <- change this if you rebuild and push your controller to another registry
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: proxycontroller
