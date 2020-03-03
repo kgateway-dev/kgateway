@@ -20,8 +20,8 @@ Other common use cases that can be solved with custom proxy controllers include:
 
 ## How it will work
 
-A custom `Proxy` controller takes Gloo resources as input and writes the desired output to managed `Proxy` custom
-resources.
+A custom `Proxy` controller takes any inputs (in our case, Gloo custom resources in kubernetes) and writes the desired
+output to managed `Proxy` custom resource(s).
 
 In our case, we will write a controller that takes `Upstream`s and `Proxy`s as inputs and outputs a new `Proxy`. Then
 we will deploy the new controller to create and manage our new `my-cool-proxy` `Proxy` custom resource. Finally, we
