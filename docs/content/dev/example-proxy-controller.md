@@ -800,7 +800,7 @@ petstore     ClusterIP   10.109.34.250   <none>        8080/TCP   5s
 The upstream that was created:
 
 ```bash
-kubectl get upstream
+kubectl get upstream -n gloo-system
 ```
 
 ```
@@ -874,6 +874,13 @@ by the `gateway` proxy controller. It's not very different from the controller w
 
 We'll need to deploy another proxy that will register to Gloo with it's `role` configured to match the name of our proxy 
 CRD, `my-cool-proxy`. Let's do it!
+
+If you'd prefer, you can deploy the `my-cool-proxy` envoy configmap, service, and deployment in one step:
+
+```shell script
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/proxycontroller/install/my-cool-proxy.yaml
+```
+and then skip to [testing the proxy](#testing-the-proxy).
 
 ### Creating the ConfigMap
 
@@ -1058,7 +1065,7 @@ returns
 Try any `Host` header for any upstream name: 
 
 ```bash
-kubectl get upstream
+kubectl get upstream -n gloo-system
 ```
 
 ```noop
