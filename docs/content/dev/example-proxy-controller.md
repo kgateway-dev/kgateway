@@ -601,11 +601,18 @@ and [deploy it as a pod](https://github.com/solo-io/gloo/tree/master/example/pro
 inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}})
 in your cluster so that Discovery will create some Upstreams for us.
 
-Once that's done, to see our code in action, simply run `go run example/proxycontroller/proxycontroller.go` from repo root!
 
-```bash
+
+{{< tabs >}}
+{{< tab name="run locally" codelang="bash">}}
 go run example/proxycontroller/proxycontroller.go
-```
+{{< /tab >}}
+{{< tab name="run in k8s" codelang="bash">}}
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/proxycontroller/install/proxycontroller.yaml
+{{< /tab >}}
+{{< /tabs >}}
+
+The logs should show:
 ```
 2019/02/11 11:27:30 wrote proxy object: listeners:<name:"my-amazing-listener" bind_address:"::" bind_port:8080 http_listener:<virtual_hosts:<name:"default-kubernetes-443" domains:"default-kubernetes-443" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"default-kubernetes-443" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gateway-proxy-8080" domains:"gloo-system-gateway-proxy-8080" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gateway-proxy-8080" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gloo-9977" domains:"gloo-system-gloo-9977" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gloo-9977" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-kube-dns-53" domains:"kube-system-kube-dns-53" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-kube-dns-53" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-tiller-deploy-44134" domains:"kube-system-tiller-deploy-44134" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-tiller-deploy-44134" namespace:"gloo-system" > > > > > > > status:<> metadata:<name:"my-cool-proxy" namespace:"gloo-system" resource_version:"455073" > 
 ```
