@@ -4,7 +4,8 @@ weight: 2
 ---
 
 In this tutorial, we're going to show how to use Gloo's {{< protobuf name="gloo.solo.io.Proxy" display="Proxy API">}}
-to build a router which automatically creates routes for every existing kubernetes service.
+to build a router which automatically creates routes for every existing kubernetes service. Then we will show how to
+enable the same functionality for consul services as well.
 
 ## Why Write a Custom Proxy Controller
 
@@ -1085,7 +1086,7 @@ potential use cases. Take a look at our
 wide range of configuration options Proxies expose such as request transformation, SSL termination, serverless computing, 
 and much more.
 
-## Appendix - Auto-routing with consul services
+## Appendix - Auto-Generated Routes for Discovered Consul Services
 
 The rest of this guide assumes you've been running on minikube, but this setup can be extrapolated to production/more
 complex setups.
@@ -1095,7 +1096,7 @@ Run consul on your local machine:
 consul agent -dev --client=0.0.0.0
 ```
 
-Get the Host IP address reachable from within minikube:
+Get the Host IP address where consul will be reachable from within minikube pods:
 ```shell script
 minikube ssh "route -n | grep ^0.0.0.0 | awk '{ print \$2 }'"
 ```
@@ -1118,7 +1119,7 @@ cat > petstore-service.json <<EOF
 EOF
 ```
 
-register the consul service:
+Register the consul service:
 ```shell script
 curl -v \
     -XPUT \
@@ -1126,7 +1127,7 @@ curl -v \
     "http://127.0.0.1:8500/v1/agent/service/register"
 ```
 
-confirm the upstream was discovered:
+Confirm the upstream was discovered:
 ```shell script
 kubectl get us -n gloo-system petstore
 ```
@@ -1147,4 +1148,4 @@ returns
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-Nice! You've configured Gloo to auto-route to discovered consul services!
+Nice. You've configured Gloo to proactively create routes to discovered consul services!
