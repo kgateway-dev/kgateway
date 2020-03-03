@@ -2,7 +2,7 @@
 title: "Installing Gloo Enterprise"
 menuTitle: Gloo Enterprise
 description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
-weight: 40
+weight: 60
 ---
 
 ## Installing the Gloo Gateway on Kubernetes
