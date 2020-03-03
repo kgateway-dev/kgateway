@@ -30,14 +30,23 @@ import (
 
 var _ = Describe("Consul EDS", func() {
 
-	const writeNamespace = defaults.GlooSystem
+	var (
+		ctrl *gomock.Controller
+	)
 
+	const writeNamespace = defaults.GlooSystem
+	BeforeEach(func() {
+		ctrl = gomock.NewController(T)
+	})
+
+	AfterEach(func() {
+		ctrl.Finish()
+	})
 	Describe("endpoints watch 2 - more idiomatic", func() {
 
 		var (
 			ctx               context.Context
 			cancel            context.CancelFunc
-			ctrl              *gomock.Controller
 			consulWatcherMock *mock_consul.MockConsulWatcher
 
 			// Data center names
@@ -116,7 +125,6 @@ var _ = Describe("Consul EDS", func() {
 		})
 
 		AfterEach(func() {
-			ctrl.Finish()
 
 			if cancel != nil {
 				cancel()
@@ -450,6 +458,75 @@ var _ = Describe("Consul EDS", func() {
 
 	})
 
+	Describe("unit tests", func() {
+		FIt("generates unique endpoint names", func() {
+
+			svcs := []*consulapi.CatalogService{
+				{
+					ID:         "12341234-1234-1234-1234-123412341234",
+					Node:       "ip-1.2.3.4",
+					Address:    "1.2.3.4",
+					Datacenter: "test",
+					TaggedAddresses: map[string]string{
+						"lan": "1.2.3.4",
+						"wan": "1.2.3.4",
+					},
+					// test with two services having the same services id. this can happen.
+					ServiceID:      "foo",
+					ServiceName:    "foo",
+					ServiceAddress: "1.2.3.4",
+					ServiceTags:    []string{"serf"},
+					ServicePort:    1234,
+				}, {
+					ID:         "12341234-1234-1234-1234-123412341234",
+					Node:       "ip-1.2.3.4",
+					Address:    "1.2.3.4",
+					Datacenter: "test",
+					TaggedAddresses: map[string]string{
+						"lan": "1.2.3.4",
+						"wan": "1.2.3.4",
+					},
+					ServiceID:      "foo",
+					ServiceName:    "foo",
+					ServiceAddress: "1.2.3.4",
+					ServiceTags:    []string{"http"},
+					ServicePort:    1235,
+				}, {
+					ID:         "12341234-1234-1234-1234-123412341234",
+					Node:       "ip-1.2.3.4",
+					Address:    "test.com",
+					Datacenter: "test-dns",
+					TaggedAddresses: map[string]string{
+						"lan": "1.2.3.4",
+						"wan": "1.2.3.4",
+					},
+					ServiceID:      "foo",
+					ServiceName:    "foo",
+					ServiceAddress: "test.com",
+					ServiceTags:    []string{"ftp"},
+					ServicePort:    1236,
+				},
+			}
+
+			twoIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}, {IP: net.IPv4(2, 1, 0, 11)}}
+			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(twoIps, nil).Times(1)
+
+			trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
+			for _, svc := range svcs {
+				trackedServiceToUpstreams[svc.ServiceName] = []*v1.Upstream{}
+			}
+
+			// make sure the we have a correct number of generated endpoints:
+
+			endpoints := buildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams)
+			endpontNames := map[string]bool{}
+			for _, endpoint := range endpoints {
+				endpontNames[endpoint.GetMetadata().Name] = true
+			}
+			Expect(endpontNames).To(HaveLen(len(svcs) + (len(twoIps) - 1)))
+		})
+	})
 	Describe("unit tests", func() {
 
 		It("generates the correct endpoint for a given Consul service", func() {
