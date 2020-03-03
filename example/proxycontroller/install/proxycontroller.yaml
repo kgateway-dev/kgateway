@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    gloo: proxycontroller
+  name: proxycontroller
+  namespace: gloo-system
+spec:
+  selector:
+    matchLabels:
+      gloo: proxycontroller
+  template:
+    metadata:
+      labels:
+        gloo: proxycontroller
+    spec:
+      containers:
+        - image: quay.io/solo-io/proxycontroller:1.2.12 # <- change this if you rebuild and push your controller to another registry
+          imagePullPolicy: Always
+          name: proxycontroller

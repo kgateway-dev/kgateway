@@ -596,9 +596,10 @@ func must(err error) {
 
 ### Run
 
-While it's possible to package this application in a Docker container and deploy it as a pod inside of Kubernetes, let's 
-just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}}) in your cluster so 
-that Discovery will create some Upstreams for us.
+While it's possible to package [this application in a Docker container](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/Dockerfile)
+and [deploy it as a pod](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/install/proxycontroller.yaml)
+inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}})
+in your cluster so that Discovery will create some Upstreams for us.
 
 Once that's done, to see our code in action, simply run `go run example/proxycontroller/proxycontroller.go` from repo root!
 

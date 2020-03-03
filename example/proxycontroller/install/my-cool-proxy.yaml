@@ -71,7 +71,6 @@ metadata:
   name: my-cool-proxy
   namespace: default
 spec:
-  replicas:
   selector:
     matchLabels:
       gloo: my-cool-proxy
