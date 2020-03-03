@@ -55,14 +55,13 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters)
 
-	var errAggregator sync.WaitGroup
-	errAggregator.Add(1)
 	go func() {
-		defer errAggregator.Done()
+		defer close(errChan)
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
 	go func() {
+		defer close(endpointsChan)
 
 		// Create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
@@ -70,6 +69,15 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		defer func() { cancel() }()
 
 		timer := time.NewTicker(DefaultDnsPollingInterval)
+
+		publishEndpoints := func(endpoints v1.EndpointList) bool {
+			select {
+			case <-opts.Ctx.Done():
+				return false
+			case endpointsChan <- endpoints:
+			}
+			return true
+		}
 
 		for {
 			select {
@@ -89,7 +97,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				previousHash = hashutils.MustHash(endpoints)
 				previousSpecs = specs
 
-				endpointsChan <- endpoints
+				if !publishEndpoints(endpoints) {
+					return
+				}
 
 			case <-timer.C:
 				// Poll to ensure any DNS updates get picked up in endpoints for EDS
@@ -101,16 +111,12 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				}
 
 				previousHash = currentHash
-				endpointsChan <- endpoints
+				if !publishEndpoints(endpoints) {
+					return
+				}
 
 			case <-opts.Ctx.Done():
-				close(endpointsChan)
-
-				// Wait for error aggregation routing to complete to avoid writing to closed errChan
-				errAggregator.Wait()
-				close(errChan)
 				return
-
 			}
 		}
 	}()
