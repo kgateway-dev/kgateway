@@ -16,7 +16,7 @@ const (
 	ConfigDirName  = ".gloo"
 
 	defaultYaml = `# glooctl configuration file
-# see https://gloo.solo.io/advanced_configuration/glooctl-config/ for more information
+# see https://gloo.solo.io/installation/advanced_configuration/glooctl-config/ for more information
 
 `
 	dirPermissions  = 0755

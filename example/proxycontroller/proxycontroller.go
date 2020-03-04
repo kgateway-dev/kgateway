@@ -1,8 +1,6 @@
 // +build ignore
 
-package docs_demo
-
-// package main
+package main
 
 // all the import's we'll need for this controller
 import (

@@ -1,7 +1,8 @@
 ---
 title: "Installing Gloo Gateway on Kubernetes"
+menuTitle: "Kubernetes"
 description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
-weight: 2
+weight: 10
 ---
 
 Gloo Gateway can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). The following document will take you through the process of either installation, [verifying the installation](#verify-your-installation), and [how to remove Gloo Gateway](#uninstall) if necessary.
@@ -15,7 +16,7 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 ## Installing the Gloo Gateway on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](./cluster_setup).
+Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 
 {{% notice note %}}
 For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 

@@ -1,7 +1,7 @@
 ---
 title: "Custom Resource Usage"
 description: An explanation of Custom Resource usage by Gloo.
-weight: 15
+weight: 40
 ---
 
 Gloo uses native constructs in Kubernetes to store data, including ConfigMaps, Secrets, and Custom Resource (CRs). This document is meant to summarize what CRs are created by Gloo during installation, and how these CRs interact with the other Gloo objects to store configuration data in the cluster.

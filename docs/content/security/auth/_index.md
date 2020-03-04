@@ -26,7 +26,7 @@ By default, Gloo's built-in Auth Server deploys as a Kubernetes pod. To authenti
 
 In this configuration, the Ext Auth server runs as an additional container inside the `gateway-proxy` pod(s) that run Gloo's Envoy instance(s), and communication with Envoy occurs via Unix Domain Sockets instead of TCP. This cuts out the overhead associated with the TCP protocol and can provide substantial performance benefits (40%+ in some benchmarks).
 
-You can activate this mode by [installing Gloo with Helm]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}}) and providing the following value overrides:
+You can activate this mode by [installing Gloo with Helm]({{< versioned_link_path fromRoot="/installation/gateway/enterprise#installing-on-kubernetes-with-helm" >}}) and providing the following value overrides:
 
 | option                                         | type | description                                                                                                                       |
 | ---------------------------------------------- | ---- | --------------------------------------------------------------------------------------------------------------------------------- |

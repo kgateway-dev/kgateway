@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add docs section to show how to route to automatically generated consul routes from discovered consul services.
+    issueLink: https://github.com/solo-io/gloo/issues/2308
+    resolvesIssue: false

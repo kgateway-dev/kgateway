@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix docs to work with recent Gloo & Gloo enterprise releases.
+    issueLink: https://github.com/solo-io/gloo/issues/2308
+    resolvesIssue: false
