@@ -5,6 +5,9 @@
 ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
+# If you just put your username, then that refers to your account at hub.docker.com
+IMAGE_REPO := camelcasenotation
+
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
 
@@ -113,6 +116,10 @@ clean:
 	rm -rf docs/resources
 	git clean -f -X install
 
+# This is required to run if making changes to proto files then run `make generated-code -B`
+clean-generated-code:
+	rm -rf projects/gloo/pkg/plugins/grpc/*.descriptor.go
+
 #----------------------------------------------------------------------------------
 # Generated Code and Docs
 #----------------------------------------------------------------------------------
@@ -220,7 +227,7 @@ $(OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 
 gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
-		-t quay.io/solo-io/gateway:$(VERSION)
+		-t $(IMAGE_REPO)/gateway:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Ingress
@@ -240,7 +247,7 @@ $(OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 
 ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
-		-t quay.io/solo-io/ingress:$(VERSION)
+		-t $(IMAGE_REPO)/ingress:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Access Logger
@@ -260,7 +267,7 @@ $(OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
 
 access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dockerfile.access-logger
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.access-logger \
-		-t quay.io/solo-io/access-logger:$(VERSION)
+		-t $(IMAGE_REPO)/access-logger:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Discovery
@@ -280,7 +287,7 @@ $(OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 
 discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery \
-		-t quay.io/solo-io/discovery:$(VERSION)
+		-t $(IMAGE_REPO)/discovery:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Gloo
@@ -301,7 +308,7 @@ $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
-		-t quay.io/solo-io/gloo:$(VERSION)
+		-t $(IMAGE_REPO)/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # SDS Server - gRPC server for serving Secret Discovery Service config for Gloo MTLS
@@ -322,7 +329,7 @@ $(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
 .PHONY: sds-docker
 sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
-		-t quay.io/solo-io/sds:$(VERSION)
+		-t $(IMAGE_REPO)/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Envoy init (BASE/SIDECAR)
@@ -346,7 +353,7 @@ $(OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit $(OUTPUT_DIR)/docker-entrypoint.sh
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
-		-t quay.io/solo-io/gloo-envoy-wrapper:$(VERSION)
+		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Envoy init (WASM)
@@ -367,7 +374,7 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 .PHONY: gloo-envoy-wasm-wrapper-docker
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
-		-t quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION)
+		-t $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -388,7 +395,7 @@ $(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 .PHONY: certgen-docker
 certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
-		-t quay.io/solo-io/certgen:$(VERSION)
+		-t $(IMAGE_REPO)/certgen:$(VERSION)
 
 #----------------------------------------------------------------------------------
 # Build All
@@ -528,27 +535,27 @@ docker: discovery-docker gateway-docker gloo-docker \
 # to be used for local testing.
 # docker-push is intended to be run by CI
 docker-push: $(DOCKER_IMAGES)
-	docker push quay.io/solo-io/gateway:$(VERSION) && \
-	docker push quay.io/solo-io/ingress:$(VERSION) && \
-	docker push quay.io/solo-io/discovery:$(VERSION) && \
-	docker push quay.io/solo-io/gloo:$(VERSION) && \
-	docker push quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) && \
-	docker push quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) && \
-	docker push quay.io/solo-io/certgen:$(VERSION) && \
-	docker push quay.io/solo-io/sds:$(VERSION) && \
-	docker push quay.io/solo-io/access-logger:$(VERSION)
+	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
 
 CLUSTER_NAME ?= kind
 
 push-kind-images: docker
-	kind load docker-image quay.io/solo-io/gateway:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/ingress:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/discovery:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/gloo:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/certgen:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image quay.io/solo-io/access-logger:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gateway:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/ingress:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
