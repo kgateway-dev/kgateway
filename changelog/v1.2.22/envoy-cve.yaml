@@ -1,0 +1,7 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: 1.2.0
+  description: >
+    Upgrade envoy-gloo version to handle CVE https://groups.google.com/forum/#!topic/envoy-announce/sVqmxy0un2s
