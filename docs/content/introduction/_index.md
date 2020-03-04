@@ -1,5 +1,5 @@
 ---
-title: Introduction
+title: Concepts
 weight: 10
 ---
 
