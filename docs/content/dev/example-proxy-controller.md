@@ -4,7 +4,8 @@ weight: 2
 ---
 
 In this tutorial, we're going to show how to use Gloo's {{< protobuf name="gloo.solo.io.Proxy" display="Proxy API">}}
-to build a router which automatically creates routes for every existing kubernetes service.
+to build a router which automatically creates routes for every existing kubernetes service. Then we will show how to
+enable the same functionality for consul services as well.
 
 ## Why Write a Custom Proxy Controller
 
@@ -595,15 +596,23 @@ func must(err error) {
 
 ### Run
 
-While it's possible to package this application in a Docker container and deploy it as a pod inside of Kubernetes, let's 
-just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}}) in your cluster so 
-that Discovery will create some Upstreams for us.
+While it's possible to package [this application in a Docker container](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/Dockerfile)
+and [deploy it as a pod](https://github.com/solo-io/gloo/tree/master/example/proxycontroller/install/proxycontroller.yaml)
+inside of Kubernetes, let's just try running it locally. [Make sure you have Gloo installed]({{% versioned_link_path fromRoot="/installation" %}})
+in your cluster so that Discovery will create some Upstreams for us.
 
-Once that's done, to see our code in action, simply run `go run example/proxycontroller/proxycontroller.go` from repo root!
 
-```bash
+
+{{< tabs >}}
+{{< tab name="run locally" codelang="bash">}}
 go run example/proxycontroller/proxycontroller.go
-```
+{{< /tab >}}
+{{< tab name="run in k8s" codelang="bash">}}
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/proxycontroller/install/proxycontroller.yaml
+{{< /tab >}}
+{{< /tabs >}}
+
+The logs should show:
 ```
 2019/02/11 11:27:30 wrote proxy object: listeners:<name:"my-amazing-listener" bind_address:"::" bind_port:8080 http_listener:<virtual_hosts:<name:"default-kubernetes-443" domains:"default-kubernetes-443" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"default-kubernetes-443" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gateway-proxy-8080" domains:"gloo-system-gateway-proxy-8080" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gateway-proxy-8080" namespace:"gloo-system" > > > > > virtual_hosts:<name:"gloo-system-gloo-9977" domains:"gloo-system-gloo-9977" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"gloo-system-gloo-9977" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-kube-dns-53" domains:"kube-system-kube-dns-53" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-kube-dns-53" namespace:"gloo-system" > > > > > virtual_hosts:<name:"kube-system-tiller-deploy-44134" domains:"kube-system-tiller-deploy-44134" routes:<matchers:<prefix:"/" > route_action:<single:<upstream:<name:"kube-system-tiller-deploy-44134" namespace:"gloo-system" > > > > > > > status:<> metadata:<name:"my-cool-proxy" namespace:"gloo-system" resource_version:"455073" > 
 ```
@@ -1084,3 +1093,67 @@ potential use cases. Take a look at our
 {{< protobuf name="gloo.solo.io.Proxy" display="API Reference Documentation">}} to learn about the 
 wide range of configuration options Proxies expose such as request transformation, SSL termination, serverless computing, 
 and much more.
+
+## Appendix - Auto-Generated Routes for Discovered Consul Services
+
+The rest of this guide assumes you've been running on minikube, but this setup can be extrapolated to production/more
+complex setups.
+
+Run consul on your local machine:
+```shell script
+consul agent -dev --client=0.0.0.0
+```
+
+Get the Host IP address where consul will be reachable from within minikube pods:
+```shell script
+minikube ssh "route -n | grep ^0.0.0.0 | awk '{ print \$2 }'"
+```
+
+Enable consul service discovery in Gloo, replacing address with the value you got before:
+```shell script
+kubectl patch settings -n gloo-system default --patch '{"spec": {"consul": {"address": "10.0.2.2:8500", "serviceDiscovery": {}}}}' --type=merge
+```
+
+Get the cluster IP for petstore service and register a consul service to point there:
+```shell script
+PETSTORE_IP=$(kubectl get svc -n default petstore -o=jsonpath='{.spec.clusterIP}')
+cat > petstore-service.json <<EOF
+{
+  "ID": "petstore1",
+  "Name": "petstore",
+  "Address": "${PETSTORE_IP}",
+  "Port": 8080
+}
+EOF
+```
+
+Register the consul service:
+```shell script
+curl -v \
+    -XPUT \
+    --data @petstore-service.json \
+    "http://127.0.0.1:8500/v1/agent/service/register"
+```
+
+Confirm the upstream was discovered:
+```shell script
+kubectl get us -n gloo-system petstore
+```
+returns
+```noop
+NAME       AGE
+petstore   8s
+```
+
+Hit the discovered consul service:
+```shell script
+curl $(glooctl proxy url -n default --name my-cool-proxy)/api/pets -H "Host: petstore"
+```
+
+returns
+
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+Nice. You've configured Gloo to proactively create routes to discovered consul services!
