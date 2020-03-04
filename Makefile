@@ -6,7 +6,7 @@ ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 # If you just put your username, then that refers to your account at hub.docker.com
-IMAGE_REPO := camelcasenotation
+IMAGE_REPO := quay.io/solo-io
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
