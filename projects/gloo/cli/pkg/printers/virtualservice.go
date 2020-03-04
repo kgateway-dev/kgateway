@@ -154,7 +154,7 @@ func getStatus(res resources.InputResource, namespace string) string {
 		// if we get any errors, ignore and default to more verbose error message
 		if err == nil {
 			settings, err := settingsClient.Read(namespace, defaults.SettingsName, clients.ReadOpts{})
-			if err == nil && settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes {
+			if err == nil && settings.Gloo != nil && settings.Gloo.InvalidConfigPolicy != nil && settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes {
 				return resourceStatus.String()
 			}
 		}

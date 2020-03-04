@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: `glooctl get vs` no longer panics when certain sections are not present in the settings.
+    issueLink: https://github.com/solo-io/gloo/issues/2550
