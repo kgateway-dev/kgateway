@@ -1,0 +1,8 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v0.1.20
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/2395
+  description: Use envoy's `SafeRegex` feature to have more deterministic regex performance.
