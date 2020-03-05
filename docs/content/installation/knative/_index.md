@@ -1,7 +1,7 @@
 ---
-title: "Installing Gloo for Knative"
+title: "Gloo for Knative"
 description: How to install Gloo to run in Knative Mode on Kubernetes.
-weight: 30
+weight: 40
 ---
 
 For the purpose of running Knative, Gloo can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
@@ -16,7 +16,7 @@ This guide walks you through installing Gloo and Knative using either `glooctl` 
 
 ## Installing the Gloo Knative Ingress on Kubernetes
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster can be found [here]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" >}}). You can install Gloo Knative Ingress using using `glooctl` or through Helm. Helm is the recommended method for installing in a Production environment.
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster can be found [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}). You can install Gloo Knative Ingress using using `glooctl` or through Helm. Helm is the recommended method for installing in a Production environment.
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 

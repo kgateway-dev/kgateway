@@ -44,7 +44,7 @@ The documentation for Gloo is meant to be conversational and engaging. It should
 The docs use Hugo to generate the static website, which makes the structure and naming of the directories holding the content important. The structure of the current docs can be found on the [Gloo GitHub repository](https://github.com/solo-io/gloo). Here is a representation of `content` directory as of this writing.
 
 ```bash
-├───advanced_configuration # Menu item in the navigation bar
+# Menu item in the navigation bar
 ├───api
 ├───changelog
 ├───cli

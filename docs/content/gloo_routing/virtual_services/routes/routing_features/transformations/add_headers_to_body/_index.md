@@ -139,7 +139,7 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to responses.
-1. Use a [template transformation]({{% versioned_link_path fromRoot="gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
+1. Use a [template transformation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
 1. Define two [extractions]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#extractors" %}}) to extract the required headers from the request. You can control where the values will be nested in the body by using separators in their names (dots if `advancedTemplates` is `false`, forward slashes otherwise).
 1. Merge the defined extractions to the request body.
 

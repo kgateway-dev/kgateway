@@ -1,7 +1,7 @@
 ---
 title: Run Gloo Gateway Locally with Hashicorp Consul & Vault
-menuTitle: Run Gloo with Consul & Vault
-weight: 5
+menuTitle: Consul & Vault
+weight: 10
 description: How to run Gloo Locally using Docker Compose with HashiCorp Consul & Vault
 ---
 
