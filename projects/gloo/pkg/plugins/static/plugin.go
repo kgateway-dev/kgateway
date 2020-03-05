@@ -12,6 +12,7 @@ import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
@@ -101,9 +102,14 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	if spec.UseTls || foundSslPort {
 		// tell envoy to use TLS to connect to this upstream
 		// TODO: support client certificates
-		if out.TlsContext == nil {
-			out.TlsContext = &envoyauth.UpstreamTlsContext{
+		if out.TransportSocket == nil {
+			tlsContext := &envoyauth.UpstreamTlsContext{
+				// TODO(yuval-k): Add verification context
 				Sni: hostname,
+			}
+			out.TransportSocket = &envoycore.TransportSocket{
+				Name:       pluginutils.TlsTransportSocket,
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 			}
 		}
 	}

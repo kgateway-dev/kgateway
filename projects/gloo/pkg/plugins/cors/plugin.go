@@ -14,6 +14,7 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -83,8 +84,19 @@ func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyro
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
-	out.AllowOrigin = in.AllowOrigin
-	out.AllowOriginRegex = in.AllowOriginRegex
+	for _, ao := range in.AllowOrigin {
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: ao},
+		})
+	}
+	for _, ao := range in.AllowOriginRegex {
+		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
+			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: &envoymatcher.RegexMatcher{
+				EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+				Regex:      ao,
+			}},
+		})
+	}
 	out.AllowMethods = strings.Join(in.AllowMethods, ",")
 	out.AllowHeaders = strings.Join(in.AllowHeaders, ",")
 	out.ExposeHeaders = strings.Join(in.ExposeHeaders, ",")

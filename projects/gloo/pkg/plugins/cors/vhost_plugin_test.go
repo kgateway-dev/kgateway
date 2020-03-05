@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -51,8 +52,31 @@ var _ = Describe("VirtualHost Plugin", func() {
 		}
 
 		out1 := &envoyroute.CorsPolicy{
-			AllowOrigin:      allowOrigin1,
-			AllowOriginRegex: allowOriginRegex1,
+
+			AllowOriginStringMatch: []*envoymatcher.StringMatcher{
+				&envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+				},
+				&envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+				},
+				&envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+						SafeRegex: &envoymatcher.RegexMatcher{
+							EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+							Regex:      allowOriginRegex1[0],
+						},
+					},
+				},
+				&envoymatcher.StringMatcher{
+					MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
+						SafeRegex: &envoymatcher.RegexMatcher{
+							EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+							Regex:      allowOriginRegex1[1],
+						},
+					},
+				},
+			},
 			AllowMethods:     strings.Join(allowMethods1, ","),
 			AllowHeaders:     strings.Join(allowHeaders1, ","),
 			ExposeHeaders:    strings.Join(exposeHeaders1, ","),
@@ -87,7 +111,14 @@ var _ = Describe("VirtualHost Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 			envoy1min := &envoyroute.VirtualHost{
 				Cors: &envoyroute.CorsPolicy{
-					AllowOrigin: allowOrigin1,
+					AllowOriginStringMatch: []*envoymatcher.StringMatcher{
+						&envoymatcher.StringMatcher{
+							MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[0]},
+						},
+						&envoymatcher.StringMatcher{
+							MatchPattern: &envoymatcher.StringMatcher_Exact{Exact: allowOrigin1[1]},
+						},
+					},
 				},
 			}
 			Expect(out).To(Equal(envoy1min))
