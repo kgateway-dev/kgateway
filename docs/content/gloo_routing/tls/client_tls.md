@@ -206,7 +206,7 @@ kubectl get upstream -n gloo-system \
     default-example-tls-server-8080 -o yaml
 ```
 
-{{< highlight yaml "hl_lines=18-21" >}}
+{{< highlight yaml "hl_lines=17-20" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
