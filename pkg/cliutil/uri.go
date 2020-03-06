@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -156,7 +159,7 @@ func minikubeIp(clusterName string) (string, error) {
 }
 
 // Call kubectl port-forward. Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (error, *exec.Cmd) {
+func PortForward(namespace string, resource string, localPort string, kubePort string, verbose bool) (*exec.Cmd, error) {
 
 	/** port-forward command **/
 
@@ -165,7 +168,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 
 	err := Initialize()
 	if err != nil {
-		return err, portFwd
+		return portFwd, err
 	}
 	logger := GetLogger()
 
@@ -177,22 +180,22 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 	}
 
 	if err := portFwd.Start(); err != nil {
-		return err, portFwd
+		return portFwd, err
 	}
 
-	return nil, portFwd
+	return portFwd, nil
 
 }
 
 // Call kubectl port-forward and make a GET request.
 // Callers are expected to clean up the returned portFwd *exec.cmd after the port-forward is no longer needed.
-func PortForwardGet(namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (error, *exec.Cmd, string) {
+func PortForwardGet(namespace string, resource string, localPort string, kubePort string, verbose bool, getPath string) (string, *exec.Cmd, error) {
 
 	/** port-forward command **/
 
-	err, portFwd := PortForward(namespace, resource, localPort, kubePort, verbose)
+	portFwd, err := PortForward(namespace, resource, localPort, kubePort, verbose)
 	if err != nil {
-		return err, portFwd, ""
+		return "", portFwd, err
 	}
 
 	// wait for port-forward to be ready
@@ -225,16 +228,29 @@ func PortForwardGet(namespace string, resource string, localPort string, kubePor
 
 	timer := time.Tick(time.Second * 5)
 
-	var errsList []string
+	var multiErr *multierror.Error
 	for {
 		select {
 		case err := <-errs:
-			errsList = append(errsList, err.Error()+"\n")
+			multiErr = multierror.Append(multiErr, err)
 		case res := <-result:
-			return nil, portFwd, res
+			return res, portFwd, nil
 		case <-timer:
-			return errors.Errorf("timed out trying to connect to Envoy admin port, errors: %v", errsList), portFwd, ""
+			return "", portFwd, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
 		}
 	}
 
+}
+
+func GetFreePort() (int, error) {
+	l, err := net.Listen("tcp", ":0")
+	if err != nil {
+		return 0, err
+	}
+	defer l.Close()
+	tcpAddr, ok := l.Addr().(*net.TCPAddr)
+	if !ok {
+		return 0, errors.Errorf("Error occured looking for an open tcp port")
+	}
+	return tcpAddr.Port, nil
 }

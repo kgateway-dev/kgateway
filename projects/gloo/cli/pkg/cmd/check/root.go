@@ -372,11 +372,16 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	errMessage := "Problem while checking for out of sync proxies"
 
 	// port-forward gateway-proxy deployment and get prometheus metrics
-	adminPort := int(defaults.EnvoyAdminPort)
-	localPort := adminPort + 1
+	freePort, err := cliutil.GetFreePort()
+	if err != nil {
+		fmt.Println(errMessage)
+		return false, err
+	}
+	localPort := strconv.Itoa(freePort)
+	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	promStatsPath := "/stats/prometheus"
-	err, portFwdCmd, stats := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
-		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, promStatsPath)
+	stats, portFwdCmd, err := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
+		localPort, adminPort, false, promStatsPath)
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()
 		defer portFwdCmd.Process.Kill()
@@ -401,7 +406,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	time.Sleep(time.Millisecond * 250)
 
 	// gather metrics again
-	res, err := http.Get("http://localhost:" + strconv.Itoa(localPort) + promStatsPath)
+	res, err := http.Get("http://localhost:" + localPort + promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
 		return false, err
@@ -428,8 +433,6 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	newStatsMap := parseMetrics(newStats, desiredMetricsSegments, promStatsPath)
 
 	if reflect.DeepEqual(newStatsMap, statsMap) {
-		// TODO Is worth the time for reflect?
-		fmt.Println("same though")
 		fmt.Printf("OK\n")
 		return true, nil
 	}
@@ -442,7 +445,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 			oldRejected, oldOk := statsMap[rejectedMetric]
 			if newOk && oldOk && newRejected > oldRejected {
 				fmt.Printf("An update to your gateway-proxy deployment was rejected due to schema/validation errors. The %v metric increased.\n"+
-					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", rejectedMetric)
+					"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.\n", rejectedMetric)
 				return false, nil
 			}
 			failureMetric := strings.Replace(k, "attempt", "failure", -1)
@@ -450,7 +453,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 			oldFailure, oldOk := statsMap[failureMetric]
 			if newOk && oldOk && newFailure > oldFailure {
 				fmt.Printf("An update to your gateway-proxy deployment was rejected due to network errors. The %v metric increased.\n"+
-					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", failureMetric)
+					"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.\n", failureMetric)
 				return false, nil
 			}
 		}
