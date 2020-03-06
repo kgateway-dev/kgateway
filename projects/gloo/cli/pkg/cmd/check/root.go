@@ -428,6 +428,8 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 		return false, nil
 	}
 
+	// for example, look for stats like "envoy_http_rds_update_attempt" and "envoy_http_rds_update_rejected"
+	// more info at https://www.envoyproxy.io/docs/envoy/latest/configuration/overview/mgmt_server#xds-subscription-statistics
 	desiredMetricsSegments := []string{"update_attempt", "update_rejected", "update_failure"}
 	statsMap := parseMetrics(stats, desiredMetricsSegments, promStatsPath)
 	newStatsMap := parseMetrics(newStats, desiredMetricsSegments, promStatsPath)
@@ -443,6 +445,8 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 			rejectedMetric := strings.Replace(k, "attempt", "rejected", -1)
 			newRejected, newOk := newStatsMap[rejectedMetric]
 			oldRejected, oldOk := statsMap[rejectedMetric]
+			// for example, if envoy_http_rds_update_rejected{envoy_http_conn_manager_prefix="http",envoy_rds_route_config="listener-__-8080-routes"}
+			// increases, which occurs if envoy cannot parse the config from gloo
 			if newOk && oldOk && newRejected > oldRejected {
 				fmt.Printf("An update to your gateway-proxy deployment was rejected due to schema/validation errors. The %v metric increased.\n"+
 					"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.\n", rejectedMetric)
