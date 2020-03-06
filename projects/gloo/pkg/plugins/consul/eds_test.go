@@ -460,7 +460,7 @@ var _ = Describe("Consul EDS", func() {
 	})
 
 	Describe("unit tests", func() {
-		FIt("generates unique endpoint names", func() {
+		It("generates unique endpoint names", func() {
 
 			svcs := []*consulapi.CatalogService{
 				{
