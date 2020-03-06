@@ -2,6 +2,7 @@ package consul
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"sort"
 	"sync/atomic"
@@ -505,6 +506,20 @@ var _ = Describe("Consul EDS", func() {
 					ServiceAddress: "test.com",
 					ServiceTags:    []string{"ftp"},
 					ServicePort:    1236,
+				}, {
+					ID:         "12341234-1234-1234-1234-123412341234",
+					Node:       "ip-1.2.3.4",
+					Address:    "1.2.3.4",
+					Datacenter: "test-dns",
+					TaggedAddresses: map[string]string{
+						"lan": "1.2.3.4",
+						"wan": "1.2.3.4",
+					},
+					ServiceID:      "foo",
+					ServiceName:    "foo",
+					ServiceAddress: "1.2.3.4",
+					ServiceTags:    []string{"ftp", "http"},
+					ServicePort:    1237,
 				},
 			}
 
@@ -514,7 +529,41 @@ var _ = Describe("Consul EDS", func() {
 
 			trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
 			for _, svc := range svcs {
-				trackedServiceToUpstreams[svc.ServiceName] = []*v1.Upstream{}
+				trackedServiceToUpstreams[svc.ServiceName] = []*v1.Upstream{
+					{
+						Metadata: core.Metadata{
+							Name:      "n",
+							Namespace: "n",
+						},
+						UpstreamType: &v1.Upstream_Consul{
+							Consul: &consulplugin.UpstreamSpec{
+								ServiceName: "foo",
+								ServiceTags: []string{"http"},
+							},
+						},
+					}, {
+						Metadata: core.Metadata{
+							Name:      "n1",
+							Namespace: "n",
+						},
+						UpstreamType: &v1.Upstream_Consul{
+							Consul: &consulplugin.UpstreamSpec{
+								ServiceName: "foo",
+								ServiceTags: []string{"http", "ftp"},
+							},
+						},
+					}, {
+						Metadata: core.Metadata{
+							Name:      "n2",
+							Namespace: "n",
+						},
+						UpstreamType: &v1.Upstream_Consul{
+							Consul: &consulplugin.UpstreamSpec{
+								ServiceName: "foo",
+							},
+						},
+					},
+				}
 			}
 
 			// make sure the we have a correct number of generated endpoints:
@@ -522,7 +571,35 @@ var _ = Describe("Consul EDS", func() {
 			endpoints := buildEndpointsFromSpecs(context.TODO(), writeNamespace, mockDnsResolver, svcs, trackedServiceToUpstreams)
 			endpontNames := map[string]bool{}
 			for _, endpoint := range endpoints {
+				fmt.Fprintf(GinkgoWriter, "%s%v\n", "endpoint: ", endpoint)
 				endpontNames[endpoint.GetMetadata().Name] = true
+
+				Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+					Name:      "n2",
+					Namespace: "n",
+				}))
+				switch endpoint.GetPort() {
+				case 1235:
+					// 1235 is the http endpoint above
+					Expect(endpoint.Upstreams).To(HaveLen(2))
+					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+						Name:      "n",
+						Namespace: "n",
+					}))
+				case 1237:
+					// 1237 is the ftp,http endpoint above
+					Expect(endpoint.Upstreams).To(HaveLen(3))
+					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+						Name:      "n1",
+						Namespace: "n",
+					}))
+					Expect(endpoint.Upstreams).To(ContainElement(&core.ResourceRef{
+						Name:      "n",
+						Namespace: "n",
+					}))
+				default:
+					Expect(endpoint.Upstreams).To(HaveLen(1))
+				}
 			}
 			Expect(endpontNames).To(HaveLen(len(svcs) + (len(twoIps) - 1)))
 		})

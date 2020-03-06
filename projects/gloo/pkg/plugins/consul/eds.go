@@ -172,6 +172,7 @@ func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolve
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
+			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
 			if eps, err := buildEndpoints(writeNamespace, resolver, spec, upstreams); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
@@ -291,20 +292,20 @@ func buildEndpoint(namespace, address string, service *consulapi.CatalogService,
 	return &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       namespace,
-			Name:            buildEndpointName(service),
+			Name:            buildEndpointName(address, service),
 			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
-		Upstreams: toResourceRefs(upstreams),
+		Upstreams: toResourceRefs(upstreams, service.ServiceTags),
 		Address:   address,
 		Port:      uint32(service.ServicePort),
 	}
 }
 
-func buildEndpointName(service *consulapi.CatalogService) string {
-	parts := []string{service.ServiceName}
+func buildEndpointName(address string, service *consulapi.CatalogService) string {
+	parts := []string{address, service.ServiceName}
 	if service.ServiceID != "" {
-		parts = append(parts, service.ServiceID)
+		parts = append(parts, service.ServiceID, strconv.Itoa(service.ServicePort))
 	}
 	unsanitizedName := strings.Join(parts, "-")
 	unsanitizedName = strings.ReplaceAll(unsanitizedName, "_", "")
@@ -320,11 +321,38 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 	return labels
 }
 
-func toResourceRefs(upstreams []*v1.Upstream) (out []*core.ResourceRef) {
+func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
 	for _, us := range upstreams {
-		out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+		upstreamTags := us.GetConsul().GetServiceTags()
+		if shouldAddToUpstream(endpointTags, upstreamTags) {
+			out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+		}
 	}
 	return
+}
+
+func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
+	if len(upstreamTags) == 0 {
+		return true
+	}
+
+	containsTag := func(tag string) bool {
+		for _, etag := range endpointTags {
+			if tag == etag {
+				return true
+			}
+		}
+		return false
+	}
+
+	// check if endpoint tags is a subset of upstream tags
+	for _, tag := range upstreamTags {
+		if !containsTag(tag) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
