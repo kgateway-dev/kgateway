@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: |
+      `glooctl check` now additionally checks that gloo and envoy are connected and that the gloo config is not rejected by envoy.
+    issueLink: https://github.com/solo-io/gloo/issues/1627
