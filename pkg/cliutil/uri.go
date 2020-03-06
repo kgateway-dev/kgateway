@@ -13,10 +13,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rotisserie/eris"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/go-utils/kubeutils"
-	"github.com/solo-io/solo-kit/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -34,19 +35,19 @@ func GetResource(uri string) (io.ReadCloser, error) {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			return nil, errors.Errorf("http GET returned status %d for resource %s", resp.StatusCode, uri)
+			return nil, eris.Errorf("http GET returned status %d for resource %s", resp.StatusCode, uri)
 		}
 
 		file = resp.Body
 	} else {
 		path, err := filepath.Abs(uri)
 		if err != nil {
-			return nil, errors.Wrapf(err, "getting absolute path for %v", uri)
+			return nil, eris.Wrapf(err, "getting absolute path for %v", uri)
 		}
 
 		f, err := os.Open(path)
 		if err != nil {
-			return nil, errors.Wrapf(err, "opening file %v", path)
+			return nil, eris.Wrapf(err, "opening file %v", path)
 		}
 		file = f
 	}
@@ -58,22 +59,22 @@ func GetResource(uri string) (io.ReadCloser, error) {
 func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bool, clusterName string) (string, error) {
 	restCfg, err := kubeutils.GetConfig("", "")
 	if err != nil {
-		return "", errors.Wrapf(err, "getting kube rest config")
+		return "", eris.Wrapf(err, "getting kube rest config")
 	}
 	kube, err := kubernetes.NewForConfig(restCfg)
 	if err != nil {
-		return "", errors.Wrapf(err, "starting kube client")
+		return "", eris.Wrapf(err, "starting kube client")
 	}
 	svc, err := kube.CoreV1().Services(proxyNamespace).Get(proxyName, metav1.GetOptions{})
 	if err != nil {
-		return "", errors.Wrapf(err, "could not detect '%v' service in %v namespace. "+
+		return "", eris.Wrapf(err, "could not detect '%v' service in %v namespace. "+
 			"Check that Gloo has been installed properly and is running with 'kubectl get pod -n gloo-system'",
 			proxyName, proxyNamespace)
 	}
 	var svcPort *v1.ServicePort
 	switch len(svc.Spec.Ports) {
 	case 0:
-		return "", errors.Errorf("service %v is missing ports", proxyName)
+		return "", eris.Errorf("service %v is missing ports", proxyName)
 	case 1:
 		svcPort = &svc.Spec.Ports[0]
 	default:
@@ -84,7 +85,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 			}
 		}
 		if svcPort == nil {
-			return "", errors.Errorf("named port %v not found on service %v", proxyPort, proxyName)
+			return "", eris.Errorf("named port %v not found on service %v", proxyPort, proxyName)
 		}
 	}
 
@@ -95,7 +96,7 @@ func GetIngressHost(proxyName, proxyNamespace, proxyPort string, localCluster bo
 		// TODO: support more types of NodePort services
 		host, err = getNodeIp(svc, kube, clusterName)
 		if err != nil {
-			return "", errors.Wrapf(err, "")
+			return "", eris.Wrapf(err, "")
 		}
 		port = fmt.Sprintf("%v", svcPort.NodePort)
 	} else {
@@ -124,7 +125,7 @@ func getNodeIp(svc *v1.Service, kube kubernetes.Interface, clusterName string) (
 		}
 	}
 	if nodeName == "" {
-		return "", errors.Errorf("no node found for %v's pods. ensure at least one pod has been deployed "+
+		return "", eris.Errorf("no node found for %v's pods. ensure at least one pod has been deployed "+
 			"for the %v service", svc.Name, svc.Name)
 	}
 	// special case for minikube
@@ -143,7 +144,7 @@ func getNodeIp(svc *v1.Service, kube kubernetes.Interface, clusterName string) (
 		return addr.Address, nil
 	}
 
-	return "", errors.Errorf("no active addresses found for node %v", node.Name)
+	return "", eris.Errorf("no active addresses found for node %v", node.Name)
 }
 
 func minikubeIp(clusterName string) (string, error) {
@@ -210,7 +211,7 @@ func PortForwardGet(namespace string, resource string, localPort string, kubePor
 				continue
 			}
 			if res.StatusCode != 200 {
-				errs <- errors.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
+				errs <- eris.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
 				time.Sleep(time.Millisecond * 250)
 				continue
 			}
@@ -236,7 +237,7 @@ func PortForwardGet(namespace string, resource string, localPort string, kubePor
 		case res := <-result:
 			return res, portFwd, nil
 		case <-timer:
-			return "", portFwd, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
+			return "", portFwd, eris.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
 		}
 	}
 
@@ -250,7 +251,7 @@ func GetFreePort() (int, error) {
 	defer l.Close()
 	tcpAddr, ok := l.Addr().(*net.TCPAddr)
 	if !ok {
-		return 0, errors.Errorf("Error occured looking for an open tcp port")
+		return 0, eris.Errorf("Error occured looking for an open tcp port")
 	}
 	return tcpAddr.Port, nil
 }
