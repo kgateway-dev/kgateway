@@ -387,7 +387,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	}
 
 	if strings.TrimSpace(stats) == "" {
-		fmt.Println(errMessage + ": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
+		fmt.Println(errMessage+": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
 		return false, nil
 	}
 
@@ -407,7 +407,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 		return false, err
 	}
 	if res.StatusCode != 200 {
-		fmt.Println(errMessage + ": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the gateway-proxy deployment")
+		fmt.Println(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the gateway-proxy deployment")
 		return false, nil
 	}
 	b, err := ioutil.ReadAll(res.Body)
@@ -419,7 +419,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	newStats := string(b)
 
 	if strings.TrimSpace(newStats) == "" {
-		fmt.Println(errMessage + ": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
+		fmt.Println(errMessage+": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
 		return false, nil
 	}
 
@@ -441,7 +441,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 			newRejected, newOk := newStatsMap[rejectedMetric]
 			oldRejected, oldOk := statsMap[rejectedMetric]
 			if newOk && oldOk && newRejected > oldRejected {
-				fmt.Printf("An update to your gateway-proxy deployment was rejected due to schema/validation errors. The %v metric increased.\n" +
+				fmt.Printf("An update to your gateway-proxy deployment was rejected due to schema/validation errors. The %v metric increased.\n"+
 					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", rejectedMetric)
 				return false, nil
 			}
@@ -449,7 +449,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 			newFailure, newOk := newStatsMap[failureMetric]
 			oldFailure, oldOk := statsMap[failureMetric]
 			if newOk && oldOk && newFailure > oldFailure {
-				fmt.Printf("An update to your gateway-proxy deployment was rejected due to network errors. The %v metric increased.\n" +
+				fmt.Printf("An update to your gateway-proxy deployment was rejected due to network errors. The %v metric increased.\n"+
 					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", failureMetric)
 				return false, nil
 			}
@@ -507,7 +507,7 @@ func parseMetrics(stats string, desiredMetricSegments []string, promStatsPath st
 			metric := strings.Join(pieces[0:len(pieces)-1], "")
 			metricVal, err := strconv.Atoi(pieces[len(pieces)-1])
 			if err != nil {
-				fmt.Printf("Found an unexpected format in metrics at %v endpoint of the gateway-proxy deployment. " +
+				fmt.Printf("Found an unexpected format in metrics at %v endpoint of the gateway-proxy deployment. "+
 					"Expected %v metric to have an int value but got value %v.\nContinuing check...", promStatsPath, metric, pieces[len(pieces)-1])
 				continue
 			}
