@@ -2,7 +2,10 @@ package check
 
 import (
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -19,6 +22,7 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -365,28 +369,93 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 		}
 	}
 	// check if any proxy instances are out of sync with the Gloo control plane
-	errMessage := "Problem while checking for out of sync proxies\n"
+	errMessage := "Problem while checking for out of sync proxies"
 
-	// port-forward gateway-proxy deployment
+	// port-forward gateway-proxy deployment and get prometheus metrics
 	adminPort := int(defaults.EnvoyAdminPort)
 	localPort := adminPort + 1
-	err, portFwdCmd, statsResult := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
-		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, "/stats")
+	promStatsPath := "/stats/prometheus"
+	err, portFwdCmd, stats := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
+		strconv.Itoa(localPort), strconv.Itoa(adminPort), false, promStatsPath)
 	if portFwdCmd.Process != nil {
-		portFwdCmd.Process.Release()
-		portFwdCmd.Process.Kill()
+		defer portFwdCmd.Process.Release()
+		defer portFwdCmd.Process.Kill()
 	}
 	if err != nil {
-		fmt.Printf(errMessage)
+		fmt.Println(errMessage)
 		return false, err
 	}
 
-	// look for control_plane.connected_state
-	if !strings.Contains(statsResult, "control_plane.connected_state: 1") {
-		fmt.Printf("Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config.\n")
-		// TODO tell user to check gloo or gateway-proxy logs. Or print the output of `glooct debug log`
+	if strings.TrimSpace(stats) == "" {
+		fmt.Println(errMessage + ": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
 		return false, nil
 	}
+
+	if !strings.Contains(stats, "envoy_control_plane_connected_state{} 1") {
+		fmt.Println("Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config. " +
+			"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.")
+		return false, nil
+	}
+
+	// wait for metrics to update
+	time.Sleep(time.Millisecond * 250)
+
+	// gather metrics again
+	res, err := http.Get("http://localhost:" + strconv.Itoa(localPort) + promStatsPath)
+	if err != nil {
+		fmt.Println(errMessage)
+		return false, err
+	}
+	if res.StatusCode != 200 {
+		fmt.Println(errMessage + ": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the gateway-proxy deployment")
+		return false, nil
+	}
+	b, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		fmt.Println(errMessage)
+		return false, err
+	}
+	res.Body.Close()
+	newStats := string(b)
+
+	if strings.TrimSpace(newStats) == "" {
+		fmt.Println(errMessage + ": could not find any metrics at", promStatsPath, "endpoint of the gateway-proxy deployment")
+		return false, nil
+	}
+
+	desiredMetricsSegments := []string{"update_attempt", "update_rejected", "update_failure"}
+	statsMap := parseMetrics(stats, desiredMetricsSegments, promStatsPath)
+	newStatsMap := parseMetrics(newStats, desiredMetricsSegments, promStatsPath)
+
+	if reflect.DeepEqual(newStatsMap, statsMap) {
+		// TODO Is worth the time for reflect?
+		fmt.Println("same though")
+		fmt.Printf("OK\n")
+		return true, nil
+	}
+
+	for k, oldVal := range statsMap {
+		if newVal, ok := newStatsMap[k]; ok && strings.Contains(k, "attempt") && newVal > oldVal {
+			// at least one attempt for this counter- check if any were rejected or failed
+			rejectedMetric := strings.Replace(k, "attempt", "rejected", -1)
+			newRejected, newOk := newStatsMap[rejectedMetric]
+			oldRejected, oldOk := statsMap[rejectedMetric]
+			if newOk && oldOk && newRejected > oldRejected {
+				fmt.Printf("An update to your gateway-proxy deployment was rejected due to schema/validation errors. The %v metric increased.\n" +
+					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", rejectedMetric)
+				return false, nil
+			}
+			failureMetric := strings.Replace(k, "attempt", "failure", -1)
+			newFailure, newOk := newStatsMap[failureMetric]
+			oldFailure, oldOk := statsMap[failureMetric]
+			if newOk && oldOk && newFailure > oldFailure {
+				fmt.Printf("An update to your gateway-proxy deployment was rejected due to network errors. The %v metric increased.\n" +
+					"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.\n", failureMetric)
+				return false, nil
+			}
+		}
+	}
+
 	fmt.Printf("OK\n")
 	return true, nil
 }
@@ -415,6 +484,37 @@ func renderRef(ref *core.ResourceRef) string {
 
 func renderNamespaceName(namespace, name string) string {
 	return fmt.Sprintf("%s %s", namespace, name)
+}
+
+// parseMetrics parses prometheus metrics and returns a map from the metric name and labels to its value.
+// It expects to only look for int values!
+func parseMetrics(stats string, desiredMetricSegments []string, promStatsPath string) map[string]int {
+	statsMap := make(map[string]int)
+	statsLines := strings.Split(stats, "\n")
+	for _, line := range statsLines {
+		trimLine := strings.TrimSpace(line)
+		if strings.HasPrefix(trimLine, "#") || trimLine == "" {
+			continue // Ignore comments, help text, type info, empty lines (https://github.com/prometheus/docs/blob/master/content/docs/instrumenting/exposition_formats.md#comments-help-text-and-type-information)
+		}
+		desiredMetric := false
+		for _, s := range desiredMetricSegments {
+			if strings.Contains(trimLine, s) {
+				desiredMetric = true
+			}
+		}
+		if desiredMetric {
+			pieces := strings.Fields(trimLine) // split by white spaces
+			metric := strings.Join(pieces[0:len(pieces)-1], "")
+			metricVal, err := strconv.Atoi(pieces[len(pieces)-1])
+			if err != nil {
+				fmt.Printf("Found an unexpected format in metrics at %v endpoint of the gateway-proxy deployment. " +
+					"Expected %v metric to have an int value but got value %v.\nContinuing check...", promStatsPath, metric, pieces[len(pieces)-1])
+				continue
+			}
+			statsMap[metric] = metricVal
+		}
+	}
+	return statsMap
 }
 
 // Checks whether the cluster that the kubeconfig points at is available
