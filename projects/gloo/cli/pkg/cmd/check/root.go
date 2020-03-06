@@ -1,6 +1,7 @@
 package check
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -103,7 +104,7 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
-	ok, err = checkProxies(namespaces, opts.Metadata.Namespace)
+	ok, err = checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -352,7 +353,7 @@ func checkGateways(namespaces []string) (bool, error) {
 	return true, nil
 }
 
-func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
+func checkProxies(ctx context.Context, namespaces []string, glooNamespace string) (bool, error) {
 	fmt.Printf("Checking proxies... ")
 	client := helpers.MustProxyClient()
 	for _, ns := range namespaces {
@@ -380,7 +381,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
 	promStatsPath := "/stats/prometheus"
-	stats, portFwdCmd, err := cliutil.PortForwardGet(glooNamespace, "deploy/gateway-proxy",
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/gateway-proxy",
 		localPort, adminPort, false, promStatsPath)
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()
@@ -397,7 +398,7 @@ func checkProxies(namespaces []string, glooNamespace string) (bool, error) {
 	}
 
 	if !strings.Contains(stats, "envoy_control_plane_connected_state{} 1") {
-		fmt.Println("Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config. " +
+		fmt.Println("Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config.\n" +
 			"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.")
 		return false, nil
 	}
