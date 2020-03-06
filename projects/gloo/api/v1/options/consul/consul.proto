@@ -20,7 +20,9 @@ message UpstreamSpec {
     string service_name = 1;
     // The list of service tags Gloo should search for on a service instance
     // before deciding whether or not to include the instance as part of this
-    // upstream
+    // upstream. Empty list means that all service instances with the same service name will be
+    // included. When not empty, only service instances that match all of the tags will be selected
+    // for this upstream.
     repeated string service_tags = 2;
 
     // An optional Service Spec describing the service listening at this address

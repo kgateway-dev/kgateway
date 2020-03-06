@@ -35,7 +35,9 @@ type UpstreamSpec struct {
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
 	// The list of service tags Gloo should search for on a service instance
 	// before deciding whether or not to include the instance as part of this
-	// upstream
+	// upstream. Empty list means that all service instances with the same service name will be
+	// included. When not empty, only service instances that match all of the tags will be selected
+	// for this upstream.
 	ServiceTags []string `protobuf:"bytes,2,rep,name=service_tags,json=serviceTags,proto3" json:"service_tags,omitempty"`
 	// An optional Service Spec describing the service listening at this address
 	ServiceSpec *options.ServiceSpec `protobuf:"bytes,3,opt,name=service_spec,json=serviceSpec,proto3" json:"service_spec,omitempty"`
