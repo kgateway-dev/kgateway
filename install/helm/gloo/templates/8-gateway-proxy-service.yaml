@@ -22,14 +22,14 @@ spec:
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}
   ports:
-  - port: {{ $spec.service.httpPort }}
-    targetPort: {{ $spec.podTemplate.httpPort }}
-    protocol: TCP
-    name: http
   - port: {{ $spec.service.httpsPort }}
     targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
     name: https
+  - port: {{ $spec.service.httpPort }}
+    targetPort: {{ $spec.podTemplate.httpPort }}
+    protocol: TCP
+    name: http
   selector:
     gateway-proxy-id: {{ $name | kebabcase }}
     gateway-proxy: live
