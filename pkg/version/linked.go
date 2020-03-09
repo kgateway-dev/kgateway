@@ -10,6 +10,7 @@ var (
 	// Will be set by the linker during build. Does not include "v" prefix.
 	Version string
 )
+
 func init() {
 	if Version == "" {
 		Version = UndefinedVersion
