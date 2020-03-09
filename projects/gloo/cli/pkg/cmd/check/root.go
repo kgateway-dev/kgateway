@@ -4,10 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
-
-	"github.com/solo-io/gloo/pkg/cliutil"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -365,38 +362,9 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 			}
 		}
 	}
-	// check if any proxy instances are out of sync with the Gloo control plane
-	errMessage := "Problem while checking for out of sync proxies"
 
-	// port-forward gateway-proxy deployment and get prometheus metrics
-	freePort, err := cliutil.GetFreePort()
-	if err != nil {
-		fmt.Println(errMessage)
-		return false, err
-	}
-	localPort := strconv.Itoa(freePort)
-	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/gateway-proxy",
-		localPort, adminPort, false, promStatsPath)
-	if portFwdCmd.Process != nil {
-		defer portFwdCmd.Process.Release()
-		defer portFwdCmd.Process.Kill()
-	}
-	if err != nil {
-		fmt.Println(errMessage)
-		return false, err
-	}
+	return checkProxyPromStats(ctx, glooNamespace)
 
-	if !checkProxyConnectedState(stats, errMessage,
-		"Your gateway-proxy is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+
-			"You may want to try looking at your gloo or gateway-proxy logs or using the `glooctl debug log` command.") {
-		return false, nil
-	}
-
-	// wait for metrics to update
-	time.Sleep(time.Millisecond * 250)
-
-	return checkProxyUpdate(stats, localPort, errMessage)
 }
 
 func checkSecrets(namespaces []string) (bool, error) {
