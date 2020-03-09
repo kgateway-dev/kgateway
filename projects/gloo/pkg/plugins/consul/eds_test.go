@@ -102,11 +102,11 @@ var _ = Describe("Consul EDS", func() {
 			testService := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
 				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
-				if q.Datacenter == dc2 {
-					return []*consulapi.CatalogService{testService},nil,nil
-				}
-				return nil,nil,nil
-			}).Times(3) // once for each datacenter
+					if q.Datacenter == dc2 {
+						return []*consulapi.CatalogService{testService}, nil, nil
+					}
+					return nil, nil, nil
+				}).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
@@ -146,7 +146,7 @@ var _ = Describe("Consul EDS", func() {
 			// we have to put all the mock expects before the test starts or else the test may have data races
 			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context,string){
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
 			}).Return(initialIps, nil).Times(1) // once for each consul service
 
@@ -154,7 +154,7 @@ var _ = Describe("Consul EDS", func() {
 			// once for each consul service x 2 because we will let the test run through the EDS DNS poller twice
 			// the first poll, DNS will have changed and we expect to receive new endpoints on the channel
 			// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
-			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context,string){
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context, string) {
 				fmt.Fprint(GinkgoWriter, "Updated resolve called.")
 			}).Return(updatedIps, nil).Times(2)
 
@@ -178,10 +178,10 @@ var _ = Describe("Consul EDS", func() {
 			}
 
 			// simulate and error
-			failErr:=eris.New("fail")
+			failErr := eris.New("fail")
 			errorProducer <- failErr
 			select {
-			case err := <-errorChan:	
+			case err := <-errorChan:
 				Expect(err).To(MatchError(ContainSubstring(failErr.Error())))
 			case <-time.After(time.Second):
 				Fail("timeout waiting for error")
