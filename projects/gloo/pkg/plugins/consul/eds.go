@@ -178,6 +178,7 @@ func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolve
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
 			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
+			// tracking issue: https://github.com/solo-io/gloo/issues/2576
 			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
