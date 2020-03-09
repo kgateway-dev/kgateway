@@ -37,7 +37,7 @@ var _ = Describe("Resolve", func() {
 		tag := "tag"
 		dc := "dc1"
 
-		us := createTestUpstream(svcName, []string{tag}, []string{dc})
+		us := createTestUpstream(svcName, svcName, []string{tag}, []string{dc})
 
 		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
 
@@ -66,7 +66,7 @@ var _ = Describe("Resolve", func() {
 			{IP: net.IPv4(2, 1, 0, 11)},
 		}
 		mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-		mockDnsResolver.EXPECT().Resolve("test.service.consul").Return(ips, nil).Times(1)
+		mockDnsResolver.EXPECT().Resolve(gomock.Any(), "test.service.consul").Return(ips, nil).Times(1)
 
 		plug := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
@@ -74,7 +74,7 @@ var _ = Describe("Resolve", func() {
 		tag := "tag"
 		dc := "dc1"
 
-		us := createTestUpstream(svcName, []string{tag}, []string{dc})
+		us := createTestUpstream(svcName, svcName, []string{tag}, []string{dc})
 
 		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
 

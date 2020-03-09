@@ -34,8 +34,6 @@ import (
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	endpointsChan := make(chan v1.EndpointList)
-	errChan := make(chan error)
 
 	// Filter out non-consul upstreams
 	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
@@ -55,11 +53,13 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters)
 
+	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
+	endpointsChan := make(chan v1.EndpointList)
 	go func() {
 		defer close(endpointsChan)
 
@@ -71,6 +71,9 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		timer := time.NewTicker(DefaultDnsPollingInterval)
 
 		publishEndpoints := func(endpoints v1.EndpointList) bool {
+			if opts.Ctx.Err() != nil {
+				return false
+			}
 			select {
 			case <-opts.Ctx.Done():
 				return false
@@ -80,6 +83,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		}
 
 		for {
+			// don't leak the timer.
+			defer timer.Stop()
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
 				if !ok {
@@ -173,7 +178,7 @@ func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolve
 	for _, spec := range specs {
 		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
 			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
-			if eps, err := buildEndpoints(writeNamespace, resolver, spec, upstreams); err != nil {
+			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
 				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
 			} else {
 				endpoints = append(endpoints, eps...)
@@ -240,7 +245,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoints(namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
+func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -249,7 +254,7 @@ func buildEndpoints(namespace string, resolver DnsResolver, service *consulapi.C
 		address = service.Address
 	}
 
-	ipAddresses, err := getIpAddresses(address, resolver)
+	ipAddresses, err := getIpAddresses(ctx, address, resolver)
 	if err != nil {
 		return nil, err
 	}
@@ -262,7 +267,7 @@ func buildEndpoints(namespace string, resolver DnsResolver, service *consulapi.C
 }
 
 // only returns an error if the consul service address is a hostname and we can't resolve it
-func getIpAddresses(address string, resolver DnsResolver) ([]string, error) {
+func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) ([]string, error) {
 	addr := net.ParseIP(address)
 	if addr != nil {
 		// the consul service address is an IP address, no need to resolve it!
@@ -275,8 +280,7 @@ func getIpAddresses(address string, resolver DnsResolver) ([]string, error) {
 		return nil, eris.Errorf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
 			"would have resolved as a hostname but the configured Consul DNS resolver was nil", address)
 	}
-
-	ipAddrs, err := resolver.Resolve(address)
+	ipAddrs, err := resolver.Resolve(ctx, address)
 	if err != nil {
 		return nil, err
 	}

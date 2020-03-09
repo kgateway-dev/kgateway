@@ -1,6 +1,7 @@
 package consul
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -57,7 +58,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 
 	for _, inst := range instances {
 		if matchTags(spec.ServiceTags, inst.ServiceTags) {
-			ipAddresses, err := getIpAddresses(inst.ServiceAddress, p.resolver)
+			ipAddresses, err := getIpAddresses(context.TODO(), inst.ServiceAddress, p.resolver)
 			if err != nil {
 				return nil, err
 			}

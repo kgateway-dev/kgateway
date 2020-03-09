@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -19,6 +20,7 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -83,7 +85,7 @@ var _ = Describe("Consul EDS", func() {
 			errorProducer = make(chan error)
 
 			upstreamsToTrack = v1.UpstreamList{
-				createTestUpstream(svc1, []string{primary, secondary, canary}, []string{dc1, dc2, dc3}),
+				createTestUpstream(svc1, svc1, []string{primary, secondary, canary}, []string{dc1, dc2, dc3}),
 			}
 
 			consulServiceSnapshot = []*consul.ServiceMeta{
@@ -97,16 +99,15 @@ var _ = Describe("Consul EDS", func() {
 			consulWatcherMock = mock_consul.NewMockConsulWatcher(ctrl)
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
 			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters).Return(serviceMetaProducer, errorProducer).Times(1)
-
+			testService := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
 			consulWatcherMock.EXPECT().Service(svc1, "", gomock.Any()).Return([]*consulapi.CatalogService{
-				createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{secondary}, 3456, 100),
-			}, nil, nil).Times(3) // once for each datacenter
+				testService}, nil, nil).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
-				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
-					ConsulTagKeyPrefix + primary:    no,
+				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  yes,
-					ConsulTagKeyPrefix + canary:     no,
+					ConsulTagKeyPrefix + canary:     yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
@@ -114,10 +115,10 @@ var _ = Describe("Consul EDS", func() {
 			}
 
 			expectedEndpointsSecondAttempt = v1.EndpointList{
-				createExpectedEndpoint(svc1, "c", "2.1.0.11", "100", writeNamespace, 3456, map[string]string{
-					ConsulTagKeyPrefix + primary:    no,
+				createExpectedEndpoint(buildEndpointName("2.1.0.11", testService), svc1, "2.1.0.11", "100", writeNamespace, 3456, map[string]string{
+					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  yes,
-					ConsulTagKeyPrefix + canary:     no,
+					ConsulTagKeyPrefix + canary:     yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
@@ -140,13 +141,13 @@ var _ = Describe("Consul EDS", func() {
 			// we have to put all the mock expects before the test starts or else the test may have data races
 			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(initialIps, nil).Times(1) // once for each consul service
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(initialIps, nil).Times(1) // once for each consul service
 
 			updatedIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 11)}}
 			// once for each consul service x 2 because we will let the test run through the EDS DNS poller twice
 			// the first poll, DNS will have changed and we expect to receive new endpoints on the channel
 			// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(updatedIps, nil).Times(2)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(updatedIps, nil).Times(2)
 
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
@@ -161,8 +162,9 @@ var _ = Describe("Consul EDS", func() {
 				defer GinkgoRecover()
 				for {
 					select {
-					default:
-						Consistently(errorChan).ShouldNot(Receive())
+					case err := <-errorChan:
+						Expect(err).NotTo(HaveOccurred())
+						return err
 					case <-errRoutineCtx.Done():
 						return nil
 					}
@@ -171,7 +173,13 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(BeEquivalentTo(expectedEndpointsFirstAttempt)))
+			// use select instead of eventually for easier debuging.
+			select {
+			case endpointsReceived := <-endpointsChan:
+				Expect(endpointsReceived).To(BeEquivalentTo(expectedEndpointsFirstAttempt))
+			case <-time.After(time.Second):
+				Fail("timeout waiting for endpoints")
+			}
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
@@ -238,8 +246,12 @@ var _ = Describe("Consul EDS", func() {
 			errorProducer = make(chan error)
 
 			upstreamsToTrack = v1.UpstreamList{
-				createTestUpstream(svc1, []string{primary, secondary, canary}, []string{dc1, dc2, dc3}),
-				createTestUpstream(svc2, []string{primary, secondary}, []string{dc1, dc2}),
+				createTestUpstream(svc1, svc1, []string{}, []string{dc1, dc2, dc3}),
+				createTestUpstream(svc1+primary, svc1, []string{primary}, []string{dc1, dc2, dc3}),
+				createTestUpstream(svc1+secondary, svc1, []string{secondary}, []string{dc1, dc2, dc3}),
+				createTestUpstream(svc1+canary, svc1, []string{canary}, []string{dc1, dc2, dc3}),
+				createTestUpstream(svc2+primary, svc2, []string{primary}, []string{dc1, dc2}),
+				createTestUpstream(svc2+secondary, svc2, []string{secondary}, []string{dc1, dc2}),
 			}
 
 			consulServiceSnapshot = []*consul.ServiceMeta{
@@ -273,25 +285,25 @@ var _ = Describe("Consul EDS", func() {
 					case svc1:
 						switch q.Datacenter {
 						case dc1:
-							services := []*consulapi.CatalogService{
+							return []*consulapi.CatalogService{
 								createTestService("1.1.0.1", dc1, svc1, "a", []string{primary}, 1234, 100),
 								createTestService("1.1.0.2", dc1, svc1, "b", []string{primary}, 1234, 100),
-							}
-							// Simulate the addition of a service instance. "> 5" because the first 5 attempts are a
-							// result of the first snapshot (1 invocation for every service:dataCenter pair)
-							if currentAttempt > 5 {
-								services = append(services, createTestService("1.1.0.3", dc1, svc1, "b1", []string{primary, canary}, 1234, 100))
-							}
-							return services, nil, nil
+							}, nil, nil
 						case dc2:
 							return []*consulapi.CatalogService{
 								createTestService("2.1.0.10", dc2, svc1, "c", []string{secondary}, 3456, 100),
 								createTestService("2.1.0.11", dc2, svc1, "d", []string{secondary}, 4567, 100),
 							}, nil, nil
 						case dc3:
-							return []*consulapi.CatalogService{
+							services := []*consulapi.CatalogService{
 								createTestService("3.1.0.99", dc3, svc1, "e", []string{secondary, canary}, 9999, 100),
-							}, nil, nil
+							}
+							// Simulate the addition of a service instance. "> 5" because the first 5 attempts are a
+							// result of the first snapshot (1 invocation for every service:dataCenter pair)
+							if currentAttempt > 5 {
+								services = append(services, createTestService("3.1.0.3", dc3, svc1, "e1", []string{canary}, 1234, 100))
+							}
+							return services, nil, nil
 						}
 					case svc2:
 						switch q.Datacenter {
@@ -313,7 +325,7 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				// 5 endpoints for service 1
-				createExpectedEndpoint(svc1, "a", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
+				createExpectedEndpoint("1-1-0-1-svc-1-a-1234", "svc-1,svc-1primary", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     no,
@@ -321,7 +333,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: no,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "b", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
+				createExpectedEndpoint("1-1-0-2-svc-1-b-1234", "svc-1,svc-1primary", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     no,
@@ -329,7 +341,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: no,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "c", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+				createExpectedEndpoint("2-1-0-10-svc-1-c-3456", "svc-1,svc-1secondary", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     no,
@@ -337,7 +349,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "d", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
+				createExpectedEndpoint("2-1-0-11-svc-1-d-4567", "svc-1,svc-1secondary", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     no,
@@ -345,7 +357,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint(svc1, "e", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
+				createExpectedEndpoint("3-1-0-99-svc-1-e-9999", "svc-1,svc-1secondary,svc-1canary", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     yes,
@@ -355,25 +367,25 @@ var _ = Describe("Consul EDS", func() {
 				}),
 
 				// 4 endpoints for service 2
-				createExpectedEndpoint(svc2, "a2", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
+				createExpectedEndpoint("1-2-0-1-svc-2-a2-8080", "svc-2primary", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulDataCenterKeyPrefix + dc1: yes,
 					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint(svc2, "b2", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
+				createExpectedEndpoint("1-2-0-2-svc-2-b2-8080", "svc-2primary", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulDataCenterKeyPrefix + dc1: yes,
 					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint(svc2, "c2", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
+				createExpectedEndpoint("2-2-0-10-svc-2-c2-8088", "svc-2secondary", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
 					ConsulDataCenterKeyPrefix + dc2: yes,
 				}),
-				createExpectedEndpoint(svc2, "d2", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
+				createExpectedEndpoint("2-2-0-11-svc-2-d2-8088", "svc-2secondary", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
@@ -388,13 +400,13 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsSecondAttempt = append(
 				expectedEndpointsFirstAttempt.Clone(),
-				createExpectedEndpoint(svc1, "b1", "1.1.0.3", "100", writeNamespace, 1234, map[string]string{
-					ConsulTagKeyPrefix + primary:    yes,
+				createExpectedEndpoint("3-1-0-3-svc-1-e1-1234", "svc-1,svc-1canary", "3.1.0.3", "100", writeNamespace, 1234, map[string]string{
+					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     yes,
-					ConsulDataCenterKeyPrefix + dc1: yes,
+					ConsulDataCenterKeyPrefix + dc1: no,
 					ConsulDataCenterKeyPrefix + dc2: no,
-					ConsulDataCenterKeyPrefix + dc3: no,
+					ConsulDataCenterKeyPrefix + dc3: yes,
 				}),
 			)
 			sort.SliceStable(expectedEndpointsSecondAttempt, func(i, j int) bool {
@@ -437,7 +449,7 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(BeEquivalentTo(expectedEndpointsFirstAttempt)))
+			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt)))
 
 			// Wait for error monitoring routine to stop, we want to simulate an error
 			errRoutineCancel()
@@ -449,7 +461,7 @@ var _ = Describe("Consul EDS", func() {
 			// Simulate an update to the services
 			// We use the same metadata snapshot because what changed is the service spec
 			serviceMetaProducer <- consulServiceSnapshot
-			Eventually(endpointsChan).Should(Receive(BeEquivalentTo(expectedEndpointsSecondAttempt)))
+			Eventually(endpointsChan).Should(Receive(matchers.BeEquivalentToDiff(expectedEndpointsSecondAttempt)))
 
 			// Cancel and verify that all the channels have been closed
 			cancel()
@@ -525,7 +537,7 @@ var _ = Describe("Consul EDS", func() {
 
 			twoIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}, {IP: net.IPv4(2, 1, 0, 11)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any()).Return(twoIps, nil).Times(1)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(twoIps, nil).Times(1)
 
 			trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
 			for _, svc := range svcs {
@@ -616,15 +628,17 @@ var _ = Describe("Consul EDS", func() {
 				ServiceTags: []string{"tag-1", "tag-3"},
 				ModifyIndex: 9876,
 			}
-			upstream := createTestUpstream("my-svc", []string{"tag-1", "tag-2", "tag-3"}, []string{"dc-1", "dc-2"})
+			upstream := createTestUpstream("my-svc", "my-svc", []string{"tag-1", "tag-3"}, []string{"dc-1", "dc-2"})
+			// add another upstream so to test that tag2 is in the labels.
+			upstream2 := createTestUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"dc-1", "dc-2"})
 
-			endpoints, err := buildEndpoints(writeNamespace, nil, consulService, v1.UpstreamList{upstream})
+			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream,upstream2})
 			Expect(err).To(BeNil())
-
-			Expect(endpoints).To(ConsistOf(&v1.Endpoint{
+			Expect(endpoints).To(HaveLen(1))
+			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
 				Metadata: core.Metadata{
 					Namespace: writeNamespace,
-					Name:      "my-svc-my-svc-0",
+					Name:      "127-0-0-1-my-svc-my-svc-0-1234",
 					Labels: map[string]string{
 						ConsulTagKeyPrefix + "tag-1":       ConsulEndpointMetadataMatchTrue,
 						ConsulTagKeyPrefix + "tag-2":       ConsulEndpointMetadataMatchFalse,
@@ -642,10 +656,10 @@ var _ = Describe("Consul EDS", func() {
 	})
 })
 
-func createTestUpstream(svcName string, tags, dataCenters []string) *v1.Upstream {
+func createTestUpstream(usptreamName, svcName string, tags, dataCenters []string) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: core.Metadata{
-			Name:      "consul-svc:" + svcName,
+			Name:      "consul-svc:" + usptreamName,
 			Namespace: "",
 		},
 		UpstreamType: &v1.Upstream_Consul{
@@ -670,26 +684,27 @@ func createTestService(address, dc, name, id string, tags []string, port int, la
 	}
 }
 
-func createExpectedEndpoint(name, id, address, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
-	if id != "" {
-		id = "-" + id
-	}
-	return &v1.Endpoint{
+func createExpectedEndpoint(name, usname, address, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
+	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       ns,
-			Name:            name + id,
+			Name:            name,
 			Labels:          labels,
 			ResourceVersion: version,
 		},
-		Upstreams: []*core.ResourceRef{
-			{
-				Name:      "consul-svc:" + name,
-				Namespace: "",
-			},
-		},
+
 		Address: address,
 		Port:    port,
 	}
+
+	for _, svc := range strings.Split(usname, ",") {
+		ep.Upstreams = append(ep.Upstreams, &core.ResourceRef{
+			Name:      "consul-svc:" + svc,
+			Namespace: "",
+		})
+	}
+
+	return ep
 }
 
 func buildHostname(svc, dc string) string {
