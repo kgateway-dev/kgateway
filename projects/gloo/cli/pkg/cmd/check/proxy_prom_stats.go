@@ -140,10 +140,11 @@ func parseMetrics(stats string, desiredMetricSegments []string) map[string]int {
 				desiredMetric = true
 			}
 		}
+		// sample line: "envoy_http_rds_update_rejected{envoy_http_conn_manager_prefix="http",envoy_rds_route_config="listener-__-8080-routes"} 90"
 		if desiredMetric {
-			pieces := strings.Fields(trimLine) // split by white spaces
-			metric := strings.Join(pieces[0:len(pieces)-1], "")
-			metricVal, err := strconv.Atoi(pieces[len(pieces)-1])
+			pieces := strings.Fields(trimLine)                    // split by white spaces
+			metric := strings.Join(pieces[0:len(pieces)-1], "")   // get all but last piece (as one string)- this is metric name and labels
+			metricVal, err := strconv.Atoi(pieces[len(pieces)-1]) // get last piece (as int)- this is metric value
 			if err != nil {
 				fmt.Printf("Found an unexpected format in metrics at %v endpoint of the gateway-proxy deployment. "+
 					"Expected %v metric to have an int value but got value %v.\nContinuing check...", promStatsPath, metric, pieces[len(pieces)-1])
