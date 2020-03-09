@@ -5,10 +5,16 @@ import (
 	"github.com/solo-io/go-utils/versionutils/git"
 )
 
-var UndefinedVersion = "undefined"
-
-// This will be set by the linker during build
-var Version = UndefinedVersion
+var (
+	UndefinedVersion = "undefined"
+	// Will be set by the linker during build. Does not include "v" prefix.
+	Version string
+)
+func init() {
+	if Version == "" {
+		Version = UndefinedVersion
+	}
+}
 
 func IsReleaseVersion() bool {
 	if Version == UndefinedVersion {
