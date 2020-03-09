@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Allow gatewayProxy to be overridden via global values
+    issueLink: https://github.com/solo-io/gloo/issues/2564

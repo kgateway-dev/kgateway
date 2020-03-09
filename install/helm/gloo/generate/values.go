@@ -25,12 +25,13 @@ type Config struct {
 }
 
 type Global struct {
-	Image      *Image      `json:"image,omitempty"`
-	Extensions interface{} `json:"extensions,omitempty"`
-	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	Wasm       Wasm        `json:"wasm,omitempty"`
-	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
+	Image          *Image                  `json:"image,omitempty"`
+	Extensions     interface{}             `json:"extensions,omitempty"`
+	GlooRbac       *Rbac                   `json:"glooRbac,omitempty"`
+	Wasm           Wasm                    `json:"wasm,omitempty"`
+	GlooStats      Stats                   `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls       Mtls                    `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
+	GatewayProxies map[string]GatewayProxy `json:"gatewayProxies,omitempty"`
 }
 
 type Namespace struct {

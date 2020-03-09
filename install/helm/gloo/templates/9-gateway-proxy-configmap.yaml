@@ -3,7 +3,11 @@
 {{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxies := .Values.gatewayProxies }}
+{{- if $global.gatewayProxies }}
+{{- $gatewayProxies = mergeOverwrite $gatewayProxies $global.gatewayProxies }}
+{{- end }}
+{{- range $name, $spec := $gatewayProxies }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
 # config_map

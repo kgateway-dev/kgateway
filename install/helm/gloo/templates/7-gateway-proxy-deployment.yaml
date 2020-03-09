@@ -4,7 +4,11 @@
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
-{{- range $name, $spec := .Values.gatewayProxies }}
+{{- $gatewayProxies := .Values.gatewayProxies }}
+{{- if $global.gatewayProxies }}
+{{- $gatewayProxies = mergeOverwrite $gatewayProxies $global.gatewayProxies }}
+{{- end }}
+{{- range $name, $spec := $gatewayProxies }}
 {{- $image := $spec.podTemplate.image }}
 {{- if $global }}
 {{- $image = merge $spec.podTemplate.image $global.image }}
