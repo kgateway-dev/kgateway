@@ -5,10 +5,10 @@ jobs:
     name: Build
     runs-on: ubuntu-18.04
     steps:
-    - name: Set up Go 1.13
+    - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
-        go-version: 1.13
+        go-version: 1.14
       id: go
     - name: Install Protoc
       uses: Arduino/actions/setup-protoc@master
