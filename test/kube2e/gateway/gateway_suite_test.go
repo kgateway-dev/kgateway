@@ -1,6 +1,7 @@
 package gateway_test
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -87,6 +88,9 @@ func StartTestHelper() {
 		opts := &options.Options{
 			Metadata: core.Metadata{
 				Namespace: testHelper.InstallNamespace,
+			},
+			Top: options.Top{
+				Ctx: context.Background(),
 			},
 		}
 		ok, err := check.CheckResources(opts)
