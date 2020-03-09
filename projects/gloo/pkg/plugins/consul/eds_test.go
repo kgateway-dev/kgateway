@@ -20,12 +20,12 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/matchers"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"golang.org/x/sync/errgroup"
@@ -632,7 +632,7 @@ var _ = Describe("Consul EDS", func() {
 			// add another upstream so to test that tag2 is in the labels.
 			upstream2 := createTestUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"dc-1", "dc-2"})
 
-			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream,upstream2})
+			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
 			Expect(err).To(BeNil())
 			Expect(endpoints).To(HaveLen(1))
 			Expect(endpoints[0]).To(matchers.BeEquivalentToDiff(&v1.Endpoint{
