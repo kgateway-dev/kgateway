@@ -204,6 +204,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 	defer cancel()
 
 	// wait for port-forward to be ready
+	retryInterval := time.Millisecond * 250
 	result := make(chan string)
 	errs := make(chan error)
 	go func() {
@@ -216,18 +217,18 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 			res, err := http.Get("http://localhost:" + localPort + getPath)
 			if err != nil {
 				errs <- err
-				time.Sleep(time.Millisecond * 250)
+				time.Sleep(retryInterval)
 				continue
 			}
 			if res.StatusCode != 200 {
 				errs <- eris.Errorf("invalid status code: %v %v", res.StatusCode, res.Status)
-				time.Sleep(time.Millisecond * 250)
+				time.Sleep(retryInterval)
 				continue
 			}
 			b, err := ioutil.ReadAll(res.Body)
 			if err != nil {
 				errs <- err
-				time.Sleep(time.Millisecond * 250)
+				time.Sleep(retryInterval)
 				continue
 			}
 			res.Body.Close()
