@@ -3,14 +3,15 @@ package check
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/pkg/cliutil"
-	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/cliutil"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
 const promStatsPath = "/stats/prometheus"
@@ -105,7 +106,7 @@ func checkProxyUpdate(stats string, localPort string, errMessage string) (bool, 
 	}
 
 	for metricName, oldVal := range statsMap {
-		newVal, ok := newStatsMap[metricName];
+		newVal, ok := newStatsMap[metricName]
 		if ok && strings.Contains(metricName, "rejected") && newVal > oldVal {
 			// for example, if envoy_http_rds_update_rejected{envoy_http_conn_manager_prefix="http",envoy_rds_route_config="listener-__-8080-routes"}
 			// increases, which occurs if envoy cannot parse the config from gloo
