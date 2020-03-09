@@ -51,8 +51,10 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 		fmt.Println(errMessage)
 		return false, err
 	}
-	defer portFwdCmd.Process.Release()
-	defer portFwdCmd.Process.Kill()
+	if portFwdCmd.Process != nil {
+		defer portFwdCmd.Process.Release()
+		defer portFwdCmd.Process.Kill()
+	}
 
 	if !checkProxyConnectedState(stats, deploymentName, errMessage,
 		"Your "+deploymentName+" is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+

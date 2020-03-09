@@ -170,7 +170,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 
 	err := Initialize()
 	if err != nil {
-		return portFwd, err
+		return nil, err
 	}
 	logger := GetLogger()
 
@@ -182,7 +182,7 @@ func PortForward(namespace string, resource string, localPort string, kubePort s
 	}
 
 	if err := portFwd.Start(); err != nil {
-		return portFwd, err
+		return nil, err
 	}
 
 	return portFwd, nil
@@ -197,7 +197,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 
 	portFwd, err := PortForward(namespace, resource, localPort, kubePort, verbose)
 	if err != nil {
-		return "", portFwd, err
+		return "", nil, err
 	}
 
 	localCtx, cancel := context.WithTimeout(ctx, time.Second*3)
@@ -245,7 +245,11 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 		case res := <-result:
 			return res, portFwd, nil
 		case <-localCtx.Done():
-			return "", portFwd, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
+			if portFwd.Process != nil {
+				portFwd.Process.Kill()
+				portFwd.Process.Release()
+			}
+			return "", nil, errors.Errorf("timed out trying to connect to localhost during port-forward, errors: %v", multiErr)
 		}
 	}
 
