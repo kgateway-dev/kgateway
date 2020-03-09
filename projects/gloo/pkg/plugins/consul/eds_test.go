@@ -100,8 +100,13 @@ var _ = Describe("Consul EDS", func() {
 			consulWatcherMock.EXPECT().DataCenters().Return(dataCenters, nil).Times(1)
 			consulWatcherMock.EXPECT().WatchServices(gomock.Any(), dataCenters).Return(serviceMetaProducer, errorProducer).Times(1)
 			testService := createTestService(buildHostname(svc1, dc2), dc2, svc1, "c", []string{primary, secondary, canary}, 3456, 100)
-			consulWatcherMock.EXPECT().Service(svc1, "", gomock.Any()).Return([]*consulapi.CatalogService{
-				testService}, nil, nil).Times(3) // once for each datacenter
+			consulWatcherMock.EXPECT().Service(svc1, gomock.Any(), gomock.Any()).DoAndReturn(
+				func(service, tag string, q *consulapi.QueryOptions) ([]*consulapi.CatalogService, *consulapi.QueryMeta, error) {
+				if q.Datacenter == dc2 {
+					return []*consulapi.CatalogService{testService},nil,nil
+				}
+				return nil,nil,nil
+			}).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
@@ -141,13 +146,17 @@ var _ = Describe("Consul EDS", func() {
 			// we have to put all the mock expects before the test starts or else the test may have data races
 			initialIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 10)}}
 			mockDnsResolver := mock_consul2.NewMockDnsResolver(ctrl)
-			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(initialIps, nil).Times(1) // once for each consul service
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context,string){
+				fmt.Fprint(GinkgoWriter, "Initial resolve called.")
+			}).Return(initialIps, nil).Times(1) // once for each consul service
 
 			updatedIps := []net.IPAddr{{IP: net.IPv4(2, 1, 0, 11)}}
 			// once for each consul service x 2 because we will let the test run through the EDS DNS poller twice
 			// the first poll, DNS will have changed and we expect to receive new endpoints on the channel
 			// the second poll, DNS will resolve to the same thing and we do not expect to receive new endpoints
-			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Return(updatedIps, nil).Times(2)
+			mockDnsResolver.EXPECT().Resolve(gomock.Any(), gomock.Any()).Do(func(context.Context,string){
+				fmt.Fprint(GinkgoWriter, "Updated resolve called.")
+			}).Return(updatedIps, nil).Times(2)
 
 			eds := NewPlugin(consulWatcherMock, mockDnsResolver, nil)
 
@@ -155,38 +164,28 @@ var _ = Describe("Consul EDS", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 
-			// Monitors error channel until we cancel its context
-			errRoutineCtx, errRoutineCancel := context.WithCancel(ctx)
-			eg := errgroup.Group{}
-			eg.Go(func() error {
-				defer GinkgoRecover()
-				for {
-					select {
-					case err := <-errorChan:
-						Expect(err).NotTo(HaveOccurred())
-						return err
-					case <-errRoutineCtx.Done():
-						return nil
-					}
-				}
-			})
-
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
 			// use select instead of eventually for easier debuging.
 			select {
+			case err := <-errorChan:
+				Expect(err).NotTo(HaveOccurred())
+				Fail("err chan closed prematurly")
 			case endpointsReceived := <-endpointsChan:
-				Expect(endpointsReceived).To(BeEquivalentTo(expectedEndpointsFirstAttempt))
+				Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt))
 			case <-time.After(time.Second):
 				Fail("timeout waiting for endpoints")
 			}
 
-			// Wait for error monitoring routine to stop, we want to simulate an error
-			errRoutineCancel()
-			_ = eg.Wait()
-
-			errorProducer <- eris.New("fail")
-			Eventually(errorChan).Should(Receive())
+			// simulate and error
+			failErr:=eris.New("fail")
+			errorProducer <- failErr
+			select {
+			case err := <-errorChan:	
+				Expect(err).To(MatchError(ContainSubstring(failErr.Error())))
+			case <-time.After(time.Second):
+				Fail("timeout waiting for error")
+			}
 
 			// Simulate an update to DNS entries
 			// by default we poll DNS every 5s for updates
