@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix upgrade from Gloo 1.2.22+ to 1.3.x. The `alwaysSortRouteTableRoutes` setting was added to the Gloo
+      `Settings` API in the 1.2.x stable branch to fix a regression from desired behavior, while enabling users that
+      depended on the wrong behavior to enable it. This PR adds and ignores `alwaysSortRouteTableRoutes` to Gloo 1.3.x
+      so upgrades from Gloo 1.2.x settings can be parsed by Gloo 1.3.x.
+    issueLink: https://github.com/solo-io/gloo/issues/2554
