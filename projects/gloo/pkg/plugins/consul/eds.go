@@ -350,7 +350,7 @@ func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 		return false
 	}
 
-	// check if endpoint tags is a subset of upstream tags
+	// check if upstream tags is a subset of endpoint tags
 	for _, tag := range upstreamTags {
 		if !containsTag(tag) {
 			return false
