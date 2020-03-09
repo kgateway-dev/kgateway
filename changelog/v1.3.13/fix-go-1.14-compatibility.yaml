@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: |
+      Fix go v1.14 compatibility issue.
+    issueLink: https://github.com/solo-io/gloo/issues/2532
