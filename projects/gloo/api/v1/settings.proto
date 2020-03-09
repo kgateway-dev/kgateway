@@ -424,4 +424,8 @@ message GatewayOptions {
     // When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
     // than just the Gateway CRDs in its own namespace
     bool read_gateways_from_all_namespaces = 4;
+
+    // Deprecated.
+    // This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo.
+    bool always_sort_route_table_routes = 5 [deprecated=true];
 }

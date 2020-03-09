@@ -243,6 +243,7 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.-[]|uint8|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.-|int32|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.-[]|uint8|||
 |gatewayProxies.NAME.gatewaySettings.options.-|int32|||
 |gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
@@ -329,6 +330,7 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.-[]|uint8|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.-|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.always_sort_route_table_routes|bool|false||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.-[]|uint8|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.-|int32|0||
 |gatewayProxies.gatewayProxy.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
