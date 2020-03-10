@@ -129,7 +129,7 @@ Now if we get the `default` VirtualService, we should see the new SSL configurat
 glooctl get virtualservice default -o kube-yaml
 ```
 
-{{< highlight yaml "hl_lines=10-13" >}}
+{{< highlight yaml "hl_lines=7-10" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -245,7 +245,7 @@ Now if we get the VirtualService, we should see this one set up with a different
 glooctl get virtualservice animal -o kube-yaml
 ```
 
-{{< highlight yaml "hl_lines=11-14" >}}
+{{< highlight yaml "hl_lines=8-13" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -281,12 +281,10 @@ status:
       state: 1
 {{< /highlight >}}     
 
-If everything up to this point looks good, let's try to query the service and make sure to pass in the qualifying `Host` information so that Envoy can serve the correct certificates.
+If everything up to this point looks good, let's try to query the service and make sure to pass in the qualifying SNI information so that Envoy can serve the correct certificates.
 
-
-```bash
-curl -k -H "Host: animalstore.example.com"  \
-$(glooctl proxy url --port https)/animals
+```shell script
+curl -k --resolve animalstore.example.com:443:$(kubectl get svc -n gloo-system gateway-proxy -o=jsonpath='{.status.loadBalancer.ingress[0].ip}') https://animalstore.example.com/animals
 ```
 
 ```json
@@ -301,43 +299,100 @@ By default, when a VirtualService does NOT have any SSL/TLS configuration, it wi
 To verify that, let's take a look at the Gloo `Proxy` object. The Gloo `Proxy` object is the lowest-level domain object that reflects the configuration Gloo sends to Envoy. All of the other higher-level objects (like `Gateway` and `VirtualService`) drive the configuration of the `Proxy` object. 
 
 ```bash
-kubectl get proxy -n gloo-system -o yaml
+kubectl get proxy -n gloo-system gateway-proxy -oyaml
 ```
 
-{{< highlight yaml "hl_lines=14-15 33-36" >}}
-apiVersion: v1
-items:
-- apiVersion: gloo.solo.io/v1
-  kind: Proxy
-  metadata:
-    name: gateway-proxy
-    namespace: gloo-system
-  spec:
-    listeners:
-    - bindAddress: '::'
-      bindPort: 8080
-      httpListener: {}
-      name: listener-::-8080
-    - bindAddress: '::'
-      bindPort: 8443
-      httpListener:
-        virtualHosts:
-        - domains:
-          - '*'
-          name: gloo-system.default
-          routes:
-          - matchers:
-             - exact: /sample-route-1
-            routeAction:
-              single:
-                upstream:
-                  name: default-petstore-8080
-                  namespace: gloo-system
-            options:
-              prefixRewrite: /api/pets
-      name: listener-::-8443
-      sslConfiguations:
-      - secretRef:
-          name: gateway-tls
-          namespace: gloo-system
+
+{{% notice warning %}}
+Note that the proxy's TLS listener (the one with `bindPort` 8443) has multiple sslConfigurations. If any of those valid TLS configs match a request, they can be routed to any route on the listener. This means that SSL config can be shared between virtual services if they are part of the same listener (i.e., HTTP or HTTPS).
+{{% /notice %}}
+
+
+{{< highlight yaml "hl_lines=18-19 74-82" >}}
+apiVersion: gloo.solo.io/v1
+kind: Proxy
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  listeners:
+  - bindAddress: '::'
+    bindPort: 8080
+    httpListener: {}
+    metadata:
+      sources:
+      - kind: '*v1.Gateway'
+        name: gateway-proxy
+        namespace: gloo-system
+    name: listener-::-8080
+    useProxyProto: false
+  - bindAddress: '::'
+    bindPort: 8443
+    httpListener:
+      virtualHosts:
+      - domains:
+        - animalstore.example.com
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: animal
+            namespace: gloo-system
+        name: gloo-system.animal
+        routes:
+        - matchers:
+          - exact: /animals
+          metadata:
+            sources:
+            - kind: '*v1.VirtualService'
+              name: animal
+              namespace: gloo-system
+          options:
+            prefixRewrite: /api/pets
+          routeAction:
+            single:
+              upstream:
+                name: default-petstore-8080
+                namespace: gloo-system
+      - domains:
+        - '*'
+        metadata:
+          sources:
+          - kind: '*v1.VirtualService'
+            name: default
+            namespace: gloo-system
+        name: gloo-system.default
+        routes:
+        - matchers:
+          - exact: /sample-route-1
+          metadata:
+            sources:
+            - kind: '*v1.VirtualService'
+              name: default
+              namespace: gloo-system
+          options:
+            prefixRewrite: /api/pets
+          routeAction:
+            single:
+              upstream:
+                name: default-petstore-8080
+                namespace: gloo-system
+    metadata:
+      sources:
+      - kind: '*v1.Gateway'
+        name: gateway-proxy-ssl
+        namespace: gloo-system
+    name: listener-::-8443
+    sslConfigurations:
+    - secretRef:
+        name: animal-certs
+        namespace: gloo-system
+      sniDomains:
+      - animalstore.example.com
+    - secretRef:
+        name: gateway-tls
+        namespace: gloo-system
+    useProxyProto: false
+status:
+  reported_by: gloo
+  state: 1
 {{< /highlight >}}
