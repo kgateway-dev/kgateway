@@ -1,6 +1,6 @@
 ---
 title: "Deployment Patterns"
-weight: 35
+weight: 30
 description: Deployment options and patterns for Gloo.
 ---
 

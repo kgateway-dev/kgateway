@@ -1,6 +1,6 @@
 ---
 title: "Deployment Options"
-weight: 33
+weight: 20
 description: Infrastructure Options for Installing Gloo
 ---
 

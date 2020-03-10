@@ -1,9 +1,10 @@
 ---
-title: "Concepts"
-weight: 40
+title: "Core Concepts"
+weight: 10
 description: An explanation of the bedrock concepts behind Gloo.
 ---
-There are several core concepts that server as the bedrock on which Gloo is guilt. This document will provide an explanation of the various concepts, how they are implemented in Gloo, and links to the API documentation to learn more. Before you review this document, it may be useful to first read our Introduction page to get a sense of the purpose behind Gloo and the problems it seeks to solve.
+
+There are several core concepts that serve as the bedrock on which Gloo is built. This document will provide an explanation of the various concepts, how they are implemented in Gloo, and links to the API documentation to learn more. Before you review this document, it may be useful to first read our [Introduction]({{% versioned_link_path fromRoot="/introduction/" %}}) page to get a sense of the purpose behind Gloo and the problems it seeks to solve.
 
 In this document we will start with a general overview and then expand on specific topics. Links are included in the list below if you wish to jump to a specific topic.
 
