@@ -6,7 +6,7 @@
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- $gatewayProxies := .Values.gatewayProxies }}
 {{- if $global.gatewayProxies }}
-{{- $gatewayProxies = mergeOverwrite $gatewayProxies $global.gatewayProxies }}
+{{- $gatewayProxies = $global.gatewayProxies }}
 {{- end }}
 {{- range $name, $spec := $gatewayProxies }}
 {{- $image := $spec.podTemplate.image }}

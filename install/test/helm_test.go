@@ -775,6 +775,23 @@ var _ = Describe("Helm Test", func() {
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
+					It("supports overwriting default deployment", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.gatewayProxies.notDefaultProxy.kind.deployment.replicas=1",
+								"global.gatewayProxies.notDefaultProxy.configMap.data=null",
+								"global.gatewayProxies.notDefaultProxy.service.extraAnnotations=null",
+								"global.gatewayProxies.notDefaultProxy.service.type=ClusterIP",
+								"global.gatewayProxies.notDefaultProxy.podTemplate.httpPort=8081",
+								"global.gatewayProxies.notDefaultProxy.podTemplate.image.tag=dev",
+							},
+						})
+						deploymentName := "not-default-proxy"
+						// deployment exists for for second declaration of gateway proxy
+						testManifest.Expect("Deployment", namespace, deploymentName).NotTo(BeNil())
+						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(BeNil())
+					})
+
 					It("creates a deployment with gloo wasm envoy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"global.wasm.enabled=true"},

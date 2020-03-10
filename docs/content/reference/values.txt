@@ -462,3 +462,90 @@
 |global.glooMtls.envoy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |global.glooMtls.envoy.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.envoy.image.pullSecret|string||image pull policy for the container |
+|global.gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
+|global.gatewayProxies.NAME.kind.deployment.resources.limits.memory|string||amount of memory|
+|global.gatewayProxies.NAME.kind.deployment.resources.limits.cpu|string||amount of CPUs|
+|global.gatewayProxies.NAME.kind.deployment.resources.requests.memory|string||amount of memory|
+|global.gatewayProxies.NAME.kind.deployment.resources.requests.cpu|string||amount of CPUs|
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].value|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.fieldRef.apiVersion|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.fieldRef.fieldPath|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.containerName|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.resource|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int64|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|int32|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor|bool|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|uint|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|int32|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.resourceFieldRef.divisor[]|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.name|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.key|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.configMapKeyRef.optional|bool|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.name|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
+|global.gatewayProxies.NAME.kind.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|global.gatewayProxies.NAME.kind.daemonSet.hostPort|bool||whether or not to enable host networking on the pod. Only relevant when running as a DaemonSet|
+|global.gatewayProxies.NAME.podTemplate.image.tag|string||tag for the container|
+|global.gatewayProxies.NAME.podTemplate.image.repository|string||image name (repository) for the container.|
+|global.gatewayProxies.NAME.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
+|global.gatewayProxies.NAME.podTemplate.image.pullPolicy|string||image pull policy for the container|
+|global.gatewayProxies.NAME.podTemplate.image.pullSecret|string||image pull policy for the container |
+|global.gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service|
+|global.gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service|
+|global.gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
+|global.gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
+|global.gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on|
+|global.gatewayProxies.NAME.podTemplate.nodeSelector.NAME|string||label selector for nodes|
+|global.gatewayProxies.NAME.podTemplate.tolerations[].key|string|||
+|global.gatewayProxies.NAME.podTemplate.tolerations[].operator|string|||
+|global.gatewayProxies.NAME.podTemplate.tolerations[].value|string|||
+|global.gatewayProxies.NAME.podTemplate.tolerations[].effect|string|||
+|global.gatewayProxies.NAME.podTemplate.tolerations[].tolerationSeconds|int64|||
+|global.gatewayProxies.NAME.podTemplate.probes|bool||enable liveness and readiness probes|
+|global.gatewayProxies.NAME.podTemplate.resources.limits.memory|string||amount of memory|
+|global.gatewayProxies.NAME.podTemplate.resources.limits.cpu|string||amount of CPUs|
+|global.gatewayProxies.NAME.podTemplate.resources.requests.memory|string||amount of memory|
+|global.gatewayProxies.NAME.podTemplate.resources.requests.cpu|string||amount of CPUs|
+|global.gatewayProxies.NAME.podTemplate.disableNetBind|bool||don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024|
+|global.gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run envoy as an unprivileged user|
+|global.gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
+|global.gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|global.gatewayProxies.NAME.configMap.data.NAME|string|||
+|global.gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
+|global.gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
+|global.gatewayProxies.NAME.service.httpsPort|int||HTTPS port for the gateway service|
+|global.gatewayProxies.NAME.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
+|global.gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
+|global.gatewayProxies.NAME.service.externalTrafficPolicy|string|||
+|global.gatewayProxies.NAME.service.name|string|||
+|global.gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
+|global.gatewayProxies.NAME.tracing.provider|string|||
+|global.gatewayProxies.NAME.tracing.cluster|string|||
+|global.gatewayProxies.NAME.gatewaySettings.disableGeneratedGateways|bool||set to true to disable the gateway generation for a gateway proxy|
+|global.gatewayProxies.NAME.gatewaySettings.useProxyProto|bool||use proxy protocol|
+|global.gatewayProxies.NAME.gatewaySettings.customHttpGateway|string||custom yaml to use for http gateway settings|
+|global.gatewayProxies.NAME.gatewaySettings.customHttpsGateway|string||custom yaml to use for https gateway settings|
+|global.gatewayProxies.NAME.gatewaySettings.options.validation_server_addr|string|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.proxy_validation_server_addr|string|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_cert|string|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.validation_webhook_tls_key|string|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.ignore_gloo_validation_failure|bool|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.-[]|uint8|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.-|int32|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.-[]|uint8|||
+|global.gatewayProxies.NAME.gatewaySettings.options.validation.-|int32|||
+|global.gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
+|global.gatewayProxies.NAME.gatewaySettings.options.always_sort_route_table_routes|bool|||
+|global.gatewayProxies.NAME.gatewaySettings.options.-[]|uint8|||
+|global.gatewayProxies.NAME.gatewaySettings.options.-|int32|||
+|global.gatewayProxies.NAME.extraEnvoyArgs[]|string||envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)|
+|global.gatewayProxies.NAME.extraContainersHelper|string|||
+|global.gatewayProxies.NAME.extraInitContainersHelper|string|||
+|global.gatewayProxies.NAME.extraVolumeHelper|string|||
+|global.gatewayProxies.NAME.extraListenersHelper|string|||
+|global.gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|global.gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
+|global.gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
