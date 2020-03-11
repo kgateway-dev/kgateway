@@ -41,7 +41,7 @@ Please refer to the [tracing guide]({{% versioned_link_path fromRoot="/observabi
 
 ### Envoy Admin
 
-The admin port for Envoy is `19000` by default. Gloo does not alter this default. The admin port is used to publish metrics as well as a large number of other features. You can find more information about the Envoy admin port in the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.7.0/operations/admin).
+The admin port for Envoy is set to `19000` by Gloo. Through the admin port you can view the metrics for Envoy as well as a large number of other features. You can find more information about the Envoy admin port in the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.7.0/operations/admin). Gloo configures port `8081` on the Envoy proxy for metric scraping by Prometheus. If you plan to use your own instance of Prometheus, you will be connecting to port `8081` for metrics collection.
 
 ### Gloo Admin
 
