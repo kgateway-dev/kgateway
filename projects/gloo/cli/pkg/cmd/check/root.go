@@ -1,6 +1,7 @@
 package check
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -52,7 +54,7 @@ func CheckResources(opts *options.Options) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	ok, err := checkDeployments(opts)
+	deployments, ok, err := getAndCheckDeployments(opts)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -95,7 +97,7 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
-	ok, err = checkProxies(namespaces)
+	ok, err = checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace, deployments)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -103,21 +105,21 @@ func CheckResources(opts *options.Options) (bool, error) {
 	return true, nil
 }
 
-func checkDeployments(opts *options.Options) (bool, error) {
+func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, bool, error) {
 	fmt.Printf("Checking deployments... ")
 	client := helpers.MustKubeClient()
 	_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 	if err != nil {
 		fmt.Printf("Gloo namespace does not exist\n")
-		return false, err
+		return nil, false, err
 	}
 	deployments, err := client.AppsV1().Deployments(opts.Metadata.Namespace).List(metav1.ListOptions{})
 	if err != nil {
-		return false, err
+		return nil, false, err
 	}
 	if len(deployments.Items) == 0 {
 		fmt.Printf("Gloo is not installed\n")
-		return false, nil
+		return nil, false, nil
 	}
 
 	var errorToPrint string
@@ -139,7 +141,7 @@ func checkDeployments(opts *options.Options) (bool, error) {
 			}
 			if errorToPrint != "" {
 				fmt.Print(errorToPrint)
-				return false, err
+				return nil, false, err
 			}
 		}
 
@@ -151,7 +153,7 @@ func checkDeployments(opts *options.Options) (bool, error) {
 
 			if errorToPrint != "" {
 				fmt.Print(errorToPrint)
-				return false, err
+				return nil, false, err
 			}
 		}
 
@@ -163,7 +165,7 @@ func checkDeployments(opts *options.Options) (bool, error) {
 
 			if errorToPrint != "" {
 				fmt.Print(errorToPrint)
-				return false, err
+				return nil, false, err
 			}
 		}
 
@@ -176,7 +178,7 @@ func checkDeployments(opts *options.Options) (bool, error) {
 		}
 	}
 	fmt.Printf("OK\n")
-	return true, nil
+	return deployments, true, nil
 }
 
 func checkPods(opts *options.Options) (bool, error) {
@@ -344,7 +346,7 @@ func checkGateways(namespaces []string) (bool, error) {
 	return true, nil
 }
 
-func checkProxies(namespaces []string) (bool, error) {
+func checkProxies(ctx context.Context, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) (bool, error) {
 	fmt.Printf("Checking proxies... ")
 	client := helpers.MustProxyClient()
 	for _, ns := range namespaces {
@@ -360,8 +362,9 @@ func checkProxies(namespaces []string) (bool, error) {
 			}
 		}
 	}
-	fmt.Printf("OK\n")
-	return true, nil
+
+	return checkProxiesPromStats(ctx, glooNamespace, deployments)
+
 }
 
 func checkSecrets(namespaces []string) (bool, error) {

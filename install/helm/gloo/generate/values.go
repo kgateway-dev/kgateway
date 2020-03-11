@@ -252,6 +252,7 @@ type GatewayProxyService struct {
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
 	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
+	HttpsFirst            bool              `json:"httpsFirst", desc:"List HTTPS port before HTTP"`
 }
 
 type Tracing struct {

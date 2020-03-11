@@ -225,6 +225,7 @@
 |gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
 |gatewayProxies.NAME.service.externalTrafficPolicy|string|||
 |gatewayProxies.NAME.service.name|string|||
+|gatewayProxies.NAME.service.httpsFirst|bool|||
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
@@ -312,6 +313,7 @@
 |gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
 |gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||
 |gatewayProxies.gatewayProxy.service.name|string|||
+|gatewayProxies.gatewayProxy.service.httpsFirst|bool|false||
 |gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
