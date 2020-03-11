@@ -18,12 +18,20 @@ import "gloo/projects/gloo/api/v1/options/service_spec.proto";
 message UpstreamSpec {
     // The name of the Consul Service
     string service_name = 1;
+
+    // Deprecated: the meaning of this field is ambigous. please use subset_tags and instance_tags instead.
+    repeated string service_tags = 2;
+    
+    // Gloo will segment instances based off of these tags. This allows you to set routes that route
+    // to a subset of the instances of the service
+    repeated string subset_tags = 6;
+
     // The list of service tags Gloo should search for on a service instance
     // before deciding whether or not to include the instance as part of this
     // upstream. Empty list means that all service instances with the same service name will be
     // included. When not empty, only service instances that match all of the tags will be selected
     // for this upstream.
-    repeated string service_tags = 2;
+    repeated string instance_tags = 7;
 
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;

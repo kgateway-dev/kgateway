@@ -245,12 +245,12 @@ var _ = Describe("Consul EDS", func() {
 			errorProducer = make(chan error)
 
 			upstreamsToTrack = v1.UpstreamList{
-				createTestUpstream(svc1, svc1, []string{}, []string{dc1, dc2, dc3}),
-				createTestUpstream(svc1+primary, svc1, []string{primary}, []string{dc1, dc2, dc3}),
-				createTestUpstream(svc1+secondary, svc1, []string{secondary}, []string{dc1, dc2, dc3}),
-				createTestUpstream(svc1+canary, svc1, []string{canary}, []string{dc1, dc2, dc3}),
-				createTestUpstream(svc2+primary, svc2, []string{primary}, []string{dc1, dc2}),
-				createTestUpstream(svc2+secondary, svc2, []string{secondary}, []string{dc1, dc2}),
+				createTestFilteredUpstream(svc1, svc1, nil, []string{}, []string{dc1, dc2, dc3}),
+				createTestFilteredUpstream(svc1+primary, svc1, []string{primary}, []string{primary}, []string{dc1, dc2, dc3}),
+				createTestFilteredUpstream(svc1+secondary, svc1, []string{secondary}, []string{secondary}, []string{dc1, dc2, dc3}),
+				createTestFilteredUpstream(svc1+canary, svc1, []string{canary}, []string{canary}, []string{dc1, dc2, dc3}),
+				createTestFilteredUpstream(svc2+primary, svc2, []string{primary}, []string{primary}, []string{dc1, dc2}),
+				createTestFilteredUpstream(svc2+secondary, svc2, []string{secondary}, []string{secondary}, []string{dc1, dc2}),
 			}
 
 			consulServiceSnapshot = []*consul.ServiceMeta{
@@ -548,8 +548,8 @@ var _ = Describe("Consul EDS", func() {
 						},
 						UpstreamType: &v1.Upstream_Consul{
 							Consul: &consulplugin.UpstreamSpec{
-								ServiceName: "foo",
-								ServiceTags: []string{"http"},
+								ServiceName:  "foo",
+								InstanceTags: []string{"http"},
 							},
 						},
 					}, {
@@ -559,8 +559,8 @@ var _ = Describe("Consul EDS", func() {
 						},
 						UpstreamType: &v1.Upstream_Consul{
 							Consul: &consulplugin.UpstreamSpec{
-								ServiceName: "foo",
-								ServiceTags: []string{"http", "ftp"},
+								ServiceName:  "foo",
+								InstanceTags: []string{"http", "ftp"},
 							},
 						},
 					}, {
@@ -624,12 +624,12 @@ var _ = Describe("Consul EDS", func() {
 				Address:     "127.0.0.1",
 				ServicePort: 1234,
 				Datacenter:  "dc-1",
-				ServiceTags: []string{"tag-1", "tag-3"},
+				ServiceTags: []string{"tag-1", "tag-3", "http"},
 				ModifyIndex: 9876,
 			}
-			upstream := createTestUpstream("my-svc", "my-svc", []string{"tag-1", "tag-3"}, []string{"dc-1", "dc-2"})
+			upstream := createTestFilteredUpstream("my-svc", "my-svc", []string{"tag-1", "tag-3"}, []string{"http"}, []string{"dc-1", "dc-2"})
 			// add another upstream so to test that tag2 is in the labels.
-			upstream2 := createTestUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"dc-1", "dc-2"})
+			upstream2 := createTestFilteredUpstream("my-svc-2", "my-svc", []string{"tag-2"}, []string{"serf"}, []string{"dc-1", "dc-2"})
 
 			endpoints, err := buildEndpoints(context.TODO(), writeNamespace, nil, consulService, v1.UpstreamList{upstream, upstream2})
 			Expect(err).To(BeNil())
@@ -656,6 +656,9 @@ var _ = Describe("Consul EDS", func() {
 })
 
 func createTestUpstream(usptreamName, svcName string, tags, dataCenters []string) *v1.Upstream {
+	return createTestFilteredUpstream(usptreamName, svcName, tags, nil, dataCenters)
+}
+func createTestFilteredUpstream(usptreamName, svcName string, tags, instancetags, dataCenters []string) *v1.Upstream {
 	return &v1.Upstream{
 		Metadata: core.Metadata{
 			Name:      "consul-svc:" + usptreamName,
@@ -663,9 +666,10 @@ func createTestUpstream(usptreamName, svcName string, tags, dataCenters []string
 		},
 		UpstreamType: &v1.Upstream_Consul{
 			Consul: &consulplugin.UpstreamSpec{
-				ServiceName: svcName,
-				ServiceTags: tags,
-				DataCenters: dataCenters,
+				ServiceName:  svcName,
+				SubsetTags:   tags,
+				InstanceTags: instancetags,
+				DataCenters:  dataCenters,
 			},
 		},
 	}

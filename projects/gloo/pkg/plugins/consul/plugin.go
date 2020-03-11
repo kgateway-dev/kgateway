@@ -57,7 +57,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	}
 
 	for _, inst := range instances {
-		if matchTags(spec.ServiceTags, inst.ServiceTags) {
+		if (len(spec.InstanceTags) == 0) || matchTags(spec.InstanceTags, inst.ServiceTags) {
 			ipAddresses, err := getIpAddresses(context.TODO(), inst.ServiceAddress, p.resolver)
 			if err != nil {
 				return nil, err
@@ -71,7 +71,7 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		}
 	}
 
-	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.ServiceTags)
+	return nil, eris.Errorf("service with name %s and tags %v not found", spec.ServiceName, spec.InstanceTags)
 }
 
 func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInterval *time.Duration) *plugin {

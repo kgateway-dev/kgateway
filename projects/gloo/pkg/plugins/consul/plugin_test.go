@@ -37,7 +37,7 @@ var _ = Describe("Resolve", func() {
 		tag := "tag"
 		dc := "dc1"
 
-		us := createTestUpstream(svcName, svcName, []string{tag}, []string{dc})
+		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
 		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
 
@@ -74,7 +74,7 @@ var _ = Describe("Resolve", func() {
 		tag := "tag"
 		dc := "dc1"
 
-		us := createTestUpstream(svcName, svcName, []string{tag}, []string{dc})
+		us := createTestFilteredUpstream(svcName, svcName, nil, []string{tag}, []string{dc})
 
 		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
 
@@ -94,5 +94,29 @@ var _ = Describe("Resolve", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "2.1.0.10:1234"}))
+	})
+
+	It("can resolve consul service addresses in an unfiltered upstream", func() {
+
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+
+		svcName := "my-svc"
+		dc := "dc1"
+
+		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
+
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+
+		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
+			{
+				ServiceAddress: "5.6.7.8",
+				ServicePort:    1234,
+			},
+		}, nil, nil)
+
+		u, err := plug.Resolve(us)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
 	})
 })

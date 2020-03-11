@@ -328,7 +328,7 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 
 func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
 	for _, us := range upstreams {
-		upstreamTags := us.GetConsul().GetServiceTags()
+		upstreamTags := us.GetConsul().GetInstanceTags()
 		if shouldAddToUpstream(endpointTags, upstreamTags) {
 			out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
 		}
@@ -364,6 +364,9 @@ func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
 		for _, tag := range us.GetConsul().ServiceTags {
+			tagMap[tag] = true
+		}
+		for _, tag := range us.GetConsul().SubsetTags {
 			tagMap[tag] = true
 		}
 	}

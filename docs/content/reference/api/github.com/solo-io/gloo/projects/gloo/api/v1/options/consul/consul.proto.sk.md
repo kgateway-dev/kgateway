@@ -35,6 +35,8 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 ```yaml
 "serviceName": string
 "serviceTags": []string
+"subsetTags": []string
+"instanceTags": []string
 "serviceSpec": .options.gloo.solo.io.ServiceSpec
 "connectEnabled": bool
 "dataCenters": []string
@@ -44,7 +46,9 @@ consul Upstreams are typically generated automatically by Gloo from the consul A
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `serviceName` | `string` | The name of the Consul Service. |  |
-| `serviceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream. Empty list means that all service instances with the same service name will be included. When not empty, only service instances that match all of the tags will be selected for this upstream. |  |
+| `serviceTags` | `[]string` | Deprecated: the meaning of this field is ambigous. please use subset_tags and instance_tags instead. |  |
+| `subsetTags` | `[]string` | Gloo will segment instances based off of these tags. This allows you to set routes that route to a subset of the instances of the service. |  |
+| `instanceTags` | `[]string` | The list of service tags Gloo should search for on a service instance before deciding whether or not to include the instance as part of this upstream. Empty list means that all service instances with the same service name will be included. When not empty, only service instances that match all of the tags will be selected for this upstream. |  |
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |  |
 | `connectEnabled` | `bool` | Is this consul service connect enabled. |  |
 | `dataCenters` | `[]string` | The data centers in which the service instance represented by this upstream is registered. |  |
