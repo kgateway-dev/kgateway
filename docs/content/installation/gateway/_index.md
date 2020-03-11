@@ -17,7 +17,7 @@ The Enterprise version of Gloo can be installed using the following guide:
 
 |    |    |
 |----|----|
-| ![Gloo Enterprise]({{< versioned_link_path fromRoot="/img/gloo-ee.png" >}}) | [Gloo Enterprise]({{< versioned_link_path fromRoot="/installation/gateway/enterprise" >}}) is based on the open-source Gloo Gateway with additional (closed source) UI and plugins. |
+| ![Gloo Enterprise]({{< versioned_link_path fromRoot="/img/gloo-ee.png" >}}) | [Gloo Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) is based on the open-source Gloo Gateway with additional (closed source) UI and plugins. |
 
 You also install Gloo Gateway in a development scenario on your local workstation using one of the following guides:
 

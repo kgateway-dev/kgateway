@@ -48,7 +48,7 @@ Gloo Enterprise has a single installation workflow:
 <table>
   <tr height="100">
     <td width="10%">
-      <a href="{{% versioned_link_path fromRoot="/installation/gateway/enterprise/" %}}"><img src='{{% versioned_link_path fromRoot="/img/gloo-ee.png" %}}' width="60"/></a>
+      <a href="{{% versioned_link_path fromRoot="/installation/enterprise/" %}}"><img src='{{% versioned_link_path fromRoot="/img/gloo-ee.png" %}}' width="60"/></a>
     </td>
     <td>
     Gloo Enterprise is based on the open-source Gloo Gateway with additional (closed source) UI and plugins. See [the Gloo Enterprise documentation](https://solo.io/glooe) for more details on the additional features of the Enterprise version of Gloo.

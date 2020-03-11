@@ -378,7 +378,7 @@ The proxy has now been configured to route requests to the `/api/pets` REST endp
 
 Congratulations! You've successfully set up your first routing rule. That's just the tip of the iceberg though. In the next sections, we'll take a closer look at more HTTP routing capabilities, including [customizing the matching rules]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules" %}}), [route destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations" %}}), and [routing features]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features" %}}).
 
-To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}}) page.
+To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}) page.
 
 If you're ready to dive deeper into routing, the next logical step is trying out different matching rules starting with [Path Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}}).
 

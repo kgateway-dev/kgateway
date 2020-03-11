@@ -137,6 +137,6 @@ You can find out more about deploying Gloo using HashiCorp solutions by [followi
 Now that you have a basic understanding of the deployment options for Gloo, there are number of potential next steps that we'd like to recommend.
 
 * **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
-* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/deployment_arch" %}})**: Learn about specific implementations of Gloo on different software stacks.
-* **[Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
+* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo on different software stacks.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
 * **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.
