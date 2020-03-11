@@ -27,9 +27,9 @@ While Gloo Enterprise includes an installation of Prometheus and Grafana, it is 
 
 ## Tracing
 
-Tracking the life of a request as it passes through the API gateway and to other services can be challenging. You want to understand how a flow traversed your system, where there is latency, and how the request was processed. Envoy has built-in tracing capabilities to enable system wide tracing using request ID generation, client trace ID joining, and external trace service integration. Gloo makes it simple to enable and configure tracing in your environment.
+Tracking the life of a request as it passes through the API gateway and to other services can be challenging. You want to understand how a flow traversed your system, where there is latency, and how the request was processed. Envoy has [built-in tracing capabilities](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/observability/tracing.html) to enable system wide tracing using request ID generation, client trace ID joining, and external trace service integration. Gloo makes it simple to enable and configure tracing in your environment.
 
-Envoy will send its tracing information to an external trace service, such as Zipkin or Lightstep. The tracing service provider settings for Envoy can be set during installation by editing the Helm chart values, or post installation by updating the ConfigMap that holds the Envoy configuration.
+Envoy will send its tracing information to an external trace service, such as [Zipkin](https://zipkin.io/) or [Lightstep](https://lightstep.com/). The tracing service provider settings for Envoy can be set during installation by editing the Helm chart values, or post installation by updating the ConfigMap that holds the Envoy configuration.
 
 Once a tracing service provider has been configured, tracing can be enabled on a per-listener basis in Gloo. To assist in identifying the path of a flow, a tracing annotation can be added by each route in a Virtual Service.
 
@@ -45,13 +45,14 @@ The admin port for Envoy is `19000` by default. Gloo does not alter this default
 
 ### Gloo Admin
 
-The admin port for all of the Gloo pods is `9091` If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/observability/metrics/" %}}), as well as admin functionality like changing the logging levels and getting a stack dump.
+The admin port for all of the Gloo pods is `9091`. If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/observability/metrics/" %}})), as well as admin functionality like changing the logging levels and getting a stack dump.
 
 ---
 
 ## Next Steps
 
 Now that you have an understanding of how Gloo supports observability we have a few suggested paths:
+
 * **[Security]({{% versioned_link_path fromRoot="/introduction/security/" %}})** - learn more about Gloo and its security features
 * **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo
 * **[Observability guides]({{% versioned_link_path fromRoot="/observability/" %}})** - Set up Grafana and Prometheus or configure tracing

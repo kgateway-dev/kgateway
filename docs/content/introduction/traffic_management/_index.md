@@ -11,10 +11,10 @@ Gloo acts as the control plane to manage traffic flowing between downstream clie
 
 The primary components that deal with traffic management in Gloo are as follows:
 
-* **Gateways** - Gloo listens for incoming traffic on Gateways. The Gateway definition includes the protocols and ports on which Gloo listens for traffic.
-* **Virtual Services** - Virtual Services are bound to a Gateway and configured to respond for specific domains. Each contains a set of route rules, security configuration, rate limiting, transformations, and other core routing capabilities supported by Gloo.
+* **Gateways** - Gloo listens for incoming traffic on *Gateways*. The Gateway definition includes the protocols and ports on which Gloo listens for traffic.
+* **Virtual Services** - *Virtual Services* are bound to a Gateway and configured to respond for specific domains. Each contains a set of route rules, security configuration, rate limiting, transformations, and other core routing capabilities supported by Gloo.
 * **Routes** - Routes are associated with Virtual Services and direct traffic based on characteristics of the request and the upstream destination.
-* **Upstreams** - Routes send traffic to destinations, called Upstreams. Upstreams take many forms, including Kubernetes services, AWS Lambda functions, or Consul services.
+* **Upstreams** - Routes send traffic to destinations, called *Upstreams*. Upstreams take many forms, including Kubernetes services, AWS Lambda functions, or Consul services.
 
 Additional information can be found in the [Gloo Core Concepts document]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}).
 
@@ -42,11 +42,11 @@ spec:
   useProxyProto: false
 {{< /highlight >}}
 
-A full listing of configuration options is available in the {{< protobuf name="gateway.solo.io.Gateway" display="API reference for Gateways">}}.
+A full listing of configuration options is available in the {{< protobuf name="gateway.solo.io.Gateway" display="API reference for Gateways.">}}
 
 The listeners on a gateway typically listen for HTTP requests coming in on a specific address and port as defined by `bindAddress` and `bindPort`. Additional options can be configured by including an `options` section in the spec. SSL for a gateway is enabled by setting the `ssl` property to `true`.
 
-Gloo Gateway can be configured to act as a gateway on layer 7 (HTTP/S) or a layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/gloo_routing/tcp_proxy/" %}}).
+Gloo Gateway can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/gloo_routing/tcp_proxy/" %}}).
 
 Gloo Gateway is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` section to your listener configuration. 
 
@@ -65,7 +65,7 @@ spec:
             - origin
 ```
 
-Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/observability/tracing/" %}}, [access log configuration]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/gloo_routing/websockets/" %}}).
+Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/" %}}).
 
 ---
 
@@ -75,7 +75,7 @@ Traffic that arrives at a listener is processed using one of the Virtual Service
 
 ### Destination selection
 
-Routes are the primary building block of the Virtual Service. A route contains matchers and an upstream which could be a single destination, a list of weighted destinations, or an Upstream Group.
+Routes are the primary building block of a Virtual Service. Routes contain matchers and an Upstream which could be a single destination, a list of weighted destinations, or an Upstream Group.
 
 {{< highlight proto "hl_lines=8-15" >}}
 apiVersion: gateway.solo.io/v1
@@ -95,7 +95,7 @@ spec:
               namespace: gloo-system
 {{< /highlight >}}
 
-Matchers inspect information about a request and determine if the data in the request matches a value defined in the rule.The content inspected can include the request path, header, query, and method. Matchers can be combined in a single rule to further refine which requests will be matched against that rule. For instance, a request could be using the POST method and reference the path `/app/cart`. The combination of an HTTP Method matcher and a Path matcher could identify the request, and send it to a shopping cart Upstream.
+Matchers inspect information about a request and determine if the data in the request matches a value defined in the rule. The content inspected can include the request path, header, query, and method. Matchers can be combined in a single rule to further refine which requests will be matched against that rule. For instance, a request could be using the POST method and reference the path `/app/cart`. The combination of an HTTP Method matcher and a Path matcher could identify the request, and send it to a shopping cart Upstream.
 
 More information on each type of matcher is available in the following guides.
 
@@ -116,7 +116,7 @@ Upstreams can be added manually, creating what are called [Static Upstreams]({{%
 
 #### Multiple Upstreams
 
-There may be times you want to specify multiple Upstreams for a given route. Perhaps you are performing Blue/Green testing, and want to send a certain percentage of traffic to an alternate service. You can specify [multiple Upstream destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/multi_destination/" %}}) in your route, [create an Upstream Group]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}) for your route, or send traffic to a [subset of pods in Kubernetes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}).
+There may be times you want to specify multiple Upstreams for a given route. Perhaps you are performing Blue/Green testing, and want to send a certain percentage of traffic to an alternate version of a service. You can specify [multiple Upstream destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/multi_destination/" %}}) in your route, [create an Upstream Group]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}) for your route, or send traffic to a [subset of pods in Kubernetes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}).
 
 Gloo can also use Upstream Groups to perform a [canary release]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/canary/" %}}), by slowly and iteratively introducing a new destination for a percentage of the traffic on a Virtual Service. Gloo can be used with [Flagger](https://docs.flagger.app/tutorials/gloo-progressive-delivery) to automatically change the percentages in an Upstream Group as part of a canary release.
 
@@ -169,7 +169,7 @@ More information about configuring the [timeout]({{% versioned_link_path fromRoo
 
 #### Traffic shadowing
 
-You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. As bugs or issues are discovered with the new release, clients are encountering problems with the site. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/shadowing/" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of the software, without altering the original request.
+You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. Real clients are consuming the new version of your service, with potentially negative consequences. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/shadowing/" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of your service, without altering the original request.
 
 ---
 
@@ -182,7 +182,7 @@ When configuring an API gateway or edge proxy, invalid configurations can quickl
 1. Report the status on change
 1. Process the changes and apply to Envoy
 
-More detail on the validation process and how to configure it can be found in the [Configuration Validation guide]({{% versioned_link_path fromRoot="/gloo_routing/validation/" %}}).
+More detail on the validation process and its settings can be found in the [Configuration Validation guide]({{% versioned_link_path fromRoot="/gloo_routing/validation/" %}}).
 
 ---
 
