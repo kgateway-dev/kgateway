@@ -129,7 +129,7 @@ In the above file, `global.extensions.extAuth.plugins` is a map where:
 * the correspondent value is a reference to a container image that contains the plugin file
 
 {{% notice note %}}
-We will install using `glooctl`, but you can use this same value file to install the [Gloo Helm chart]({{% versioned_link_path fromRoot="/installation/gateway/enterprise#installing-on-kubernetes-with-helm" %}}).
+We will install using `glooctl`, but you can use this same value file to install the [Gloo Helm chart]({{% versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" %}}).
 {{% /notice %}}
 
 Now we can use this file to install Gloo:

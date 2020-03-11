@@ -8,7 +8,7 @@ Gloo has integrations with several other applications and services to either enh
 * **[Kubernetes Ingress](#kubernetes-ingress)** - Use Gloo as the ingress controller on your Kubernetes cluster
 * **[AWS Elastic Load Balancers](#aws-elastic-load-balancers)** - Augment the AWS Elastic Load Balancer with Gloo Gateway
 * **[Service Mesh](#service-mesh)** - Provide edge ingress for a service mesh deployment like Istio, Linkerd, or AWS App Mesh
-* **[Let's Encrypt](#lets-encrypt)** - Provision and manage certificates for Gloo using Let's Encrypt and cert-manager
+* **[Let's Encrypt](#let-s-encrypt)** - Provision and manage certificates for Gloo using Let's Encrypt and cert-manager
 
 ---
 
