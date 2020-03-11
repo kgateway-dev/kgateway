@@ -50,4 +50,14 @@ When configuring permissions for your developers and administrators, you may wis
 
 As a simple example, you may want to allow a developer access to create Virtual Services, but only for the domain example.com. Kubernetes RBAC would allows you to grant a developer access to create the Virtual Service, but it does not have a way to constrain the creation to a specific domain. OPA can evaluate the Virtual Service custom resource when it is submitted and reject any Virtual Services that are not defined for example.com.
 
-The [following guide]({{% versioned_link_path fromRoot="/security/opa/" %}} shows how to configure a simple OPA policy dictating that all Virtual Services must not have a prefix re-write.
+The [following guide]({{% versioned_link_path fromRoot="/security/opa/" %}}) shows how to configure a simple OPA policy dictating that all Virtual Services must not have a prefix re-write.
+
+---
+
+## Next Steps
+
+Now that you have an understanding of how Gloo handles security we have a few suggested paths:
+
+* **[Traffic management]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}})** - learn more about Gloo and traffic management
+* **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo
+* **[Security guides]({{% versioned_link_path fromRoot="/security/" %}})** - Try out the security guides to learn more

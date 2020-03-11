@@ -1,6 +1,6 @@
 ---
 title: FAQs
-weight: 70
+weight: 80
 description: Frequently Asked Questions
 ---
 

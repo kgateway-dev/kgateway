@@ -1,5 +1,6 @@
 ---
 title: "API Reference"
+description: Reference documentation for the Gloo API
 weight: 10
 ---
 

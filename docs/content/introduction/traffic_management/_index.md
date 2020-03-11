@@ -189,6 +189,7 @@ More detail on the validation process and how to configure it can be found in th
 ## Next Steps
 
 Now that you have an understanding of how Gloo handles traffic management we have a few suggested paths:
+
 * **[Security]({{% versioned_link_path fromRoot="/introduction/security/" %}})** - learn more about Gloo and its security features
 * **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo
 * **[Traffic management guides]({{% versioned_link_path fromRoot="/gloo_routing/" %}})** - Try out the traffic management guides to learn more

@@ -6,7 +6,7 @@ weight: 100
 ## Intro
 
 
-Gloo invites invites developers to extend Gloo's functionality and adapt to new use cases via the addition of plugins. 
+Gloo invites developers to extend Gloo's functionality and adapt to new use cases via the addition of plugins. 
 
 Gloo's plugin based architecture makes it easy to extend functionality in a variety of areas:
 

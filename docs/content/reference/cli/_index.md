@@ -1,5 +1,6 @@
 ---
 title: Command Line Reference
+description: Reference for the glooctl command line tool
 weight: 20
 ---
 

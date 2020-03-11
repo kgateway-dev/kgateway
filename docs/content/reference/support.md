@@ -1,5 +1,6 @@
 ---
 title: "Release Support"
+description: Expected release cadence and support of Gloo
 weight: 52
 ---
 

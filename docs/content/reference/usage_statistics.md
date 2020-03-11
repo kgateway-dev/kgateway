@@ -1,6 +1,6 @@
 ---
 title: Internal Usage Statistics
-weight: 100
+weight: 40
 description: Gloo's usage stats collection
 ---
 
