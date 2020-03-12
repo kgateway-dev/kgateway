@@ -258,7 +258,7 @@ of our sample application!
 
 If Gloo is running on kubernetes, the extauth server logs can be viewed with:
 ```
-k logs -n gloo-system deploy/extauth -f
+kubectl logs -n gloo-system deploy/extauth -f
 ```
 If the auth config has been received successfully, you should see the log line:
 ```

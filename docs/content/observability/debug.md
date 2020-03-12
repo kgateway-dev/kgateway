@@ -19,7 +19,7 @@ To enable debug logging, run:
 curl "localhost:19000/logging?level=debug" -XPOST
 ```
 
-To view the logs, go to your terminal and run:
+To view the logs, run:
 ```
 kubectl logs -n gloo-system deploy/gateway-proxy -f
 ```
@@ -30,7 +30,7 @@ for additional information.
 More information on the large amount of features available in this admin view can be found in the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.7.0/operations/admin).
 
 ## Gloo Administration Interface
-If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/observability/metrics/" %}}), as well as enables admin functionality like getting a stack dump.
+If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/observability/metrics/" %}})) and admin functionality like getting a stack dump.
 
 For example, to enable debug logging on the gloo pod, run: 
 ```
@@ -42,5 +42,3 @@ To view the logs, run:
 ```
 kubectl logs -n gloo-system deploy/gloo -f
 ```
-
-## Feature Logging
