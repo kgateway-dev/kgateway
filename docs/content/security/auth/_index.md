@@ -145,17 +145,6 @@ There are two exceptions to this rule:
 - if the child attribute defines an `AuthConfig`, or
 - if the child explicitly disables authentication via the `disable: true` configuration.
 
-### Logging
-
-If Gloo is running on kubernetes, the extauth server logs can be viewed with:
-```
-k logs -n gloo-system deploy/extauth -f
-```
-If you have an auth config, you should see the log line:
-```
-"logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
-```
-
 ### Implementations
 
 We have seen how `AuthConfigs` can be used to define granular authentication configurations for `Virtual Services`. For a detailed overview of the authN/authZ models implemented by Gloo, check out the other guides:

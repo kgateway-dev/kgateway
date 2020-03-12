@@ -254,6 +254,17 @@ of our sample application!
 
 ![Pet Clinic app homepage](./../petclinic-home.png)
 
+### Logging
+
+If Gloo is running on kubernetes, the extauth server logs can be viewed with:
+```
+k logs -n gloo-system deploy/extauth -f
+```
+If the auth config has been received successfully, you should see the log line:
+```
+"logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
+```
+
 ### Cleanup
 You can clean up the resources created in this guide by running:
 
