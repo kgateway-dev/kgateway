@@ -76,10 +76,10 @@ to point Gloo toward the rate-limit service.
 
 If Gloo is running on kubernetes, the rate limiting logs can be viewed with:
 ```
-k logs -n gloo-system deploy/rate-limit -f
+kubectl logs -n gloo-system deploy/rate-limit -f
 ```
 
-When it starts up correctly, you should see the log line similar to:
+When it starts up correctly, you should see a log line similar to:
 ```
 "caller":"server/server_impl.go:48","msg":"Listening for HTTP on ':18080'"
 ```

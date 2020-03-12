@@ -277,8 +277,8 @@ Cert rotation can be done by updating the gloo-mtls-certs secret.
 ### Logging
 
 #### SDS sidecar
-The gloo, gateway-proxy, extauth and rate-limiting pods will have a SDS sidecar
-when it is running in Gloo mTLS mode. To see the logs for the sds server, run:
+The gloo, gateway-proxy, extauth and rate-limiting pods will have SDS sidecars
+when Gloo is running in mTLS mode. To see the logs for the sds server, run:
 ```
 kubectl logs -n gloo-system deploy/gloo sds
 kubectl logs -n gloo-system deploy/gateway-proxy sds
@@ -293,22 +293,22 @@ You should see logs like:
 ```
 
 #### Envoy sidecar
-The gloo, extauth, and rate-limiting pods will have an envoy sidecar container.
-To see the logs for the envoy sidecar containers, run:
+The gloo, extauth, and rate-limiting pods will have Envoy sidecar containers.
+To see the logs for the Envoy sidecar containers, run:
 ```
 kubectl logs -n gloo-system deploy/gloo envoy-sidecar
 kubectl logs -n gloo-system deploy/extauth envoy-sidecar
 kubectl logs -n gloo-system deploy/rate-limit envoy-sidecar
 ```
 
-If the SDS server hasn't started up yet, the envoy sidecar will contain log lines like:
+If the SDS server hasn't started up yet, the Envoy sidecar will contain log lines like:
 ```
 StreamSecrets gRPC config stream closed: 14, upstream connect error or disconnect/reset before headers. reset reason: connection failure
 ```
-Once the SDS server starts up and provides certs to the envoy sidecar, these messages will stop.
+Once the SDS server starts up and provides certs to the Envoy sidecar, these messages will stop.
 
-Each envoy sidecar also has an administration interface available on port 8001. To access
-this page (e.g. for the gloo pod's envoy sidecar), run:
+Each Envoy sidecar also has an administration interface available on port 8001. To access
+this page (e.g. for the gloo pod's Envoy sidecar), run:
 ```
 kubectl port-forward -n gloo-system deploy/gloo 8001
 ```

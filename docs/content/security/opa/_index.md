@@ -6,8 +6,8 @@ description: Define fine-grained policies to control Gloo configuration itself.
 
 In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role
 Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo VirtualService. RBAC only
-allows you to grant permissions entire objects. With the Open Policy Agent, you can specify very fine grain controls
-over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service".
+allows you to grant permissions for entire objects. With the Open Policy Agent, you can specify very fine grain controls
+over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual services".
 With OPA, in addition to specifying access, you can say "virtual services must point to the domain example.com".
 
 You can of course combine both, as you see fit.
