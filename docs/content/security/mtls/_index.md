@@ -273,3 +273,44 @@ The gloo-mtls-certs are added to the volumes section and mounted in the rate-lim
 ### Cert Rotation
 
 Cert rotation can be done by updating the gloo-mtls-certs secret.
+
+### Logging
+
+#### SDS sidecar
+The gloo, gateway-proxy, extauth and rate-limiting pods will have a SDS sidecar
+when it is running in Gloo mTLS mode. To see the logs for the sds server, run:
+```
+kubectl logs -n gloo-system deploy/gloo sds
+kubectl logs -n gloo-system deploy/gateway-proxy sds
+kubectl logs -n gloo-system deploy/extauth sds
+kubectl logs -n gloo-system deploy/rate-limit sds
+```
+
+You should see logs like:
+```
+"caller":"server/server.go:57","msg":"sds server listening on 127.0.0.1:8234"
+"logger":"sds_server","caller":"server/server.go:97","msg":"Updating SDS config. Snapshot version is xxxx"
+```
+
+#### Envoy sidecar
+The gloo, extauth, and rate-limiting pods will have an envoy sidecar container.
+To see the logs for the envoy sidecar containers, run:
+```
+kubectl logs -n gloo-system deploy/gloo envoy-sidecar
+kubectl logs -n gloo-system deploy/extauth envoy-sidecar
+kubectl logs -n gloo-system deploy/rate-limit envoy-sidecar
+```
+
+If the SDS server hasn't started up yet, the envoy sidecar will contain log lines like:
+```
+StreamSecrets gRPC config stream closed: 14, upstream connect error or disconnect/reset before headers. reset reason: connection failure
+```
+Once the SDS server starts up and provides certs to the envoy sidecar, these messages will stop.
+
+Each envoy sidecar also has an administration interface available on port 8001. To access
+this page (e.g. for the gloo pod's envoy sidecar), run:
+```
+kubectl port-forward -n gloo-system deploy/gloo 8001
+```
+
+To check that the SDS server has successfully delivered certs, check [localhost:8001/certs](http://localhost:8001/certs).
