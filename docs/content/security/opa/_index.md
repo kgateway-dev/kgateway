@@ -16,7 +16,7 @@ Be sure to check the external auth [configuration overview]({{% versioned_link_p
 
 ## Table of Contents
 - [Setup](#setup)
-- [Input Objects](#setup)
+- [Input Objects](#input-objects)
 - [Disable prefix rewrites on virtual services with Open Policy Agent](#disable-prefix-rewrites-on-virtual-services-with-open-policy-agent)
     - [Policy](#policy)
     - [Apply Policy](#apply-policy)
@@ -57,7 +57,15 @@ This script follows the docs outlined in [official OPA docs](https://www.openpol
 ```
 {{% /expand %}}
 
----
+## Input Objects
+
+In this document, we refer to an `input` object which is populated by an Envoy CheckRequest object. Its most important
+fields are
+
+1) `input.http_request` which is based on the [Envoy HTTP Request object](https://github.com/envoyproxy/envoy/blob/b7a8c98cfc20e3033819228d5a9c555a6c5c6aaa/api/envoy/service/auth/v3/attribute_context.proto#L98)
+object.
+
+2) `input.state.jwt` which is used [here](#validate-jwts-with-open-policy-agent).
 
 ## Disable prefix rewrites on virtual services with Open Policy Agent
 
