@@ -18,6 +18,17 @@ Wouldn't it be nice to be able to **write just the authentication logic you need
 
 In this guide we will show you how easy it is to extend Gloo's Ext Auth server via [Go plugins](https://golang.org/pkg/plugin/).
 
+{{% notice warning %}}
+Beware of encountering potential bugs in the go plugin runtime if you're running on an old version of linux (e.g., kops defaults in 1.15.1). If so, you may see go fail to execute the `dlopen` system call, manifesting as:
+```shell script
+{"level":"error","ts":1582578689.0415232,"logger":"extauth.ext-auth-service","caller":"service/extauth.go:58","msg":"Error while authorizing request","error":"empty config set","stacktrace":...}
+```
+Even when your auth service has properly been configured, seeing a similar log line to this earlier in your logs:
+```shell script
+{"level":"info","ts":1582578688.078688,"logger":"extauth","caller":"runner/run.go:158","msg":"got new config","config":[{"auth_config_ref_name":"gloo-system.plugin-auth","configs":[{"AuthConfig":{"plugin_auth":{"name":"RequiredHeader","plugin_file_name":"RequiredHeader.so","exported_symbol_name":"Plugin","config":{"fields":{"AllowedValues":{"Kind":{"list_value":{"values":[{"Kind":{"string_value":"foo"}},{"Kind":{"string_value":"bar"}}]}}},"RequiredHeader":{"Kind":{"string_value":"my-auth-header"}}}}}}}]}]}
+```
+{{% /notice %}}
+
 ## Development workflow overview
 
 Following are the high-level steps required to use your auth plugins with Gloo. Through the course of this guide we will see each one of them in greater detail.
