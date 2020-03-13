@@ -104,14 +104,14 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 Now we should create the Kubernetes secrets to hold this cert:
 
 ```bash
-kubectl create secret tls gateway-tls --key tls.key \
+kubectl create secret tls upstream-tls --key tls.key \
    --cert tls.crt --namespace gloo-system
 ```
 
 Note, you could also use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
 
 ```bash
-glooctl create secret tls --name gateway-tls --certchain $CERT --privatekey $KEY
+glooctl create secret tls --name upstream-tls --certchain $CERT --privatekey $KEY
 ```
 
 If you've created your secret with `kubectl`, you don't need to use `glooctl` to do the same. 
@@ -120,7 +120,7 @@ Lastly, let's configure the VirtualService to use this cert via the Kubernetes s
 
 ```bash
 glooctl edit virtualservice --name default --namespace gloo-system \
-   --ssl-secret-name gateway-tls --ssl-secret-namespace gloo-system
+   --ssl-secret-name upstream-tls --ssl-secret-namespace gloo-system
 ```
 
 Now if we get the `default` VirtualService, we should see the new SSL configuration:
@@ -138,7 +138,7 @@ metadata:
 spec:
   sslConfig:
     secretRef:
-      name: gateway-tls
+      name: upstream-tls
       namespace: gloo-system
   virtualHost:
     domains:
@@ -199,7 +199,7 @@ Since they are self-signed, we can reuse tls.crt as our rootca file.
 Now, you should use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
 
 ```bash
-glooctl create secret tls --name gateway-mtls --certchain $CERT --privatekey $KEY --rootca $ROOTCA
+glooctl create secret tls --name downstream-mtls --certchain $CERT --privatekey $KEY --rootca $ROOTCA
 ```
 Note that the $CERT and $KEY should come from the cert and key generated from the previous example (tls.crt and tls.key).
 The $ROOTCA file comes from the self-signed cert provided in this example (mtls.crt).
@@ -208,7 +208,7 @@ Next, let's configure the VirtualService to use this cert via the Kubernetes sec
 
 ```bash
 glooctl edit virtualservice --name default --namespace gloo-system \
-   --ssl-secret-name gateway-mtls --ssl-secret-namespace gloo-system
+   --ssl-secret-name downstream-mtls --ssl-secret-namespace gloo-system
 ```
 
 Now if we get the `default` VirtualService, we should see the new SSL configuration:
@@ -226,7 +226,7 @@ metadata:
 spec:
   sslConfig:
     secretRef:
-      name: gateway-mtls
+      name: downstream-mtls
       namespace: gloo-system
   virtualHost:
     domains:
@@ -486,7 +486,7 @@ spec:
       sniDomains:
       - animalstore.example.com
     - secretRef:
-        name: gateway-tls
+        name: upstream-tls
         namespace: gloo-system
     useProxyProto: false
 status:
