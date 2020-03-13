@@ -4,15 +4,11 @@ weight: 60
 description: Define fine-grained policies to control Gloo configuration itself.
 ---
 
-In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role
-Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo VirtualService. RBAC only
-allows you to grant permissions for entire objects. With the Open Policy Agent, you can specify very fine grain controls
-over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual services".
-With OPA, in addition to specifying access, you can say "virtual services must point to the domain example.com".
+In Kubernetes, Gloo stores its configuration as Custom Resource Definitions (CRDs). You can use normal Kubernetes Role Based Access Control (RBAC) to create a policy that grants users the ability to create a Gloo VirtualService. RBAC only allows to grant permissions entire objects. With the Open Policy Agent, one can specify very fine grain control over Gloo objects. For example, with RBAC you can say, "user john@example.com is allowed to create virtual service" With OPA, in addition to specifying access,  you can say "virtual services must point to the domain example.com". 
 
-You can of course combine both, as you see fit.
+You can of-course combine both, as you see fit.
 
-In this document we will show a simple OPA policy that dictates that "all virtual services must not have a prefix rewrite".
+In this document we will show a simple OPA policy that dictates that all virtual services must not have a prefix re-write.
 
 ---
 
@@ -22,7 +18,7 @@ Before you get started, you will need to have the Gloo Gateway running in a Kube
 
 ### Setup
 
-First, set up OPA as a validating webhook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo in our case).
+First, setup OPA as a validating web hook. In this mode, OPA validates the Kubernetes objects before they are visible to the controllers that act on them (Gloo in our case).
 
 You can use the [setup.sh](setup.sh) script for that purpose.
 
@@ -118,15 +114,16 @@ Time to test!
 
 We have prepared two virtual services for testing:
 
-vs-ok.yaml:
+<details><summary>[vs-ok.yaml](vs-ok.yaml)</summary>
 ```
 {{% readfile file="security/opa/vs-ok.yaml" %}}
 ```
-vs-err.yaml:
+</details>
+<details><summary>[vs-err.yaml](vs-err.yaml)</summary>
 ```
 {{% readfile file="security/opa/vs-err.yaml" %}}
 ```
-
+</details>
 
 Try it:
 ```shell
