@@ -108,7 +108,8 @@ kubectl create secret tls upstream-tls --key tls.key \
    --cert tls.crt --namespace gloo-system
 ```
 
-Note, you could also use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
+Note, you could also use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for
+client cert verification (for example, if you set up [downstream mTLS for your VirtualServices](#configuring-downstream-mtls-in-a-virtualservice)). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
 
 ```bash
 glooctl create secret tls --name upstream-tls --certchain $CERT --privatekey $KEY
@@ -196,13 +197,13 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 Since they are self-signed, we can reuse tls.crt as our rootca file.
 
-Now, you should use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
+We will use `glooctl` to create the tls `secret`:
 
 ```bash
-glooctl create secret tls --name downstream-mtls --certchain $CERT --privatekey $KEY --rootca $ROOTCA
+glooctl create secret tls --name downstream-mtls --certchain tls.crt --privatekey tls.key --rootca mtls.crt
 ```
-Note that the $CERT and $KEY should come from the cert and key generated from the previous example (tls.crt and tls.key).
-The $ROOTCA file comes from the self-signed cert provided in this example (mtls.crt).
+Note that the cert and key files were generated from the previous example (tls.crt and tls.key).
+The root ca file comes from the self-signed cert provided in this example (mtls.crt).
 
 Next, let's configure the VirtualService to use this cert via the Kubernetes secrets:
 
