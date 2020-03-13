@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add docs describing how to set up downstream mTLS.
+    issueLink: https://github.com/solo-io/gloo/issues/2598
