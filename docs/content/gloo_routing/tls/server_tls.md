@@ -112,7 +112,7 @@ Note, you could also use `glooctl` to create the tls `secret` which also allows 
 client cert verification (for example, if you set up [downstream mTLS for your VirtualServices](#configuring-downstream-mtls-in-a-virtualservice)). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
 
 ```bash
-glooctl create secret tls --name upstream-tls --certchain $CERT --privatekey $KEY
+glooctl create secret tls --name upstream-tls --certchain tls.crt --privatekey tls.key
 ```
 
 If you've created your secret with `kubectl`, you don't need to use `glooctl` to do the same. 
@@ -163,7 +163,7 @@ status:
       state: 1
 {{< /highlight >}}
 
-If we try query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
+If we try to query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
 
 ```bash
 curl $(glooctl proxy url --port http)/sample-route-1
@@ -195,7 +195,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
    -keyout mtls.key -out mtls.crt -subj "/CN=gloo.gloo-system.com"
 ```
 
-Since they are self-signed, we can reuse tls.crt as our rootca file.
+Since they are self-signed, we can use mtls.crt as both our client cert and our rootca file for Gloo to verify the client.
 
 We will use `glooctl` to create the tls `secret`:
 
@@ -271,7 +271,7 @@ any certs.
 curl: (35) error:1401E410:SSL routines:CONNECT_CR_FINISHED:sslv3 alert handshake failure
 ```
 
-We can do this by passing in the mtls.key and mtls.crt files.
+We can provide certs by passing in the mtls.key and mtls.crt files.
 
 ```bash
 curl --cert mtls.crt --key mtls.key -k $(glooctl proxy url --port https)/sample-route-1
