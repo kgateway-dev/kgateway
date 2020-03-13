@@ -4,7 +4,7 @@ description: This document shows how some common ways to debug Gloo and Envoy
 weight: 10
 ---
 
-At times you may need to debug Gloo and misconfigurations. Gloo is based on Envoy and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo and Envoy. 
+At times you may need to debug Gloo and misconfigurations. Gloo is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo and Envoy. 
 
 The guide is broken into 3 main sections:
 
@@ -26,7 +26,7 @@ This will dump all of the relevant configuration into to files, `gloo-logs.log` 
 
 ## General debugging tools and tips
 
-If you're experiencing unexpected behavior after installing and configuring Gloo, the first thing to do is verify installation and configuration. The fastest way to do that is to run the `glooctl check` command. This command will go through the deployments, pods and Gloo resources to make sure they're in a healthy/Accepted/OK status. Typically if there is some problem syncing resources, you'd find an issue here.
+If you're experiencing unexpected behavior after installing and configuring Gloo, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo resources to make sure they're in a healthy/Accepted/OK status. Typically if there is some problem syncing resources, you'd find an issue here.
 
 ```bash
 glooctl check
@@ -56,7 +56,7 @@ This combines both `Gateway` and `VirtualService` resources into a single docume
 
 ### Upstreams
 
-When using dynamic Upstream discovery (default, out of the box), and making changes to those upstreams (ie, adding TLS), you may end up with misconfigured or `Rejected` Upstreams that can cause resources that depend on them to show failures (ie, VirtualServices, RouteTable, etc). To determine whether your Upstreams are in a healthy state, run the following and examine the `STATUS` column:
+When using [dynamic Upstream discovery]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/discovered_upstream/" >}}) (default, out of the box), and making changes to those upstreams (ie, adding TLS), you may end up with misconfigured or `Rejected` Upstreams that can cause resources that depend on them to show failures (ie, VirtualServices, RouteTable, etc). To determine whether your Upstreams are in a healthy state, run the following and examine the `STATUS` column:
 
 ```bash
 glooctl get upstreams
@@ -64,7 +64,7 @@ glooctl get upstreams
 
 ## Debugging the data plane
 
-Gloo is based on Envoy proxy which means there is a lot of generic Envoy debugging knowledge that is applicable to Gloo. When you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
+Gloo is based on Envoy proxy which means there is a lot of [generic Envoy debugging knowledge](https://www.envoyproxy.io/docs/envoy/latest/operations/operations) that is applicable to Gloo. When you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
 
 
 ### Dumping Envoy configuration
@@ -100,7 +100,7 @@ glooctl proxy stats
 
 ### All else with Envoy: bootstrap and Admin
 
-There may be more limited times where you need direct access to the Envoy Admin API. You can view both the Envoy bootstrap config as well as access the Admin API with the following commands:
+There may be more limited times where you need direct access to the [Envoy Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin). You can view both the Envoy bootstrap config as well as access the [Admin API](https://www.envoyproxy.io/docs/envoy/latest/operations/admin) with the following commands:
 
 ```bash
 kubectl exec -it -n gloo-system deploy/gateway-proxy \
@@ -127,7 +127,7 @@ gateway-proxy-8689c55fb8-7swfq   1/1     Running   0          15h
 gloo-66fb8974c9-8sgll            1/1     Running   0          15h
 ```
 
-You will see more components for the Enterprise installation
+You will see more components for the [Enterprise installation]({{< versioned_link_path fromRoot="/installation/enterprise/" >}})
 
 ```bash
 NAME                                                  READY   STATUS    RESTARTS   AGE
@@ -171,7 +171,7 @@ kubectl logs -f -n gloo-system -l gloo=gloo
 
 ### Changing logging Levels and more
 
-Each Gloo control plane component comes with a hidden debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
+Each Gloo control plane component comes with a [optional debug port]({{< versioned_link_path fromRoot="/observability/ports/" >}}) that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
 
 ```bash
 kubectl port-forward  -n gloo-system deploy/gloo  9091:9091
@@ -187,3 +187,11 @@ Now you can navigate to http://localhost:9091 and you get a simple page with som
 With these endpoints, you can profile the behavior of the component, adjust its logging, view the prometheus-style telemetry signals, as well as view tracing spans within the process. This is a very handy page to understand the behavior of a particular component. 
 
 
+### All else fails
+
+Again, f all else fails, you can capture the state of Gloo configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+
+```bash
+glooctl debug logs -f gloo-logs.log
+glooctl debug yaml -f gloo-yamls.yaml
+```
