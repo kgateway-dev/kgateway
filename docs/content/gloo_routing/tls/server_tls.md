@@ -186,7 +186,7 @@ curl -k $(glooctl proxy url --port https)/sample-route-1
 
 ### Configuring downstream mTLS in a VirtualService
 
-Gloo can be configured to verify downstream client certificates.
+Gloo can be configured to verify downstream client certificates. As can be seen in the example above, you can reference a Kubernetes secret on your Virtual Service which allows Gloo to verify the upstream. If this secret also contains a root CA, Gloo will use it to verify downstream client certificates.
 
 We need to create a new set of self-signed certs to use in between the client and Gloo.
 
@@ -197,7 +197,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 
 Since they are self-signed, we can use mtls.crt as both our client cert and our rootca file for Gloo to verify the client.
 
-We will use `glooctl` to create the tls `secret`:
+We will use `glooctl` to create the tls `secret`, adding the rootca with an additional flag:
 
 ```bash
 glooctl create secret tls --name downstream-mtls --certchain tls.crt --privatekey tls.key --rootca mtls.crt
