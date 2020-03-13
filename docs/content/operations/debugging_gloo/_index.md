@@ -4,7 +4,7 @@ description: This document shows how some common ways to debug Gloo and Envoy
 weight: 10
 ---
 
-At times you may need to debug Gloo and misconfigurations. Gloo is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo and Envoy. 
+At times you may need to debug Gloo misconfigurations. Gloo is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo and Envoy. 
 
 The guide is broken into 3 main sections:
 
