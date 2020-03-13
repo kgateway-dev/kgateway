@@ -363,11 +363,14 @@ func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
-		for _, tag := range us.GetConsul().ServiceTags {
-			tagMap[tag] = true
-		}
-		for _, tag := range us.GetConsul().SubsetTags {
-			tagMap[tag] = true
+		if len(us.GetConsul().SubsetTags) != 0 {
+			for _, tag := range us.GetConsul().SubsetTags {
+				tagMap[tag] = true
+			}
+		} else {
+			for _, tag := range us.GetConsul().ServiceTags {
+				tagMap[tag] = true
+			}
 		}
 	}
 	for tag := range tagMap {

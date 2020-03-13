@@ -33,7 +33,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type UpstreamSpec struct {
 	// The name of the Consul Service
 	ServiceName string `protobuf:"bytes,1,opt,name=service_name,json=serviceName,proto3" json:"service_name,omitempty"`
-	// Deprecated: the meaning of this field is ambigous. please use subset_tags and instance_tags instead.
+	// Deprecated: This field was renamed to subset_tags. If subset_tags is used, this field is
+	// ignored. Otherwise, the behavior is the same as subset_tags field below.
 	ServiceTags []string `protobuf:"bytes,2,rep,name=service_tags,json=serviceTags,proto3" json:"service_tags,omitempty"`
 	// Gloo will segment instances based off of these tags. This allows you to set routes that route
 	// to a subset of the instances of the service
