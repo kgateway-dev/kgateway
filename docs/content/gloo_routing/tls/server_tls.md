@@ -111,7 +111,7 @@ kubectl create secret tls gateway-tls --key tls.key \
 Note, you could also use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
 
 ```bash
-glooctl create secret tls --certchain $CERT --privatekey $KEY
+glooctl create secret tls --name gateway-tls --certchain $CERT --privatekey $KEY
 ```
 
 If you've created your secret with `kubectl`, you don't need to use `glooctl` to do the same. 
@@ -177,6 +177,103 @@ It's possible that if you used self-signed certs, `curl` cannot validate the cer
 
 ```bash
 curl -k $(glooctl proxy url --port https)/sample-route-1
+```
+
+```json
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+### Configuring downstream mTLS in a VirtualService
+
+Gloo can be configured to verify downstream client certificates.
+
+We need to create a new set of self-signed certs to use in between the client and Gloo.
+
+```bash
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+   -keyout mtls.key -out mtls.crt -subj "/CN=gloo.gloo-system.com"
+```
+
+Since they are self-signed, we can reuse tls.crt as our rootca file.
+
+Now, you should use `glooctl` to create the tls `secret` which also allows storing a RootCA which can be used for client cert verification (for example, if you set up mTLS for your VirtualServices). `glooctl` adds extra annotations so we can catalog the different secrets we may need like `tls`, `aws`, `azure` to make it easier to serialize/deserialize in the correct format. For example, to create the tls secret with `glooctl`:
+
+```bash
+glooctl create secret tls --name gateway-mtls --certchain $CERT --privatekey $KEY --rootca $ROOTCA
+```
+Note that the $CERT and $KEY should come from the cert and key generated from the previous example (tls.crt and tls.key).
+The $ROOTCA file comes from the self-signed cert provided in this example (mtls.crt).
+
+Next, let's configure the VirtualService to use this cert via the Kubernetes secrets:
+
+```bash
+glooctl edit virtualservice --name default --namespace gloo-system \
+   --ssl-secret-name gateway-mtls --ssl-secret-namespace gloo-system
+```
+
+Now if we get the `default` VirtualService, we should see the new SSL configuration:
+
+```bash
+glooctl get virtualservice default -o kube-yaml
+```
+
+{{< highlight yaml "hl_lines=7-10" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: default
+  namespace: gloo-system
+spec:
+  sslConfig:
+    secretRef:
+      name: gateway-mtls
+      namespace: gloo-system
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /sample-route-1
+      options:
+        prefixRewrite: /api/pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080
+            namespace: gloo-system
+status:
+  reported_by: gateway
+  state: 1
+  subresource_statuses:
+    '*v1.Proxy.gloo-system.gateway-proxy':
+      reported_by: gloo
+      state: 1
+{{< /highlight >}}
+
+If we try query the HTTP port, we should not get a successful response (it should hang, or timeout since we no longer have a route on the HTTP listener and Envoy will give a grace period to drain requests. After the drain is completed, the HTTP port will be closed if there are no other routes on the listener). By default when there are no routes for a listener, the port will not be opened.
+
+```bash
+curl $(glooctl proxy url --port http)/sample-route-1
+```
+
+If we try with the HTTPS port, it should be denied due to not being verified:
+
+Since we used self-signed certs, `curl` cannot validate the certificate. In this case, SPECIFICALLY FOR THIS EXAMPLE, you can skip certificate validation with `curl -k ...`(note this is not secure):
+
+```bash
+curl -k $(glooctl proxy url --port https)/sample-route-1
+```
+
+This will fail with Gloo refusing the client connection because the client has not provided
+any certs.
+```
+curl: (35) error:1401E410:SSL routines:CONNECT_CR_FINISHED:sslv3 alert handshake failure
+```
+
+We can do this by passing in the mtls.key and mtls.crt files.
+
+```bash
+curl --cert mtls.crt --key mtls.key -k $(glooctl proxy url --port https)/sample-route-1
 ```
 
 ```json
