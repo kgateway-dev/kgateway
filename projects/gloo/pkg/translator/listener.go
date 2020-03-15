@@ -169,7 +169,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := ""
 		switch sslCfg := sslConfig.SslSecrets.(type) {
 		case *v1.SslConfig_SecretRef:
-			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetNamespace()
 		case *v1.SslConfig_SslFiles:
 			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
 		default:
