@@ -209,6 +209,7 @@ type GatewayProxy struct {
 
 type GatewayProxyGatewaySettings struct {
 	DisableGeneratedGateways bool              `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
+	IPv4Only                 bool              `json:"ipv4Only,omitempty" desc:"set to true to configure the default gateway to be ipv4 only"`
 	UseProxyProto            bool              `json:"useProxyProto" desc:"use proxy protocol"`
 	CustomHttpGateway        string            `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
 	CustomHttpsGateway       string            `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`

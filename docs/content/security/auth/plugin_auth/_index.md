@@ -27,7 +27,7 @@ Following are the high-level steps required to use your auth plugins with Gloo. 
 1. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or routes.
 
 {{% notice note %}}
-For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated[**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
+For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated [**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
 {{% /notice %}}
 
 ## Building an Ext Auth plugin
