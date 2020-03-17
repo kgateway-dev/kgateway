@@ -72,7 +72,7 @@ var _ = Describe("Route Plugin", func() {
 					&envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
 							SafeRegex: &envoymatcher.RegexMatcher{
-								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
 								Regex:      allowOriginRegex1[0],
 							},
 						},
@@ -80,7 +80,7 @@ var _ = Describe("Route Plugin", func() {
 					&envoymatcher.StringMatcher{
 						MatchPattern: &envoymatcher.StringMatcher_SafeRegex{
 							SafeRegex: &envoymatcher.RegexMatcher{
-								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+								EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
 								Regex:      allowOriginRegex1[1],
 							},
 						},
