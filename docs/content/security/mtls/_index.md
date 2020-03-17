@@ -314,3 +314,9 @@ To check that the SDS server has successfully delivered certs, check [localhost:
 ---
 
 ## Next Steps
+
+In addition to mutual TLS, you can also configure client TLS to Upstreams and server TLS to downstream clients. Check out these guides to learn more:
+
+* **[Setting up Upstream TLS]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls/" %}})**
+* **[Setting up Upstream TLS with Service Annotations]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls_service_annotations/" %}})**
+* **[Setting up Server TLS]({{% versioned_link_path fromRoot="/gloo_routing/tls/server_tls/" %}})**
