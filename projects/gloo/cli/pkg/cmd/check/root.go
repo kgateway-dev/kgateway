@@ -82,12 +82,17 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
+	knownAuthConfigs, ok, err := checkAuthConfigs(namespaces)
+	if !ok || err != nil {
+		return ok, err
+	}
+
 	ok, err = checkSecrets(namespaces)
 	if !ok || err != nil {
 		return ok, err
 	}
 
-	ok, err = checkVirtualServices(namespaces, knownUpstreams)
+	ok, err = checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -291,7 +296,29 @@ func checkUpstreamGroups(namespaces []string) (bool, error) {
 	return true, nil
 }
 
-func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
+func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
+	fmt.Printf("Checking auth configs... ")
+	client := helpers.MustAuthConfigClient()
+	var knownAuthConfigs []string
+	for _, ns := range namespaces {
+		authConfigs, err := client.List(ns, clients.ListOpts{})
+		if err != nil {
+			return nil, false, err
+		}
+		for _, authConfig := range authConfigs {
+			if authConfig.Status.GetState() == core.Status_Rejected {
+				fmt.Printf("Found rejected upstream: %s\n", renderMetadata(authConfig.GetMetadata()))
+				fmt.Printf("Reason: %s", authConfig.Status.Reason)
+				return nil, false, nil
+			}
+			knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
+		}
+	}
+	fmt.Printf("OK\n")
+	return knownAuthConfigs, true, nil
+}
+
+func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs []string) (bool, error) {
 	fmt.Printf("Checking virtual services... ")
 	client := helpers.MustVirtualServiceClient()
 	for _, ns := range namespaces {
@@ -318,6 +345,15 @@ func checkVirtualServices(namespaces, knownUpstreams []string) (bool, error) {
 							}
 						}
 					}
+				}
+			}
+			acRef := virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()
+			if acRef != nil {
+				if !cliutils.Contains(knownAuthConfigs, renderRef(acRef)) {
+					fmt.Printf("Virtual service references unknown auth config:\n")
+					fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
+					fmt.Printf("  Auth Config: %s\n", renderRef(acRef))
+					return false, nil
 				}
 			}
 		}
