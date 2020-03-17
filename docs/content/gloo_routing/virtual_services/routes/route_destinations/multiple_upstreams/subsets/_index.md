@@ -40,7 +40,7 @@ Following is an example of using a label, e.g. `color: blue`, to subset pods han
 
 These are the Upstream changes that allow you to use the label `color` as a subset selector:
 
-{{< highlight yaml "hl_lines=15-18" >}}
+{{< highlight yaml "hl_lines=14-17" >}}
 apiVersion: gloo.solo.io/v1
   kind: Upstream
     labels:
