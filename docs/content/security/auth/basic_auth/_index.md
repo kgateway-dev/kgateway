@@ -195,6 +195,17 @@ We are now able to reach the upstream again!
 }
 ```
 
+### Logging
+
+If Gloo is running on kubernetes, the extauth server logs can be viewed with:
+```
+kubectl logs -n gloo-system deploy/extauth -f
+```
+If the auth config has been received successfully, you should see the log line:
+```
+"logger":"extauth","caller":"runner/run.go:179","msg":"got new config"
+```
+
 ## Summary
 
 In this tutorial, we installed Gloo Enterprise and created an unauthenticated Virtual Service that routes requests to a 
