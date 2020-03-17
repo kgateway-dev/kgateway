@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Shrink the footprint of discovery significantly by removing upstream creation based on pod labels, which was
+      originally used for (and no longer needed by) subset routing. This can drastically reduce the number of upstreams
+      created, which in turn will reduce the size of upstreams stored in Gloo in-memory, reducing Gloo's memory
+      footprint.
+    issueLink: https://github.com/solo-io/gloo/issues/2619
