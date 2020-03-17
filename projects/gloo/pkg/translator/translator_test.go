@@ -1709,8 +1709,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain",
-							PrivateKey: "key",
+							CertChain:  "chain1",
+							PrivateKey: "key1",
 						},
 					},
 				}, &v1.Secret{
@@ -1720,9 +1720,20 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
+							CertChain:  "chain2",
 							PrivateKey: "key2",
-							RootCa:     "rootca3",
+							RootCa:     "rootca2",
+						},
+					},
+				}, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo", // check same name with different ns
+						Namespace: "solo.io2",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain3",
+							PrivateKey: "key3",
 						},
 					},
 				})
@@ -1746,15 +1757,24 @@ var _ = Describe("Translator", func() {
 						},
 						SniDomains: []string{"b.com"},
 					},
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"c.com"},
+					},
 				})
 
-				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				Expect(listener.GetFilterChains()).To(HaveLen(3))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
@@ -1762,10 +1782,19 @@ var _ = Describe("Translator", func() {
 				fc = listener.GetFilterChains()[1]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain2"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
-				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca2"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
+
+				By("checking third filter chain")
+				fc = listener.GetFilterChains()[2]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
 			})
 		})
 	})

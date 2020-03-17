@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix issue where two ssl certs with the same name but different namespaces were merged.
+    issueLink: https://github.com/solo-io/gloo/issues/2605

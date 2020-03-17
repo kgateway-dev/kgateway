@@ -87,8 +87,9 @@ var _ = Describe("CORS", func() {
 			// allowedOrigin := "*"
 			allowedMethods := []string{"GET", "POST"}
 			cors := &cors.CorsPolicy{
-				AllowOrigin:  allowedOrigins,
-				AllowMethods: allowedMethods,
+				AllowOrigin:      allowedOrigins,
+				AllowOriginRegex: allowedOrigins,
+				AllowMethods:     allowedMethods,
 			}
 
 			td.setupInitialProxy(cors)

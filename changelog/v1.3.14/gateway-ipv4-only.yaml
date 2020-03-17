@@ -1,0 +1,7 @@
+changelog:
+  - type: HELM
+    description: >
+      Add a helm chart value `gatewayProxies.$gatewayProxy.gatewaySettings.ipv4Only`.
+      This changes the Gateway spec's bindAddress to '0.0.0.0' instead of '::',
+      which is ipv6 by default. Use this helm value if your network allows ipv4 addresses only.
+    issueLink: https://github.com/solo-io/gloo/issues/2425
