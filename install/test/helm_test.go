@@ -28,6 +28,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
+	jobsv1 "k8s.io/api/batch/v1"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -51,6 +52,13 @@ func GetPodNameEnvVar() v1.EnvVar {
 				FieldPath: "metadata.name",
 			},
 		},
+	}
+}
+
+func GetTestExtraEnvVar() v1.EnvVar {
+	return v1.EnvVar{
+		Name:  "TEST_EXTRA_ENV_VAR",
+		Value: "test",
 	}
 }
 
@@ -242,6 +250,100 @@ var _ = Describe("Helm Test", func() {
 				})
 			})
 
+			Context("gloo mtls settings", func() {
+				var (
+					glooMtlsSecretVolume = v1.Volume{
+						Name: "gloo-mtls-certs",
+						VolumeSource: v1.VolumeSource{
+							Secret: &v1.SecretVolumeSource{
+								SecretName:  "gloo-mtls-certs",
+								Items:       nil,
+								DefaultMode: proto.Int(420),
+							},
+						},
+					}
+
+					haveEnvoySidecar = func(containers []v1.Container) bool {
+						for _, c := range containers {
+							if c.Name == "envoy-sidecar" {
+								return true
+							}
+						}
+						return false
+					}
+
+					haveSdsSidecar = func(containers []v1.Container) bool {
+						for _, c := range containers {
+							if c.Name == "sds" {
+								return true
+							}
+						}
+						return false
+					}
+				)
+
+				It("should put the secret volume in the Gloo and Gateway-Proxy Deployment and add a sidecar in the Gloo Deployment", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.glooMtls.enabled=true"},
+					})
+
+					foundGlooMtlsCertgenJob := false
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Job"
+					}).ExpectAll(func(job *unstructured.Unstructured) {
+						jobObject, err := kuberesource.ConvertUnstructured(job)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Job %+v should be able to convert from unstructured", job))
+						structuredDeployment, ok := jobObject.(*jobsv1.Job)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Job %+v should be able to cast to a structured job", job))
+
+						if structuredDeployment.GetName() == "gloo-mtls-certgen" {
+							foundGlooMtlsCertgenJob = true
+						}
+					})
+					Expect(foundGlooMtlsCertgenJob).To(BeTrue(), "Did not find the gloo-mtls-certgen job")
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						if structuredDeployment.GetName() == "gloo" {
+							Ω(haveEnvoySidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
+							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
+							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(glooMtlsSecretVolume))
+						}
+
+						if structuredDeployment.GetName() == "gateway-proxy" {
+							Ω(haveSdsSidecar(structuredDeployment.Spec.Template.Spec.Containers)).To(BeTrue())
+							Expect(structuredDeployment.Spec.Template.Spec.Volumes).To(ContainElement(glooMtlsSecretVolume))
+						}
+					})
+				})
+
+				It("should add an additional listener to the gateway-proxy-envoy-config if $spec.extraListenersHelper is defined", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"global.glooMtls.enabled=true,gatewayProxies.gatewayProxy.extraListenersHelper=gloo.testlistener"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedTestListener := "    - name: test_listener"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedTestListener))
+						}
+					})
+				})
+			})
+
 			Context("gateway", func() {
 				var labels map[string]string
 				BeforeEach(func() {
@@ -310,7 +412,7 @@ var _ = Describe("Helm Test", func() {
 								Value: "8083",
 							},
 						)
-						container.PullPolicy = "Always"
+						container.PullPolicy = "IfNotPresent"
 						svcBuilder := &ResourceBuilder{
 							Namespace:  namespace,
 							Name:       accessLoggerName,
@@ -521,6 +623,16 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.service.type=LoadBalancer",
 								"gatewayProxies.gatewayProxy.service.loadBalancerIP=test-lb-ip",
+							},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
+					It("sets custom service name", func() {
+						gatewayProxyService.ObjectMeta.Name = "gateway-proxy-custom"
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.service.name=gateway-proxy-custom",
 							},
 						})
 						testManifest.ExpectService(gatewayProxyService)
@@ -829,6 +941,48 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("can add extra volume mounts to the gateway-proxy container deployment", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].VolumeMounts,
+							v1.VolumeMount{
+								Name:      "sds-uds-path",
+								MountPath: "/var/run/sds",
+							})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Volumes = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Volumes,
+							v1.Volume{
+								Name: "sds-uds-path",
+								VolumeSource: v1.VolumeSource{
+									HostPath: &v1.HostPathVolumeSource{
+										Path: "/var/run/sds",
+									},
+								},
+							})
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraVolumeHelper=gloo.testVolume",
+								"gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper=gloo.testVolumeMount",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can accept extra env vars", func() {
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gatewayProxies.gatewayProxy.kind.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1040,7 +1194,7 @@ spec:
       serviceAccountName: gateway
       containers:
       - image: quay.io/solo-io/gateway:` + version + `
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         name: gateway
         ports:
           - containerPort: 8443
@@ -1105,10 +1259,10 @@ spec:
       labels:
         gloo: gateway-certgen
     spec:
-      serviceAccountName: gateway-certgen
+      serviceAccountName: certgen
       containers:
         - image: quay.io/solo-io/certgen:` + version + `
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           name: certgen
           env:
             - name: POD_NAMESPACE
@@ -1161,7 +1315,7 @@ metadata:
     "helm.sh/hook-weight": "5"
 subjects:
 - kind: ServiceAccount
-  name: gateway-certgen
+  name: certgen
   namespace: ` + namespace + `
 roleRef:
   kind: ClusterRole
@@ -1178,11 +1332,11 @@ kind: ServiceAccount
 metadata:
   labels:
     app: gloo
-    gloo: gateway
+    gloo: rbac
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-weight": "5"
-  name: gateway-certgen
+  name: certgen
   namespace: ` + namespace + `
 
 `)
@@ -1356,6 +1510,20 @@ metadata:
 						})
 
 					})
+
+					It("can accept extra env vars", func() {
+						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							glooDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gloo.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gloo.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
 				})
 
 				Context("gateway deployment", func() {
@@ -1472,6 +1640,20 @@ metadata:
 						})
 
 					})
+
+					It("can accept extra env vars", func() {
+						gatewayDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							gatewayDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"gateway.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+					})
 				})
 
 				Context("discovery deployment", func() {
@@ -1562,6 +1744,20 @@ metadata:
 							},
 						})
 
+					})
+
+					It("can accept extra env vars", func() {
+						discoveryDeployment.Spec.Template.Spec.Containers[0].Env = append(
+							[]v1.EnvVar{GetTestExtraEnvVar()},
+							discoveryDeployment.Spec.Template.Spec.Containers[0].Env...,
+						)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.deployment.customEnv[0].Name=TEST_EXTRA_ENV_VAR",
+								"discovery.deployment.customEnv[0].Value=test",
+							},
+						})
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 				})
 
@@ -1744,7 +1940,7 @@ metadata:
 													v1.ResourceCPU:    resource.MustParse("500m"),
 												},
 											},
-											ImagePullPolicy: "Always",
+											ImagePullPolicy: "IfNotPresent",
 											SecurityContext: &v1.SecurityContext{
 												Capabilities:             &v1.Capabilities{Add: nil, Drop: []v1.Capability{"ALL"}},
 												RunAsUser:                pointer.Int64Ptr(10101),

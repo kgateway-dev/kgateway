@@ -72,6 +72,18 @@ service can work in tandem with the Gloo external auth service to define separat
 unauthorized users. The Gloo Enteprise rate-limit service is enabled and configured by default, no configuration is needed
 to point Gloo toward the rate-limit service.
 
+### Logging
+
+If Gloo is running on kubernetes, the rate limiting logs can be viewed with:
+```
+kubectl logs -n gloo-system deploy/rate-limit -f
+```
+
+When it starts up correctly, you should see a log line similar to:
+```
+"caller":"server/server_impl.go:48","msg":"Listening for HTTP on ':18080'"
+```
+
 ### Rate Limit Configuration
 
 Check out the guides for each of the Gloo rate-limit APIs and configuration options for Gloo Enterprise's rate-limit

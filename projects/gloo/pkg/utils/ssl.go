@@ -67,7 +67,10 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	}
 	// show alpn for downstreams.
 	// placing it on upstreams maybe problematic if they do not expose alpn.
-	common.AlpnProtocols = []string{"h2", "http/1.1"}
+	common.AlpnProtocols = dc.AlpnProtocols
+	if len(common.AlpnProtocols) == 0 {
+		common.AlpnProtocols = []string{"h2", "http/1.1"}
+	}
 	return &envoyauth.DownstreamTlsContext{
 		CommonTlsContext:         common,
 		RequireClientCertificate: gogoutils.BoolGogoToProto(requireClientCert),

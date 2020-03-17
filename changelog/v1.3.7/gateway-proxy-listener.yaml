@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Allow additional listeners to be added to the gateway-proxy config map using the
+      `$spec.extraListenersHelper` helm template variable.

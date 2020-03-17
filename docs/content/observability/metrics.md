@@ -124,7 +124,7 @@ kubectl --namespace gloo-system port-forward deployment/discovery 9091:9091
 
 And then open <http://localhost:9091> for the admin page, including the Prometheus metrics at <http://localhost:9091/metrics>.
 
-More information on Gloo's admin ports can be found [here]({{% versioned_link_path fromRoot="/observability/ports/" %}}).
+More information on Gloo's admin ports can be found [here]({{% versioned_link_path fromRoot="/introduction/observability/#grafana-and-prometheus" %}}).
 
 #### Metrics Context
 

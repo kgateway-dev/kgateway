@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Allow for gateway-proxy to have a custom service name
+    issueLink: https://github.com/solo-io/gloo/issues/2446

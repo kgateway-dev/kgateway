@@ -80,24 +80,24 @@ message Gateway {
 }
 
 message HttpGateway {
-    // Names & namespace refs of the the virtual services which contain the actual routes for the gateway.
-    // If the list is empty, all virtual services in the same namespace as this gateway will apply,
+    // Names & namespace refs of the virtual services which contain the actual routes for the gateway.
+    // If the list is empty, all virtual services in all namespaces that Gloo watches will apply,
     // with accordance to `ssl` flag on `Gateway` above.
     // The default namespace matching behavior can be overridden via `virtual_service_namespaces` flag below.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
     repeated core.solo.io.ResourceRef virtual_services = 1 [(gogoproto.nullable) = false];
 
-    // Select virtual services by their label. This will apply only to virtual services in the same namespace
-    // as the gateway resource, unless `virtual_service_namespaces` is provided below.
+    // Select virtual services by their label. If `virtual_service_namespaces` is provided below, this will apply only
+    // to virtual services in the namespaces specified.
     // Only one of `virtualServices` or `virtualServiceSelector` should be provided.
     map<string, string> virtual_service_selector = 2;
 
     // The virtual services that compose a gateway are referenced by name via `virtual_services` or by label selector
     // via `virtual_service_selector` on the `HttpGateway` object.
-    // By default, virtual services only match if they are in the same namespace as the Gateway itself, to better
-    // support multi-tenant models and prevent potentially problematic virtual service merging with duplicate domains.
+    // By default, virtual services match if they are in any namespace watched by Gloo.
 
-    // Expand the search by providing a list of valid search namespaces here, or search all namespaces by setting '*'
+    // Restrict the search by providing a list of valid search namespaces here.
+    // Setting '*' will search all namespaces, equivalent to omitting this value.
     repeated string virtual_service_namespaces = 3;
 
     // HTTP Gateway configuration

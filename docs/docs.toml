@@ -63,3 +63,10 @@ weight = 10
 # remove the default hugo taxonomies (tag and category directories)
 disableKinds = ["taxonomy", "taxonomyTerm"]
 [taxonomies]
+
+# fix link generation issue
+[markup]
+  defaultMarkdownHandler = "goldmark"
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true

@@ -2,9 +2,6 @@ package dashboard
 
 import (
 	"fmt"
-	"io"
-	"os"
-	"os/exec"
 	"strconv"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -70,26 +67,12 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 			/** port-forward command **/
 
-			portFwd := exec.Command("kubectl", "port-forward", "-n", opts.Metadata.Namespace,
-				"deployment/api-server", staticPort)
-
-			err = cliutil.Initialize()
+			_, portFwdCmd, err := cliutil.PortForwardGet(opts.Top.Ctx, opts.Metadata.Namespace, "deployment/api-server",
+				staticPort, staticPort, opts.Top.Verbose, "")
 			if err != nil {
 				return err
 			}
-			logger := cliutil.GetLogger()
-
-			portFwd.Stderr = io.MultiWriter(logger, os.Stderr)
-			if opts.Top.Verbose {
-				portFwd.Stdout = io.MultiWriter(logger, os.Stdout)
-			} else {
-				portFwd.Stdout = logger
-			}
-
-			if err := portFwd.Start(); err != nil {
-				return err
-			}
-			defer portFwd.Wait()
+			defer portFwdCmd.Wait()
 
 			/** open in browser **/
 

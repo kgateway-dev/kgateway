@@ -110,12 +110,6 @@ glooctl get upstreams
 | default-petstore-8080          | Kubernetes | Accepted | svc name:      petstore      |
 |                                |            |          | svc namespace: default       |
 |                                |            |          | port:          8080          |
-|                                |            |          | REST service:                |
-|                                |            |          | functions:                   |
-|                                |            |          | - addPet                     |
-|                                |            |          | - deletePet                  |
-|                                |            |          | - findPetById                |
-|                                |            |          | - findPets                   |
 |                                |            |          |                              |
 | gloo-system-gateway-proxy-8080 | Kubernetes | Accepted | svc name:      gateway-proxy |
 |                                |            |          | svc namespace: gloo-system   |
@@ -131,8 +125,6 @@ glooctl get upstreams
 This command lists all the Upstreams Gloo has discovered, each written to an *Upstream* CRD. 
 
 The upstream we want to see is `default-petstore-8080`. 
-
-Digging a little deeper into the details of the table, we can see that Gloo's function discovery populated our upstream with the available rest endpoints it implements. 
     
 {{% notice note %}}
 The upstream was created in the `gloo-system` namespace rather than `default` because it was created by a discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo. 
@@ -152,7 +144,6 @@ Let's take a closer look at the upstream that Gloo's Discovery service created:
 glooctl get upstream default-petstore-8080 --output kube-yaml
 ```
 ```yaml
----
 apiVersion: gloo.solo.io/v1
 kind: Upstream
 metadata:
@@ -181,75 +172,98 @@ performance. To enable Function Discovery Service (fds) on our petstore, we need
 kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
-Now fds will discovery the swagger spec.
+Now Gloo's function discovery will discover the swagger spec. Fds populated our upstream with the available rest endpoints it implements.
+
+```shell
+glooctl get upstream default-petstore-8080
+```
+```console
++-----------------------+------------+----------+-------------------------+
+|       UPSTREAM        |    TYPE    |  STATUS  |         DETAILS         |
++-----------------------+------------+----------+-------------------------+
+| default-petstore-8080 | Kubernetes | Accepted | svc name:      petstore |
+|                       |            |          | svc namespace: default  |
+|                       |            |          | port:          8080     |
+|                       |            |          | REST service:           |
+|                       |            |          | functions:              |
+|                       |            |          | - addPet                |
+|                       |            |          | - deletePet             |
+|                       |            |          | - findPetById           |
+|                       |            |          | - findPets              |
+|                       |            |          |                         |
++-----------------------+------------+----------+-------------------------+
+```
 
 ```shell script
-glooctl get upstream default-petstore-8080 --output yaml
+glooctl get upstream default-petstore-8080 --output kube-yaml
 ```
 ```yaml
----
-discoveryMetadata: {}
-kube:
-  selector:
-    app: petstore
-  serviceName: petstore
-  serviceNamespace: default
-  servicePort: 8080
-  serviceSpec:
-    rest:
-      swaggerInfo:
-        url: http://petstore.default.svc.cluster.local:8080/swagger.json
-      transformations:
-        addPet:
-          body:
-            text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
-              "{{ default(tag, "")}}"}'
-          headers:
-            :method:
-              text: POST
-            :path:
-              text: /api/pets
-            content-type:
-              text: application/json
-        deletePet:
-          headers:
-            :method:
-              text: DELETE
-            :path:
-              text: /api/pets/{{ default(id, "") }}
-            content-type:
-              text: application/json
-        findPetById:
-          body: {}
-          headers:
-            :method:
-              text: GET
-            :path:
-              text: /api/pets/{{ default(id, "") }}
-            content-length:
-              text: "0"
-            content-type: {}
-            transfer-encoding: {}
-        findPets:
-          body: {}
-          headers:
-            :method:
-              text: GET
-            :path:
-              text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit, "")}}
-            content-length:
-              text: "0"
-            content-type: {}
-            transfer-encoding: {}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
 metadata:
   labels:
-    app: petstore
     discovered_by: kubernetesplugin
+    service: petstore
   name: default-petstore-8080
   namespace: gloo-system
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      app: petstore
+    serviceName: petstore
+    serviceNamespace: default
+    servicePort: 8080
+    serviceSpec:
+      rest:
+        swaggerInfo:
+          url: http://petstore.default.svc.cluster.local:8080/swagger.json
+        transformations:
+          addPet:
+            body:
+              text: '{"id": {{ default(id, "") }},"name": "{{ default(name, "")}}","tag":
+                "{{ default(tag, "")}}"}'
+            headers:
+              :method:
+                text: POST
+              :path:
+                text: /api/pets
+              content-type:
+                text: application/json
+          deletePet:
+            headers:
+              :method:
+                text: DELETE
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-type:
+                text: application/json
+          findPetById:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets/{{ default(id, "") }}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
+          findPets:
+            body: {}
+            headers:
+              :method:
+                text: GET
+              :path:
+                text: /api/pets?tags={{default(tags, "")}}&limit={{default(limit,
+                  "")}}
+              content-length:
+                text: "0"
+              content-type: {}
+              transfer-encoding: {}
 status:
-  reportedBy: gloo
-  state: Accepted
+  reported_by: gloo
+  state: 1
 ```
 
 The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these endpoints to demonstrate function routing in the [next tutorial]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/" >}}).
@@ -308,19 +322,16 @@ Routes are associated with virtual services in Gloo. When we created the route i
 With `glooctl`, we can see that the default virtual service was created with our route:
 
 ```shell
-glooctl get virtualservice --output yaml
+glooctl get virtualservice --output kube-yaml
 ```
 
-{{< highlight yaml >}}
----
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  generation: "3"
   name: default
   namespace: gloo-system
   ownerReferences: []
-  resourceVersion: "1018063"
 status:
   reportedBy: gateway
   state: Accepted
@@ -341,7 +352,7 @@ virtualHost:
         upstream:
           name: default-petstore-8080
           namespace: gloo-system
-{{< /highlight >}}
+```
     
 When a virtual service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
 
@@ -367,7 +378,7 @@ The proxy has now been configured to route requests to the `/api/pets` REST endp
 
 Congratulations! You've successfully set up your first routing rule. That's just the tip of the iceberg though. In the next sections, we'll take a closer look at more HTTP routing capabilities, including [customizing the matching rules]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules" %}}), [route destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations" %}}), and [routing features]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features" %}}).
 
-To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}}) page.
+To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}) page.
 
 If you're ready to dive deeper into routing, the next logical step is trying out different matching rules starting with [Path Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}}).
 

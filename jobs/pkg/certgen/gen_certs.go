@@ -21,6 +21,6 @@ func GenCerts(svcName, svcNamespace string) (*certutils.Certificates, error) {
 				fmt.Sprintf("%s.%s.svc.%s", svcName, svcNamespace, network.GetClusterDomainName()),
 			},
 		},
-		Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		Usages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth},
 	})
 }

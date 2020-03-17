@@ -86,16 +86,17 @@ type What struct {
 }
 
 type RunOptions struct {
-	NsToWrite      string
-	NsToWatch      []string
-	WhatToRun      What
-	GlooPort       int32
-	ValidationPort int32
-	Settings       *gloov1.Settings
-	Extensions     syncer.Extensions
-	Cache          memory.InMemoryResourceCache
-	KubeClient     kubernetes.Interface
-	ConsulClient   consul.ConsulWatcher
+	NsToWrite        string
+	NsToWatch        []string
+	WhatToRun        What
+	GlooPort         int32
+	ValidationPort   int32
+	Settings         *gloov1.Settings
+	Extensions       syncer.Extensions
+	Cache            memory.InMemoryResourceCache
+	KubeClient       kubernetes.Interface
+	ConsulClient     consul.ConsulWatcher
+	ConsulDnsAddress string
 }
 
 //noinspection GoUnhandledErrorResult
@@ -264,7 +265,10 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 		KubeClient:    runOptions.KubeClient,
 		KubeCoreCache: kubeCoreCache,
 		DevMode:       true,
-		ConsulWatcher: runOptions.ConsulClient,
+		Consul: bootstrap.Consul{
+			ConsulWatcher: runOptions.ConsulClient,
+			DnsServer:     runOptions.ConsulDnsAddress,
+		},
 	}
 }
 

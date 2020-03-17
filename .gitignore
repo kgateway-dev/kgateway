@@ -22,3 +22,4 @@ docs/helm-values.md
 ## START Temporary exclusion while master/v0.20.x branch is supported
 old_docs_temp_dir/
 ## END Temporary exclusion while master/v0.20.x branch is supported
+.vscode/launch.json

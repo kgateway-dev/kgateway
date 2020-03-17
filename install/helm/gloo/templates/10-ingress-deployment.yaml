@@ -26,6 +26,9 @@ spec:
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
         env:
+{{- if .Values.ingress.deployment.customEnv }}
+{{ toYaml .Values.ingress.deployment.customEnv | indent 8 }}
+{{- end }}
         - name: POD_NAMESPACE
           valueFrom:
             fieldRef:

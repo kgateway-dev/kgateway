@@ -4,10 +4,7 @@ weight: 10
 description: Conditionally update the status of an HTTP response
 ---
 
-Sometimes an upstream service does not communicate a failure via HTTP response status codes, but rather includes the 
-failure information within the response body. But what if some of your downstream clients expect the status code to be set?
-In this tutorial we will see how to use transformations to change the HTTP status code based on the contents of the 
-response payload.
+Sometimes an upstream service does not communicate a failure via HTTP response status codes, but rather includes the failure information within the response body. But what if some of your downstream clients expect the status code to be set? In this tutorial we will see how to use transformations to change the HTTP status code based on the contents of the response payload.
 
 ### Setup
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
@@ -38,8 +35,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request 
-body. Create a file named `data.json` with the following content in your current working directory:
+We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request body. Create a file named `data.json` with the following content in your current working directory:
 
 ```shell
 cat << EOF > data.json
@@ -90,9 +86,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 ### Updating the response code
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside 
-the `data` response body attribute. We will now configure Gloo to change the response status to 400 if the `data.error` 
-attribute is present; otherwise, the original status code should be preserved.
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo to change the response status to 400 if the `data.error` attribute is present; otherwise, the original status code should be preserved.
 
 #### Update Virtual Service
 To implement this behavior, we need to add the following to our Virtual Service definition:
@@ -131,11 +125,10 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to responses.
-1. Use a [template transformation]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
+1. Use a [template transformation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
 1. Transform the ":status" pseudo-header according to the template string.
 
-The template uses the [Inja templating language]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" >}}) 
-to define the conditional logic that will be applied to the ":status" header.
+The template uses the [Inja templating language]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" %}}) to define the conditional logic that will be applied to the ":status" header.
 
 #### Test our configuration
 To test that our configuration has been correctly applied, let's execute `curl` command again, with a slight 

@@ -17,12 +17,14 @@ var _ = Describe("Secret", func() {
 		data := []byte{1, 2, 3}
 		kube := fake.NewSimpleClientset()
 		secretCfg := TlsSecret{
-			SecretName:      "mysecret",
-			SecretNamespace: "mynamespace",
-			PrivateKeyKey:   "key.pem",
-			CaCertKey:       "ca.pem",
-			PrivateKey:      data,
-			CaCert:          data,
+			SecretName:         "mysecret",
+			SecretNamespace:    "mynamespace",
+			PrivateKeyFileName: "key.pem",
+			CertFileName:       "ca.pem",
+			CaBundleFileName:   "ca_bundle.pem",
+			PrivateKey:         data,
+			Cert:               data,
+			CaBundle:           data,
 		}
 
 		err := CreateTlsSecret(context.TODO(), kube, secretCfg)
@@ -35,7 +37,7 @@ var _ = Describe("Secret", func() {
 				Name:      "mysecret",
 				Namespace: "mynamespace",
 			},
-			Data: map[string][]byte{"key.pem": data, "ca.pem": data},
+			Data: map[string][]byte{"key.pem": data, "ca.pem": data, "ca_bundle.pem": data},
 			Type: "kubernetes.io/tls",
 		}))
 	})

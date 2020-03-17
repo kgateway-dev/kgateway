@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -167,7 +169,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := ""
 		switch sslCfg := sslConfig.SslSecrets.(type) {
 		case *v1.SslConfig_SecretRef:
-			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetNamespace()
 		case *v1.SslConfig_SslFiles:
 			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
 		default:
@@ -222,11 +224,17 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 
 func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
 
+	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
+	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
+	for i, lf := range listenerFilters {
+		listenerFiltersCopy[i] = proto.Clone(lf).(*envoylistener.Filter)
+	}
+
 	return &envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters: listenerFilters,
+		Filters: listenerFiltersCopy,
 
 		TransportSocket: &envoycore.TransportSocket{
 			Name:       pluginutils.TlsTransportSocket,

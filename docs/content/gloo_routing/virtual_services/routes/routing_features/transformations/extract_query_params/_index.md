@@ -60,9 +60,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-As you can see from the response above, the upstream service returns the request headers as part of the JSON payload. 
-We will now configure Gloo to extract the values of the `foo` and `bar` query parameters and use them to create two new 
-headers named - you guessed it - `foo` and `bar`.
+As you can see from the response above, the upstream service returns the request headers as part of the JSON payload. We will now configure Gloo to extract the values of the `foo` and `bar` query parameters and use them to create two new headers named - you guessed it - `foo` and `bar`.
 
 To implement this behavior, we need to add the following to our Virtual Service definition:
 
@@ -117,7 +115,7 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.
-1. Define two [extractions]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#extractors" >}}) 
+1. Define two [extractions]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#extractors" %}}) 
 to extract the values of the query parameters. We achieve this by using regex capturing groups and selecting the nested group 
 which matches only the value of the relevant query parameter.
 1. Add two headers and set their values of the values of the extractions.

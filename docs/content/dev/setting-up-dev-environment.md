@@ -6,7 +6,7 @@ weight: 1
 
 ## Environment Setup
 
-### Prerequsistes
+### Prerequisites
 
 Developing on Gloo requires the following to be installed on your system:
 

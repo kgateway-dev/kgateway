@@ -1,44 +1,27 @@
 ---
-title: Installing Gloo Gateway
+title: Gloo Gateway
 description: Guides for installing the Gloo Gateway.
-weight: 2
+weight: 30
 ---
 
 ## Install the Gloo Gateway
 
-<dic markdown=1>
-<table>
-  <tr height="100">
-    <td width="10%">
-      <a href='{{% versioned_link_path fromRoot="/installation/gateway/kubernetes" %}}'><img src='{{% versioned_link_path fromRoot="/img/kube.png" %}}' width="60"/></a>
-    </td>
-    <td>
-     Install the Gloo Gateway on Kubernetes, using Kubernetes Custom Resources to configure routing.
-    </td>
-  </tr>
-  <tr height="100">
-    <td width="10%">
-      <a href='{{% versioned_link_path fromRoot="/installation/gateway/docker-compose-file" %}}'><img src='{{% versioned_link_path fromRoot="/img/docker.png" %}}' width="60"/></a>
-    </td>
-    <td>
-     Run Gloo locally with Docker Compose, using `yaml` files which are mounted to the Gloo container for configuration and secret storage.
-    </td>
-  </tr>
-  <tr height="100">
-    <td width="10%">
-      <a href='{{% versioned_link_path fromRoot="/installation/gateway/docker-compose-consul" %}}'><img src='{{% versioned_link_path fromRoot="/img/consul.png" %}}' width="60"/></a>
-    </td>
-    <td>
-     Run Gloo locally with Docker Compose, using [HashiCorp Consul](https://www.consul.io/) for configuration and [HashiCorp Vault](https://www.vaultproject.io/) for secret storage.
-    </td>
-  </tr>
-  <tr height="100">
-    <td width="10%">
-      <a href='{{% versioned_link_path fromRoot="/installation/gateway/nomad" %}}'><img src='{{% versioned_link_path fromRoot="/img/nomad.png" %}}' width="60"/></a>
-    </td>
-    <td>
-     Run Gloo on a [HashiCorp Nomad Cluster](https://www.nomadproject.io/), using [Consul](https://www.consul.io/) for configuration and [Vault](https://www.vaultproject.io/) for secret storage.
-    </td>
-  </tr>
-</table>
-</dic>
+There are two primary ways to install the Gloo Gateway in production:
+
+|    |    |
+|----|----|
+|![Kubernetes]({{< versioned_link_path fromRoot="/img/kube.png" >}}) | Install the Gloo Gateway on [Kubernetes]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes" >}}), using Kubernetes Custom Resources to configure routing. |
+| ![HashiCorp]({{< versioned_link_path fromRoot="/img/nomad.png" >}}) | Run Gloo on a [HashiCorp Nomad Cluster]({{< versioned_link_path fromRoot="/installation/gateway/nomad" >}}), using Consul for configuration and Vault for secret storage. |
+
+The Enterprise version of Gloo can be installed using the following guide:
+
+|    |    |
+|----|----|
+| ![Gloo Enterprise]({{< versioned_link_path fromRoot="/img/gloo-ee.png" >}}) | [Gloo Enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/" >}}) is based on the open-source Gloo Gateway with additional (closed source) UI and plugins. |
+
+You also install Gloo Gateway in a development scenario on your local workstation using one of the following guides:
+
+|    |    |
+|----|----|
+| ![Docker with HashiCorp]({{< versioned_link_path fromRoot="/img/consul.png" >}}) | [Run Gloo locally with Docker Compose]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul" >}}), using HashiCorp Consul for configuration and HashiCorp Vault for secret storage. |
+| ![Docker with files]({{< versioned_link_path fromRoot="/img/docker.png" >}}) | [Run Gloo locally with Docker Compose]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-file" >}}), using `yaml` files which are mounted to the Gloo container for configuration and secret storage. |

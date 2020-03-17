@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      In Gloo 1.2.13 we removed the auto-creation of Gateway resources. This updates the Consul guide to reflect that change.
+    issueLink: https://github.com/solo-io/gloo/issues/2439

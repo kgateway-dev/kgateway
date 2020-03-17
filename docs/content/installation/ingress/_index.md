@@ -1,12 +1,12 @@
 ---
-title: "Installing Gloo as an Ingress Controller"
+title: "Gloo as an Ingress Controller"
 description: How to install Gloo to run in Ingress Mode on Kubernetes.
-weight: 4
+weight: 50
 ---
 
 Gloo can be used as a simple ingress controller on Kubernetes. This guide will take you through the process of deploying Gloo as an ingress controller using either `glooctl` or Helm.
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/cluster_setup/" >}}).
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}).
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 

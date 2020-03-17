@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Adjust the format of list items in docs and add some padding to the main content area.
+    issueLink: https://github.com/solo-io/gloo/issues/2351

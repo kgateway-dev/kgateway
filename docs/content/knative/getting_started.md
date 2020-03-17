@@ -36,25 +36,25 @@ run `glooctl proxy url --name knative-external-proxy`
      Copy the YAML below to a file called `helloworld-go.yaml` and apply it with
      `kubectl`
   
-     ```yaml
-     apiVersion: serving.knative.dev/v1alpha1
-     kind: Service
-     metadata:
-       name: helloworld-go
-       namespace: default
-     spec:
-       template:
-         spec:
-           containers:
-             - image: gcr.io/knative-samples/helloworld-go
-               env:
-                 - name: TARGET
-                   value: Go Sample v1
-     ```
+    ```yaml
+    apiVersion: serving.knative.dev/v1alpha1
+    kind: Service
+    metadata:
+      name: helloworld-go
+      namespace: default
+    spec:
+      template:
+        spec:
+          containers:
+            - image: gcr.io/knative-samples/helloworld-go
+              env:
+                - name: TARGET
+                  value: Go Sample v1
+    ```
   
-     ```
-     kubectl apply -f helloworld-go.yaml
-     ```
+    ```
+    kubectl apply -f helloworld-go.yaml
+    ```
 
 2. Send a request
 

@@ -141,9 +141,9 @@ message RateLimitRouteExtension {
 message Action {
     // The following descriptor entry is appended to the descriptor:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("source_cluster", "<local service cluster>")
+    // ```
     //
     // <local service cluster> is derived from the :option:`--service-cluster` option.
     message SourceCluster {
@@ -151,19 +151,19 @@ message Action {
 
     // The following descriptor entry is appended to the descriptor:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("destination_cluster", "<routed target cluster>")
+    // ```
     //
     // Once a request matches against a route table rule, a routed cluster is determined by one of
-    // the following :ref:`route table configuration <envoy_api_msg_RouteConfiguration>`
+    // the following `route table configuration (envoy_api_msg_RouteConfiguration)`
     // settings:
     //
-    // * :ref:`cluster <envoy_api_field_route.RouteAction.cluster>` indicates the upstream cluster
+    // * `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
     //   to route to.
-    // * :ref:`weighted_clusters <envoy_api_field_route.RouteAction.weighted_clusters>`
+    // * `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
     //   chooses a cluster randomly from a set of clusters with attributed weight.
-    // * :ref:`cluster_header <envoy_api_field_route.RouteAction.cluster_header>` indicates which
+    // * `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
     //   header in the request contains the target cluster.
     message DestinationCluster {
     }
@@ -171,9 +171,9 @@ message Action {
     // The following descriptor entry is appended when a header contains a key that matches the
     // *header_name*:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("<descriptor_key>", "<header_value_queried_from_header>")
+    // ```
     message RequestHeaders {
       // The header name to be queried from the request headers. The header’s
       // value is used to populate the value of the descriptor entry for the
@@ -185,19 +185,19 @@ message Action {
     }
 
     // The following descriptor entry is appended to the descriptor and is populated using the
-    // trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwarded-for>`:
+    // trusted address from `x-forwarded-for (config_http_conn_man_headers_x-forwarded-for)`:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("remote_address", "<trusted address from x-forwarded-for>")
+    // ```
     message RemoteAddress {
     }
 
     // The following descriptor entry is appended to the descriptor:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("generic_key", "<descriptor_value>")
+    // ```
     message GenericKey {
       // The value to use in the descriptor entry.
       string descriptor_value = 1 ;// [(validate.rules).string.min_bytes = 1];
@@ -205,9 +205,9 @@ message Action {
 
     // The following descriptor entry is appended to the descriptor:
     //
-    // .. code-block:: cpp
-    //
+    // ```
     //   ("header_match", "<descriptor_value>")
+    // ```
     message HeaderValueMatch {
       // The value to use in the descriptor entry.
       string descriptor_value = 1 ;// [(validate.rules).string.min_bytes = 1];
@@ -263,11 +263,11 @@ message Int64Range {
     // Specifies the name of the header in the request.
     string name = 1 ;// [(validate.rules).string.min_bytes = 1];
   
-    reserved 2; // value deprecated by :ref:`exact_match
-                // <envoy_api_field_route.HeaderMatcher.exact_match>`
+    reserved 2; // value deprecated by `exact_match
+                // (envoy_api_field_route.HeaderMatcher.exact_match)`
   
-    reserved 3; // regex deprecated by :ref:`regex_match
-                // <envoy_api_field_route.HeaderMatcher.regex_match>`
+    reserved 3; // regex deprecated by `regex_match
+                // (envoy_api_field_route.HeaderMatcher.regex_match)`
   
     // Specifies how the header match will be performed to route the request.
     oneof header_match_specifier {
@@ -277,7 +277,7 @@ message Int64Range {
       // If specified, this regex string is a regular expression rule which implies the entire request
       // header value must match the regex. The rule will not match if only a subsequence of the
       // request header value matches the regex. The regex grammar used in the value field is defined
-      // `here <https://en.cppreference.com/w/cpp/regex/ecmascript>`_.
+      // `(here)[https://en.cppreference.com/w/cpp/regex/ecmascript]`.
       //
       // Examples:
       //

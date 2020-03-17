@@ -643,9 +643,9 @@ func (*Action) XXX_OneofWrappers() []interface{} {
 
 // The following descriptor entry is appended to the descriptor:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("source_cluster", "<local service cluster>")
+// ```
 //
 // <local service cluster> is derived from the :option:`--service-cluster` option.
 type Action_SourceCluster struct {
@@ -680,19 +680,19 @@ var xxx_messageInfo_Action_SourceCluster proto.InternalMessageInfo
 
 // The following descriptor entry is appended to the descriptor:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("destination_cluster", "<routed target cluster>")
+// ```
 //
 // Once a request matches against a route table rule, a routed cluster is determined by one of
-// the following :ref:`route table configuration <envoy_api_msg_RouteConfiguration>`
+// the following `route table configuration (envoy_api_msg_RouteConfiguration)`
 // settings:
 //
-// * :ref:`cluster <envoy_api_field_route.RouteAction.cluster>` indicates the upstream cluster
+// * `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
 //   to route to.
-// * :ref:`weighted_clusters <envoy_api_field_route.RouteAction.weighted_clusters>`
+// * `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
 //   chooses a cluster randomly from a set of clusters with attributed weight.
-// * :ref:`cluster_header <envoy_api_field_route.RouteAction.cluster_header>` indicates which
+// * `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
 //   header in the request contains the target cluster.
 type Action_DestinationCluster struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -727,9 +727,9 @@ var xxx_messageInfo_Action_DestinationCluster proto.InternalMessageInfo
 // The following descriptor entry is appended when a header contains a key that matches the
 // *header_name*:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("<descriptor_key>", "<header_value_queried_from_header>")
+// ```
 type Action_RequestHeaders struct {
 	// The header name to be queried from the request headers. The header’s
 	// value is used to populate the value of the descriptor entry for the
@@ -781,11 +781,11 @@ func (m *Action_RequestHeaders) GetDescriptorKey() string {
 }
 
 // The following descriptor entry is appended to the descriptor and is populated using the
-// trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwarded-for>`:
+// trusted address from `x-forwarded-for (config_http_conn_man_headers_x-forwarded-for)`:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("remote_address", "<trusted address from x-forwarded-for>")
+// ```
 type Action_RemoteAddress struct {
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -818,9 +818,9 @@ var xxx_messageInfo_Action_RemoteAddress proto.InternalMessageInfo
 
 // The following descriptor entry is appended to the descriptor:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("generic_key", "<descriptor_value>")
+// ```
 type Action_GenericKey struct {
 	// The value to use in the descriptor entry.
 	DescriptorValue      string   `protobuf:"bytes,1,opt,name=descriptor_value,json=descriptorValue,proto3" json:"descriptor_value,omitempty"`
@@ -862,9 +862,9 @@ func (m *Action_GenericKey) GetDescriptorValue() string {
 
 // The following descriptor entry is appended to the descriptor:
 //
-// .. code-block:: cpp
-//
+// ```
 //   ("header_match", "<descriptor_value>")
+// ```
 type Action_HeaderValueMatch struct {
 	// The value to use in the descriptor entry.
 	DescriptorValue string `protobuf:"bytes,1,opt,name=descriptor_value,json=descriptorValue,proto3" json:"descriptor_value,omitempty"`

@@ -21,7 +21,7 @@ func VirtualService(opts *options.Options) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			_ = printers.PrintVirtualServices(virtualServices, opts.Top.Output)
+			_ = printers.PrintVirtualServices(virtualServices, opts.Top.Output, opts.Metadata.Namespace)
 			return nil
 		},
 	}

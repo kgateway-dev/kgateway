@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Support Consul service registry integration when Consul service endpoints are hostnames not IPs.
+    issueLink: https://github.com/solo-io/gloo/issues/2424

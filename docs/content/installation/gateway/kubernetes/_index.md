@@ -1,13 +1,14 @@
 ---
 title: "Installing Gloo Gateway on Kubernetes"
+menuTitle: "Kubernetes"
 description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
-weight: 2
+weight: 10
 ---
 
 Gloo Gateway can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). The following document will take you through the process of either installation, [verifying the installation](#verify-your-installation), and [how to remove Gloo Gateway](#uninstall) if necessary.
 
 {{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/introduction/support/#kubernetes" %}})
+Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
 {{% /notice %}}
 
 ---
@@ -15,7 +16,7 @@ Minimum required Kubernetes is 1.11.x. For older versions see our [release suppo
 ## Installing the Gloo Gateway on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](./cluster_setup).
+Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 
 {{% notice note %}}
 For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
@@ -124,7 +125,7 @@ helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overr
 
 #### List of Gloo Helm chart values
 
-The [Helm Chart Values page](./helm_chart_values) describes all the values that you can override in your custom values file.
+The [Helm Chart Values page]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) describes all the values that you can override in your custom values file.
 
 ---
 

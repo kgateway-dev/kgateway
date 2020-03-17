@@ -82,7 +82,7 @@ var _ = Describe("Translator", func() {
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
 
-	BeforeEach(func() {
+	beforeEach := func() {
 
 		ctrl = gomock.NewController(T)
 
@@ -92,10 +92,12 @@ var _ = Describe("Translator", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings:      settings,
-			Secrets:       memoryClientFactory,
-			Upstreams:     memoryClientFactory,
-			ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			Settings:  settings,
+			Secrets:   memoryClientFactory,
+			Upstreams: memoryClientFactory,
+			Consul: bootstrap.Consul{
+				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			},
 		}
 		registeredPlugins = registry.Plugins(opts)
 
@@ -156,7 +158,8 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}}
-	})
+	}
+	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
 		getPlugins := func() []plugins.Plugin {
@@ -669,6 +672,106 @@ var _ = Describe("Translator", func() {
 			version2 := endpoints.Version
 			Expect(version2).ToNot(Equal(version1))
 		})
+	})
+
+	Context("lds", func() {
+
+		var (
+			localUpstream1 *v1.Upstream
+			localUpstream2 *v1.Upstream
+		)
+
+		BeforeEach(func() {
+
+			Expect(params.Snapshot.Upstreams).To(HaveLen(1))
+
+			buildLocalUpstream := func(descriptors string) *v1.Upstream {
+				return &v1.Upstream{
+					Metadata: core.Metadata{
+						Name:      "test2",
+						Namespace: "gloo-system",
+					},
+					UpstreamType: &v1.Upstream_Static{
+						Static: &v1static.UpstreamSpec{
+							ServiceSpec: &v1plugins.ServiceSpec{
+								PluginType: &v1plugins.ServiceSpec_Grpc{
+									Grpc: &v1grpc.ServiceSpec{
+										GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
+											PackageName: "foo",
+											ServiceName: "bar",
+										}},
+										Descriptors: []byte(descriptors),
+									},
+								},
+							},
+							Hosts: []*v1static.Host{
+								{
+									Addr: "Test2",
+									Port: 124,
+								},
+							},
+						},
+					},
+				}
+			}
+
+			localUpstream1 = buildLocalUpstream("")
+			localUpstream2 = buildLocalUpstream("randomString")
+
+		})
+
+		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
+			translate()
+
+			By("get the original version and http filters")
+
+			// get version
+			originalVersion := snapshot.GetResources(xds.ListenerType).Version
+
+			// get http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+
+			By("add the upstreams and compare the new version and http filters")
+
+			// add upstreams with same name
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			upstreamsVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
+
+			// reset modified global variables
+			beforeEach()
+
+			By("add the upstreams in the opposite order and compare the version and http filters")
+
+			// add upstreams in the opposite order
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			flipOrderVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
+		})
+
 	})
 
 	Context("when handling upstream groups", func() {
@@ -1606,8 +1709,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain",
-							PrivateKey: "key",
+							CertChain:  "chain1",
+							PrivateKey: "key1",
 						},
 					},
 				}, &v1.Secret{
@@ -1617,9 +1720,20 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
+							CertChain:  "chain2",
 							PrivateKey: "key2",
-							RootCa:     "rootca3",
+							RootCa:     "rootca2",
+						},
+					},
+				}, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo", // check same name with different ns
+						Namespace: "solo.io2",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain3",
+							PrivateKey: "key3",
 						},
 					},
 				})
@@ -1643,15 +1757,24 @@ var _ = Describe("Translator", func() {
 						},
 						SniDomains: []string{"b.com"},
 					},
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"c.com"},
+					},
 				})
 
-				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				Expect(listener.GetFilterChains()).To(HaveLen(3))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
@@ -1659,10 +1782,19 @@ var _ = Describe("Translator", func() {
 				fc = listener.GetFilterChains()[1]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain2"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
-				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca2"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
+
+				By("checking third filter chain")
+				fc = listener.GetFilterChains()[2]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
 			})
 		})
 	})

@@ -35,8 +35,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request 
-body. Create a file named `data.json` with the following content in your current working directory:
+We will be sending POST requests to the upstream, so let's create a simple JSON file that will constitute our request body. Create a file named `data.json` with the following content in your current working directory:
 
 ```shell
 cat << EOF > data.json
@@ -87,8 +86,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 ### Updating the response code
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside 
-the `data` response body attribute. We will now configure Gloo to add the values of two headers to the body:
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo to add the values of two headers to the body:
 
 - the value of the `root` header will be added to a new `root` attribute at the top level of the JSON body,
 - the value of the `nested` header will be added to a new `nested` attribute inside the `payload` attribute.
@@ -141,10 +139,8 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to responses.
-1. Use a [template transformation]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" >}}).
-1. Define two [extractions]({{< ref "gloo_routing/virtual_services/routes/routing_features/transformations#extractors" >}}) 
-to extract the required headers from the request. You can control where the values will be nested in the body by using 
-separators in their names (dots if `advancedTemplates` is `false`, forward slashes otherwise).
+1. Use a [template transformation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
+1. Define two [extractions]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#extractors" %}}) to extract the required headers from the request. You can control where the values will be nested in the body by using separators in their names (dots if `advancedTemplates` is `false`, forward slashes otherwise).
 1. Merge the defined extractions to the request body.
 
 #### Test our configuration
@@ -154,8 +150,7 @@ To test that our configuration has been correctly applied, let's execute `curl` 
 curl -H "Content-Type: application/json" -H "root: root-val" -H "nested: nested-val" $(glooctl proxy url)/post -d @data.json | jq
 ```
 
-You should get the following output, indicating that the headers have been merged into the request body at the expected 
-locations:
+You should get the following output, indicating that the headers have been merged into the request body at the expected locations:
 
 {{< highlight json "hl_lines=6 8" >}}
 {

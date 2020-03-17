@@ -69,6 +69,6 @@ func sortRoutes(opts *options.Options) error {
 		return errors.Wrapf(err, "writing updated vs")
 	}
 
-	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output)
+	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{out}, opts.Top.Output, opts.Metadata.Namespace)
 	return nil
 }

@@ -14,9 +14,9 @@ import (
 )
 
 type TlsSecret struct {
-	SecretName, SecretNamespace string
-	PrivateKeyKey, CaCertKey    string
-	PrivateKey, CaCert          []byte
+	SecretName, SecretNamespace                        string
+	PrivateKeyFileName, CertFileName, CaBundleFileName string
+	PrivateKey, Cert, CaBundle                         []byte
 }
 
 func CreateTlsSecret(ctx context.Context, kube kubernetes.Interface, secretCfg TlsSecret) error {
@@ -55,8 +55,9 @@ func makeTlsSecret(args TlsSecret) *v1.Secret {
 		},
 		Type: v1.SecretTypeTLS,
 		Data: map[string][]byte{
-			args.PrivateKeyKey: args.PrivateKey,
-			args.CaCertKey:     args.CaCert,
+			args.PrivateKeyFileName: args.PrivateKey,
+			args.CertFileName:       args.Cert,
+			args.CaBundleFileName:   args.CaBundle,
 		},
 	}
 }

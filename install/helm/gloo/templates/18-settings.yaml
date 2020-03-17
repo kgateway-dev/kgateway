@@ -9,7 +9,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   gloo:
+{{- if .Values.global.glooMtls.enabled }}
+    xdsBindAddr: "127.0.0.1:9999"
+{{- else }}
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
+{{- end }}
 {{- if .Values.settings.invalidConfigPolicy }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
@@ -31,7 +35,7 @@ spec:
 {{- end }}
 {{- if .Values.settings.integrations.knative.enabled }}
   knative:
-{{- if (regexMatch "[0-9]+[.][0-7]+[.][0-9]+" .Values.settings.integrations.knative.version ) }}
+{{- if (semverCompare "< 0.8.0" .Values.settings.integrations.knative.version ) }}
     clusterIngressProxyAddress: "clusteringress-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
 {{- else }}
     knativeExternalProxyAddress: "knative-external-proxy.{{ .Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}"
