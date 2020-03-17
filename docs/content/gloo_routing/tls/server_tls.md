@@ -502,6 +502,8 @@ status:
   state: 1
 {{< /highlight >}}
 
+---
+
 ## Next Steps
 
 As we mentioned earlier, you can configure Gloo to perform mutual TLS (mTLS) and client side TLS with Upstreams. Check out these guides to learn more:
