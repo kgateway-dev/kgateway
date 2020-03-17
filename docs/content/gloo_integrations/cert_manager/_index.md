@@ -151,7 +151,7 @@ Configure gloo's default virtual service to route to the function and use the ce
 We can create a virtual service and routes in one of two ways:
 
 1. The glooctl command line
-1. A Kuberentes CRD
+1. A Kubernetes CRD
 
 Please choose **one** of these ways outline below to proceed.
 

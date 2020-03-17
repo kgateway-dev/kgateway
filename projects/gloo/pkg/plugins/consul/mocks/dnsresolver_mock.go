@@ -5,6 +5,7 @@
 package mock_consul
 
 import (
+	context "context"
 	net "net"
 	reflect "reflect"
 
@@ -35,16 +36,16 @@ func (m *MockDnsResolver) EXPECT() *MockDnsResolverMockRecorder {
 }
 
 // Resolve mocks base method
-func (m *MockDnsResolver) Resolve(arg0 string) ([]net.IPAddr, error) {
+func (m *MockDnsResolver) Resolve(arg0 context.Context, arg1 string) ([]net.IPAddr, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Resolve", arg0)
+	ret := m.ctrl.Call(m, "Resolve", arg0, arg1)
 	ret0, _ := ret[0].([]net.IPAddr)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Resolve indicates an expected call of Resolve
-func (mr *MockDnsResolverMockRecorder) Resolve(arg0 interface{}) *gomock.Call {
+func (mr *MockDnsResolverMockRecorder) Resolve(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockDnsResolver)(nil).Resolve), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockDnsResolver)(nil).Resolve), arg0, arg1)
 }

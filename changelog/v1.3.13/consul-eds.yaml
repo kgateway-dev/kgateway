@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Fix issue where Consul endpoints were given a similar name, due to them having the same ID.
+    issueLink: https://github.com/solo-io/gloo/issues/2567
+  - type: FIX
+    description: When not empty, only consul service instances that match all of the tags will be selected for this upstream.
+    issueLink: https://github.com/solo-io/gloo/issues/2567

@@ -46,7 +46,12 @@ func (us *Upstream_Consul) GetSubsetSpec() *plugins.SubsetSpec {
 		Keys: dataCenterMetadataKeys,
 	})
 
-	if tags := us.Consul.ServiceTags; len(tags) > 0 {
+	tags := us.Consul.SubsetTags
+	if len(tags) == 0 {
+		tags = us.Consul.ServiceTags
+	}
+
+	if len(tags) > 0 {
 
 		// If any tags are present, create a subset selector with the tags as key set
 		// This will cause Envoy to partition the endpoints (service instances) by their tags
