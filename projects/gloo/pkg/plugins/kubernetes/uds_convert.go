@@ -22,13 +22,6 @@ import (
 	kubev1 "k8s.io/api/core/v1"
 )
 
-var ignoredLabels = []string{
-	"pod-template-hash",        // it is common and provides nothing useful for discovery
-	"controller-revision-hash", // set by helm
-	"pod-template-generation",  // set by helm
-	"release",                  // set by helm
-}
-
 type UpstreamConverter interface {
 	UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList
 }
