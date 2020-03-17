@@ -43,7 +43,7 @@ within a particular Function App
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `functionAppName` | `string` | The Name of the Azure Function App where the functions are grouped. |  |
-| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/architecture/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled. |  |
+| `secretRef` | [.core.solo.io.ResourceRef](../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A [Gloo Secret Ref](https://gloo.solo.io/introduction/concepts/#Secrets) to an [Azure Publish Profile JSON file](https://azure.microsoft.com/en-us/downloads/publishing-profile-overview/). {{ hide_not_implemented "Azure Secrets can be created with `glooctl secret create azure ...`" }} Note that this secret is not required unless Function Discovery is enabled. |  |
 | `functions` | [[]azure.options.gloo.solo.io.UpstreamSpec.FunctionSpec](../azure.proto.sk/#functionspec) |  |  |
 
 
