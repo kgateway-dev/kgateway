@@ -348,13 +348,11 @@ func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs 
 				}
 			}
 			acRef := virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()
-			if acRef != nil {
-				if !cliutils.Contains(knownAuthConfigs, renderRef(acRef)) {
-					fmt.Printf("Virtual service references unknown auth config:\n")
-					fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
-					fmt.Printf("  Auth Config: %s\n", renderRef(acRef))
-					return false, nil
-				}
+			if acRef != nil && !cliutils.Contains(knownAuthConfigs, renderRef(acRef)) {
+				fmt.Printf("Virtual service references unknown auth config:\n")
+				fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
+				fmt.Printf("  Auth Config: %s\n", renderRef(acRef))
+				return false, nil
 			}
 		}
 	}
