@@ -168,31 +168,9 @@ For more information about json format dictionaries, check out the [Envoy docs](
 #### Outputting to a custom file
 
 Instead of outputting the string or json-formatted access logs to standard out, it may be preferable to log them to 
-a file local to the container. For example, maybe we have modified the `gateway-proxy` deployment to include a writable volume
-in `/etc/access-logs`. First, define a file "gateway-proxy-patch.yaml" containing the following contents:
+a file local to the container. This requires a volume that is writable in the `gateway-proxy` container.
 
-```yaml
-spec:
-  template:
-    spec:
-      containers:
-        - name: gateway-proxy
-          volumeMounts:
-            - mountPath: /etc/access-logs/
-              name: access-logs
-      volumes:
-        - name: access-logs
-          emptyDir: {}
-```
-
-Now apply this patch with `kubectl`: 
-
-```
-kubectl patch -n gloo-system deployment gateway-proxy --type strategic --patch "$(cat gateway-proxy-patch.yaml)"
-```
-
-Once the `gateway-proxy` pod is up and running again, it should now have a writable directory in `/etc/access-logs`. Now 
-we can update the `gateway` CRD to utilize this as a path for access logging:
+We'll update the path in our file sink to write to a file in the `/dev` directory, which is already writable:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -211,7 +189,7 @@ spec:
     accessLoggingService:
       accessLog:
         - fileSink:
-            path: /etc/access-logs/gateway-proxy-log.json
+            path: /dev/access-logs.json
             jsonFormat:
               protocol: "%PROTOCOL%"
               duration: "%DURATION%"
@@ -221,7 +199,7 @@ spec:
 
 This will cause requests to the HTTP port to be logged to a file inside the `gateway-proxy` container:
 ```
-$ kubectl exec -n gloo-system -it deploy/gateway-proxy -- cat /etc/access-logs/gateway-proxy-log.json
+$ kubectl exec -n gloo-system -it deploy/gateway-proxy -- cat /dev/access-logs.json
 ```
 
 ```
@@ -354,10 +332,10 @@ spec:
             path: /dev/stdout
             stringFormat: ""
         - fileSink:
-            path: /etc/access-logs/default-gateway-proxy-log.json
+            path: /dev/default-access-log.txt
             stringFormat: ""
         - fileSink:
-            path: /etc/access-logs/gateway-proxy-log.json
+            path: /dev/other-access-log.json
             jsonFormat:
               protocol: "%PROTOCOL%"
               duration: "%DURATION%"
