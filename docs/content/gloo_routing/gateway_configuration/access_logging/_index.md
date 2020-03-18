@@ -330,10 +330,41 @@ listener with your custom access logging server, it should be reported there.
 ### Configuring multiple access logs 
 
 More than one access log can be configured for a single Envoy listener. Putting the examples above together, here is a configuration
-that will write a string formatted log to one file, a json-formatted log to another, and also send the access logs to a grpc 
-access logger. 
+that includes four different access log outputs: a default string-formatted access log to standard out on the Envoy container, a default
+string-formatted access log to a file in the Envoy container, a json-formatted access log to a different file in the Envoy container, 
+and a json-formatted access log to standard out in the `gateway-proxy-access-logger` container. 
 
 ```yaml
-
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway: {}
+  proxyNames:
+    - gateway-proxy
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+        - fileSink:
+            path: /dev/stdout
+            stringFormat: ""
+        - fileSink:
+            path: /etc/access-logs/default-gateway-proxy-log.json
+            stringFormat: ""
+        - fileSink:
+            path: /etc/access-logs/gateway-proxy-log.json
+            jsonFormat:
+              protocol: "%PROTOCOL%"
+              duration: "%DURATION%"
+              upstreamCluster: "%UPSTREAM_CLUSTER%"
+              upstreamHost: "%UPSTREAM_HOST%"
+        - grpcService:
+            logName: example
+            staticClusterName: access_log_cluster
 ```
 
