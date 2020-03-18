@@ -22,7 +22,7 @@ TCP and HTTP access logging include:
 
 #### Additional HTTP Properties
 
-When Envoy is used as an HTTP proxy, then a large amount of additional HTTP information is available for access logging, including:
+When Envoy is used as an HTTP proxy a large amount of additional HTTP information is available for access logging, including:
 * Request data including the method, path, scheme, port, user agent, headers, body, and more 
 * Response data including the response code, headers, body, and trailers, as well as a string representation of the response code
 * Protocol version
@@ -367,4 +367,3 @@ spec:
             logName: example
             staticClusterName: access_log_cluster
 ```
-
