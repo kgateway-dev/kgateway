@@ -307,7 +307,7 @@ func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 		}
 		for _, authConfig := range authConfigs {
 			if authConfig.Status.GetState() == core.Status_Rejected {
-				fmt.Printf("Found rejected upstream: %s\n", renderMetadata(authConfig.GetMetadata()))
+				fmt.Printf("Found rejected auth config: %s\n", renderMetadata(authConfig.GetMetadata()))
 				fmt.Printf("Reason: %s", authConfig.Status.Reason)
 				return nil, false, nil
 			}
