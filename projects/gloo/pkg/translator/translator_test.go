@@ -294,6 +294,7 @@ var _ = Describe("Translator", func() {
 
 			Expect(err).To(BeNil())
 			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: auth config not found:"))
 		})
 	})
 
