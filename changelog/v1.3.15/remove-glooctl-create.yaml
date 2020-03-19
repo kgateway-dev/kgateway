@@ -1,0 +1,5 @@
+changelog:
+  - type: BREAKING_CHANGE
+    description: >
+      Remove `glooctl create` command in favor of `kubectl apply`.
+    issueLink: https://github.com/solo-io/gloo/issues/2621
