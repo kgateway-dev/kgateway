@@ -8,7 +8,6 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/create"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/del"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/edit"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
@@ -76,7 +75,6 @@ func GlooCli() *cobra.Command {
 			add.RootCmd(opts),
 			remove.RootCmd(opts),
 			route.RootCmd(opts),
-			create.RootCmd(opts),
 			edit.RootCmd(opts),
 			upgrade.RootCmd(opts),
 			gateway.RootCmd(opts),
