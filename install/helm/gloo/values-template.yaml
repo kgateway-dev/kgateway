@@ -115,6 +115,7 @@ ingressProxy:
     httpPort: 80
     httpsPort: 443
     replicas: 1
+    extraAnnotations: {}
   configMap:
     data:
   tracing:

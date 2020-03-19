@@ -7,6 +7,12 @@ metadata:
     gloo: ingress-proxy
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
+{{- if .Values.ingressProxy.deployment.extraAnnotations }}
+  annotations:
+  {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
 spec:
   ports:
   - port: {{ .Values.ingressProxy.deployment.httpPort }}
