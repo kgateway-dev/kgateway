@@ -3,3 +3,4 @@ changelog:
     description: >
       Add quote to envoyExtgraArgs in the gatewayProxy deployment. This allows using values that 
       start with %. This is useful for stackdriver log ingestion
+    issueLink: https://github.com/solo-io/gloo/issues/2647
