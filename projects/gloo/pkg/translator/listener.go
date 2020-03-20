@@ -115,6 +115,18 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 		contextutils.LoggerFrom(params.Ctx).DPanic("internal error: listener report was not http type")
 	}
 
+	// Check that we don't refer to nonexistent auth config
+	for _, vHost := range httpListener.HttpListener.GetVirtualHosts() {
+		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
+		if acRef != nil {
+			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
+				validation.AppendHTTPListenerError(
+					httpListenerReport, validationapi.HttpListenerReport_Error_ProcessingError,
+					"auth config not found: "+acRef.String())
+			}
+		}
+	}
+
 	// add the http connection manager filter after all the InAuth Listener Filters
 	rdsName := routeConfigName(listener)
 	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, httpListenerReport)
@@ -169,7 +181,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := ""
 		switch sslCfg := sslConfig.SslSecrets.(type) {
 		case *v1.SslConfig_SecretRef:
-			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetNamespace()
 		case *v1.SslConfig_SslFiles:
 			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
 		default:

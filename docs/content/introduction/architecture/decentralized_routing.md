@@ -1,6 +1,6 @@
 ---
 title: "Decentralized Ownership"
-weight: 31
+weight: 40
 ---
 
 ## Decentralized API ownership

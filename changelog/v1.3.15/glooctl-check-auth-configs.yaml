@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Check auth configs with glooctl check.
+    issueLink: https://github.com/solo-io/gloo/issues/2036

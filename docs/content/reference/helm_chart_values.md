@@ -1,6 +1,6 @@
 ---
 title: "Helm Chart Values"
-description: Listing of Helm chart values for the Gloo Gateway chart.
+description: Listing of Helm chart values for the Gloo Gateway chart
 weight: 30
 ---
 

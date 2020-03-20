@@ -10,7 +10,7 @@ When services registered into Consul require a bit more fine-grained grouping an
 
 ## Configuring Gloo to Discover from Consul
 
-Gloo can automatically discover [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts#upstreams" %}}) from Consul. You can also explicitly create upstreams from Consul. 
+Gloo can automatically discover [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) from Consul. You can also explicitly create upstreams from Consul. 
 
 To enable automatic discovery of Consul services, update your {{< protobuf name="gloo.solo.io.Settings" >}} resource and add the `consul` section:
 
@@ -115,7 +115,7 @@ get when querying Consul for a service with a given name:
 ]
 ```
 
-If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts#upstreams" %}}) like you do with any other service to which to route. 
+If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) like you do with any other service to which to route. 
 
 Example:
 
@@ -139,7 +139,7 @@ spec:
             namespace: gloo-system
 {{< /highlight >}}
 
-Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively). 
+Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively). 
 
 ### Subset based routing
 
@@ -151,7 +151,7 @@ display="consul destination type"
 >}} settings. This allows you to target a subset of these service instances via the optional `tags` and `dataCenters` fields. Gloo will detect the correspondent IP addresses and ports and load balance traffic between them. 
 
 
-If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts/#upstreams" %}}) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively).
+If the ports and data centers for all of the endpoints for a Consul service are the same, and you don't need to slice and dice them up into finer-grained subsets, you can just use [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#upstreams" %}}) like you do with any other service to which to route. Also, with using Upstreams instead of the consul-specific config, you can also leverage the fact that Gloo does [function discovery]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/#functions" %}}) (ie, REST or gRPC based on swagger or reflection respectively).
 
 {{% notice note %}}
 When providing the `tags` option, Gloo will only match service instances that **exactly** match the given tag set.

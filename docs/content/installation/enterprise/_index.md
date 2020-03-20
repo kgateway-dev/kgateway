@@ -37,7 +37,7 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
-Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/enterprise/#verify-your-installation" %}}).
+Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
 
 
 {{% notice note %}}
@@ -66,7 +66,7 @@ helm install glooe/gloo-ee --name glooe --namespace gloo-system \
   --set-string license_key=YOUR_LICENSE_KEY
 ```
 
-Once you've installed Gloo, please be sure [to verify your installation]({{% versioned_link_path fromRoot="/installation/gateway/enterprise/#verify-your-installation" %}}).
+Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
 
 #### Customizing your installation with Helm
 

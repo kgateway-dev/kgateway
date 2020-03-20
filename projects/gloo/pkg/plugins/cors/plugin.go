@@ -92,7 +92,7 @@ func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyro
 	for _, ao := range in.AllowOriginRegex {
 		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
 			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: &envoymatcher.RegexMatcher{
-				EngineType: &envoymatcher.RegexMatcher_GoogleRe2{},
+				EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
 				Regex:      ao,
 			}},
 		})

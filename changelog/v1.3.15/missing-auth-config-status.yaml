@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      If a Virtual Service refers to a missing Auth Config, this error will now show up in the Virtual
+      Service and the Proxy statuses as errors.
+    issueLink: https://github.com/solo-io/gloo/issues/2017

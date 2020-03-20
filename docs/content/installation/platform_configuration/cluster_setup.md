@@ -17,7 +17,7 @@ Click on the links below for details specific to your Kubernetes distribution:
 - [Next Steps](#next-steps)
 
 {{% notice note %}}
-Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/introduction/support/#kubernetes" %}})
+Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
 {{% /notice %}}
 
 {{% notice note %}}

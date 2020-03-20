@@ -1,9 +1,10 @@
 ---
-title: "Concepts"
-weight: 40
+title: "Core Concepts"
+weight: 10
 description: An explanation of the bedrock concepts behind Gloo.
 ---
-There are several core concepts that server as the bedrock on which Gloo is guilt. This document will provide an explanation of the various concepts, how they are implemented in Gloo, and links to the API documentation to learn more. Before you review this document, it may be useful to first read our Introduction page to get a sense of the purpose behind Gloo and the problems it seeks to solve.
+
+There are several core concepts that serve as the bedrock on which Gloo is built. This document will provide an explanation of the various concepts, how they are implemented in Gloo, and links to the API documentation to learn more. Before you review this document, it may be useful to first read our [Introduction]({{% versioned_link_path fromRoot="/introduction/" %}}) page to get a sense of the purpose behind Gloo and the problems it seeks to solve.
 
 In this document we will start with a general overview and then expand on specific topics. Links are included in the list below if you wish to jump to a specific topic.
 
@@ -81,7 +82,7 @@ Virtual Services also support wildcard domains (starting with `*`).
 
 Gloo creates a `default` Virtual Service for the user if the user does not provide one. The `default` Virtual Service matches the `*` domain, which serves routes for any request that does not include a `Host`/`:authority` header, or a request that requests a domain that does not match another Virtual Service. You'll note in the [Hello World tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}) we create a `virtualservice` named `default`.
 
-Each domain specified for a Virtual Service must be unique across the set of all Virtual Services provided to Gloo. In previous versions, we supported Virtual Service  merging, which means you could have multiple Virtual Services with the same domain, and we would just merge the routes. The preferred way to segment out routes and have multiple owners of the Virtual Service is to use [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}). Please see the [introduction to the decentralized Gloo API]({{% versioned_link_path fromRoot="/introduction/decentralized_routing/" %}}) and [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}) for more.
+Each domain specified for a Virtual Service must be unique across the set of all Virtual Services provided to Gloo. In previous versions, we supported Virtual Service  merging, which means you could have multiple Virtual Services with the same domain, and we would just merge the routes. The preferred way to segment out routes and have multiple owners of the Virtual Service is to use [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}). Please see the [introduction to the decentralized Gloo API]({{% versioned_link_path fromRoot="/introduction/architecture/decentralized_routing/" %}}) and [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}) for more.
 
 For some use cases, it may be sufficient to let all routes live on a single Virtual Service. In this scenario, Gloo uses the same set of route rules for requests, regardless of their `Host` or `:authority` header.
 

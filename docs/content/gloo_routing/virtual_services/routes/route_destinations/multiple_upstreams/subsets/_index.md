@@ -12,7 +12,7 @@ Kubernetes Service. There are currently two steps required to get subsetting to 
 the only upstream type currently supported. 
 
 **First**, you need to edit the {{< protobuf name="kubernetes.options.gloo.solo.io.UpstreamSpec">}}
-of the Kubernetes Upstream that you want to define subsets for by adding a {{< protobuf name="plugins.gloo.solo.io.SubsetSpec">}}. 
+of the Kubernetes Upstream that you want to define subsets for by adding a {{< protobuf name="options.gloo.solo.io.SubsetSpec">}}. 
 The `subsetSpec` contains a list of `selectors`, each of which consist of a set of `keys`. Each key represents a Kubernetes 
 label key. These selectors determine how the subsets for the upstream are to be calculated. For example, the following 
 `subsetSpec`:
@@ -40,7 +40,7 @@ Following is an example of using a label, e.g. `color: blue`, to subset pods han
 
 These are the Upstream changes that allow you to use the label `color` as a subset selector:
 
-{{< highlight yaml "hl_lines=15-18" >}}
+{{< highlight yaml "hl_lines=14-17" >}}
 apiVersion: gloo.solo.io/v1
   kind: Upstream
     labels:

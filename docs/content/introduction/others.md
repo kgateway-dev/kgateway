@@ -1,6 +1,6 @@
 ---
 title: "Gloo vs others"
-weight: 100
+weight: 70
 description: A comparison of similar products and how Gloo is different.
 ---
 

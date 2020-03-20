@@ -3,61 +3,54 @@ title: Access Logging
 weight: 1
 ---
 
-Gloo can be configured to provide extensive Access Logging from envoy. These logs can be configured for 
-HTTP (L7) connections as well at TCP (L4).
+A common use case for the API gateway is to produce an **access log** (sometimes referred to as an audit log). The entries of 
+ an access log represent traffic through the proxy. The access log entries can be customized to include 
+data from the request, the routing destination, and the response. The proxy can be configured to output multiple access logs with different configuration.
+An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a grpc 
+server for custom handling. 
 
+With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** CRD.  
 
-# Access Logging
+### Data Available for Logging
 
-The envoy documentation on Access Logging can be found 
-[here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-default-format).
+Envoy exposes a lot of data that can be used when customizing access logs. Some common data properties available for both 
+TCP and HTTP access logging include:
+* The downstream (client) address, connection info, tls configuration, and timing
+* The upstream (service) address, connection info, tls configuration, timing, and envoy routing information
+* Relevant envoy configuration, such as rate of sampling (if used)
+* Filter-specific context published to Envoy's dynamic metadata during the filter chain
 
-#### Usage
+#### Additional HTTP Properties
 
-Access Logging allows for more verbose, customizable usage logs from envoy. These logs will not replace the normal logs outputted by envoy, but can be used instead to supplement them. 
-Possible use cases include:
+When Envoy is used as an HTTP proxy a large amount of additional HTTP information is available for access logging, including:
+* Request data including the method, path, scheme, port, user agent, headers, body, and more 
+* Response data including the response code, headers, body, and trailers, as well as a string representation of the response code
+* Protocol version
 
-*  specially formatted string logs
-*  formatted JSON logging to be ingested by log aggregators
-*  GRPC streaming of logs to external services
+#### Additional TCP Properties
 
-#### Configuration
+Due to the limitations of the TCP protocol, the only additional data available for access logging when using Envoy as a TCP 
+proxy are connection properties: bytes received and sent. 
 
-The following explanation assumes that the user has gloo `v0.18.1+` running, as well as some previous knowledge of Gloo resources, and how to use them. In order to install Gloo if it is not already please refer to the following [tutorial]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}). The only Gloo resource involved in enabling Access Logging is the `Gateway`. Further Documentation can be found {{< protobuf name="gateway.solo.io.Gateway" display="here">}}.
+### File-based Access Logging
 
-Enabling access logs in Gloo is as simple as adding a [listener plugin]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/" %}}) to any one of the gateway resources.
+File-based access logging can be enabled in Gloo by customizing the **Gateway** CRD. For file-based access logs (also referred to 
+as file sink access logs), there are two main configurations to set:
+* Path: This is where the logs are written, either to `/dev/stdout` or to a file that is in a writable volume in the proxy container 
+* Format: This provides a log template for either string or json-formatted logs
 
-The documentation for the `Access Logging Service` plugin API can be found {{< protobuf display="here" name="als.options.gloo.solo.io.AccessLog">}}.
+#### Outputting formatted strings
 
-Gloo supports two types of Access Logging. `File Sink` and `GRPC`.
+To configure access logs on a specific Envoy listener that output string-formatted logs to a file, 
+we can add an access logging option to the corresponding Gateway CRD. 
 
-### File Sink
-
-Within the `File Sink` category of Access Logs there are 2 options for output, those being:
-
-* [String formatted](#string-formatted)
-* [JSON formatted](#json-formatted)
-
-These are mutually exclusive for a given Access Logging configuration, but any number of access logging configurations can be applied to any place in the API which supports Access Logging. All `File Sink` configurations also accept a file path which envoy logs to. If the desired behavior is for these logs to output to `stdout` along with the other envoy logs then use the value `/dev/stdout` as the path.
-
-The documentation on envoy formatting directives can be found [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries)
-
-{{% notice note %}}
-See [**this guide**]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" >}})
-to see how to include custom attributes in your access logs by leveraging Gloo's 
-[**transformation API**]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations" >}}).
-{{% /notice %}}
-
-##### String formatted
-
-An example config for string formatted logs is as follows:
-{{< highlight yaml "hl_lines=15-20" >}}
+For example, here is an example Gateway configuration that logs all requests into the HTTP port to 
+standard out, using the [default string format](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-default-format):
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  annotations:
-    origin: default
-  name: gateway
+  name: gateway-proxy
   namespace: gloo-system
 spec:
   bindAddress: '::'
@@ -72,22 +65,28 @@ spec:
       - fileSink:
           path: /dev/stdout
           stringFormat: ""
-{{< / highlight >}}
+```
 
+This will cause requests to the HTTP port to be logged to the application logs of the `gateway-proxy` deployment:
+```
+$ kubectl logs -n gloo-system deploy/gateway-proxy
+```
 
-The above yaml also includes the Gateway object it is contained in. Notice that the `stringFormat` field above is set to `""`. This is intentional. If the string is set to `""` envoy will use a standard formatting string. More information on this as well as how to create a customized string see [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#default-format-string).
+```
+[2020-03-17T18:39:54.919Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 2 2 "-" "curl/7.54.0" "eb5af05f-f14f-467b-994c-aeac9b5383f1" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:40:22.086Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 2 1 "-" "curl/7.54.0" "a90bb140-bf4a-42d7-84f3-bb983ae089ec" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:40:31.043Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 2 2 "-" "curl/7.54.0" "d10e4cc3-c148-4bcc-9c5d-b9b9b6cbf950" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:40:33.680Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "fe904bec-d2ba-4027-9aa3-fef74dbf927e" "35.196.131.38" "10.52.0.54:8080"
+```
 
-##### JSON formatted
+#### Customizing the string format
 
-An example config for JSON formatted logs is as follows:
-
-{{< highlight yaml "hl_lines=15-22" >}}
+In the example above, the default string format was used. Alternatively, a custom string format can be provided explicitly:
+```yaml
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
-  annotations:
-    origin: default
-  name: gateway
+  name: gateway-proxy
   namespace: gloo-system
 spec:
   bindAddress: '::'
@@ -101,86 +100,248 @@ spec:
       accessLog:
       - fileSink:
           path: /dev/stdout
-          jsonFormat:
-            protocol: "%PROTOCOL%"
-            duration: "%DURATION%"
-{{< / highlight >}}
+          stringFormat: >
+            [%START_TIME%] "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%"
+            %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION%
+            %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%"
+            "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%UPSTREAM_HOST%"
+```
 
-The majority is the same as the above, as the gateway has the same config, the differece exists in the formatting of the file sink. Instead of a simple string formatting directive, this config accepts an object value which is transformed by envoy into JSON formatted logs. The object inside of the `jsonFormat` field is interpreted as a JSON object. This object consists of nested json objects as well as keys which point to individual formatting directives. More documentation on JSON formatting can be found [here](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries).
+This will cause requests to the HTTP port to be logged to the application logs of the `gateway-proxy` deployment:
+```
+$ kubectl logs -n gloo-system deploy/gateway-proxy
+```
 
+```
+[2020-03-17T18:49:50.298Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 2 2 "-" "curl/7.54.0" "6fce19d1-63a9-438b-94ac-b4ec212b9027" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:49:52.141Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 0 "-" "curl/7.54.0" "ff80348a-5b69-4485-ac73-73f3fe825532" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:49:53.685Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 0 "-" "curl/7.54.0" "2a66949f-55e5-4dae-a03c-5f749ce4867c" "35.196.131.38" "10.52.0.54:8080"
+[2020-03-17T18:49:55.191Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "4a0013d3-f0e6-44b8-ad5f-fa181852e6cd" "35.196.131.38" "10.52.0.54:8080"```
+```
 
-## GRPC Access Logging
+For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-format-strings). 
 
-To access the GRPC Access logging feature Gloo `v0.18.38+` is required.
+#### Outputting structured json
 
-Gloo now supports Envoy GRPC access logging. Logging access data directly to a file can be very useful, but sometimes collecting the data via a GRPC service can be a better fit. 
-The best example of such a situation is when the access logging data is useful or required by other microservices. File Sink has filtering options, but programmatic filtering, as well as 
-eventing with the GRPC data can be very powerful, and allow for unique features to be built using the data being streamed.
+Instead of outputting strings, the file sink access logger can be configured to log structured json instead. When 
+configuring structured json, the Envoy fields are referenced in the same way as in the string format, however a mapping to json 
+keys is defined: 
 
-GRPC Access logging functions very similarly to the file sink, however there are no formatting directives, as all of the data is sent via GRPC requests, and management of said data falls to the user.
-There are only two configuration steps needed to get started:
-
- * Add a cluster to the envoy bootstrap config which points to the access-logging service.
- * Pass a reference to the cluster into the access logging API
-
-These instructions assume that a service already exists at the predefined location which is listening for access logging grpc connections. In order to make is easier to get up and running, we provide
-a simnple implementation which simply receives the messages and then logs them. The code for this implementation can be found [here](https://github.com/solo-io/gloo/tree/master/projects/accesslogger/pkg/loggingservice).
-The server itself is extendable, and can be ran with callbacks if different behavior is needed. The implementation referenced above is included in our helm chart, which is included in the manifest when
-the access logger is enabled. In order to use a different service, simply swap the image name in the helm chart.
-
-In order to demonstrate the GRPC access logging in action, we are going to run the latest gloo as well as the petstore demo.
-To install Gloo we will be using `glooctl`
-
-Firstly, save the following values file locally:
 ```yaml
+apiVersion: gateway.solo.io/v1
+   kind: Gateway
+   metadata:
+     name: gateway-proxy
+     namespace: gloo-system
+   spec:
+     bindAddress: '::'
+     bindPort: 8080
+     proxyNames:
+       - gateway-proxy
+     httpGateway: {}
+     useProxyProto: false
+     options:
+       accessLoggingService:
+         accessLog:
+           - fileSink:
+               path: /dev/stdout
+               jsonFormat:
+                 protocol: "%PROTOCOL%"
+                 duration: "%DURATION%"
+                 upstreamCluster: "%UPSTREAM_CLUSTER%"
+                 upstreamHost: "%UPSTREAM_HOST%"
+```
+
+This will cause requests to the HTTP port to be logged to the application logs of the `gateway-proxy` deployment:
+```
+$ kubectl logs -n gloo-system deploy/gateway-proxy
+```
+
+```
+{"protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"4","upstreamCluster":"default-petstore-8080_gloo-system"}
+{"upstreamHost":"10.52.0.54:8080","duration":"3","upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1"}
+{"protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"3","upstreamCluster":"default-petstore-8080_gloo-system"}
+```
+
+For more information about json format dictionaries, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#format-dictionaries).
+
+#### Outputting to a custom file
+
+Instead of outputting the string or json-formatted access logs to standard out, it may be preferable to log them to 
+a file local to the container. This requires a volume that is writable in the `gateway-proxy` container.
+
+We'll update the path in our file sink to write to a file in the `/dev` directory, which is already writable:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  proxyNames:
+    - gateway-proxy
+  httpGateway: {}
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+        - fileSink:
+            path: /dev/access-logs.json
+            jsonFormat:
+              protocol: "%PROTOCOL%"
+              duration: "%DURATION%"
+              upstreamCluster: "%UPSTREAM_CLUSTER%"
+              upstreamHost: "%UPSTREAM_HOST%"
+```
+
+This will cause requests to the HTTP port to be logged to a file inside the `gateway-proxy` container:
+```
+$ kubectl exec -n gloo-system -it deploy/gateway-proxy -- cat /dev/access-logs.json
+```
+
+```
+{"duration":"4","upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080"}
+{"upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"1"}
+{"upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"1"}
+```
+
+### GRPC Access Logging
+
+The previous section reviewed the different ways you can configure access logging to output to a file local to the 
+proxy container. Alternatively, it may be desirable to configure Envoy to emit access logs to a grpc endpoint. This would be
+a custom service deployed to your cluster that receives access log events and then does something with them - such 
+as writing them to a file in the access log grpc service container, or sending them to an enterprise logging backend.  
+
+#### Deploying the open source GPRC access logger
+
+Open source Gloo includes an optional GRPC access log server implementation that can be turned on and deployed using 
+the following helm values:
+
+```yaml
+# Note: for enterprise users, this should be prefixed with "gloo"
+# gloo:
+#   accessLogger:
+#     enabled: true
+
 accessLogger:
   enabled: true
 ```
-There are more options available, but this is the simplest to get up and running. Once this is saved locally we can install gloo.
-Save the location of this file to the env variable `LOCAL_VALUES_FILE`
 
-Using glooctl:
-```bash
-glooctl install gateway -n gloo-system --values $LOCAL_VALUES_FILE
+This will add a deployment to the `gloo-system` namespace called `gateway-proxy-access-logger`. It also deploys a 
+Kubernetes service, and adds the following static cluster to the `gateway-proxy-envoy-config` config map:
+
+```yaml
+...
+      - name: access_log_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+            cluster_name: access_log_cluster
+            endpoints:
+            - lb_endpoints:
+              - endpoint:
+                    address:
+                        socket_address:
+                            address: gateway-proxy-access-logger.gloo-system.svc.cluster.local
+                            port_value: 8083
+        http2_protocol_options: {}
+        type: STRICT_DNS # if .Values.accessLogger.enabled # if $spec.tracing
+...
 ```
 
-Now run
-```bash
-kubectl get pods -n gloo-system
+This access logging service can now be used by configuring the **gateway** CRD:
 
-NAME                                              READY   STATUS    RESTARTS   AGE
-api-server-5c46c77c9-9724f                        3/3     Running   0          2m49s
-discovery-56dcb649c8-4m9d4                        1/1     Running   0          2m49s
-gateway-proxy-59c46d569-lwhbh                     1/1     Running   0          2m49s
-gateway-proxy-access-logger-6bb9f97fb8-8v8h8      1/1     Running   0          2m49s
-gateway-58c58fcd46-vccmt                          1/1     Running   0          2m49s
-gloo-7975c97546-ssh26                             1/1     Running   0          2m49s
-```
-The output should be similar to the above, minus the generated section of the names.
-
-Once all of the gloo pods are up and running let's go ahead and install the petstore. The tutorial on how to do this as well as basic gloo routing is located [here]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}).
-Once the petstore pod is up and running we will route some traffic to it, and test that the traffic is being recorded in the access logs.
-
-Run the following curl from the routing tutorial doc.
-```bash
-curl $(glooctl proxy url)/sample-route-1
-```
-
-returns
-
-```json
-[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway: {}
+  proxyNames:
+  - gateway-proxy
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+        - grpcService:
+            logName: example
+            staticClusterName: access_log_cluster
 ```
 
-Once this command has been run successfully let's go check the access logs to see that it has been delivered and reported.
-
-```bash
-kubectl get logs -n gloo-system deployments/gateway-proxy-access-logger | grep /api/pets
+This will cause requests to the HTTP port to be logged to standard out in the `gateway-proxy-access-logger` container:
 ```
-```json
-{"level":"info","ts":"2019-09-09T17:56:52.669Z","logger":"access_log","caller":"runner/run.go:50","msg":"received http request","logger_name":"test","node_id":"gateway-proxy-59c46d569-kmjhb.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"&Struct{Fields:map[string]*Value{role: &Value{Kind:&Value_StringValue{StringValue:gloo-system~gateway-proxy,},XXX_unrecognized:[],},},XXX_unrecognized:[],}","protocol_version":"HTTP11","request_path":"/api/pets","request_method":"GET","response_status":"&UInt32Value{Value:200,XXX_unrecognized:[],}"}
+$ k logs -n gloo-system deploy/gateway-proxy-access-logger
 ```
 
-If all went well this command should yield all of the requests whose request path includes `/api/pets`. This particular implementation is very simplistic, meant more for demonstration than anything.
-However, the server code which was used to build this access logging service can be found [here](https://github.com/solo-io/gloo/blob/v1.2.12/projects/accesslogger/pkg/loggingservice/server.go)
-and is easily extendable to fit any needs. To run a different access logger than the one provided simply replace the image object in the helm configuration, and the service will be replaced by a custom image.
+```
+{"level":"info","ts":"2020-03-18T17:22:03.976Z","logger":"access_log","caller":"runner/run.go:92","msg":"Starting access-log server"}
+{"level":"info","ts":"2020-03-18T17:22:03.977Z","logger":"access_log","caller":"runner/run.go:98","msg":"access-log server running in [gRPC] mode, listening at [:8083]"}
+{"level":"info","ts":"2020-03-18T20:18:09.390Z","logger":"access_log","caller":"loggingservice/server.go:37","msg":"received access log message","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > "}
+{"level":"info","ts":"2020-03-18T20:18:09.390Z","logger":"access_log","caller":"runner/run.go:48","msg":"received http request","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > ","protocol_version":"HTTP11","request_path":"/","request_method":"GET","response_status":"value:403 "}
+{"level":"info","ts":"2020-03-18T20:18:11.401Z","logger":"access_log","caller":"loggingservice/server.go:37","msg":"received access log message","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > "}
+{"level":"info","ts":"2020-03-18T20:18:11.401Z","logger":"access_log","caller":"runner/run.go:48","msg":"received http request","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > ","protocol_version":"HTTP11","request_path":"/","request_method":"GET","response_status":"value:403 "}
+{"level":"info","ts":"2020-03-18T20:18:12.400Z","logger":"access_log","caller":"loggingservice/server.go:37","msg":"received access log message","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > "}
+{"level":"info","ts":"2020-03-18T20:18:12.400Z","logger":"access_log","caller":"runner/run.go:48","msg":"received http request","logger_name":"example","node_id":"gateway-proxy-548b6587cb-hh6v2.gloo-system","node_cluster":"gateway","node_locality":"<nil>","node_metadata":"fields:<key:\"role\" value:<string_value:\"gloo-system~gateway-proxy\" > > ","protocol_version":"HTTP11","request_path":"/","request_method":"GET","response_status":"value:403 "}
+```
+
+The code for this server implementation is available [here](https://github.com/solo-io/gloo/tree/master/projects/accesslogger). 
+
+#### Building a custom service
+
+If you are building a custom access logging grpc service, you will need get it deployed alongside Gloo. The Envoy 
+config (that Gloo stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
+custom access log server. Once you have a named static cluster in your envoy config, you can reference it in 
+your **gateway** CRD. 
+
+The Gloo access logger was written to be customizable with callbacks, so it may provide a useful starting point. Feel free
+to open an issue in the Gloo repo to track improvements to the existing implementation. 
+
+To verify your Envoy access logging configuration, use `glooctl check`. If there is a problem configuring the Envoy 
+listener with your custom access logging server, it should be reported there. 
+
+### Configuring multiple access logs 
+
+More than one access log can be configured for a single Envoy listener. Putting the examples above together, here is a configuration
+that includes four different access log outputs: a default string-formatted access log to standard out on the Envoy container, a default
+string-formatted access log to a file in the Envoy container, a json-formatted access log to a different file in the Envoy container, 
+and a json-formatted access log to standard out in the `gateway-proxy-access-logger` container. 
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway: {}
+  proxyNames:
+    - gateway-proxy
+  useProxyProto: false
+  options:
+    accessLoggingService:
+      accessLog:
+        - fileSink:
+            path: /dev/stdout
+            stringFormat: ""
+        - fileSink:
+            path: /dev/default-access-log.txt
+            stringFormat: ""
+        - fileSink:
+            path: /dev/other-access-log.json
+            jsonFormat:
+              protocol: "%PROTOCOL%"
+              duration: "%DURATION%"
+              upstreamCluster: "%UPSTREAM_CLUSTER%"
+              upstreamHost: "%UPSTREAM_HOST%"
+        - grpcService:
+            logName: example
+            staticClusterName: access_log_cluster
+```

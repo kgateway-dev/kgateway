@@ -92,7 +92,7 @@ spec:
           - --disable-hot-restart
           {{- with $spec.extraEnvoyArgs}}
             {{- range . }}
-          - {{ . }}
+          - {{ . | quote }}
             {{- end }}
           {{- end}}
         env:

@@ -18,6 +18,18 @@ Wouldn't it be nice to be able to **write just the authentication logic you need
 
 In this guide we will show you how easy it is to extend Gloo's Ext Auth server via [Go plugins](https://golang.org/pkg/plugin/).
 
+{{% notice warning %}}
+Beware of encountering potential bugs in the go plugin runtime if you're running on an old version of linux (e.g., the linux installed by kops defaults in kops 1.15.1). If so, you may see go fail to execute the `dlopen` C function call, manifesting as:
+```shell script
+{"level":"error","ts":1582578689.0415232,"logger":"extauth.ext-auth-service","caller":"service/extauth.go:58","msg":"Error while authorizing request","error":"empty config set","stacktrace":...}
+```
+Even when your auth service has properly been configured, seeing a similar log line to this earlier in your logs:
+```shell script
+{"level":"info","ts":1582578688.078688,"logger":"extauth","caller":"runner/run.go:158","msg":"got new config","config":[{"auth_config_ref_name":"gloo-system.plugin-auth","configs":[{"AuthConfig":{"plugin_auth":{"name":"RequiredHeader","plugin_file_name":"RequiredHeader.so","exported_symbol_name":"Plugin","config":{"fields":{"AllowedValues":{"Kind":{"list_value":{"values":[{"Kind":{"string_value":"foo"}},{"Kind":{"string_value":"bar"}}]}}},"RequiredHeader":{"Kind":{"string_value":"my-auth-header"}}}}}}}]}]}
+```
+To resolve this error, we suggest upgrading your host linux OS.
+{{% /notice %}}
+
 ## Development workflow overview
 
 Following are the high-level steps required to use your auth plugins with Gloo. Through the course of this guide we will see each one of them in greater detail.
@@ -27,7 +39,7 @@ Following are the high-level steps required to use your auth plugins with Gloo. 
 1. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or routes.
 
 {{% notice note %}}
-For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated[**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
+For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated [**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
 {{% /notice %}}
 
 ## Building an Ext Auth plugin
@@ -129,7 +141,7 @@ In the above file, `global.extensions.extAuth.plugins` is a map where:
 * the correspondent value is a reference to a container image that contains the plugin file
 
 {{% notice note %}}
-We will install using `glooctl`, but you can use this same value file to install the [Gloo Helm chart]({{% versioned_link_path fromRoot="/installation/gateway/enterprise#installing-on-kubernetes-with-helm" %}}).
+We will install using `glooctl`, but you can use this same value file to install the [Gloo Helm chart]({{% versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" %}}).
 {{% /notice %}}
 
 Now we can use this file to install Gloo:

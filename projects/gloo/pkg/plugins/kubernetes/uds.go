@@ -37,7 +37,6 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	errs := make(chan error)
 	discoverUpstreams := func() {
 		var serviceList []*kubev1.Service
-		var podList []*kubev1.Pod
 		for _, ns := range watchNamespaces {
 			services, err := p.kubeCoreCache.NamespacedServiceLister(ns).List(labels.SelectorFromSet(opts.Selector))
 			if err != nil {
@@ -45,14 +44,8 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 				return
 			}
 			serviceList = append(serviceList, services...)
-			pods, err := p.kubeCoreCache.NamespacedPodLister(ns).List(labels.SelectorFromSet(opts.Selector))
-			if err != nil {
-				errs <- err
-				return
-			}
-			podList = append(podList, pods...)
 		}
-		upstreams := p.ConvertServices(ctx, watchNamespaces, serviceList, podList, discOpts, writeNamespace)
+		upstreams := p.ConvertServices(ctx, watchNamespaces, serviceList, discOpts, writeNamespace)
 		logger.Debugw("discovered services", "num", len(upstreams))
 		upstreamsChan <- upstreams
 	}
@@ -79,7 +72,7 @@ func (p *plugin) DiscoverUpstreams(watchNamespaces []string, writeNamespace stri
 	return upstreamsChan, errs, nil
 }
 
-func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, services []*kubev1.Service, pods []*kubev1.Pod, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
+func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, services []*kubev1.Service, opts discovery.Opts, writeNamespace string) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		if skip(svc, opts) {
@@ -92,7 +85,7 @@ func (p *plugin) ConvertServices(ctx context.Context, watchNamespaces []string, 
 			}
 		}
 
-		upstreamsToCreate := p.UpstreamConverter.UpstreamsForService(ctx, svc, pods)
+		upstreamsToCreate := p.UpstreamConverter.UpstreamsForService(ctx, svc)
 		for _, u := range upstreamsToCreate {
 			u.Metadata.Namespace = writeNamespace
 		}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes/serviceconverter"
@@ -20,18 +19,10 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	kubev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/labels"
 )
 
-var ignoredLabels = []string{
-	"pod-template-hash",        // it is common and provides nothing useful for discovery
-	"controller-revision-hash", // set by helm
-	"pod-template-generation",  // set by helm
-	"release",                  // set by helm
-}
-
 type UpstreamConverter interface {
-	UpstreamsForService(ctx context.Context, svc *kubev1.Service, pods []*kubev1.Pod) v1.UpstreamList
+	UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList
 }
 
 func DefaultUpstreamConverter() *KubeUpstreamConverter {
@@ -44,79 +35,19 @@ type KubeUpstreamConverter struct {
 	serviceConverters []serviceconverter.ServiceConverter
 }
 
-func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *kubev1.Service, pods []*kubev1.Pod) v1.UpstreamList {
-
-	uniqueLabelSets := GetUniqueLabelSets(svc, pods)
-	return uc.createUpstreamForLabels(ctx, uniqueLabelSets, svc)
-}
-
-func (uc *KubeUpstreamConverter) createUpstreamForLabels(ctx context.Context, uniqueLabelSets []map[string]string, svc *kubev1.Service) v1.UpstreamList {
+func (uc *KubeUpstreamConverter) UpstreamsForService(ctx context.Context, svc *kubev1.Service) v1.UpstreamList {
 	var upstreams v1.UpstreamList
-	for _, extendedLabels := range uniqueLabelSets {
-		for _, port := range svc.Spec.Ports {
-			upstreams = append(upstreams, uc.CreateUpstream(ctx, svc, port, extendedLabels))
-		}
+	for _, port := range svc.Spec.Ports {
+		upstreams = append(upstreams, uc.CreateUpstream(ctx, svc, port))
 	}
 	return upstreams
 }
 
-func GetUniqueLabelSets(svc *kubev1.Service, pods []*kubev1.Pod) []map[string]string {
-
-	var podlabelss []map[string]string
-	for _, pod := range pods {
-		if pod.Namespace != svc.Namespace {
-			continue
-		}
-		podlabelss = append(podlabelss, pod.ObjectMeta.Labels)
-	}
-
-	return GetUniqueLabelSetsForObjects(svc.Spec.Selector, podlabelss)
-}
-
-func GetUniqueLabelSetsForObjects(selector map[string]string, podlabelss []map[string]string) []map[string]string {
-	uniqueLabelSets := []map[string]string{
-		selector,
-	}
-	if len(selector) > 0 {
-		for _, podlabels := range podlabelss {
-			if !labels.AreLabelsInWhiteList(selector, podlabels) {
-				continue
-			}
-
-			// create upstreams for the extra labels beyond the selector
-			extendedLabels := make(map[string]string)
-		addExtendedLabels:
-			for k, v := range podlabels {
-				// special cases we ignore
-				for _, ignoredLabel := range ignoredLabels {
-					if k == ignoredLabel {
-						continue addExtendedLabels
-					}
-				}
-				extendedLabels[k] = v
-			}
-			if len(extendedLabels) > 0 && !containsMap(uniqueLabelSets, extendedLabels) {
-				uniqueLabelSets = append(uniqueLabelSets, extendedLabels)
-			}
-		}
-
-	}
-	return uniqueLabelSets
-}
-
-func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort, labels map[string]string) *v1.Upstream {
+func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1.Service, port kubev1.ServicePort) *v1.Upstream {
 	meta := svc.ObjectMeta
 	coremeta := kubeutils.FromKubeMeta(meta)
 	coremeta.ResourceVersion = ""
-	extraLabels := make(map[string]string)
-	// find extra keys not present in the service selector
-	for k, v := range labels {
-		if _, ok := svc.Spec.Selector[k]; ok {
-			continue
-		}
-		extraLabels[k] = v
-	}
-	coremeta.Name = strings.ToLower(UpstreamName(meta.Namespace, meta.Name, port.Port, extraLabels))
+	coremeta.Name = strings.ToLower(UpstreamName(meta.Namespace, meta.Name, port.Port))
 
 	us := &v1.Upstream{
 		Metadata: coremeta,
@@ -125,7 +56,7 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 				ServiceName:      meta.Name,
 				ServiceNamespace: meta.Namespace,
 				ServicePort:      uint32(port.Port),
-				Selector:         labels,
+				Selector:         svc.Spec.Selector,
 			},
 		},
 		DiscoveryMetadata: &v1.DiscoveryMetadata{},
@@ -140,14 +71,8 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 	return us
 }
 
-func UpstreamName(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
-
-	var labelsTag string
-	if len(extraLabels) > 0 {
-		_, values := keysAndValues(extraLabels)
-		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
-	}
-	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort))
+func UpstreamName(serviceNamespace, serviceName string, servicePort int32) string {
+	return sanitizer.SanitizeNameV2(fmt.Sprintf("%s-%s-%v", serviceNamespace, serviceName, servicePort))
 }
 
 // TODO: move to a utils package
@@ -159,28 +84,6 @@ func containsString(s string, slice []string) bool {
 		}
 	}
 	return false
-}
-
-func containsMap(maps []map[string]string, item map[string]string) bool {
-	for _, m := range maps {
-		if reflect.DeepEqual(m, item) {
-			return true
-		}
-	}
-	return false
-}
-
-func keysAndValues(m map[string]string) ([]string, []string) {
-	var keys []string
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	var values []string
-	for _, k := range keys {
-		values = append(values, m[k])
-	}
-	return keys, values
 }
 
 func skip(svc *kubev1.Service, opts discovery.Opts) bool {

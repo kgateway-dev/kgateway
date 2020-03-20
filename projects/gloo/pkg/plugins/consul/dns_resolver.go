@@ -12,14 +12,14 @@ import (
 //go:generate goimports -w ./mocks/
 
 type DnsResolver interface {
-	Resolve(address string) ([]net.IPAddr, error)
+	Resolve(ctx context.Context, address string) ([]net.IPAddr, error)
 }
 
 type ConsulDnsResolver struct {
 	DnsAddress string
 }
 
-func (c *ConsulDnsResolver) Resolve(address string) ([]net.IPAddr, error) {
+func (c *ConsulDnsResolver) Resolve(ctx context.Context, address string) ([]net.IPAddr, error) {
 	res := net.Resolver{
 		PreferGo: true, // otherwise we may use cgo which doesn't resolve on my mac in testing
 		Dial: func(ctx context.Context, network, address string) (conn net.Conn, err error) {
@@ -28,7 +28,7 @@ func (c *ConsulDnsResolver) Resolve(address string) ([]net.IPAddr, error) {
 			return net.Dial("tcp", c.DnsAddress)
 		},
 	}
-	ipAddrs, err := res.LookupIPAddr(context.Background(), address)
+	ipAddrs, err := res.LookupIPAddr(ctx, address)
 	if err != nil {
 		return nil, err
 	}

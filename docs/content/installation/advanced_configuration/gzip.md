@@ -81,7 +81,7 @@ curl -v $(glooctl proxy url)/helloworld -H "Accept-Encoding: gzip"
 ```
 You should see that the response is in plain text.
 
-Now edit the gateway as described [above]({{< versioned_link_path fromRoot="/advanced_configuration/gzip/#configuration" >}}).
+Now edit the gateway as described [above](#configuration).
 
 If we send the same request:
 ```shell

@@ -1,6 +1,6 @@
 ---
 title: "Architecture"
-weight: 30
+weight: 20
 description: A description of the high-level architecture behind Gloo.
 ---
 
@@ -36,11 +36,11 @@ In the most basic sense, Gloo is a translation engine and [Envoy xDS server](htt
 
 At the logical layer, Gloo is comprised of several different services that perform unique functions. Gloo's control plane sits outside the request path, providing the control layer for Envoy and other services through its transformation plug-in.
 
-The following sections describe the various logical components of Gloo. The [Deployment Architecture guide]({{% versioned_link_path fromRoot="/introduction/deployment_arch" %}}) provides examples and guidance for specific implementations of Gloo on different software stacks.
+The following sections describe the various logical components of Gloo. The [Deployment Architecture guide]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}}) provides examples and guidance for specific implementations of Gloo on different software stacks.
 
 ### Config Watcher
 
-The *Config Watcher* watches the storage layer for updates to user configuration objects, such as [Upstreams]({{% versioned_link_path fromRoot="/introduction/concepts#upstreams" %}}) and [Virtual Services]({{% versioned_link_path fromRoot="/introduction/concepts#virtual-services" %}}). The storage layer could be a custom resource in Kubernetes or an key/value entry in HashiCorp Consul.
+The *Config Watcher* watches the storage layer for updates to user configuration objects, such as [Upstreams]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#upstreams" %}}) and [Virtual Services]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#virtual-services" %}}). The storage layer could be a custom resource in Kubernetes or an key/value entry in HashiCorp Consul.
 
 ### Secret Watcher
 
@@ -109,6 +109,6 @@ The following discovery methods are currently supported:
 Now that you have a basic understanding of the Gloo architecture, there are number of potential next steps that we'd like to recommend.
 
 * **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
-* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/deployment_arch" %}})**: Learn about specific implementations of Gloo on different software stacks.
-* **[Concepts]({{% versioned_link_path fromRoot="/introduction/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
+* **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo on different software stacks.
+* **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
 * **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.

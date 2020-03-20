@@ -1,6 +1,6 @@
 ---
-title: FAQ
-weight: 50
+title: FAQs
+weight: 80
 description: Frequently Asked Questions
 ---
 
@@ -23,7 +23,7 @@ Other use cases Gloo can solve:
 Envoy Proxy is a data-plane component with powerful routing, observability, and resilience capabilities. Envoy can be difficult to operationalize and complex to configure. Gloo adds the following:
 
 * A [flexible control plane]({{< versioned_link_path fromRoot="/dev" >}}) with extensibility in mind
-* More ergonomic, [domain-specific APIs]({{< versioned_link_path fromRoot="/introduction/concepts" >}}) to drive Envoy configuration
+* More ergonomic, [domain-specific APIs]({{< versioned_link_path fromRoot="/introduction/architecture/concepts" >}}) to drive Envoy configuration
 * [Function-level routing]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
 * [Transformation of request/response](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/transformation) via a super-fast C++ templating filter [built on Inja](https://github.com/pantor/inja)
 * Envoy filters to call [AWS Lambda directly](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/aws_lambda), handling the complex security handshaking

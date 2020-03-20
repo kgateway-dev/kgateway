@@ -8,7 +8,7 @@ Websockets is a protocol allowing full-duplex communication through a single TCP
 
 ## Configuring Websockets on entire listener
 
-Since websocket upgrades are enabled by default on an entire [Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners), we can use the [HttpConnectionManager]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/" %}}) configuration on the [Gateway]({{% versioned_link_path fromRoot="/introduction/concepts#gateways" %}}) to turn off websocket upgrades for all connections on that listener. 
+Since websocket upgrades are enabled by default on an entire [Listener](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/listeners), we can use the [HttpConnectionManager]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/" %}}) configuration on the [Gateway]({{% versioned_link_path fromRoot="/introduction/architecture/concepts#gateways" %}}) to turn off websocket upgrades for all connections on that listener. 
 
 For example, the default `gateway-proxy` can be configured like the following:
 
