@@ -775,6 +775,22 @@ var _ = Describe("Helm Test", func() {
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
 					})
 
+					It("supports extra args to envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraEnvoyArgs[0]=--log-format",
+								// note that things that start with a percent make break yaml
+								// hence the test.
+								"gatewayProxies.gatewayProxy.extraEnvoyArgs[1]=%L%m%d %T.%e %t envoy] [%t][%n]%v",
+							},
+						})
+						// deployment exists for for second declaration of gateway proxy
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
+							"--log-format", "%L%m%d %T.%e %t envoy] [%t][%n]%v")
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("creates a deployment with gloo wasm envoy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"global.wasm.enabled=true"},
