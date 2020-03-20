@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Allow un-setting replicas, to support flux usage of deployment with the HPA.
+    issueLink: https://github.com/solo-io/gloo/issues/2650

@@ -7,6 +7,7 @@ import (
 	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -789,6 +790,17 @@ var _ = Describe("Helm Test", func() {
 							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
 							"--log-format", "%L%m%d %T.%e %t envoy] [%t][%n]%v")
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("supports not specifying replicas to envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment.replicas=",
+							},
+						})
+						// deployment exists for for second declaration of gateway proxy
+						gatewayProxyDeployment.Spec.Replicas = nil
+						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(matchers.BeEquivalentToDiff(gatewayProxyDeployment))
 					})
 
 					It("creates a deployment with gloo wasm envoy", func() {
