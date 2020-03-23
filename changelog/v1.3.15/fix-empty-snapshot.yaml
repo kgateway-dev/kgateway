@@ -1,7 +1,7 @@
 changelog:
   - type: FIX
     description: >
-      With disableProxyCollection: false (the default), extauth had a race condition
+      With `disableProxyCollection: false` (the default), extauth had a race condition
       where it could recevie nil config. This could result in 403s that shouldn't happen.
       This change pulls in a fix from solo-kit where GetStatusKeys was returning a slice with
       an empty string, which caused an empty snapshot to be added with an empty version. Fixing
