@@ -65,6 +65,7 @@ func StartTestHelper() {
 
 	// install gloo with helm
 	runAndCleanCommand("kubectl", "create", "namespace", testHelper.InstallNamespace)
+	runAndCleanCommand("helm", "repo", "add", "gloo", "https://storage.googleapis.com/solo-public-helm")
 	runAndCleanCommand("helm", "repo", "update")
 	runAndCleanCommand("helm", "install", testHelper.HelmChartName, "gloo/gloo",
 		"--namespace", testHelper.InstallNamespace,
