@@ -25,7 +25,7 @@ func MustKubeClient() kubernetes.Interface {
 }
 
 // Check that everything is OK by running `glooctl check`
-func GlooctlCheckEventuallyHealthy(testHelper *helper.SoloTestHelper) {
+func GlooctlCheckEventuallyHealthy(testHelper *helper.SoloTestHelper, timeoutInterval string) {
 	Eventually(func() error {
 		opts := &options.Options{
 			Metadata: core.Metadata{
@@ -43,7 +43,7 @@ func GlooctlCheckEventuallyHealthy(testHelper *helper.SoloTestHelper) {
 			return nil
 		}
 		return errors.New("glooctl check detected a problem with the installation")
-	}, "40s", "5s").Should(BeNil())
+	}, timeoutInterval, "5s").Should(BeNil())
 }
 
 func GetHelmValuesOverrideFile() (filename string, cleanup func()) {

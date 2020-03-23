@@ -44,7 +44,7 @@ var _ = Describe("Kube2e: helm", func() {
 			}
 		}
 
-		kube2e.GlooctlCheckEventuallyHealthy(testHelper)
+		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "60s")
 	})
 
 	It("uses helm to update the settings without errors", func() {
@@ -66,7 +66,7 @@ var _ = Describe("Kube2e: helm", func() {
 		Expect(err).To(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
 
-		kube2e.GlooctlCheckEventuallyHealthy(testHelper)
+		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "40s")
 	})
 
 })
