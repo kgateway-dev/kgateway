@@ -40,7 +40,7 @@ var _ = Describe("Kube2e: helm", func() {
 			if minorV == 3 {
 				patchV, err := strconv.Atoi(pieces[2])
 				Expect(err).To(BeNil())
-				Expect(patchV >= 14).To(BeTrue())
+				Expect(patchV >= 15).To(BeTrue())
 			}
 		}
 
