@@ -1,6 +1,9 @@
 package helm_test
 
 import (
+	"strconv"
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
@@ -22,10 +25,24 @@ var _ = Describe("Kube2e: helm", func() {
 		runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
 			"-n", testHelper.InstallNamespace)
 
-		// check that the version is the most recent one by comparing with the client version
-		glooVersion, err := version.GetClientServerVersions(version.NewKube(testHelper.InstallNamespace))
+		// check that the version is >= 1.3.14 as expected
+		glooVersion := GetGlooServerVersion(testHelper.InstallNamespace)
+		pieces := strings.Split(glooVersion, ".")
+		Expect(pieces).To(HaveLen(3))
+
+		majorV, err := strconv.Atoi(pieces[0])
 		Expect(err).To(BeNil())
-		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(glooVersion.GetClient().Version))
+		Expect(majorV >= 1).To(BeTrue())
+		if majorV == 1 {
+			minorV, err := strconv.Atoi(pieces[1])
+			Expect(err).To(BeNil())
+			Expect(minorV >= 3).To(BeTrue())
+			if minorV == 3 {
+				patchV, err := strconv.Atoi(pieces[2])
+				Expect(err).To(BeNil())
+				Expect(patchV >= 14).To(BeTrue())
+			}
+		}
 
 		kube2e.GlooctlCheckEventuallyHealthy(testHelper)
 	})
