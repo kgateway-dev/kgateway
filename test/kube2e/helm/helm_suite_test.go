@@ -65,6 +65,7 @@ func StartTestHelper() {
 
 	// install gloo with helm
 	runAndCleanCommand("kubectl", "create", "namespace", testHelper.InstallNamespace)
+	runAndCleanCommand("helm", "repo", "update")
 	runAndCleanCommand("helm", "install", testHelper.HelmChartName, "gloo/gloo",
 		"--namespace", testHelper.InstallNamespace,
 		"--values", valueOverrideFile,
@@ -86,12 +87,10 @@ func TearDownTestHelper() {
 func runAndCleanCommand(name string, arg ...string) []byte {
 	cmd := exec.Command(name, arg...)
 	b, err := cmd.Output()
-	// temporary add for debugging
+	// for debugging in Cloud Build
 	if err != nil {
 		if v, ok := err.(*exec.ExitError); ok {
 			fmt.Println("ExitError: ", string(v.Stderr))
-		} else {
-			fmt.Println("Other Error:", err.Error())
 		}
 	}
 	Expect(err).To(BeNil())
