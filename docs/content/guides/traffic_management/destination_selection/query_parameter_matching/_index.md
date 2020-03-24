@@ -14,6 +14,8 @@ The route rules in a *Virtual Service* can use query parameter matching rules to
   * If no value is specified, then the presence of the query parameter in the request with any value will match
   * If present, the `value` field will be interpreted based on the value of `regex` field
 
+---
+
 ## Setup
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
@@ -26,7 +28,7 @@ This guide also assumes that you are running Gloo Gateway in a Kubernetes cluste
 
 ## Create an Upstream
 
-First we are going to create a simple upstream for testing called `json-upstream`, that routes to a static site.
+First we are going to create a simple Upstream for testing called `json-upstream`, that routes to a static site.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_createupstream.mp4" type="video/mp4">
@@ -41,7 +43,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tab >}}
 {{< /tabs >}}
 
-The site referenced in the Upstream is JSONPlaceholder - a fake online REST API for testing and prototyping. 
+The site referenced in the Upstream is JSONPlaceholder - an online REST API for testing and prototyping. 
 
 ---
 
@@ -59,8 +61,7 @@ Now let's create a Virtual Service with a query parameter match. For simplicity,
 {{< /tab >}}
 {{< /tabs >}}
 
-We've created a virtual service that will match if the request contains a query param called `param1` with an exact value of `value1`. 
-The request must also have a query parameter `param2` with any value, and `param3` set to a single lowercase letter. 
+We've created a virtual service that will match if the request contains a query param called `param1` with an exact value of `value1`. The request must also have a query parameter `param2` with any value, and `param3` set to a single lowercase letter. 
 
 To test we can run several curl commands with different parameter combinations. Note that the URL must have quotes around it for curl to accept query parameters. 
 
@@ -78,7 +79,7 @@ curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&p
 
 ### Testing the first parameter
 
-For our next request, we will set an incorrect value for query param 1. The response will be a 404 from the Virtual Service since it has no valid route for the request.
+For our next request, we will set an incorrect value for query `param1`. The response will be a 404 from the Virtual Service since it has no valid route for the request.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test2.mp4" type="video/mp4">
@@ -90,7 +91,7 @@ curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=othervalue&param2=valu
 
 ### Testing the second parameter
 
-The second parameter (`param2`) does not have a required value specified. If we set a different value for query param 2, the response will be successfully sourced from the Upstream.
+The second parameter (`param2`) does not have a required value specified. If we set a different value for query `param2`, the response will be successfully sourced from the Upstream.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/querymatch_test3.mp4" type="video/mp4">
@@ -114,8 +115,7 @@ curl -v -H "Host: foo" "$(glooctl proxy url)/posts?param1=value1&param2=value2&p
 
 ## Summary
 
-In this tutorial, we created a static Upstream and Virtual Service that utilized query parameter matching. We saw how the route rules matched on an exact value, 
-any value, and a regex. 
+In this tutorial, we created a static Upstream and Virtual Service that utilized query parameter matching. We saw how the route rules matched on an exact value, any value, and a regex. 
 
 Let's cleanup the Virtual Service and Upstream we used.
 
@@ -140,6 +140,6 @@ glooctl delete upstream json-upstream
 Query parameter matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
 
 * [Path Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" >}})
-* [Header Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" >}})
-* [HTTP Method Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" >}})
+* [Header Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/header_matching/" >}})
+* [HTTP Method Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/http_method_matching/" >}})
 

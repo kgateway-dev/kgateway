@@ -4,14 +4,13 @@ weight: 10
 description: Match requests to routes based on the context path
 ---
 
-
-The route rules in a *Virtual Service* can use path matching rules to match requests to routes based on the context path.  There are three options that can be used for HTTP path matching. You can specify only one of the following three options within any given route matcher spec:
+The route rules in a *Virtual Service* can use path matching rules to match requests to routes based on the context path. There are three options that can be used for HTTP path matching. You can specify only one of the following three options within any given route matcher spec:
 
 * [`prefix`](#prefix) - match if the beginning path of request path matches specified path.
 * [`exact`](#exact) - match if request path matches specified path exactly.
 * [`regex`](#regex) - match if the specified regular expression matches.
 
-In this guide, we're going to take a closer look at each matching type by creating an *Upstream* and then creating a *Virtual Service* to route requests to that Upstream based on the path submitted as part of the request.
+In this guide, we're going to take a closer look at each matching type by creating an *Upstream* and then creating a Virtual Service to route requests to that Upstream based on the path submitted as part of the request.
 
 ---
 
@@ -27,7 +26,7 @@ This guide also assumes that you are running Gloo Gateway in a Kubernetes cluste
 
 ## Create an Upstream
 
-First we are going to create a simple upstream for testing called `json-upstream`, that routes to a static site.
+First we are going to create a simple Upstream for testing called `json-upstream`, that routes to a static site.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_createupstream.mp4" type="video/mp4">
@@ -42,7 +41,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 {{< /tab >}}
 {{< /tabs >}}
 
-The site referenced in the Upstream is JSONPlaceholder - a fake online REST API for testing and prototyping. 
+The site referenced in the Upstream is JSONPlaceholder - an online REST API for testing and prototyping. 
 
 ---
 
@@ -110,7 +109,7 @@ curl -H "Host: foo" $(glooctl proxy url)/posts
 ]
 ```
 
-A request to `/posts` matches on the prefix `/posts` and is routed to the upstream at `jsonplaceholder.typicode.com:80`. A request sent to `/` does not match the prefix `/posts`.
+A request to `/posts` matches on the prefix `/posts` and is routed to the Upstream at `jsonplaceholder.typicode.com:80`. A request sent to `/` does not match the prefix `/posts`.
 
 ```shell
 curl -v -H "Host: foo" $(glooctl proxy url)/
@@ -381,7 +380,7 @@ glooctl delete vs --name test-regex
 
 In this tutorial, we created a static Upstream and added a route on a Virtual Service to point to it. We learned how to use all 3 types of matchers allowed by Gloo when determining if a route configuration matches a request path: prefix, exact, and regex. 
 
-Let's cleanup the test upstream we used.
+Let's cleanup the test Upstream we used.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_deleteupstream.mp4"  type="video/mp4">
@@ -400,7 +399,7 @@ glooctl delete upstream json-upstream
 
 Path matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
 
-* [Header Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" >}})
-* [Query Parameter Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/query_parameter_matching/" >}})
-* [HTTP Method Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" >}})
+* [Header Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/header_matching/" >}})
+* [Query Parameter Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/query_parameter_matching/" >}})
+* [HTTP Method Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/http_method_matching/" >}})
 

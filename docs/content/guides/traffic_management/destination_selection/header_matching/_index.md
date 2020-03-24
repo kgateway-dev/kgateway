@@ -57,7 +57,7 @@ glooctl create upstream static --static-hosts jsonplaceholder.typicode.com:80 --
 
 ## Create a Virtual Service
 
-Let's create a virtual service with several header match rules. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths.
+Let's create a Virtual Service with several header match rules. For simplicity, we'll set the path matcher to prefix on `/` to match all request paths.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/headermatch_createvs.mp4" type="video/mp4">
@@ -173,6 +173,6 @@ glooctl delete upstream json-upstream
 Header matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
 
 * [Path Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" >}})
-* [Query Parameter Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/query_parameter_matching/" >}})
-* [HTTP Method Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" >}})
+* [Query Parameter Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/query_parameter_matching/" >}})
+* [HTTP Method Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/http_method_matching/" >}})
 

@@ -39,7 +39,7 @@ glooctl get upstream default-petstore-8080
 +-----------------------+------------+----------+-------------------------+
 ```
 
-Now let's create a route to the petstore like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}):
+Now let's create a route to the petstore like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}):
 ```bash
 glooctl add route \
     --path-exact /sample-route-1 \

@@ -135,7 +135,7 @@ When the `gateway-proxy` pod restarts it should have the new trace provider conf
 
 ##### 2. Enable tracing on the listener
 
-After you have installed Gloo with a tracing provider, you can enable tracing on a listener-by-listener basis. Gloo exposes this feature through a listener plugin. Please see [the tracing listener plugin docs]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
+After you have installed Gloo with a tracing provider, you can enable tracing on a listener-by-listener basis. Gloo exposes this feature through a listener plugin. Please see [the tracing listener plugin docs]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/#tracing" %}}) for details on how to enable tracing on a listener.
 
 ##### 3. (Optional) Annotate routes with descriptors
 

@@ -27,6 +27,6 @@ helm install gloo gloo/gloo --namespace gloo-system
 {{< /tab >}}
 {{< /tabs >}}
 
-That's it! With Gloo installed you can try our [Hello World example]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}) to get an idea of how Gloo can be used.
+That's it! With Gloo installed you can try our [Hello World example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) to get an idea of how Gloo can be used.
 
 For a more detailed guide on getting your local system configured, installing prerequisites, and deployment options check out our [Preparation]({{% versioned_link_path fromRoot="/installation/preparation/" %}}) doc.

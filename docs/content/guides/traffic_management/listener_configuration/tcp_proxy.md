@@ -4,24 +4,36 @@ weight: 30
 description: Learn how to use Gloo as a simple TCP proxy
 ---
 
-In this tutorial, we'll take a look at using gloo as a TCP proxy. Envoy by default is an L4 proxy and is therefore
-more than up to the task. Gloo's TCP routing feature are slightly different than the rest of Gloo's routing as a result
-of the relative simplicity of TCP level routing. Current features include standard routing, ssl, and sni domain matching.
+In this tutorial, we'll take a look at using Gloo as a TCP proxy. Envoy is an L4 proxy by default and is therefore
+more than up to the task. Gloo's TCP routing features are slightly different than the rest of Gloo's routing as a result
+of the relative simplicity of TCP level routing. Current features include standard routing, SSL, and Server Name Indication (SNI) domain matching.
 
-### Resources 
+---
 
-For reference on  the 
+## Resources 
+
+Gloo uses the gateway Custom Resource (CR) to configure the TCP proxy settings. The gateway CRs are combined to form a Proxy CR, which is used to generate the configuration for the Envoy proxy. You can read more about the gateway and proxy API at the links below.
 
 - {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}}
 - {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}
 
-### What you'll need
+---
 
-You'll need to have Gloo installed on Kubernetes and have access to that Kubernetes cluster. Please refer to the
-[Gloo installation]({{< versioned_link_path fromRoot="/installation" >}}) for guidance on installing Gloo into Kubernetes.
+## What you'll need
 
-You'll also need access from the Kubernetes cluster to an external API. You will also need an accessible TCP service running 
-in cluster, this may be anything, for the purposes of this tutorial we will use a basic tcp-echo pod.
+To complete this guide you will need the following items:
+
+* Gloo installed on Kubernetes and access to that Kubernetes cluster. Please refer to the [Gloo installation]({{< versioned_link_path fromRoot="/installation" >}}) for guidance on installing Gloo into Kubernetes.
+
+* Access from the Kubernetes cluster to an external API. 
+
+* A TCP service running in cluster. For the purposes of this tutorial we will use a basic tcp-echo pod.
+
+---
+
+## Configuring the TCP proxy
+
+### Deploy the tcp-echo pod
 
 Firstly apply the following yaml into the namespace of your choice. For the purposes of this tutorial we will be using `gloo-system`
 
@@ -59,6 +71,8 @@ EOF
 
 Once the `tcp-echo` pod is up and running we are ready to create our gateway resource and begin routing to it.
 
+### Provision the gateway CR
+
 The gateway will contain the following: 
 ```bash
 kubectl apply -n gloo-system -f - <<EOF
@@ -93,7 +107,6 @@ gloo-system   gateway       26h
 gloo-system   gateway-ssl   26h
 gloo-system   tcp           5s
 ```
-
 
 The above gateway will be read in by Gloo, which will combine it with the other gateways into a Proxy resource.
 To make sure that the configuration has been translated properly run:
@@ -141,10 +154,11 @@ metadata:
 {{< /highlight >}}
 
 
-If the translation worked than the listeners array in the resource spec will contain an entry for the tcp service we will be routing to.
-Once the state on the resource is recorded as `1` the service is ready to be routed to.
+If the translation worked, the listeners array in the resource spec will contain an entry for the TCP service we will be routing to. Once the state on the resource is recorded as `1` the service is ready to be routed to.
 
-The next step is adding a port to the gateway-proxy service so we can route to the envoy listener which is handling our TCP traffic.
+The next step is adding a port to the gateway-proxy service so we can route to the Envoy listener which is handling our TCP traffic.
+
+### Add a port to the gateway-proxy
 
 The service should look like the following:
 
@@ -184,11 +198,14 @@ status:
   loadBalancer: {}
 {{< /highlight >}}
 
-The important part here is the entry on port `8000` for our tcp service. Once the service has been saved to kubernetes, get the NodePort from the
-service port entry and save it for later.
+The important part here is the entry on port `8000` for our TCP service. Once the service has been saved to Kubernetes, get the NodePort from the service port entry and save it for later.
 
 The next and final step is routing to the service.
+
+### Routing to the TCP service
+
 This step assumes you are running on a local minikube instance.
+
 ```bash
 curl -v telnet://$(minikube ip):30197
 ```
@@ -206,5 +223,10 @@ note: The node port was inserted in the above command following the ip
 {{% /notice %}}
 
 
-Now the terminal is waiting for input, all input entered will be echo'd back. And an inspection of the logs from the pod will reveal that the data
-is in fact being proxied through.
+Now the terminal is waiting for input. All input entered will be echo'd back. An inspection of the logs from the pod will reveal that the data is in fact being proxied through.
+
+---
+
+## Next Steps
+
+In this guide you saw how Gloo can be configured as a TCP proxy for services that do not use HTTP/S. Gloo can also handle [gRPC-Web clients]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" >}}) and [Websockets]({{< versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" >}}). Check out those guides for more information.

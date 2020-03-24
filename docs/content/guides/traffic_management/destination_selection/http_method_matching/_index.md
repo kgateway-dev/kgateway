@@ -10,7 +10,7 @@ The route rules in a *Virtual Service* can evaluate based on the request HTTP me
 Gloo/Envoy is based on HTTP/2, the HTTP method gets translated into a header value match against the HTTP/2 `:method` header, which [by spec](https://http2.github.io/http2-spec/#HttpRequest) includes all of the HTTP/1 verbs.
 {{% /notice %}}
 
-In this guide, we're going to take a closer look at different method matches by creating an *Upstream* and then creating a *Virtual Service* to route requests to that Upstream based on the method used in the request.
+In this guide, we're going to take a closer look at different method matches by creating an *Upstream* and then creating a Virtual Service to route requests to that Upstream based on the method used in the request.
 
 ---
 
@@ -81,7 +81,7 @@ returns
 
 The response confirms that a new blog post was created on the Upstream.
 
-Now let's delete that virtual service to prepare for the next method.
+Now let's delete that Virtual Service to prepare for the next method.
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
@@ -94,7 +94,7 @@ glooctl delete vs --name test-post
 
 ### Create the GET Virtual Service
 
-We've seen how the `POST` method matches, now let's create a virtual service that matches on `GET` instead.
+We've seen how the `POST` method matches, now let's create a Virtual Service that matches on `GET` instead.
 
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/httpmatch_createvs2.mp4" type="video/mp4">
@@ -128,7 +128,7 @@ curl -H "Host: foo" $(glooctl proxy url)/posts
 
 ## Summary 
 
-In this guide, we created a virtual service that utilized HTTP method matching and demonstrated it on POST and GET requests. 
+In this guide, we created a Virtual Service that utilized HTTP method matching and demonstrated it on POST and GET requests. 
 
 Let's cleanup the Virtual Service and Upstream we used.
 
@@ -147,6 +147,6 @@ glooctl delete upstream json-upstream
 
 HTTP method matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
 
-* [Header Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" >}})
+* [Header Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/header_matching/" >}})
 * [Path Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" >}})
-* [Query Parameter Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/query_parameter_matching/" >}})
+* [Query Parameter Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/query_parameter_matching/" >}})

@@ -76,7 +76,7 @@ glooctl get upstream default-example-tls-server-8080
 +---------------------------------|------------|----------|--------------------------------+
 ```
 
-Now let's create a route to the example tls server like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}})
+Now let's create a route to the example tls server like [we did in the hello world tutorial]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}})
 
 ```bash
 glooctl add route \
