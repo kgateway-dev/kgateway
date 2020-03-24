@@ -1,8 +1,7 @@
 package helm_test
 
 import (
-	"strconv"
-	"strings"
+	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,33 +15,20 @@ import (
 
 var _ = Describe("Kube2e: helm", func() {
 
-	It("uses helm to upgrade to a higher 1.3.x version without errors", func() {
+	var chartUri string
+
+	It("uses helm to upgrade to this gloo version without errors", func() {
 
 		// check that the version is 1.3.0
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal("1.3.0"))
 
-		// upgrade to most recent gloo version
-		runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
+		// upgrade to the gloo version being tested
+		chartUri = filepath.Join("../../..", testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
+		runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 			"-n", testHelper.InstallNamespace)
 
-		// check that the version is >= 1.3.14 as expected
-		glooVersion := GetGlooServerVersion(testHelper.InstallNamespace)
-		pieces := strings.Split(glooVersion, ".")
-		Expect(pieces).To(HaveLen(3))
-
-		majorV, err := strconv.Atoi(pieces[0])
-		Expect(err).To(BeNil())
-		Expect(majorV >= 1).To(BeTrue())
-		if majorV == 1 {
-			minorV, err := strconv.Atoi(pieces[1])
-			Expect(err).To(BeNil())
-			Expect(minorV >= 3).To(BeTrue())
-			if minorV == 3 {
-				patchV, err := strconv.Atoi(pieces[2])
-				Expect(err).To(BeNil())
-				Expect(patchV >= 15).To(BeTrue())
-			}
-		}
+		// check that the version is as expected
+		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
 		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "60s")
 	})
@@ -56,10 +42,16 @@ var _ = Describe("Kube2e: helm", func() {
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 
 		// update the settings with `helm upgrade` (without updating the gloo version)
-		runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
-			"-n", testHelper.InstallNamespace,
-			"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
-			"--version", GetGlooServerVersion(testHelper.InstallNamespace))
+		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
+			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
+				"-n", testHelper.InstallNamespace,
+				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
+				"--version", GetGlooServerVersion(testHelper.InstallNamespace))
+		} else { // has already upgraded to the chart being tested- use it
+			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
+				"-n", testHelper.InstallNamespace,
+				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400")
+		}
 
 		// check that the setting updated
 		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
