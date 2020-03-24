@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix memory leak in active (event-heavy) kubernetes environments which could lead to memory usage growing
+      without bounds by using namespace/name string key to prevent queueing multiple events for the same resource
+      in the workqueue.
+    issueLink: https://github.com/solo-io/gloo/issues/2361
+    resolvesIssue: false
