@@ -207,7 +207,7 @@ var _ = Describe("Gateway", func() {
 				}
 			})
 
-			It("should work with no ssl and cleans up the envoy config when the virtual service is deleted", func() {
+			It("should work with no ssl and clean up the envoy config when the virtual service is deleted", func() {
 				up := tu.Upstream
 				vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
 				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})

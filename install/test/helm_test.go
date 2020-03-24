@@ -7,6 +7,7 @@ import (
 	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"k8s.io/apimachinery/pkg/util/sets"
 
@@ -773,6 +774,33 @@ var _ = Describe("Helm Test", func() {
 						// deployment exists for for second declaration of gateway proxy
 						testManifest.Expect("Deployment", namespace, deploymentName).NotTo(BeNil())
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").NotTo(BeNil())
+					})
+
+					It("supports extra args to envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.extraEnvoyArgs[0]=--log-format",
+								// note that things that start with a percent make break yaml
+								// hence the test.
+								"gatewayProxies.gatewayProxy.extraEnvoyArgs[1]=%L%m%d %T.%e %t envoy] [%t][%n]%v",
+							},
+						})
+						// deployment exists for for second declaration of gateway proxy
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args = append(
+							gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Args,
+							"--log-format", "%L%m%d %T.%e %t envoy] [%t][%n]%v")
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("supports not specifying replicas to envoy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.kind.deployment.replicas=",
+							},
+						})
+						// deployment exists for for second declaration of gateway proxy
+						gatewayProxyDeployment.Spec.Replicas = nil
+						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(matchers.BeEquivalentToDiff(gatewayProxyDeployment))
 					})
 
 					It("creates a deployment with gloo wasm envoy", func() {
