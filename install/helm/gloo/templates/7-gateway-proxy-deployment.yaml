@@ -26,7 +26,9 @@ metadata:
   namespace: {{ $.Release.Namespace }}
 spec:
   {{- if $spec.kind.deployment}}
+  {{- if $spec.kind.deployment.replicas}}
   replicas: {{ $spec.kind.deployment.replicas }}
+  {{- end}}
   {{- end}}
   selector:
     matchLabels:
@@ -90,7 +92,7 @@ spec:
           - --disable-hot-restart
           {{- with $spec.extraEnvoyArgs}}
             {{- range . }}
-          - {{ . }}
+          - {{ . | quote }}
             {{- end }}
           {{- end}}
         env:

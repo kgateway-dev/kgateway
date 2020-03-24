@@ -471,7 +471,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
-	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
+	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient(), authConfigClient.BaseClient())
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
