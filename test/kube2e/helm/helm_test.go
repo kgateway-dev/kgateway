@@ -19,7 +19,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 	It("uses helm to upgrade to this gloo version without errors", func() {
 
-		// check that the version is 1.3.0
+		By("should start with gloo version 1.3.0")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal("1.3.0"))
 
 		// upgrade to the gloo version being tested
@@ -27,7 +27,7 @@ var _ = Describe("Kube2e: helm", func() {
 		runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 			"-n", testHelper.InstallNamespace)
 
-		// check that the version is as expected
+		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
 		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "60s")
@@ -35,7 +35,7 @@ var _ = Describe("Kube2e: helm", func() {
 
 	It("uses helm to update the settings without errors", func() {
 
-		// check that the setting is the default to start
+		By("should start with the default settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 		client := helpers.MustSettingsClient()
 		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 		Expect(err).To(BeNil())
@@ -53,7 +53,7 @@ var _ = Describe("Kube2e: helm", func() {
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 		}
 
-		// check that the setting updated
+		By("should have updated to settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 		settings, err = client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 		Expect(err).To(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
