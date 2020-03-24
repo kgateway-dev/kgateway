@@ -678,7 +678,7 @@ var _ = Describe("Route converter", func() {
 				allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt1a, rt1b, rt3a, rt3b, rt3c}
 			})
 
-			FIt("works as expected", func() {
+			It("works as expected", func() {
 
 				converted, err := visitor.ConvertVirtualService(vs)
 
