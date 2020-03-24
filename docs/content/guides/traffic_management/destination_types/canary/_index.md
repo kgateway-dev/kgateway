@@ -1,7 +1,7 @@
 ---
 title: Canary Release
 weight: 60
-description: Reducing the risk of making changes with canary release
+description: Using phased roll-out across releases in a Canary style workflow
 ---
 
 One of the most important capabilities enabled by Gloo is reducing the risk of making changes to your services by controlling what traffic goes to which backend services. The term ["canary release"](https://blog.christianposta.com/deploy/blue-green-deployments-a-b-testing-and-canary-releases/) in this case refers to slowly and iteratively introducing a new deployment into your production environment by putting a "canary" into the environment. The idea with the canary is to test whether the intended changes behave well and without issues when taking a small fraction (think, 1% ) of the traffic. If this canary deployment starts to misbehave (as judged by external metric collection like request throughput or latency) then we immediately roll it back and direct traffic to the last known-working deployment.

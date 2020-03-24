@@ -1,10 +1,8 @@
 ---
 title: gRPC to REST
 weight: 130
-description: Routing gRPC to REST.
+description: Routing gRPC services to a REST API
 ---
-
-## Motivation
 
 A growing trend is to use gRPC internally as the communication protocol between micro-services. This has quite a few advantages. Some of those are:
 
@@ -14,37 +12,38 @@ A growing trend is to use gRPC internally as the communication protocol between 
 1. HTTP based which plays well with existing firewalls and load balancers
 1. Well supported with tooling around observability
 
-While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON\REST 
-style API. This can happen for many reasons. among which are:
+While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON\REST style API. This can happen for many reasons. among which are:
 
 1. Keeping the API backwards compatible
 1. Making the API more Web friendly
 1. Supporting low-end devices such as IoT where gRPC is not supported.
 
-Gloo allows you to define JSON/REST to your gRPC API so you can have the best of both words - 
-outwards facing REST API and an internal gRPC API with no extra code.
+Gloo allows you to define JSON/REST to your gRPC API so you can have the best of both worlds - outwards facing REST API and an internal gRPC API with no extra code.
 
-With Gloo, there is not need to annotate your proto definitions with the `google.api.http` options.
-a simple gRPC proto will work.
+With Gloo, there is no need to annotate your proto definitions with the `google.api.http` options. A simple gRPC proto will work.
+
+---
 
 ## Overview
 
-In this demo we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo.
+In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo.
 
-Usually, to understand the details of the binary protobuf, a protobuf descriptor is needed. As this micro-service is built with server reflection enabled; Together with Gloo's automatic function
-discovery functionality the required protobuf descriptor will be automatically discovered.
+Usually, to understand the details of the binary protobuf, a protobuf descriptor is needed. As this micro-service is built with server reflection enabled; together with Gloo's automatic function discovery functionality the required protobuf descriptor will be automatically discovered.
 
 In this guide we are going to:
 
 1. Deploy a gRPC demo service
 1. Verify that the gRPC descriptors were indeed discovered
-1. Add a VirtualService creating a REST API that maps to the gRPC API
+1. Add a Virtual Service creating a REST API that maps to the gRPC API
 1. Verify that everything is working as expected
 
 Let's get started!
 
-## Prereqs
-1. Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+### Prereqs
+
+Install Gloo with Function Discovery Service (FDS) [blacklist mode]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/#configuring-the-fdsmode-setting" >}}) enabled
+
+---
 
 ## Deploy the demo gRPC store
 
@@ -55,12 +54,15 @@ kubectl create deployment grpcstore-demo --image=docker.io/soloio/grpcstore-demo
 kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
 ```
 
-## Verify that gRPC functions were discovered
+### Verify that gRPC functions were discovered
 After a few seconds Gloo should have discovered the service with it's proto descriptor:
+
 ```shell
 kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
 ```
+
 You should see output similar to this:
+
 ```yaml
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -94,15 +96,17 @@ status:
   state: 1
 
 ```
+
 {{% notice note %}}
-The descriptors field above was truncated for brevity
+The descriptors field above was truncated for brevity.
 {{% /notice %}}
 
 As you can see Gloo's function discovery detected the gRPC functions on that service. 
 
-## Create a REST to gRPC translation
+### Create a REST to gRPC translation
 
 Now we are ready to create the external REST to gRPC API. Please run the following command:
+
 ```shell
 kubectl create -f - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -176,14 +180,10 @@ spec:
 EOF
 ```
 
-An explanation for the VirtualService above:
-We have defined four routes. Each route uses
-a {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec" >}} to define REST routes to a gRPC service.
-When translating a REST API to a gRPC API the JSON body is automatically used to fill in the proto
-message fields. If you have some parameters in the path or in headers, your can specify them using 
-the {{< protobuf name="transformation.options.gloo.solo.io.Parameters" display="parameters">}}  block in the {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec">}} (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
+An explanation for the Virtual Service above:
+We have defined four routes. Each route uses a {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec" >}} to define REST routes to a gRPC service. When translating a REST API to a gRPC API the JSON body is automatically used to fill in the proto message fields. If you have some parameters in the path or in headers, your can specify them using the {{< protobuf name="transformation.options.gloo.solo.io.Parameters" display="parameters">}}  block in the {{< protobuf name="grpc.options.gloo.solo.io.DestinationSpec" display="gRPC destinationSpec">}} (as done in the route to `GetItem` and `DeleteItem`). We use HTTP method matching to make sure that our API adheres to the REST semantics. Note that the routes for `CreateItem` and `ListItems` are defined for the exact path `/items` (i.e. no trailing slash).
 
-## Test
+### Test
 
 To test, we can use `curl` to issue queries to our new REST API:
 
@@ -201,8 +201,12 @@ curl $URL/items/item1 -XDELETE
 curl $URL/items
 ```
 
+---
+
 ## Conclusion
 
-In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo.
-This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need
-to maintain to sets of code. 
+In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
+
+### Next Steps
+
+Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). Gloo can also use a [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}}) as an Upstream. Our [function discovery guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" %}}) covers how to set up the Function Discovery Service (FDS) for a Swagger document or gRPC service.

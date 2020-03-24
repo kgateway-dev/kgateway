@@ -1,7 +1,7 @@
 ---
 title: Multiple Destinations
 weight: 30
-description: This is where multiple Upstreams are configured on a route, with weights associated with them.
+description: Multiple Upstreams configured on a route, with weights associated with them.
 ---
 
 The {{% protobuf name="gloo.solo.io.MultiDestination" display="MultiDestination" %}}

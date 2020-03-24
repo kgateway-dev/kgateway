@@ -2,7 +2,7 @@
 menuTitle: Delegation
 title: Delegating with Route Tables
 weight: 70
-description: Virtual Services can delegate ownership of configuration to Route Tables, top-level API objects which specify routes for a given domain and path prefix.
+description: Delegate ownership of configuration to Route Tables for a given domain and path prefix
 ---
 
 
@@ -10,11 +10,7 @@ The Gloo Virtual Service makes it possible to define all routes for a domain on 
 
 However, condensing all routing config onto a single object can be cumbersome when dealing with a large number of routes.
 
-Gloo provides a feature referred to as *delegation*. 
-Delegation allows a complete routing configuration to be assembled from separate config objects. The root config object
-*delegates* responsibility to other objects, forming a tree of config objects. 
-The tree always has a *Virtual Service* as its root, which delegates to any number of *Route Tables*.
-Route Tables  can further delegate to other Route Tables.
+Gloo provides a feature referred to as *delegation*. Delegation allows a complete routing configuration to be assembled from separate config objects. The root config object *delegates* responsibility to other objects, forming a tree of config objects. The tree always has a *Virtual Service* as its root, which delegates to any number of *Route Tables*.Route Tables can further delegate to other Route Tables.
 
 ## Motivation
 

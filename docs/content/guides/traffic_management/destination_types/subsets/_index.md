@@ -1,7 +1,7 @@
 ---
 title: Subsets
 weight: 85
-description: Routing to subsets of an Upstream.
+description: Routing to subsets of an Upstream
 ---
 
 ## Subset

@@ -1,7 +1,7 @@
 ---
 title: Static Upstreams
 weight: 10
-description: Routing to explicitly and statically defined upstream (ie, not automatically discovered)
+description: Routing to explicitly and statically defined Upstreams
 ---
 
 Let's configure Gloo to route to a single, static Upstream. In this case, we'll route requests through Gloo to the JSON testing API available at `http://jsonplaceholder.typicode.com/`. 

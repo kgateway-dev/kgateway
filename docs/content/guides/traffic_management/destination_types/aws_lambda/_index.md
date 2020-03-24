@@ -1,7 +1,7 @@
 ---
 title: AWS Lambda
 weight: 100
-description: AWS Upstream configuration guide.
+description: Routing to AWS Lambda as an Upstream
 ---
 
 ## How to setup and use AWS Upstream

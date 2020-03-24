@@ -1,7 +1,7 @@
 ---
 title: Consul Services
 weight: 90
-description: Routing to services that are registered in Consul service-discovery registry
+description: Routing to services registered in Consul service-discovery
 ---
 
 Gloo's service discovery leverages existing registry or catalog implementations. A widely deployed service for registering and discovery services is [HashiCorp Consul](https://www.hashicorp.com/products/consul/). If your services already register into Consul, we can use Gloo to read the service catalog from Consul and discover these services automatically.

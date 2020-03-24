@@ -1,7 +1,7 @@
 ---
 title: Upstream Groups
 weight: 40
-description: This is an abstraction where the Upstreams and weights are stored in a separate Upstream Group CRD.
+description: Upstreams and weights are stored in a separate Upstream Group Custom Resource
 ---
 
 An {{< protobuf name="gloo.solo.io.UpstreamGroup" display="UpstreamGroup">}} addresses
