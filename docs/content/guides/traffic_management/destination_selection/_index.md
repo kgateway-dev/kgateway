@@ -10,4 +10,4 @@ The following are the different aspects of the request that you can match agains
 
 {{% children description="true" depth="1" %}}
 
-We recommend starting with [Path Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}}) first and then reviewing the other matching types in turn.
+We recommend starting with [Path Matching]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" %}}) first and then reviewing the other matching types in turn.

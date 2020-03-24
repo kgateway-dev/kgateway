@@ -1,22 +1,24 @@
 ---
 title: HTTP Connection Manager
 weight: 10
+description: Refine the behavior of Envoy for each listener that you manage with Gloo
 ---
 
 The HTTP Connection Manager lets you refine the behavior of Envoy for each listener that you manage with Gloo.
 
+---
 
-### Websocket
+## Websocket
 
-You can configure the Http Connection Manager on a listener to enable or disable websocket upgrades. See the [Websocket]({{% versioned_link_path fromRoot="/gloo_routing/websockets/" %}}) documentation for more. 
+You can configure the Http Connection Manager on a listener to enable or disable websocket upgrades. See the [Websocket]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" %}}) documentation for more. 
 
 ### Tracing
 
 One of the fields in the HTTP Connection Manager Plugin is `tracing`. This specifies the listener-specific tracing configuration.
 
-For notes on configuring and using tracing with Gloo, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/observability/tracing/" %}})
+For notes on configuring and using tracing with Gloo, please see the [tracing setup docs.]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}})
 
-The tracing configuration fields of the Gateway CRD are highlighted below.
+The tracing configuration fields of the Gateway Custom Resource (CR) are highlighted below.
 
 {{< highlight yaml "hl_lines=8-15" >}}
 apiVersion: gateway.solo.io/v1
@@ -41,7 +43,7 @@ status: # collapsed for brevity
 
 Gloo exposes Envoy's powerful configuration capabilities with the HTTP Connection Manager. The details of these fields can be found [here](https://www.envoyproxy.io/docs/envoy/v1.9.0/configuration/http_conn_man/http_conn_man) and [here](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions)
 
-Below, see a reference configuration specification to demonstrate the structure of the expected yaml.
+Below, see a reference configuration specification to demonstrate the structure of the expected YAML.
 
 {{< highlight yaml "hl_lines=7-24" >}}
 apiVersion: gateway.solo.io/v1
@@ -71,4 +73,10 @@ spec:
 status: # collapsed for brevity
 {{< /highlight >}}
 
+We recommend that you consult the linked Envoy docs to gain a better understanding of the `httpGateway` options and how you might apply them in your environment.
 
+---
+
+## Next Steps
+
+Two potential settings that might be of interest are the options governing the configuration of [gRPC Web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}) and [Websockets]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/websockets/" %}}). Please check out the linked guides for more information on how to configure each of these options.

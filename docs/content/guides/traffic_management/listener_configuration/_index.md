@@ -5,13 +5,13 @@ weight: 20
 
 **Gateway** definitions set up the protocols and ports on which Gloo listens for traffic.  For example, by default Gloo will have a gateway configured for HTTP and HTTPS traffic. Gloo allows you to configure properties of your gateways with several plugins.
 
-
 These guides show you how to apply these advanced listener configurations to refine your gateways' behavior.
+
+---
 
 ## Overview
 
-For demonstration purposes, let's edit the default gateways that are installed with `glooctl install gateway`.
-You can list and edit gateways with `kubectl`.
+For demonstration purposes, let's edit the default gateways that are installed with `glooctl install gateway`. You can list and edit gateways with `kubectl`.
 
 ```bash
 kubectl get gateway --all-namespaces
@@ -24,7 +24,7 @@ gloo-system   gateway-proxy-ssl   2d
 
 ### Plugin summary
 
-The listener plugin portion of the gateway crd is shown below.
+The listener plugin portion of the gateway Custom Resource (CR) is shown below.
 
 {{< highlight yaml "hl_lines=7-11" >}}
 apiVersion: gateway.solo.io/v1
@@ -45,7 +45,7 @@ status: # collapsed for brevity
 
 ### Verify your configuration
 
-To verify that your configuration was accepted, inspect the proxy CRDs. They should have the values you specified. 
+To verify that your configuration was accepted, inspect the proxy CRs. They should have the values you specified. 
 
 ```bash
 kubectl get proxy  --all-namespaces -o yaml
@@ -85,3 +85,11 @@ items:
 kind: List
 metadata: # collapsed for brevity
 {{< /highlight >}}
+
+---
+
+## Next Steps
+
+The guide above showed some basics on how to manipulate settings for the gateway listener in Gloo. The following guides provide additional detail around what you may want to change in the gateway CR and how to do so.
+
+{{% children description="true" depth="1" %}}

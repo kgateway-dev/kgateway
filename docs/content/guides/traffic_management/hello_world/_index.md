@@ -1,13 +1,13 @@
 ---
 title: Hello World
 weight: 10
-description: Follow this guide for hands on, step-by-step tutorial for creating your first virtual service and routing rules in Kubernetes.
+description: Follow this guide for hands on, step-by-step tutorial for creating your first Virtual Service and routing rules in Kubernetes.
 ---
 
 In this guide, we will introduce Gloo's *Upstream* and *Virtual Service* concepts by accomplishing the following tasks:
 
 * Deploy a REST service to Kubernetes using the Pet Store sample application
-* Observe that Gloo's Discovery system finds the Pet Store service and creates an Upstream Custom Resource Definition (CRD) for it
+* Observe that Gloo's Discovery system finds the Pet Store service and creates an Upstream Custom Resource (CR) for it
 * Create a Virtual Service and add routes sending traffic to specific paths on the Pet Store Upstream based on incoming web requests
 * Verify Gloo correctly configures Envoy to route to the Upstream
 * Test the routes by submitting web requests using `curl`
@@ -122,12 +122,12 @@ glooctl get upstreams
 +--------------------------------+------------+----------+------------------------------+
 ```
 
-This command lists all the Upstreams Gloo has discovered, each written to an *Upstream* CRD. 
+This command lists all the Upstreams Gloo has discovered, each written to an *Upstream* CR. 
 
-The upstream we want to see is `default-petstore-8080`. 
+The Upstream we want to see is `default-petstore-8080`. 
     
 {{% notice note %}}
-The upstream was created in the `gloo-system` namespace rather than `default` because it was created by a discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo. 
+The Upstream was created in the `gloo-system` namespace rather than `default` because it was created by the discovery service. Upstreams and Virtual Services do not need to live in the `gloo-system` namespace to be processed by Gloo. 
 {{% /notice %}}
 
 ### Investigate the YAML of the Upstream
@@ -165,18 +165,18 @@ status:
   state: 1
 ```
 
-By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is
-a swagger service. Gloo can discover this swagger spec, but by default Gloo's function discovery features are turned off to improve 
-performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
+By default the upstream created is rather simple. It represents a specific kubernetes service. However, the petstore application is a swagger service. Gloo can discover this swagger spec, but by default Gloo's function discovery features are turned off to improve performance. To enable Function Discovery Service (fds) on our petstore, we need to label the namespace.
+
 ```shell
 kubectl label namespace default  discovery.solo.io/function_discovery=enabled
 ```
 
-Now Gloo's function discovery will discover the swagger spec. Fds populated our upstream with the available rest endpoints it implements.
+Now Gloo's function discovery will discover the swagger spec. Fds populated our Upstream with the available rest endpoints it implements.
 
 ```shell
 glooctl get upstream default-petstore-8080
 ```
+
 ```console
 +-----------------------+------------+----------+-------------------------+
 |       UPSTREAM        |    TYPE    |  STATUS  |         DETAILS         |
@@ -197,6 +197,7 @@ glooctl get upstream default-petstore-8080
 ```shell script
 glooctl get upstream default-petstore-8080 --output kube-yaml
 ```
+
 ```yaml
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -266,7 +267,7 @@ status:
   state: 1
 ```
 
-The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).  We will use these endpoints to demonstrate function routing in the [next tutorial]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/" >}}).
+The application endpoints were discovered by Gloo's Function Discovery (fds) service. This was possible because the petstore application implements OpenAPI (specifically, discovering a Swagger JSON document at `petstore-svc/swagger.json`).
 
 ---
 
@@ -298,7 +299,7 @@ glooctl add route \
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
 ```
 
-The initial **STATUS** of the petstore virtual service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `virtualservice` with `glooctl`.
+The initial **STATUS** of the petstore Virtual Service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `virtualservice` with `glooctl`.
 
 ```shell
 glooctl get virtualservice
@@ -315,11 +316,11 @@ glooctl get virtualservice
 
 ### Verify Virtual Service Creation
 
-Let's verify that a virtual service was created with that route. 
+Let's verify that a Virtual Service was created with that route. 
 
-Routes are associated with virtual services in Gloo. When we created the route in the previous step, we didn't provide a virtual service, so Gloo created a virtual service called `default` and added the route. 
+Routes are associated with Virtual Services in Gloo. When we created the route in the previous step, we didn't provide a Virtual Service, so Gloo created a Virtual Service called `default` and added the route. 
 
-With `glooctl`, we can see that the default virtual service was created with our route:
+With `glooctl`, we can see that the default Virtual Service was created with our route:
 
 ```shell
 glooctl get virtualservice --output kube-yaml
@@ -354,13 +355,13 @@ virtualHost:
           namespace: gloo-system
 ```
     
-When a virtual service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
+When a Virtual Service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
 
 At this point we have a `virtualservice` with a routing rule sending traffic on the path `/all-pets` to the `upstream` petstore at a path of `/api/pets`.
 
 ### Test the Route Rule
 
-Let’s test the route rule by retrieving the url of the Gloo gateway, and sending a web request to the `/all-pets` path of the url using curl:
+Let’s test the route rule by retrieving the URL of the Gloo gateway, and sending a web request to the `/all-pets` path of the URL using curl:
 
 ```shell
 curl $(glooctl proxy url)/all-pets
@@ -376,9 +377,9 @@ The proxy has now been configured to route requests to the `/api/pets` REST endp
 
 ## Next Steps
 
-Congratulations! You've successfully set up your first routing rule. That's just the tip of the iceberg though. In the next sections, we'll take a closer look at more HTTP routing capabilities, including [customizing the matching rules]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules" %}}), [route destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations" %}}), and [routing features]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features" %}}).
+Congratulations! You've successfully set up your first routing rule. That's just the tip of the iceberg though. In the next sections, we'll take a closer look at more HTTP routing capabilities, including [customizing the matching rules]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_selection/" %}}), [route destination types]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/" %}}), and [request processing features]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/" %}}).
 
 To learn more about the concepts behind Upstreams and Virtual Services check out the [Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}}) page.
 
-If you're ready to dive deeper into routing, the next logical step is trying out different matching rules starting with [Path Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}}).
+If you're ready to dive deeper into routing, the next logical step is trying out different matching rules starting with [Path Matching]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" %}}).
 

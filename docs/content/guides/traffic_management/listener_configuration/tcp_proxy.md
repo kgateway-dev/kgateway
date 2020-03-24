@@ -1,7 +1,7 @@
 ---
 title: TCP Proxy
 weight: 30
-description: In this tutorial, we'll take a look at using gloo as a TCP proxy.
+description: Learn how to use Gloo as a simple TCP proxy
 ---
 
 In this tutorial, we'll take a look at using gloo as a TCP proxy. Envoy by default is an L4 proxy and is therefore

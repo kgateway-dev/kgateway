@@ -65,7 +65,7 @@ spec:
             - origin
 ```
 
-Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/" %}}).
+Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/http_connection_manager/" %}}).
 
 ---
 
@@ -99,7 +99,7 @@ Matchers inspect information about a request and determine if the data in the re
 
 More information on each type of matcher is available in the following guides.
 
-* [Path matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" %}})
+* [Path matching]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" %}})
 * [Header matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" %}})
 * [Query Parameter Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/query_parameter_matching/" %}})
 * [HTTP Method Matching]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" %}})

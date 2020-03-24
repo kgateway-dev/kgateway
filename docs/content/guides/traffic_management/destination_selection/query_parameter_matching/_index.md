@@ -139,7 +139,7 @@ glooctl delete upstream json-upstream
 
 Query parameter matching rules are not the only rules available for routing decisions. We recommend checking out any of the following guides next:
 
-* [Path Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/path_matching/" >}})
+* [Path Matching]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_selection/path_matching/" >}})
 * [Header Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/header_matching/" >}})
 * [HTTP Method Matching]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/matching_rules/http_method_matching/" >}})
 

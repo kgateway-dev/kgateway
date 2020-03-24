@@ -33,7 +33,7 @@ Envoy will send its tracing information to an external trace service, such as [Z
 
 Once a tracing service provider has been configured, tracing can be enabled on a per-listener basis in Gloo. To assist in identifying the path of a flow, a tracing annotation can be added by each route in a Virtual Service.
 
-Please refer to the [tracing guide]({{% versioned_link_path fromRoot="/observability/tracing/" %}}) for more information on setup and configuration.
+Please refer to the [tracing guide]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}) for more information on setup and configuration.
 
 ---
 
