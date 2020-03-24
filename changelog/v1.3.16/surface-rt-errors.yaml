@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Propagate all warnings and errors from sub route tables to the top level Virtual Service status field.
+    issueLink: https://github.com/solo-io/gloo/issues/2628

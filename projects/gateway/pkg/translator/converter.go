@@ -37,6 +37,9 @@ var (
 	InvalidRouteTableForDelegateErr = func(delegatePrefix, pathString string) error {
 		return errors.Wrapf(InvalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 	}
+	TopLevelVirtualResourceErr = func(rtRef core.Metadata, err error) error {
+		return errors.Wrapf(err, "on sub route table %v.%v", rtRef.Name, rtRef.Namespace)
+	}
 )
 
 type RouteConverter interface {
@@ -102,12 +105,13 @@ type routeInfo struct {
 
 func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
-	return rv.visit(wrapper, nil, nil)
+	return rv.visit(wrapper, nil, nil, virtualService)
 }
 
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
 // The additional arguments are used to store the state of the traversal of the current branch of the route tree.
-func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList,
+	topLevelVirtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
 
 	for _, gatewayRoute := range resource.GetRoutes() {
@@ -125,6 +129,8 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
 				rv.reports.AddError(resource.InputResource(), err)
+				rv.reports.AddError(topLevelVirtualService,
+					TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err))
 				continue
 			}
 		}
@@ -142,6 +148,10 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			routeTables, err := rv.routeTableSelector.SelectRouteTables(action.DelegateAction, resource.InputResource().GetMetadata().Namespace)
 			if err != nil {
 				rv.reports.AddWarning(resource.InputResource(), err.Error())
+				if parentRoute != nil { // surface error
+					rv.reports.AddWarning(topLevelVirtualService,
+						TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err).Error())
+				}
 				continue
 			}
 
@@ -156,6 +166,10 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			routeTablesByWeight, sortedWeights, errs := rv.routeTableIndexer.IndexByWeight(routeTables)
 			for _, err := range errs {
 				rv.reports.AddWarning(resource.InputResource(), err.Error())
+				if parentRoute != nil { // surface error
+					rv.reports.AddWarning(topLevelVirtualService,
+						TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err).Error())
+				}
 			}
 
 			// Process the route tables in order by weight
@@ -183,7 +197,7 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
 
 					// Recursive call
-					subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy)
+					subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy, topLevelVirtualService)
 					if err != nil {
 						return nil, err
 					}
