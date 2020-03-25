@@ -1,7 +1,7 @@
 changelog:
   - type: FIX
     description: >
-      In active (event-heavy) kubernetes environments, if events come in too quickly, can lead to memory usage growing
+      In active (event-heavy) kubernetes environments, if events come in too quickly, they can lead to memory usage growing
       without bound in Gloo and Discovery. Mitigate and slow the leak by using keys in the kubernetes controller
       workqueue that can be compared for equality to de-duplicate them.
     issueLink: https://github.com/solo-io/gloo/issues/2361
