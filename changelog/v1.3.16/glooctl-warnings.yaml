@@ -1,0 +1,8 @@
+changelog:
+  - type: NON_USER_FACING
+    description: The docs have been updated so that the title includes the page name, rather than simply "Gloo Docs".
+    issueLink: https://github.com/solo-io/gloo/issues/2613
+  - type: FIX
+    description: >
+      `glooctl check` now reports Gloo custom resource status warnings.
+    issueLink: https://github.com/solo-io/gloo/issues/2659
