@@ -80,7 +80,7 @@ This is a very basic example of the capabilities of the ModSecurity rules engine
 
 The following sections will explain how to enable this rule on the gateway level as well as on the virtual service level.
 
-The following tutorials assume basic knowledge of Gloo and it's routing capabilities, as well a kubernetes cluster running Gloo Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/gloo_routing/hello_world" %}}).
+The following tutorials assume basic knowledge of Gloo and it's routing capabilities, as well a kubernetes cluster running Gloo Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
 
 #### Http Gateway
 

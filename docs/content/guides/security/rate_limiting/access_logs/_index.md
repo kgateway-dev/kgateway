@@ -4,13 +4,11 @@ weight: 50
 description: Use access logs to determine request characteristics of rate-limit rule breaches.
 ---
 
-In this tutorial we will see how to use 
-[Access Logs]({{< versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging" >}}) to determine common characteristics
-of rate-limit offending requests.
+In this tutorial we will see how to use [Access Logs]({{< versioned_link_path fromRoot="/guides/security/access_logging/" >}}) to determine common characteristics of rate-limit offending requests.
 
 ### Setup
 Let's start by setting up the virtual service and settings resources to match the rule priority
-[example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
+[example]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/rulepriority/#test-the-example" %}}).
 
 Let's also update the default `Gateway` resource to enable access logging:
 
@@ -193,7 +191,7 @@ Otherwise, use pip to install the library `pip install matplotlib`
 {{% /notice %}}
 
 This should create a histogram that looks like:
-![Rate Limit Histogram]({{% versioned_link_path fromRoot="/security/rate_limiting/access_logs/RateLimitHistogram.png" %}})
+![Rate Limit Histogram]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/access_logs/RateLimitHistogram.png" %}})
 
 Notice that two requests were made to number "411", and one was made to "311".
 

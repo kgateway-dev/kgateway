@@ -14,8 +14,7 @@ Instead, the last valid configuration for that Virtual Service will be used.
 This behavior is used in order to ensure that invalid configuration does not lead to service outages.
 
 In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. 
-This is particularly useful when [delegating to Route Tables]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation">}})
-as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. 
+This is particularly useful when [delegating to Route Tables]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation/">}}) as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. 
 
 For this reason, Gloo supports the ability to enable *automatic replacement of invalid routes* (specifically, routes which point to a missing **Upstream**
 or **UpstreamGroup**). 
@@ -27,7 +26,7 @@ This document demonstrates how to enable and use this feature.
 Make sure before starting you have:
 
 - [Installed Gloo in Gateway Mode]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes">}})
-- [Deployed the Petstore example App]({{< versioned_link_path fromRoot="/gloo_routing/hello_world#deploy-the-pet-store-application">}})
+- [Deployed the Petstore example App]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/#deploy-the-pet-store-application">}})
 
 # Create a Partially Valid Virtual Service 
 
@@ -39,7 +38,7 @@ Consider the following Virtual Service:
 {{< readfile file="guides/traffic_management/configuration_validation/partially_invalid_vs.yaml">}}
 ```
 
-The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< versioned_link_path fromRoot="/gloo_routing/hello_world">}}), while `/bad-route` points to an invalid destination.
+The route `/good-route` points to a valid destination (assuming the [`petstore` app has been deployed to the cluster]({{< versioned_link_path fromRoot="/guides/traffic_management/hello_world/">}}), while `/bad-route` points to an invalid destination.
 
 Let's try applying this configuration to the cluster before enabling route replacement:
 

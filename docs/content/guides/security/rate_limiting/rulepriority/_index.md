@@ -8,7 +8,7 @@ weight: 20
 
 In this guide we explore some more advanced configuration options added to Gloo's implementation of Envoy's rate limit
 API. If you are not already familiar with Gloo's Envoy rate limit API support and examples, you should read our Envoy
-rate limit API [intro]({{% versioned_link_path fromRoot="/security/rate_limiting/envoy" %}}) first.
+rate limit API [intro]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy" %}}) first.
 
 ## Motivation
 

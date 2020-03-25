@@ -7,11 +7,11 @@ description: Set up Gloo to route to TLS-encrypted services by using annotations
 
 ## Motivation
 
-Gloo can auto-discover SSL configuration for [upstream TLS connections]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls">}}) using annotations on the Kubernetes Service.
+Gloo can auto-discover SSL configuration for [upstream TLS connections]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls/">}}) using annotations on the Kubernetes Service.
 
 This can be used as a convenient alternative to the {{% protobuf display="Upstream" name="gloo.solo.io.Upstream" %}} to configure Upstream or Client SSL.
 
-This document explains the options for configuring SSL using service annotations. For a step-by-step guide illustrating Upstream SSL in Gloo, see [the Upstream SSL Guide]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls">}})
+This document explains the options for configuring SSL using service annotations. For a step-by-step guide illustrating Upstream SSL in Gloo, see [the Upstream SSL Guide]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls/">}})
 
 ## Configuring Upstream SSL Using Kubernetes Secrets
 

@@ -44,7 +44,7 @@ of this tutorial.
 
 ### Setup
 Let's start by setting up the virtual service and settings resources to match the rule priority
-[example]({{% versioned_link_path fromRoot="/security/rate_limiting/rulepriority/#test-the-example" %}}).
+[example]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/rulepriority/#test-the-example" %}}).
 
 ### Triggering limits
 
@@ -70,7 +70,7 @@ In the dropdown, you can select the rate-limit metric you'd like to investigate.
 Add a PromQL query (prometheus query language) for `ratelimit_solo_io_over_limit`, choose the appropriate time window,
 and execute. If you click the graph tab, you should see a spike in queries over limit (click to enlarge):
 
-![Prometheus Graph]({{% versioned_link_path fromRoot="/security/rate_limiting/metrics/PrometheusGraph.png" %}})
+![Prometheus Graph]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/metrics/PrometheusGraph.png" %}})
 
 Note that the metric is labeled with `descriptor`: `customtype_Whatsapp`. This is saying that our request was over the
 limit associated with the custom descriptor `Whatsapp` (Rule 2, limit all Whatsapp requests to 1/min). Note that I
@@ -94,7 +94,7 @@ Enter the Grafana credentials (by default, `admin/admin`).
 On the left side there is a bell, hover on it and select alerting -> notification channels. This should show the
 following:
 
-![Create Notification Channel]({{% versioned_link_path fromRoot="/security/rate_limiting/metrics/CreateNotificationChannel.png" %}})
+![Create Notification Channel]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/metrics/CreateNotificationChannel.png" %}})
 
 For the sake of example, choose email, and save. We have not configured SMTP for Grafana, so the alerts won't actually
 get delivered.
@@ -103,16 +103,16 @@ Now let's create a dashboard and alert for the metric you'd like to alert on.
 
 Go to the main menu and select "create a dashboard". Fill in the PromQL query and as follows:
 
-![Create Dashboard]({{% versioned_link_path fromRoot="/security/rate_limiting/metrics/CreateDashboard.png" %}})
+![Create Dashboard]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/metrics/CreateDashboard.png" %}})
 
 In the alert page, you should see the email destination you created as a valid destination. Select it, and save your
 dashboard:
 
-![Alert Setup]({{% versioned_link_path fromRoot="/security/rate_limiting/metrics/AlertSetup.png" %}})
+![Alert Setup]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/metrics/AlertSetup.png" %}})
 
 ### Further Drill Down
 
 Sometimes you'd like to further drill down into the offending requests, as well as requests that contributed to
 rate-limit rule breaches. If the default metrics aren't enough, the next recommended course of action is to do some
 analysis of your access logs. To get started, you can check out our access logs example
-[here]({{% versioned_link_path fromRoot="/security/rate_limiting/access_logs" %}}).
+[here]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/access_logs" %}}).

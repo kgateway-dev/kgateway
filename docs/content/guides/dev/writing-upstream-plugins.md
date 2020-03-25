@@ -25,7 +25,7 @@ To see the completed code for this tutorial:
 
 ## Environment Setup
 
-To set up a development environment for Gloo including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{% versioned_link_path fromRoot="/dev/setting-up-dev-environment" %}}). Make sure you 
+To set up a development environment for Gloo including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{% versioned_link_path fromRoot="/guides/dev/setting-up-dev-environment" %}}). Make sure you 
 include the **Enabling Code Generation** section of that tutorial.
 
 ## Upstream Plugin
@@ -192,7 +192,7 @@ Great! We're all set to run code generation on Gloo and begin writing our plugin
 
 ## Running the Code Generation
 
-To regenerate code in the project, we will need `go`, `make`, `dep`, and `protoc` installed. If they aren't already, [see the dev setup guide]({{% versioned_link_path fromRoot="/dev/setting-up-dev-environment" %}}).
+To regenerate code in the project, we will need `go`, `make`, `dep`, and `protoc` installed. If they aren't already, [see the dev setup guide]({{% versioned_link_path fromRoot="/guides/dev/setting-up-dev-environment" %}}).
 
 To (re)generate code:
 
@@ -848,7 +848,7 @@ Code changes are now complete. You can view the all of the code here:
 ## Build and Deploy from Source
 
 To see our new and improved Gloo in action, follow the 
-[building and deploying Gloo from source tutorial]({{% versioned_link_path fromRoot="/dev/building-and-deploying-gloo" %}}).
+[building and deploying Gloo from source tutorial]({{% versioned_link_path fromRoot="/guides/dev/building-and-deploying-gloo" %}}).
 
 ## Conclusions
 

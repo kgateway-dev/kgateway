@@ -198,6 +198,6 @@ routes:
 {{< /highlight >}}
 
 {{% notice note %}}
-As is the case with [`Subsets`]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/subsets/" %}}), Gloo will fall back to forwarding the request to all available service 
+As is the case with [`Subsets`]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/subsets/" %}}), Gloo will fall back to forwarding the request to all available service 
 instances if the given criteria do not match any subset of instances.
 {{% /notice %}}

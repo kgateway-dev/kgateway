@@ -31,13 +31,13 @@ When Gloo matches a request to a route secured with API keys, it looks for a val
 the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on 
 the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
 
-Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/security/auth#auth-configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth#auth-configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-Let's create a [Static Upstream]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}}) 
+Let's create a [Static Upstream]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream/" >}}) 
 named `json-upstream` that routes to a static website; we will send requests to it during this tutorial.
 
 {{< tabs >}}
@@ -196,7 +196,7 @@ EOF
 {{< /highlight >}}
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/security/auth#inheritance-rules" >}}) it.
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/guides/security/auth#inheritance-rules" >}}) it.
 
 ### Testing denied requests
 Let's try and resend the same request we sent earlier:

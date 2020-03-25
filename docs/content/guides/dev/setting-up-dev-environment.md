@@ -107,7 +107,7 @@ go run projects/gateway/cmd/main.go
 
 ```
 
-Awesome! You're ready to start developing on Gloo! Check out the [Writing Upstream Plugins Guide]({{% versioned_link_path fromRoot="/dev/writing-upstream-plugins" %}}) to see how to add plugins to gloo.
+Awesome! You're ready to start developing on Gloo! Check out the [Writing Upstream Plugins Guide]({{% versioned_link_path fromRoot="/guides/dev/writing-upstream-plugins" %}}) to see how to add plugins to gloo.
 
 
 ### Enabling Code Generation

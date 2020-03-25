@@ -22,13 +22,13 @@ With these drawbacks, to achieve 1% traffic routing, you will need 100 pods: 1 w
 
 ## Traffic shadowing for Canary
 
-A step you could perform _before_ a percentage based canary of traffic is traffic shadowing. In this model, we don't send a percentage of live traffic to the new service, but we send a percentage of _shadowed_ traffic. With shadowed traffic, we make a copy of a request and send it to the new service, not the actual request. Responses get ignored. [Gloo supports traffic shadowing to add in Canary releases]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/shadowing" >}}).
+A step you could perform _before_ a percentage based canary of traffic is traffic shadowing. In this model, we don't send a percentage of live traffic to the new service, but we send a percentage of _shadowed_ traffic. With shadowed traffic, we make a copy of a request and send it to the new service, not the actual request. Responses get ignored. [Gloo supports traffic shadowing to add in Canary releases]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/shadowing/" >}}).
 
 ![Canary traffic]({{% versioned_link_path fromRoot="/img/traffic-shadowing.png" %}})
 
 ## Canary with Gloo
 
-Gloo supports a very powerful Canary mechanism through [UpstreamGroups]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups" >}}). Using `UpstreamGroups` we can specify very fine-grained traffic weight to control request by % of requests. 
+Gloo supports a very powerful Canary mechanism through [UpstreamGroups]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/upstream_groups/" >}}). Using `UpstreamGroups` we can specify very fine-grained traffic weight to control request by % of requests. 
 
 ## Canary with Gloo+Flagger
 

@@ -53,10 +53,10 @@ Nomad is a workload scheduler that can be used in place of Docker Compose or Kub
 
 ## Where to Next?
 
-The most common starting point is to [install Gloo Gateway]({{% versioned_link_path fromRoot="/installation/" %}}). Once Gloo Gateway is installed, [Gloo Routing]({{% versioned_link_path fromRoot="/gloo_routing/" %}}) is likely your go-to destination.  Otherwise, here are some common paths to learning.
+The most common starting point is to [install Gloo Gateway]({{% versioned_link_path fromRoot="/installation/" %}}). Once Gloo Gateway is installed, [Traffic Management]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) is likely your go-to destination.  Otherwise, here are some common paths to learning.
 
 - Do you need a Kubernetes cluster? Start [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 - Need to install the Gloo Gateway? Start [here]({{% versioned_link_path fromRoot="/installation/" %}}).
-- Want to know more about Gloo Routing? Start [here]({{% versioned_link_path fromRoot="/gloo_routing/" %}}).
-- Concerned about security? Start [here]({{% versioned_link_path fromRoot="/security/" %}}). (*Enterprise Gloo only*)
-- Monitoring your thing? Start [here]({{% versioned_link_path fromRoot="/observability/" %}}). (*Enterprise Gloo only*)
+- Want to know more about Gloo Routing? Start [here]({{% versioned_link_path fromRoot="/introduction/traffic_management/" %}}).
+- Concerned about security? Start [here]({{% versioned_link_path fromRoot="/guides/security/" %}}). (*Enterprise Gloo only*)
+- Monitoring your thing? Start [here]({{% versioned_link_path fromRoot="/guides/observability/" %}}). (*Enterprise Gloo only*)

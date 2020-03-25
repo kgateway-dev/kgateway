@@ -18,13 +18,13 @@ If a request matches a route on which Basic Authentication is configured, Gloo w
 standard `Authorization` header before sending the request to its destination. If the user associated with the credentials 
 is not explicitly allowed to access that route, Gloo will return a 401 response to the downstream client.
 
-Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/security/auth#auth-configuration-overview" >}}) 
+Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth#auth-configuration-overview" >}}) 
 for detailed information about how authentication is configured on Virtual Services.
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
-Let's start by creating a [Static Upstream]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream" >}}) 
+Let's start by creating a [Static Upstream]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream/" >}}) 
 that routes to a website; we will send requests to it during this tutorial.
 
 {{< tabs >}}
@@ -140,7 +140,7 @@ EOF
 {{< /highlight >}}
 
 In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will 
-inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/security/auth#inheritance-rules" >}}) it.
+inherit its `AuthConfig`, unless it [overwrites or disables]({{< versioned_link_path fromRoot="/guides/security/auth#inheritance-rules" >}}) it.
 
 ### Testing denied requests
 Let's try and resend the same request we sent earlier:

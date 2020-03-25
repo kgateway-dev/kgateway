@@ -111,4 +111,4 @@ Now that you have a basic understanding of the Gloo architecture, there are numb
 * **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
 * **[Deployment Architecture]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo on different software stacks.
 * **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
-* **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.

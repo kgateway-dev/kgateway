@@ -195,7 +195,7 @@ kubectl annotate service -n default example-tls-server gloo.solo.io/sslService.s
 {{< /tabs >}}
 
 {{% notice note %}}
-See the [guide on using Service annotations to configure SSL]({{< versioned_link_path fromRoot="/gloo_routing/tls/client_tls_service_annotations">}}) for
+See the [guide on using Service annotations to configure SSL]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations/">}}) for
 the full set of options when using Service annotations to configure upstream SSL.
 {{% /notice %}}
 

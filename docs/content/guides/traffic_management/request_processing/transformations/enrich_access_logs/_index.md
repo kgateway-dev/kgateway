@@ -4,7 +4,7 @@ weight: 50
 description: Use transformations to craft custom attributes in access logs.
 ---
 
-In this tutorial we will see how to use transformations to add custom attributes to your [Access Logs]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging" %}}).
+In this tutorial we will see how to use transformations to add custom attributes to your [Access Logs]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}}).
 
 ### Setup
 {{< readfile file="/static/content/setup_postman_echo.md" markdown="true">}}
@@ -52,7 +52,7 @@ spec:
           path: /dev/stdout
 {{< /highlight >}}
 
-This configures the Gateway to create a log entry in JSON format for all incoming requests and write it to the standard output stream. For more information about access logging, see the [correspondent section]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging" %}}) of the docs.
+This configures the Gateway to create a log entry in JSON format for all incoming requests and write it to the standard output stream. For more information about access logging, see the [correspondent section]({{% versioned_link_path fromRoot="/guides/security/access_logging/" %}}) of the docs.
 
 Finally, let's create a simple Virtual Service that matches any path and routes all traffic to our Upstream:
 
@@ -128,7 +128,7 @@ You should see the following output, indicating that an access log entry has bee
 ```
 
 ### Adding custom access log attributes
-Envoy's access log [command operators](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators) provide a powerful way of extracting information from HTTP streams. The `REQ` and `RESP` operators allow you to log headers, but there is no way of including custom information that is not included in the headers, e.g. attributes included in the request/response payloads, or environment variables. There is a `DYNAMIC_METADATA` operator, but it relies on the custom information having been written to the [Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) by an Envoy filter. Fortunately, as we saw in the [main page]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#dynamicmetadatavalues" %}}) of the transformation docs, Gloo's Transformation API provides you with the means of adding information the dynamic metadata.
+Envoy's access log [command operators](https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log#command-operators) provide a powerful way of extracting information from HTTP streams. The `REQ` and `RESP` operators allow you to log headers, but there is no way of including custom information that is not included in the headers, e.g. attributes included in the request/response payloads, or environment variables. There is a `DYNAMIC_METADATA` operator, but it relies on the custom information having been written to the [Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) by an Envoy filter. Fortunately, as we saw in the [main page]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#dynamicmetadatavalues" %}}) of the transformation docs, Gloo's Transformation API provides you with the means of adding information the dynamic metadata.
 
 Let's see how this can be done.
 

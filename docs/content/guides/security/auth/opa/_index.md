@@ -10,7 +10,7 @@ The OPA feature was introduced with **Gloo Enterprise**, release 0.18.21. If you
 
 The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that can be used to define and enforce versatile policies in a uniform way across your organization. Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/security/auth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
+Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
 ## Table of Contents
 - [Setup](#setup)
@@ -179,7 +179,7 @@ spec:
 EOF
 {{< /highlight >}}
 
-In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will inherit its `AuthConfig`, unless it [overwrites or disables]({{% versioned_link_path fromRoot="/security/auth#inheritance-rules" %}}) it.
+In the above example we have added the configuration to the Virtual Host. Each route belonging to a Virtual Host will inherit its `AuthConfig`, unless it [overwrites or disables]({{% versioned_link_path fromRoot="/guides/security/auth#inheritance-rules" %}}) it.
 
 ### Testing the configuration
 Paths that don't start with `/api/pets` are not authorized (should return 403):

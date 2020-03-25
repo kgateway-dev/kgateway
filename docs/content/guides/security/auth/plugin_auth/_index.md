@@ -8,7 +8,7 @@ description: Extend Gloo's built-in auth server with custom Go plugins
 This feature was introduced with **Gloo Enterprise**, release 0.18.11. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-We have seen that one way of implementing custom authentication logic is by [providing your own auth server]({{< versioned_link_path fromRoot="/security/auth/custom_auth" >}}). While this approach gives you great freedom, it also comes at a cost: 
+We have seen that one way of implementing custom authentication logic is by [providing your own auth server]({{< versioned_link_path fromRoot="/guides/security/auth/custom_auth" >}}). While this approach gives you great freedom, it also comes at a cost: 
 
 - You have to write and manage an additional service. If your authentication logic is simple, the plumbing needed to get it running might constitute a significant overhead.
 - If your custom auth server serves only as an adapter for your existing auth service, it will introduce an additional network hop with the associated latency to any request that needs to be authenticated; either that, or you will most likely need to update your existing service so that it can conform to the request/response format expected by Gloo.
@@ -39,7 +39,7 @@ Following are the high-level steps required to use your auth plugins with Gloo. 
 1. Reference your plugin in your Virtual Services for it to be invoked for requests matching particular virtual hosts or routes.
 
 {{% notice note %}}
-For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated [**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}).
+For a more in-depth explanation of the Ext Auth Plugin development workflow, please check our dedicated [**Plugin Developer Guide**]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins" >}}).
 {{% /notice %}}
 
 ## Building an Ext Auth plugin
@@ -61,7 +61,7 @@ type ExtAuthPlugin interface {
 }
 ```
 
-Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#api-overview" >}}) for a detailed explanation of the API.
+Check the [plugin developer guide]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#api-overview" >}}) for a detailed explanation of the API.
 
 For this guide we will use a simple example plugin that has already been built. You can find the source code to build it yourself [here](https://github.com/solo-io/ext-auth-plugin-examples/tree/master/plugins/required_header).
 
@@ -112,7 +112,7 @@ total 28356
 You can see that it contains the compiled plugin file `RequiredHeader.so`.
 
 {{% notice warning %}}
-Make sure the plugin image tag matches the version of GlooE you are using. Plugins with mismatching versions will fail to be loaded due to the compatibility constraints imposed by the Go plugin model. See [this section]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin developer guide for more information.
+Make sure the plugin image tag matches the version of GlooE you are using. Plugins with mismatching versions will fail to be loaded due to the compatibility constraints imposed by the Go plugin model. See [this section]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#build-helper-tools" >}}) of the plugin developer guide for more information.
 {{% /notice %}}
 
 ## Configuring Gloo
@@ -196,7 +196,7 @@ spec:
         name: auth-plugins
 {{< /highlight >}}
 
-Each plugin container image built as described in the *Packaging and publishing the plugin* [section]({{< versioned_link_path fromRoot="/security/auth/plugin_auth#packaging-and-publishing-the-plugin" >}}) has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available to the `extauth` server.
+Each plugin container image built as described in the *Packaging and publishing the plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/plugin_auth#packaging-and-publishing-the-plugin" >}}) has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available to the `extauth` server.
 
 Let's verify that the `extauth` server did successfully start by checking its logs.
 
@@ -288,10 +288,10 @@ When referenced on a Virtual Service, this configuration will instruct Gloo to a
 for the next two fields.
 - `pluginFileName`: the name of the compiled plugin that was copied to the `/auth-plugins` directory. Defaults to `<name>.so`.
 - `exportedSymbolName`: the name of the exported symbol Gloo will look for when loading the plugin. Defaults to `<name>`.
-- `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case this will be an instance of `*Config`, as seen in the *Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/security/auth/plugin_auth#building-an-ext-auth-plugin" >}}).
+- `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case this will be an instance of `*Config`, as seen in the *Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/plugin_auth#building-an-ext-auth-plugin" >}}).
 
 {{% notice note %}}
-You may have noticed that the `configs` attribute in the above `AuthConfig` is an array. It is possible to define multiple steps in an `AuthConfig`. Steps will be executed in the order they are defined. The first config to deny a request will cause the execution to be interrupted and a response to be returned to the downstream client. The headers produced by each step will be merged into the request to the next one. Check the [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins#multi-step-authconfigs" >}}) for more information about how the headers are merged.
+You may have noticed that the `configs` attribute in the above `AuthConfig` is an array. It is possible to define multiple steps in an `AuthConfig`. Steps will be executed in the order they are defined. The first config to deny a request will cause the execution to be interrupted and a response to be returned to the downstream client. The headers produced by each step will be merged into the request to the next one. Check the [plugin developer guide]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#multi-step-authconfigs" >}}) for more information about how the headers are merged.
 {{% /notice %}}
 
 ##### Update the Virtual Service
@@ -397,4 +397,4 @@ kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/
 ```
 
 ## Next steps
-As a next step, check out our [plugin developer guide]({{< versioned_link_path fromRoot="/dev/writing_auth_plugins" >}}) for a detailed tutorial on how to build your own external auth plugins!
+As a next step, check out our [plugin developer guide]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins" >}}) for a detailed tutorial on how to build your own external auth plugins!

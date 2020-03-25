@@ -22,15 +22,15 @@ Other use cases Gloo can solve:
 
 Envoy Proxy is a data-plane component with powerful routing, observability, and resilience capabilities. Envoy can be difficult to operationalize and complex to configure. Gloo adds the following:
 
-* A [flexible control plane]({{< versioned_link_path fromRoot="/dev" >}}) with extensibility in mind
+* A [flexible control plane]({{< versioned_link_path fromRoot="/guides/dev" >}}) with extensibility in mind
 * More ergonomic, [domain-specific APIs]({{< versioned_link_path fromRoot="/introduction/architecture/concepts" >}}) to drive Envoy configuration
-* [Function-level routing]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
+* [Function-level routing]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/" >}}); Envoy understands routing to clusters (`host:port`) while Gloo understands routing to a Swagger/OAS endpoint, gRPC function, Cloud Function like Lambda, etc.
 * [Transformation of request/response](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/transformation) via a super-fast C++ templating filter [built on Inja](https://github.com/pantor/inja)
 * Envoy filters to call [AWS Lambda directly](https://github.com/solo-io/envoy-gloo/tree/master/source/extensions/filters/http/aws_lambda), handling the complex security handshaking
 * [Discovery of services running in a hybrid platform]({{< versioned_link_path fromRoot="/introduction/architecture#discovery-architecture" >}}) (like VMs, containers, infrastructure as code, function as a service, etc)
 * Out of the box caching filters - enterprise feature
-* [Rate-limiting service]({{< versioned_link_path fromRoot="/security/rate_limiting/simple/">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/security/rate_limiting/envoy/">}}), depending on what you need) - enterprise feature
-* [OIDC integration]({{< versioned_link_path fromRoot="/security/auth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/security/auth/" >}}) - enterprise feature
+* [Rate-limiting service]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/">}}), depending on what you need) - enterprise feature
+* [OIDC integration]({{< versioned_link_path fromRoot="/guides/security/auth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/guides/security/auth/" >}}) - enterprise feature
 
 
 #### What's the difference between Gloo and Istio
@@ -165,7 +165,7 @@ status:
 
 #### How do I configure TLS for Gloo
 
-Gloo can be configured with TLS and SNI for multiple virtual hosts. Please [see the documentation for how to do that]({{< versioned_link_path fromRoot="/gloo_routing/tls/server_tls">}})
+Gloo can be configured with TLS and SNI for multiple virtual hosts. Please [see the documentation for how to do that]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}})
 
 #### I want to call my HTTP/HTTPS services; what URL do I use?
 
@@ -397,7 +397,7 @@ This is by design with the intention of not over-exposing your cluster by accide
 
 #### Why am I getting error: multiple "filter chains with the same matching rules are defined"
 
-When you create multiple VirtualServices that have TLS/SSL configuration, Gloo will use SNI to try and route to the correct VirtualService. For this to work, you need to specify the `domain` explicitly in your VirtualService as well as the SNI domains. [See the TLS documentation for more]({{< versioned_link_path fromRoot="/gloo_routing/tls/server_tls">}}). If you don't do this, then you'll have multiple VirtualServices with different certificate information and Envoy will not know which one to use since the hosts are the same.
+When you create multiple VirtualServices that have TLS/SSL configuration, Gloo will use SNI to try and route to the correct VirtualService. For this to work, you need to specify the `domain` explicitly in your VirtualService as well as the SNI domains. [See the TLS documentation for more]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}}). If you don't do this, then you'll have multiple VirtualServices with different certificate information and Envoy will not know which one to use since the hosts are the same.
 
 #### When I have both HTTP and HTTPS routes, why are they merged and only available on HTTPS?
 

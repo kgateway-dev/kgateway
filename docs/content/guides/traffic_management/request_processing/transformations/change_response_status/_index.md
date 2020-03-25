@@ -125,10 +125,10 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to responses.
-1. Use a [template transformation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#transformation-templates" %}}).
+1. Use a [template transformation]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#transformation-templates" %}}).
 1. Transform the ":status" pseudo-header according to the template string.
 
-The template uses the [Inja templating language]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#templating-language" %}}) to define the conditional logic that will be applied to the ":status" header.
+The template uses the [Inja templating language]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#templating-language" %}}) to define the conditional logic that will be applied to the ":status" header.
 
 #### Test our configuration
 To test that our configuration has been correctly applied, let's execute `curl` command again, with a slight 

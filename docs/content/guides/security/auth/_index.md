@@ -11,13 +11,13 @@ API Gateways act as a control point for the outside world to access the various 
 ## Authentication in Gloo
 
 {{% notice note %}}
-This section refers specifically to the **Gloo Enterprise** external auth server. If you are using the open source version of Gloo, please refer to the [Custom Auth section]({{< versioned_link_path fromRoot="/security/auth/custom_auth" >}}) of the security docs.
+This section refers specifically to the **Gloo Enterprise** external auth server. If you are using the open source version of Gloo, please refer to the [Custom Auth section]({{< versioned_link_path fromRoot="/guides/security/auth/custom_auth" >}}) of the security docs.
 {{% /notice %}}
 
 Gloo Enterprise provides a variety of authentication options to meet the needs of your environment. They range from supporting basic use cases to complex and fine grained secure access control. Architecturally, Gloo uses a dedicated auth server to verify the user credentials and determine their permissions. Gloo provides an auth server that can support several authN/Z implementations and also allows you to provide your auth server to implement custom logic.
 
 {{% notice info %}}
-If you are seeing authentication errors for `OPTIONS` requests, and your application is doing CORS, please refer to the [Understanding CORS]({{< versioned_link_path fromRoot="/security/cors" >}}) docs.
+If you are seeing authentication errors for `OPTIONS` requests, and your application is doing CORS, please refer to the [Understanding CORS]({{< versioned_link_path fromRoot="/guides/security/cors" >}}) docs.
 {{% /notice %}}
 
 ### Switching Between Ext Auth Deployment Modes

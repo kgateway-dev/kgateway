@@ -46,7 +46,7 @@ A full listing of configuration options is available in the {{< protobuf name="g
 
 The listeners on a gateway typically listen for HTTP requests coming in on a specific address and port as defined by `bindAddress` and `bindPort`. Additional options can be configured by including an `options` section in the spec. SSL for a gateway is enabled by setting the `ssl` property to `true`.
 
-Gloo Gateway can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/gloo_routing/tcp_proxy/" %}}).
+Gloo Gateway can be configured to act as a gateway on layer 7 (HTTP/S) or layer 4 (TCP). The majority of services will likely be using HTTP, but there may be some cases where applications either do not use HTTP or should be presented as a TCP endpoint. When Gloo operates as a TCP Proxy, the options for traffic management are greatly reduced. Gloo currently supports standard routing, SSL, and Server Name Indication (SNI) domain matching. Applications not using HTTP can be configured using the [TCP Proxy guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tcp_proxy/" %}}).
 
 Gloo Gateway is meant to serve as an abstraction layer, simplifying the configuration of the underlying Envoy proxy and adding new functionality. The advanced options on Envoy are not exposed by default, but they can be accessed by adding an `httpGateway` section to your listener configuration. 
 
@@ -65,7 +65,7 @@ spec:
             - origin
 ```
 
-Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="/gloo_routing/gateway_configuration/grpc_web/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/" %}}).
+Some of the advanced options include [enabling tracing]({{% versioned_link_path fromRoot="/guides/observability/tracing/" %}}), [access log configuration]({{% versioned_link_path fromRoot="/guides/security/access_logging//" %}}), disabling [gRPC Web transcoding]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}), and fine-grained control over [Websockets]({{% versioned_link_path fromRoot="http://localhost:1313/guides/traffic_management/listener_configuration/websockets/" %}}). More detail on how to perform advanced listener configuration can be found in the [HTTP Connection Manager guide]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/http_connection_manager/" %}}).
 
 ---
 
@@ -112,27 +112,27 @@ Once an incoming request has been matched by a route rule, the traffic can eithe
 
 #### Single Upstreams
 
-Upstreams can be added manually, creating what are called [Static Upstreams]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/static_upstream/" %}}). Gloo also has a discovery service that can monitor Kubernetes or Consul and [automatically add new services]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/discovered_upstream/" %}}) as they are discovered. When routing to an Upstream, you can take advantage of Gloo’s endpoint discovery system, and configure routes to specific functions, either on a REST or gRPC service, or on a cloud function. This is referred to as [Function Routing]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/" %}}).
+Upstreams can be added manually, creating what are called [Static Upstreams]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/static_upstream//" %}}). Gloo also has a discovery service that can monitor Kubernetes or Consul and [automatically add new services]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" %}}) as they are discovered. When routing to an Upstream, you can take advantage of Gloo’s endpoint discovery system, and configure routes to specific functions, either on a REST or gRPC service, or on a cloud function.
 
 #### Multiple Upstreams
 
-There may be times you want to specify multiple Upstreams for a given route. Perhaps you are performing Blue/Green testing, and want to send a certain percentage of traffic to an alternate version of a service. You can specify [multiple Upstream destinations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/multi_destination/" %}}) in your route, [create an Upstream Group]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}) for your route, or send traffic to a [subset of pods in Kubernetes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/multiple_upstreams/upstream_groups/" %}}).
+There may be times you want to specify multiple Upstreams for a given route. Perhaps you are performing Blue/Green testing, and want to send a certain percentage of traffic to an alternate version of a service. You can specify [multiple Upstream destinations]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/multi_destination/" %}}) in your route, [create an Upstream Group]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/upstream_groups//" %}}) for your route, or send traffic to a [subset of pods in Kubernetes]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/upstream_groups//" %}}).
 
-Gloo can also use Upstream Groups to perform a [canary release]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/canary/" %}}), by slowly and iteratively introducing a new destination for a percentage of the traffic on a Virtual Service. Gloo can be used with [Flagger](https://docs.flagger.app/tutorials/gloo-progressive-delivery) to automatically change the percentages in an Upstream Group as part of a canary release.
+Gloo can also use Upstream Groups to perform a [canary release]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/canary/" %}}), by slowly and iteratively introducing a new destination for a percentage of the traffic on a Virtual Service. Gloo can be used with [Flagger](https://docs.flagger.app/tutorials/gloo-progressive-delivery) to automatically change the percentages in an Upstream Group as part of a canary release.
 
 In addition to static and discovered Upstreams, the following Upstreams can be created to map directly a specialty construct:
 
-* [Kubernetes services]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/kubernetes_services/" %}})
-* [Consul services]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/consul_services/" %}})
-* [AWS Lambda]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/aws_lambda/" %}})
-* [REST endpoint]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/rest_endpoint/" %}})
-* [gRPC]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/function_routing/grpc_to_rest/" %}})
+* [Kubernetes services]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/kubernetes_services/" %}})
+* [Consul services]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/consul_services/" %}})
+* [AWS Lambda]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/aws_lambda/" %}})
+* [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}})
+* [gRPC]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest/" %}})
 
 #### Route Delegation
 
 While it is possible to have a single Virtual Service directly route all traffic for a domain in its main route configuration, that may not always be the best approach. Let's say you have a domain called example.com which runs a shopping cart API and a community forum. The shopping cart API is handled by one team and the community forum is handled by another. You want to enable each team to make updates on their routing rules, without stepping on each other toes or messing with the main Virtual Service for the domain. Sounds like a job for route delegation!
 
-In a route delegation, a prefix of the main Virtual Service can be delegated to a *Route Table*.  The Route Table is a collection of routes, just like in the main Virtual Service, but the permissions of the Route Table could be scoped to your shopping cart API team. In our example, you can create route delegations for the `/api/cart` prefix and the `/community` prefix to route tables managed by the respective teams. Now each team is free to manage their own set of routing rule, and you have the freedom to expand this model as new services are added to the domain. You can find out more in the [route delegation guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}).
+In a route delegation, a prefix of the main Virtual Service can be delegated to a *Route Table*.  The Route Table is a collection of routes, just like in the main Virtual Service, but the permissions of the Route Table could be scoped to your shopping cart API team. In our example, you can create route delegations for the `/api/cart` prefix and the `/community` prefix to route tables managed by the respective teams. Now each team is free to manage their own set of routing rule, and you have the freedom to expand this model as new services are added to the domain. You can find out more in the [route delegation guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation//" %}}).
 
 ---
 
@@ -142,15 +142,15 @@ One of the core features of any API Gateway is the ability to transform the traf
 
 #### Transformations
 
-Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations*. You might [change the response status]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/change_response_status/" %}}) coming from an Upstream service, [add headers to the body]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/add_headers_to_body/" %}}) of a request, or [add custom attributes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs/" %}}) for your access logs. The guides included in the [Transformations]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/" %}}) section can provide clear examples of how to implement those transformations and more.
+Transformations can be applied to *VirtualHosts*, *Routes*, and *WeightedDestinations*. You might [change the response status]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/change_response_status/" %}}) coming from an Upstream service, [add headers to the body]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/add_headers_to_body/" %}}) of a request, or [add custom attributes]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/enrich_access_logs//" %}}) for your access logs. The guides included in the [Transformations]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/" %}}) section can provide clear examples of how to implement those transformations and more.
 
 #### Direct response and redirects
 
-Not all requests should be sent to an Upstream destination. In some cases, the request should be redirected either to another site ([Host Redirect]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/redirect_action/" %}})) or to another Virtual Service in Gloo. You may also wish to redirect clients requesting the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/https_redirect/" %}}). Other requests should have a [direct response]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/direct_response_action/" %}}) from the Virtual Service, such as a 404 not found.
+Not all requests should be sent to an Upstream destination. In some cases, the request should be redirected either to another site ([Host Redirect]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/redirect_action/" %}})) or to another Virtual Service in Gloo. You may also wish to redirect clients requesting the HTTP version of a service to the [HTTPS version instead]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/https_redirect/" %}}). Other requests should have a [direct response]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/direct_response_action/" %}}) from the Virtual Service, such as a 404 not found.
 
 #### Faults
 
-Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/faults/" %}}).
+Faults are a way to test the resilience of your services by injecting faults (errors and delays) into a percentage of your requests. Gloo can do this automatically by [following this guide]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/faults/" %}}).
 
 #### Timeouts and retries
 
@@ -165,11 +165,11 @@ Gloo will attempt to send requests to the proper Upstream, but there may be time
           perTryTimeout: '5s'
 ```
 
-More information about configuring the [timeout]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/timeout/" %}}) and [retry]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/retries/" %}}) can be found in their respective guides.
+More information about configuring the [timeout]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/timeout/" %}}) and [retry]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/retries/" %}}) can be found in their respective guides.
 
 #### Traffic shadowing
 
-You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. Real clients are consuming the new version of your service, with potentially negative consequences. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/shadowing/" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of your service, without altering the original request.
+You can control the rollout of changes using canary releases or blue-green deployments with Upstream Groups. The downside to using either feature is that your are working with live traffic. Real clients are consuming the new version of your service, with potentially negative consequences. An alternative is to shadow the client traffic to your new release, while still processing the original request normally. [Traffic shadowing]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/shadowing//" %}}) makes a copy of an incoming request and sends it out-of-band to the new version of your service, without altering the original request.
 
 ---
 
@@ -182,7 +182,7 @@ When configuring an API gateway or edge proxy, invalid configurations can quickl
 1. Report the status on change
 1. Process the changes and apply to Envoy
 
-More detail on the validation process and its settings can be found in the [Configuration Validation guide]({{% versioned_link_path fromRoot="/gloo_routing/validation/" %}}).
+More detail on the validation process and its settings can be found in the [Configuration Validation guide]({{% versioned_link_path fromRoot="/guides/traffic_management/configuration_validation/" %}}).
 
 ---
 
@@ -192,5 +192,5 @@ Now that you have an understanding of how Gloo handles traffic management we hav
 
 * **[Security]({{% versioned_link_path fromRoot="/introduction/security/" %}})** - learn more about Gloo and its security features
 * **[Setup]({{% versioned_link_path fromRoot="/installation/" %}})** - Deploy your own instance of Gloo
-* **[Traffic management guides]({{% versioned_link_path fromRoot="/gloo_routing/" %}})** - Try out the traffic management guides to learn more
+* **[Traffic management guides]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}})** - Try out the traffic management guides to learn more
 

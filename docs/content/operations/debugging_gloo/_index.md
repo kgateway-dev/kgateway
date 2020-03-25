@@ -56,7 +56,7 @@ This combines both `Gateway` and `VirtualService` resources into a single docume
 
 ### Upstreams
 
-When using [dynamic Upstream discovery]({{< versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/route_destinations/single_upstreams/discovered_upstream/" >}}) (default, out of the box), and making changes to those upstreams (ie, adding TLS), you may end up with misconfigured or `Rejected` Upstreams that can cause resources that depend on them to show failures (ie, VirtualServices, RouteTable, etc). To determine whether your Upstreams are in a healthy state, run the following and examine the `STATUS` column:
+When using [dynamic Upstream discovery]({{< versioned_link_path fromRoot="/guides/traffic_management/destination_types/discovered_upstream/" >}}) (default, out of the box), and making changes to those upstreams (ie, adding TLS), you may end up with misconfigured or `Rejected` Upstreams that can cause resources that depend on them to show failures (ie, VirtualServices, RouteTable, etc). To determine whether your Upstreams are in a healthy state, run the following and examine the `STATUS` column:
 
 ```bash
 glooctl get upstreams
@@ -88,7 +88,7 @@ glooctl proxy logs -f
 
 When you have the logging window up, send requests through to the proxy and you can get some very detailed debugging logging going through the log tail. 
 
-Additionally, you can enable access logging to dump specific parts of the request into the logs. Please see the [doc on access logging]({{< versioned_link_path fromRoot="/gloo_routing/gateway_configuration/access_logging/" >}}) to configure that. 
+Additionally, you can enable access logging to dump specific parts of the request into the logs. Please see the [doc on access logging]({{< versioned_link_path fromRoot="/guides/security/access_logging//" >}}) to configure that. 
 
 
 ### Viewing Envoy stats
@@ -171,7 +171,7 @@ kubectl logs -f -n gloo-system -l gloo=gloo
 
 ### Changing logging Levels and more
 
-Each Gloo control plane component comes with a [optional debug port]({{< versioned_link_path fromRoot="/observability/ports/" >}}) that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
+Each Gloo control plane component comes with a [optional debug port]({{< versioned_link_path fromRoot="/guides/observability/ports/" >}}) that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
 
 ```bash
 kubectl port-forward  -n gloo-system deploy/gloo  9091:9091

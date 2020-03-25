@@ -115,7 +115,7 @@ The above `options` configuration is to be interpreted as following:
 
 1. Add a transformation to all traffic handled by this Virtual Host.
 1. Apply the transformation only to requests.
-1. Define two [extractions]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations#extractors" %}}) 
+1. Define two [extractions]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations#extractors" %}}) 
 to extract the values of the query parameters. We achieve this by using regex capturing groups and selecting the nested group 
 which matches only the value of the relevant query parameter.
 1. Add two headers and set their values of the values of the extractions.

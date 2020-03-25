@@ -25,13 +25,13 @@ Let's see what underpins Gloo routing with a high-level look at the layout of th
 
 ## Route Rules
 
-Configuring the routing engine is done with defined predicates that match on incoming requests. The contents of a request, such as headers, path, method, etc., are examined to see if they match the predicates of a route rule. If they do, the request is processed based on enabled routing features and routed to an Upstream destinations such as REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the [Virtual Services section]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services" %}}) we'll dig into this process further.
+Configuring the routing engine is done with defined predicates that match on incoming requests. The contents of a request, such as headers, path, method, etc., are examined to see if they match the predicates of a route rule. If they do, the request is processed based on enabled routing features and routed to an Upstream destinations such as REST or gRPC services running in Kubernetes, EC2, etc. or Cloud Functions like Lambda. In the [Traffic Management section]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) we'll dig into this process further.
 
 ![Structure of gateway configurations with virtual service]({{% versioned_link_path fromRoot="/img/gloo-routing-overview.png" %}})
 
 ## Examples and Concepts
 
-Now that you have a basic framework for understanding what Gloo routing does, let's get started with a [Hello World]({{% versioned_link_path fromRoot="/gloo_routing/hello_world" %}}) example. Once you're comfortable implementing a basic configuration, you can move to more advanced use cases and expand your understanding of core concepts in Gloo like [Virtual Services]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services" %}}) and [Configuring TLS]({{% versioned_link_path fromRoot="/gloo_routing/tls" %}}).
+Now that you have a basic framework for understanding what Gloo routing does, let's get started with a [Hello World]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) example. Once you're comfortable implementing a basic configuration, you can move to more advanced use cases and expand your understanding of core concepts in Gloo like [Traffic Management]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}) and [Network Security]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}).
 
 ---
 

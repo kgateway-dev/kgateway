@@ -97,7 +97,7 @@ configuration options are inconsistent/invalid).
 The webhook can be configured to reject invalid resources via the 
 {{< protobuf name="gloo.solo.io.Settings" display="Settings">}} resource.
 
-See [the Admission Controller Guide]({{< versioned_link_path "/gloo_routing/validation/admission_control">}}) 
+See [the Admission Controller Guide]({{< versioned_link_path "/guides/traffic_management/configuration_validation/admission_control/">}}) 
 to learn how to configure and use Gloo's admission control feature.
 
 # Sanitizing Config
@@ -107,8 +107,7 @@ Gloo can be configured to pass partially-valid config to Envoy by admitting it t
 Rather than refuse to update Envoy with invalid config, Gloo can replace the invalid pieces of configuration with preconfigured 
 defaults.
 
-See [the Route Replacement Guide]({{< versioned_link_path "/gloo_routing/validation/invalid_route_replacement">}}) 
-to learn how to configure and use Gloo's sanitization feature.
+See [the Route Replacement Guide]({{< versioned_link_path "/guides/traffic_management/configuration_validation/invalid_route_replacement/">}}) to learn how to configure and use Gloo's sanitization feature.
 
 # Further Reading
 

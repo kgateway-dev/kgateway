@@ -4,7 +4,7 @@ weight: 10
 description: Understanding how to set up Server-side TLS for Gloo
 ---
 
-Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls/" %}}). In this document, we'll explore configuring Gloo for server TLS.
+Gloo can encrypt traffic coming from external clients over TLS/HTTPS. [We can also configure Gloo to do mTLS with external clients as well]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}}). In this document, we'll explore configuring Gloo for server TLS.
 
 ---
 
@@ -508,6 +508,6 @@ status:
 
 As we mentioned earlier, you can configure Gloo to perform mutual TLS (mTLS) and client side TLS with Upstreams. Check out these guides to learn more:
 
-* **[Setting up Upstream TLS]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls/" %}})**
-* **[Setting up Upstream TLS with Service Annotations]({{% versioned_link_path fromRoot="/gloo_routing/tls/client_tls_service_annotations/" %}})**
-* **[Gloo mTLS mode]({{% versioned_link_path fromRoot="/security/mtls/" %}})**
+* **[Setting up Upstream TLS]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}})**
+* **[Setting up Upstream TLS with Service Annotations]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations//" %}})**
+* **[Gloo mTLS mode]({{% versioned_link_path fromRoot="/guides/security/mtls/" %}})**

@@ -22,7 +22,7 @@ When we say Gloo is a "next-generation" gateway, we mean it was purpose-built fo
 ## Getting to know Gloo
 
 * [**Installation**]({{% versioned_link_path fromRoot="/installation" %}})
-* [**Developers**]({{% versioned_link_path fromRoot="/dev/" %}})
+* [**Developers**]({{% versioned_link_path fromRoot="/guides/dev/" %}})
 * [**Blog**](https://medium.com/solo-io/announcing-gloo-the-function-gateway-3f0860ef6600)
 * [**Slack**](https://slack.solo.io)
 * [**Twitter**](https://twitter.com/soloio_inc)

@@ -68,13 +68,13 @@ spec:
   useProxyProto: false
 ```
 
-In this case, we are setting up an HTTP listener on port 8443. When [VirtualServices](#virtual-services) define a TLS context, they'll automatically bind to this Gateway. You can explicitly configure the Gateway to which a [VirtualService](#virtual-services) binds. In addition, you can also create [TCP gateways]({{% versioned_link_path fromRoot="/gloo_routing/tcp_proxy/" %}}) that allow for binary traffic.
+In this case, we are setting up an HTTP listener on port 8443. When [VirtualServices](#virtual-services) define a TLS context, they'll automatically bind to this Gateway. You can explicitly configure the Gateway to which a [VirtualService](#virtual-services) binds. In addition, you can also create [TCP gateways]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/tcp_proxy/" %}}) that allow for binary traffic.
 
 ---
 
 ## Virtual Services
 
-*Virtual Services* define a set of route rules, security configuration (including [TLS, mTLS, SNI]({{% versioned_link_path fromRoot="/gloo_routing/tls/" %}}), [WAF]({{% versioned_link_path fromRoot="/security/waf/" %}}), [OAuth]({{% versioned_link_path fromRoot="/security/auth/oauth/" %}}), [Data Loss Prevention]({{% versioned_link_path fromRoot="/security/data_loss_prevention/" %}}), and [others]({{% versioned_link_path fromRoot="/security/" %}})), rate limiting, transformations, and other core routing capabilities supported by Gloo.
+*Virtual Services* define a set of route rules, security configuration (including [TLS, mTLS, SNI]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}), [WAF]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}), [OAuth]({{% versioned_link_path fromRoot="/guides/security/auth/oauth/" %}}), [Data Loss Prevention]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}), and [others]({{% versioned_link_path fromRoot="/guides/security/" %}})), rate limiting, transformations, and other core routing capabilities supported by Gloo.
 
 Gloo selects the appropriate Virtual Service (set of routes) based on the domain specified in a request's `Host` header (in HTTP 1.1) or `:authority` header (HTTP 2.0).
 
@@ -82,7 +82,7 @@ Virtual Services also support wildcard domains (starting with `*`).
 
 Gloo creates a `default` Virtual Service for the user if the user does not provide one. The `default` Virtual Service matches the `*` domain, which serves routes for any request that does not include a `Host`/`:authority` header, or a request that requests a domain that does not match another Virtual Service. You'll note in the [Hello World tutorial]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}) we create a `virtualservice` named `default`.
 
-Each domain specified for a Virtual Service must be unique across the set of all Virtual Services provided to Gloo. In previous versions, we supported Virtual Service  merging, which means you could have multiple Virtual Services with the same domain, and we would just merge the routes. The preferred way to segment out routes and have multiple owners of the Virtual Service is to use [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}). Please see the [introduction to the decentralized Gloo API]({{% versioned_link_path fromRoot="/introduction/architecture/decentralized_routing/" %}}) and [delegation]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/delegation/" %}}) for more.
+Each domain specified for a Virtual Service must be unique across the set of all Virtual Services provided to Gloo. In previous versions, we supported Virtual Service  merging, which means you could have multiple Virtual Services with the same domain, and we would just merge the routes. The preferred way to segment out routes and have multiple owners of the Virtual Service is to use [delegation]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation//" %}}). Please see the [introduction to the decentralized Gloo API]({{% versioned_link_path fromRoot="/introduction/architecture/decentralized_routing/" %}}) and [delegation]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/delegation//" %}}) for more.
 
 For some use cases, it may be sufficient to let all routes live on a single Virtual Service. In this scenario, Gloo uses the same set of route rules for requests, regardless of their `Host` or `:authority` header.
 

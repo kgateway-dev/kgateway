@@ -318,6 +318,6 @@ curl http://localhost:8080/petstore/findWithId/1
 
 ## Next Steps
 
-Congratulations! You've successfully deployed Gloo with Docker Compose and created your first route. Now let's delve deeper into the world of [Gloo routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}). 
+Congratulations! You've successfully deployed Gloo with Docker Compose and created your first route. Now let's delve deeper into the world of [Traffic Management with Gloo]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}). 
 
 Most of the existing tutorials for Gloo use Kubernetes as the underlying resource, but they can also use a Docker Compose deployment. It will be necessary to handcraft the proper YAML files for each configuration, so it might make more sense to check out using either Kubernetes or Consul & Vault to store configuration data.

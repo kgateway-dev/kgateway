@@ -224,7 +224,7 @@ dynamicMetadataValues:
 
 The `metadataNamespace` is optional. It defaults to the namespace of the Gloo transformation filter name, i.e. `io.solo.transformation`.
 
-A common use case for this attribute is to define custom data to be included in your access logs. See the [dedicated tutorial]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/routing_features/transformations/enrich_access_logs" %}}) for an example of how this can be achieved.
+A common use case for this attribute is to define custom data to be included in your access logs. See the [dedicated tutorial]({{% versioned_link_path fromRoot="/guides/traffic_management/request_processing/transformations/enrich_access_logs/" %}}) for an example of how this can be achieved.
 
 ##### advancedTemplates
 This attribute determines which notation to use when accessing elements in JSON structures. If set to `true`, Gloo will expect JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start"). Defaults to `false`.

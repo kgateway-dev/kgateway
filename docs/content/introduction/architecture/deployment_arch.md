@@ -123,4 +123,4 @@ Now that you have an understanding of the Gloo deployment patterns, there are nu
 * **[Getting Started]({{% versioned_link_path fromRoot="/getting_started/" %}})**: Deploy Gloo yourself or try one of our Katacoda courses.
 * **[Deployment Options]({{% versioned_link_path fromRoot="/introduction/architecture/deployment_arch/" %}})**: Learn about specific implementations of Gloo with Kubernetes or HashiCorp.
 * **[Concepts]({{% versioned_link_path fromRoot="/introduction/architecture/concepts/" %}})**: Learn more about the core concepts behind Gloo and how they interact.
-* **[Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.
+* **[Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}})**: extend Gloo's functionality for your use case through various plugins.

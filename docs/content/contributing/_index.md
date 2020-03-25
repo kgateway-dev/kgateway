@@ -16,7 +16,7 @@ You can help us improve and extend Gloo itself by helping with bug fixes and ope
 
 ## Extend Gloo's functionality
 
-We have put together a set of development guides to get started on extending and improving Gloo through the addition of new plugins. Checkout out the [introductory doc]({{< versioned_link_path fromRoot="/dev/" >}}) in the developer guides for more information on getting going.
+We have put together a set of development guides to get started on extending and improving Gloo through the addition of new plugins. Checkout out the [introductory doc]({{< versioned_link_path fromRoot="/guides/dev/" >}}) in the developer guides for more information on getting going.
 
 ## Improve the documentation
 

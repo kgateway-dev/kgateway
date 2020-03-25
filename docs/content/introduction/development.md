@@ -26,5 +26,5 @@ Gloo's plugin based architecture makes it easy to extend functionality in a vari
 - [Upstream Plugins](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/plugin_interface.go#L44): customize what happens to requests when they are routed to a service
 - **Operators for Configuration**: Gloo exposes its intermediate language for proxy configuration via the [`gloo.solo.io/Proxy`](https://gloo.solo.io/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#proxy) Custom Resource, allowing operators to leverage Gloo for multiple use cases. The [Gloo Gateway](https://github.com/solo-io/gloo/tree/master/projects/gateway) and [Sqoop](https://github.com/solo-io/sqoop) provide API Gateway and GraphQL Server functionality respectively, without needing to run in the same process (or even the same container) as Gloo.
 
-To get started with development around Gloo, we recommend taking a look at our [Developer Guides]({{% versioned_link_path fromRoot="/dev/" %}}).
+To get started with development around Gloo, we recommend taking a look at our [Developer Guides]({{% versioned_link_path fromRoot="/guides/dev/" %}}).
 

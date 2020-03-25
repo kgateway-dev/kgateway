@@ -156,10 +156,10 @@ For your convenience, here's the content of teardown.sh:
 
 ## Next Steps
 
-Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security featuers in Gloo.
+Now that you've see how to configure a basic policy with OPA, you can go further down the rabbit hole of policies, or check out some of the other security features in Gloo.
 
-* [**Web Application Firewall**]({{% versioned_link_path fromRoot="/security/waf/" %}})
-* [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/security/data_loss_prevention/" %}})
-* [**Cross-Origin Resource Sharing**]({{% versioned_link_path fromRoot="/security/cors/" %}})
+* [**Web Application Firewall**]({{% versioned_link_path fromRoot="/guides/security/waf/" %}})
+* [**Data Loss Prevention**]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}})
+* [**Cross-Origin Resource Sharing**]({{% versioned_link_path fromRoot="/guides/security/cors/" %}})
 
-Or you might want to learn more about the various features available to [Routes]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/routes/" %}}) on a [Virtual Service]({{% versioned_link_path fromRoot="/gloo_routing/virtual_services/" %}}).
+Or you might want to learn more about the various features available to Routes on a Virtual Service in our [Traffic Management guides]({{% versioned_link_path fromRoot="/guides/traffic_management/" %}}).
