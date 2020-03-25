@@ -1,6 +1,7 @@
 ---
 title: Observability
 weight: 40
+description: Monitoring, metrics, and logging for Gloo
 ---
 
 > **Note**: Observability features are available only in enterprise Gloo

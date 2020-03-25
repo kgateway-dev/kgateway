@@ -1,6 +1,7 @@
 ---
 title: Traffic Management
 weight: 10
+description: Managing the traffic flowing through Gloo to Upstream destinations
 ---
 
 Gloo has a powerful routing engine that can handle simple use cases like API-to-API routing as well as more complex ones like HTTP to gRPC with body and header transformations. Routing can also be done natively to cloud-function providers like AWS Lambda, Google Cloud Functions and Azure Functions.

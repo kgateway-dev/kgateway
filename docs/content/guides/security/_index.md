@@ -1,6 +1,7 @@
 ---
 title: Security
 weight: 30
+description: Implementing security features for traffic handled by Gloo
 ---
 
 One of the core responsibilities of an API Gateway is to secure your cluster. This problem can take many 

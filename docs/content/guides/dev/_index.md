@@ -1,6 +1,7 @@
 ---
 title: "Developer Guides"
 weight: 60
+description: Extending Gloo's functionality with the use of plugins
 ---
 
 ## Intro
