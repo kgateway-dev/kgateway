@@ -23,7 +23,7 @@ Let's dig a bit deeper and see why you might use some of these architectures.
 
 ## Simple ingress to Kubernetes
 
-Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/gloo_integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
+Gloo can play the role of a very simple [Kubernetes Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) Controller. See [the docs for setting up Gloo]({{< versioned_link_path fromRoot="/guides/integrations/ingress" >}}) as an Ingress controller. In this mode, you get a simple HTTP proxy based on [Envoy Proxy](https://www.envoyproxy.io) (restricted by the Kubernetes Ingress API) that can interpret the `Ingress` sepc. Note; a large portion of the Envoy (and Gloo) functionality is not exposed through the Ingress API. Consider using [Gateway mode]({{< versioned_link_path fromRoot="/installation/gateway" >}}) for non-trivial deployments. 
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/ingress.png" %}})
 

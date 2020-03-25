@@ -208,7 +208,7 @@ status:
 
 At this point, we have the correct certificates/keys/CAs installed into the proxy and configured for the `productpage` service.
 
-See the bottom of the page for instructions on [testing your configuration]({{% versioned_link_path fromRoot="/gloo_integrations/service_mesh/gloo_istio_mtls/#test-your-configuration" %}}).
+See the bottom of the page for instructions on [testing your configuration]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/#test-your-configuration" %}}).
 
 ### With SDS mode
 
