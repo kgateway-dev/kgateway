@@ -2,7 +2,7 @@
 title: Setting up Upstream TLS with Service Annotations
 menuTitle: TLS with Service Annotations
 weight: 30
-description: Set up Gloo to route to TLS-encrypted services by using annotations on the Kubernetes Service object.
+description: Set up Gloo to route to TLS-encrypted services using Kubernetes Service object annotations
 ---
 
 ## Motivation

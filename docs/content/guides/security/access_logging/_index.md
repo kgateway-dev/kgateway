@@ -1,15 +1,15 @@
 ---
 title: Access Logging
 weight: 40
+description: Produce an access log representing traffic passing through the proxy
 ---
 
-A common use case for the API gateway is to produce an **access log** (sometimes referred to as an audit log). The entries of 
- an access log represent traffic through the proxy. The access log entries can be customized to include 
+A common use case for the API gateway is to produce an **access log** (sometimes referred to as an audit log). The entries of an access log represent traffic through the proxy. The access log entries can be customized to include 
 data from the request, the routing destination, and the response. The proxy can be configured to output multiple access logs with different configuration.
-An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a grpc 
-server for custom handling. 
 
-With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** CRD.  
+An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a grpc server for custom handling. 
+
+With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.  
 
 ### Data Available for Logging
 

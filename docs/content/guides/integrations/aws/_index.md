@@ -1,6 +1,6 @@
 ---
 title: "AWS Elastic Load Balancers (ELB)"
-description: This document shows how Gloo complement AWS' load balancers in combining Gloo's L7 application networking with AWS zone aware global load balancers.
+description: Use Gloo to complement AWS load balancers
 weight: 7
 ---
 

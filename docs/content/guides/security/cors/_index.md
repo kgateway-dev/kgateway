@@ -1,7 +1,7 @@
 ---
 title: CORS
 weight: 70
-description: Cross-Origin Resource Sharing (CORS) is a method of enforcing client-side access controls on resources by specifying external domains that are able to access certain or all routes of your domain.
+description: Enforce client-side access controls by specifying external domains to access certain routes of your domain
 ---
 
 ### Understanding CORS

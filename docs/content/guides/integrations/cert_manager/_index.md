@@ -1,7 +1,7 @@
 ---
 title: "Integrating Gloo and Let's Encrypt with cert-manager"
 menuTitle: Cert-manager
-description: This document shows how to secure your ingress traffic using gloo and cert-manager. We will deploy everything to minikube. With minor adjustments can be applied to any Kubernetes cluster.
+description: Secure your ingress traffic using Gloo and cert-manager
 weight: 20
 ---
 

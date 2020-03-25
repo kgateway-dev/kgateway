@@ -1,7 +1,7 @@
 ---
 title: Gloo mTLS mode
 weight: 40
-description: Gloo mTLS is a way to ensure that communications between Gloo and Envoy is secure. This is useful if your control-plane is in a different environment than your envoy instance.
+description: Ensure that communications between Gloo and Envoy is secure with mTLS
 ---
 
 {{% notice note %}}

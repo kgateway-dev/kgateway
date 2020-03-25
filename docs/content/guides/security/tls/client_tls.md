@@ -1,7 +1,7 @@
 ---
 title: Setting up Upstream TLS
 weight: 20
-description: Understanding how to set up Gloo to route to TLS-encrypted services
+description: Set up Gloo to route to TLS-encrypted services
 ---
 
 ## Configuring Upstream TLS for Gloo

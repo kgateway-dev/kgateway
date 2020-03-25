@@ -1,15 +1,17 @@
 ---
 menuTitle: Network Encryption
-title: Configuring TLS
+title: Network Encryption
 weight: 10
-description: Configure Gloo to serve and terminate TLS to downstream clients, as well as initiate upstream connections using upstream TLS.
+description: Configure Gloo to use TLS upstream, downstream, and with Envoy
 ---
 
-Gloo can perform *TLS termination* for downstream clients, unencrypting traffic arriving from downstream clients. 
+Network security and encryption is incredibly important, especially for public facing services or services that carry sensitive data. Gloo can assist with the following use cases:
 
-Gloo is also capable of loading client certificates to perform mutual TLS with an *upstream server* which is already serving TLS.
+ * Perform *TLS termination* for downstream clients, unencrypting traffic arriving from downstream clients
+ * Loading client certificates to perform mutual TLS with an *upstream server* which is already serving TLS
+ * Configure mutual TLS with the Envoy proxy served by the xDS service on the Gloo pod
 
-For downstream TLS termination, [see the guide on setting up Server TLS]({{< versioned_link_path fromRoot="/guides/security/tls/server_tls/">}})
+The following guides provide more detail on how to configure each feature:
 
-For upstream TLS connections, [see the documentation on setting up Client TLS]({{< versioned_link_path fromRoot="/guides/security/tls/client_tls/">}})
+{{% children description="true" %}}
 
