@@ -16,17 +16,14 @@ This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, and 1.4.3.
 This guide was tested with Gloo v1.3.1.
 
 {{% notice note %}}
-Please note that for gloo versions 1.1.x and up, you must run: `kubectl label namespace default discovery.solo.io/function_discovery=disabled`
-before editing the upstream. This prevents your changes from being overwritten.
+Please note that for gloo versions 1.1.x and up, you must run: `kubectl label namespace default discovery.solo.io/function_discovery=disabled` before editing the Upstream. This prevents your changes from being overwritten.
 {{% /notice %}}
 
 ### Kubernetes versions
 
 This guide was tested with GKE v1.15.
 
-Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing
-Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes.
-We recommend installing Istio in a cluster which has this feature turned on by default (for example, GKE).
+Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes. We recommend installing Istio in a cluster which has this feature turned on by default (for example, GKE).
 
 ---
 
@@ -36,8 +33,7 @@ For this exercise, you will need Istio installed with mTLS enabled.
 
 ### Download and install
 
-To download and install the latest version of Istio, follow the installation instructions [here](https://istio.io/docs/setup/getting-started/).
-You will need to set the profile to sds for this guide.
+To download and install the latest version of Istio, follow the installation instructions [here](https://istio.io/docs/setup/getting-started/). You will need to set the profile to sds for this guide.
 
 Previous releases can be found for download [here](https://github.com/istio/istio/releases).
 
@@ -53,8 +49,7 @@ Use `kubectl get pods -n istio-system` to check the status on the Istio pods and
 
 ### SDS mode
 
-In Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/secret.html#secret-discovery-service-sds). 
-This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as with Istio 1.0. This has two big benefits:
+In Istio 1.1, a new option to configure certificates and keys was introduced based on [Envoy Proxy's Secret Discovery Service](https://www.envoyproxy.io/docs/envoy/v1.11.2/configuration/secret.html#secret-discovery-service-sds). This mode enables Istio to deliver the secrets via an API instead of mounting to the file system as with Istio 1.0. This has two big benefits:
 
 * We don't need to hot-restart the proxy when certificates are rotated
 * The keys for the services never travel over the network; they stay on a single node and are delivered to the service. 
@@ -65,8 +60,8 @@ For more information on [Istio's identity provisioning through SDS](https://isti
 
 ## Step 2 - Install bookinfo
 
-Before configuring gloo, you'll need to install the bookinfo sample app to be consistent with this guide, 
-or you can use your preferred upstream. Either way, you'll need to enable istio-injection in the default namespace:
+Before configuring gloo, you'll need to install the bookinfo sample app to be consistent with this guide, or you can use your preferred Upstream. Either way, you'll need to enable istio-injection in the default namespace:
+
 ```bash
 kubectl label namespace default istio-injection=enabled
 ```
@@ -80,19 +75,13 @@ kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 
 ## Step 3 - Configure Gloo
 
-This guide assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace
-and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the
-`istio-injection` label does *not* exist on the `gloo-system` namespace.
-See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
+This guide assumes that you have Gloo installed. Gloo is installed to the `gloo-system` namespace and should *not* be injected with the Istio sidecar. If you have automatic injection enabled for Istio, make sure the `istio-injection` label does *not* exist on the `gloo-system` namespace. See [the Istio docs on automatic sidecar injection](https://istio.io/docs/setup/kubernetes/additional-setup/sidecar-injection/#automatic-sidecar-injection) for more.
 
-To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the 
-[quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
+To quickly install Gloo, download *glooctl* and run `glooctl install gateway`. See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
-For Gloo to successfully send requests to an Istio upstream with mTLS enabled, we need to add
-the Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the 
-upstream service.
+For Gloo to successfully send requests to an Istio Upstream with mTLS enabled, we need to addthe Istio mTLS secret to the gateway-proxy pod. The secret allows Gloo to authenticate with the Upstream service.
 
-The last configuration step is to configure the relevant Gloo upstreams with mTLS. We can be fine-grained about which upstreams have these settings as not all Gloo upstreams may need/want mTLS enabled. This gives us the flexibility to route to upstreams
+The last configuration step is to configure the relevant Gloo Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams
 both with and without mTLS enabled - a common occurrence in a brown field environment or during a migration to Istio.
 
 ### Without SDS
@@ -163,14 +152,14 @@ spec:
 
 The Gloo gateway will now have access to Istio client secrets.
 
-Let's edit the `productpage` upstream and tell Gloo to use the secrets that we just mounted into the Gloo Gateway.
+Let's edit the `productpage` Upstream and tell Gloo to use the secrets that we just mounted into the Gloo Gateway.
 
-Edit the upstream with this command:
+Edit the Upstream with this command:
 ```bash
 kubectl edit upstream default-productpage-9080 --namespace gloo-system
 ```
 
-The updated upstream should look like this:
+The updated Upstream should look like this:
 {{< highlight yaml "hl_lines=19-23" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream
@@ -212,8 +201,8 @@ See the bottom of the page for instructions on [testing your configuration]({{% 
 
 ### With SDS mode
 
-Gloo can easily and automatically plug into the Istio SDS architecture. 
-To allow Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
+Gloo can easily and automatically plug into the Istio SDS architecture. To allow Gloo to do this, let's configure the Gloo gateway proxy (Envoy) to communicate with the Istio SDS over the Unix Domain Socket:
+
 ```bash
 kubectl edit deploy/gateway-proxy -n gloo-system
 ```
@@ -289,6 +278,7 @@ spec:
 {{< /highlight >}}
 
 In Istio 1.3 there were some changes to the token used to authenticate as well as how that projected token gets into the gateway. For Istio 1.3 and 1.4, let's also add the projected token:
+
 {{< highlight yaml "hl_lines=16-17 32-39" >}}
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -332,14 +322,15 @@ spec:
 ...        
 {{< /highlight >}}
 
-Next, we need to update the `productpage` upstream with the appropriate SDS configuration:
+Next, we need to update the `productpage` Upstream with the appropriate SDS configuration:
+
 ```bash
 kubectl edit upstream default-productpage-9080 -n gloo-system
 ```
 
 ### Istio 1.1.x
 
-Here's an example of the edited upstream for Istio 1.1.
+Here's an example of the edited Upstream for Istio 1.1.
 
 {{< highlight yaml "hl_lines=23-31" >}}
 apiVersion: gloo.solo.io/v1
@@ -387,7 +378,7 @@ This was fixed by Istio 1.3.6.
 
 For Istio 1.3 and 1.4, we need to use the new header name as well as point to the new location of the projected token.
 
-Here's an example of the edited upstream for Istio 1.3 and 1.4:
+Here's an example of the edited Upstream for Istio 1.3 and 1.4:
 {{< highlight yaml "hl_lines=15-23" >}}
 apiVersion: gloo.solo.io/v1
 kind: Upstream

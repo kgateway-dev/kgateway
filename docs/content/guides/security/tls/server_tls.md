@@ -510,4 +510,4 @@ As we mentioned earlier, you can configure Gloo to perform mutual TLS (mTLS) and
 
 * **[Setting up Upstream TLS]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}})**
 * **[Setting up Upstream TLS with Service Annotations]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls_service_annotations//" %}})**
-* **[Gloo mTLS mode]({{% versioned_link_path fromRoot="/guides/security/mtls/" %}})**
+* **[Gloo mTLS mode]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/" %}})**

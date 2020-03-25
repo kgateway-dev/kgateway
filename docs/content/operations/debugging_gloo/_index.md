@@ -171,7 +171,7 @@ kubectl logs -f -n gloo-system -l gloo=gloo
 
 ### Changing logging Levels and more
 
-Each Gloo control plane component comes with a [optional debug port]({{< versioned_link_path fromRoot="/guides/observability/ports/" >}}) that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
+Each Gloo control plane component comes with a optional debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
 
 ```bash
 kubectl port-forward  -n gloo-system deploy/gloo  9091:9091

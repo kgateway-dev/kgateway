@@ -32,7 +32,7 @@ External authentication in Gloo supports several forms of authentication:
 
 An API gateway sits between the downstream client and the upstream service it wants to connect with. The network traffic between the API gateway and the downstream client, and between the API gateway and the upstream service should be encrypted using Transport Layer Security (TLS). Gloo can configure [server TLS]({{% versioned_link_path fromRoot="/guides/security/tls/server_tls//" %}}) to present a valid certificate to downstream clients and [client TLS]({{% versioned_link_path fromRoot="/guides/security/tls/client_tls//" %}}) to present a valid certificate to upstream services.
 
-We must also consider the control plane used by Gloo Gateway to configure Envoy through the xDS protocol. The xDS communication may contain sensitive data, and should be encrypted through mutual TLS (mTLS) to validate the identity of both parties and encrypt the traffic between them. Mutual TLS requires that both the client and server present valid and trusted certificates when creating the TLS tunnel. Gloo is capable of configuring [mTLS between Gloo and Envoy]({{% versioned_link_path fromRoot="/guides/security/mtls/" %}}).
+We must also consider the control plane used by Gloo Gateway to configure Envoy through the xDS protocol. The xDS communication may contain sensitive data, and should be encrypted through mutual TLS (mTLS) to validate the identity of both parties and encrypt the traffic between them. Mutual TLS requires that both the client and server present valid and trusted certificates when creating the TLS tunnel. Gloo is capable of configuring [mTLS between Gloo and Envoy]({{% versioned_link_path fromRoot="/guides/security/tls/mtls/" %}}).
 
 ---
 

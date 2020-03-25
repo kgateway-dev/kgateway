@@ -21,7 +21,7 @@ Grafana is an open source analytics and monitoring solution that allows you to q
 
 Gloo Enterprise's deployment of Prometheus is configured to scrape metrics from all of the Gloo pods including the Envoy proxy. The default Grafana deployment uses Prometheus as a data source to generate dashboards and visualizations. The Gloo Observability service interacts with Grafana to create dynamically generated dashboards for the cluster and individual Upstreams.
 
-While Gloo Enterprise includes an installation of Prometheus and Grafana, it is possible to use your own existing instances of either application. Please reference the configuration guides for [Grafana]({{% versioned_link_path fromRoot="/guides/observability/grafana/" %}}) and [Prometheus]({{% versioned_link_path fromRoot="/guides/observability/metrics/" %}}) for more information.
+While Gloo Enterprise includes an installation of Prometheus and Grafana, it is possible to use your own existing instances of either application. Please reference the configuration guides for [Grafana]({{% versioned_link_path fromRoot="/guides/observability/grafana/" %}}) and [Prometheus]({{% versioned_link_path fromRoot="/guides/observability/prometheus/metrics/" %}}) for more information.
 
 ---
 
@@ -45,7 +45,7 @@ The admin port for Envoy is set to `19000` by Gloo. Through the admin port you c
 
 ### Gloo Admin
 
-The admin port for all of the Gloo pods is `9091`. If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/guides/observability/metrics/" %}})), as well as admin functionality like changing the logging levels and getting a stack dump.
+The admin port for all of the Gloo pods is `9091`. If the `START_STATS_SERVER` environment variable is set to `true` in Gloo's pods, they will listen on port `9091`. Functionality available on that port includes Prometheus metrics at `/metrics` (see more on Gloo metrics [here]({{% versioned_link_path fromRoot="/guides/observability/prometheus/metrics/" %}})), as well as admin functionality like changing the logging levels and getting a stack dump.
 
 ---
 
