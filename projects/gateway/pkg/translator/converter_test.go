@@ -692,12 +692,14 @@ var _ = Describe("Route converter", func() {
 				Expect(converted[4]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1/2")))
 				Expect(converted[5]).To(WithTransform(getFirstPrefixMatcher, Equal("/foo/a/1")))
 
-				By("virtual service contains a warning about two child route tables with the same weight", func() {
+				By("virtual service contains all warnings about child route tables with the same weight", func() {
 					_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport).NotTo(BeNil())
-					Expect(vsReport.Warnings).To(HaveLen(1))
+					Expect(vsReport.Warnings).To(HaveLen(3))
 					Expect(vsReport.Warnings).To(ConsistOf(
 						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1, rt2}, 20).Error(),
+						translator.TopLevelVirtualResourceErr(rt3.GetMetadata(), translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3b, rt3c}, 0)).Error(),
+						translator.TopLevelVirtualResourceErr(rt1.GetMetadata(), translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1a, rt1b}, 0)).Error(),
 					))
 				})
 

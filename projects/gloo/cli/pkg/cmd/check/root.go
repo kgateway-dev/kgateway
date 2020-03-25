@@ -266,7 +266,12 @@ func checkUpstreams(namespaces []string) ([]string, bool, error) {
 		for _, upstream := range upstreams {
 			if upstream.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected upstream: %s\n", renderMetadata(upstream.GetMetadata()))
-				fmt.Printf("Reason: %s", upstream.Status.Reason)
+				fmt.Printf("Reason: %s\n", upstream.Status.Reason)
+				return nil, false, nil
+			}
+			if upstream.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found upstream with warnings: %s\n", renderMetadata(upstream.GetMetadata()))
+				fmt.Printf("Reason: %s\n", upstream.Status.Reason)
 				return nil, false, nil
 			}
 			knownUpstreams = append(knownUpstreams, renderMetadata(upstream.GetMetadata()))
@@ -287,7 +292,12 @@ func checkUpstreamGroups(namespaces []string) (bool, error) {
 		for _, upstreamGroup := range upstreamGroups {
 			if upstreamGroup.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected upstream group: %s\n", renderMetadata(upstreamGroup.GetMetadata()))
-				fmt.Printf("Reason: %s", upstreamGroup.Status.Reason)
+				fmt.Printf("Reason: %s\n", upstreamGroup.Status.Reason)
+				return false, nil
+			}
+			if upstreamGroup.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found upstream group with warnings: %s\n", renderMetadata(upstreamGroup.GetMetadata()))
+				fmt.Printf("Reason: %s\n", upstreamGroup.Status.Reason)
 				return false, nil
 			}
 		}
@@ -308,7 +318,12 @@ func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 		for _, authConfig := range authConfigs {
 			if authConfig.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected auth config: %s\n", renderMetadata(authConfig.GetMetadata()))
-				fmt.Printf("Reason: %s", authConfig.Status.Reason)
+				fmt.Printf("Reason: %s\n", authConfig.Status.Reason)
+				return nil, false, nil
+			}
+			if authConfig.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found auth config with warnings: %s\n", renderMetadata(authConfig.GetMetadata()))
+				fmt.Printf("Reason: %s\n", authConfig.Status.Reason)
 				return nil, false, nil
 			}
 			knownAuthConfigs = append(knownAuthConfigs, renderMetadata(authConfig.GetMetadata()))
@@ -329,7 +344,12 @@ func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs 
 		for _, virtualService := range virtualServices {
 			if virtualService.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
-				fmt.Printf("Reason: %s", virtualService.Status.GetReason())
+				fmt.Printf("Reason: %s\n", virtualService.Status.GetReason())
+				return false, nil
+			}
+			if virtualService.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found virtual service with warnings: %s\n", renderMetadata(virtualService.GetMetadata()))
+				fmt.Printf("Reason: %s\n", virtualService.Status.GetReason())
 				return false, nil
 			}
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
@@ -371,7 +391,12 @@ func checkGateways(namespaces []string) (bool, error) {
 		for _, gateway := range gateways {
 			if gateway.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected gateway: %s\n", renderMetadata(gateway.GetMetadata()))
-				fmt.Printf("Reason: %s", gateway.Status.Reason)
+				fmt.Printf("Reason: %s\n", gateway.Status.Reason)
+				return false, nil
+			}
+			if gateway.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found gateway with warnings: %s\n", renderMetadata(gateway.GetMetadata()))
+				fmt.Printf("Reason: %s\n", gateway.Status.Reason)
 				return false, nil
 			}
 		}
@@ -391,7 +416,12 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 		for _, proxy := range proxies {
 			if proxy.Status.GetState() == core.Status_Rejected {
 				fmt.Printf("Found rejected proxy: %s\n", renderMetadata(proxy.GetMetadata()))
-				fmt.Printf("Reason: %s", proxy.Status.Reason)
+				fmt.Printf("Reason: %s\n", proxy.Status.Reason)
+				return false, nil
+			}
+			if proxy.Status.GetState() == core.Status_Warning {
+				fmt.Printf("Found proxy with warnings: %s\n", renderMetadata(proxy.GetMetadata()))
+				fmt.Printf("Reason: %s\n", proxy.Status.Reason)
 				return false, nil
 			}
 		}
