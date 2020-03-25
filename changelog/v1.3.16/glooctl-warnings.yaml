@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      `glooctl check` now report Gloo CRD status warnings.
+    issueLink: https://github.com/solo-io/gloo/issues/2659
