@@ -330,7 +330,7 @@ In this scenario, Gloo will also alert the user by adding a warning to the statu
 specifies the `RouteTableSelector`).
 
 Please see the [Route Table weight](#route-table-weight) section below for more information about how to control 
-the ordering or your delegated routes.
+the ordering of your delegated routes.
 {{% /notice %}}
 
 A complete configuration might look as follows:
