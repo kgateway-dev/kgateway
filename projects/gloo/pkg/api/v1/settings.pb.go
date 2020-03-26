@@ -1180,9 +1180,9 @@ type GlooOptions struct {
 	// Default circuit breaker configuration to use for upstream requests,
 	// when not provided by specific upstream.
 	CircuitBreakers *CircuitBreakerConfig `protobuf:"bytes,3,opt,name=circuit_breakers,json=circuitBreakers,proto3" json:"circuit_breakers,omitempty"`
-	// Timeout to get initial snapshot of resources. If not set, Gloo will not wait for initial
-	// snapshot - if set and and gloo could not fetch it's initial snapshot before the timeout
-	// reached, gloo will panic.
+	// Timeout to get initial snapshot of resources. If set to zero, Gloo will not wait for initial
+	// snapshot - if nonzero and gloo could not fetch it's initial snapshot before the timeout
+	// reached, gloo will panic. If unset, Gloo defaults to 5 minutes.
 	EndpointsWarmingTimeout *types.Duration         `protobuf:"bytes,4,opt,name=endpoints_warming_timeout,json=endpointsWarmingTimeout,proto3" json:"endpoints_warming_timeout,omitempty"`
 	AwsOptions              *GlooOptions_AWSOptions `protobuf:"bytes,5,opt,name=aws_options,json=awsOptions,proto3" json:"aws_options,omitempty"`
 	// set these options to fine-tune the way Gloo handles invalid user configuration
