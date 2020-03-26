@@ -1,7 +1,6 @@
 package gateway_test
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -22,11 +21,6 @@ import (
 	"github.com/gogo/protobuf/types"
 	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-
-	errors "github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -77,31 +71,14 @@ func StartTestHelper() {
 
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	valueOverrideFile, cleanupFunc := getHelmValuesOverrideFile()
+	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
-	Eventually(func() error {
-		opts := &options.Options{
-			Metadata: core.Metadata{
-				Namespace: testHelper.InstallNamespace,
-			},
-			Top: options.Top{
-				Ctx: context.Background(),
-			},
-		}
-		ok, err := check.CheckResources(opts)
-		if err != nil {
-			return errors.Wrap(err, "unable to run glooctl check")
-		}
-		if ok {
-			return nil
-		}
-		return errors.New("glooctl check detected a problem with the installation")
-	}, "40s", "5s").Should(BeNil())
+	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "40s")
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
@@ -200,34 +177,4 @@ func UpdateSettings(f func(settings *v1.Settings)) {
 	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
 	// what we want to test.
 	time.Sleep(3 * time.Second)
-}
-
-func getHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
-	Expect(err).NotTo(HaveOccurred())
-
-	// disabling usage statistics is not important to the functionality of the tests,
-	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
-	// install to a single namespace so we can run multiple invocations of the regression tests against the
-	// same cluster in CI.
-	_, err = values.Write([]byte(`
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-gloo:
-  deployment:
-    disableUsageStatistics: true
-`))
-	Expect(err).NotTo(HaveOccurred())
-
-	err = values.Close()
-	Expect(err).NotTo(HaveOccurred())
-
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
 }
