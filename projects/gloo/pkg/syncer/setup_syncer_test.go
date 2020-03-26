@@ -205,7 +205,7 @@ var _ = Describe("SetupSyncer", func() {
 			})
 
 			It("panics when endpoints don't arrive in a timely manner", func() {
-				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(0)
+				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(1 * time.Nanosecond)
 				setup := NewSetupFunc()
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
