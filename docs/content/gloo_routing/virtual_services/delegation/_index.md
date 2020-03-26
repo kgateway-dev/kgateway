@@ -319,6 +319,20 @@ You can specify two types of selection criteria (which can be used together):
 tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved 
 value `*` can be used to select Route Tables in all namespaces watched by Gloo.
 
+{{% notice warning %}}
+If a `RouteTableSelector` matches multiple route tables and the route tables do not specify different `weights`, 
+Gloo will sort the routes which belong to those tables to avoid short-circuiting (e.g. having a route with a `/foo` 
+prefix matcher coming before a route with a `/foo/bar` one). The sorting occurs by descending specificity: 
+routes with longer paths will come first, and in case of equal paths, precedence will be given to the route that defines 
+the more restrictive matchers. The algorithm used for sorting the routes can be found 
+[here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23).
+In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource (the one that 
+specifies the `RouteTableSelector`).
+
+Please see the [Route Table weight](#route-table-weight) section below for more information about how to control 
+the ordering or your delegated routes.
+{{% /notice %}}
+
 A complete configuration might look as follows:
 
 A root-level **VirtualService** which delegates routing decisions to any **RouteTables** in the `gloo-system` namespace that 
@@ -435,18 +449,8 @@ Gloo will process the route tables matched by a selector in ascending order by w
 route table in the order they are defined. 
 
 In the above example, we want the `/a/b` route to come before the `/a` route, to avoid the latter one short-circuiting 
-the former; hence, we set the weight of the `a-b-routes` table to `10` and the one of the `a-routes` table to `20`. 
+the former; hence, we set the weight of the `a-b-routes` table to `10` and the weight of the `a-routes` table to `20`.
 As you can see in the diagram above, the resulting `Proxy` object defines the routes in the desired order.
-
-{{% notice warning %}}
-If multiple route tables define the same weight, Gloo will sort the routes which belong to those tables to avoid 
-short-circuiting. The sorting occurs by descending specificity: routes with longer paths will come first, and in case 
-of equal paths, precedence will be given to the route that defines the more restrictive matchers. The algorithm used 
-for sorting the routes can be found 
-[here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23))
-In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource (the one that 
-specifies the `RouteTableSelector`).
-{{% /notice %}}
 
 ## Learn more
 
