@@ -1,9 +1,10 @@
 changelog:
   - type: FIX
     description: >
-      Add a default Gloo endpoint warming timeout of fives minutes. Previously, by default Gloo wouldn't wait for endpoints
-      to warm before propagating config to Envoy. With this change, Gloo will wait for discovery and EDS to warm before
-      propagating config to Envoy, and panic if this doesn't happen within five minutes. This helps prevent unnecessary
-      downtime in upgrade scenarios. If `EndpointsWarmingTimeout` is set to zero on the Gloo settings, the old default
-      behavior is used (Gloo doesn't wait for EDS or discovery to be ready before propagating config).
+      Change the how Gloo handles an unset endpoint warming timeout to make upgrades safer by default. Previously, by
+      default Gloo wouldn't wait for endpoints to warm before propagating config to Envoy. With this change, Gloo will
+      wait up to five minutes (configurable) for discovery and EDS to warm before propagating config to Envoy, and panic
+      if this doesn't happen within the warming timeout. This helps prevent unnecessary downtime in upgrade scenarios.
+      If `EndpointsWarmingTimeout` is set to zero on the Gloo settings, the old default behavior is used (Gloo doesn't
+      wait for EDS or discovery to be ready before propagating config).
     issueLink: https://github.com/solo-io/gloo/issues/2673
