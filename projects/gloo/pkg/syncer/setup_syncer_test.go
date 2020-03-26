@@ -210,6 +210,12 @@ var _ = Describe("SetupSyncer", func() {
 				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).To(Panic())
 			})
 
+			It("doesn't panic when endpoints don't arrive in a timely manner if set to zero", func() {
+				settings.Gloo.EndpointsWarmingTimeout = types.DurationProto(0)
+				setup := NewSetupFunc()
+				Expect(func() { setup(ctx, kubeCoreCache, memcache, settings) }).NotTo(Panic())
+			})
+
 		})
 	})
 })
