@@ -356,6 +356,7 @@ metadata:
   labels:
     domain: example.com
 spec:
+  weight: 20
   routes:
     - matchers:
         # the path matchers in this RouteTable can begin with any prefix
@@ -375,6 +376,7 @@ metadata:
   labels:
     domain: example.com
 spec:
+  weight: 10
   routes:
     - matchers:
         # the path matchers in this RouteTable can begin with any prefix
@@ -425,10 +427,26 @@ graph LR;
     
 {{< /mermaid >}}
 
-As you can see in the diagram above, Gloo will reorder the routes by descending specificity when adding them to the proxy: 
-routes with longer paths will come first, and in case of equal paths, precedence will be given to the route that 
-defines the more restrictive matchers (the algorithm used for sorting the routes can be found 
-[here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23)).
+#### Route Table weight
+As you might have noticed, we specified a `weight` attribute on the above route tables. This attribute can be used 
+to determine the order in which the routes will appear on the final Proxy resource when multiple route tables match 
+a `RouteTableSelector`. The field is optional; if no value is specified, the `weight` defaults to 0 (zero). 
+Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of each 
+route table in the order they are defined. 
+
+In the above example, we want the `/a/b` route to come before the `/a` route, to avoid the latter one short-circuiting 
+the former; hence, we set the weight of the `a-b-routes` table to `10` and the one of the `a-routes` table to `20`. 
+As you can see in the diagram above, the resulting `Proxy` object defines the routes in the desired order.
+
+{{% notice warning %}}
+If multiple route tables define the same weight, Gloo will sort the routes which belong to those tables to avoid 
+short-circuiting. The sorting occurs by descending specificity: routes with longer paths will come first, and in case 
+of equal paths, precedence will be given to the route that defines the more restrictive matchers. The algorithm used 
+for sorting the routes can be found 
+[here](https://github.com/solo-io/gloo/blob/v1.3.2/projects/gloo/pkg/utils/sort_routes.go#L23))
+In this scenario, Gloo will also alert the user by adding a warning to the status of the parent resource (the one that 
+specifies the `RouteTableSelector`).
+{{% /notice %}}
 
 ## Learn more
 
