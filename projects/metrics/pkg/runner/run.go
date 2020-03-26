@@ -56,7 +56,7 @@ func startMetricsService(ctx context.Context, clientSettings Settings, service *
 	logger.Infof("metrics server running in [%s] mode, listening at [%s]", runMode, addr)
 	lis, err := net.Listen(network, addr)
 	if err != nil {
-		logger.Errorw("Failed to announce on network", zap.Any("mode", runMode), zap.Any("address", addr), zap.Any("error", err))
+		logger.Errorw("Failed to announce on network", zap.Any("mode", runMode), zap.Any("address", addr), zap.Error(err))
 		return err
 	}
 	go func() {

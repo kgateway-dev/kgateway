@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/solo-io/go-utils/testutils"
+
 	"github.com/hashicorp/go-multierror"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/waf"
@@ -398,27 +400,14 @@ var _ = Describe("Translator", func() {
 				}
 			})
 
-			var findVsInNamespace = func(ns string, snap *v1.ApiSnapshot) v1.VirtualServiceList {
-				var result v1.VirtualServiceList
-				for _, vs := range snap.VirtualServices {
-					if vs.Metadata.Namespace == ns {
-						result = append(result, vs)
-					}
-				}
-
-				return result
-			}
-
-			It("should translate an empty gateway to have all virtual services in the same namespace", func() {
+			It("should translate an empty gateway to have all virtual services", func() {
 
 				proxy, _ := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
 
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
-				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have as many virtual hosts as virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 			})
 
 			It("omitting matchers should default to '/' prefix matcher", func() {
@@ -430,9 +419,7 @@ var _ = Describe("Translator", func() {
 				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
-				Expect(listener.VirtualHosts).To(HaveLen(len(vsInSameNamespace)), "Should have virtual services in the same namespace")
+				Expect(listener.VirtualHosts).To(HaveLen(len(snap.VirtualServices)))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[1].Routes[0].Matchers).To(HaveLen(1))
 				Expect(listener.VirtualHosts[0].Routes[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
@@ -495,14 +482,14 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(1))
+					Expect(listener.VirtualHosts).To(HaveLen(2))
 				})
 
-				It("should allow a gateway to match virtual services outside its own namespace if so configured", func() {
+				It("should prevent a gateway from matching virtual services outside its own namespace if so configured", func() {
 					snap.Gateways[0].GatewayType = &v1.Gateway_HttpGateway{
 						HttpGateway: &v1.HttpGateway{
 							VirtualServiceSelector:   labelSet,
-							VirtualServiceNamespaces: []string{"*"},
+							VirtualServiceNamespaces: []string{"gloo-system"},
 						},
 					}
 
@@ -512,9 +499,8 @@ var _ = Describe("Translator", func() {
 					Expect(proxy).NotTo(BeNil())
 					Expect(proxy.Listeners).To(HaveLen(1))
 					listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-					Expect(listener.VirtualHosts).To(HaveLen(2))
+					Expect(listener.VirtualHosts).To(HaveLen(1))
 					Expect(listener.VirtualHosts[0].Domains).To(Equal(snap.VirtualServices[0].VirtualHost.Domains))
-					Expect(listener.VirtualHosts[1].Domains).To(Equal(snap.VirtualServices[2].VirtualHost.Domains))
 				})
 
 			})
@@ -526,18 +512,17 @@ var _ = Describe("Translator", func() {
 
 				Expect(errs.ValidateStrict()).NotTo(HaveOccurred())
 
-				vsInSameNamespace := findVsInNamespace(ns, snap)
-				Expect(vsInSameNamespace).NotTo(BeEmpty(), "Should have virtual services in the same namespace")
 				var vsWithoutSsl v1.VirtualServiceList
-				for _, vs := range vsInSameNamespace {
+				for _, vs := range snap.VirtualServices {
 					if vs.SslConfig == nil {
 						vsWithoutSsl = append(vsWithoutSsl, vs)
 					}
 				}
-				Expect(proxy.Listeners).To(HaveLen(len(vsWithoutSsl)))
+				Expect(proxy.Listeners).To(HaveLen(1))
 				listener := proxy.Listeners[0].ListenerType.(*gloov1.Listener_HttpListener).HttpListener
-				Expect(listener.VirtualHosts).To(HaveLen(1))
+				Expect(listener.VirtualHosts).To(HaveLen(len(vsWithoutSsl)))
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name2"))
+				Expect(listener.VirtualHosts[1].Name).To(ContainSubstring("name3"))
 			})
 
 			It("should not have vhosts without ssl", func() {
@@ -572,7 +557,7 @@ var _ = Describe("Translator", func() {
 						DomainInOtherVirtualServicesErr("d1.com", []string{"gloo-system.name2"}),
 						GatewayHasConflictingVirtualServicesErr([]string{"d1.com"}),
 					} {
-						Expect(multiErr.WrappedErrors()).To(ContainElement(MatchError(expectedError)))
+						Expect(multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(expectedError)))
 					}
 				})
 
@@ -592,7 +577,7 @@ var _ = Describe("Translator", func() {
 						DomainInOtherVirtualServicesErr("", []string{"gloo-system.name2"}),
 						GatewayHasConflictingVirtualServicesErr([]string{""}),
 					} {
-						Expect(multiErr.WrappedErrors()).To(ContainElement(MatchError(expectedError.Error())))
+						Expect(multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(expectedError)))
 					}
 				})
 
@@ -865,10 +850,10 @@ var _ = Describe("Translator", func() {
 
 					Expect(listener.VirtualHosts[0].Routes).To(Equal([]*gloov1.Route{
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:delegate3Route2",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/3-delegate/upstream2",
+									Prefix: "/a/1-upstream",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -885,7 +870,7 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: mergedLeafLevelRoutePlugins,
+							Options: rootLevelRoutePlugins,
 						},
 						{
 							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:<unnamed>",
@@ -911,10 +896,10 @@ var _ = Describe("Translator", func() {
 							Options: mergedMidLevelRoutePlugins,
 						},
 						{
-							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:<unnamed>",
+							Name: "vs:name1_route:testRouteName_rt:delegate-1_route:delegate1Route2_rt:delegate-3_route:delegate3Route2",
 							Matchers: []*matchers.Matcher{{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/a/1-upstream",
+									Prefix: "/a/3-delegate/upstream2",
 								},
 							}},
 							Action: &gloov1.Route_RouteAction{
@@ -931,10 +916,32 @@ var _ = Describe("Translator", func() {
 									},
 								},
 							},
-							Options: rootLevelRoutePlugins,
+							Options: mergedLeafLevelRoutePlugins,
 						},
 					}))
 					Expect(listener.VirtualHosts[1].Routes).To(Equal([]*gloov1.Route{
+						{
+							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/b/2-upstream",
+								},
+							}},
+							Action: &gloov1.Route_RouteAction{
+								RouteAction: &gloov1.RouteAction{
+									Destination: &gloov1.RouteAction_Single{
+										Single: &gloov1.Destination{
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Name:      "my-upstream",
+													Namespace: "gloo-system",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
 						{
 							Name: "",
 							Matchers: []*matchers.Matcher{{
@@ -957,28 +964,6 @@ var _ = Describe("Translator", func() {
 								},
 							},
 							Options: leafLevelRoutePlugins,
-						},
-						{
-							Name: "vs:name2_route:<unnamed>_rt:delegate-2_route:delegate2Route1",
-							Matchers: []*matchers.Matcher{{
-								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/b/2-upstream",
-								},
-							}},
-							Action: &gloov1.Route_RouteAction{
-								RouteAction: &gloov1.RouteAction{
-									Destination: &gloov1.RouteAction_Single{
-										Single: &gloov1.Destination{
-											DestinationType: &gloov1.Destination_Upstream{
-												Upstream: &core.ResourceRef{
-													Name:      "my-upstream",
-													Namespace: "gloo-system",
-												},
-											},
-										},
-									},
-								},
-							},
 						},
 					}))
 				})
@@ -1141,14 +1126,6 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 			Sources: []SourceRef{
 				{
 					ResourceRef: core.ResourceRef{
-						Name:      "delegate-3",
-						Namespace: "gloo-system",
-					},
-					ResourceKind:       "*v1.RouteTable",
-					ObservedGeneration: 0,
-				},
-				{
-					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",
 						Namespace: "gloo-system",
 					},
@@ -1195,6 +1172,14 @@ var expectedRouteMetadatas = [][]*SourceMetadata{
 		},
 		{
 			Sources: []SourceRef{
+				{
+					ResourceRef: core.ResourceRef{
+						Name:      "delegate-3",
+						Namespace: "gloo-system",
+					},
+					ResourceKind:       "*v1.RouteTable",
+					ObservedGeneration: 0,
+				},
 				{
 					ResourceRef: core.ResourceRef{
 						Name:      "delegate-1",

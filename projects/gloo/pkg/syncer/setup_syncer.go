@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -245,7 +247,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		s.previousValidationServer.addr = validationAddr
 	}
 
-	consulClient, err := bootstrap.ConsulClientForSettings(settings)
+	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}
@@ -283,6 +285,18 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 	opts.DevMode = settings.DevMode
 	opts.Settings = settings
 
+	opts.Consul.DnsServer = settings.GetConsul().GetDnsAddress()
+	if len(opts.Consul.DnsServer) == 0 {
+		opts.Consul.DnsServer = consulplugin.DefaultDnsAddress
+	}
+	if pollingInterval := settings.GetConsul().GetDnsPollingInterval(); pollingInterval != nil {
+		dnsPollingInterval, err := types.DurationFromProto(pollingInterval)
+		if err != nil {
+			return err
+		}
+		opts.Consul.DnsPollingInterval = &dnsPollingInterval
+	}
+
 	// if vault service discovery specified, initialize consul watcher
 	if consulServiceDiscovery := settings.GetConsul().GetServiceDiscovery(); consulServiceDiscovery != nil {
 		// Set up Consul client
@@ -290,7 +304,7 @@ func (s *setupSyncer) Setup(ctx context.Context, kubeCache kube.SharedCache, mem
 		if err != nil {
 			return err
 		}
-		opts.ConsulWatcher = consulClientWrapper
+		opts.Consul.ConsulWatcher = consulClientWrapper
 	}
 
 	err = s.runFunc(opts)
@@ -355,7 +369,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.Settings.GetGloo().GetDisableKubernetesDestinations() {
 		kubeServiceClient = nil
 	}
-	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.ConsulWatcher)
+	hybridUsClient, err := upstreams.NewHybridUpstreamClient(upstreamClient, kubeServiceClient, opts.Consul.ConsulWatcher)
 	if err != nil {
 		return err
 	}
@@ -463,11 +477,11 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
 	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
-	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient())
+	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient(), authConfigClient.BaseClient())
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
-	validator := validation.NewValidator(t)
+	validator := validation.NewValidator(watchOpts.Ctx, t)
 	if opts.ValidationServer.Server != nil {
 		opts.ValidationServer.Server.SetValidator(validator)
 	}

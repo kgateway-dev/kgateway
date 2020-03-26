@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix Gloo linker compatibility in go 1.14; now we properly link the client version in `glooctl` when building on
+      go 1.14 (this just fixes our homebrew formula, as the shipped binary had always been built with go 1.13).
+    issueLink: https://github.com/solo-io/gloo/issues/2532

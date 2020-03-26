@@ -1,0 +1,8 @@
+changelog:
+  - type: FIX
+    description: >
+      Propagate all warnings and errors from delegate route tables to the top level Virtual Service status field.
+      For example, if we have a long chain of delegated route tables like vs1 -> rt1 -> rt2 -> rt3, and rt3 has
+      a warning, that warning will show up on the parent route table rt2 and the top level Virtual Service vs1,
+      but not any intermediary route tables like rt1.
+    issueLink: https://github.com/solo-io/gloo/issues/2628

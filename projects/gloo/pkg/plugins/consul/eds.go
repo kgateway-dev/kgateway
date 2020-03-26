@@ -2,10 +2,17 @@ package consul
 
 import (
 	"context"
+	"net"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+
+	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/hashutils"
 
 	"github.com/solo-io/go-utils/kubeutils"
 
@@ -27,17 +34,15 @@ import (
 // Whenever it detects an update to said services, it fetches the complete specs for the tracked services,
 // converts them to endpoints, and sends the result on the returned channel.
 func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.UpstreamList, opts clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
-	endpointsChan := make(chan v1.EndpointList)
-	errChan := make(chan error)
-
-	logger := contextutils.LoggerFrom(contextutils.WithLogger(opts.Ctx, "consul_eds"))
 
 	// Filter out non-consul upstreams
-	trackedServices := make(map[string][]*v1.Upstream)
+	trackedServiceToUpstreams := make(map[string][]*v1.Upstream)
+	var previousSpecs []*consulapi.CatalogService
+	var previousHash uint64
 	for _, us := range upstreamsToTrack {
 		if consulUsSpec := us.GetConsul(); consulUsSpec != nil {
 			// We generate one upstream for every Consul service name, so this should never happen.
-			trackedServices[consulUsSpec.ServiceName] = append(trackedServices[consulUsSpec.ServiceName], us)
+			trackedServiceToUpstreams[consulUsSpec.ServiceName] = append(trackedServiceToUpstreams[consulUsSpec.ServiceName], us)
 		}
 	}
 
@@ -48,21 +53,38 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters)
 
-	var errAggregator sync.WaitGroup
-	errAggregator.Add(1)
+	errChan := make(chan error)
 	go func() {
-		defer errAggregator.Done()
+		defer close(errChan)
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
+	endpointsChan := make(chan v1.EndpointList)
 	go func() {
+		defer close(endpointsChan)
 
 		// Create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
 		// Use closure to allow cancel function to be updated as context changes
 		defer func() { cancel() }()
 
+		timer := time.NewTicker(DefaultDnsPollingInterval)
+
+		publishEndpoints := func(endpoints v1.EndpointList) bool {
+			if opts.Ctx.Err() != nil {
+				return false
+			}
+			select {
+			case <-opts.Ctx.Done():
+				return false
+			case endpointsChan <- endpoints:
+			}
+			return true
+		}
+
 		for {
+			// don't leak the timer.
+			defer timer.Stop()
 			select {
 			case serviceMeta, ok := <-serviceMetaChan:
 				if !ok {
@@ -74,71 +96,102 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				ctx, newCancel := context.WithCancel(opts.Ctx)
 				cancel = newCancel
 
-				specs := newSpecCollector()
+				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
-				// Get complete service information for every dataCenter:service tuple in separate goroutines
-				var eg errgroup.Group
-				for _, service := range serviceMeta {
-					for _, dataCenter := range service.DataCenters {
+				previousHash = hashutils.MustHash(endpoints)
+				previousSpecs = specs
 
-						// Copy iterator variables before passing them to goroutines!
-						svc := service
-						dcName := dataCenter
-
-						// Get complete spec for each service in parallel
-						eg.Go(func() error {
-							queryOpts := &consulapi.QueryOptions{Datacenter: dcName, RequireConsistent: true}
-
-							services, _, err := p.client.Service(svc.Name, "", queryOpts.WithContext(ctx))
-							if err != nil {
-								return err
-							}
-
-							specs.Append(services)
-
-							return nil
-						})
-					}
+				if !publishEndpoints(endpoints) {
+					return
 				}
 
-				// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
-				//
-				// Don't return if an error occurred. We still want to propagate the endpoints  for the requests that
-				// succeeded. Any inconsistencies will be caught by the Gloo translator.
-				if err := eg.Wait(); err != nil {
-					select {
-					case errChan <- err:
-					default:
-						logger.Errorf("write error channel is full! could not propagate err: %v", err)
-					}
+			case <-timer.C:
+				// Poll to ensure any DNS updates get picked up in endpoints for EDS
+				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, previousSpecs, trackedServiceToUpstreams)
+
+				currentHash := hashutils.MustHash(endpoints)
+				if previousHash == currentHash {
+					continue
 				}
 
-				var endpoints v1.EndpointList
-				for _, spec := range specs.Get() {
-					if upstreams, ok := trackedServices[spec.ServiceName]; ok {
-						endpoints = append(endpoints, buildEndpoint(writeNamespace, spec, upstreams))
-					}
+				previousHash = currentHash
+				if !publishEndpoints(endpoints) {
+					return
 				}
-
-				// Sort by name in ascending order for idempotency
-				sort.SliceStable(endpoints, func(i, j int) bool {
-					return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
-				})
-
-				endpointsChan <- endpoints
 
 			case <-opts.Ctx.Done():
-				close(endpointsChan)
-
-				// Wait for error aggregation routing to complete to avoid writing to closed errChan
-				errAggregator.Wait()
-				close(errChan)
 				return
 			}
 		}
 	}()
 
 	return endpointsChan, errChan, nil
+}
+
+func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error) []*consulapi.CatalogService {
+	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
+
+	specs := newSpecCollector()
+
+	// Get complete service information for every dataCenter:service tuple in separate goroutines
+	var eg errgroup.Group
+	for _, service := range serviceMeta {
+		for _, dataCenter := range service.DataCenters {
+
+			// Copy iterator variables before passing them to goroutines!
+			svc := service
+			dcName := dataCenter
+
+			// Get complete spec for each service in parallel
+			eg.Go(func() error {
+				queryOpts := &consulapi.QueryOptions{Datacenter: dcName, RequireConsistent: true}
+
+				services, _, err := client.Service(svc.Name, "", queryOpts.WithContext(ctx))
+				if err != nil {
+					return err
+				}
+
+				specs.Add(services)
+
+				return nil
+			})
+		}
+	}
+
+	// Wait for all requests to complete, an error to occur, or for the underlying context to be cancelled.
+	//
+	// Don't return if an error occurred. We still want to propagate the endpoints for the requests that
+	// succeeded. Any inconsistencies will be caught by the Gloo translator.
+	if err := eg.Wait(); err != nil {
+		select {
+		case errChan <- err:
+		default:
+			logger.Errorf("write error channel is full! could not propagate err: %v", err)
+		}
+	}
+	return specs.Get()
+}
+
+func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
+	var endpoints v1.EndpointList
+	for _, spec := range specs {
+		if upstreams, ok := trackedServiceToUpstreams[spec.ServiceName]; ok {
+			// TODO if buildEndpoints fails temporarily due to dns failure, we will remove it from eds.
+			// tracking issue: https://github.com/solo-io/gloo/issues/2576
+			if eps, err := buildEndpoints(ctx, writeNamespace, resolver, spec, upstreams); err != nil {
+				contextutils.LoggerFrom(ctx).Warnf("consul eds plugin encountered error resolving DNS for consul service %v", spec, err)
+			} else {
+				endpoints = append(endpoints, eps...)
+			}
+		}
+	}
+
+	// Sort by name in ascending order for idempotency
+	sort.SliceStable(endpoints, func(i, j int) bool {
+		return endpoints[i].Metadata.Name < endpoints[j].Metadata.Name
+	})
+	return endpoints
 }
 
 // The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
@@ -193,7 +246,7 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
-func buildEndpoint(namespace string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
 	// ServiceAddress is the IP address of the service host — if empty, node address should be used
@@ -202,24 +255,62 @@ func buildEndpoint(namespace string, service *consulapi.CatalogService, upstream
 		address = service.Address
 	}
 
-	ep := &v1.Endpoint{
+	ipAddresses, err := getIpAddresses(ctx, address, resolver)
+	if err != nil {
+		return nil, err
+	}
+
+	var endpoints []*v1.Endpoint
+	for _, ipAddr := range ipAddresses {
+		endpoints = append(endpoints, buildEndpoint(namespace, ipAddr, service, upstreams))
+	}
+	return endpoints, nil
+}
+
+// only returns an error if the consul service address is a hostname and we can't resolve it
+func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) ([]string, error) {
+	addr := net.ParseIP(address)
+	if addr != nil {
+		// the consul service address is an IP address, no need to resolve it!
+		return []string{address}, nil
+	}
+
+	// we're assuming the consul service returned a hostname instead of an IP
+	// we need to resolve this here so EDS can be given IPs (EDS can't resolve hostnames)
+	if resolver == nil {
+		return nil, eris.Errorf("Consul service returned an address that couldn't be parsed as an IP (%s), "+
+			"would have resolved as a hostname but the configured Consul DNS resolver was nil", address)
+	}
+	ipAddrs, err := resolver.Resolve(ctx, address)
+	if err != nil {
+		return nil, err
+	}
+
+	var ipAddresses []string
+	for _, ipAddr := range ipAddrs {
+		ipAddresses = append(ipAddresses, ipAddr.String())
+	}
+	return ipAddresses, nil
+}
+
+func buildEndpoint(namespace, address string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+	return &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       namespace,
-			Name:            buildEndpointName(service),
+			Name:            buildEndpointName(address, service),
 			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
-		Upstreams: toResourceRefs(upstreams),
+		Upstreams: toResourceRefs(upstreams, service.ServiceTags),
 		Address:   address,
 		Port:      uint32(service.ServicePort),
 	}
-	return ep
 }
 
-func buildEndpointName(service *consulapi.CatalogService) string {
-	parts := []string{service.ServiceName}
+func buildEndpointName(address string, service *consulapi.CatalogService) string {
+	parts := []string{address, service.ServiceName}
 	if service.ServiceID != "" {
-		parts = append(parts, service.ServiceID)
+		parts = append(parts, service.ServiceID, strconv.Itoa(service.ServicePort))
 	}
 	unsanitizedName := strings.Join(parts, "-")
 	unsanitizedName = strings.ReplaceAll(unsanitizedName, "_", "")
@@ -235,18 +326,51 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 	return labels
 }
 
-func toResourceRefs(upstreams []*v1.Upstream) (out []*core.ResourceRef) {
+func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
 	for _, us := range upstreams {
-		out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+		upstreamTags := us.GetConsul().GetInstanceTags()
+		if shouldAddToUpstream(endpointTags, upstreamTags) {
+			out = append(out, utils.ResourceRefPtr(us.Metadata.Ref()))
+		}
 	}
 	return
+}
+
+func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
+	if len(upstreamTags) == 0 {
+		return true
+	}
+
+	containsTag := func(tag string) bool {
+		for _, etag := range endpointTags {
+			if tag == etag {
+				return true
+			}
+		}
+		return false
+	}
+
+	// check if upstream tags is a subset of endpoint tags
+	for _, tag := range upstreamTags {
+		if !containsTag(tag) {
+			return false
+		}
+	}
+
+	return true
 }
 
 func getUniqueUpstreamTags(upstreams []*v1.Upstream) (tags []string) {
 	tagMap := make(map[string]bool)
 	for _, us := range upstreams {
-		for _, tag := range us.GetConsul().ServiceTags {
-			tagMap[tag] = true
+		if len(us.GetConsul().SubsetTags) != 0 {
+			for _, tag := range us.GetConsul().SubsetTags {
+				tagMap[tag] = true
+			}
+		} else {
+			for _, tag := range us.GetConsul().ServiceTags {
+				tagMap[tag] = true
+			}
 		}
 	}
 	for tag := range tagMap {
@@ -273,23 +397,23 @@ func newSpecCollector() specCollector {
 }
 
 type specCollector interface {
-	Append([]*consulapi.CatalogService)
+	Add([]*consulapi.CatalogService)
 	Get() []*consulapi.CatalogService
 }
 
 type collector struct {
-	mutex sync.Mutex
+	mutex sync.RWMutex
 	specs []*consulapi.CatalogService
 }
 
-func (c *collector) Append(specs []*consulapi.CatalogService) {
+func (c *collector) Add(specs []*consulapi.CatalogService) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	c.specs = append(c.specs, specs...)
 }
 
 func (c *collector) Get() []*consulapi.CatalogService {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.specs
 }

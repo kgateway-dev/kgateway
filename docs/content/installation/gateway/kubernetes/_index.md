@@ -1,17 +1,22 @@
 ---
 title: "Installing Gloo Gateway on Kubernetes"
+menuTitle: "Kubernetes"
 description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
-weight: 2
+weight: 10
 ---
 
 Gloo Gateway can be installed on a Kubernetes cluster by using either the [`glooctl` command line tool](#installing-on-kubernetes-with-glooctl) or a [Helm chart](#installing-on-kubernetes-with-helm). The following document will take you through the process of either installation, [verifying the installation](#verify-your-installation), and [how to remove Gloo Gateway](#uninstall) if necessary.
+
+{{% notice note %}}
+Minimum required Kubernetes is 1.11.x. For older versions see our [release support guide]({{% versioned_link_path fromRoot="/reference/support/#kubernetes" %}})
+{{% /notice %}}
 
 ---
 
 ## Installing the Gloo Gateway on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your
-Kubernetes cluster [here](./cluster_setup).
+Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 
 {{% notice note %}}
 For certain providers with more strict multi-tenant security, like OpenShift, be sure to follow the cluster set up accordingly. 
@@ -120,7 +125,7 @@ helm install gloo-custom-0-7-6 gloo/gloo --namespace my-namespace -f value-overr
 
 #### List of Gloo Helm chart values
 
-The [Helm Chart Values page](./helm_chart_values) describes all the values that you can override in your custom values file.
+The [Helm Chart Values page]({{< versioned_link_path fromRoot="/reference/helm_chart_values/" >}}) describes all the values that you can override in your custom values file.
 
 ---
 
@@ -164,7 +169,7 @@ NAME                        COMPLETIONS   DURATION   AGE
 job.batch/gateway-certgen   1/1           14s        5m
 ```
 #### Looking for opened ports?
-You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/gloo_routing/hello_world/" %}}). 
+You will NOT have any open ports listening on a default install. For Envoy to open the ports and actually listen, you need to have a Route defined in one of the VirtualServices that will be associated with that particular Gateway/Listener. Please see the [Hello World tutorial to get started]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}). 
 
 {{% notice note %}}
 NOT opening the listener ports when there are no listeners (routes) is by design with the intention of not over-exposing your cluster by accident (for security). If you feel this behavior is not justified, please let us know.
@@ -203,4 +208,4 @@ glooctl uninstall --all
 
 ## Next Steps
 
-After you've installed Gloo, please check out our user guides on [Gloo Routing]({{< versioned_link_path fromRoot="/gloo_routing" >}}).
+After you've installed Gloo, please check out our user guides on [Traffic Management]({{< versioned_link_path fromRoot="/guides/traffic_management/" >}}).

@@ -1,6 +1,7 @@
 package generate
 
 import (
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	appsv1 "k8s.io/api/core/v1"
 )
 
@@ -27,12 +28,9 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	Wasm       Wasm        `json:"wasm"`
-	GlooStats  Stats       `json:"glooStats" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-}
-
-type Stats struct {
-	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
+	Wasm       Wasm        `json:"wasm,omitempty"`
+	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
 }
 
 type Namespace struct {
@@ -79,6 +77,7 @@ type JobSpec struct {
 type DeploymentSpec struct {
 	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
 	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
+	CustomEnv []*appsv1.EnvVar      `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
 }
 
 type Integrations struct {
@@ -191,26 +190,30 @@ type CertGenJob struct {
 }
 
 type GatewayProxy struct {
-	Kind                      *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
-	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
-	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
-	Service                   *GatewayProxyService         `json:"service,omitempty"`
-	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
-	Tracing                   *Tracing                     `json:"tracing,omitempty"`
-	GatewaySettings           *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
-	ExtraEnvoyArgs            []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
-	ExtraContainersHelper     string                       `json:"extraContainersHelper,omitempty"`
-	ExtraInitContainersHelper string                       `json:"extraInitContainersHelper",omitempty`
-	ExtraVolumeHelper         string                       `json:"extraVolumeHelper",omitempty`
-	Stats                     *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
-	ReadConfig                bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	Kind                        *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate                 *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
+	ConfigMap                   *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	Service                     *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity                bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
+	Tracing                     *Tracing                     `json:"tracing,omitempty"`
+	GatewaySettings             *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	ExtraEnvoyArgs              []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
+	ExtraContainersHelper       string                       `json:"extraContainersHelper,omitempty"`
+	ExtraInitContainersHelper   string                       `json:"extraInitContainersHelper",omitempty`
+	ExtraVolumeHelper           string                       `json:"extraVolumeHelper",omitempty`
+	ExtraListenersHelper        string                       `json:"extraListenersHelper",omitempty`
+	Stats                       *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
+	ReadConfig                  bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	ExtraProxyVolumeMountHelper string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 }
 
 type GatewayProxyGatewaySettings struct {
-	DisableGeneratedGateways bool   `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
-	UseProxyProto            bool   `json:"useProxyProto" desc:"use proxy protocol"`
-	CustomHttpGateway        string `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
-	CustomHttpsGateway       string `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	DisableGeneratedGateways bool              `json:"disableGeneratedGateways" desc:"set to true to disable the gateway generation for a gateway proxy"`
+	IPv4Only                 bool              `json:"ipv4Only,omitempty" desc:"set to true if your network allows ipv4 addresses only. Sets the Gateway spec's bindAddress to 0.0.0.0 instead of ::"`
+	UseProxyProto            bool              `json:"useProxyProto" desc:"use proxy protocol"`
+	CustomHttpGateway        string            `json:"customHttpGateway,omitempty" desc:"custom yaml to use for http gateway settings"`
+	CustomHttpsGateway       string            `json:"customHttpsGateway,omitempty" desc:"custom yaml to use for https gateway settings"`
+	GatewayOptions           v1.GatewayOptions `json:"options,omitempty" desc:"custom options for http(s) gateways"`
 }
 
 type GatewayProxyKind struct {
@@ -249,6 +252,8 @@ type GatewayProxyService struct {
 	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
+	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
+	HttpsFirst            bool              `json:"httpsFirst", desc:"List HTTPS port before HTTP"`
 }
 
 type Tracing struct {
@@ -304,4 +309,22 @@ type K8s struct {
 
 type Wasm struct {
 	Enabled bool `json:"enabled" desc:"switch the gateway-proxy image to one which supports WASM"`
+}
+
+type Stats struct {
+	Enabled bool `json:"enabled,omitempty" desc:"Controls whether or not prometheus stats are enabled"`
+}
+
+type Mtls struct {
+	Enabled      bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
+	Sds          SdsContainer          `json:"sds,omitempty"`
+	EnvoySidecar EnvoySidecarContainer `json:"envoy,omitempty"`
+}
+
+type SdsContainer struct {
+	Image *Image `json:"image,omitempty"`
+}
+
+type EnvoySidecarContainer struct {
+	Image *Image `json:"image,omitempty"`
 }

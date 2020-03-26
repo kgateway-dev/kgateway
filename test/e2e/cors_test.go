@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
+	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"github.com/solo-io/gloo/pkg/utils"
 
@@ -86,8 +87,9 @@ var _ = Describe("CORS", func() {
 			// allowedOrigin := "*"
 			allowedMethods := []string{"GET", "POST"}
 			cors := &cors.CorsPolicy{
-				AllowOrigin:  allowedOrigins,
-				AllowMethods: allowedMethods,
+				AllowOrigin:      allowedOrigins,
+				AllowOriginRegex: allowedOrigins,
+				AllowMethods:     allowedMethods,
 			}
 
 			td.setupInitialProxy(cors)
@@ -181,17 +183,9 @@ func (td *corsTestData) setupProxy(proxy *gloov1.Proxy) error {
 
 func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
 	By("Setup proxy")
-	td.per.envoyPort = services.NextBindPort()
+	td.per.envoyPort = defaults.HttpPort
 	proxy := td.per.getGlooCorsProxyWithVersion("", cors)
 	err := td.setupProxy(proxy)
-	Expect(err).NotTo(HaveOccurred())
-	Eventually(func() error {
-		_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", td.per.envoyPort))
-		if err != nil {
-			return err
-		}
-		return nil
-	}, "10s", ".1s").Should(BeNil())
 	// Call with retries to ensure proxy is available
 	Eventually(func() error {
 		proxy, err := td.getGlooCorsProxy(cors)
@@ -199,6 +193,14 @@ func (td *corsTestData) setupInitialProxy(cors *cors.CorsPolicy) {
 			return err
 		}
 		return td.setupProxy(proxy)
+	}, "10s", ".1s").Should(BeNil())
+	Expect(err).NotTo(HaveOccurred())
+	Eventually(func() error {
+		_, err := http.Get(fmt.Sprintf("http://%s:%d/status/200", "localhost", td.per.envoyPort))
+		if err != nil {
+			return err
+		}
+		return nil
 	}, "10s", ".1s").Should(BeNil())
 }
 

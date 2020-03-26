@@ -45,7 +45,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		cfg *rest.Config
 	)
 
-	consulClient, err := bootstrap.ConsulClientForSettings(settings)
+	consulClient, err := bootstrap.ConsulClientForSettings(ctx, settings)
 	if err != nil {
 		return err
 	}

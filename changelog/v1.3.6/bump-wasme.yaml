@@ -1,0 +1,9 @@
+changelog:
+- type: FIX
+  description: Fix issue with multiple wasm filters getting the same config.
+  issueLink: https://github.com/solo-io/gloo/issues/2456
+- dependencyOwner: solo-io
+  dependencyRepo: wasme
+  dependencyTag: v0.0.13-rc1
+  description: Update wasme to version v0.0.13-rc1.
+  type: DEPENDENCY_BUMP

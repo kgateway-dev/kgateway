@@ -5,18 +5,14 @@ description: Steps for upgrading Gloo components
 ---
 
 {{% notice warning %}}
-This upgrade process is not suitable in environments where downtime is unacceptable. This is mainly for upgrading
-Gloo while experimenting in dev or staging environments. For zero-downtime upgrades, users have found success in performing
-Gloo upgrades through blue-green deployments across different namespaces.
+This upgrade process is not suitable in environments where downtime is unacceptable. This is mainly for upgrading Gloo while experimenting in dev or staging environments. For zero-downtime upgrades, users have found success in performing Gloo upgrades through blue-green deployments across different namespaces.
 {{% /notice %}}
 
 {{% notice note %}}
 This guide will largely assume that you are running Gloo in Kubernetes.
 {{% /notice %}}
 
-In this guide, we'll walk you through how to upgrade Gloo. First you'll want to familiarize yourself
-with our various [Changelog entry types](../../changelog/changelog_types) so that you can review
-the changes that have been made in the release you are upgrading to. 
+In this guide, we'll walk you through how to upgrade Gloo. First you'll want to familiarize yourself with our various [Changelog entry types]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}) so that you can review the changes that have been made in the release you are upgrading to. 
 
 Once you have reviewed the changes in the new release, there are two components to upgrade:
 
@@ -29,29 +25,16 @@ Once you have reviewed the changes in the new release, there are two components 
         * [Helm 3](#helm-3)
         * [Helm 2](#helm-2)
 
-Before upgrading, always make sure to check our changelogs (refer to our
-[open-source](../../changelog/open_source) or [enterprise](../../changelog/enterprise) changelogs)
-for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade 
-procedure; if this is the case, then we will take care to explain what must be done in the changelog notes.
+Before upgrading, always make sure to check our changelogs (refer to our [open-source]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}) or [enterprise]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}) changelogs) for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade procedure; if this is the case, then we will take care to explain what ust be done in the changelog notes.
 
-You may also want to scan our [frequently-asked questions](../faq) to see if any of those cases apply to you.
-Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our 
-[public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
+You may also want to scan our [frequently-asked questions]({{% versioned_link_path fromRoot="/upgrading/faq/" %}}) to see if any of those cases apply to you. Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 {{% notice note %}}
-We version open-source Gloo separately from Gloo Enterprise. This is because Gloo Enterprise pulls in
-open-source Gloo as a dependency. While the patch versions of Gloo and Gloo Enterprise may drift apart
-from each other, we will maintain the same major/minor versions across the two projects. So for example,
-we may be at version `x.y.a` in open-source Gloo and `x.y.b` in Gloo Enterprise. `x` and `y` will always
-be the same, but `a` and `b` will often not be the same. This is why, if you are a Gloo Enterprise user,
-you may see different versions reported by `glooctl version`. We will try to ensure that open-source Gloo
-and Gloo Enterprise will be compatible each other across patch versions, but make no guarantees
-about compatibility between minor or major versions.
+We version open-source Gloo separately from Gloo Enterprise. This is because Gloo Enterprise pulls in open-source Gloo as a dependency. While the patch versions of Gloo and Gloo Enterprise may drift apart from each other, we will maintain the same major/minor versions across the two projects. So for example, we may be at version `x.y.a` in open-source Gloo and `x.y.b` in Gloo Enterprise. `x` and `y` will always be the same, but `a` and `b` will often not be the same. This is why, if you are a Gloo Enterprise user, you may see different versions reported by `glooctl version`. We will try to ensure that open-source Gloo and Gloo Enterprise will be compatible each other across patch versions, but make no guarantees about compatibility between minor or major versions.
 
 <br> 
 
-Visit https://semver.org/ for an explanation of semantic versioning if you
-are unfamiliar with these concepts.
+Visit https://semver.org/ for an explanation of semantic versioning if you are unfamiliar with these concepts.
 
 <br>
 
@@ -66,40 +49,24 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"0.20.8","Na
 
 <br>
 
-If you are an open-source user of Gloo, you will only need to be aware of open-source versions found
-[in our open-source changelogs](../../changelog/open_source). If you are an enterprise user of Gloo,
-you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs](../../changelog/enterprise).
-However, you may need to be aware of the version of open-source Gloo included as a dependency in
-Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version
-will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in
-our [changelog entries](../../changelog/changelog_types).
+If you are an open-source user of Gloo, you will only need to be aware of open-source versions found [in our open-source changelogs]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}). If you are an enterprise user of Gloo, you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}). However, you may need to be aware of the version of open-source Gloo included as a dependency in Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in our [changelog entries]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}).
 {{% /notice %}}
 
 ## Upgrading Components
 
-After upgrading a component, you should be sure to run `glooctl check` immediately afterwards.
-`glooctl check` will scan Gloo for problems and report them back to you. A problem reported by
-`glooctl check` means that Gloo is not working properly and that Envoy may not be receiving updated
-configuration.
+After upgrading a component, you should be sure to run `glooctl check` immediately afterwards. `glooctl check` will scan Gloo for problems and report them back to you. A problem reported by `glooctl check` means that Gloo is not working properly and that Envoy may not be receiving updated configuration.
 
 ### Upgrading `glooctl`
 
 {{% notice note %}}
-It is important to try to keep the version of `glooctl` in alignment with the version of the Gloo
-server components running in your cluster. Because `glooctl` can create resources in your cluster
-(for example, with `glooctl add route`), you may see errors in Gloo if you create resources from a version
-of `glooctl` that is incompatible with the version of the server components.
+It is important to try to keep the version of `glooctl` in alignment with the version of the Gloo server components running in your cluster. Because `glooctl` can create resources in your cluster (for example, with `glooctl add route`), you may see errors in Gloo if you create resources from a version of `glooctl` that is incompatible with the version of the server components.
 {{% /notice %}}
 
 #### Using `glooctl` Itself
 
-The easiest way to upgrade `glooctl` is to simply run `glooctl upgrade`, which will attempt to download
-the latest binary. There are more fine-grained options available; those can be viewed by running
-`glooctl upgrade --help`. One in particular to make note of is `glooctl upgrade --release`, which can
-be useful in maintaining careful control over what version you are running.
+The easiest way to upgrade `glooctl` is to simply run `glooctl upgrade`, which will attempt to download the latest binary. There are more fine-grained options available; those can be viewed by running `glooctl upgrade --help`. One in particular to make note of is `glooctl upgrade --release`, which can be useful in maintaining careful control over what version you are running.
 
-Here is an example where we notice we have a version mismatch between `glooctl` and the version of Gloo
-running in our minikube cluster (1.2.0 and 1.2.1 respectively), and we correct it:
+Here is an example where we notice we have a version mismatch between `glooctl` and the version of Gloo running in our minikube cluster (1.2.0 and 1.2.1 respectively), and we correct it:
 
 ```bash
 ~ > glooctl version
@@ -134,49 +101,32 @@ No problems detected.
 
 #### Download Release Asset
 
-You can find `glooctl` built for every platform in our release artifacts. For example, see our release
-assets for v1.0.0: https://github.com/solo-io/gloo/releases/tag/v1.0.0
+You can find `glooctl` built for every platform in our release artifacts. For example, see our release assets for v1.0.0: https://github.com/solo-io/gloo/releases/tag/v1.0.0
 
 ### Upgrading the Server Components
 
-There are two options for how to perform the server upgrade. Note that these options are not
-mutually-exclusive; if you have used one in the past, you can freely choose to use a different one in the future.
+There are two options for how to perform the server upgrade. Note that these options are not mutually-exclusive; if you have used one in the past, you can freely choose to use a different one in the future.
 
-Both installation methods allow you to provide overrides for the default chart values; however, installing through
-Helm may give you more flexibility as you are working directly with Helm rather than `glooctl`, which, for
-installation, is essentially just a wrapper around Helm.
-See our [open-source installation docs](../../installation/gateway/kubernetes/#list-of-gloo-helm-chart-values) and
-our [enterprise installation docs](../../installation/enterprise/#list-of-gloo-helm-chart-values)
-for a complete list of Helm values that can be overridden.
+Both installation methods allow you to provide overrides for the default chart values; however, installing through Helm may give you more flexibility as you are working directly with Helm rather than `glooctl`, which, for installation, is essentially just a wrapper around Helm. See our [open-source installation docs]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/#list-of-gloo-helm-chart-values" %}}) and our [enterprise installation docs]({{% versioned_link_path fromRoot="/installation/enterprise/#list-of-gloo-helm-chart-values" %}}) for a complete list of Helm values that can be overridden.
 
 {{% notice note %}}
-We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook.
-We attempt to put a `ttlSecondsAfterFinished` value on the job so that it gets cleaned up automatically,
-but as this setting is still in Alpha, your cluster may ignore this value. If that is the case, you
-may run into an issue while upgrading where the upgrade attempts to change the `gateway-certgen` job,
-but the update fails because the job is immutable. If you run into this, simply delete the job, which
-should have completed long before, and re-apply the upgrade.
+We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook. We attempt to put a `ttlSecondsAfterFinished` value on the job so that it gets cleaned up automatically, but as this setting is still in Alpha, your cluster may ignore this value. If that is the case, you may run into an issue while upgrading where the upgrade attempts to change the `gateway-certgen` job, but the update fails because the job is immutable. If you run into this, simply delete the job, which should have completed long before, and re-apply the upgrade.
 {{% /notice %}}
 
 #### Using `glooctl`
 
-You'll want to use the `glooctl install` command tree, the most common path in which is
-`glooctl install gateway`. A good way to proceed in a simple case is a two-step process, which will ensure that
-`glooctl`'s version is left matching the server components:
+You'll want to use the `glooctl install` command tree, the most common path in which is `glooctl install gateway`. A good way to proceed in a simple case is a two-step process, which will ensure that `glooctl`'s version is left matching the server components:
 
 1. Upgrade the `glooctl` binary as described above
 1. Run `glooctl install gateway`, which will pull down image versions matching `glooctl`'s version.
 
-All `glooctl` commands can have `--help` appended to them to view helpful usage information.
-Some useful flags to be aware of in particular:
+All `glooctl` commands can have `--help` appended to them to view helpful usage information. Some useful flags to be aware of in particular:
 
 * `--dry-run` (`-d`): lets you preview the YAML of the release manifest
 * `--namespace` (`-n`): lets you customize the namespace being installed to, which defaults to `gloo-system`
 * `--values`: provide a path to a values override file to use when rendering the Helm chart
 
-Here we perform an upgrade from Gloo 1.2.0 to 1.2.1 in our minikube
-cluster, confirming along the way (just as a demonstration) that the new images `glooctl` is referencing 
-match its own version. Along the way you may need to delete the completed `gateway-certgen` job.
+Here we perform an upgrade from Gloo 1.2.0 to 1.2.1 in our minikube cluster, confirming along the way (just as a demonstration) that the new images `glooctl` is referencing match its own version. Along the way you may need to delete the completed `gateway-certgen` job.
 
 {{% notice note %}}
 For Enterprise users of Gloo, this process is largely the same. You'll just need to change your `glooctl`
@@ -243,14 +193,10 @@ No problems detected.
 #### Using Helm
 
 {{% notice note %}}
-Upgrading through Helm only (i.e., not through `glooctl`) will not ensure that the version of `glooctl` 
-matches the server components. You may encounter errors in this state. Be sure to follow the 
-["upgrading `glooctl`"](#upgrading-glooctl) steps above to match `glooctl`'s version to the server components. 
+Upgrading through Helm only (i.e., not through `glooctl`) will not ensure that the version of `glooctl` matches the server components. You may encounter errors in this state. Be sure to follow the ["upgrading `glooctl`"](#upgrading-glooctl) steps above to match `glooctl`'s version to the server components. 
 {{% /notice %}}
 
-For Enterprise users of Gloo, the process with either Helm 2 or 3 is the same. You'll just need to set your license
-key during installation by using `--set license_key="$license"` (or include the line `license_key: LICENSE-KEY` in
-your values file).
+For Enterprise users of Gloo, the process with either Helm 2 or 3 is the same. You'll just need to set your license key during installation by using `--set license_key="$license"` (or include the line `license_key: LICENSE-KEY` in your values file).
 
 Get a trial Enterprise license at https://www.solo.io/gloo-trial.
 
@@ -279,24 +225,17 @@ quay.io/solo-io/gloo:1.2.1
 ##### Helm 2
 
 {{% notice warning %}}
-Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.2.0 and later requires explicitly
-setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
+Using Helm 2 with open source Gloo v1.2.3 and later or Gloo Enterprise v1.2.0 and later requires explicitly setting `crds.create=true`, as this is how we are managing compatibility between Helm 2 and 3.
 {{% /notice %}}
 
-At the time of writing, Helm v2 [does not support managing CRDs](https://github.com/helm/helm/issues/5871#issuecomment-522096388).
-As a result, if you try to upgrade through `helm install` or `helm upgrade`, you may encounter an error
-stating that a CRD already exists.
+At the time of writing, Helm v2 [does not support managing CRDs](https://github.com/helm/helm/issues/5871#issuecomment-522096388). As a result, if you try to upgrade through `helm install` or `helm upgrade`, you may encounter an error stating that a CRD already exists.
 
 ```bash
 ~ > helm install gloo/gloo
 Error: customresourcedefinitions.apiextensions.k8s.io "authconfigs.enterprise.gloo.solo.io" already exists
 ```
 
-There are two options for resolving this problem. If there have not been changes to the CRDs (such a change
-would be mentioned in our changelogs), then you can simply set the Helm value `global.glooRbac.create` to `false`
-and skip CRD creation altogether. If there have been changes to the CRDs, then you could either delete the 
-CRDs yourself, or you could render the chart yourself and then directly `kubectl apply` it. 
-The rest of this section will assume the latter.
+There are two options for resolving this problem. If there have not been changes to the CRDs (such a change would be mentioned in our changelogs), then you can simply set the Helm value `global.glooRbac.create` to `false` and skip CRD creation altogether. If there have been changes to the CRDs, then you could either delete the CRDs yourself, or you could render the chart yourself and then directly `kubectl apply` it. The rest of this section will assume the latter.
 
 ```bash
 namespace=gloo-system # customize to your namespace

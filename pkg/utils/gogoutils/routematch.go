@@ -4,6 +4,7 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	types "github.com/gogo/protobuf/types"
 	envoyroute_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
 	envoytype_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
@@ -38,6 +39,10 @@ func ToGlooRouteMatch(routeMatch *envoyroute.RouteMatch) *envoyroute_gloo.RouteM
 	case *envoyroute.RouteMatch_Regex:
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Regex{
 			Regex: typed.Regex,
+		}
+	case *envoyroute.RouteMatch_SafeRegex:
+		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Regex{
+			Regex: typed.SafeRegex.GetRegex(),
 		}
 	case *envoyroute.RouteMatch_Path:
 		rm.PathSpecifier = &envoyroute_gloo.RouteMatch_Path{
@@ -105,6 +110,10 @@ func ToGlooHeader(header *envoyroute.HeaderMatcher) *envoyroute_gloo.HeaderMatch
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RegexMatch{
 			RegexMatch: specificHeaderSpecifier.RegexMatch,
 		}
+	case *envoyroute.HeaderMatcher_SafeRegexMatch:
+		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RegexMatch{
+			RegexMatch: specificHeaderSpecifier.SafeRegexMatch.GetRegex(),
+		}
 	case *envoyroute.HeaderMatcher_RangeMatch:
 		h.HeaderMatchSpecifier = &envoyroute_gloo.HeaderMatcher_RangeMatch{
 			RangeMatch: &envoytype_gloo.Int64Range{
@@ -143,11 +152,27 @@ func ToGlooQueryParameterMatcher(queryParamMatcher *envoyroute.QueryParameterMat
 	if queryParamMatcher == nil {
 		return nil
 	}
-	return &envoyroute_gloo.QueryParameterMatcher{
-		Name:  queryParamMatcher.GetName(),
-		Value: queryParamMatcher.GetValue(),
-		Regex: BoolProtoToGogo(queryParamMatcher.GetRegex()),
+	value := ""
+	regex := false
+	switch {
+	case queryParamMatcher.GetPresentMatch():
+	case queryParamMatcher.GetStringMatch().GetExact() != "":
+		value = queryParamMatcher.GetStringMatch().GetExact()
+	case queryParamMatcher.GetStringMatch().GetSafeRegex() != nil:
+		value = queryParamMatcher.GetStringMatch().GetSafeRegex().GetRegex()
+		regex = true
 	}
+
+	qpm := &envoyroute_gloo.QueryParameterMatcher{
+		Name:  queryParamMatcher.GetName(),
+		Value: value,
+	}
+	if regex {
+		qpm.Regex = &types.BoolValue{
+			Value: true,
+		}
+	}
+	return qpm
 }
 
 func ToGlooGrpc(grpc *envoyroute.RouteMatch_GrpcRouteMatchOptions) *envoyroute_gloo.RouteMatch_GrpcRouteMatchOptions {

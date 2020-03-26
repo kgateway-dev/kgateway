@@ -1,0 +1,11 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2369
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2360
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2154
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2125
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/1519

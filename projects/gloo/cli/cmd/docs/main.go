@@ -10,7 +10,10 @@ import (
 
 func main() {
 	app := cmd.GlooCli()
-	err := clidoc.GenerateCliDocsWithConfig(app, clidoc.LatestConfig)
+	var cliGenConfig = clidoc.Config{
+		OutputDir: "./docs/content/reference/cli",
+	}
+	err := clidoc.GenerateCliDocsWithConfig(app, cliGenConfig)
 	if err != nil {
 		log.Fatalf("error generating docs: %b", err)
 	}

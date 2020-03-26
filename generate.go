@@ -30,7 +30,7 @@ func main() {
 			Output: options.Hugo,
 			HugoOptions: &options.HugoOptions{
 				DataDir: "/docs/data",
-				ApiDir:  "api",
+				ApiDir:  "reference/api",
 			},
 		},
 		ExternalImports: sk_anyvendor.CreateDefaultMatchOptions(

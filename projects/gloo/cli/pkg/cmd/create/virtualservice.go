@@ -85,7 +85,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 		}
 	}
 
-	printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output)
+	printers.PrintVirtualServices(v1.VirtualServiceList{vs}, opts.Top.Output, opts.Metadata.Namespace)
 
 	return nil
 }

@@ -4,13 +4,11 @@ steps:
 # All steps after this must set working directory to use the cloned Gloo source
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
-# gcloud builds submit --substitutions COMMIT_SHA=abc ./
-- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.2.2'
+# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo ./
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
   args:
-    - "--repo-owner"
-    - "solo-io"
     - "--repo-name"
-    - gloo
+    - "$REPO_NAME"
     - "--repo-sha"
     - "$COMMIT_SHA"
     - "--repo-output-dir"
@@ -33,28 +31,6 @@ steps:
   args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
   dir: *dir
   id: 'untar-mod-cache'
-
-# Run some basic checks on the repo
-# 1) check formatting of go files
-# 2) ensure that make generated-code produces a clean diff
-# 3) ensure that the site is generated with no warnings (strict = true in mkdocs)
-
-# e2e-go-mod-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-go-mod-ginkgo
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-  dir: *dir
-  entrypoint: make
-  args: ['check-format']
-  waitFor: ['untar-mod-cache']
-  id: 'check-format'
-
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  entrypoint: 'bash'
-  args: ['ci/check-code-and-docs-gen.sh']
-  env:
-  - 'TAGGED_VERSION=$TAG_NAME'
-  dir: *dir
-  waitFor: ['untar-mod-cache']
-  id: 'check-code-and-docs-gen'
 
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
@@ -119,7 +95,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending',  '-noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'check-code-and-docs-gen', 'set-gcr-zone', 'get-test-credentials']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
@@ -140,7 +116,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
-  waitFor: ['prepare-workspace', 'check-code-and-docs-gen']
+  waitFor: ['prepare-workspace']
   id: 'compile'
 
   # 1) Run make targets to push docker images
@@ -180,7 +156,7 @@ steps:
     - 'RUN_KUBE2E_TESTS=1'
     - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4',  '-noColor', 'test/kube2e']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
   waitFor: ['build-test-assets', 'docker-push']
   id: 'regression-tests'
 

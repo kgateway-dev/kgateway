@@ -3,7 +3,7 @@
   "description": "Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.\n\n",
   "name": "gloo.solo.io",
   "version": "v1",
-  "docs_dir": "docs/content/api",
+  "docs_dir": "docs/content/reference/api",
   "imports": [
     "github.com/solo-io/solo-kit/api/external/kubernetes"
   ],

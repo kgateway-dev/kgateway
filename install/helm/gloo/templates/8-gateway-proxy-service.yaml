@@ -1,5 +1,6 @@
 {{- if .Values.gateway.enabled }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- $svcName := default $name $spec.service.name }}
 ---
 apiVersion: v1
 kind: Service
@@ -8,7 +9,7 @@ metadata:
     app: gloo
     gloo: gateway-proxy
     gateway-proxy-id: {{ $name | kebabcase }}
-  name: {{ $name | kebabcase }}
+  name: {{ $svcName | kebabcase }}
   namespace: {{ $.Release.Namespace }}
 {{- if $spec.service.extraAnnotations }}
   annotations:
@@ -21,6 +22,16 @@ spec:
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}
   ports:
+{{- if $spec.service.httpsFirst }}
+  - port: {{ $spec.service.httpsPort }}
+    targetPort: {{ $spec.podTemplate.httpsPort }}
+    protocol: TCP
+    name: https
+  - port: {{ $spec.service.httpPort }}
+    targetPort: {{ $spec.podTemplate.httpPort }}
+    protocol: TCP
+    name: http
+{{- else }}
   - port: {{ $spec.service.httpPort }}
     targetPort: {{ $spec.podTemplate.httpPort }}
     protocol: TCP
@@ -29,6 +40,7 @@ spec:
     targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
     name: https
+{{- end }}
   selector:
     gateway-proxy-id: {{ $name | kebabcase }}
     gateway-proxy: live

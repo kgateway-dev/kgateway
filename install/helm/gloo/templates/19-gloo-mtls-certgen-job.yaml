@@ -1,0 +1,41 @@
+{{- $image := .Values.gateway.certGenJob.image }}
+{{- if .Values.global.glooMtls.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: gloo
+    gloo: gloo-mtls-certgen
+  name: gloo-mtls-certgen
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+    "helm.sh/hook-weight": "10"
+    "helm.sh/hook-delete-policy": hook-succeeded
+spec:
+  template:
+    metadata:
+      labels:
+        gloo: gloo-mtls-certs
+    spec:
+      serviceAccountName: certgen
+      containers:
+        - image: {{template "gloo.image" $image}}
+          imagePullPolicy: {{ $image.pullPolicy }}
+          name: certgen
+          env:
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+          args:
+            - "--secret-name=gloo-mtls-certs"
+            - "--svc-name=gloo"
+      restartPolicy: Never
+  # this feature is still in Alpha, which means it must be manually enabled in the k8s api server
+  # with --feature-gates="TTLAfterFinished=true". This flag also works with minikube start ...
+  # if the feature flag is not enabled in the k8s api server, this setting will be silently ignored at creation time
+  {{- if semverCompare ">=1.12" .Capabilities.KubeVersion.GitVersion }}
+  ttlSecondsAfterFinished: 60
+  {{- end }}
+{{- end }}

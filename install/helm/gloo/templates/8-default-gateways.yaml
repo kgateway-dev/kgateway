@@ -12,13 +12,21 @@ metadata:
   labels:
     app: gloo
 spec:
+  {{- if $gatewaySettings.ipv4Only }}
+  bindAddress: "0.0.0.0"
+  {{- else }}
   bindAddress: "::"
+  {{- end }}
   bindPort: {{ $spec.podTemplate.httpPort }}
 {{- if $gatewaySettings.customHttpGateway}}
   httpGateway:
 {{ toYaml $gatewaySettings.customHttpGateway | indent 4}}
 {{- else }}
   httpGateway: {}
+{{- end }}
+{{- if $gatewaySettings.options }}
+  options:
+{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: false
@@ -42,6 +50,10 @@ spec:
 {{ toYaml $gatewaySettings.customHttpsGateway | indent 6}}
 {{- else }}
   httpGateway: {}
+{{- end }}
+{{- if $gatewaySettings.options }}
+  options:
+{{ toYaml $gatewaySettings.options | indent 4 }}
 {{- end }}
   useProxyProto: {{ $gatewaySettings.useProxyProto }}
   ssl: true

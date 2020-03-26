@@ -1,0 +1,30 @@
+name: Check Code and Docs Gen
+on: pull_request
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+    - name: Install Protoc
+      uses: Arduino/actions/setup-protoc@master
+      with:
+        version: '3.6.1'
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+
+    - name: Generate Code
+      run: |
+        ./ci/check-code-and-docs-gen.sh

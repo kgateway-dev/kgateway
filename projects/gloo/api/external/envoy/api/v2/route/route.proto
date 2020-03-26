@@ -25,15 +25,14 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
 // [#protodoc-title: HTTP route]
-// * Routing :ref:`architecture overview <arch_overview_http_routing>`
-// * HTTP :ref:`router filter <config_http_filters_router>`
+// * Routing `architecture overview (arch_overview_http_routing)`
+// * HTTP `router filter (config_http_filters_router)`
 
 // The top level element in the routing configuration is a virtual host. Each virtual host has
 // a logical name as well as a set of domains that get routed to it based on the incoming request's
 // host header. This allows a single listener to service multiple top level domain path trees. Once
 // a virtual host is selected based on the domain, the routes are processed in order to see which
 // upstream cluster to route to or whether to perform a redirect.
-// [#comment:next free field: 17]
 message VirtualHost {
     // The logical name of the virtual host. This is used when emitting certain
     // statistics but is not relevant for routing.
@@ -48,7 +47,6 @@ message VirtualHost {
     //  3. Prefix domain wildcards: ``foo.*`` or ``foo-*``.
     //  4. Special wildcard ``*`` matching any domain.
     //
-    // .. note::
     //
     //   The wildcard will not match the empty string.
     //   e.g. ``*-bar.foo.com`` will match ``baz-bar.foo.com`` but not ``-bar.foo.com``.
@@ -88,10 +86,10 @@ message VirtualHost {
 
     // Specifies a list of HTTP headers that should be added to each request
     // handled by this virtual host. Headers specified at this level are applied
-    // after headers from enclosed :ref:`envoy_api_msg_route.Route` and before headers from the
-    // enclosing :ref:`envoy_api_msg_RouteConfiguration`. For more information, including
-    // details on header value syntax, see the documentation on :ref:`custom request headers
-    // <config_http_conn_man_headers_custom_request_headers>`.
+    // after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+    // enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
+    // details on header value syntax, see the documentation on `custom request headers
+    // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption request_headers_to_add = 7
     [(validate.rules).repeated .max_items = 1000];
 
@@ -101,10 +99,10 @@ message VirtualHost {
 
     // Specifies a list of HTTP headers that should be added to each response
     // handled by this virtual host. Headers specified at this level are applied
-    // after headers from enclosed :ref:`envoy_api_msg_route.Route` and before headers from the
-    // enclosing :ref:`envoy_api_msg_RouteConfiguration`. For more information, including
-    // details on header value syntax, see the documentation on :ref:`custom request headers
-    // <config_http_conn_man_headers_custom_request_headers>`.
+    // after headers from enclosed `envoy_api_msg_route.Route` and before headers from the
+    // enclosing `envoy_api_msg_RouteConfiguration`. For more information, including
+    // details on header value syntax, see the documentation on `custom request headers
+    // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption response_headers_to_add = 10
     [(validate.rules).repeated .max_items = 1000];
 
@@ -120,25 +118,25 @@ message VirtualHost {
     // The per_filter_config field can be used to provide virtual host-specific
     // configurations for filters. The key should match the filter name, such as
     // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-    // specific; see the :ref:`HTTP filter documentation <config_http_filters>`
+    // specific; see the `HTTP filter documentation (config_http_filters)`
     // for if and how it is utilized.
     map<string, google.protobuf.Struct> per_filter_config = 12;
 
     // The per_filter_config field can be used to provide virtual host-specific
     // configurations for filters. The key should match the filter name, such as
     // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-    // specific; see the :ref:`HTTP filter documentation <config_http_filters>`
+    // specific; see the `HTTP filter documentation (config_http_filters)`
     // for if and how it is utilized.
     map<string, google.protobuf.Any> typed_per_filter_config = 15;
 
-    // Decides whether the :ref:`x-envoy-attempt-count
-    // <config_http_filters_router_x-envoy-attempt-count>` header should be included
+    // Decides whether the `x-envoy-attempt-count
+    // (config_http_filters_router_x-envoy-attempt-count)` header should be included
     // in the upstream request. Setting this option will cause it to override any existing header
     // value, so in the case of two Envoys on the request path with this option enabled, the upstream
     // will see the attempt count as perceived by the second Envoy. Defaults to false.
     // This header is unaffected by the
-    // :ref:`suppress_envoy_headers
-    // <envoy_api_field_config.filter.http.router.v2.Router.suppress_envoy_headers>` flag.
+    // `suppress_envoy_headers
+    // (envoy_api_field_config.filter.http.router.v2.Router.suppress_envoy_headers)` flag.
     bool include_request_attempt_count = 14;
 
     // Indicates the retry policy for all routes in this virtual host. Note that setting a
@@ -155,11 +153,9 @@ message VirtualHost {
 // A route is both a specification of how to match a request as well as an indication of what to do
 // next (e.g., redirect, forward, rewrite, etc.).
 //
-// .. attention::
 //
-//   Envoy supports routing on HTTP method via :ref:`header matching
-//   <envoy_api_msg_route.HeaderMatcher>`.
-// [#comment:next free field: 15]
+//   Envoy supports routing on HTTP method via `header matching
+//   (envoy_api_msg_route.HeaderMatcher)`.
 message Route {
     // Name for the route.
     string name = 14;
@@ -195,23 +191,23 @@ message Route {
     // The per_filter_config field can be used to provide route-specific
     // configurations for filters. The key should match the filter name, such as
     // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-    // specific; see the :ref:`HTTP filter documentation <config_http_filters>` for
+    // specific; see the `HTTP filter documentation (config_http_filters)` for
     // if and how it is utilized.
     map<string, google.protobuf.Struct> per_filter_config = 8;
 
     // The per_filter_config field can be used to provide route-specific
     // configurations for filters. The key should match the filter name, such as
     // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-    // specific; see the :ref:`HTTP filter documentation <config_http_filters>` for
+    // specific; see the `HTTP filter documentation (config_http_filters)` for
     // if and how it is utilized.
     map<string, google.protobuf.Any> typed_per_filter_config = 13;
 
     // Specifies a set of headers that will be added to requests matching this
     // route. Headers specified at this level are applied before headers from the
-    // enclosing :ref:`envoy_api_msg_route.VirtualHost` and
-    // :ref:`envoy_api_msg_RouteConfiguration`. For more information, including details on
-    // header value syntax, see the documentation on :ref:`custom request headers
-    // <config_http_conn_man_headers_custom_request_headers>`.
+    // enclosing `envoy_api_msg_route.VirtualHost` and
+    // `envoy_api_msg_RouteConfiguration`. For more information, including details on
+    // header value syntax, see the documentation on `custom request headers
+    // (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption request_headers_to_add = 9
     [(validate.rules).repeated .max_items = 1000];
 
@@ -221,10 +217,10 @@ message Route {
 
     // Specifies a set of headers that will be added to responses to requests
     // matching this route. Headers specified at this level are applied before
-    // headers from the enclosing :ref:`envoy_api_msg_route.VirtualHost` and
-    // :ref:`envoy_api_msg_RouteConfiguration`. For more information, including
+    // headers from the enclosing `envoy_api_msg_route.VirtualHost` and
+    // `envoy_api_msg_RouteConfiguration`. For more information, including
     // details on header value syntax, see the documentation on
-    // :ref:`custom request headers <config_http_conn_man_headers_custom_request_headers>`.
+    // `custom request headers (config_http_conn_man_headers_custom_request_headers)`.
     repeated core.HeaderValueOption response_headers_to_add = 10
     [(validate.rules).repeated .max_items = 1000];
 
@@ -237,58 +233,57 @@ message Route {
     Tracing tracing = 15;
 }
 
-// Compared to the :ref:`cluster <envoy_api_field_route.RouteAction.cluster>` field that specifies a
-// single upstream cluster as the target of a request, the :ref:`weighted_clusters
-// <envoy_api_field_route.RouteAction.weighted_clusters>` option allows for specification of
+// Compared to the `cluster (envoy_api_field_route.RouteAction.cluster)` field that specifies a
+// single upstream cluster as the target of a request, the `weighted_clusters
+// (envoy_api_field_route.RouteAction.weighted_clusters)` option allows for specification of
 // multiple upstream clusters along with weights that indicate the percentage of
 // traffic to be forwarded to each cluster. The router selects an upstream cluster based on the
 // weights.
-// [#comment:next free field: 11]
 message WeightedCluster {
     message ClusterWeight {
         // Name of the upstream cluster. The cluster must exist in the
-        // :ref:`cluster manager configuration <config_cluster_manager>`.
+        // `cluster manager configuration (config_cluster_manager)`.
         string name = 1 [(validate.rules).string.min_bytes = 1];
 
-        // An integer between 0 and :ref:`total_weight
-        // <envoy_api_field_route.WeightedCluster.total_weight>`. When a request matches the route,
+        // An integer between 0 and `total_weight
+        // (envoy_api_field_route.WeightedCluster.total_weight)`. When a request matches the route,
         // the choice of an upstream cluster is determined by its weight. The sum of weights across all
         // entries in the clusters array must add up to the total_weight, which defaults to 100.
         google.protobuf.UInt32Value weight = 2;
 
         // Optional endpoint metadata match criteria used by the subset load balancer. Only endpoints in
         // the upstream cluster with metadata matching what is set in this field will be considered for
-        // load balancing. Note that this will be merged with what's provided in :ref:
-        // `RouteAction.MetadataMatch <envoy_api_field_route.RouteAction.metadata_match>`, with values
+        // load balancing. Note that this will be merged with what's provided in
+        // `RouteAction.MetadataMatch (envoy_api_field_route.RouteAction.metadata_match)`, with values
         // here taking precedence. The filter name should be specified as *envoy.lb*.
         core.Metadata metadata_match = 3;
 
         // Specifies a list of headers to be added to requests when this cluster is selected
-        // through the enclosing :ref:`envoy_api_msg_route.RouteAction`.
+        // through the enclosing `envoy_api_msg_route.RouteAction`.
         // Headers specified at this level are applied before headers from the enclosing
-        // :ref:`envoy_api_msg_route.Route`, :ref:`envoy_api_msg_route.VirtualHost`, and
-        // :ref:`envoy_api_msg_RouteConfiguration`. For more information, including details on
-        // header value syntax, see the documentation on :ref:`custom request headers
-        // <config_http_conn_man_headers_custom_request_headers>`.
+        // `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+        // `envoy_api_msg_RouteConfiguration`. For more information, including details on
+        // header value syntax, see the documentation on `custom request headers
+        // (config_http_conn_man_headers_custom_request_headers)`.
         repeated core.HeaderValueOption request_headers_to_add = 4
         [(validate.rules).repeated .max_items = 1000];
 
         // Specifies a list of HTTP headers that should be removed from each request when
-        // this cluster is selected through the enclosing :ref:`envoy_api_msg_route.RouteAction`.
+        // this cluster is selected through the enclosing `envoy_api_msg_route.RouteAction`.
         repeated string request_headers_to_remove = 9;
 
         // Specifies a list of headers to be added to responses when this cluster is selected
-        // through the enclosing :ref:`envoy_api_msg_route.RouteAction`.
+        // through the enclosing `envoy_api_msg_route.RouteAction`.
         // Headers specified at this level are applied before headers from the enclosing
-        // :ref:`envoy_api_msg_route.Route`, :ref:`envoy_api_msg_route.VirtualHost`, and
-        // :ref:`envoy_api_msg_RouteConfiguration`. For more information, including details on
-        // header value syntax, see the documentation on :ref:`custom request headers
-        // <config_http_conn_man_headers_custom_request_headers>`.
+        // `envoy_api_msg_route.Route`, `envoy_api_msg_route.VirtualHost`, and
+        // `envoy_api_msg_RouteConfiguration`. For more information, including details on
+        // header value syntax, see the documentation on `custom request headers
+        // (config_http_conn_man_headers_custom_request_headers)`.
         repeated core.HeaderValueOption response_headers_to_add = 5
         [(validate.rules).repeated .max_items = 1000];
 
         // Specifies a list of headers to be removed from responses when this cluster is selected
-        // through the enclosing :ref:`envoy_api_msg_route.RouteAction`.
+        // through the enclosing `envoy_api_msg_route.RouteAction`.
         repeated string response_headers_to_remove = 6;
 
         reserved 7;
@@ -296,14 +291,14 @@ message WeightedCluster {
         // The per_filter_config field can be used to provide weighted cluster-specific
         // configurations for filters. The key should match the filter name, such as
         // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-        // specific; see the :ref:`HTTP filter documentation <config_http_filters>`
+        // specific; see the `HTTP filter documentation (config_http_filters)`
         // for if and how it is utilized.
         map<string, google.protobuf.Struct> per_filter_config = 8;
 
         // The per_filter_config field can be used to provide weighted cluster-specific
         // configurations for filters. The key should match the filter name, such as
         // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
-        // specific; see the :ref:`HTTP filter documentation <config_http_filters>`
+        // specific; see the `HTTP filter documentation (config_http_filters)`
         // for if and how it is utilized.
         map<string, google.protobuf.Any> typed_per_filter_config = 10;
     }
@@ -321,8 +316,8 @@ message WeightedCluster {
     // cluster under the key *runtime_key_prefix* + "." + *cluster[i].name* where
     // *cluster[i]* denotes an entry in the clusters array field. If the runtime
     // key for the cluster does not exist, the value specified in the
-    // configuration file will be used as the default weight. See the :ref:`runtime documentation
-    // <operations_runtime>` for how key names map to the underlying implementation.
+    // configuration file will be used as the default weight. See the `runtime documentation
+    // (operations_runtime)` for how key names map to the underlying implementation.
     string runtime_key_prefix = 2;
 }
 
@@ -365,10 +360,9 @@ message RouteMatch {
     // number is <= the value of the numerator N, or if the key is not present, the default
     // value, the router continues to evaluate the remaining match criteria. A runtime_fraction
     // route configuration can be used to roll out route changes in a gradual manner without full
-    // code/config deploys. Refer to the :ref:`traffic shifting
-    // <config_http_conn_man_route_table_traffic_splitting_shift>` docs for additional documentation.
+    // code/config deploys. Refer to the `traffic shifting
+    // (config_http_conn_man_route_table_traffic_splitting_shift)` docs for additional documentation.
     //
-    // .. note::
     //
     //    Parsing this field is implemented such that the runtime key's data may be represented
     //    as a FractionalPercent proto represented as JSON/YAML and may also be represented as an
@@ -400,7 +394,6 @@ message RouteMatch {
     GrpcRouteMatchOptions grpc = 8;
 }
 
-// [#comment:next free field: 11]
 message CorsPolicy {
     // Specifies the origins that will be allowed to do CORS requests.
     //
@@ -430,21 +423,18 @@ message CorsPolicy {
     oneof enabled_specifier {
         // Specifies if CORS is enabled. Defaults to true. Only effective on route.
         //
-        // .. attention::
-        //
         //   **This field is deprecated**. Set the
-        //   :ref:`filter_enabled<envoy_api_field_route.CorsPolicy.filter_enabled>` field instead.
+        //   `filter_enabled (envoy_api_field_route.CorsPolicy.filter_enabled)` field instead.
         google.protobuf.BoolValue enabled = 7 [deprecated = true];
 
         // Specifies if CORS is enabled.
         //
         // More information on how this can be controlled via runtime can be found
-        // :ref:`here <cors-runtime>`.
+        // `here (cors-runtime)`.
         //
-        // .. note::
         //
-        //   This field defaults to 100/:ref:`HUNDRED
-        //   <envoy_api_enum_type.FractionalPercent.DenominatorType>`.
+        //   This field defaults to 100/`HUNDRED
+        //   (envoy_api_enum_type.FractionalPercent.DenominatorType)`.
         core.RuntimeFractionalPercent filter_enabled = 9;
     }
 
@@ -452,16 +442,14 @@ message CorsPolicy {
     // does not enforce any policies.
     //
     // More information on how this can be controlled via runtime can be found
-    // :ref:`here <cors-runtime>`.
+    // `here (cors-runtime)`.
     //
-    // .. note::
     //
-    //   This field defaults to 100/:ref:`HUNDRED
-    //   <envoy_api_enum_type.FractionalPercent.DenominatorType>`.
+    //   This field defaults to 100/`HUNDRED
+    //   (envoy_api_enum_type.FractionalPercent.DenominatorType)`.
     core.RuntimeFractionalPercent shadow_enabled = 10;
 }
 
-// [#comment:next free field: 30]
 message RouteAction {
     oneof cluster_specifier {
         option (validate.required) = true;
@@ -475,8 +463,7 @@ message RouteAction {
         // header is not found or the referenced cluster does not exist, Envoy will
         // return a 404 response.
         //
-        // .. attention::
-        //
+                //
         //   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1
         //   *Host* header. Thus, if attempting to match on *Host*, match on *:authority* instead.
         string cluster_header = 2 [(validate.rules).string.min_bytes = 1];
@@ -484,7 +471,7 @@ message RouteAction {
         // Multiple upstream clusters can be specified for a given route. The
         // request is routed to one of the upstream clusters based on weights
         // assigned to each cluster. See
-        // :ref:`traffic splitting <config_http_conn_man_route_table_traffic_splitting_split>`
+        // `traffic splitting (config_http_conn_man_route_table_traffic_splitting_split)`
         // for additional documentation.
         WeightedCluster weighted_clusters = 3;
     }
@@ -504,27 +491,24 @@ message RouteAction {
 
     // Optional endpoint metadata match criteria used by the subset load balancer. Only endpoints
     // in the upstream cluster with metadata matching what's set in this field will be considered
-    // for load balancing. If using :ref:`weighted_clusters
-    // <envoy_api_field_route.RouteAction.weighted_clusters>`, metadata will be merged, with values
+    // for load balancing. If using `weighted_clusters
+    // (envoy_api_field_route.RouteAction.weighted_clusters)`, metadata will be merged, with values
     // provided there taking precedence. The filter name should be specified as *envoy.lb*.
     core.Metadata metadata_match = 4;
 
     // Indicates that during forwarding, the matched prefix (or path) should be
     // swapped with this value. This option allows application URLs to be rooted
     // at a different path from those exposed at the reverse proxy layer. The router filter will
-    // place the original path before rewrite into the :ref:`x-envoy-original-path
-    // <config_http_filters_router_x-envoy-original-path>` header.
-    //
-    // .. attention::
+    // place the original path before rewrite into the `x-envoy-original-path
+    // (config_http_filters_router_x-envoy-original-path)` header.
     //
     //   Pay careful attention to the use of trailing slashes in the
-    //   :ref:`route's match <envoy_api_field_route.Route.match>` prefix value.
+    //   `route's match (envoy_api_field_route.Route.match)` prefix value.
     //   Stripping a prefix from a path requires multiple Routes to handle all cases. For example,
     //   rewriting */prefix* to */* and */prefix/etc* to */etc* cannot be done in a single
-    //   :ref:`Route <envoy_api_msg_route.Route>`, as shown by the below config entries:
+    //   `Route (envoy_api_msg_route.Route)`, as shown by the below config entries:
     //
-    //   .. code-block:: yaml
-    //
+    //   ```
     //     - match:
     //         prefix: "/prefix/"
     //       route:
@@ -533,7 +517,7 @@ message RouteAction {
     //         prefix: "/prefix"
     //       route:
     //         prefix_rewrite: "/"
-    //
+    //   ```
     //   Having above entries in the config, requests to */prefix* will be stripped to */*, while
     //   requests to */prefix/etc* will be stripped to */etc*.
     string prefix_rewrite = 5;
@@ -551,11 +535,10 @@ message RouteAction {
         google.protobuf.BoolValue auto_host_rewrite = 7;
 
         // Indicates that during forwarding, the host header will be swapped with the content of given
-        // downstream or :ref:`custom <config_http_conn_man_headers_custom_request_headers>` header.
+        // downstream or `custom (config_http_conn_man_headers_custom_request_headers)` header.
         // If header value is empty, host header is left intact.
         //
-        // .. attention::
-        //
+                //
         //   Pay attention to the potential security implications of using this option. Provided header
         //   must come from trusted source.
         string auto_host_rewrite_header = 29;
@@ -565,24 +548,23 @@ message RouteAction {
     // spans between the point at which the entire downstream request (i.e. end-of-stream) has been
     // processed and when the upstream response has been completely processed.
     //
-    // .. note::
     //
     //   This timeout includes all retries. See also
-    //   :ref:`config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
-    //   :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
-    //   :ref:`retry overview <arch_overview_http_routing_retry>`.
+    //   `config_http_filters_router_x-envoy-upstream-rq-timeout-ms`,
+    //   `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms`, and the
+    //   `retry overview (arch_overview_http_routing_retry)`.
     google.protobuf.Duration timeout = 8 [(gogoproto.stdduration) = true];
 
     // Specifies the idle timeout for the route. If not specified, there is no per-route idle timeout,
-    // although the connection manager wide :ref:`stream_idle_timeout
-    // <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.stream_idle_timeout>`
+    // although the connection manager wide `stream_idle_timeout
+    // (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.stream_idle_timeout)`
     // will still apply. A value of 0 will completely disable the route's idle timeout, even if a
     // connection manager stream idle timeout is configured.
     //
-    // The idle timeout is distinct to :ref:`timeout
-    // <envoy_api_field_route.RouteAction.timeout>`, which provides an upper bound
-    // on the upstream response time; :ref:`idle_timeout
-    // <envoy_api_field_route.RouteAction.idle_timeout>` instead bounds the amount
+    // The idle timeout is distinct to `timeout
+    // (envoy_api_field_route.RouteAction.timeout)`, which provides an upper bound
+    // on the upstream response time; `idle_timeout
+    // (envoy_api_field_route.RouteAction.idle_timeout)` instead bounds the amount
     // of time the request's stream may be idle.
     //
     // After header decoding, the idle timeout will apply on downstream and
@@ -617,15 +599,14 @@ message RouteAction {
         // configuration but not present in runtime, 0 is the default and thus 0% of
         // requests will be mirrored.
         //
-        // .. attention::
-        //
+                //
         //   **This field is deprecated**. Set the
-        //   :ref:`runtime_fraction
-        //   <envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_fraction>` field instead.
+        //   `runtime_fraction
+        //   (envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_fraction)` field instead.
         string runtime_key = 2 [deprecated = true];
 
-        // If both :ref:`runtime_key
-        // <envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_key>` and this field are not
+        // If both `runtime_key
+        // (envoy_api_field_route.RouteAction.RequestMirrorPolicy.runtime_key)` and this field are not
         // specified, all requests to the target cluster will be mirrored.
         //
         // If specified, this field takes precedence over the `runtime_key` field and requests must also
@@ -635,10 +616,9 @@ message RouteAction {
         // number is <= the value of the numerator N, or if the key is not present, the default
         // value, the request will be mirrored.
         //
-        // .. note::
         //
         //   Parsing this field is implemented such that the runtime key's data may be represented
-        //   as a :ref:`FractionalPercent <envoy_api_msg_type.FractionalPercent>` proto represented
+        //   as a `FractionalPercent (envoy_api_msg_type.FractionalPercent)` proto represented
         //   as JSON/YAML and may also be represented as an integer with the assumption that the value
         //   is an integral percentage out of 100. For instance, a runtime key lookup returning the
         //   value "42" would parse as a `FractionalPercent` whose numerator is 42 and denominator is
@@ -650,8 +630,7 @@ message RouteAction {
     // Indicates that the route has a request mirroring policy.
     RequestMirrorPolicy request_mirror_policy = 10;
 
-    // Optionally specifies the :ref:`routing priority <arch_overview_http_routing_priority>`.
-    // [#comment:TODO(htuch): add (validate.rules).enum.defined_only = true once
+    // Optionally specifies the `routing priority (arch_overview_http_routing_priority)`.
     // https://github.com/lyft/protoc-gen-validate/issues/42 is resolved.]
     core.RoutingPriority priority = 11;
 
@@ -665,12 +644,12 @@ message RouteAction {
 
     // Specifies if the rate limit filter should include the virtual host rate
     // limits. By default, if the route configured rate limits, the virtual host
-    // :ref:`rate_limits <envoy_api_field_route.VirtualHost.rate_limits>` are not applied to the
+    // `rate_limits (envoy_api_field_route.VirtualHost.rate_limits)` are not applied to the
     // request.
     google.protobuf.BoolValue include_vh_rate_limits = 14;
 
-    // Specifies the route's hashing policy if the upstream cluster uses a hashing :ref:`load balancer
-    // <arch_overview_load_balancing_types>`.
+    // Specifies the route's hashing policy if the upstream cluster uses a hashing `load balancer
+    // (arch_overview_load_balancing_types)`.
     message HashPolicy {
         message Header {
             // The name of the request header that will be used to obtain the hash
@@ -773,11 +752,11 @@ message RouteAction {
     // If present, and the request is a gRPC request, use the
     // `grpc-timeout header <https://github.com/grpc/grpc/blob/master/doc/PROTOCOL-HTTP2.md>`_,
     // or its default value (infinity) instead of
-    // :ref:`timeout <envoy_api_field_route.RouteAction.timeout>`, but limit the applied timeout
+    // `timeout (envoy_api_field_route.RouteAction.timeout)`, but limit the applied timeout
     // to the maximum value specified here. If configured as 0, the maximum allowed timeout for
     // gRPC requests is infinity. If not configured at all, the `grpc-timeout` header is not used
     // and gRPC requests time out like any other requests using
-    // :ref:`timeout <envoy_api_field_route.RouteAction.timeout>` or its default.
+    // `timeout (envoy_api_field_route.RouteAction.timeout)` or its default.
     // This can be used to prevent unexpected upstream request timeouts due to potentially long
     // time gaps between gRPC request and response in gRPC streaming mode.
     google.protobuf.Duration max_grpc_timeout = 23 [(gogoproto.stdduration) = true];
@@ -794,8 +773,8 @@ message RouteAction {
     // Allows enabling and disabling upgrades on a per-route basis.
     // This overrides any enabled/disabled upgrade filter chain specified in the
     // HttpConnectionManager
-    // :ref:upgrade_configs`
-    // <envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs>`
+    // `upgrade_configs
+    // (envoy_api_field_config.filter.network.http_connection_manager.v2.HttpConnectionManager.upgrade_configs)`
     // but does not affect any custom filter chain specified there.
     message UpgradeConfig {
         // The case-insensitive name of this upgrade, e.g. "websocket".
@@ -807,7 +786,7 @@ message RouteAction {
     };
     repeated UpgradeConfig upgrade_configs = 25;
 
-    // Configures :ref:`internal redirect <arch_overview_internal_redirects>` behavior.
+    // Configures `internal redirect (arch_overview_internal_redirects)` behavior.
     enum InternalRedirectAction {
         PASS_THROUGH_INTERNAL_REDIRECT = 0;
         HANDLE_INTERNAL_REDIRECT = 1;
@@ -820,28 +799,26 @@ message RouteAction {
     HedgePolicy hedge_policy = 27;
 }
 
-// HTTP retry :ref:`architecture overview <arch_overview_http_routing_retry>`.
-// [#comment:next free field: 9]
+// HTTP retry `architecture overview (arch_overview_http_routing_retry)`.
 message RetryPolicy {
     // Specifies the conditions under which retry takes place. These are the same
-    // conditions documented for :ref:`config_http_filters_router_x-envoy-retry-on` and
-    // :ref:`config_http_filters_router_x-envoy-retry-grpc-on`.
+    // conditions documented for `config_http_filters_router_x-envoy-retry-on` and
+    // `config_http_filters_router_x-envoy-retry-grpc-on`.
     string retry_on = 1;
 
     // Specifies the allowed number of retries. This parameter is optional and
     // defaults to 1. These are the same conditions documented for
-    // :ref:`config_http_filters_router_x-envoy-max-retries`.
+    // `config_http_filters_router_x-envoy-max-retries`.
     google.protobuf.UInt32Value num_retries = 2;
 
     // Specifies a non-zero upstream timeout per retry attempt. This parameter is optional. The
     // same conditions documented for
-    // :ref:`config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
+    // `config_http_filters_router_x-envoy-upstream-rq-per-try-timeout-ms` apply.
     //
-    // .. note::
     //
     //   If left unspecified, Envoy will use the global
-    //   :ref:`route timeout <envoy_api_field_route.RouteAction.timeout>` for the request.
-    //   Consequently, when using a :ref:`5xx <config_http_filters_router_x-envoy-retry-on>` based
+    //   `route timeout (envoy_api_field_route.RouteAction.timeout)` for the request.
+    //   Consequently, when using a `5xx (config_http_filters_router_x-envoy-retry-on)` based
     //   retry policy, a request that times out will not be retried as the total timeout budget
     //   would have been exhausted.
     google.protobuf.Duration per_try_timeout = 3 [(gogoproto.stdduration) = true];
@@ -857,7 +834,7 @@ message RetryPolicy {
 
     // Specifies an implementation of a RetryPriority which is used to determine the
     // distribution of load across priorities used for retries. Refer to
-    // :ref:`retry plugin configuration <arch_overview_http_retry_plugins>` for more details.
+    // `retry plugin configuration (arch_overview_http_retry_plugins)` for more details.
     RetryPriority retry_priority = 4;
 
     message RetryHostPredicate {
@@ -871,7 +848,7 @@ message RetryPolicy {
 
     // Specifies a collection of RetryHostPredicates that will be consulted when selecting a host
     // for retries. If any of the predicates reject the host, host selection will be reattempted.
-    // Refer to :ref:`retry plugin configuration <arch_overview_http_retry_plugins>` for more
+    // Refer to `retry plugin configuration (arch_overview_http_retry_plugins)` for more
     // details.
     repeated RetryHostPredicate retry_host_predicate = 5;
 
@@ -886,7 +863,7 @@ message RetryPolicy {
     message RetryBackOff {
         // Specifies the base interval between retries. This parameter is required and must be greater
         // than zero. Values less than 1 ms are rounded up to 1 ms.
-        // See :ref:`config_http_filters_router_x-envoy-max-retries` for a discussion of Envoy's
+        // See `config_http_filters_router_x-envoy-max-retries` for a discussion of Envoy's
         // back-off algorithm.
         google.protobuf.Duration base_interval = 1 [
       (validate.rules).duration = {
@@ -898,7 +875,7 @@ message RetryPolicy {
 
 // Specifies the maximum interval between retries. This parameter is optional, but must be
 // greater than or equal to the `base_interval` if set. The default is 10 times the
-// `base_interval`. See :ref:`config_http_filters_router_x-envoy-max-retries` for a discussion
+// `base_interval`. See `config_http_filters_router_x-envoy-max-retries` for a discussion
 // of Envoy's back-off algorithm.
 google.protobuf.Duration max_interval = 2
 [(validate.rules).duration.gt = {seconds: 0}, (gogoproto.stdduration) = true];
@@ -907,12 +884,12 @@ google.protobuf.Duration max_interval = 2
 // Specifies parameters that control retry back off. This parameter is optional, in which case the
 // default base interval is 25 milliseconds or, if set, the current value of the
 // `upstream.base_retry_backoff_ms` runtime parameter. The default maximum interval is 10 times
-// the base interval. The documentation for :ref:`config_http_filters_router_x-envoy-max-retries`
+// the base interval. The documentation for `config_http_filters_router_x-envoy-max-retries`
 // describes Envoy's back-off algorithm.
 RetryBackOff retry_back_off = 8;
 }
 
-// HTTP request hedging :ref:`architecture overview <arch_overview_http_routing_hedging>`.
+// HTTP request hedging `architecture overview (arch_overview_http_routing_hedging)`.
 message HedgePolicy {
     // Specifies the number of initial requests that should be sent upstream.
     // Must be at least 1.
@@ -932,7 +909,7 @@ message HedgePolicy {
     // Once a timed out request is retried due to per try timeout, the router
     // filter will ensure that it is not retried again even if the returned
     // response headers would otherwise be retried according the specified
-    // :ref:`RetryPolicy <envoy_api_msg_route.RetryPolicy>`.
+    // `RetryPolicy (envoy_api_msg_route.RetryPolicy)`.
     // Defaults to false.
     bool hedge_on_per_try_timeout = 3;
 }
@@ -962,10 +939,9 @@ message RedirectAction {
         // should be swapped with this value. This option allows redirect URLs be dynamically created
         // based on the request.
         //
-        // .. attention::
-        //
+                //
         //   Pay attention to the use of trailing slashes as mentioned in
-        //   :ref:`RouteAction's prefix_rewrite <envoy_api_field_route.RouteAction.prefix_rewrite>`.
+        //   `RouteAction's prefix_rewrite (envoy_api_field_route.RouteAction.prefix_rewrite)`.
         string prefix_rewrite = 5;
     }
 
@@ -1002,11 +978,10 @@ message DirectResponseAction {
     // Specifies the content of the response body. If this setting is omitted,
     // no body is included in the generated response.
     //
-    // .. note::
     //
     //   Headers can be specified using *response_headers_to_add* in the enclosing
-    //   :ref:`envoy_api_msg_route.Route`, :ref:`envoy_api_msg_RouteConfiguration` or
-    //   :ref:`envoy_api_msg_route.VirtualHost`.
+    //   `envoy_api_msg_route.Route`, `envoy_api_msg_RouteConfiguration` or
+    //   `envoy_api_msg_route.VirtualHost`.
     core.DataSource body = 2;
 }
 
@@ -1014,28 +989,27 @@ message Decorator {
     // The operation name associated with the request matched to this route. If tracing is
     // enabled, this information will be used as the span name reported for this request.
     //
-    // .. note::
     //
     //   For ingress (inbound) requests, or egress (outbound) responses, this value may be overridden
-    //   by the :ref:`x-envoy-decorator-operation
-    //   <config_http_filters_router_x-envoy-decorator-operation>` header.
+    //   by the `x-envoy-decorator-operation
+    //   (config_http_filters_router_x-envoy-decorator-operation)` header.
     string operation = 1 [(validate.rules).string.min_bytes = 1];
 }
 
 message Tracing {
 
     // Target percentage of requests managed by this HTTP connection manager that will be force
-    // traced if the :ref:`x-client-trace-id <config_http_conn_man_headers_x-client-trace-id>`
+    // traced if the `x-client-trace-id (config_http_conn_man_headers_x-client-trace-id)`
     // header is set. This field is a direct analog for the runtime variable
-    // 'tracing.client_sampling' in the :ref:`HTTP Connection Manager
-    // <config_http_conn_man_runtime>`.
+    // 'tracing.client_sampling' in the `HTTP Connection Manager
+    // (config_http_conn_man_runtime)`.
     // Default: 100%
     envoy.type.FractionalPercent client_sampling = 1;
 
     // Target percentage of requests managed by this HTTP connection manager that will be randomly
     // selected for trace generation, if not requested by the client or not forced. This field is
     // a direct analog for the runtime variable 'tracing.random_sampling' in the
-    // :ref:`HTTP Connection Manager <config_http_conn_man_runtime>`.
+    // `HTTP Connection Manager (config_http_conn_man_runtime)`.
     // Default: 100%
     envoy.type.FractionalPercent random_sampling = 2;
 
@@ -1045,7 +1019,7 @@ message Tracing {
     // instance, setting client_sampling to 100% but overall_sampling to 1% will result in only 1%
     // of client requests with the appropriate headers to be force traced. This field is a direct
     // analog for the runtime variable 'tracing.global_enabled' in the
-    // :ref:`HTTP Connection Manager <config_http_conn_man_runtime>`.
+    // `HTTP Connection Manager (config_http_conn_man_runtime)`.
     // Default: 100%
     envoy.type.FractionalPercent overall_sampling = 3;
 }
@@ -1060,9 +1034,8 @@ message Tracing {
 // statistics are perfect in the sense that they are emitted on the downstream
 // side such that they include network level failures.
 //
-// Documentation for :ref:`virtual cluster statistics <config_http_filters_router_stats>`.
+// Documentation for `virtual cluster statistics (config_http_filters_router_stats)`.
 //
-// .. note::
 //
 //    Virtual clusters are a useful tool, but we do not recommend setting up a virtual cluster for
 //    every application endpoint. This is both not easily maintainable and as well the matching and
@@ -1081,23 +1054,21 @@ message VirtualCluster {
 
     //  Specifies the name of the virtual cluster. The virtual cluster name as well
     // as the virtual host name are used when emitting statistics. The statistics are emitted by the
-    // router filter and are documented :ref:`here <config_http_filters_router_stats>`.
+    // router filter and are documented `here (config_http_filters_router_stats)`.
     string name = 2 [(validate.rules).string.min_bytes = 1];
 
     // Optionally specifies the HTTP method to match on. For example GET, PUT,
     // etc.
-    // [#comment:TODO(htuch): add (validate.rules).enum.defined_only = true once
     // https://github.com/lyft/protoc-gen-validate/issues/42 is resolved.]
     core.RequestMethod method = 3;
 }
 
-// Global rate limiting :ref:`architecture overview <arch_overview_rate_limit>`.
+// Global rate limiting `architecture overview (arch_overview_rate_limit)`.
 message RateLimit {
     // Refers to the stage set in the filter. The rate limit configuration only
     // applies to filters with the same stage number. The default stage number is
     // 0.
     //
-    // .. note::
     //
     //   The filter supports a range of 0 - 10 inclusively for stage numbers.
     google.protobuf.UInt32Value stage = 1 [(validate.rules).uint32.lte = 10];
@@ -1108,9 +1079,9 @@ message RateLimit {
     message Action {
         // The following descriptor entry is appended to the descriptor:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("source_cluster", "<local service cluster>")
+        // ```
         //
         // <local service cluster> is derived from the :option:`--service-cluster` option.
         message SourceCluster {
@@ -1118,19 +1089,19 @@ message RateLimit {
 
         // The following descriptor entry is appended to the descriptor:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("destination_cluster", "<routed target cluster>")
+        // ```
         //
         // Once a request matches against a route table rule, a routed cluster is determined by one of
-        // the following :ref:`route table configuration <envoy_api_msg_RouteConfiguration>`
+        // the following `route table configuration (envoy_api_msg_RouteConfiguration)`
         // settings:
         //
-        // * :ref:`cluster <envoy_api_field_route.RouteAction.cluster>` indicates the upstream cluster
+        // * `cluster (envoy_api_field_route.RouteAction.cluster)` indicates the upstream cluster
         //   to route to.
-        // * :ref:`weighted_clusters <envoy_api_field_route.RouteAction.weighted_clusters>`
+        // * `weighted_clusters (envoy_api_field_route.RouteAction.weighted_clusters)`
         //   chooses a cluster randomly from a set of clusters with attributed weight.
-        // * :ref:`cluster_header <envoy_api_field_route.RouteAction.cluster_header>` indicates which
+        // * `cluster_header (envoy_api_field_route.RouteAction.cluster_header)` indicates which
         //   header in the request contains the target cluster.
         message DestinationCluster {
         }
@@ -1138,9 +1109,9 @@ message RateLimit {
         // The following descriptor entry is appended when a header contains a key that matches the
         // *header_name*:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("<descriptor_key>", "<header_value_queried_from_header>")
+        // ```
         message RequestHeaders {
             // The header name to be queried from the request headers. The header’s
             // value is used to populate the value of the descriptor entry for the
@@ -1152,19 +1123,19 @@ message RateLimit {
         }
 
         // The following descriptor entry is appended to the descriptor and is populated using the
-        // trusted address from :ref:`x-forwarded-for <config_http_conn_man_headers_x-forwarded-for>`:
+        // trusted address from `x-forwarded-for (config_http_conn_man_headers_x-forwarded-for)`:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("remote_address", "<trusted address from x-forwarded-for>")
+        // ```
         message RemoteAddress {
         }
 
         // The following descriptor entry is appended to the descriptor:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("generic_key", "<descriptor_value>")
+        // ```
         message GenericKey {
             // The value to use in the descriptor entry.
             string descriptor_value = 1 [(validate.rules).string.min_bytes = 1];
@@ -1172,9 +1143,9 @@ message RateLimit {
 
         // The following descriptor entry is appended to the descriptor:
         //
-        // .. code-block:: cpp
-        //
+        // ```
         //   ("header_match", "<descriptor_value>")
+        // ```
         message HeaderValueMatch {
             // The value to use in the descriptor entry.
             string descriptor_value = 1 [(validate.rules).string.min_bytes = 1];
@@ -1220,43 +1191,40 @@ message RateLimit {
     // Order matters as the actions are processed sequentially and the descriptor
     // is composed by appending descriptor entries in that sequence. If an action
     // cannot append a descriptor entry, no descriptor is generated for the
-    // configuration. See :ref:`composing actions
-    // <config_http_filters_rate_limit_composing_actions>` for additional documentation.
+    // configuration. See `composing actions
+    // (config_http_filters_rate_limit_composing_actions)` for additional documentation.
     repeated Action actions = 3 [(validate.rules).repeated .min_items = 1];
 }
 
-// .. attention::
 //
 //   Internally, Envoy always uses the HTTP/2 *:authority* header to represent the HTTP/1 *Host*
 //   header. Thus, if attempting to match on *Host*, match on *:authority* instead.
 //
-// .. attention::
 //
 //   To route on HTTP method, use the special HTTP/2 *:method* header. This works for both
 //   HTTP/1 and HTTP/2 as Envoy normalizes headers. E.g.,
 //
-//   .. code-block:: json
-//
+//   ```
 //     {
 //       "name": ":method",
 //       "exact_match": "POST"
 //     }
+//   ```
 //
-// .. attention::
-//   In the absence of any header match specifier, match will default to :ref:`present_match
-//   <envoy_api_field_route.HeaderMatcher.present_match>`. i.e, a request that has the :ref:`name
-//   <envoy_api_field_route.HeaderMatcher.name>` header will match, regardless of the header's
+//   In the absence of any header match specifier, match will default to `present_match
+//   (envoy_api_field_route.HeaderMatcher.present_match)`. i.e, a request that has the `name
+//   (envoy_api_field_route.HeaderMatcher.name)` header will match, regardless of the header's
 //   value.
 //
 message HeaderMatcher {
     // Specifies the name of the header in the request.
     string name = 1 [(validate.rules).string.min_bytes = 1];
 
-    reserved 2; // value deprecated by :ref:`exact_match
-    // <envoy_api_field_route.HeaderMatcher.exact_match>`
+    reserved 2; // value deprecated by `exact_match
+    // (envoy_api_field_route.HeaderMatcher.exact_match)`
 
-    reserved 3; // regex deprecated by :ref:`regex_match
-    // <envoy_api_field_route.HeaderMatcher.regex_match>`
+    reserved 3; // regex deprecated by `regex_match
+    // (envoy_api_field_route.HeaderMatcher.regex_match)`
 
     // Specifies how the header match will be performed to route the request.
     oneof header_match_specifier {

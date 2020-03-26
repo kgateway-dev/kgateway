@@ -165,4 +165,71 @@ var _ = Describe("PathAsString", func() {
 		SortRoutesByPath(routes)
 		Expect(routes).To(Equal(sortedRoutes))
 	})
+
+	It("all else being equal, paths are sorted lexicographically in descending order", func() {
+		routes := []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a/hello",
+					}},
+				},
+			},
+			{
+				// This one is lexicographically greater than the previous one,
+				// so it should come first even though it's longer
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/b",
+					}},
+				},
+			},
+		}
+		sortedRoutes := []*v1.Route{
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/b",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a/hello",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/foo/a",
+					}},
+				},
+			},
+			{
+				Matchers: []*matchers.Matcher{{
+					PathSpecifier: &matchers.Matcher_Prefix{
+						Prefix: "/",
+					}},
+				},
+			},
+		}
+		SortRoutesByPath(routes)
+		Expect(routes).To(Equal(sortedRoutes))
+	})
 })

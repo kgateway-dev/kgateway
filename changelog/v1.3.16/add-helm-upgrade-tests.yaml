@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add kube2e tests for using `helm upgrade` to upgrade to a different 1.3.x version or update the settings. 
+    issueLink: https://github.com/solo-io/gloo/issues/2090
+    resolvesIssue: false

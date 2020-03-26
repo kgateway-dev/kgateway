@@ -23,7 +23,6 @@ const (
 	FilterName       = "envoy.filters.http.wasm"
 	V8Runtime        = "envoy.wasm.runtime.v8"
 	WavmRuntime      = "envoy.wasm.runtime.wavm"
-	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
 	WasmEnabled      = "WASM_ENABLED"
 )
@@ -88,7 +87,9 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 			RootId:        wasmFilter.RootId,
 			Configuration: wasmFilter.Config,
 			VmConfig: &config.VmConfig{
-				VmId:    VmId,
+				// use name to ensure that every filter runs with a unique vm id
+				// this is a workaround for an Envoy bug: https://github.com/envoyproxy/envoy-wasm/issues/415
+				VmId:    wasmFilter.Name,
 				Runtime: runtime,
 				Code: &core.AsyncDataSource{
 					Specifier: &core.AsyncDataSource_Remote{

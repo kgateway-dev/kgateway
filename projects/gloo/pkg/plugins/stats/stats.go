@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var (
@@ -75,10 +75,31 @@ func (c converter) convertVirtualClusters(statsConfig *stats.Stats) ([]*envoyrou
 			return nil, invalidVirtualClusterErr(err, virtualCluster.Name)
 		}
 
+		headermatcher := []*envoyroute.HeaderMatcher{{
+			Name: ":path",
+			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_SafeRegexMatch{
+				SafeRegexMatch: &envoymatcher.RegexMatcher{
+					EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: virtualCluster.Pattern,
+				},
+			},
+		}}
+
+		if method != "" {
+			headermatcher = append(headermatcher, &envoyroute.HeaderMatcher{
+				Name: ":method",
+				HeaderMatchSpecifier: &envoyroute.HeaderMatcher_ExactMatch{
+					ExactMatch: method,
+				},
+			})
+		}
+
+		// method and path must be not empty
 		result = append(result, &envoyroute.VirtualCluster{
 			Name:    name,
-			Pattern: virtualCluster.Pattern,
-			Method:  method,
+			Headers: headermatcher,
 		})
 	}
 	return result, nil
@@ -91,15 +112,16 @@ func (c converter) validateName(name string) (string, error) {
 	return utils.SanitizeForEnvoy(c.ctx, name, "virtual cluster"), nil
 }
 
-func (c converter) validateHttpMethod(methodName string) (envoycore.RequestMethod, error) {
+func (c converter) validateHttpMethod(methodName string) (string, error) {
 	if methodName == "" {
-		return envoycore.RequestMethod_METHOD_UNSPECIFIED, nil
+		return "", nil
 	}
-	method, ok := envoycore.RequestMethod_value[strings.ToUpper(methodName)]
+	key := strings.ToUpper(methodName)
+	_, ok := envoycore.RequestMethod_value[key]
 	if !ok {
-		return 0, invalidMethodErr(methodName)
+		return "", invalidMethodErr(methodName)
 	}
-	return envoycore.RequestMethod(method), nil
+	return key, nil
 }
 
 func validMethodNames() string {

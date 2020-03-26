@@ -2,8 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"crypto/md5"
-	"fmt"
 	"strings"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -19,78 +17,18 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func UpstreamNameOld(serviceNamespace, serviceName string, servicePort int32, extraLabels map[string]string) string {
-	const maxLen = 63
-
-	var labelsTag string
-	if len(extraLabels) > 0 {
-		_, values := keysAndValues(extraLabels)
-		labelsTag = fmt.Sprintf("-%v", strings.Join(values, "-"))
-	}
-	name := fmt.Sprintf("%s-%s%s-%v", serviceNamespace, serviceName, labelsTag, servicePort)
-	if len(name) > maxLen {
-		hash := md5.Sum([]byte(name))
-		hexhash := fmt.Sprintf("%x", hash)
-		name = name[:maxLen-len(hexhash)] + hexhash
-	}
-	name = strings.Replace(name, ".", "-", -1)
-	return name
-}
-
 var _ = Describe("UdsConvert", func() {
 	createUpstream := DefaultUpstreamConverter().CreateUpstream
 
-	It("should get uniq label set", func() {
-
-		svcSelector := map[string]string{"app": "foo"}
-		podmetas := []map[string]string{
-			{"app": "foo", "env": "prod"},
-			{"app": "foo", "env": "prod"},
-			{"app": "foo", "env": "dev"},
-		}
-		result := GetUniqueLabelSetsForObjects(svcSelector, podmetas)
-		expected := []map[string]string{
-			{"app": "foo"},
-			{"app": "foo", "env": "prod"},
-			{"app": "foo", "env": "dev"},
-		}
-		Expect(result).To(Equal(expected))
-
-	})
-
 	It("should truncate long names", func() {
-		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
+		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12)
 		Expect(name).To(HaveLen(63))
-	})
-	It("should truncate long names with lot of labels", func() {
-		name := UpstreamName("test", "gloo-system", 12, map[string]string{"test": strings.Repeat("y", 120)})
-		Expect(len(name)).To(BeNumerically("<=", 63))
 	})
 
 	It("should handle collisions", func() {
-		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12, nil)
-		name2 := UpstreamName(strings.Repeat("y", 120)+"2", "gloo-system", 12, nil)
+		name := UpstreamName(strings.Repeat("y", 120), "gloo-system", 12)
+		name2 := UpstreamName(strings.Repeat("y", 120)+"2", "gloo-system", 12)
 		Expect(name).ToNot(Equal(name2))
-	})
-
-	It("should sanitize the same way", func() {
-		name := UpstreamNameOld("ns", "gloo-system", 12, map[string]string{"test": "label"})
-		name2 := UpstreamName("ns", "gloo-system", 12, map[string]string{"test": "label"})
-		Expect(name).To(Equal(name2))
-	})
-
-	It("should ignore ignored labels", func() {
-
-		svcSelector := map[string]string{"app": "foo"}
-		podmetas := []map[string]string{
-			{"app": "foo", "env": "prod", "release": "first"},
-		}
-		result := GetUniqueLabelSetsForObjects(svcSelector, podmetas)
-		expected := []map[string]string{
-			{"app": "foo"},
-			{"app": "foo", "env": "prod"},
-		}
-		Expect(result).To(Equal(expected))
 	})
 
 	Context("h2 upstream", func() {
@@ -104,7 +42,7 @@ var _ = Describe("UdsConvert", func() {
 			port := kubev1.ServicePort{
 				Port: 123,
 			}
-			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			up := createUpstream(context.TODO(), svc, port)
 			spec := up.GetKube().GetServiceSpec()
 			Expect(spec.GetGrpc()).To(BeNil())
 		})
@@ -121,7 +59,7 @@ var _ = Describe("UdsConvert", func() {
 			port := kubev1.ServicePort{
 				Port: 123,
 			}
-			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			up := createUpstream(context.TODO(), svc, port)
 			Expect(up.GetUseHttp2()).To(BeTrue())
 		})
 
@@ -136,7 +74,7 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 				Name: portname,
 			}
-			up := createUpstream(context.TODO(), svc, port, map[string]string{"a": "b"})
+			up := createUpstream(context.TODO(), svc, port)
 			Expect(up.GetUseHttp2()).To(BeTrue())
 		},
 			Entry("exactly grpc", "grpc"),
@@ -160,7 +98,7 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 			}
 
-			up := createUpstream(context.TODO(), svc, port, nil)
+			up := createUpstream(context.TODO(), svc, port)
 			Expect(up.GetSslConfig()).To(Equal(expectedCfg))
 		},
 			Entry("using ssl secret", map[string]string{

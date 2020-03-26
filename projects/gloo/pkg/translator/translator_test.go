@@ -4,7 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
@@ -17,7 +19,9 @@ import (
 	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
@@ -79,7 +83,7 @@ var _ = Describe("Translator", func() {
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
 
-	BeforeEach(func() {
+	beforeEach := func() {
 
 		ctrl = gomock.NewController(T)
 
@@ -89,10 +93,12 @@ var _ = Describe("Translator", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings:      settings,
-			Secrets:       memoryClientFactory,
-			Upstreams:     memoryClientFactory,
-			ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			Settings:  settings,
+			Secrets:   memoryClientFactory,
+			Upstreams: memoryClientFactory,
+			Consul: bootstrap.Consul{
+				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			},
 		}
 		registeredPlugins = registry.Plugins(opts)
 
@@ -153,7 +159,8 @@ var _ = Describe("Translator", func() {
 				},
 			},
 		}}
-	})
+	}
+	BeforeEach(beforeEach)
 
 	JustBeforeEach(func() {
 		getPlugins := func() []plugins.Plugin {
@@ -269,6 +276,26 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration).NotTo(BeNil())
 		Expect(routeConfiguration.GetVirtualHosts()).To(HaveLen(1))
 		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
+	})
+
+	Context("Auth configs", func() {
+		It("will error if auth config is missing", func() {
+			proxyClone := proto.Clone(proxy).(*v1.Proxy)
+			proxyClone.GetListeners()[0].GetHttpListener().GetVirtualHosts()[0].Options =
+				&v1.VirtualHostOptions{
+					Extauth: &extauth.ExtAuthExtension{
+						Spec: &extauth.ExtAuthExtension_ConfigRef{
+							ConfigRef: &core.ResourceRef{},
+						},
+					},
+				}
+
+			_, errs, _, err := translator.Translate(params, proxyClone)
+
+			Expect(err).To(BeNil())
+			Expect(errs.Validate()).To(HaveOccurred())
+			Expect(errs.Validate().Error()).To(ContainSubstring("HttpListener Error: ProcessingError. Reason: auth config not found:"))
+		})
 	})
 
 	Context("service spec", func() {
@@ -389,7 +416,7 @@ var _ = Describe("Translator", func() {
 			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
 			Expect(headerMatch.Name).To(Equal("test"))
 			Expect(headerMatch.InvertMatch).To(Equal(false))
-			regex := headerMatch.GetRegexMatch()
+			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
 		})
 
@@ -666,6 +693,106 @@ var _ = Describe("Translator", func() {
 			version2 := endpoints.Version
 			Expect(version2).ToNot(Equal(version1))
 		})
+	})
+
+	Context("lds", func() {
+
+		var (
+			localUpstream1 *v1.Upstream
+			localUpstream2 *v1.Upstream
+		)
+
+		BeforeEach(func() {
+
+			Expect(params.Snapshot.Upstreams).To(HaveLen(1))
+
+			buildLocalUpstream := func(descriptors string) *v1.Upstream {
+				return &v1.Upstream{
+					Metadata: core.Metadata{
+						Name:      "test2",
+						Namespace: "gloo-system",
+					},
+					UpstreamType: &v1.Upstream_Static{
+						Static: &v1static.UpstreamSpec{
+							ServiceSpec: &v1plugins.ServiceSpec{
+								PluginType: &v1plugins.ServiceSpec_Grpc{
+									Grpc: &v1grpc.ServiceSpec{
+										GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
+											PackageName: "foo",
+											ServiceName: "bar",
+										}},
+										Descriptors: []byte(descriptors),
+									},
+								},
+							},
+							Hosts: []*v1static.Host{
+								{
+									Addr: "Test2",
+									Port: 124,
+								},
+							},
+						},
+					},
+				}
+			}
+
+			localUpstream1 = buildLocalUpstream("")
+			localUpstream2 = buildLocalUpstream("randomString")
+
+		})
+
+		It("should have same version and http filters when http filters with the same name are added in a different order", func() {
+			translate()
+
+			By("get the original version and http filters")
+
+			// get version
+			originalVersion := snapshot.GetResources(xds.ListenerType).Version
+
+			// get http filters
+			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
+			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+
+			By("add the upstreams and compare the new version and http filters")
+
+			// add upstreams with same name
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			upstreamsVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(upstreamsVersion).ToNot(Equal(originalVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
+
+			// reset modified global variables
+			beforeEach()
+
+			By("add the upstreams in the opposite order and compare the version and http filters")
+
+			// add upstreams in the opposite order
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream2)
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, localUpstream1)
+			Expect(params.Snapshot.Upstreams).To(HaveLen(3))
+
+			translate()
+
+			// get and compare version
+			flipOrderVersion := snapshot.GetResources(xds.ListenerType).Version
+			Expect(flipOrderVersion).To(Equal(upstreamsVersion))
+
+			// get and compare http filters
+			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
+			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
+		})
+
 	})
 
 	Context("when handling upstream groups", func() {
@@ -1421,6 +1548,12 @@ var _ = Describe("Translator", func() {
 			Expect(found).To(BeTrue())
 			listener = val.ResourceProto().(*envoyapi.Listener)
 		}
+		tlsContext := func(fc *envoylistener.FilterChain) *envoyauth.DownstreamTlsContext {
+			if fc.TransportSocket == nil {
+				return nil
+			}
+			return pluginutils.MustAnyToMessage(fc.TransportSocket.GetTypedConfig()).(*envoyauth.DownstreamTlsContext)
+		}
 		Context("files", func() {
 
 			It("should translate ssl correctly", func() {
@@ -1436,7 +1569,7 @@ var _ = Describe("Translator", func() {
 				})
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
 			It("should not merge 2 ssl config if they are different", func() {
@@ -1483,7 +1616,7 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 			It("should combine sni matches", func() {
 				prep([]*v1.SslConfig{
@@ -1509,8 +1642,8 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetFilename()).To(Equal("cert"))
 				Expect(cert.GetPrivateKey().GetFilename()).To(Equal("key"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
@@ -1539,7 +1672,7 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(BeEmpty())
 			})
 		})
@@ -1582,8 +1715,8 @@ var _ = Describe("Translator", func() {
 
 				Expect(listener.GetFilterChains()).To(HaveLen(1))
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
 				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com", "b.com"}))
@@ -1597,8 +1730,8 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain",
-							PrivateKey: "key",
+							CertChain:  "chain1",
+							PrivateKey: "key1",
 						},
 					},
 				}, &v1.Secret{
@@ -1608,9 +1741,20 @@ var _ = Describe("Translator", func() {
 					},
 					Kind: &v1.Secret_Tls{
 						Tls: &v1.TlsSecret{
-							CertChain:  "chain1",
+							CertChain:  "chain2",
 							PrivateKey: "key2",
-							RootCa:     "rootca3",
+							RootCa:     "rootca2",
+						},
+					},
+				}, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo", // check same name with different ns
+						Namespace: "solo.io2",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain3",
+							PrivateKey: "key3",
 						},
 					},
 				})
@@ -1634,26 +1778,44 @@ var _ = Describe("Translator", func() {
 						},
 						SniDomains: []string{"b.com"},
 					},
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"c.com"},
+					},
 				})
 
-				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				Expect(listener.GetFilterChains()).To(HaveLen(3))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert := fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain"))
-				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key"))
-				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
 
 				By("checking second filter chain")
 				fc = listener.GetFilterChains()[1]
-				Expect(fc.TlsContext).NotTo(BeNil())
-				cert = fc.TlsContext.GetCommonTlsContext().GetTlsCertificates()[0]
-				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain2"))
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key2"))
-				Expect(fc.TlsContext.GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext().GetTrustedCa().GetInlineString()).To(Equal("rootca2"))
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
+
+				By("checking third filter chain")
+				fc = listener.GetFilterChains()[2]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
 			})
 		})
 	})

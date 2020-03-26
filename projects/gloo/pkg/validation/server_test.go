@@ -50,10 +50,12 @@ var _ = Describe("Validation Server", func() {
 			Cache: memory.NewInMemoryResourceCache(),
 		}
 		opts := bootstrap.Opts{
-			Settings:      settings,
-			Secrets:       memoryClientFactory,
-			Upstreams:     memoryClientFactory,
-			ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			Settings:  settings,
+			Secrets:   memoryClientFactory,
+			Upstreams: memoryClientFactory,
+			Consul: bootstrap.Consul{
+				ConsulWatcher: mock_consul.NewMockConsulWatcher(ctrl), // just needed to activate the consul plugin
+			},
 		}
 		registeredPlugins = registry.Plugins(opts)
 
@@ -73,7 +75,7 @@ var _ = Describe("Validation Server", func() {
 	Context("proxy validation", func() {
 		It("validates the requested proxy", func() {
 			proxy := params.Snapshot.Proxies[0]
-			s := NewValidator(translator)
+			s := NewValidator(context.TODO(), translator)
 			_ = s.Sync(context.TODO(), params.Snapshot)
 			rpt, err := s.ValidateProxy(context.TODO(), &validationgrpc.ProxyValidationServiceRequest{Proxy: proxy})
 			Expect(err).NotTo(HaveOccurred())
@@ -93,7 +95,7 @@ var _ = Describe("Validation Server", func() {
 
 			srv = grpc.NewServer()
 
-			v = NewValidator(nil)
+			v = NewValidator(context.TODO(), nil)
 
 			server := NewValidationServer()
 			server.SetValidator(v)

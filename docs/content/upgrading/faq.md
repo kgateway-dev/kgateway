@@ -60,5 +60,4 @@ global:
 
 - **Why do I get an error about re-creating CRDs when upgrading using `helm install` or `helm upgrade`?**
 
-See the explanation in the [upgrade steps](../upgrade_steps/#using-helm). Helm v2 does not manage
-CRDs well, so you may have to delete the CRDs and try again, or install using some other method.
+See the explanation in the [upgrade steps]({{% versioned_link_path fromRoot="/upgrading/upgrade_steps/#using-helm" %}}). Helm v2 does not manage CRDs well, so you may have to delete the CRDs and try again, or install using some other method.

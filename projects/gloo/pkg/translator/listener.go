@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -14,6 +16,7 @@ import (
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
 )
@@ -112,6 +115,18 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 		contextutils.LoggerFrom(params.Ctx).DPanic("internal error: listener report was not http type")
 	}
 
+	// Check that we don't refer to nonexistent auth config
+	for _, vHost := range httpListener.HttpListener.GetVirtualHosts() {
+		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
+		if acRef != nil {
+			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
+				validation.AppendHTTPListenerError(
+					httpListenerReport, validationapi.HttpListenerReport_Error_ProcessingError,
+					"auth config not found: "+acRef.String())
+			}
+		}
+	}
+
 	// add the http connection manager filter after all the InAuth Listener Filters
 	rdsName := routeConfigName(listener)
 	httpConnMgr := t.computeHttpConnectionManagerFilter(params, httpListener.HttpListener, rdsName, httpListenerReport)
@@ -166,7 +181,7 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := ""
 		switch sslCfg := sslConfig.SslSecrets.(type) {
 		case *v1.SslConfig_SecretRef:
-			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetName()
+			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetNamespace()
 		case *v1.SslConfig_SslFiles:
 			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
 		default:
@@ -221,12 +236,23 @@ func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.Listen
 
 func newSslFilterChain(downstreamConfig *envoyauth.DownstreamTlsContext, sniDomains []string, useProxyProto *types.BoolValue, listenerFilters []*envoylistener.Filter) *envoylistener.FilterChain {
 
+	// copy listenerFilter so we can modify filter chain later without changing the filters on all of them!
+	listenerFiltersCopy := make([]*envoylistener.Filter, len(listenerFilters))
+	for i, lf := range listenerFilters {
+		listenerFiltersCopy[i] = proto.Clone(lf).(*envoylistener.Filter)
+	}
+
 	return &envoylistener.FilterChain{
 		FilterChainMatch: &envoylistener.FilterChainMatch{
 			ServerNames: sniDomains,
 		},
-		Filters:       listenerFilters,
-		TlsContext:    downstreamConfig,
+		Filters: listenerFiltersCopy,
+
+		TransportSocket: &envoycore.TransportSocket{
+			Name:       pluginutils.TlsTransportSocket,
+			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(downstreamConfig)},
+		},
+
 		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),
 	}
 }

@@ -1,7 +1,7 @@
 {
   "name": "gateway.solo.io",
   "version": "v1",
-  "docs_dir": "docs/content/api",
+  "docs_dir": "docs/content/reference/api",
   "resource_groups": {
     "api.gateway.solo.io": [
       {

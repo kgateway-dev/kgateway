@@ -57,7 +57,6 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 	)
 
 	for _, dataCenter := range dataCenters {
-
 		// Copy before passing to goroutines!
 		dcName := dataCenter
 
@@ -76,30 +75,36 @@ func (c *consulWatcher) WatchServices(ctx context.Context, dataCenters []string)
 		})
 	}
 
+	go func() {
+		// Wait for the aggregation routines to shut down to avoid writing to closed channels
+		_ = eg.Wait() // will never error
+		close(allServicesChan)
+		close(errorChan)
+	}()
 	servicesByDataCenter := make(map[string]*dataCenterServicesTuple)
 	go func() {
+		defer close(outputChan)
 		for {
 			select {
 			case dataCenterServices, ok := <-allServicesChan:
-				if ok {
-					servicesByDataCenter[dataCenterServices.dataCenter] = dataCenterServices
+				if !ok {
+					return
+				}
+				servicesByDataCenter[dataCenterServices.dataCenter] = dataCenterServices
 
-					var services []*dataCenterServicesTuple
-					for _, s := range servicesByDataCenter {
-						services = append(services, s)
-					}
+				var services []*dataCenterServicesTuple
+				for _, s := range servicesByDataCenter {
+					services = append(services, s)
+				}
 
-					servicesMetaList := toServiceMetaSlice(services)
+				servicesMetaList := toServiceMetaSlice(services)
 
-					outputChan <- servicesMetaList
+				select {
+				case outputChan <- servicesMetaList:
+				case <-ctx.Done():
+					return
 				}
 			case <-ctx.Done():
-				close(outputChan)
-
-				// Wait for the aggregation routines to shut down to avoid writing to closed channels
-				_ = eg.Wait() // will never error
-				close(allServicesChan)
-				close(errorChan)
 				return
 			}
 		}
@@ -113,6 +118,8 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 	errsChan := make(chan error)
 
 	go func(dataCenter string) {
+		defer close(servicesChan)
+		defer close(errsChan)
 		lastIndex := uint64(0)
 
 		for {
@@ -154,18 +161,20 @@ func (c *consulWatcher) watchServicesInDataCenter(ctx context.Context, dataCente
 				if queryMeta.LastIndex == lastIndex {
 					continue
 				}
-
-				servicesChan <- &dataCenterServicesTuple{
+				tuple := &dataCenterServicesTuple{
 					dataCenter: dataCenter,
 					services:   services,
 				}
 
+				select {
+				case servicesChan <- tuple:
+				case <-ctx.Done():
+					return
+				}
 				// Update the last index
 				lastIndex = queryMeta.LastIndex
 
 			case <-ctx.Done():
-				close(servicesChan)
-				close(errsChan)
 				return
 			}
 		}
