@@ -1,0 +1,3 @@
+changelog:
+  - type: HELM
+    description: Added the option to have annotation specified for ingress proxy
