@@ -285,9 +285,14 @@ type IngressDeployment struct {
 }
 
 type IngressProxy struct {
+	Service    *IngressProxyService    `json:"service,omitempty"`
 	Deployment *IngressProxyDeployment `json:"deployment,omitempty"`
 	ConfigMap  *IngressProxyConfigMap  `json:"configMap,omitempty"`
 	Tracing    *string                 `json:"tracing,omitempty"`
+}
+
+type IngressProxyService struct {
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
 }
 
 type IngressProxyDeployment struct {
