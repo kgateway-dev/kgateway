@@ -34,16 +34,16 @@ great way to get a cluster up quickly.
 
 1. The Gloo Ingress [installed]({{% versioned_link_path fromRoot="/installation/ingress" %}}) and running on Kubernetes.
 
-1. Next, deploy the Pet Store app to Kubernetes:
+2. Next, deploy the Pet Store app to Kubernetes:
 
     ```shell
     kubectl apply \
       --filename https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
     ```
 
-1. Let's create a Kubernetes Ingress object to route requests to the petstore:
+3. Let's create a Kubernetes Ingress object to route requests to the petstore:
 
-    {{< highlight noop >}}
+```
 cat <<EOF | kubectl apply --filename -
 apiVersion: extensions/v1beta1
 kind: Ingress
@@ -64,14 +64,14 @@ spec:
           serviceName: petstore
           servicePort: 8080
 EOF
-{{< /highlight >}}
+```
 
     We're specifying the host as `gloo.example.com` in this example. You should replace this with the domain for which you want to route traffic, or you may omit the host field to indicate all domains (`*`).
     
     The domain will be used to match the `Host` header on incoming HTTP requests.
 
 
-1. Validate Ingress routing looks to be set up and running.
+4. Validate Ingress routing looks to be set up and running.
 
     ```shell
     kubectl get ingress petstore-ingress
@@ -82,7 +82,7 @@ EOF
     petstore-ingress   gloo.example.com             80      14h
     ```
 
-1. Let's test the route `/api/pets` using `curl`. First, we'll need to get the address of Gloo's Ingress proxy:
+5. Let's test the route `/api/pets` using `curl`. First, we'll need to get the address of Gloo's Ingress proxy:
 
 
     ```shell
@@ -94,7 +94,7 @@ EOF
     http://35.238.21.0:80
     ```
     
-1. Now we can access the petstore service through Gloo:
+6. Now we can access the petstore service through Gloo:
 
     ```shell
     curl -H "Host: gloo.example.com" ${INGRESS_URL}/api/pets
