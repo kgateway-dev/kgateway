@@ -109,13 +109,14 @@ ingress:
       repository: ingress
     replicas: 1
 ingressProxy:
+  service:
+    extraAnnotations: {}
   deployment:
     image:
       repository: gloo-envoy-wrapper
     httpPort: 80
     httpsPort: 443
     replicas: 1
-    extraAnnotations: {}
   configMap:
     data:
   tracing:
