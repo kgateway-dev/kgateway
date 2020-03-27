@@ -234,7 +234,7 @@ func MustMultiNamespacedUpstreamGroupClient(namespaces []string) v1.UpstreamGrou
 	return client
 }
 
-// provide "" (metav1.NamespaceAll)e "" (metav1.NamespaceAll) to get a cluster-scoped upstream group client
+// provide "" (metav1.NamespaceAll) to get a cluster-scoped upstream group client
 func UpstreamGroupClient(namespaces []string) (v1.UpstreamGroupClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
@@ -278,7 +278,7 @@ func MustMultiNamespacedProxyClient(namespaces []string) v1.ProxyClient {
 	return client
 }
 
-// provide "" (metav1.NamespaceAll)e "" (metav1.NamespaceAll) to get a cluster-scoped proxy client
+// provide "" (metav1.NamespaceAll) to get a cluster-scoped proxy client
 func ProxyClient(namespaces []string) (v1.ProxyClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
@@ -322,7 +322,7 @@ func MustMultiNamespacedGatewayClient(namespaces []string) gatewayv1.GatewayClie
 	return client
 }
 
-// provide "" (metav1.NamespaceAll)e "" (metav1.NamespaceAll) to get a cluster-scoped gateway client
+// provide "" (metav1.NamespaceAll) to get a cluster-scoped gateway client
 func GatewayClient(namespaces []string) (gatewayv1.GatewayClient, error) {
 	customFactory := getConfigClientFactory()
 	if customFactory != nil {
