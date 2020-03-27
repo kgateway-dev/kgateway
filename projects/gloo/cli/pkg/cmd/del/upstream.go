@@ -22,7 +22,7 @@ func Upstream(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra
 		Long:    "usage: glooctl delete upstream [NAME] [--namespace=namespace]",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			name := common.GetName(args, opts)
-			if err := helpers.MustUpstreamClient().Delete(opts.Metadata.Namespace, name,
+			if err := helpers.MustNamespacedUpstreamClient(opts.Metadata.GetNamespace()).Delete(opts.Metadata.Namespace, name,
 				clients.DeleteOpts{Ctx: opts.Top.Ctx}); err != nil {
 				return err
 			}

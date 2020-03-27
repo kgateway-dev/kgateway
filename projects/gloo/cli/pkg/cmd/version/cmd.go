@@ -63,7 +63,9 @@ func GetClientServerVersions(sv ServerVersion) (*version.Version, error) {
 	}
 	serverVersion, err := sv.Get()
 	if err != nil {
-		return nil, err
+		return &version.Version{
+			Client: clientVersion,
+		}, err
 	}
 	return &version.Version{
 		Client: clientVersion,
@@ -79,10 +81,8 @@ func getClientVersion() (*version.ClientVersion, error) {
 }
 
 func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
-	vrs, err := GetClientServerVersions(sv)
-	if err != nil {
-		return err
-	}
+	vrs, _ := GetClientServerVersions(sv)
+	// ignore error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
 		clientVersionStr := string(GetJson(vrs.GetClient()))

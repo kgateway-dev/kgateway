@@ -1,6 +1,9 @@
 package get
 
 import (
+	"context"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -8,12 +11,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var EmptyGetError = eris.New("please provide a subcommand")
-var UnsetNamespaceError = eris.New("Gloo namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
+var UnsetNamespaceError = eris.New("Gloo installation namespace does not exist. Did you install it in another namespace and forgot to add the '-n NAMESPACE' flag?")
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
@@ -27,12 +31,15 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			if err := prerun.EnableConsulClients(opts); err != nil {
 				return err
 			}
-
 			if !opts.Top.Consul.UseConsul {
 				client := helpers.MustKubeClient()
 				_, err := client.CoreV1().Namespaces().Get(opts.Metadata.Namespace, metav1.GetOptions{})
 				if err != nil {
-					return UnsetNamespaceError
+					if apierrors.IsNotFound(err) {
+						return UnsetNamespaceError
+					}
+					// we would still like to attempt the command even if we don't have rbac to list namespaces, so just log a warning
+					contextutils.LoggerFrom(context.TODO()).Warnf("unable to locate gloo installation namespace", err)
 				}
 			}
 			return nil

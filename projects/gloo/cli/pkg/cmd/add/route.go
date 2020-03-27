@@ -124,7 +124,7 @@ func addRoute(opts *options.Options) error {
 		Namespace: opts.Metadata.Namespace,
 		Name:      opts.Metadata.Name,
 	}
-	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+	selector := selectionutils.NewVirtualServiceSelector(helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()), helpers.NewNamespaceLister(), defaults.GlooSystem)
 	virtualService, err := selector.SelectOrCreateVirtualService(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
@@ -136,7 +136,7 @@ func addRoute(opts *options.Options) error {
 	virtualService.VirtualHost.Routes[index] = v1Route
 
 	if !opts.Add.DryRun {
-		virtualService, err = helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
+		virtualService, err = helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).Write(virtualService, clients.WriteOpts{
 			Ctx:               opts.Top.Ctx,
 			OverwriteExisting: true,
 		})

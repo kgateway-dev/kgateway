@@ -19,13 +19,13 @@ func CreateAndPrintObject(yml []byte, outputType printers.OutputType, namespace 
 	}
 	switch res := resource.(type) {
 	case *gloov1.Upstream:
-		us, err := helpers.MustUpstreamClient().Write(res, clients.WriteOpts{})
+		us, err := helpers.MustNamespacedUpstreamClient(namespace).Write(res, clients.WriteOpts{})
 		if err != nil {
 			return eris.Wrapf(err, "saving Upstream to storage")
 		}
 		_ = printers.PrintUpstreams(gloov1.UpstreamList{us}, outputType, nil)
 	case *v1.VirtualService:
-		vs, err := helpers.MustVirtualServiceClient().Write(res, clients.WriteOpts{})
+		vs, err := helpers.MustNamespacedVirtualServiceClient(namespace).Write(res, clients.WriteOpts{})
 		if err != nil {
 			return eris.Wrapf(err, "saving VirtualService to storage")
 		}
