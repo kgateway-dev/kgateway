@@ -109,8 +109,6 @@ ingress:
       repository: ingress
     replicas: 1
 ingressProxy:
-  service:
-    extraAnnotations: {}
   deployment:
     image:
       repository: gloo-envoy-wrapper
