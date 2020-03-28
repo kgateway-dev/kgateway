@@ -57,32 +57,26 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 }
 
 func GetClientServerVersions(sv ServerVersion) (*version.Version, error) {
-	clientVersion, err := getClientVersion()
-	if err != nil {
-		return nil, err
+	v := &version.Version{
+		Client: getClientVersion(),
 	}
 	serverVersion, err := sv.Get()
 	if err != nil {
-		return &version.Version{
-			Client: clientVersion,
-		}, err
+		return v, err
 	}
-	return &version.Version{
-		Client: clientVersion,
-		Server: serverVersion,
-	}, nil
+	v.Server = serverVersion
+	return v, nil
 }
 
-func getClientVersion() (*version.ClientVersion, error) {
-	vrs := &version.ClientVersion{
+func getClientVersion() *version.ClientVersion {
+	return &version.ClientVersion{
 		Version: linkedversion.Version,
 	}
-	return vrs, nil
 }
 
 func printVersion(sv ServerVersion, w io.Writer, opts *options.Options) error {
 	vrs, _ := GetClientServerVersions(sv)
-	// ignore error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
+	// ignoring error so we still print client version even if we can't get server versions (e.g., not deployed, no rbac)
 	switch opts.Top.Output {
 	case printers.JSON:
 		clientVersionStr := string(GetJson(vrs.GetClient()))
