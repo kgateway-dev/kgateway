@@ -18,7 +18,7 @@ var (
 func init() {
 
 	GlooComponentLabels = map[string]string{
-		"app": "gloo",
+		"app": "(gloo,glooe-prometheus)",
 	}
 
 	GlooNamespacedKinds = []string{
@@ -66,7 +66,7 @@ func init() {
 
 func LabelsToFlagString(labelMap map[string]string) (labelString string) {
 	for k, v := range labelMap {
-		labelString += fmt.Sprintf("%s=%s,", k, v)
+		labelString += fmt.Sprintf("%s in %s,", k, v)
 	}
 	labelString = strings.TrimSuffix(labelString, ",")
 	return
