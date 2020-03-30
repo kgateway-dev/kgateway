@@ -1904,7 +1904,6 @@ metadata:
 					}
 					ingressProxyService = rb.GetService()
 					selectorLabels := map[string]string{
-						"app":  "gloo",
 						"gloo": "ingress-proxy",
 					}
 					ingressProxyService.Spec.Selector = selectorLabels

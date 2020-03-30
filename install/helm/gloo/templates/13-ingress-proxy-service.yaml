@@ -7,9 +7,9 @@ metadata:
     gloo: ingress-proxy
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
-{{- if .Values.ingressProxy.deployment.extraAnnotations }}
+{{- if .Values.ingressProxy.service.extraAnnotations }}
   annotations:
-  {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}
+  {{- range $key, $value := .Values.ingressProxy.service.extraAnnotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
 {{- end }}
