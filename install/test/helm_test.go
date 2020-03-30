@@ -1892,9 +1892,8 @@ metadata:
 
 				BeforeEach(func() {
 					serviceLabels := map[string]string{
-						"app":              "gloo",
-						"gloo":             "ingress-proxy",
-						"ingress-proxy-id": "ingress-proxy",
+						"app":  "gloo",
+						"gloo": "ingress-proxy",
 					}
 					rb := ResourceBuilder{
 						Namespace: namespace,
@@ -1912,13 +1911,13 @@ metadata:
 							Name:       "http",
 							Protocol:   "TCP",
 							Port:       80,
-							TargetPort: intstr.IntOrString{IntVal: 8080},
+							TargetPort: intstr.IntOrString{IntVal: 0},
 						},
 						{
 							Name:       "https",
 							Protocol:   "TCP",
 							Port:       443,
-							TargetPort: intstr.IntOrString{IntVal: 8443},
+							TargetPort: intstr.IntOrString{IntVal: 0},
 						},
 					}
 					ingressProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
@@ -1928,6 +1927,7 @@ metadata:
 					ingressProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
+							"ingress.enabled=true",
 							"ingressProxy.service.extraAnnotations.foo=bar",
 							"ingressProxy.service.extraAnnotations.bar=baz",
 						},
