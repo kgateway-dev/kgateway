@@ -1,6 +1,6 @@
 ## Building Gloo 
 
-To build Gloo locally, follow these steps:
+To build Gloo locally, follow [these steps](https://docs.solo.io/gloo/latest/guides/dev/setting-up-dev-environment/), mostly duplicated below:
 
 Checkout gloo:
 
@@ -14,12 +14,7 @@ Navigate to the source directory:
 cd $GOPATH/src/github.com/solo-io/gloo
 ```
 
-Gloo uses [go dep](https://github.com/golang/dep) for dependency management. Ensure you have it installed and run `dep ensure -v` from the `gloo` src directory:
-
-```bash
-go get -u github.com/golang/dep/cmd/dep
-dep ensure -v
-```
+Gloo uses [go modules](https://github.com/golang/go/wiki/Modules) for dependency management. Ensure you have go 1.13+ installed.
 
 At this point you should be able to build the individual components that comprise gloo:
 
@@ -38,10 +33,13 @@ To generate the code for the gloo APIs:
 First install these dependencies:
 
 ```bash
-go get github.com/paulvollmer/2gobytes
-go get github.com/envoyproxy/protoc-gen-validate
-go get github.com/gogo/protobuf/protoc-gen-gogo
-go get golang.org/x/tools/cmd/goimports
+# install protoc 3.6.1
+curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-osx-x86_64.zip
+unzip protoc-3.6.1-osx-x86_64.zip
+sudo mv bin/protoc /usr/local/bin/
+rm -rf bin include protoc-3.6.1-osx-x86_64.zip readme.txt
+# download other codegen deps
+make update-deps
 ```
 
 Then run:
@@ -49,9 +47,3 @@ Then run:
 ```bash
 make generated-code
 ```
-
-Note, if you have multiple paths on your $GOPATH, this command will fail because at the moment: [https://github.com/solo-io/gloo/issues/234](https://github.com/solo-io/gloo/issues/234) You can work around that by setting your gopath when you run the make command:
-
-```bash
-GOPATH=/home/christian_posta/gopath make generated-code
-``` 
