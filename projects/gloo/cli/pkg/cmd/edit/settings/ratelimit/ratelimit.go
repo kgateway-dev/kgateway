@@ -49,7 +49,7 @@ func RateLimitConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Opti
 }
 
 func editSettings(opts *editOptions.EditOptions, optsExt *RateLimitSettings, args []string) error {
-	settingsClient := helpers.MustSettingsClient()
+	settingsClient := helpers.MustNamespacedSettingsClient(opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading settings")

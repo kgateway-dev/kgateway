@@ -46,7 +46,7 @@ func ExtAuthConfig(opts *editOptions.EditOptions, optionsFunc ...cliutils.Option
 }
 
 func editSettings(opts *editOptions.EditOptions, optsExt *options.OIDCSettings, args []string) error {
-	settingsClient := helpers.MustSettingsClient()
+	settingsClient := helpers.MustNamespacedSettingsClient(opts.Metadata.GetNamespace())
 	settings, err := settingsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading settings")

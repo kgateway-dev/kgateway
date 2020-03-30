@@ -127,7 +127,7 @@ func BuildSuggestedUpgradeCommand(binaryName string, mismatches []*versionutils.
 // Gloo may not be running in a kubernetes environment, so don't error out the whole command
 // if we couldn't find the version
 func warnOnError(err error, logger Logger) {
-	logger.Println("Warning: Could not determine gloo client/server versions (is Gloo running outside of kubernetes?): " + err.Error())
+	logger.Println("Warning: Could not determine gloo server versions (is Gloo running outside of kubernetes?): " + err.Error())
 }
 
 type ContainerVersion struct {

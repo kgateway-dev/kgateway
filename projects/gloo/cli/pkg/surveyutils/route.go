@@ -88,12 +88,11 @@ func getMatcherInteractive(match *options.RouteMatchers) error {
 func getDestinationInteractive(route *options.InputRoute) error {
 	dest := &route.Destination
 	// collect upstreams list
-	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
 	ugsByKey := make(map[string]*v1.UpstreamGroup)
 	var usKeys []string
 	for _, ns := range helpers.MustGetNamespaces() {
-		usList, err := usClient.List(ns, clients.ListOpts{})
+		usList, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -107,19 +106,16 @@ func getDestinationInteractive(route *options.InputRoute) error {
 		return errors.Errorf("no upstreams found. create an upstream first or enable discovery.")
 	}
 
-	ugClient, err := helpers.UpstreamGroupClient()
-	if err == nil {
-		for _, ns := range helpers.MustGetNamespaces() {
-			ugList, err := ugClient.List(ns, clients.ListOpts{})
-			if err != nil {
-				return err
-			}
-			for _, ug := range ugList {
-				ref := ug.Metadata.Ref()
-				key := "upstream-group: " + ref.Key()
-				ugsByKey[key] = ug
-				usKeys = append(usKeys, key)
-			}
+	for _, ns := range helpers.MustGetNamespaces() {
+		ugList, err := helpers.MustNamespacedUpstreamGroupClient(ns).List(ns, clients.ListOpts{})
+		if err != nil {
+			return err
+		}
+		for _, ug := range ugList {
+			ref := ug.Metadata.Ref()
+			key := "upstream-group: " + ref.Key()
+			ugsByKey[key] = ug
+			usKeys = append(usKeys, key)
 		}
 	}
 
@@ -235,7 +231,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -358,7 +354,7 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustVirtualServiceClient().List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}

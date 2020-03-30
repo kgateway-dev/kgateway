@@ -242,7 +242,7 @@ func checkPods(opts *options.Options) (bool, error) {
 }
 
 func getSettings(opts *options.Options) (*v1.Settings, error) {
-	client := helpers.MustSettingsClient()
+	client := helpers.MustNamespacedSettingsClient(opts.Metadata.GetNamespace())
 	return client.Read(opts.Metadata.Namespace, defaults.SettingsName, clients.ReadOpts{})
 }
 
@@ -256,10 +256,9 @@ func getNamespaces(settings *v1.Settings) ([]string, error) {
 
 func checkUpstreams(namespaces []string) ([]string, bool, error) {
 	fmt.Printf("Checking upstreams... ")
-	client := helpers.MustUpstreamClient()
 	var knownUpstreams []string
 	for _, ns := range namespaces {
-		upstreams, err := client.List(ns, clients.ListOpts{})
+		upstreams, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, false, err
 		}
@@ -283,9 +282,8 @@ func checkUpstreams(namespaces []string) ([]string, bool, error) {
 
 func checkUpstreamGroups(namespaces []string) (bool, error) {
 	fmt.Printf("Checking upstream groups... ")
-	client := helpers.MustUpstreamGroupClient()
 	for _, ns := range namespaces {
-		upstreamGroups, err := client.List(ns, clients.ListOpts{})
+		upstreamGroups, err := helpers.MustNamespacedUpstreamGroupClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return false, err
 		}
@@ -308,10 +306,9 @@ func checkUpstreamGroups(namespaces []string) (bool, error) {
 
 func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 	fmt.Printf("Checking auth configs... ")
-	client := helpers.MustAuthConfigClient()
 	var knownAuthConfigs []string
 	for _, ns := range namespaces {
-		authConfigs, err := client.List(ns, clients.ListOpts{})
+		authConfigs, err := helpers.MustNamespacedAuthConfigClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, false, err
 		}
@@ -335,9 +332,8 @@ func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 
 func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs []string) (bool, error) {
 	fmt.Printf("Checking virtual services... ")
-	client := helpers.MustVirtualServiceClient()
 	for _, ns := range namespaces {
-		virtualServices, err := client.List(ns, clients.ListOpts{})
+		virtualServices, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return false, err
 		}
@@ -382,9 +378,8 @@ func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs 
 
 func checkGateways(namespaces []string) (bool, error) {
 	fmt.Printf("Checking gateways... ")
-	client := helpers.MustGatewayClient()
 	for _, ns := range namespaces {
-		gateways, err := client.List(ns, clients.ListOpts{})
+		gateways, err := helpers.MustNamespacedGatewayClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return false, err
 		}
@@ -407,9 +402,8 @@ func checkGateways(namespaces []string) (bool, error) {
 
 func checkProxies(ctx context.Context, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) (bool, error) {
 	fmt.Printf("Checking proxies... ")
-	client := helpers.MustProxyClient()
 	for _, ns := range namespaces {
-		proxies, err := client.List(ns, clients.ListOpts{})
+		proxies, err := helpers.MustNamespacedProxyClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return false, err
 		}

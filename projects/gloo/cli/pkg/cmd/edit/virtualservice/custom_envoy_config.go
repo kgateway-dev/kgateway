@@ -36,7 +36,7 @@ func RateLimitCustomConfig(opts *editOptions.EditOptions, optionsFunc ...cliutil
 
 func editVhost(opts *editOptions.EditOptions) error {
 
-	vsClient := helpers.MustVirtualServiceClient()
+	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
 	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading virtual service")
