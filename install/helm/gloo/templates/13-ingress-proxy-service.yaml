@@ -7,11 +7,13 @@ metadata:
     gloo: ingress-proxy
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
+{{- if .Values.ingressProxy.service }}
 {{- if .Values.ingressProxy.service.extraAnnotations }}
   annotations:
   {{- range $key, $value := .Values.ingressProxy.service.extraAnnotations }}
     {{ $key }}: {{ $value | quote }}
   {{- end }}
+{{- end }}
 {{- end }}
 spec:
   ports:
@@ -24,6 +26,4 @@ spec:
   selector:
     gloo: ingress-proxy
   type: LoadBalancer
-
-
 {{- end }}
