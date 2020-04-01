@@ -376,6 +376,7 @@
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''|
+|ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |ingressProxy.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|

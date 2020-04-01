@@ -1886,6 +1886,57 @@ metadata:
 
 			})
 
+			Context("ingress-proxy service", func() {
+
+				var ingressProxyService *v1.Service
+
+				BeforeEach(func() {
+					serviceLabels := map[string]string{
+						"app":  "gloo",
+						"gloo": "ingress-proxy",
+					}
+					rb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      "ingress-proxy",
+						Args:      nil,
+						Labels:    serviceLabels,
+					}
+					ingressProxyService = rb.GetService()
+					selectorLabels := map[string]string{
+						"gloo": "ingress-proxy",
+					}
+					ingressProxyService.Spec.Selector = selectorLabels
+					ingressProxyService.Spec.Ports = []v1.ServicePort{
+						{
+							Name:       "http",
+							Protocol:   "TCP",
+							Port:       80,
+							TargetPort: intstr.IntOrString{IntVal: 0},
+						},
+						{
+							Name:       "https",
+							Protocol:   "TCP",
+							Port:       443,
+							TargetPort: intstr.IntOrString{IntVal: 0},
+						},
+					}
+					ingressProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+				})
+
+				It("sets extra annotations", func() {
+					ingressProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"ingress.enabled=true",
+							"ingressProxy.service.extraAnnotations.foo=bar",
+							"ingressProxy.service.extraAnnotations.bar=baz",
+						},
+					})
+					testManifest.ExpectService(ingressProxyService)
+				})
+
+			})
+
 			Describe("merge ingress and gateway", func() {
 
 				// helper for passing a values file
