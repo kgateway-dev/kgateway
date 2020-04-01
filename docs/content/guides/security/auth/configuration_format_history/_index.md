@@ -6,7 +6,7 @@ description: Overview of the external auth configuration formats supported by ea
 
 #### GlooE versions >=0.20.1
 
-**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), simplified the
+**Gloo Enterprise**, release [**0.20.1**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), simplified the
 external auth configuration format. You can now specify the `extauth` configuration directly on the `Options`/`Plugins`
 (Gloo 1.0+ vs Gloo 0.x respectively) attribute of the relevant resource:
 
@@ -39,7 +39,7 @@ of the authentication section of the docs.
 As of now, this configuration format is still supported by **Gloo Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.19.0**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), introduced the possibility to 
+**Gloo Enterprise**, release [**0.19.0**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced the possibility to 
 configure authentication on **Routes** and **WeightedDestinations**. As part of this change, authentication configurations 
 have been promoted to top-level resources, i.e. they are stored in a dedicated `AuthConfig` resource. 
 **The new features require this new configuration format**.
@@ -127,7 +127,7 @@ spec:
 As of now, this configuration format is still supported by **Gloo Enterprise**.
 {{% /notice %}}
 
-**Gloo Enterprise**, release [**0.18.21**]({{< versioned_link_path fromRoot="/changelog/enterprise" >}}), introduced a change in the 
+**Gloo Enterprise**, release [**0.18.21**]({{< versioned_link_path fromRoot="/reference/changelog/enterprise" >}}), introduced a change in the 
 authentication configuration format. It turned the `extauth` attribute from being an object into an array. This allows us 
 to define multiple configuration steps that are executed in the order in which they are specified. If any one of these 
 steps fails, the request will be denied without executing any subsequent steps. Authentication can still be configured 

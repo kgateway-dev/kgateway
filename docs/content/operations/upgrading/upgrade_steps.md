@@ -12,7 +12,7 @@ This upgrade process is not suitable in environments where downtime is unaccepta
 This guide will largely assume that you are running Gloo in Kubernetes.
 {{% /notice %}}
 
-In this guide, we'll walk you through how to upgrade Gloo. First you'll want to familiarize yourself with our various [Changelog entry types]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}) so that you can review the changes that have been made in the release you are upgrading to. 
+In this guide, we'll walk you through how to upgrade Gloo. First you'll want to familiarize yourself with our various [Changelog entry types]({{% versioned_link_path fromRoot="/reference/changelog/changelog_types/" %}}) so that you can review the changes that have been made in the release you are upgrading to. 
 
 Once you have reviewed the changes in the new release, there are two components to upgrade:
 
@@ -25,9 +25,9 @@ Once you have reviewed the changes in the new release, there are two components 
         * [Helm 3](#helm-3)
         * [Helm 2](#helm-2)
 
-Before upgrading, always make sure to check our changelogs (refer to our [open-source]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}) or [enterprise]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}) changelogs) for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade procedure; if this is the case, then we will take care to explain what ust be done in the changelog notes.
+Before upgrading, always make sure to check our changelogs (refer to our [open-source]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}) or [enterprise]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}) changelogs) for any mention of breaking changes. In some cases, a breaking change may mean a slightly different upgrade procedure; if this is the case, then we will take care to explain what ust be done in the changelog notes.
 
-You may also want to scan our [frequently-asked questions]({{% versioned_link_path fromRoot="/upgrading/faq/" %}}) to see if any of those cases apply to you. Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
+You may also want to scan our [frequently-asked questions]({{% versioned_link_path fromRoot="/operations/upgrading/faq/" %}}) to see if any of those cases apply to you. Also feel free to post in the `#gloo` or `#gloo-enterprise` rooms of our [public Slack](https://slack.solo.io/) if your use case doesn't quite fit the standard upgrade path. 
 
 {{% notice note %}}
 We version open-source Gloo separately from Gloo Enterprise. This is because Gloo Enterprise pulls in open-source Gloo as a dependency. While the patch versions of Gloo and Gloo Enterprise may drift apart from each other, we will maintain the same major/minor versions across the two projects. So for example, we may be at version `x.y.a` in open-source Gloo and `x.y.b` in Gloo Enterprise. `x` and `y` will always be the same, but `a` and `b` will often not be the same. This is why, if you are a Gloo Enterprise user, you may see different versions reported by `glooctl version`. We will try to ensure that open-source Gloo and Gloo Enterprise will be compatible each other across patch versions, but make no guarantees about compatibility between minor or major versions.
@@ -49,7 +49,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":...,{"Tag":"0.20.8","Na
 
 <br>
 
-If you are an open-source user of Gloo, you will only need to be aware of open-source versions found [in our open-source changelogs]({{% versioned_link_path fromRoot="/changelog/open_source/" %}}). If you are an enterprise user of Gloo, you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs]({{% versioned_link_path fromRoot="/changelog/enterprise/" %}}). However, you may need to be aware of the version of open-source Gloo included as a dependency in Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in our [changelog entries]({{% versioned_link_path fromRoot="/changelog/changelog_types/" %}}).
+If you are an open-source user of Gloo, you will only need to be aware of open-source versions found [in our open-source changelogs]({{% versioned_link_path fromRoot="/reference/changelog/open_source/" %}}). If you are an enterprise user of Gloo, you will be selecting versions of Gloo Enterprise from [our Enterprise changelogs]({{% versioned_link_path fromRoot="/reference/changelog/enterprise/" %}}). However, you may need to be aware of the version of open-source Gloo included as a dependency in Gloo Enterprise, as most of our proto definitions are open-source. Changes to the open-source version will be listed as "Dependency Bumps", and significant changes may be listed as "Breaking Changes" in our [changelog entries]({{% versioned_link_path fromRoot="/reference/changelog/changelog_types/" %}}).
 {{% /notice %}}
 
 ## Upgrading Components
