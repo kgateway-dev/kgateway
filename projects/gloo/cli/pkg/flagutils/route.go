@@ -10,6 +10,7 @@ func AddRouteFlags(set *pflag.FlagSet, route *options.InputRoute) {
 	set.Uint32VarP(&route.InsertIndex, "index", "x", 0, "index in the virtual service's or route table's"+
 		"route list where to insert this route. routes after it will be shifted back one")
 	set.BoolVar(&route.AddToRouteTable, "to-route-table", false, "insert the route into a route table rather than a virtual service")
+	set.BoolVar(&route.ClusterScopedVsClient, "cluster-scoped-vs-client", false, "search for *-domain virtual services outside gloo system namespace to add route to")
 
 	set.StringVarP(&route.Matcher.PathExact, "path-exact", "e", "", "exact path to match route")
 	set.StringVarP(&route.Matcher.PathRegex, "path-regex", "r", "", "regex matcher for route. "+
