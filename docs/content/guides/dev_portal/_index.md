@@ -199,11 +199,10 @@ You should see the details of the portal we just created:
 ### Adding static pages to the portal
 A common feature of developer portals is to allow the administrator to add custom pages to the web application. We can 
 do that by visiting the portal details page on the Gloo Enterprise UI again, selecting the "Pages" tab in the lower 
-part of the screen and clicking the "Add a Page" button.
+part of the screen and clicking the "Add a Page" button. 
+The resulting form prompts us for the basic properties of a static portal page.
 
-![](img/static-pages-1.png)
-
-The resulting form prompts us for the basic properties of a static portal page:
+![](img/static-page-1.png)
 
 1. `Page Name`: the display name for this page
 2. `Page URL`: the URL at which this  page will be available
@@ -213,15 +212,13 @@ The resulting form prompts us for the basic properties of a static portal page:
 the portal home page. Clicking the tile will open the page.
 
 After submitting the form you should see that the static page has been added to the portal.
-
-![](img/static-pages-2.png)
-
 Let's click on the edit button in the "Actions" column of the "Pages" table. This will display an editor where you can 
 define the content of the page using markdown.
 
-![](img/static-pages-3-mk.png)
+You can preview the page by clicking the "Preview Changes" button.
+![](img/static-page-3.png)
 
-We will add some example markdown content and confirm our changes.
+When you are done, click "Publish changes" to publish the static page..
 
 #### Test the portal
 Now let's see how the portal looks like! Portals are served by the web server that listens on port `8080` of the 
@@ -234,7 +231,7 @@ kubectl port-forward -n gloo-system deploy/dev-portal 1234:8080
 We are forwarding to port `1234` on localhost as this is the domain we configured on the portal earlier. If you now open 
 your browser and navigate to `localhost:1234` you should see the portal home page.
 
-![](img/portal-landing-page-1.png)
+![](img/portal-home-1.png)
 
 Note the portal branding and the static markdown page we configured earlier.
 
@@ -254,7 +251,7 @@ This will display the group creation wizard.
 4. In the final step we can decide which portals the members of the group will have access to; let's select the portal we just created and submit the form.
 
 If everything went well you should see the details of the group.
-![](img/created-group-1.png)
+![](img/group-1.png)
 
 #### Create a user
 Now let's add a user to the group by clicking on the "Create a User" button. This will display the user creation wizard.
@@ -270,10 +267,15 @@ we don't have any APIs yet, so let's skip this for now;
 3. The final step allows us the give the user direct access to a portal; we don't need this as we want the user to 
 have access through the group.
 
+![](img/user-1.png)
+
 #### Log into the portal
 Now that we have created a user, let's go back to our portal at `localhost:1234` and click the login button in the top 
 right corner of the screen. Input the username and password for the user we just created and you will be prompted to 
 update your password. Choose a new password, submit the form and you will be logged into the portal.
+
+![](img/password-change.png)
+
 If you click on the `APIs` tab in the navigation bar you will see that it no longer asks you to log in.
 Since we did not publish an API there is not much else we can do with the portal at this point, so let's go ahead and 
 publish our first API!
@@ -547,15 +549,17 @@ and display some of the properties of the document, for example the display name
 of the screen you can see which groups and users are allowed to see this API (if it is published to a portal they have 
 access to).
 
-In the top right section of the screen you should see the name of the portal that we published the API to.
+![](img/api-1.png)
 
 ### View and test the API
 Let's go back to our portal at `localhost:1234` and click the "API" button in the navigation bar. You should now see 
 an entry for our newly published API.
 
-TODO: image
+![](img/portal-api-1.png)
 
 If you click on the document you can browse through all of the info that we included in our OpenAPI document above. 
+
+![](img/portal-api-2.png)
 
 Before we test our interactive document, we need to port forward the Gloo gateway proxy (which the document expects to 
 be listening at `localhost:8080`):
@@ -572,6 +576,8 @@ Now let's try and query the "GET /pets" endpoint:
 
 You should see the response from the server in the "Server response" section.
 
+![](img/portal-api-3-no-auth-ok.png)
+
 ### Secure an API
 We were able to query the published API without providing any credentials, but in a real-world scenario access to the 
 API will most likely need to be secured. The Gloo Enterprise developer portal currently supports self-service for APIs 
@@ -587,11 +593,17 @@ particular key scope, the server will generate an API key secret that can be con
 This will become easier to understand after seeing a concrete example. 
 
 Let's go back to the Gloo Enterprise UI, and navigate to the "API Key Scopes" section of the developer portal screen. 
-Click the "Create a Scope" button to open the API key scope creation wizard. You will need to provide:
+Click the "Create a Scope" button to open the API key scope creation wizard. 
+
+![](img/key-scope-1.png)
+
+You will need to provide:
 
 1. A name for the key scope
 2. The portal the key scope belongs to
 3  The API(s) that share this key scope
+
+![](img/key-scope-2.png)
 
 Each secret generated for a given key scope will contain a label with the following format in its metadata:
 
@@ -682,6 +694,8 @@ We need to add these attributes too the root object:
   ]
 }
 ```
+
+![](img/api-2-editor.png)
 
 The `securityDefinitions` object is a declaration of the security schemes available to be used in the specification. 
 This does not enforce the security schemes on the operations and only serves to provide the relevant details for each scheme.
@@ -933,12 +947,23 @@ Now that everything is in place, let's go back to the portal and open the intera
 same endpoint we tested earlier, you will now get a 401 Unauthorized response. This is Gloo rejecting the request 
 because it did not provide an API key.
 
+![](img/portal-api-4-no-auth-ko.png)
+
 Now click on the user icon in the top right corner and select "API keys". This will open a page where the user can see 
-the key scopes that are available for the APIs they have access to. Click on "generate an API key" and confirm.
+the key scopes that are available for the APIs they have access to. 
 
-You should see an API key appear in the key scope. CLick it to copy it to the clipboard and head back to the API document.
+![](img/portal-key-scopes-1.png)
 
+Click on "generate an API key" and confirm. You should see an API key appear in the key scope. 
+
+![](img/portal-key-scopes-2.png)
+
+Click it to copy it to the clipboard and head back to the API document. 
 Click the "Authorize" button (which is displayed now that we have added a `securityDefinition`), paste the API key into 
 the text field and confirm.
 
+![](img/portal-api-5-auth-dialog.png)
+
 Now try the endpoint again and it should work!
+
+![](img/portal-api-6-auth-ok.png)
