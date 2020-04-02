@@ -17,7 +17,7 @@ type RouteEditInput struct {
 }
 
 func UpdateRoute(opts *RouteEditInput, modify func(*gatewayv1.Route) error) error {
-	vsClient := helpers.MustVirtualServiceClient()
+	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
 	vs, err := vsClient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 	if err != nil {
 		return errors.Wrapf(err, "Error reading vhost")
@@ -45,10 +45,8 @@ func UpdateRoute(opts *RouteEditInput, modify func(*gatewayv1.Route) error) erro
 }
 
 func EditRoutePreRunE(opts *RouteEditInput) error {
-
 	if opts.Top.Interactive {
-
-		vsclient := helpers.MustVirtualServiceClient()
+		vsclient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
 		vsvc, err := vsclient.Read(opts.Metadata.Namespace, opts.Metadata.Name, clients.ReadOpts{})
 		if err != nil {
 			return err
@@ -61,6 +59,5 @@ func EditRoutePreRunE(opts *RouteEditInput) error {
 			opts.ResourceVersion = vsvc.Metadata.ResourceVersion
 		}
 	}
-
 	return nil
 }

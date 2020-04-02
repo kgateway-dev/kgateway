@@ -62,6 +62,10 @@ message UpstreamSslConfig {
     repeated string verify_subject_alt_name = 5;
 
     SslParameters parameters = 7;
+
+    // Set Application Level Protocol Negotiation.
+    // If empty, it is not set.
+    repeated string alpn_protocols = 8;
 }
 
 message SDSConfig {

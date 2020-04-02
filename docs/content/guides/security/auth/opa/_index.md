@@ -14,6 +14,8 @@ Be sure to check the external auth [configuration overview]({{% versioned_link_p
 
 ## Table of Contents
 - [Setup](#setup)
+- [OPA policy overview](#opa-policy-overview)
+    - [OPA input structure](#opa-input-structure)
 - [Validate requests attributes with Open Policy Agent](#validate-requests-attributes-with-open-policy-agent)
     - [Deploy sample application](#deploy-a-sample-application)
     - [Creating a Virtual Service](#creating-a-virtual-service)
@@ -35,6 +37,16 @@ Be sure to check the external auth [configuration overview]({{% versioned_link_p
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
+
+## OPA policy overview
+Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work with modern JSON documents.
+
+Gloo's OPA integration will populate an `input` document which can be used in your OPA policies. The structure of the `input` document depends on the context of the incoming request. See the following section for details.
+
+### OPA input structure
+- `input.check_request` - By default, all OPA policies will contain an [Envoy Auth Service `CheckRequest`](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkrequest). This object contains all the information Envoy has gathered of the request being processed. See the Envoy docs and [proto files for `AttributeContext`](https://github.com/envoyproxy/envoy/blob/b3949eaf2080809b8a3a6cf720eba2cfdf864472/api/envoy/service/auth/v2/attribute_context.proto#L39) for the structure of this object.
+- `input.http_request` - When processing an HTTP request, this field will be populated for convenience. See the [Envoy `HttpRequest` docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/attribute_context.proto#service-auth-v2-attributecontext-httprequest) and [proto files](https://github.com/envoyproxy/envoy/blob/b3949eaf2080809b8a3a6cf720eba2cfdf864472/api/envoy/service/auth/v2/attribute_context.proto#L90) for the structure of this object.
+- `input.state.jwt` - When the [OIDC auth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/oauth/" >}}) is utilized, the token retrieved during the OIDC flow is placed into this field. See the section below on [validating JWTs](#validate-jwts-with-open-policy-agent) for an example.
 
 ## Validate requests attributes with Open Policy Agent
 
@@ -92,7 +104,7 @@ As we just saw, we were able to reach the upstream without having to provide any
 
 #### Define an OPA policy 
 
-Open Policy Agent policies are written in [Rego](https://www.openpolicyagent.org/docs/latest/how-do-i-write-policies/). The _Rego_ language is inspired from _Datalog_, which in turn is a subset of _Prolog_. _Rego_ is more suited to work with modern JSON documents. Let's create a Policy to control which actions are allowed on our service:
+Let's create a Policy to control which actions are allowed on our service:
 
 ```shell
 cat <<EOF > policy.rego

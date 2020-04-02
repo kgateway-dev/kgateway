@@ -55,6 +55,21 @@ Here, we can see an upstream was created and accepted. The upstream points to th
 default namespace. In fact, Gloo discovered that it was a REST service and, using it's function discovery system, 
 added the functions it found in the Swagger definition to the upstream.
 
+{{% notice note %}}
+The default endpoints evaluated for `swagger` or `OpenAPISepc` docs are:
+
+```
+"/swagger.json"
+"/swagger/docs/v1"
+"/swagger/docs/v2"
+"/v1/swagger"
+"/v2/swagger"
+```
+
+If you have a Swagger definition in a different location that the default conventions listed above, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. See [Configuring Function Discovery]({{< versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" >}}) for more information. 
+
+{{% /notice %}}
+
 Let's look at the yaml output for this upstream from Kubernetes:
 
 ```shell

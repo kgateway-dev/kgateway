@@ -9,11 +9,53 @@ Gloo's **Function Discovery Service** (FDS) attempts to poll endpoints for:
 * A path serving a [Swagger Document](https://swagger.io/specification/).
 * gRPC Services with [gRPC Reflection](https://github.com/grpc/grpc/blob/master/doc/server-reflection.md) enabled.
 
-This means that the Gloo `discovery` pod will make HTTP requests to all `Upstreams` known to Gloo.
 
-This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo is attempting to poll.
+The default endpoints evaluated for `swagger` or `OpenAPISepc` docs are:
 
-For this reason, we may want to restrict the manner in which FDS polls services.
+```
+"/swagger.json"
+"/swagger/docs/v1"
+"/swagger/docs/v2"
+"/v1/swagger"
+"/v2/swagger"
+```
+
+If you have a Swagger definition on a different endpoint, you can customize the location by configuring it in the `serviceSpec.rest.swaggerInfo.url` field. For example, for a given Upstream, you can add the following including an explicit location for the Swagger document:
+
+
+{{< highlight yaml "hl_lines=17-20" >}}
+apiVersion: gloo.solo.io/v1
+kind: Upstream
+metadata:
+  labels:
+    discovered_by: kubernetesplugin
+    service: petstore
+  name: default-petstore-8080
+  namespace: gloo-system
+spec:
+  discoveryMetadata: {}
+  kube:
+    selector:
+      app: petstore
+    serviceName: petstore
+    serviceNamespace: default
+    servicePort: 8080
+    serviceSpec:
+      rest:
+        swaggerInfo:
+          url: http://petstore.default:8080/foo/bar/swagger.json
+
+{{< /highlight >}}
+
+{{% notice note %}}
+
+Note, Function Discovery needs to be enabled for this to work. See the next sections.
+
+{{% /notice %}}
+
+## Function Discovery Service (FDS)
+
+Using FDS means that the Gloo `discovery` component will make HTTP requests to all `Upstreams` known to Gloo trying to discover functions. This behavior causes increased network traffic and may be undesirable if it causes unexpected behavior or logs to appear in the services Gloo is attempting to poll. For this reason, we may want to restrict the manner in which FDS polls services.
 
 Gloo allows whitelisting/blacklisting services, either by namespace or on the individual service level.
 

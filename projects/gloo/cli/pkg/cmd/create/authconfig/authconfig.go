@@ -84,7 +84,7 @@ func createAuthConfig(opts *options.Options, args []string) error {
 	}
 
 	if !opts.Create.DryRun {
-		authConfigClient := helpers.MustAuthConfigClient()
+		authConfigClient := helpers.MustNamespacedAuthConfigClient(opts.Metadata.GetNamespace())
 		ac, err = authConfigClient.Write(ac, clients.WriteOpts{})
 		if err != nil {
 			return err

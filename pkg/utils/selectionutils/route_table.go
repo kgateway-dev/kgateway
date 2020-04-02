@@ -6,7 +6,6 @@ import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
-	"github.com/solo-io/gloo/pkg/listers"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -20,18 +19,16 @@ type RouteTableSelector interface {
 }
 
 type routeTableSelector struct {
-	client          gatewayv1.RouteTableClient
-	namespaceLister listers.NamespaceLister
-	podNamespace    string
+	client       gatewayv1.RouteTableClient
+	podNamespace string
 }
 
 var _ RouteTableSelector = &routeTableSelector{}
 
-func NewRouteTableSelector(client gatewayv1.RouteTableClient, namespaceLister listers.NamespaceLister, podNamespace string) *routeTableSelector {
+func NewRouteTableSelector(client gatewayv1.RouteTableClient, podNamespace string) *routeTableSelector {
 	return &routeTableSelector{
-		client:          client,
-		namespaceLister: namespaceLister,
-		podNamespace:    podNamespace,
+		client:       client,
+		podNamespace: podNamespace,
 	}
 }
 

@@ -8,6 +8,14 @@ metadata:
     gloo: knative-external-proxy
   name: knative-external-proxy
   namespace: {{ .Release.Namespace }}
+{{- if .Values.settings.integrations.knative.proxy.service }}
+{{- if .Values.settings.integrations.knative.proxy.service.extraAnnotations }}
+  annotations:
+  {{- range $key, $value := .Values.ingressProxy.service.extraAnnotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}
 spec:
   ports:
   - port: {{ .Values.settings.integrations.knative.proxy.httpPort }}

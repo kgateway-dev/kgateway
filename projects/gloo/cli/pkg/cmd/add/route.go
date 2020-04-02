@@ -95,7 +95,7 @@ func addRoute(opts *options.Options) error {
 			Namespace: opts.Metadata.Namespace,
 			Name:      opts.Metadata.Name,
 		}
-		selector := selectionutils.NewRouteTableSelector(helpers.MustRouteTableClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+		selector := selectionutils.NewRouteTableSelector(helpers.MustNamespacedRouteTableClient(opts.Metadata.GetNamespace()), defaults.GlooSystem)
 		routeTable, err := selector.SelectOrCreateRouteTable(opts.Top.Ctx, rtRef)
 		if err != nil {
 			return err
@@ -107,7 +107,7 @@ func addRoute(opts *options.Options) error {
 		routeTable.Routes[index] = v1Route
 
 		if !opts.Add.DryRun {
-			routeTable, err = helpers.MustRouteTableClient().Write(routeTable, clients.WriteOpts{
+			routeTable, err = helpers.MustNamespacedRouteTableClient(opts.Metadata.GetNamespace()).Write(routeTable, clients.WriteOpts{
 				Ctx:               opts.Top.Ctx,
 				OverwriteExisting: true,
 			})
@@ -124,7 +124,13 @@ func addRoute(opts *options.Options) error {
 		Namespace: opts.Metadata.Namespace,
 		Name:      opts.Metadata.Name,
 	}
-	selector := selectionutils.NewVirtualServiceSelector(helpers.MustVirtualServiceClient(), helpers.NewNamespaceLister(), defaults.GlooSystem)
+	vsClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
+	nsLister := helpers.NewProvidedNamespaceLister([]string{opts.Metadata.GetNamespace()})
+	if opts.Add.Route.ClusterScopedVsClient {
+		vsClient = helpers.MustVirtualServiceClient()
+		nsLister = helpers.NewNamespaceLister()
+	}
+	selector := selectionutils.NewVirtualServiceSelector(vsClient, nsLister, defaults.GlooSystem)
 	virtualService, err := selector.SelectOrCreateVirtualService(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
@@ -136,7 +142,7 @@ func addRoute(opts *options.Options) error {
 	virtualService.VirtualHost.Routes[index] = v1Route
 
 	if !opts.Add.DryRun {
-		virtualService, err = helpers.MustVirtualServiceClient().Write(virtualService, clients.WriteOpts{
+		virtualService, err = vsClient.Write(virtualService, clients.WriteOpts{
 			Ctx:               opts.Top.Ctx,
 			OverwriteExisting: true,
 		})

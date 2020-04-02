@@ -145,9 +145,10 @@ type InputRoute struct {
 	Destination Destination
 	// TODO: multi destination
 	// Destinations []Destination
-	UpstreamGroup   core.ResourceRef
-	Plugins         RoutePlugins
-	AddToRouteTable bool // add the route to a route table rather than a virtual service
+	UpstreamGroup         core.ResourceRef
+	Plugins               RoutePlugins
+	AddToRouteTable       bool // add the route to a route table rather than a virtual service
+	ClusterScopedVsClient bool
 }
 
 type Destination struct {

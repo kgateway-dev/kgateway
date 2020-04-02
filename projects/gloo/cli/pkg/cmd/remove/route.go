@@ -53,7 +53,7 @@ func removeRoute(opts *options.Options) error {
 		return errors.Errorf("name of the target virtual service cannot be empty")
 	}
 
-	vs, err := helpers.MustVirtualServiceClient().Read(opts.Metadata.Namespace, opts.Metadata.Name,
+	vs, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).Read(opts.Metadata.Namespace, opts.Metadata.Name,
 		clients.ReadOpts{Ctx: opts.Top.Ctx})
 	if err != nil {
 		return errors.Wrapf(err, "reading vs %v", opts.Metadata.Ref())
@@ -65,7 +65,7 @@ func removeRoute(opts *options.Options) error {
 
 	vs.VirtualHost.Routes = append(vs.VirtualHost.Routes[:index], vs.VirtualHost.Routes[index+1:]...)
 
-	out, err := helpers.MustVirtualServiceClient().Write(vs, clients.WriteOpts{
+	out, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).Write(vs, clients.WriteOpts{
 		Ctx:               opts.Top.Ctx,
 		OverwriteExisting: true,
 	})

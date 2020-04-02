@@ -306,7 +306,8 @@ type ServiceSpec struct {
 }
 
 type Service struct {
-	Type *string `json:"type,omitempty" desc:"K8s service type"`
+	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
 }
 
 type IngressProxyConfigMap struct {

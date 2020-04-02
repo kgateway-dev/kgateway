@@ -78,7 +78,7 @@ func createVirtualService(opts *options.Options, args []string) error {
 	}
 
 	if !opts.Create.DryRun {
-		virtualServiceClient := helpers.MustVirtualServiceClient()
+		virtualServiceClient := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace())
 		vs, err = virtualServiceClient.Write(vs, clients.WriteOpts{})
 		if err != nil {
 			return err

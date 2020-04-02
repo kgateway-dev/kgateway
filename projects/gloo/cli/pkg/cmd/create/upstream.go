@@ -156,7 +156,7 @@ func createUpstream(opts *options.Options) error {
 	}
 
 	if !opts.Create.DryRun {
-		us, err = helpers.MustUpstreamClient().Write(us, clients.WriteOpts{})
+		us, err = helpers.MustNamespacedUpstreamClient(opts.Metadata.GetNamespace()).Write(us, clients.WriteOpts{})
 		if err != nil {
 			return err
 		}

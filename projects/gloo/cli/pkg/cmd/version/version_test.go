@@ -197,7 +197,7 @@ Server: {"type":"Gateway","enterprise":true,"kubernetes":{"containers":[{"Tag":"
 							Output: test.outputType,
 						},
 					}
-					client.EXPECT().Get().Times(1).Return(nil, nil)
+					client.EXPECT().Get().Times(1).Return(nil, eris.Errorf("fake rbac error"))
 					err := printVersion(client, buf, opts)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(buf.String()).To(ContainSubstring(undefinedServer))

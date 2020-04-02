@@ -94,6 +94,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "sni": string
 "verifySubjectAltName": []string
 "parameters": .gloo.solo.io.SslParameters
+"alpnProtocols": []string
 
 ```
 
@@ -105,6 +106,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `sni` | `string` | optional. the SNI domains that should be considered for TLS connections. |  |
 | `verifySubjectAltName` | `[]string` | Verify that the Subject Alternative Name in the peer certificate is one of the specified values. note that a root_ca must be provided if this option is used. |  |
 | `parameters` | [.gloo.solo.io.SslParameters](../ssl.proto.sk/#sslparameters) |  |  |
+| `alpnProtocols` | `[]string` | Set Application Level Protocol Negotiation. If empty, it is not set. |  |
 
 
 

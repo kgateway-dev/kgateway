@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      `glooctl` commands such as `glooctl get vs` now work without cluster-scoped rbac permissions.
+    issueLink: https://github.com/solo-io/gloo/issues/2375

@@ -14,11 +14,10 @@ import (
 func AddUpstreamGroupFlagsInteractive(upstreamGroup *options.InputUpstreamGroup) error {
 
 	// collect upstreams list
-	usClient := helpers.MustUpstreamClient()
 	ussByKey := make(map[string]*v1.Upstream)
 	var usKeys []string
 	for _, ns := range helpers.MustGetNamespaces() {
-		usList, err := usClient.List(ns, clients.ListOpts{})
+		usList, err := helpers.MustNamespacedUpstreamClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
