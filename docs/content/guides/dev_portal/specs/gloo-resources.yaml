@@ -56,7 +56,6 @@ spec:
     domains:
     - "localhost:8080" # This will be e.g. pet-store.solo.io
     routes:
-    # route to api
     - matchers:
       - prefix: /api
       routeAction:

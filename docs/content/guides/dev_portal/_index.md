@@ -1,28 +1,25 @@
 ---
 title: "Developer Portal"
 weight: 60
-description: Extending Gloo's functionality with the use of plugins
+description: Publish interactive documentation for your APIs
 ---
-
-// ![Gloo Architecture]({{% versioned_link_path fromRoot="/img/gloo-architecture-envoys.png" %}})
-
-TODO: page index
-
 
 {{% notice note %}}
 The developer portal feature was introduced with **Gloo Enterprise**, release v1.3.0. If you are using an 
 earlier version, this feature will not be available.
 {{% /notice %}}
 
-## Intro
-
-
-# Getting started
+In this guide we will see how to publish interactive documentation for your APIs and expose it to users via the 
+Gloo Enterprise developer portal.
 
 ## Concepts
-// TODO: explain CRDs and general working of the dev portal components
+// TODO: explain CRDs and general working of the dev portal components, maybe move later
 
-## Installation
+## Initial setup
+Before we can start configuring our portal, we need to enable the developer portal feature in Gloo and configure our 
+cluster with an example application and the corresponding routing configuration.
+
+#### Enabling the developer portal feature in Gloo
 The Gloo Developer Portal can be installed as part of Gloo Enterprise by providing an additional `devPortal=true` Helm 
 value during your installation or upgrade process. Please refer to the Gloo Enterprise [installation guide](https://docs.solo.io/gloo/latest/installation/enterprise/) 
 for more details on the various installation options.
@@ -55,15 +52,99 @@ redis-9d9b9955f-bh68s                                  1/1     Running   0      
 
 Notice the `dev-portal-6f5f6899cc-kqtwt` pod.
 
-## Access the developer portal admin UI
+#### Deploy a sample application
+Let's deploy an application that will represent the service that we want to publish an API for:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: petstore
+  name: petstore
+  namespace: gloo-system
+spec:
+  selector:
+    matchLabels:
+      app: petstore
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: petstore
+    spec:
+      containers:
+      - image: soloio/petstore-example:latest
+        name: petstore
+        ports:
+        - containerPort: 8080
+          name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: petstore
+  namespace: gloo-system
+  labels:
+    sevice: petstore
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+  selector:
+    app: petstore
+```
+
+Let's also create a Gloo virtual service that will route al requests for paths starting with `api` to this service:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    options:
+      cors:
+        allowOrigin:
+        - "http://localhost:1234"
+    domains:
+    - "localhost:8080"
+    routes:
+    - matchers:
+      - prefix: /api
+      routeAction:
+        single:
+          kube:
+            port: 8080
+            ref:
+              name: petstore
+              namespace: gloo-system
+```
+
+We will come back and explain the reason behind the domain and the CORS configuration later on. TODO
+
+Let's verify that everything works as expected:
+
+``` 
+curl -H "host: localhost:8080" $(glooctl proxy url)/api/pets -v
+```
+
+The above request should result in the following response:
+``` 
+[{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
+```
+
+## Access the developer portal administrator UI
 Developer portals can be managed through a the Gloo Enterprise UI. To access the UI run:
 
 ```shell 
-kubectl port-forward -n gloo-system deployment/api-server 8080
+kubectl port-forward -n gloo-system deployment/api-server 8081:8080
 ```
 
-If you open your browser and navigate to `localhost:8080`, you should see the Gloo Enterprise UI landing page:
-![GlooE UI](img/UI-landing-page.png)
+If you open your browser and navigate to `localhost:8081`, you should see the Gloo Enterprise UI landing page:
+![GlooE UI]({{% versioned_link_path fromRoot="/guides/dev_portal/img/UI-landing-page.png" %}})
 
 If the developer portal was successfully installed and your license key is valid you should see the "Dev Portal" link 
 in the top right corner of the screen. If you click on it, you will see the developer portal overview page. This page 
@@ -200,19 +281,635 @@ publish our first API!
 ## Publish an API
 In this section we will see how to publish interactive OpenAPI documentation to your portal.
 
+### Create an OpenAPI document for our service
+Before we can publish an API, we need to create an OpenAPI document that describes the service it represents. 
+the document does not need to match the entirety of the endpoints exposes by your service. You can choose to 
+expose only a subset of the endpoints, for example if you want to expose just a part of a larger monolithic application. 
+It is up to the user to verify that the document matches the service it describes; the developer portal will not attempt 
+to validate the document against the service.
+
+{{% expand "Here is the full OpenAPI document representing our example application (click to expand)" %}}
+```json
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Swagger Petstore",
+    "description": "A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification",
+    "termsOfService": "http://helloreverb.com/terms/",
+    "contact": {
+      "name": "Wordnik API Team"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "host": "localhost:8080",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "description": "Returns all pets from the system that the user has access to",
+        "operationId": "findPets",
+        "produces": [
+          "application/json",
+          "application/xml",
+          "text/xml",
+          "text/html"
+        ],
+        "parameters": [
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "tags to filter by",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of results to return",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/pet"
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new pet in the store.  Duplicates are allowed",
+        "operationId": "addPet",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "pet",
+            "in": "body",
+            "description": "Pet to add to the store",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/petInput"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "$ref": "#/definitions/pet"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      }
+    },
+    "/pets/{id}": {
+      "get": {
+        "description": "Returns a user based on a single ID, if the user does not have access to the pet",
+        "operationId": "findPetById",
+        "produces": [
+          "application/json",
+          "application/xml",
+          "text/xml",
+          "text/html"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to fetch",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "$ref": "#/definitions/pet"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "deletes a single pet based on the ID supplied",
+        "operationId": "deletePet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to delete",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "pet deleted"
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "pet": {
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      }
+    },
+    "petInput": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/pet"
+        },
+        {
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      ]
+    },
+    "errorModel": {
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+```
+{{% /expand %}}
+
+Please note the following two attributes in out document:
+
+- the `host` attribute, which we set to `localhost:8080`
+- the `basePath` which we set to `/api`
+
+The interactive documentation for API that will be published in the portal will allow users to test the endpoints of the 
+API. These above attributes will determine the base of the address that the requests will be sent two, in this case:
+
+```
+localhost:8080/api
+```
+
+Please save the above document to your local file system for the next step (you can download it [here](specs/petstore.json)).
+
 ### Create an API
 Let's go back to the Gloo Enterprise UI, and navigate to the "APIs" section of the developer portal screen. Click on the 
 "Create an API" button to display the API creation wizard.
 
 1. The first step requires you to upload an OpenAPI document that represent your API. You can either provide a URL or 
-upload the file from you local file system. TODO: provide file
+upload the file from you local file system. Here you can
 2. Next you can upload an image for your API. The image will be displayed next to the API in the portal.
 3. In the following screen select our portal.
 4. Skip the user step (as the user will have access through the group)
 5. Add the group to give it access to this API and submit the form.
 
+You should now see the details of the API we just created. The developer portal server will parse the OpenAPI document 
+and display some of the properties of the document, for example the display name and the description. In the lower part 
+of the screen you can see which groups and users are allowed to see this API (if it is published to a portal they have 
+access to).
 
+In the top right section of the screen you should see the name of the portal that we published the API to.
 
+### View and test the API
+Let's go back to our portal at `localhost:1234` and click the "API" button in the navigation bar. You should now see 
+an entry for our newly published API.
 
-#### API Key secret label
-portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"
+TODO: image
+
+If you click on the document you can browse through all of the info that we included in our OpenAPI document above. 
+Let's try and query the "GET /pets" endpoint:
+
+1. expand the endpoint entry
+2. click the "Try it out" button
+3. click "Execute"
+
+You should see the response from the server in the "Server response" section.
+
+### Secure an API
+We were able to query the published API without providing any credentials, but in a real-world scenario access to the 
+API will most likely need to be secured. The Gloo Enterprise developer portal currently supports self-service for APIs 
+that are secured using API keys. It does so by leveraging the Gloo Enterprise 
+[API keys]({{% versioned_link_path fromRoot="/guides/security/auth/apikey_auth" %}}) authentication feature. 
+In the following sections we will see how to configure Gloo to allow users to generate API keys to send authenticated 
+requests via the interactive API document.
+
+##### Create a key scope
+An API key scope is a way of grouping APIs that share a common API key configuration within the context of a portal. 
+The portal server uses the key scope information to generate API key secrets. When a user requests an API key for a 
+particular key scope, the server will generate an API key secret that can be consumed by Gloo. 
+This will become easier to understand after seeing a concrete example. 
+
+Let's go back to the Gloo Enterprise UI, and navigate to the "API Key Scopes" section of the developer portal screen. 
+Click the "Create a Scope" button to open the API key scope creation wizard. You will need to provide:
+
+1. A name for the key scope
+2. The portal the key scope belongs to
+3  The API(s) that share this key scope
+
+Each secret generated for a given key scope will contain a label with the following format in its metadata:
+
+`portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"`
+
+For example, given the resources we created up to this point, the secrets created for the above key scope will contain 
+the following label:
+
+TODO:
+`portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"`
+
+##### Add API key auth to the API
+With the above information, we can go ahead and update our virtual service. First, let's create an API key `AuthConfig`:
+
+```
+kubectl apply -f - <<EOF
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: apikey-auth
+  namespace: gloo-system
+spec:
+  configs:
+  - api_key_auth:
+      label_selector:
+        portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"
+```
+
+This will allow any requests that provide an API key that is contained in a kubernetes secret that matches the given label.
+
+Let's update our virtual service to use this `AuthConfig`:
+
+{{< highlight yaml "hl_lines=12-17" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: petstore
+  namespace: gloo-system
+spec:
+  virtualHost:
+    options:
+      cors:
+        allowOrigin:
+        - "http://localhost:1234"
+        allowHeaders:
+        - "api-key"
+      extauth:
+        configRef:
+          name: apikey-auth
+          namespace: gloo-system
+    domains:
+    - "localhost:8080"
+    routes:
+    - matchers:
+      - prefix: /api
+      routeAction:
+        single:
+          kube:
+            port: 8080
+            ref:
+              name: petstore
+              namespace: gloo-system
+{{< /highlight >}} 
+
+Note that we also added `api-key` to the headers allowed by our CORS configuration. `api-key` is the name of the header 
+that Gloo inspects for an API key. The interactive documentation will send requests with that header to the service.
+
+##### Update our OpenAPI document
+Next we need to update our API specification in order to account for the changes we just made. In particular, we need to 
+add these attributes:
+
+```json
+{
+  "securityDefinitions": {
+    "petStoreApiKey": {
+      "type": "apiKey",
+      "name": "api-key",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "petStoreApiKey": []
+    }
+  ]
+}
+```
+
+The `securityDefinitions` object is a declaration of the security schemes available to be used in the specification. 
+This does not enforce the security schemes on the operations and only serves to provide the relevant details for each scheme.
+Here we are defining an API key authentication scheme that expects API keys to be included in a header named `api-key`.
+
+{{% notice note %}}
+It is important that the header name is `api-key`, otherwise Gloo will not be able to authenticate the requests sent from the document.
+{{% /notice %}}
+
+The `security` attribute lists the required security schemes to execute an operation. Since we define it at the root of 
+the document, it will apply to all operations.
+
+{{% expand "Click to see the complete updated document" %}}
+```json
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "1.0.0",
+    "title": "Swagger Petstore",
+    "description": "A sample API that uses a petstore as an example to demonstrate features in the swagger-2.0 specification",
+    "termsOfService": "http://helloreverb.com/terms/",
+    "contact": {
+      "name": "Wordnik API Team"
+    },
+    "license": {
+      "name": "MIT"
+    }
+  },
+  "host": "localhost:8080",
+  "basePath": "/api",
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/pets": {
+      "get": {
+        "description": "Returns all pets from the system that the user has access to",
+        "operationId": "findPets",
+        "produces": [
+          "application/json",
+          "application/xml",
+          "text/xml",
+          "text/html"
+        ],
+        "parameters": [
+          {
+            "name": "tags",
+            "in": "query",
+            "description": "tags to filter by",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "collectionFormat": "csv"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of results to return",
+            "required": false,
+            "type": "integer",
+            "format": "int32"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/pet"
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      },
+      "post": {
+        "description": "Creates a new pet in the store.  Duplicates are allowed",
+        "operationId": "addPet",
+        "produces": [
+          "application/json"
+        ],
+        "parameters": [
+          {
+            "name": "pet",
+            "in": "body",
+            "description": "Pet to add to the store",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/petInput"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "$ref": "#/definitions/pet"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      }
+    },
+    "/pets/{id}": {
+      "get": {
+        "description": "Returns a user based on a single ID, if the user does not have access to the pet",
+        "operationId": "findPetById",
+        "produces": [
+          "application/json",
+          "application/xml",
+          "text/xml",
+          "text/html"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to fetch",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "pet response",
+            "schema": {
+              "$ref": "#/definitions/pet"
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      },
+      "delete": {
+        "description": "deletes a single pet based on the ID supplied",
+        "operationId": "deletePet",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "ID of pet to delete",
+            "required": true,
+            "type": "integer",
+            "format": "int64"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "pet deleted"
+          },
+          "default": {
+            "description": "unexpected error",
+            "schema": {
+              "$ref": "#/definitions/errorModel"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "pet": {
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "name": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        }
+      }
+    },
+    "petInput": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/pet"
+        },
+        {
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "id": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        }
+      ]
+    },
+    "errorModel": {
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+```
+{{% /expand %}}
+
+Please check out [this page](https://swagger.io/resources/open-api/) for more info about the OpenAPI specifications.
