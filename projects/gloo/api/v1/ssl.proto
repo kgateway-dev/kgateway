@@ -63,7 +63,7 @@ message UpstreamSslConfig {
 
     SslParameters parameters = 7;
 
-    // Set Application Level Protocol Negotiation
+    // Set Application Level Protocol Negotiation.
     // If empty, it is not set.
     repeated string alpn_protocols = 8;
 }

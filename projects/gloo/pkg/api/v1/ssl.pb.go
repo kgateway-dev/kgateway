@@ -262,7 +262,7 @@ type UpstreamSslConfig struct {
 	// note that a root_ca must be provided if this option is used.
 	VerifySubjectAltName []string       `protobuf:"bytes,5,rep,name=verify_subject_alt_name,json=verifySubjectAltName,proto3" json:"verify_subject_alt_name,omitempty"`
 	Parameters           *SslParameters `protobuf:"bytes,7,opt,name=parameters,proto3" json:"parameters,omitempty"`
-	// Set Application Level Protocol Negotiation
+	// Set Application Level Protocol Negotiation.
 	// If empty, it is not set.
 	AlpnProtocols        []string `protobuf:"bytes,8,rep,name=alpn_protocols,json=alpnProtocols,proto3" json:"alpn_protocols,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

@@ -65,8 +65,7 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	if common.ValidationContextType != nil {
 		requireClientCert = &gogo_types.BoolValue{Value: true}
 	}
-	// show alpn for downstreams.
-	// placing it on upstreams maybe problematic if they do not expose alpn.
+	// default alpn for downstreams.
 	if len(common.AlpnProtocols) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
 	}
