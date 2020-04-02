@@ -144,7 +144,7 @@ kubectl port-forward -n gloo-system deployment/api-server 8081:8080
 ```
 
 If you open your browser and navigate to `localhost:8081`, you should see the Gloo Enterprise UI landing page:
-![GlooE UI]({{% versioned_link_path fromRoot="/guides/dev_portal/img/UI-landing-page.png" %}})
+![GlooE UI]({{% versioned_link_path fromRoot="/guides/dev_portal/img/ui-landing-page.png" %}})
 
 If the developer portal was successfully installed and your license key is valid you should see the "Dev Portal" link 
 in the top right corner of the screen. If you click on it, you will see the developer portal overview page. This page 
