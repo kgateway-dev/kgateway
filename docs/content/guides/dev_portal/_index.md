@@ -1,6 +1,6 @@
 ---
 title: "Developer Portal"
-weight: 60
+weight: 70
 description: Publish interactive documentation for your APIs
 ---
 
@@ -11,9 +11,6 @@ earlier version, this feature will not be available.
 
 In this guide we will see how to publish interactive documentation for your APIs and expose it to users via the 
 Gloo Enterprise developer portal.
-
-## Concepts
-// TODO: explain CRDs and general working of the dev portal components, maybe move later
 
 ## Initial setup
 Before we can start configuring our portal, we need to enable the developer portal feature in Gloo and configure our 
