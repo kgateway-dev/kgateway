@@ -123,7 +123,7 @@ spec:
               namespace: gloo-system
 ```
 
-We will come back and explain the reason behind the domain and the CORS configuration later on. TODO
+We will come back and explain the reason behind the domain and the CORS configuration [later in this guide](#note-on-cors).
 
 Let's verify that everything works as expected:
 
@@ -670,6 +670,11 @@ spec:
 
 Note that we also added `api-key` to the headers allowed by our CORS configuration. `api-key` is the name of the header 
 that Gloo inspects for an API key. The interactive documentation will send requests with that header to the service.
+
+###### Note on CORS
+We need the CORS configuration because the portal app is served from `localhost:1234`, but the interactive API document 
+sends requests to `localhost:8080`. Without it, the request violated the same-origin security policy. 
+The CORS configuration allows your browser and Gloo to validate the cross-origin request.
 
 ##### Update our OpenAPI document
 Next we need to update our API specification in order to account for the changes we just made, so let's go back to the 
