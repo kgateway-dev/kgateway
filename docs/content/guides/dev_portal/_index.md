@@ -194,7 +194,7 @@ to create the portal.
 
 ##### Result
 You should see the details of the portal we just created:
-![](img/created-portal-1.png)
+![](img/portal-details-1.png)
 
 ### Adding static pages to the portal
 A common feature of developer portals is to allow the administrator to add custom pages to the web application. We can 
