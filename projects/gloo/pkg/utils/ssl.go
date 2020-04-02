@@ -67,7 +67,6 @@ func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, 
 	}
 	// show alpn for downstreams.
 	// placing it on upstreams maybe problematic if they do not expose alpn.
-	common.AlpnProtocols = dc.AlpnProtocols
 	if len(common.AlpnProtocols) == 0 {
 		common.AlpnProtocols = []string{"h2", "http/1.1"}
 	}
@@ -83,6 +82,7 @@ type CertSource interface {
 	GetSds() *v1.SDSConfig
 	GetVerifySubjectAltName() []string
 	GetParameters() *v1.SslParameters
+	GetAlpnProtocols() []string
 }
 
 func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSource {
@@ -262,6 +262,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	var err error
 	tlsContext.TlsParams, err = convertTlsParams(cs)
 
+	tlsContext.AlpnProtocols = cs.GetAlpnProtocols()
 	return tlsContext, err
 }
 
