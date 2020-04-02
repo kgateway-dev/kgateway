@@ -556,7 +556,15 @@ an entry for our newly published API.
 TODO: image
 
 If you click on the document you can browse through all of the info that we included in our OpenAPI document above. 
-Let's try and query the "GET /pets" endpoint:
+
+Before we test our interactive document, we need to port forward the Gloo gateway proxy (which the document expects to 
+be listening at `localhost:8080`):
+
+```
+kubectl port-forward -n gloo-system deploy/gateway-proxy 8080
+```
+
+Now let's try and query the "GET /pets" endpoint:
 
 1. expand the endpoint entry
 2. click the "Try it out" button
@@ -592,8 +600,7 @@ Each secret generated for a given key scope will contain a label with the follow
 For example, given the resources we created up to this point, the secrets created for the above key scope will contain 
 the following label:
 
-TODO:
-`portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"`
+`portals.devportal.solo.io/gloo-system.pet-store.pet-key-scope: "true"`
 
 ##### Add API key auth to the API
 With the above information, we can go ahead and update our virtual service. First, let's create an API key `AuthConfig`:
@@ -609,7 +616,8 @@ spec:
   configs:
   - api_key_auth:
       label_selector:
-        portals.devportal.solo.io/<PORTA_NAMESPACE>.<PORTAL_NAME>.<KEY_SCOPE_NAME>: "true"
+        portals.devportal.solo.io/gloo-system.pet-store.pet-key-scope: "true"
+EOF
 ```
 
 This will allow any requests that provide an API key that is contained in a kubernetes secret that matches the given label.
@@ -652,8 +660,11 @@ Note that we also added `api-key` to the headers allowed by our CORS configurati
 that Gloo inspects for an API key. The interactive documentation will send requests with that header to the service.
 
 ##### Update our OpenAPI document
-Next we need to update our API specification in order to account for the changes we just made. In particular, we need to 
-add these attributes:
+Next we need to update our API specification in order to account for the changes we just made, so let's go back to the 
+details page for our API in the Gloo Enterprise UI. The UI provides an OpenAPI editor that we can use to update our 
+document. You can open it by clicking the "Open editor" button in the lower left corner. 
+
+We need to add these attributes too the root object:
 
 ```json
 {
@@ -682,6 +693,11 @@ It is important that the header name is `api-key`, otherwise Gloo will not be ab
 
 The `security` attribute lists the required security schemes to execute an operation. Since we define it at the root of 
 the document, it will apply to all operations.
+
+Please check out [this page](https://swagger.io/resources/open-api/) for more info about the OpenAPI specifications.
+
+After you have applied the changes, you can preview them by clicking "Update preview". If everything looks fine, 
+save the changes by clicking "Publish Changes".
 
 {{% expand "Click to see the complete updated document" %}}
 ```json
@@ -912,4 +928,17 @@ the document, it will apply to all operations.
 ```
 {{% /expand %}}
 
-Please check out [this page](https://swagger.io/resources/open-api/) for more info about the OpenAPI specifications.
+##### Test the updated doc
+Now that everything is in place, let's go back to the portal and open the interactive API doc. If you try querying the 
+same endpoint we tested earlier, you will now get a 401 Unauthorized response. This is Gloo rejecting the request 
+because it did not provide an API key.
+
+Now click on the user icon in the top right corner and select "API keys". This will open a page where the user can see 
+the key scopes that are available for the APIs they have access to. Click on "generate an API key" and confirm.
+
+You should see an API key appear in the key scope. CLick it to copy it to the clipboard and head back to the API document.
+
+Click the "Authorize" button (which is displayed now that we have added a `securityDefinition`), paste the API key into 
+the text field and confirm.
+
+Now try the endpoint again and it should work!
