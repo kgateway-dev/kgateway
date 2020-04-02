@@ -150,7 +150,7 @@ If the developer portal was successfully installed and your license key is valid
 in the top right corner of the screen. If you click on it, you will see the developer portal overview page. This page 
 presents a summary of the main developer portal resources (nothing interesting at this point, since we did not create 
 any resources yet).
-![Empty landing page](img/dev-portal-empty-landing.png)
+![Empty landing page]({{% versioned_link_path fromRoot="/guides/dev_portal/img/dev-portal-empty-landing.png" %}})
 
 ## Create a portal
 Let's start by creating a portal. From the overview page click on the "View Portals" link and then on the 
@@ -176,7 +176,7 @@ overlapping domain.
 We will set the domain to `localhost:1234`, as in this guide we will be port-forwarding the portal server to our local 
 machine.
 
-![](img/portal-wizard-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-wizard-1.png" %}})
 
 ##### Portal banner
 The next step will prompt us to upload a "hero" image. This is a large banner that will serve as a background for our 
@@ -194,7 +194,7 @@ to create the portal.
 
 ##### Result
 You should see the details of the portal we just created:
-![](img/portal-details-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-details-1.png" %}})
 
 ### Adding static pages to the portal
 A common feature of developer portals is to allow the administrator to add custom pages to the web application. We can 
@@ -202,7 +202,7 @@ do that by visiting the portal details page on the Gloo Enterprise UI again, sel
 part of the screen and clicking the "Add a Page" button. 
 The resulting form prompts us for the basic properties of a static portal page.
 
-![](img/static-page-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/static-page-1.png" %}})
 
 1. `Page Name`: the display name for this page
 2. `Page URL`: the URL at which this  page will be available
@@ -215,8 +215,10 @@ After submitting the form you should see that the static page has been added to 
 Let's click on the edit button in the "Actions" column of the "Pages" table. This will display an editor where you can 
 define the content of the page using markdown.
 
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/static-page-2.png" %}})
+
 You can preview the page by clicking the "Preview Changes" button.
-![](img/static-page-3.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/static-page-3.png" %}})
 
 When you are done, click "Publish changes" to publish the static page..
 
@@ -231,7 +233,7 @@ kubectl port-forward -n gloo-system deploy/dev-portal 1234:8080
 We are forwarding to port `1234` on localhost as this is the domain we configured on the portal earlier. If you now open 
 your browser and navigate to `localhost:1234` you should see the portal home page.
 
-![](img/portal-home-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-home-1.png" %}})
 
 Note the portal branding and the static markdown page we configured earlier.
 
@@ -251,7 +253,7 @@ This will display the group creation wizard.
 4. In the final step we can decide which portals the members of the group will have access to; let's select the portal we just created and submit the form.
 
 If everything went well you should see the details of the group.
-![](img/group-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/group-1.png" %}})
 
 #### Create a user
 Now let's add a user to the group by clicking on the "Create a User" button. This will display the user creation wizard.
@@ -267,14 +269,14 @@ we don't have any APIs yet, so let's skip this for now;
 3. The final step allows us the give the user direct access to a portal; we don't need this as we want the user to 
 have access through the group.
 
-![](img/user-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/user-1.png" %}})
 
 #### Log into the portal
 Now that we have created a user, let's go back to our portal at `localhost:1234` and click the login button in the top 
 right corner of the screen. Input the username and password for the user we just created and you will be prompted to 
 update your password. Choose a new password, submit the form and you will be logged into the portal.
 
-![](img/password-change.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/password-change.png" %}})
 
 If you click on the `APIs` tab in the navigation bar you will see that it no longer asks you to log in.
 Since we did not publish an API there is not much else we can do with the portal at this point, so let's go ahead and 
@@ -283,7 +285,7 @@ publish our first API!
 ## Publish an API
 In this section we will see how to publish interactive OpenAPI documentation to your portal.
 
-### Create an OpenAPI document for our service
+#### Create an OpenAPI document for our service
 Before we can publish an API, we need to create an OpenAPI document that describes the service it represents. 
 the document does not need to match the entirety of the endpoints exposes by your service. You can choose to 
 expose only a subset of the endpoints, for example if you want to expose just a part of a larger monolithic application. 
@@ -525,15 +527,14 @@ Please note the following two attributes in out document:
 - the `basePath` which we set to `/api`
 
 The interactive documentation for API that will be published in the portal will allow users to test the endpoints of the 
-API. These above attributes will determine the base of the address that the requests will be sent two, in this case:
+API. These above attributes will determine the base of the address that the requests will be sent to, in this case:
 
-```
-localhost:8080/api
-```
+`localhost:8080/api`
 
-Please save the above document to your local file system for the next step (you can download it [here](specs/petstore.json)).
+Please save the above document to your local file system for the next step 
+(you can download it [here]({{% versioned_link_path fromRoot="/guides/dev_portal/specs/petstore.json" %}})).
 
-### Create an API
+#### Create an API
 Let's go back to the Gloo Enterprise UI, and navigate to the "APIs" section of the developer portal screen. Click on the 
 "Create an API" button to display the API creation wizard.
 
@@ -549,17 +550,17 @@ and display some of the properties of the document, for example the display name
 of the screen you can see which groups and users are allowed to see this API (if it is published to a portal they have 
 access to).
 
-![](img/api-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/api-1.png" %}})
 
-### View and test the API
+#### View and test the API
 Let's go back to our portal at `localhost:1234` and click the "API" button in the navigation bar. You should now see 
 an entry for our newly published API.
 
-![](img/portal-api-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-1.png" %}})
 
 If you click on the document you can browse through all of the info that we included in our OpenAPI document above. 
 
-![](img/portal-api-2.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-2.png" %}})
 
 Before we test our interactive document, we need to port forward the Gloo gateway proxy (which the document expects to 
 be listening at `localhost:8080`):
@@ -576,9 +577,9 @@ Now let's try and query the "GET /pets" endpoint:
 
 You should see the response from the server in the "Server response" section.
 
-![](img/portal-api-3-no-auth-ok.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-3-no-auth-ok.png" %}})
 
-### Secure an API
+## Secure an API
 We were able to query the published API without providing any credentials, but in a real-world scenario access to the 
 API will most likely need to be secured. The Gloo Enterprise developer portal currently supports self-service for APIs 
 that are secured using API keys. It does so by leveraging the Gloo Enterprise 
@@ -586,7 +587,7 @@ that are secured using API keys. It does so by leveraging the Gloo Enterprise
 In the following sections we will see how to configure Gloo to allow users to generate API keys to send authenticated 
 requests via the interactive API document.
 
-##### Create a key scope
+#### Create a key scope
 An API key scope is a way of grouping APIs that share a common API key configuration within the context of a portal. 
 The portal server uses the key scope information to generate API key secrets. When a user requests an API key for a 
 particular key scope, the server will generate an API key secret that can be consumed by Gloo. 
@@ -595,7 +596,7 @@ This will become easier to understand after seeing a concrete example.
 Let's go back to the Gloo Enterprise UI, and navigate to the "API Key Scopes" section of the developer portal screen. 
 Click the "Create a Scope" button to open the API key scope creation wizard. 
 
-![](img/key-scope-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/key-scope-1.png" %}})
 
 You will need to provide:
 
@@ -603,7 +604,7 @@ You will need to provide:
 2. The portal the key scope belongs to
 3  The API(s) that share this key scope
 
-![](img/key-scope-2.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/key-scope-2.png" %}})
 
 Each secret generated for a given key scope will contain a label with the following format in its metadata:
 
@@ -614,7 +615,7 @@ the following label:
 
 `portals.devportal.solo.io/gloo-system.pet-store.pet-key-scope: "true"`
 
-##### Add API key auth to the API
+#### Add API key auth to the API
 With the above information, we can go ahead and update our virtual service. First, let's create an API key `AuthConfig`:
 
 ```
@@ -671,12 +672,12 @@ spec:
 Note that we also added `api-key` to the headers allowed by our CORS configuration. `api-key` is the name of the header 
 that Gloo inspects for an API key. The interactive documentation will send requests with that header to the service.
 
-###### Note on CORS
+##### Note on CORS
 We need the CORS configuration because the portal app is served from `localhost:1234`, but the interactive API document 
 sends requests to `localhost:8080`. Without it, the request violated the same-origin security policy. 
 The CORS configuration allows your browser and Gloo to validate the cross-origin request.
 
-##### Update our OpenAPI document
+#### Update our OpenAPI document
 Next we need to update our API specification in order to account for the changes we just made, so let's go back to the 
 details page for our API in the Gloo Enterprise UI. The UI provides an OpenAPI editor that we can use to update our 
 document. You can open it by clicking the "Open editor" button in the lower left corner. 
@@ -700,7 +701,7 @@ We need to add these attributes too the root object:
 }
 ```
 
-![](img/api-2-editor.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/api-2-editor.png" %}})
 
 The `securityDefinitions` object is a declaration of the security schemes available to be used in the specification. 
 This does not enforce the security schemes on the operations and only serves to provide the relevant details for each scheme.
@@ -947,28 +948,28 @@ save the changes by clicking "Publish Changes".
 ```
 {{% /expand %}}
 
-##### Test the updated doc
+#### Test the updated doc
 Now that everything is in place, let's go back to the portal and open the interactive API doc. If you try querying the 
 same endpoint we tested earlier, you will now get a 401 Unauthorized response. This is Gloo rejecting the request 
 because it did not provide an API key.
 
-![](img/portal-api-4-no-auth-ko.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-4-no-auth-ko.png" %}})
 
 Now click on the user icon in the top right corner and select "API keys". This will open a page where the user can see 
 the key scopes that are available for the APIs they have access to. 
 
-![](img/portal-key-scopes-1.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-key-scopes-1.png" %}})
 
 Click on "generate an API key" and confirm. You should see an API key appear in the key scope. 
 
-![](img/portal-key-scopes-2.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-key-scopes-2.png" %}})
 
 Click it to copy it to the clipboard and head back to the API document. 
 Click the "Authorize" button (which is displayed now that we have added a `securityDefinition`), paste the API key into 
 the text field and confirm.
 
-![](img/portal-api-5-auth-dialog.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-5-auth-dialog.png" %}})
 
 Now try the endpoint again and it should work!
 
-![](img/portal-api-6-auth-ok.png)
+![]({{% versioned_link_path fromRoot="/guides/dev_portal/img/portal-api-6-auth-ok.png" %}})
