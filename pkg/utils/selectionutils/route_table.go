@@ -7,11 +7,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	sk_errors "github.com/solo-io/solo-kit/pkg/errors"
-	"go.uber.org/zap"
 )
 
 type RouteTableSelector interface {
@@ -70,6 +68,5 @@ func (s *routeTableSelector) create(ctx context.Context, ref *core.ResourceRef) 
 		routeTable.Metadata.Name = "default"
 	}
 
-	contextutils.LoggerFrom(ctx).Infow("Created new default route table object", zap.Any("routeTable", routeTable))
 	return routeTable, nil
 }

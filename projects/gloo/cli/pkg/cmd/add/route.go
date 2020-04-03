@@ -117,6 +117,7 @@ func addRoute(opts *options.Options) error {
 			if err != nil {
 				return err
 			}
+			contextutils.LoggerFrom(opts.Top.Ctx).Infow("Created new default route table", zap.Any("routeTable", routeTable))
 		}
 
 		_ = printers.PrintRouteTables(gatewayv1.RouteTableList{routeTable}, opts.Top.Output)
