@@ -40,6 +40,12 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 	for _, addr := range clusterEndpoints {
 		metadata := getLbMetadata(upstream, addr.Metadata.Labels, "")
 		metadata = addAnnotations(metadata, addr.Metadata.Annotations)
+		var healthCheckConfig *envoyendpoints.Endpoint_HealthCheckConfig
+		if host := addr.GetHealthCheck().GetHostname(); host != "" {
+			healthCheckConfig = &envoyendpoints.Endpoint_HealthCheckConfig{
+				Hostname: host,
+			}
+		}
 		lbEndpoint := envoyendpoints.LbEndpoint{
 			Metadata: metadata,
 			HostIdentifier: &envoyendpoints.LbEndpoint_Endpoint{
@@ -55,10 +61,8 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 							},
 						},
 					},
-					HealthCheckConfig: &envoyendpoints.Endpoint_HealthCheckConfig{
-						Hostname: addr.GetHealthCheck().GetHostname(),
-					},
-					Hostname: addr.GetHostname(),
+					HealthCheckConfig: healthCheckConfig,
+					Hostname:          addr.GetHostname(),
 				},
 			},
 		}

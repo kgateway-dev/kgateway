@@ -686,10 +686,11 @@ var _ = Describe("Consul EDS", func() {
 					},
 					ResourceVersion: "9876",
 				},
-				Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
-				Address:   "127.0.0.1",
-				Port:      1234,
-				Hostname:  "hostname.foo.com",
+				Upstreams:   []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
+				Address:     "127.0.0.1",
+				Port:        1234,
+				Hostname:    "hostname.foo.com",
+				HealthCheck: &v1.HealthCheckConfig{Hostname: "hostname.foo.com"},
 			}))
 		})
 
@@ -729,6 +730,11 @@ func createTestService(address, dc, name, id string, tags []string, port int, la
 }
 
 func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
+	var healthCheckConfig *v1.HealthCheckConfig
+	if hostname != "" {
+		healthCheckConfig = &v1.HealthCheckConfig{Hostname: hostname}
+	}
+
 	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       ns,
@@ -737,9 +743,10 @@ func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns strin
 			ResourceVersion: version,
 		},
 
-		Address:  ipAddress,
-		Port:     port,
-		Hostname: hostname,
+		Address:     ipAddress,
+		Port:        port,
+		Hostname:    hostname,
+		HealthCheck: healthCheckConfig,
 	}
 
 	for _, svc := range strings.Split(usname, ",") {
