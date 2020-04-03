@@ -31,7 +31,7 @@ func NewRouteTableSelector(client gatewayv1.RouteTableClient, podNamespace strin
 }
 
 func (s *routeTableSelector) SelectOrBuildRouteTable(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
-	// Read or create route table
+	// Read or build route table
 	// unlike virtual service, name must be provided as there is no "default" virtual service
 	name := ref.GetName()
 	if name == "" {
@@ -50,7 +50,7 @@ func (s *routeTableSelector) SelectOrBuildRouteTable(ctx context.Context, ref *c
 		return found, nil
 	}
 
-	// Create a new default route table object
+	// Build a new default route table object
 	return s.build(ctx, ref)
 }
 

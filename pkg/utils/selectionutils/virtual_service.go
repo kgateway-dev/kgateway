@@ -71,7 +71,7 @@ func (s *virtualServiceSelector) SelectOrBuildVirtualService(ctx context.Context
 		}
 	}
 
-	// Create a new default virtual service object
+	// Build a new default virtual service object
 	return s.build(ctx, ref)
 }
 
