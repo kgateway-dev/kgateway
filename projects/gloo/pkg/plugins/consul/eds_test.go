@@ -109,7 +109,7 @@ var _ = Describe("Consul EDS", func() {
 				}).Times(3) // once for each datacenter
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
-				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+				createExpectedEndpoint(buildEndpointName("2.1.0.10", testService), svc1, testService.Address, "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     yes,
@@ -120,7 +120,7 @@ var _ = Describe("Consul EDS", func() {
 			}
 
 			expectedEndpointsSecondAttempt = v1.EndpointList{
-				createExpectedEndpoint(buildEndpointName("2.1.0.11", testService), svc1, "2.1.0.11", "100", writeNamespace, 3456, map[string]string{
+				createExpectedEndpoint(buildEndpointName("2.1.0.11", testService), svc1, testService.Address, "2.1.0.11", "100", writeNamespace, 3456, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     yes,
@@ -166,11 +166,11 @@ var _ = Describe("Consul EDS", func() {
 
 			// Simulate the initial read when starting watch
 			serviceMetaProducer <- consulServiceSnapshot
-			// use select instead of eventually for easier debuging.
+			// use select instead of eventually for easier debugging.
 			select {
 			case err := <-errorChan:
 				Expect(err).NotTo(HaveOccurred())
-				Fail("err chan closed prematurly")
+				Fail("err chan closed prematurely")
 			case endpointsReceived := <-endpointsChan:
 				Expect(endpointsReceived).To(matchers.BeEquivalentToDiff(expectedEndpointsFirstAttempt))
 			case <-time.After(time.Second):
@@ -324,7 +324,7 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsFirstAttempt = v1.EndpointList{
 				// 5 endpoints for service 1
-				createExpectedEndpoint("1-1-0-1-svc-1-a-1234", "svc-1,svc-1primary", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
+				createExpectedEndpoint("1-1-0-1-svc-1-a-1234", "svc-1,svc-1primary", "", "1.1.0.1", "100", writeNamespace, 1234, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     no,
@@ -332,7 +332,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: no,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint("1-1-0-2-svc-1-b-1234", "svc-1,svc-1primary", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
+				createExpectedEndpoint("1-1-0-2-svc-1-b-1234", "svc-1,svc-1primary", "", "1.1.0.2", "100", writeNamespace, 1234, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     no,
@@ -340,7 +340,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: no,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint("2-1-0-10-svc-1-c-3456", "svc-1,svc-1secondary", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
+				createExpectedEndpoint("2-1-0-10-svc-1-c-3456", "svc-1,svc-1secondary", "", "2.1.0.10", "100", writeNamespace, 3456, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     no,
@@ -348,7 +348,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint("2-1-0-11-svc-1-d-4567", "svc-1,svc-1secondary", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
+				createExpectedEndpoint("2-1-0-11-svc-1-d-4567", "svc-1,svc-1secondary", "", "2.1.0.11", "100", writeNamespace, 4567, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     no,
@@ -356,7 +356,7 @@ var _ = Describe("Consul EDS", func() {
 					ConsulDataCenterKeyPrefix + dc2: yes,
 					ConsulDataCenterKeyPrefix + dc3: no,
 				}),
-				createExpectedEndpoint("3-1-0-99-svc-1-e-9999", "svc-1,svc-1secondary,svc-1canary", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
+				createExpectedEndpoint("3-1-0-99-svc-1-e-9999", "svc-1,svc-1secondary,svc-1canary", "", "3.1.0.99", "100", writeNamespace, 9999, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulTagKeyPrefix + canary:     yes,
@@ -366,25 +366,25 @@ var _ = Describe("Consul EDS", func() {
 				}),
 
 				// 4 endpoints for service 2
-				createExpectedEndpoint("1-2-0-1-svc-2-a2-8080", "svc-2primary", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
+				createExpectedEndpoint("1-2-0-1-svc-2-a2-8080", "svc-2primary", "", "1.2.0.1", "100", writeNamespace, 8080, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulDataCenterKeyPrefix + dc1: yes,
 					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint("1-2-0-2-svc-2-b2-8080", "svc-2primary", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
+				createExpectedEndpoint("1-2-0-2-svc-2-b2-8080", "svc-2primary", "", "1.2.0.2", "100", writeNamespace, 8080, map[string]string{
 					ConsulTagKeyPrefix + primary:    yes,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulDataCenterKeyPrefix + dc1: yes,
 					ConsulDataCenterKeyPrefix + dc2: no,
 				}),
-				createExpectedEndpoint("2-2-0-10-svc-2-c2-8088", "svc-2secondary", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
+				createExpectedEndpoint("2-2-0-10-svc-2-c2-8088", "svc-2secondary", "", "2.2.0.10", "100", writeNamespace, 8088, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
 					ConsulDataCenterKeyPrefix + dc2: yes,
 				}),
-				createExpectedEndpoint("2-2-0-11-svc-2-d2-8088", "svc-2secondary", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
+				createExpectedEndpoint("2-2-0-11-svc-2-d2-8088", "svc-2secondary", "", "2.2.0.11", "100", writeNamespace, 8088, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  yes,
 					ConsulDataCenterKeyPrefix + dc1: no,
@@ -399,7 +399,7 @@ var _ = Describe("Consul EDS", func() {
 
 			expectedEndpointsSecondAttempt = append(
 				expectedEndpointsFirstAttempt.Clone(),
-				createExpectedEndpoint("3-1-0-3-svc-1-e1-1234", "svc-1,svc-1canary", "3.1.0.3", "100", writeNamespace, 1234, map[string]string{
+				createExpectedEndpoint("3-1-0-3-svc-1-e1-1234", "svc-1,svc-1canary", "", "3.1.0.3", "100", writeNamespace, 1234, map[string]string{
 					ConsulTagKeyPrefix + primary:    no,
 					ConsulTagKeyPrefix + secondary:  no,
 					ConsulTagKeyPrefix + canary:     yes,
@@ -728,7 +728,7 @@ func createTestService(address, dc, name, id string, tags []string, port int, la
 	}
 }
 
-func createExpectedEndpoint(name, usname, address, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
+func createExpectedEndpoint(name, usname, hostname, ipAddress, version, ns string, port uint32, labels map[string]string) *v1.Endpoint {
 	ep := &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       ns,
@@ -737,8 +737,9 @@ func createExpectedEndpoint(name, usname, address, version, ns string, port uint
 			ResourceVersion: version,
 		},
 
-		Address: address,
-		Port:    port,
+		Address:  ipAddress,
+		Port:     port,
+		Hostname: hostname,
 	}
 
 	for _, svc := range strings.Split(usname, ",") {
