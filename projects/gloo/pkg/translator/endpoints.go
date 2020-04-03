@@ -55,6 +55,9 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 							},
 						},
 					},
+					HealthCheckConfig: &envoyendpoints.Endpoint_HealthCheckConfig{
+						Hostname: addr.GetHealthCheck().GetHostname(),
+					},
 					Hostname: addr.GetHostname(),
 				},
 			},

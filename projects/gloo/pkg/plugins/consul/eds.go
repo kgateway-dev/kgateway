@@ -296,6 +296,7 @@ func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) (
 func buildEndpoint(namespace, address, ipAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
 	hostname := ""
 	if address != ipAddress {
+		// we don't want to override the hostname if we didn't resolve the address
 		hostname = address
 	}
 	return &v1.Endpoint{
@@ -308,7 +309,10 @@ func buildEndpoint(namespace, address, ipAddress string, service *consulapi.Cata
 		Upstreams: toResourceRefs(upstreams, service.ServiceTags),
 		Address:   ipAddress,
 		Port:      uint32(service.ServicePort),
-		Hostname:  hostname, // we don't want to override the hostname if we didn't resolve the address
+		Hostname:  hostname,
+		HealthCheck: &v1.HealthCheckConfig{
+			Hostname: hostname,
+		},
 	}
 }
 
