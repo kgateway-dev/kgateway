@@ -689,10 +689,9 @@ var _ = Describe("Consul EDS", func() {
 				Upstreams: []*core.ResourceRef{utils.ResourceRefPtr(upstream.Metadata.Ref())},
 				Address:   "127.0.0.1",
 				Port:      1234,
-				Hostname: "hostname.foo.com",
+				Hostname:  "hostname.foo.com",
 			}))
 		})
-
 
 	})
 })
