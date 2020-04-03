@@ -1939,6 +1939,7 @@ metadata:
 					ingressProxyService.Spec.Type = v1.ServiceTypeNodePort
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
+							"ingress.enabled=true",
 							"ingressProxy.service.type=NodePort",
 						},
 					})
