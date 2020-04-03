@@ -68,7 +68,7 @@ kubectl label namespace default istio-injection=enabled
 
 To install the bookinfo sample app, cd into your downloaded Istio directory and run this command:
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.5.1/samples/bookinfo/platform/kube/bookinfo.yaml
+kubectl apply -f samples/bookinfo/platform/kube/bookinfo.yaml
 ```
 
 ---
