@@ -51,10 +51,10 @@ func (s *routeTableSelector) SelectOrBuildRouteTable(ctx context.Context, ref *c
 	}
 
 	// Create a new default route table object
-	return s.create(ctx, ref)
+	return s.build(ctx, ref)
 }
 
-func (s *routeTableSelector) create(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
+func (s *routeTableSelector) build(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
 	routeTable := &gatewayv1.RouteTable{
 		Metadata: core.Metadata{
 			Namespace: ref.GetNamespace(),
