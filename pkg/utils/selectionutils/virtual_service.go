@@ -15,7 +15,7 @@ import (
 //go:generate mockgen -destination mocks/mock_virtual_service.go -package mocks github.com/solo-io/gloo/pkg/utils/selectionutils VirtualServiceSelector
 
 type VirtualServiceSelector interface {
-	SelectOrCreateVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)
+	SelectOrBuildVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error)
 }
 
 type virtualServiceSelector struct {
@@ -34,8 +34,8 @@ func NewVirtualServiceSelector(client gatewayv1.VirtualServiceClient, namespaceL
 	}
 }
 
-func (s *virtualServiceSelector) SelectOrCreateVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
-	// Read or create virtual service as specified
+func (s *virtualServiceSelector) SelectOrBuildVirtualService(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
+	// Read or build virtual service as specified
 	if ref.GetNamespace() != "" && ref.GetName() != "" {
 		found, err := s.client.Read(ref.GetNamespace(), ref.GetName(), clients.ReadOpts{Ctx: ctx})
 		if err != nil && !sk_errors.IsNotExist(err) {
@@ -48,7 +48,7 @@ func (s *virtualServiceSelector) SelectOrCreateVirtualService(ctx context.Contex
 
 	// Create a new default virtual service with the given name
 	if ref.GetName() != "" {
-		return s.create(ctx, ref)
+		return s.build(ctx, ref)
 	}
 
 	// Look for an existing virtual service with * domain
@@ -72,10 +72,10 @@ func (s *virtualServiceSelector) SelectOrCreateVirtualService(ctx context.Contex
 	}
 
 	// Create a new default virtual service object
-	return s.create(ctx, ref)
+	return s.build(ctx, ref)
 }
 
-func (s *virtualServiceSelector) create(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
+func (s *virtualServiceSelector) build(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.VirtualService, error) {
 	virtualService := &gatewayv1.VirtualService{
 		Metadata: core.Metadata{
 			Namespace: ref.GetNamespace(),
@@ -92,6 +92,5 @@ func (s *virtualServiceSelector) create(ctx context.Context, ref *core.ResourceR
 		virtualService.Metadata.Name = "default"
 	}
 
-	contextutils.LoggerFrom(ctx).Infow("Created new default virtual service object", zap.Any("virtualService", virtualService))
 	return virtualService, nil
 }

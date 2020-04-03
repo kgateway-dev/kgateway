@@ -15,7 +15,7 @@ import (
 )
 
 type RouteTableSelector interface {
-	SelectOrCreateRouteTable(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error)
+	SelectOrBuildRouteTable(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error)
 }
 
 type routeTableSelector struct {
@@ -32,7 +32,7 @@ func NewRouteTableSelector(client gatewayv1.RouteTableClient, podNamespace strin
 	}
 }
 
-func (s *routeTableSelector) SelectOrCreateRouteTable(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
+func (s *routeTableSelector) SelectOrBuildRouteTable(ctx context.Context, ref *core.ResourceRef) (*gatewayv1.RouteTable, error) {
 	// Read or create route table
 	// unlike virtual service, name must be provided as there is no "default" virtual service
 	name := ref.GetName()
