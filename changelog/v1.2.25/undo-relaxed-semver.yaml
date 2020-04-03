@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Undo relaxed semver validation, to ensure we don't add new features to our stable branch.
