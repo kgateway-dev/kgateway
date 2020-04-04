@@ -224,8 +224,9 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
-  // identify all valid apikey secrets using the provided label selector.
-  // apikey secrets must be in gloo's watch namespaces for gloo to locate them
+  // identify all valid apikey secrets using the provided label selector.<br/>
+  // apikey secrets must be in gloo's watch namespaces for gloo to locate them.<br/>
+  // **These are labels on the apikey secret's metadata, not the 'labels' field of the `ApiKeySecret`**
   map<string, string> label_selector = 1;
   // a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector
   repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
@@ -236,8 +237,9 @@ message ApiKeySecret {
   bool generate_api_key = 1;
   // if present, use the provided apikey
   string api_key = 2;
-  // a list of labels (key=value) for the apikey secret.
-  // virtual services may look for these labels using a provided label selector
+  // a list of labels (key=value) for the apikey secret.<br/>
+  // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata
+  // of the created secret.
   repeated string labels = 3;
 }
 
@@ -328,8 +330,11 @@ message ExtAuthConfig {
 
   }
 
+  // **NOTE: This configuration is not user-facing and will be auto generated**
   message ApiKeyAuthConfig {
-    // a map of valid apikeys to their associated plaintext users.
+    // A mapping of valid apikeys to their associated plaintext users.
+    // This map is automatically populated with the relevant `ApiKeySecret`s.
+    // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
     map<string, string> valid_api_key_and_user = 1;
   }
 

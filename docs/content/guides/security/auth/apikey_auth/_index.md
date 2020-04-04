@@ -23,10 +23,12 @@ rotation is up to the user, thus the security of the routes is up to the user.
 
 To secure your services using API keys, you first need to provide Gloo with your secret API keys in the form of `Secrets`. After your API key secrets are in place, you can configure authentication on your Virtual Services by referencing the secrets in one of two ways:
 
-1. you can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
-1. you can **explicitly reference** a set of secrets by their identifier (namespace and name).
+1. You can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
+1. You can **explicitly reference** a set of secrets by their identifier (namespace and name).
 
 When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the `api-key` header. If the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
+
+Internally, Gloo will generate a mapping of API keys to _user identities_ for all API keys present in the system. The _user identity_ for a given API key is the name of the `Secret` which contains the API key. The _user identity_ will be added to the request as a header, `x-user-id` by default, which can be utilized in subsequent filters. This header is then sanitized from the response.
 
 Be sure to check the external auth [configuration overview]({{< versioned_link_path fromRoot="/guides/security/auth#auth-configuration-overview" >}}) for detailed information about how authentication is configured on Virtual Services.
 

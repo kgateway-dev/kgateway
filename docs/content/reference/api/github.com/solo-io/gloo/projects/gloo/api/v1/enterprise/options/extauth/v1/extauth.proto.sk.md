@@ -386,7 +386,7 @@ This is used with custom auth servers.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `labelSelector` | `map<string, string>` | identify all valid apikey secrets using the provided label selector. apikey secrets must be in gloo's watch namespaces for gloo to locate them. |  |
+| `labelSelector` | `map<string, string>` | identify all valid apikey secrets using the provided label selector.<br/> apikey secrets must be in gloo's watch namespaces for gloo to locate them.<br/> **These are labels on the apikey secret's metadata, not the 'labels' field of the `ApiKeySecret`**. |  |
 | `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector. |  |
 
 
@@ -408,7 +408,7 @@ This is used with custom auth servers.
 | ----- | ---- | ----------- |----------- | 
 | `generateApiKey` | `bool` | if true, generate an apikey. |  |
 | `apiKey` | `string` | if present, use the provided apikey. |  |
-| `labels` | `[]string` | a list of labels (key=value) for the apikey secret. virtual services may look for these labels using a provided label selector. |  |
+| `labels` | `[]string` | a list of labels (key=value) for the apikey secret.<br/> These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret. |  |
 
 
 
@@ -535,7 +535,8 @@ is requested (meaning that all the polled connections are in use), the connectio
 ---
 ### ApiKeyAuthConfig
 
-
+ 
+**NOTE: This configuration is not user-facing and will be auto generated**
 
 ```yaml
 "validApiKeyAndUser": map<string, string>
@@ -544,7 +545,7 @@ is requested (meaning that all the polled connections are in use), the connectio
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `validApiKeyAndUser` | `map<string, string>` | a map of valid apikeys to their associated plaintext users. |  |
+| `validApiKeyAndUser` | `map<string, string>` | A mapping of valid apikeys to their associated plaintext users. This map is automatically populated with the relevant `ApiKeySecret`s. The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |  |
 
 
 

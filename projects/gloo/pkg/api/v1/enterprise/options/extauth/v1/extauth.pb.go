@@ -1031,8 +1031,9 @@ func (m *OauthSecret) GetClientSecret() string {
 }
 
 type ApiKeyAuth struct {
-	// identify all valid apikey secrets using the provided label selector.
-	// apikey secrets must be in gloo's watch namespaces for gloo to locate them
+	// identify all valid apikey secrets using the provided label selector.<br/>
+	// apikey secrets must be in gloo's watch namespaces for gloo to locate them.<br/>
+	// **These are labels on the apikey secret's metadata, not the 'labels' field of the `ApiKeySecret`**
 	LabelSelector map[string]string `protobuf:"bytes,1,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector
 	ApiKeySecretRefs     []*core.ResourceRef `protobuf:"bytes,2,rep,name=api_key_secret_refs,json=apiKeySecretRefs,proto3" json:"api_key_secret_refs,omitempty"`
@@ -1084,8 +1085,9 @@ type ApiKeySecret struct {
 	GenerateApiKey bool `protobuf:"varint,1,opt,name=generate_api_key,json=generateApiKey,proto3" json:"generate_api_key,omitempty"`
 	// if present, use the provided apikey
 	ApiKey string `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
-	// a list of labels (key=value) for the apikey secret.
-	// virtual services may look for these labels using a provided label selector
+	// a list of labels (key=value) for the apikey secret.<br/>
+	// These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata
+	// of the created secret.
 	Labels               []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -1472,8 +1474,11 @@ func (m *ExtAuthConfig_OAuthConfig) GetScopes() []string {
 	return nil
 }
 
+// **NOTE: This configuration is not user-facing and will be auto generated**
 type ExtAuthConfig_ApiKeyAuthConfig struct {
-	// a map of valid apikeys to their associated plaintext users.
+	// A mapping of valid apikeys to their associated plaintext users.
+	// This map is automatically populated with the relevant `ApiKeySecret`s.
+	// The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
 	ValidApiKeyAndUser   map[string]string `protobuf:"bytes,1,rep,name=valid_api_key_and_user,json=validApiKeyAndUser,proto3" json:"valid_api_key_and_user,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
