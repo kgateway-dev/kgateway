@@ -12,6 +12,7 @@ weight: 5
 
 
 - [Endpoint](#endpoint) **Top-Level Resource**
+- [HealthCheckConfig](#healthcheckconfig)
   
 
 
@@ -32,6 +33,8 @@ Endpoints represent dynamically discovered address/ports where an upstream servi
 "upstreams": []core.solo.io.ResourceRef
 "address": string
 "port": int
+"hostname": string
+"healthCheck": .gloo.solo.io.HealthCheckConfig
 "metadata": .core.solo.io.Metadata
 
 ```
@@ -41,7 +44,26 @@ Endpoints represent dynamically discovered address/ports where an upstream servi
 | `upstreams` | [[]core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | List of the upstreams the endpoint belongs to. |  |
 | `address` | `string` | Address of the endpoint (ip or hostname). |  |
 | `port` | `int` | listening port for the endpoint. |  |
+| `hostname` | `string` | hostname to use for the endpoint (e.g., auto host rewrite) if provided. |  |
+| `healthCheck` | [.gloo.solo.io.HealthCheckConfig](../endpoint.proto.sk/#healthcheckconfig) | configuration for health checking the endpoint. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
+
+
+
+
+---
+### HealthCheckConfig
+
+
+
+```yaml
+"hostname": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `hostname` | `string` | hostname to use for the endpoint health checks if provided. |  |
 
 
 

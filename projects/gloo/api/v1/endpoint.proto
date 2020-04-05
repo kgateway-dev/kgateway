@@ -27,6 +27,17 @@ message Endpoint {
     // listening port for the endpoint
     uint32 port = 3;
 
+    // hostname to use for the endpoint (e.g., auto host rewrite) if provided.
+    string hostname = 4;
+
+    // configuration for health checking the endpoint.
+    HealthCheckConfig health_check = 5;
+
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
+}
+
+message HealthCheckConfig {
+    // hostname to use for the endpoint health checks if provided.
+    string hostname = 1;
 }
