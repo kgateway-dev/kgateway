@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    description: >-
+      Allow users to override the Service type as an alternative to
+      Load Balancer for Ingress Proxy and Knative
+    issueLink: https://github.com/solo-io/gloo/pull/2683

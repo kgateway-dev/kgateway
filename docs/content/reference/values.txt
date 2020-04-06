@@ -38,6 +38,8 @@
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.name|string|||
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.key|string|||
 |settings.integrations.knative.proxy.customEnv[].valueFrom.secretKeyRef.optional|bool|||
+|settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
+|settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
@@ -376,7 +378,6 @@
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.key|string|||
 |ingress.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''|
-|ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |ingressProxy.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -412,6 +413,8 @@
 |ingressProxy.deployment.customEnv[].valueFrom.secretKeyRef.optional|bool|||
 |ingressProxy.configMap.data.NAME|string|||
 |ingressProxy.tracing|string|||
+|ingressProxy.service.type|string|LoadBalancer|K8s service type|
+|ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
 |accessLogger.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |accessLogger.image.repository|string|access-logger|image name (repository) for the container.|

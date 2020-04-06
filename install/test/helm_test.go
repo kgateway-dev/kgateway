@@ -1935,6 +1935,17 @@ metadata:
 					testManifest.ExpectService(ingressProxyService)
 				})
 
+				It("sets type", func() {
+					ingressProxyService.Spec.Type = v1.ServiceTypeNodePort
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"ingress.enabled=true",
+							"ingressProxy.service.type=NodePort",
+						},
+					})
+					testManifest.ExpectService(ingressProxyService)
+				})
+
 			})
 
 			Describe("merge ingress and gateway", func() {

@@ -25,5 +25,5 @@ spec:
     name: https
   selector:
     gloo: ingress-proxy
-  type: LoadBalancer
+  type: {{ .Values.ingressProxy.service.type }}
 {{- end }}
