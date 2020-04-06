@@ -45,6 +45,10 @@ func init() {
 		"virtualservices.gateway.solo.io",
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
+		"apidocs.devportal.solo.io",
+		"groups.devportal.solo.io",
+		"portals.devportal.solo.io",
+		"users.devportal.solo.io",
 	}
 
 }

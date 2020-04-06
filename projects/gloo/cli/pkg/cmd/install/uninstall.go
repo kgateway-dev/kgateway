@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -56,6 +57,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		return err
 	}
 
+	var crdNames []string
 	_, _ = fmt.Fprintf(u.output, "Removing Gloo system components from namespace %s...\n", namespace)
 	if releaseExists {
 
@@ -68,12 +70,11 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
 			// Helm never deletes CRDs, so we collect the CRD names to delete them ourselves if need be.
 			// We need to run this first, as it depends on the release still being present.
-			crdNames, err := u.findCrdNamesForRelease(namespace)
+			// But we need to uninstall the release before we delete the CRDs.
+			crdNames, err = u.findCrdNamesForRelease(namespace)
 			if err != nil {
 				return err
 			}
-
-			u.deleteGlooCrds(crdNames)
 		}
 
 		if _, err = uninstallAction.Run(releaseName); err != nil {
@@ -106,7 +107,10 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 
 	// delete our hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
-		u.deleteGlooCrds(GlooCrdNames)
+		if len(crdNames) == 0 {
+			crdNames = GlooCrdNames
+		}
+		u.deleteGlooCrds(crdNames)
 	}
 
 	if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
@@ -151,10 +155,23 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) {
 		return
 	}
 
+	// Put all crds in map for quick lookup
+	crdNamesFound := make(map[string]struct{}, 0)
+	output, err := u.kubeCli.KubectlOut(nil, "get", "crds", "-o", "name")
+	// if we couldn't check for CRDs, just attempt to delete them
+	if err == nil {
+		crdNamesList := strings.Split(string(output), "\n")
+		for _, name := range crdNamesList {
+			crdNamesFound[strings.TrimPrefix(name, "customresourcedefinition.apiextensions.k8s.io/")] = struct{}{}
+		}
+	}
+
 	_, _ = fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
 	for _, crdName := range crdNames {
-		args = append(args, crdName)
+		if _, ok := crdNamesFound[crdName]; ok { // add crdName to delete command only if crd is present
+			args = append(args, crdName)
+		}
 	}
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
 		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
