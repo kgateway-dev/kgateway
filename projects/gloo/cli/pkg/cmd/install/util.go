@@ -11,8 +11,6 @@ var (
 	GlooCrdNames           []string
 
 	GlooComponentLabels map[string]string
-
-	KnativeCrdNames []string
 )
 
 func init() {
@@ -47,19 +45,6 @@ func init() {
 		"virtualservices.gateway.solo.io",
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
-	}
-
-	KnativeCrdNames = []string{
-		"virtualservices.networking.istio.io",
-		"certificates.networking.internal.knative.dev",
-		"clusteringresses.networking.internal.knative.dev",
-		"configurations.serving.knative.dev",
-		"images.caching.internal.knative.dev",
-		"podautoscalers.autoscaling.internal.knative.dev",
-		"revisions.serving.knative.dev",
-		"routes.serving.knative.dev",
-		"services.serving.knative.dev",
-		"serverlessservices.networking.internal.knative.dev",
 	}
 
 }

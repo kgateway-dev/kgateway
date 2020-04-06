@@ -73,10 +73,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 				return err
 			}
 
-			err = u.deleteGlooCrds(crdNames)
-			if err != nil {
-				return err
-			}
+			u.deleteGlooCrds(crdNames)
 		}
 
 		if _, err = uninstallAction.Run(releaseName); err != nil {
@@ -109,10 +106,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 
 	// delete our hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
-		err := u.deleteGlooCrds(GlooCrdNames)
-		if err != nil {
-			return err
-		}
+		u.deleteGlooCrds(GlooCrdNames)
 	}
 
 	if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
@@ -152,9 +146,9 @@ func (u *uninstaller) findCrdNamesForRelease(namespace string) (crdNames []strin
 }
 
 // expects the Helm release to still be present
-func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
+func (u *uninstaller) deleteGlooCrds(crdNames []string) {
 	if len(crdNames) == 0 {
-		return nil
+		return
 	}
 
 	_, _ = fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
@@ -165,8 +159,6 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) error {
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
 		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")
 	}
-
-	return nil
 }
 
 func (u *uninstaller) deleteNamespace(namespace string) {
