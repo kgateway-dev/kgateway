@@ -561,7 +561,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/api/http.proto.sk/#HttpRule
     package: google.api
   google.protobuf.Any:
-    relativepath: reference/api/google/protobuf/any.proto.sk/#Any
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/any.proto.sk/#Any
     package: google.protobuf
   google.protobuf.BoolValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#BoolValue
@@ -570,7 +570,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#BytesValue
     package: google.protobuf
   google.protobuf.DescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#DescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#DescriptorProto
     package: google.protobuf
   google.protobuf.DoubleValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#DoubleValue
@@ -582,40 +582,37 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/empty.proto.sk/#Empty
     package: google.protobuf
   google.protobuf.EnumDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#EnumDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#EnumDescriptorProto
     package: google.protobuf
   google.protobuf.EnumOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#EnumOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#EnumOptions
     package: google.protobuf
   google.protobuf.EnumValueDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#EnumValueDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#EnumValueDescriptorProto
     package: google.protobuf
   google.protobuf.EnumValueOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#EnumValueOptions
-    package: google.protobuf
-  google.protobuf.ExtensionRangeOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#ExtensionRangeOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#EnumValueOptions
     package: google.protobuf
   google.protobuf.FieldDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#FieldDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#FieldDescriptorProto
     package: google.protobuf
   google.protobuf.FieldOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#FieldOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#FieldOptions
     package: google.protobuf
   google.protobuf.FileDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#FileDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#FileDescriptorProto
     package: google.protobuf
   google.protobuf.FileDescriptorSet:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#FileDescriptorSet
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#FileDescriptorSet
     package: google.protobuf
   google.protobuf.FileOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#FileOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#FileOptions
     package: google.protobuf
   google.protobuf.FloatValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#FloatValue
     package: google.protobuf
   google.protobuf.GeneratedCodeInfo:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#GeneratedCodeInfo
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#GeneratedCodeInfo
     package: google.protobuf
   google.protobuf.Int32Value:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#Int32Value
@@ -627,28 +624,28 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/struct.proto.sk/#ListValue
     package: google.protobuf
   google.protobuf.MessageOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#MessageOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#MessageOptions
     package: google.protobuf
   google.protobuf.MethodDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#MethodDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#MethodDescriptorProto
     package: google.protobuf
   google.protobuf.MethodOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#MethodOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#MethodOptions
     package: google.protobuf
   google.protobuf.OneofDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#OneofDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#OneofDescriptorProto
     package: google.protobuf
   google.protobuf.OneofOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#OneofOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#OneofOptions
     package: google.protobuf
   google.protobuf.ServiceDescriptorProto:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#ServiceDescriptorProto
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#ServiceDescriptorProto
     package: google.protobuf
   google.protobuf.ServiceOptions:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#ServiceOptions
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#ServiceOptions
     package: google.protobuf
   google.protobuf.SourceCodeInfo:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#SourceCodeInfo
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#SourceCodeInfo
     package: google.protobuf
   google.protobuf.StringValue:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#StringValue
@@ -657,7 +654,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/struct.proto.sk/#Struct
     package: google.protobuf
   google.protobuf.Timestamp:
-    relativepath: reference/api/google/protobuf/timestamp.proto.sk/#Timestamp
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/timestamp.proto.sk/#Timestamp
     package: google.protobuf
   google.protobuf.UInt32Value:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#UInt32Value
@@ -666,7 +663,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/wrappers.proto.sk/#UInt64Value
     package: google.protobuf
   google.protobuf.UninterpretedOption:
-    relativepath: reference/api/google/protobuf/descriptor.proto.sk/#UninterpretedOption
+    relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/descriptor.proto.sk/#UninterpretedOption
     package: google.protobuf
   google.protobuf.Value:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/external/google/protobuf/struct.proto.sk/#Value
