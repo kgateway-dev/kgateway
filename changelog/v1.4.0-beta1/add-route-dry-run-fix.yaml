@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix `glooctl add route` so that the --dry-run flag does not create a route table or virtual service.
+    issueLink: https://github.com/solo-io/gloo/issues/2715

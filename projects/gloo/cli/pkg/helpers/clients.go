@@ -174,6 +174,18 @@ func (namespaceLister) List() ([]string, error) {
 	return GetNamespaces()
 }
 
+type providedNamespaceLister struct {
+	namespaces []string
+}
+
+func NewProvidedNamespaceLister(namespaces []string) listers.NamespaceLister {
+	return providedNamespaceLister{namespaces: namespaces}
+}
+
+func (l providedNamespaceLister) List() ([]string, error) {
+	return l.namespaces, nil
+}
+
 func MustUpstreamClient() v1.UpstreamClient {
 	return MustNamespacedUpstreamClient(metav1.NamespaceAll) // will require cluster-scoped permissions
 }

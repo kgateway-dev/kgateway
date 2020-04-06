@@ -97,6 +97,7 @@ type KnativeProxy struct {
 	HttpsPort int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
 	Tracing   *string `json:"tracing,omitempty" desc:"tracing configuration"`
 	*DeploymentSpec
+	*ServiceSpec
 }
 
 type Settings struct {
@@ -288,6 +289,7 @@ type IngressProxy struct {
 	Deployment *IngressProxyDeployment `json:"deployment,omitempty"`
 	ConfigMap  *IngressProxyConfigMap  `json:"configMap,omitempty"`
 	Tracing    *string                 `json:"tracing,omitempty"`
+	*ServiceSpec
 }
 
 type IngressProxyDeployment struct {
@@ -297,6 +299,15 @@ type IngressProxyDeployment struct {
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
 	*DeploymentSpec
+}
+
+type ServiceSpec struct {
+	Service *Service `json:"service,omitempty" desc:"K8s service configuration"`
+}
+
+type Service struct {
+	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
+	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
 }
 
 type IngressProxyConfigMap struct {

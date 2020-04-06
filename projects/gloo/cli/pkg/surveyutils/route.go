@@ -231,7 +231,7 @@ func AddRouteFlagsInteractive(opts *options.Options) error {
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).List(ns, clients.ListOpts{})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{})
 		if err != nil {
 			return err
 		}
@@ -354,7 +354,7 @@ func SelectVirtualServiceInteractiveWithPrompt(opts *options.Options, prompt str
 	var namespaces []string
 	for _, ns := range helpers.MustGetNamespaces() {
 		namespaces = append(namespaces, ns)
-		vsList, err := helpers.MustNamespacedVirtualServiceClient(opts.Metadata.GetNamespace()).List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
+		vsList, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{Ctx: opts.Top.Ctx})
 		if err != nil {
 			return nil, err
 		}

@@ -17,8 +17,9 @@ import (
 	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/envoyproxy/go-control-plane/pkg/server"
+	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
 // These values must match the values in the envoy sidecar's common_tls_context
@@ -96,16 +97,16 @@ func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile str
 	}
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. Snapshot version is %s", snapshotVersion)
 
-	items := []cache.Resource{
+	items := []cache_types.Resource{
 		serverCertSecret(sslCertFile, sslKeyFile),
 		validationContextSecret(sslCaFile),
 	}
 	secretSnapshot := cache.Snapshot{}
-	secretSnapshot.Resources[cache.Secret] = cache.NewResources(snapshotVersion, items)
+	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
 	return snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
 }
 
-func serverCertSecret(certFile, keyFile string) cache.Resource {
+func serverCertSecret(certFile, keyFile string) cache_types.Resource {
 	return &auth.Secret{
 		Name: serverCert,
 		Type: &auth.Secret_TlsCertificate{
@@ -125,7 +126,7 @@ func serverCertSecret(certFile, keyFile string) cache.Resource {
 	}
 }
 
-func validationContextSecret(caFile string) cache.Resource {
+func validationContextSecret(caFile string) cache_types.Resource {
 	return &auth.Secret{
 		Name: validationContext,
 		Type: &auth.Secret_ValidationContext{

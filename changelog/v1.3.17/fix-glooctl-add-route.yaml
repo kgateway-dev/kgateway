@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    description: >
+      In `glooctl` 1.3.16, there was a regression with the `glooctl add route` command that prevented it from working
+      if the `--name` flag was omitted, which was common in our documented tutorials. Pre 1.3.16, `glooctl add route`
+      would search all namespaces for a virtual service with * for domain (all domains) to add the route to. This
+      would require cluster-scoped permissions on the virtual service by the user.
+
+      This change defaults `glooctl add route` to use a namespaced virtual service client, which requires fewer
+      permissions, but also only searches a single namespace for virtual services to add the route to, before creating
+      a new virtual service. `glooctl add route` now supports the `cluster-scoped-vs-client` boolean flag, which
+      supports the original, pre 1.3.16 behavior.
+    issueLink: https://github.com/solo-io/gloo/issues/2708

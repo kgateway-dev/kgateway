@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 
-	"github.com/envoyproxy/go-control-plane/pkg/cache"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
