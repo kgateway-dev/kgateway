@@ -62,7 +62,7 @@ func (ProxyLatency_Measurement) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_b72148e2a3523d34, []int{0, 0}
 }
 
-// Configure the proxy latency fitler. This filter measures the latency
+// Configure the proxy latency filter. This filter measures the latency
 // incurred by the filter chain in a histogram.
 type ProxyLatency struct {
 	// How to measure the request.

@@ -27,7 +27,7 @@ weight: 5
 ### ProxyLatency
 
  
-Configure the proxy latency fitler. This filter measures the latency
+Configure the proxy latency filter. This filter measures the latency
 incurred by the filter chain in a histogram.
 
 ```yaml
