@@ -3,6 +3,7 @@ syntax = "proto3";
 package envoy.config.filter.http.proxylatency.v2;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency";
 
+import "google/protobuf/wrappers.proto";
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 
@@ -10,22 +11,28 @@ option (gogoproto.equal_all) = true;
 // incurred by the filter chain in a histogram.
 message ProxyLatency {
 
+    // How to perform the latency measurement. Given an incoming request from downstream and
+    // outging request to upstream; or incoming response from upstream and outgoing repsonse to
+    // downstream, This outlines how to measure the latency used by the proxy.
     enum Measurement {
-        DEFAULT = 0;
-        FIRST_BYTE = 1;
-        LAST_BYTE = 2;
+        // Count from the last byte of the incoming request\response to the first byte of the outgoing request\response.
+        LAST_INCOMING_FIRST_OUTGOING = 0;
+        // Count from the first byte of the incoming request\response to the first byte of the outgoing request\response.
+        FIRST_INCOMING_FIRST_OUTGOING = 1;
+        // Count from the last byte of the incoming request\response to the last byte of the outgoing request\response.
+        LAST_INCOMING_LAST_OUTGOING = 2;
+        // Count from the first byte of the incoming request\response to the last byte of the outgoing request\response.
+        FIRST_INCOMING_LAST_OUTGOING = 3;
     }
 
-    // When to start measuring - the time of the last byte received, or the first one.
-    // if not specified, defaults to last byte
-    Measurement start = 1;
+    // How to measure the request.
+    Measurement request = 1;
 
-    // When to end measuring - the time of the last byte received, or the first one.
-    // if not specified, defaults to first byte
-    Measurement end = 2;
+    // How measure the response.
+    Measurement response = 2;
 
-    // Charge a stat per upstream cluster.
-    bool charge_cluster_stat = 3;
-    // Charge a stat per listener.
-    bool charge_listener_stat = 4;
+    // Charge a stat per upstream cluster. If not specified, defaults to true.
+    google.protobuf.BoolValue charge_cluster_stat = 3;
+    // Charge a stat per listener. If not specified, defaults to true.
+    google.protobuf.BoolValue charge_listener_stat = 4;
 }

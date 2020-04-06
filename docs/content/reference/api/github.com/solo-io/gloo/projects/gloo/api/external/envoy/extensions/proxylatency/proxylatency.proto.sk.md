@@ -31,19 +31,19 @@ Configure the proxy latency fitler. This filter measures the latency
 incurred by the filter chain in a histogram.
 
 ```yaml
-"start": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
-"end": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
-"chargeClusterStat": bool
-"chargeListenerStat": bool
+"request": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
+"response": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
+"chargeClusterStat": .google.protobuf.BoolValue
+"chargeListenerStat": .google.protobuf.BoolValue
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `start` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | When to start measuring - the time of the last byte received, or the first one. if not specified, defaults to last byte. |  |
-| `end` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | When to end measuring - the time of the last byte received, or the first one. if not specified, defaults to first byte. |  |
-| `chargeClusterStat` | `bool` | Charge a stat per upstream cluster. |  |
-| `chargeListenerStat` | `bool` | Charge a stat per listener. |  |
+| `request` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How to measure the request. |  |
+| `response` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How measure the response. |  |
+| `chargeClusterStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per upstream cluster. If not specified, defaults to true. |  |
+| `chargeListenerStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per listener. If not specified, defaults to true. |  |
 
 
 
@@ -51,13 +51,17 @@ incurred by the filter chain in a histogram.
 ---
 ### Measurement
 
-
+ 
+How to perform the latency measurement. Given an incoming request from downstream and
+outging request to upstream; or incoming response from upstream and outgoing repsonse to
+downstream, This outlines how to measure the latency used by the proxy.
 
 | Name | Description |
 | ----- | ----------- | 
-| `DEFAULT` |  |
-| `FIRST_BYTE` |  |
-| `LAST_BYTE` |  |
+| `LAST_INCOMING_FIRST_OUTGOING` | Count from the last byte of the incoming request\response to the first byte of the outgoing request\response. |
+| `FIRST_INCOMING_FIRST_OUTGOING` | Count from the first byte of the incoming request\response to the first byte of the outgoing request\response. |
+| `LAST_INCOMING_LAST_OUTGOING` | Count from the last byte of the incoming request\response to the last byte of the outgoing request\response. |
+| `FIRST_INCOMING_LAST_OUTGOING` | Count from the first byte of the incoming request\response to the last byte of the outgoing request\response. |
 
 
 
