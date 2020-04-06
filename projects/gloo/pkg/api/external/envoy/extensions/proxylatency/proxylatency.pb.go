@@ -27,6 +27,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 // How to perform the latency measurement. Given an incoming request from downstream and
 // outging request to upstream; or incoming response from upstream and outgoing repsonse to
 // downstream, This outlines how to measure the latency used by the proxy.
+// Latency is measured in milliseconds will appear as a histogram in the envoy stats, with the
+// 'proxy_latency' prefix.
 type ProxyLatency_Measurement int32
 
 const (

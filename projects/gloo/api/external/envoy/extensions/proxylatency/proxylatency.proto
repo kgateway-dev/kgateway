@@ -14,6 +14,8 @@ message ProxyLatency {
     // How to perform the latency measurement. Given an incoming request from downstream and
     // outging request to upstream; or incoming response from upstream and outgoing repsonse to
     // downstream, This outlines how to measure the latency used by the proxy.
+    // Latency is measured in milliseconds will appear as a histogram in the envoy stats, with the
+    // 'proxy_latency' prefix.
     enum Measurement {
         // Count from the last byte of the incoming request\response to the first byte of the outgoing request\response.
         LAST_INCOMING_FIRST_OUTGOING = 0;
