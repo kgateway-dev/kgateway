@@ -12,7 +12,7 @@ weight: 5
 
 
 - [ProxyLatency](#proxylatency)
-- [Start](#start)
+- [Measurement](#measurement)
   
 
 
@@ -31,7 +31,8 @@ Configure the proxy latency fitler. This filter measures the latency
 incurred by the filter chain in a histogram.
 
 ```yaml
-"start": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Start
+"start": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
+"end": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
 "chargeClusterStat": bool
 "chargeListenerStat": bool
 
@@ -39,7 +40,8 @@ incurred by the filter chain in a histogram.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `start` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Start](../proxylatency.proto.sk/#start) | When to start measuring - the time of the last byte received, or the first one. |  |
+| `start` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | When to start measuring - the time of the last byte received, or the first one. if not specified, defaults to last byte. |  |
+| `end` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | When to end measuring - the time of the last byte received, or the first one. if not specified, defaults to first byte. |  |
 | `chargeClusterStat` | `bool` | Charge a stat per upstream cluster. |  |
 | `chargeListenerStat` | `bool` | Charge a stat per listener. |  |
 
@@ -47,12 +49,13 @@ incurred by the filter chain in a histogram.
 
 
 ---
-### Start
+### Measurement
 
 
 
 | Name | Description |
 | ----- | ----------- | 
+| `DEFAULT` |  |
 | `FIRST_BYTE` |  |
 | `LAST_BYTE` |  |
 

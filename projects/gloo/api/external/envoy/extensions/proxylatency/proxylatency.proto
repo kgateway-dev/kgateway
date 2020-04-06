@@ -10,16 +10,22 @@ option (gogoproto.equal_all) = true;
 // incurred by the filter chain in a histogram.
 message ProxyLatency {
 
-    enum Start {
-        FIRST_BYTE = 0;
-        LAST_BYTE = 1;
+    enum Measurement {
+        DEFAULT = 0;
+        FIRST_BYTE = 1;
+        LAST_BYTE = 2;
     }
 
     // When to start measuring - the time of the last byte received, or the first one.
-    Start start = 1;
+    // if not specified, defaults to last byte
+    Measurement start = 1;
+
+    // When to end measuring - the time of the last byte received, or the first one.
+    // if not specified, defaults to first byte
+    Measurement end = 2;
 
     // Charge a stat per upstream cluster.
-    bool charge_cluster_stat = 2;
+    bool charge_cluster_stat = 3;
     // Charge a stat per listener.
-    bool charge_listener_stat = 3;
+    bool charge_listener_stat = 4;
 }
