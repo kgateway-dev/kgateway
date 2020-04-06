@@ -36,17 +36,17 @@ func (m *MockVirtualServiceSelector) EXPECT() *MockVirtualServiceSelectorMockRec
 	return m.recorder
 }
 
-// SelectOrCreateVirtualService mocks base method.
-func (m *MockVirtualServiceSelector) SelectOrCreateVirtualService(arg0 context.Context, arg1 *core.ResourceRef) (*v1.VirtualService, error) {
+// SelectOrBuildVirtualService mocks base method.
+func (m *MockVirtualServiceSelector) SelectOrBuildVirtualService(arg0 context.Context, arg1 *core.ResourceRef) (*v1.VirtualService, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SelectOrCreateVirtualService", arg0, arg1)
+	ret := m.ctrl.Call(m, "SelectOrBuildVirtualService", arg0, arg1)
 	ret0, _ := ret[0].(*v1.VirtualService)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SelectOrCreateVirtualService indicates an expected call of SelectOrCreateVirtualService.
-func (mr *MockVirtualServiceSelectorMockRecorder) SelectOrCreateVirtualService(arg0, arg1 interface{}) *gomock.Call {
+// SelectOrBuildVirtualService indicates an expected call of SelectOrBuildVirtualService.
+func (mr *MockVirtualServiceSelectorMockRecorder) SelectOrBuildVirtualService(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectOrCreateVirtualService", reflect.TypeOf((*MockVirtualServiceSelector)(nil).SelectOrCreateVirtualService), arg0, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SelectOrBuildVirtualService", reflect.TypeOf((*MockVirtualServiceSelector)(nil).SelectOrBuildVirtualService), arg0, arg1)
 }

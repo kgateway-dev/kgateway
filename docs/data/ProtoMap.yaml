@@ -410,6 +410,9 @@ apis:
   gloo.solo.io.GlooOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GlooOptions
     package: gloo.solo.io
+  gloo.solo.io.HealthCheckConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/endpoint.proto.sk/#HealthCheckConfig
+    package: gloo.solo.io
   gloo.solo.io.HttpListener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#HttpListener
     package: gloo.solo.io

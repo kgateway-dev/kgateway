@@ -22,4 +22,30 @@ var _ = Describe("Root", func() {
 			Expect(err).To(Equal(constants.SubcommandError))
 		})
 	})
+
+	It("can print yaml in dry run", func() {
+		out, err := testutils.GlooctlOut("add route --path-exact /all-pets --dest-name default-petstore-8080" +
+			"--prefix-rewrite /api/pets --dry-run --name test")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out).To(Equal(`apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  creationTimestamp: null
+  name: test
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+    - '*'
+    routes:
+    - matchers:
+      - exact: /all-pets
+      routeAction:
+        single:
+          upstream:
+            name: default-petstore-8080--prefix-rewrite
+            namespace: gloo-system
+status: {}
+`))
+	})
 })

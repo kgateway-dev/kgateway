@@ -23,6 +23,9 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
+        service:
+          type: LoadBalancer
+          extraAnnotations: {}
   # Namespaces that Gloo should watch. This includes watches set for pods, services, as well as CRD configuration objects.
   watchNamespaces: []
   # Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
@@ -115,6 +118,9 @@ ingressProxy:
     httpPort: 80
     httpsPort: 443
     replicas: 1
+  service:
+    type: LoadBalancer
+    extraAnnotations: {}
   configMap:
     data:
   tracing:

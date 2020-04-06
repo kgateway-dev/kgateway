@@ -414,8 +414,9 @@ HELM_DIR := install/helm/gloo
 .PHONY: generate-helm-files
 generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
-$(OUTPUT_DIR)/.helm-prepared:
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION)  --generate-helm-docs
+HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
+$(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
+	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
 	touch $@
 
 package-chart: generate-helm-files

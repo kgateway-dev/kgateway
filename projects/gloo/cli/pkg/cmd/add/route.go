@@ -3,6 +3,9 @@ package add
 import (
 	"sort"
 
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 
@@ -96,7 +99,7 @@ func addRoute(opts *options.Options) error {
 			Name:      opts.Metadata.Name,
 		}
 		selector := selectionutils.NewRouteTableSelector(helpers.MustNamespacedRouteTableClient(opts.Metadata.GetNamespace()), defaults.GlooSystem)
-		routeTable, err := selector.SelectOrCreateRouteTable(opts.Top.Ctx, rtRef)
+		routeTable, err := selector.SelectOrBuildRouteTable(opts.Top.Ctx, rtRef)
 		if err != nil {
 			return err
 		}
@@ -114,6 +117,7 @@ func addRoute(opts *options.Options) error {
 			if err != nil {
 				return err
 			}
+			contextutils.LoggerFrom(opts.Top.Ctx).Infow("Created new default route table", zap.Any("routeTable", routeTable))
 		}
 
 		_ = printers.PrintRouteTables(gatewayv1.RouteTableList{routeTable}, opts.Top.Output)
@@ -131,7 +135,7 @@ func addRoute(opts *options.Options) error {
 		nsLister = helpers.NewNamespaceLister()
 	}
 	selector := selectionutils.NewVirtualServiceSelector(vsClient, nsLister, defaults.GlooSystem)
-	virtualService, err := selector.SelectOrCreateVirtualService(opts.Top.Ctx, vsRef)
+	virtualService, err := selector.SelectOrBuildVirtualService(opts.Top.Ctx, vsRef)
 	if err != nil {
 		return err
 	}
@@ -149,6 +153,7 @@ func addRoute(opts *options.Options) error {
 		if err != nil {
 			return err
 		}
+		contextutils.LoggerFrom(opts.Top.Ctx).Infow("Created new default virtual service", zap.Any("virtualService", virtualService))
 	}
 
 	_ = printers.PrintVirtualServices(gatewayv1.VirtualServiceList{virtualService}, opts.Top.Output, opts.Metadata.Namespace)

@@ -7,7 +7,7 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.26.2
-	github.com/envoyproxy/go-control-plane v0.9.3
+	github.com/envoyproxy/go-control-plane v0.9.6-0.20200401235947-be7fefdaf0df
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
 	github.com/fsnotify/fsnotify v1.4.7

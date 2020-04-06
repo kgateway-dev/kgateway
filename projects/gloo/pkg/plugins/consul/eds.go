@@ -262,7 +262,7 @@ func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver,
 
 	var endpoints []*v1.Endpoint
 	for _, ipAddr := range ipAddresses {
-		endpoints = append(endpoints, buildEndpoint(namespace, ipAddr, service, upstreams))
+		endpoints = append(endpoints, buildEndpoint(namespace, address, ipAddr, service, upstreams))
 	}
 	return endpoints, nil
 }
@@ -293,17 +293,28 @@ func getIpAddresses(ctx context.Context, address string, resolver DnsResolver) (
 	return ipAddresses, nil
 }
 
-func buildEndpoint(namespace, address string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+func buildEndpoint(namespace, address, ipAddress string, service *consulapi.CatalogService, upstreams []*v1.Upstream) *v1.Endpoint {
+	hostname := ""
+	var healthCheckConfig *v1.HealthCheckConfig
+	if address != ipAddress {
+		// we don't want to override the hostname if we didn't resolve the address
+		hostname = address
+		healthCheckConfig = &v1.HealthCheckConfig{
+			Hostname: hostname,
+		}
+	}
 	return &v1.Endpoint{
 		Metadata: core.Metadata{
 			Namespace:       namespace,
-			Name:            buildEndpointName(address, service),
+			Name:            buildEndpointName(ipAddress, service),
 			Labels:          buildLabels(service.ServiceTags, []string{service.Datacenter}, upstreams),
 			ResourceVersion: strconv.FormatUint(service.ModifyIndex, 10),
 		},
-		Upstreams: toResourceRefs(upstreams, service.ServiceTags),
-		Address:   address,
-		Port:      uint32(service.ServicePort),
+		Upstreams:   toResourceRefs(upstreams, service.ServiceTags),
+		Address:     ipAddress,
+		Port:        uint32(service.ServicePort),
+		Hostname:    hostname,
+		HealthCheck: healthCheckConfig,
 	}
 }
 

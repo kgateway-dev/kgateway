@@ -1,0 +1,10 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.4.1
+  - type: NEW_FEATURE
+    description: >
+      Updated envoy to envoy-gloo based on upstream envoy (b5a3405b2725e979a93e7410fce7c57a0c66d8db), which includes
+      auto host rewrite on EDS clusters.
+    issueLink: https://github.com/solo-io/gloo/issues/2552

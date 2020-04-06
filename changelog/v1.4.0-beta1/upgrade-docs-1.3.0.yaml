@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add tested docs for upgrading from any Gloo 1.2 to any Gloo 1.3 release, using helm 2 or helm 3.
+    issueLink: https://github.com/solo-io/gloo/issues/2090
