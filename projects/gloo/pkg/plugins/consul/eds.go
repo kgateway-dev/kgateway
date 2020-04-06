@@ -132,7 +132,7 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 
 	go func() {
 		wg.Wait()
-		defer close(errChan)
+		close(errChan)
 	}()
 	return endpointsChan, errChan, nil
 }
