@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package envoy.config.filter.http.proxylatency.v2;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency";
+
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Configure the proxy latency fitler. This filter measures the latency
+// incurred by the filter chain in a histogram.
+message ProxyLatency {
+
+    enum Start {
+        FIRST_BYTE = 0;
+        LAST_BYTE = 1;
+    }
+
+    // When to start measuring - the time of the last byte received, or the first one.
+    Start start = 1;
+
+    // Charge a stat per upstream cluster.
+    bool charge_cluster_stat = 2;
+    // Charge a stat per listener.
+    bool charge_listener_stat = 3;
+}

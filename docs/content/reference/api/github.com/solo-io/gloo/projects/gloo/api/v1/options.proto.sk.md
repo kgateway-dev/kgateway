@@ -66,6 +66,7 @@ Optional, feature-specific configuration that lives on http listeners
 "dlp": .dlp.options.gloo.solo.io.FilterConfig
 "wasm": .wasm.options.gloo.solo.io.PluginSource
 "gzip": .envoy.config.filter.http.gzip.v2.Gzip
+"proxyLatency": .envoy.config.filter.http.proxylatency.v2.ProxyLatency
 
 ```
 
@@ -79,6 +80,7 @@ Optional, feature-specific configuration that lives on http listeners
 | `dlp` | [.dlp.options.gloo.solo.io.FilterConfig](../enterprise/options/dlp/dlp.proto.sk/#filterconfig) | Enterprise-only: Config for data loss prevention. |  |
 | `wasm` | [.wasm.options.gloo.solo.io.PluginSource](../options/wasm/wasm.proto.sk/#pluginsource) | Wasm filter config [very-experimental!] Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true These require a special nightly version of envoy which is not deployed by default. |  |
 | `gzip` | [.envoy.config.filter.http.gzip.v2.Gzip](../../external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#gzip) | Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```. |  |
+| `proxyLatency` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency](../../external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency) | Enterprise-only: Proxy latency. |  |
 
 
 
