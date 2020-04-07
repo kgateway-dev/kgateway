@@ -4,7 +4,7 @@ weight: 2
 description: How to configure your Grafana installation
 ---
 
-> **Note**: Observability features are available only in enterprise Gloo
+> **Note**: This page details configuration for the Grafana deployment packaged with Enterprise Gloo
 
  * [Default Installation](#default-installation)
     * [Credentials](#credentials)

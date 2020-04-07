@@ -4,11 +4,17 @@ weight: 40
 description: Monitoring, metrics, and logging for Gloo
 ---
 
-> **Note**: Observability features are available only in enterprise Gloo
+Gloo exposes a lot of metrics from both the data plane (Envoy) as well as the control plane components. 
+These metrics are available in Open Source Gloo, and can be scraped into a standard metrics backend like Prometheus. 
 
-As an API gateway built on the Envoy proxy, Gloo is well-equipped to use the wealth of metrics exported by Envoy to provide a detailed view into the health of your system, from both a high-level system view and a detailed look at each upstream.
+Enterprise Gloo comes with a few extra enhancements around observability. First, it installs by default with a prometheus 
+server to scrape all of the Gloo metrics, and a Grafana instance to provide dashboards from those metrics. Alternatively, 
+customers may wish to use their own Prometheus and Grafana deployments and integrate Gloo with those. 
 
-By default, the enterprise deployment of Gloo ships with deployments of two leaders in the open source monitoring space, Prometheus and Grafana. See the links below for more info on how we use each one:
+
+Gloo Enterprise comes with a built-in grafana dashboard to show a high-level health of the Envoy proxy, 
+and also comes with a component called `observability` that dynamically creates a new Grafana dashboard for each Gloo `Upstream`. 
+
 
 {{% children description="true" %}}
 
