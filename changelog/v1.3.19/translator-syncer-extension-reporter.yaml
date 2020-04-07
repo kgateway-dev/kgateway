@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Allow `TranslatorSyncerExtension`s to be able to report errors and warnings to Gloo CRs too.
+    issueLink: https://github.com/solo-io/gloo/issues/2719

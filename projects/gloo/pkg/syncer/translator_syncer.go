@@ -27,6 +27,7 @@ type translatorSyncer struct {
 }
 
 type TranslatorSyncerExtensionParams struct {
+	Reporter                 reporter.Reporter
 	RateLimitServiceSettings ratelimit.ServiceSettings
 }
 

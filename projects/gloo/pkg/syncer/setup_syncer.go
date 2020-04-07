@@ -8,61 +8,51 @@ import (
 	"strings"
 	"time"
 
-	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
-	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
-
+	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/gogo/protobuf/types"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	consulapi "github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
-	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
-
-	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
-
-	"github.com/gogo/protobuf/types"
-	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
+	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
+	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
+	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
+	"github.com/solo-io/gloo/projects/metrics/pkg/runner"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kube"
+	corecache "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	xdsserver "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
-
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/server"
 	"go.uber.org/zap"
-
-	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	"google.golang.org/grpc/reflection"
 )
 
 type RunFunc func(opts bootstrap.Opts) error
@@ -426,21 +416,6 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
-	var syncerExtensions []TranslatorSyncerExtension
-	params := TranslatorSyncerExtensionParams{
-		RateLimitServiceSettings: ratelimit.ServiceSettings{
-			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
-		},
-	}
-	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
-		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
-		if err != nil {
-			logger.Errorw("Error initializing extension", "error", err)
-			continue
-		}
-		syncerExtensions = append(syncerExtensions, syncerExtension)
-	}
-
 	errs := make(chan error)
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
@@ -494,6 +469,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	xdsSanitizer := sanitizer.XdsSanitizers{
 		sanitizer.NewUpstreamRemovingSanitizer(),
 		routeReplacingSanitizer,
+	}
+
+	// Set up the syncer extensions
+	var syncerExtensions []TranslatorSyncerExtension
+	params := TranslatorSyncerExtensionParams{
+		Reporter: rpt,
+		RateLimitServiceSettings: ratelimit.ServiceSettings{
+			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
+		},
+	}
+	for _, syncerExtensionFactory := range extensions.SyncerExtensions {
+		syncerExtension, err := syncerExtensionFactory(watchOpts.Ctx, params)
+		if err != nil {
+			logger.Errorw("Error initializing extension", "error", err)
+			continue
+		}
+		syncerExtensions = append(syncerExtensions, syncerExtension)
 	}
 
 	translationSync := NewTranslatorSyncer(t, opts.ControlPlane.SnapshotCache, xdsHasher, xdsSanitizer, rpt, opts.DevMode, syncerExtensions, opts.Settings)
