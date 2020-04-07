@@ -144,6 +144,14 @@ kubectl create clusterrolebinding cluster-admin-binding \
     --user $(gcloud config get-value account)
 ```
 
+### Private clusters
+
+Deploying Gloo in a private GKE cluster requires some additional configuration. 
+
+A private cluster cannot access container repositories outside of Google. You will need to configure the private cluster to use Cloud NAT for internet access. You can follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) in the docs from Google. The Gloo containers are hosted on Quay.io.
+
+A private cluster requires firewall rules to be in place for the API server to talk to the Gloo pods. Create a firewall rule allowing TCP and UDP traffic on ports 9977, 9979, 9988, and 9091 from the *master address range* to the node tags. You can follow [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters) for more information.
+
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
