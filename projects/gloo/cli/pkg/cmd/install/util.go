@@ -9,6 +9,7 @@ var (
 	GlooNamespacedKinds    []string
 	GlooClusterScopedKinds []string
 	GlooCrdNames           []string
+	GlooECrdNames          []string
 
 	GlooComponentLabels map[string]string
 )
@@ -45,6 +46,9 @@ func init() {
 		"virtualservices.gateway.solo.io",
 		"routetables.gateway.solo.io",
 		"authconfigs.enterprise.gloo.solo.io",
+	}
+
+	GlooECrdNames = []string{
 		"apidocs.devportal.solo.io",
 		"groups.devportal.solo.io",
 		"portals.devportal.solo.io",

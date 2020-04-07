@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -105,10 +104,10 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 
 	u.uninstallKnativeIfNecessary()
 
-	// delete our hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
+	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
 		if len(crdNames) == 0 {
-			crdNames = GlooCrdNames
+			crdNames = append(GlooCrdNames, GlooECrdNames...)
 		}
 		u.deleteGlooCrds(crdNames)
 	}
@@ -155,23 +154,10 @@ func (u *uninstaller) deleteGlooCrds(crdNames []string) {
 		return
 	}
 
-	// Put all crds in map for quick lookup
-	crdNamesFound := make(map[string]struct{}, 0)
-	output, err := u.kubeCli.KubectlOut(nil, "get", "crds", "-o", "name")
-	// if we couldn't check for CRDs, just attempt to delete them
-	if err == nil {
-		crdNamesList := strings.Split(string(output), "\n")
-		for _, name := range crdNamesList {
-			crdNamesFound[strings.TrimPrefix(name, "customresourcedefinition.apiextensions.k8s.io/")] = struct{}{}
-		}
-	}
-
 	_, _ = fmt.Fprintf(u.output, "Removing Gloo CRDs...\n")
 	args := []string{"delete", "crd"}
 	for _, crdName := range crdNames {
-		if _, ok := crdNamesFound[crdName]; ok { // add crdName to delete command only if crd is present
-			args = append(args, crdName)
-		}
+		args = append(args, crdName)
 	}
 	if err := u.kubeCli.Kubectl(nil, args...); err != nil {
 		_, _ = fmt.Fprintf(u.output, "Unable to delete Gloo CRDs. Continuing...\n")

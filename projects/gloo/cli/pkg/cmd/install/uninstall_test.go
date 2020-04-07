@@ -92,7 +92,7 @@ spec:
 		})
 
 		It("can uninstall CRDs when requested", func() {
-			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + crdName, crdDeleteCmd}, []string{})
+			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + crdName}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
 			err := uninstaller.Uninstall(&options.Options{
@@ -126,7 +126,6 @@ spec:
 		It("--all flag behaves as expected", func() {
 			mockKubectl := installutil.NewMockKubectl([]string{
 				"delete crd " + crdName,
-				crdDeleteCmd,
 				"delete namespace " + defaults.GlooSystem,
 			}, []string{})
 
@@ -164,6 +163,8 @@ spec:
 				clusterScopedDeleteCmds = append(clusterScopedDeleteCmds,
 					fmt.Sprintf("delete %s -l %s", kind, glooAppFlags))
 			}
+
+			crdDeleteCmd += " " + strings.Join(install.GlooECrdNames, " ")
 		})
 
 		It("deletes all resources with the app=gloo label in the given namespace", func() {
