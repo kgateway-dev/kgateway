@@ -31,7 +31,7 @@ An example `values.yaml` file that you could pass in to configure Envoy is:
 gatewayProxies:
   gatewayProxy:
     extraEnvoyArgs:
-      - component-log-level
+      - --component-log-level
       - upstream:debug,connection:trace
 ```
 
