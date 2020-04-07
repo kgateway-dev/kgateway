@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Updated envoy-gloo based, which includes fixes to support auto host rewrite on EDS clusters.
+      (i.e., fixing auto host rewrite for gloo with consul)
+    issueLink: https://github.com/solo-io/gloo/issues/2552
