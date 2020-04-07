@@ -25,10 +25,13 @@ and should immediately create an upstream for the petstore service.
 
 ## Look at discovered Upstream
 
-Let's verify the service was discovered and an upstream was written. Discovery automatically creates a name based on 
-the name and namespace of the service, and the port.  
+Discovery automatically creates an upstream
+in the discovery namespace (usually `gloo-system`, determined by the `discoveryNamespace` setting). The name of a 
+discovered upstream is based on the name, namespace, and port of the service it references, in the form: 
+`NAMESPACE-NAME-PORT`. For instance, in this example, we are deploying the petstore service in the default 
+namespace and it listens on port 8080. So we'd expect the discovered upstream to have the name `default-petstore-8080`.   
 
-We can do this using `glooctl`: 
+Let's verify the service was discovered and an upstream was written. We can do this using `glooctl`: 
 
 ```shell
 glooctl get upstream -n gloo-system default-petstore-8080
@@ -152,6 +155,9 @@ status:
   reported_by: gloo
   state: 1
 ```
+
+Note that the discovered upstream also has this label: `discovered_by: kubernetesplugin`. This is an easy way 
+to determine that the upstream was created by Gloo discovery. 
 
 ## Create a route to this service
 
