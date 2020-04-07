@@ -34,6 +34,7 @@ Be sure to check the external auth [configuration overview]({{% versioned_link_p
         - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
         - [Update the Virtual Service](#update-the-virtual-service)
     - [Testing our configuration](#testing-our-configuration)
+- [Troubleshooting OPA](#troubleshooting-opa)
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
@@ -531,3 +532,134 @@ kubectl delete -n gloo-system configmap allow-jwt
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petclinic/petclinic.yaml
 rm check-jwt.rego dex-values.yaml
 ```
+
+## Troubleshooting OPA
+
+You can get more insight into the exact behavior of your OPA configuration by turning on debug 
+logging in the `extauth` deployment. 
+
+First, expose the pod on port 9091 with: 
+```
+kubectl port-forward -n gloo-system deploy/extauth 9091
+```
+
+Now, you can set the log level to debug with the following curl command:
+```
+curl -XPUT localhost:9091/logging -d '{"level":"debug"}'
+```
+
+With debug logging enabled, the extauth server logs will now contain the OPA input, evaluation trace, 
+and result. Run this command to stream the OPA debug log in a user-friendly way, for easy, real-time
+debugging:
+```
+kubectl logs -n gloo-system deploy/extauth -f | jq -r -j "select(.trace != null) | .trace"
+```
+
+Note: this command uses `jq` for parsing and pretty-printing the structured json logs. 
+
+When OPA is enabled on a route and a request is submitted, you'll start to see OPA trace logs. Here's an example:
+
+```
+{
+  "check_request": {
+    "attributes": {
+      "source": {
+        "address": {
+          "Address": {
+            "SocketAddress": {
+              "address": "10.142.0.53",
+              "PortSpecifier": {
+                "PortValue": 58181
+              }
+            }
+          }
+        }
+      },
+      "destination": {
+        "address": {
+          "Address": {
+            "SocketAddress": {
+              "address": "10.52.1.28",
+              "PortSpecifier": {
+                "PortValue": 8080
+              }
+            }
+          }
+        }
+      },
+      "request": {
+        "time": {
+          "seconds": 1586274307,
+          "nanos": 128021000
+        },
+        "http": {
+          "id": "8223534253882703044",
+          "method": "GET",
+          "headers": {
+            ":authority": "35.227.100.106:80",
+            ":method": "GET",
+            ":path": "/sample-route-1",
+            "accept-encoding": "gzip",
+            "user-agent": "Go-http-client/1.1",
+            "x-forwarded-proto": "http",
+            "x-request-id": "5477c542-4145-459a-8ef3-c6b27d126982",
+            "x-token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJTTVMiLCJudW1iZXIiOiIyMDAifQ.quxs99EylhY2Eod3Ns-NkGRAVbM3riZLQLaCHvPPcpeTn7fEmcATPL82rZvUENLX6nsj_FXetd5dpvAJwPTCTRFhnEmVlK6J9i46nNqlA2JAFwXTww4WlrrpoD6p1fGoq5cGqzqdNBrfK-uee1w5N-c5de3waLAQXK7W6_x-L-0ovAqb0wz4i-fIcTKHGELpReGCh762rrj_iMuwaZMg3SJmIfSbGB7SFfdCcY1kE8fTdwZayoxzG1EzeNFTHd7D-h1Y_odafi_PGn5zwkpU4NkBqTcPx2TbZCS5QPG9VjSgWIi5cWW1tQiPyuv7UOmjgmgZFbXXG-Uf_SBpPZdUhg"
+          },
+          "path": "/sample-route-1",
+          "host": "35.227.100.106:80",
+          "protocol": "HTTP/1.1"
+        }
+      },
+      "context_extensions": {
+        "config_id": "gloo-system.opa-auth",
+        "source_name": "gloo-system.gateway-proxy-listener-::-8080-gloo-system_petstore",
+        "source_type": "virtual_host"
+      },
+      "metadata_context": {}
+    }
+  },
+  "http_request": {
+    "id": "8223534253882703044",
+    "method": "GET",
+    "headers": {
+      ":authority": "35.227.100.106:80",
+      ":method": "GET",
+      ":path": "/sample-route-1",
+      "accept-encoding": "gzip",
+      "user-agent": "Go-http-client/1.1",
+      "x-forwarded-proto": "http",
+      "x-request-id": "5477c542-4145-459a-8ef3-c6b27d126982",
+      "x-token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJTTVMiLCJudW1iZXIiOiIyMDAifQ.quxs99EylhY2Eod3Ns-NkGRAVbM3riZLQLaCHvPPcpeTn7fEmcATPL82rZvUENLX6nsj_FXetd5dpvAJwPTCTRFhnEmVlK6J9i46nNqlA2JAFwXTww4WlrrpoD6p1fGoq5cGqzqdNBrfK-uee1w5N-c5de3waLAQXK7W6_x-L-0ovAqb0wz4i-fIcTKHGELpReGCh762rrj_iMuwaZMg3SJmIfSbGB7SFfdCcY1kE8fTdwZayoxzG1EzeNFTHd7D-h1Y_odafi_PGn5zwkpU4NkBqTcPx2TbZCS5QPG9VjSgWIi5cWW1tQiPyuv7UOmjgmgZFbXXG-Uf_SBpPZdUhg"
+    },
+    "path": "/sample-route-1",
+    "host": "35.227.100.106:80",
+    "protocol": "HTTP/1.1"
+  },
+  "state": null
+}Enter __localq0__ = data.test.allow; equal(__localq0__, true, _)
+| Eval __localq0__ = data.test.allow
+| Index __localq0__ = data.test.allow matched 0 rules)
+| Enter data.test.allow
+| | Eval true
+| | Exit data.test.allow
+| Eval equal(__localq0__, true, _)
+| Exit __localq0__ = data.test.allow; equal(__localq0__, true, _)
+Redo __localq0__ = data.test.allow; equal(__localq0__, true, _)
+| Redo equal(__localq0__, true, _)
+| Redo __localq0__ = data.test.allow
+| Redo data.test.allow
+| | Redo true
+{
+  "expressions": [
+    {
+      "value": false,
+      "text": "data.test.allow == true",
+      "location": {
+        "row": 1,
+        "col": 1
+      }
+    }
+  ]
+
+```
+
