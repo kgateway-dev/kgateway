@@ -54,14 +54,18 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	serviceMetaChan, servicesWatchErrChan := p.client.WatchServices(opts.Ctx, dataCenters)
 
 	errChan := make(chan error)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		defer close(errChan)
+		defer wg.Done()
 		errutils.AggregateErrs(opts.Ctx, errChan, servicesWatchErrChan, "consul eds")
 	}()
 
 	endpointsChan := make(chan v1.EndpointList)
+	wg.Add(1)
 	go func() {
 		defer close(endpointsChan)
+		defer wg.Done()
 
 		// Create a new context for each loop, cancel it before each loop
 		var cancel context.CancelFunc = func() {}
@@ -126,6 +130,10 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 		}
 	}()
 
+	go func() {
+		wg.Wait()
+		close(errChan)
+	}()
 	return endpointsChan, errChan, nil
 }
 
