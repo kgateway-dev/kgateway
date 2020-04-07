@@ -278,6 +278,9 @@ apis:
   envoy.config.filter.http.modsecurity.v2.RuleSet:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#RuleSet
     package: envoy.config.filter.http.modsecurity.v2
+  envoy.config.filter.http.proxylatency.v2.ProxyLatency:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto.sk/#ProxyLatency
+    package: envoy.config.filter.http.proxylatency.v2
   envoy.config.filter.http.sanitize.v2.Sanitize:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/extauth/sanitize.proto.sk/#Sanitize
     package: envoy.config.filter.http.sanitize.v2

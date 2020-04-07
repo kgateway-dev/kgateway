@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package envoy.config.filter.http.proxylatency.v2;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/proxylatency";
+
+import "google/protobuf/wrappers.proto";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+// Configure the proxy latency filter. This filter measures the latency
+// incurred by the filter chain in a histogram.
+message ProxyLatency {
+
+    // How to perform the latency measurement. Given an incoming request from downstream and
+    // outging request to upstream; or incoming response from upstream and outgoing repsonse to
+    // downstream, This outlines how to measure the latency used by the proxy.
+    // Latency is measured in milliseconds will appear as a histogram in the envoy stats, with the
+    // 'proxy_latency' prefix.
+    enum Measurement {
+        // Count from the last byte of the incoming request\response to the first byte of the outgoing request\response.
+        LAST_INCOMING_FIRST_OUTGOING = 0;
+        // Count from the first byte of the incoming request\response to the first byte of the outgoing request\response.
+        FIRST_INCOMING_FIRST_OUTGOING = 1;
+        // Count from the last byte of the incoming request\response to the last byte of the outgoing request\response.
+        LAST_INCOMING_LAST_OUTGOING = 2;
+        // Count from the first byte of the incoming request\response to the last byte of the outgoing request\response.
+        FIRST_INCOMING_LAST_OUTGOING = 3;
+    }
+
+    // How to measure the request.
+    Measurement request = 1;
+
+    // How measure the response.
+    Measurement response = 2;
+
+    // Charge a stat per upstream cluster. If not specified, defaults to true.
+    google.protobuf.BoolValue charge_cluster_stat = 3;
+    // Charge a stat per listener. If not specified, defaults to true.
+    google.protobuf.BoolValue charge_listener_stat = 4;
+}
