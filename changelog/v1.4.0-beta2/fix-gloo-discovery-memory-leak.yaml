@@ -5,3 +5,27 @@ changelog:
       usage growing without bound in Gloo and Discovery. Fix the leak by de-duplicating and processing events immediately.
     issueLink: https://github.com/solo-io/gloo/issues/2361
     resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: api
+    dependencyTag: kubernetes-1.17.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: client-go
+    dependencyTag: kubernetes-1.17.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: kubectl
+    dependencyTag: kubernetes-1.17.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apimachinery
+    dependencyTag: kubernetes-1.17.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apiextensions-apiserver
+    dependencyTag: kubernetes-1.17.1
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: k8s.io
+    dependencyRepo: apiserver
+    dependencyTag: kubernetes-1.17.1
