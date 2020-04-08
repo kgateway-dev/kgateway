@@ -43,7 +43,11 @@ metadata:
   labels:
     app: gloo
 spec:
+  {{- if $gatewaySettings.ipv4Only }}
+  bindAddress: "0.0.0.0"
+  {{- else }}
   bindAddress: "::"
+  {{- end }}
   bindPort: {{ $spec.podTemplate.httpsPort }}
 {{- if $gatewaySettings.customHttpsGateway}}
   httpGateway:
