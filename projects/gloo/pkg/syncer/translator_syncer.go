@@ -23,7 +23,9 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
-	settings   *v1.Settings
+	// used to track which envoy node IDs exist without belonging to a proxy
+	extensionKeys map[string]struct{}
+	settings      *v1.Settings
 }
 
 type TranslatorSyncerExtensionParams struct {
@@ -62,13 +64,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
-	xds.ExtensionNodeIDs = map[string]struct{}{}
+	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
 		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
-		xds.ExtensionNodeIDs[nodeID] = struct{}{}
+		s.extensionKeys[nodeID] = struct{}{}
 	}
 	return multiErr.ErrorOrNil()
 }
