@@ -51,8 +51,17 @@ func SnapshotKey(proxy *v1.Proxy) string {
 	return fmt.Sprintf("%v~%v", namespace, name)
 }
 
+var ExtensionNodeIDs []string
+
 // Called in Syncer when a new set of proxies arrive
 // used to trim snapshots whose proxies have been deleted
+func GetValidKeys(proxies v1.ProxyList) []string {
+	var validKeys []string
+	validKeys = append(validKeys, GetKeysFromProxies(proxies)...)
+	validKeys = append(validKeys, ExtensionNodeIDs...)
+	return validKeys
+}
+
 func GetKeysFromProxies(proxies v1.ProxyList) []string {
 	var validKeys []string
 	// This is where we correlate Node ID with proxy namespace~name
