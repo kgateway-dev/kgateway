@@ -62,13 +62,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
-	xds.ExtensionNodeIDs = []string{}
+	xds.ExtensionNodeIDs = map[string]struct{}{}
 	for _, extension := range s.extensions {
 		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
-		xds.ExtensionNodeIDs = append(xds.ExtensionNodeIDs, nodeID)
+		xds.ExtensionNodeIDs[nodeID] = struct{}{}
 	}
 	return multiErr.ErrorOrNil()
 }
