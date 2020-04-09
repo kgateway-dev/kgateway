@@ -43,15 +43,6 @@ steps:
 
 # e2e-ginkgo is produced from https://github.com/solo-io/cloud-builders/e2e-ginkgo
 # Must set the GOPATH to tell the container the workspace has already been set up (by the dep step above)
-- name: 'gcr.io/$PROJECT_ID/e2e-ginkgo:0.2.1'
-  env:
-  - 'PROJECT_ROOT=github.com/solo-io/gloo'
-  - 'GOPATH=/workspace/gopath'
-  dir: './gopath/src/github.com/solo-io/gloo'
-  entrypoint: make
-  args: ['check-format']
-  waitFor: ['prepare-workspace']
-  id: 'check-format'
 - name: 'gcr.io/$PROJECT_ID/go-make:0.1.12'
   entrypoint: 'bash'
   args: ['ci/check-code-and-docs-gen.sh']
