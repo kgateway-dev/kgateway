@@ -6,9 +6,10 @@ package consul
 
 import (
 	context "context"
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hashicorp/consul/api"
-	reflect "reflect"
 )
 
 // MockConsulWatcher is a mock of ConsulWatcher interface.

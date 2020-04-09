@@ -5,9 +5,10 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	metricsservice "github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
-	reflect "reflect"
 )
 
 // MockStorageClient is a mock of StorageClient interface.
