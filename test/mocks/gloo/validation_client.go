@@ -6,37 +6,36 @@ package mock_validation
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	validation "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	grpc "google.golang.org/grpc"
+	reflect "reflect"
 )
 
-// MockProxyValidationServiceClient is a mock of ProxyValidationServiceClient interface
+// MockProxyValidationServiceClient is a mock of ProxyValidationServiceClient interface.
 type MockProxyValidationServiceClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockProxyValidationServiceClientMockRecorder
 }
 
-// MockProxyValidationServiceClientMockRecorder is the mock recorder for MockProxyValidationServiceClient
+// MockProxyValidationServiceClientMockRecorder is the mock recorder for MockProxyValidationServiceClient.
 type MockProxyValidationServiceClientMockRecorder struct {
 	mock *MockProxyValidationServiceClient
 }
 
-// NewMockProxyValidationServiceClient creates a new mock instance
+// NewMockProxyValidationServiceClient creates a new mock instance.
 func NewMockProxyValidationServiceClient(ctrl *gomock.Controller) *MockProxyValidationServiceClient {
 	mock := &MockProxyValidationServiceClient{ctrl: ctrl}
 	mock.recorder = &MockProxyValidationServiceClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockProxyValidationServiceClient) EXPECT() *MockProxyValidationServiceClientMockRecorder {
 	return m.recorder
 }
 
-// NotifyOnResync mocks base method
+// NotifyOnResync mocks base method.
 func (m *MockProxyValidationServiceClient) NotifyOnResync(arg0 context.Context, arg1 *validation.NotifyOnResyncRequest, arg2 ...grpc.CallOption) (validation.ProxyValidationService_NotifyOnResyncClient, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -49,14 +48,14 @@ func (m *MockProxyValidationServiceClient) NotifyOnResync(arg0 context.Context, 
 	return ret0, ret1
 }
 
-// NotifyOnResync indicates an expected call of NotifyOnResync
+// NotifyOnResync indicates an expected call of NotifyOnResync.
 func (mr *MockProxyValidationServiceClientMockRecorder) NotifyOnResync(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotifyOnResync", reflect.TypeOf((*MockProxyValidationServiceClient)(nil).NotifyOnResync), varargs...)
 }
 
-// ValidateProxy mocks base method
+// ValidateProxy mocks base method.
 func (m *MockProxyValidationServiceClient) ValidateProxy(arg0 context.Context, arg1 *validation.ProxyValidationServiceRequest, arg2 ...grpc.CallOption) (*validation.ProxyValidationServiceResponse, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{arg0, arg1}
@@ -69,7 +68,7 @@ func (m *MockProxyValidationServiceClient) ValidateProxy(arg0 context.Context, a
 	return ret0, ret1
 }
 
-// ValidateProxy indicates an expected call of ValidateProxy
+// ValidateProxy indicates an expected call of ValidateProxy.
 func (mr *MockProxyValidationServiceClientMockRecorder) ValidateProxy(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{arg0, arg1}, arg2...)

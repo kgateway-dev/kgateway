@@ -6,12 +6,11 @@ package protocol_upgrade
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -101,8 +100,10 @@ type ProtocolUpgradeConfig_ProtocolUpgradeSpec struct {
 func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) Reset() {
 	*m = ProtocolUpgradeConfig_ProtocolUpgradeSpec{}
 }
-func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) String() string { return proto.CompactTextString(m) }
-func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) ProtoMessage()    {}
+func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) ProtoMessage() {}
 func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) Descriptor() ([]byte, []int) {
 	return fileDescriptor_384550b21127c365, []int{0, 0}
 }

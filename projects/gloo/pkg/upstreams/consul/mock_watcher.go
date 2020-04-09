@@ -6,36 +6,35 @@ package consul
 
 import (
 	context "context"
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	api "github.com/hashicorp/consul/api"
+	reflect "reflect"
 )
 
-// MockConsulWatcher is a mock of ConsulWatcher interface
+// MockConsulWatcher is a mock of ConsulWatcher interface.
 type MockConsulWatcher struct {
 	ctrl     *gomock.Controller
 	recorder *MockConsulWatcherMockRecorder
 }
 
-// MockConsulWatcherMockRecorder is the mock recorder for MockConsulWatcher
+// MockConsulWatcherMockRecorder is the mock recorder for MockConsulWatcher.
 type MockConsulWatcherMockRecorder struct {
 	mock *MockConsulWatcher
 }
 
-// NewMockConsulWatcher creates a new mock instance
+// NewMockConsulWatcher creates a new mock instance.
 func NewMockConsulWatcher(ctrl *gomock.Controller) *MockConsulWatcher {
 	mock := &MockConsulWatcher{ctrl: ctrl}
 	mock.recorder = &MockConsulWatcherMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockConsulWatcher) EXPECT() *MockConsulWatcherMockRecorder {
 	return m.recorder
 }
 
-// DataCenters mocks base method
+// DataCenters mocks base method.
 func (m *MockConsulWatcher) DataCenters() ([]string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DataCenters")
@@ -44,13 +43,13 @@ func (m *MockConsulWatcher) DataCenters() ([]string, error) {
 	return ret0, ret1
 }
 
-// DataCenters indicates an expected call of DataCenters
+// DataCenters indicates an expected call of DataCenters.
 func (mr *MockConsulWatcherMockRecorder) DataCenters() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DataCenters", reflect.TypeOf((*MockConsulWatcher)(nil).DataCenters))
 }
 
-// Services mocks base method
+// Services mocks base method.
 func (m *MockConsulWatcher) Services(q *api.QueryOptions) (map[string][]string, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Services", q)
@@ -60,13 +59,13 @@ func (m *MockConsulWatcher) Services(q *api.QueryOptions) (map[string][]string, 
 	return ret0, ret1, ret2
 }
 
-// Services indicates an expected call of Services
+// Services indicates an expected call of Services.
 func (mr *MockConsulWatcherMockRecorder) Services(q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Services", reflect.TypeOf((*MockConsulWatcher)(nil).Services), q)
 }
 
-// Service mocks base method
+// Service mocks base method.
 func (m *MockConsulWatcher) Service(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Service", service, tag, q)
@@ -76,13 +75,13 @@ func (m *MockConsulWatcher) Service(service, tag string, q *api.QueryOptions) ([
 	return ret0, ret1, ret2
 }
 
-// Service indicates an expected call of Service
+// Service indicates an expected call of Service.
 func (mr *MockConsulWatcherMockRecorder) Service(service, tag, q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Service", reflect.TypeOf((*MockConsulWatcher)(nil).Service), service, tag, q)
 }
 
-// Connect mocks base method
+// Connect mocks base method.
 func (m *MockConsulWatcher) Connect(service, tag string, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Connect", service, tag, q)
@@ -92,13 +91,13 @@ func (m *MockConsulWatcher) Connect(service, tag string, q *api.QueryOptions) ([
 	return ret0, ret1, ret2
 }
 
-// Connect indicates an expected call of Connect
+// Connect indicates an expected call of Connect.
 func (mr *MockConsulWatcherMockRecorder) Connect(service, tag, q interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Connect", reflect.TypeOf((*MockConsulWatcher)(nil).Connect), service, tag, q)
 }
 
-// WatchServices mocks base method
+// WatchServices mocks base method.
 func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []string) (<-chan []*ServiceMeta, <-chan error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchServices", ctx, dataCenters)
@@ -107,7 +106,7 @@ func (m *MockConsulWatcher) WatchServices(ctx context.Context, dataCenters []str
 	return ret0, ret1
 }
 
-// WatchServices indicates an expected call of WatchServices
+// WatchServices indicates an expected call of WatchServices.
 func (mr *MockConsulWatcherMockRecorder) WatchServices(ctx, dataCenters interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchServices", reflect.TypeOf((*MockConsulWatcher)(nil).WatchServices), ctx, dataCenters)
