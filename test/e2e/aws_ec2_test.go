@@ -52,7 +52,7 @@ sudo ./echoapp2 --port 80 &
 
 - Verify that you can reach the app
   - `curl` the app, you should see a help menu for the app
-```bas
+```bash
 curl http://<instance-public-ip>/
 ```
 */
@@ -170,6 +170,7 @@ var _ = Describe("AWS EC2 Plugin utils test", func() {
 		// TODO[test enhancement] - create an EC2 instance on demand (or auto-skip the test) if the expected instance is unavailable
 		// See notes in the header of this file for instructions on how to restore the instance
 		ec2Port := 80
+		// This is an Elastic IP in us-east-1 and can be reassigned if the instance ever goes down
 		ec2Url := fmt.Sprintf("http://%v:%v/metrics", strings.Join([]string{"100", "24", "224", "6"}, "."), ec2Port)
 		validateUrl(ec2Url, substring)
 
