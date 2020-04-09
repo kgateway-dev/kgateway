@@ -35,8 +35,10 @@ type ProtocolUpgradeConfig struct {
 }
 
 func (m *ProtocolUpgradeConfig) Reset()         { *m = ProtocolUpgradeConfig{} }
-func (m *ProtocolUpgradeConfig) String() string { return proto.CompactTextString(m) }
-func (*ProtocolUpgradeConfig) ProtoMessage()    {}
+func (m *ProtocolUpgradeConfig) String() string {
+	return proto.CompactTextString(m)
+}
+func (*ProtocolUpgradeConfig) ProtoMessage() {}
 func (*ProtocolUpgradeConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_384550b21127c365, []int{0}
 }
