@@ -35,10 +35,8 @@ type ProtocolUpgradeConfig struct {
 }
 
 func (m *ProtocolUpgradeConfig) Reset()         { *m = ProtocolUpgradeConfig{} }
-func (m *ProtocolUpgradeConfig) String() string {
-	return proto.CompactTextString(m)
-}
-func (*ProtocolUpgradeConfig) ProtoMessage() {}
+func (m *ProtocolUpgradeConfig) String() string { return proto.CompactTextString(m) }
+func (*ProtocolUpgradeConfig) ProtoMessage()    {}
 func (*ProtocolUpgradeConfig) Descriptor() ([]byte, []int) {
 	return fileDescriptor_384550b21127c365, []int{0}
 }
@@ -103,10 +101,8 @@ type ProtocolUpgradeConfig_ProtocolUpgradeSpec struct {
 func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) Reset() {
 	*m = ProtocolUpgradeConfig_ProtocolUpgradeSpec{}
 }
-func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) String() string {
-	return proto.CompactTextString(m)
-}
-func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) ProtoMessage() {}
+func (m *ProtocolUpgradeConfig_ProtocolUpgradeSpec) String() string { return proto.CompactTextString(m) }
+func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) ProtoMessage()    {}
 func (*ProtocolUpgradeConfig_ProtocolUpgradeSpec) Descriptor() ([]byte, []int) {
 	return fileDescriptor_384550b21127c365, []int{0, 0}
 }
