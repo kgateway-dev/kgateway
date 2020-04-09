@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Assign Elastic IP to ec2 instance in aws ec2 e2e so a code change won't be
+    necessary if it is brought down again
