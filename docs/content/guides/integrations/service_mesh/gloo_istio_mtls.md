@@ -9,7 +9,7 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 ### Istio versions
 
-This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, and 1.4.3.
+This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, ad 1.5.1.
 
 ### Gloo versions
 
