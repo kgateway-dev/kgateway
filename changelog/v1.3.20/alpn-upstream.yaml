@@ -1,5 +1,6 @@
 
 changelog:
-  - type: NEW_FEATURE
-    description: Allow ALPN on the upstream. Istio upstreams seem to require ALPN set.
+  - type: FIX
+    description: Allow ALPN on the upstream. Istio upstreams seem to require ALPN set, so this fixes
+                 the integration with Istio 1.5.
     issueLink: https://github.com/solo-io/gloo/issues/2703 
