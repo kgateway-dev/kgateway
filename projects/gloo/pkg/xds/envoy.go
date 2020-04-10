@@ -53,11 +53,15 @@ func SnapshotKey(proxy *v1.Proxy) string {
 
 // Called in Syncer when a new set of proxies arrive
 // used to trim snapshots whose proxies have been deleted
-func GetKeysFromProxies(proxies v1.ProxyList) []string {
+func GetValidKeys(proxies v1.ProxyList, extensionKeys map[string]struct{}) []string {
 	var validKeys []string
-	// This is where we correlate Node ID with proxy namespace~name
+	// Get keys from proxies
 	for _, proxy := range proxies {
+		// This is where we correlate Node ID with proxy namespace~name
 		validKeys = append(validKeys, SnapshotKey(proxy))
+	}
+	for key := range extensionKeys {
+		validKeys = append(validKeys, key)
 	}
 	return validKeys
 }

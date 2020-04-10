@@ -23,7 +23,9 @@ type translatorSyncer struct {
 	// used for debugging purposes only
 	latestSnap *v1.ApiSnapshot
 	extensions []TranslatorSyncerExtension
-	settings   *v1.Settings
+	// used to track which envoy node IDs exist without belonging to a proxy
+	extensionKeys map[string]struct{}
+	settings      *v1.Settings
 }
 
 type TranslatorSyncerExtensionParams struct {
@@ -34,7 +36,7 @@ type TranslatorSyncerExtensionParams struct {
 type TranslatorSyncerExtensionFactory func(context.Context, TranslatorSyncerExtensionParams) (TranslatorSyncerExtension, error)
 
 type TranslatorSyncerExtension interface {
-	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) error
+	Sync(ctx context.Context, snap *v1.ApiSnapshot, xdsCache envoycache.SnapshotCache) (string, error)
 }
 
 func NewTranslatorSyncer(translator translator.Translator, xdsCache envoycache.SnapshotCache, xdsHasher *xds.ProxyKeyHasher, sanitizer sanitizer.XdsSanitizer, reporter reporter.Reporter, devMode bool, extensions []TranslatorSyncerExtension, settings *v1.Settings) v1.ApiSyncer {
@@ -62,11 +64,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
+	s.extensionKeys = map[string]struct{}{}
 	for _, extension := range s.extensions {
-		err := extension.Sync(ctx, snap, s.xdsCache)
+		nodeID, err := extension.Sync(ctx, snap, s.xdsCache)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
+		s.extensionKeys[nodeID] = struct{}{}
 	}
 	return multiErr.ErrorOrNil()
 }
