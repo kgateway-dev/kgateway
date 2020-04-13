@@ -44,8 +44,12 @@ message Proxy {
     repeated Listener listeners = 2;
 
     // Status indicates the validation status of this resource.
-    // Status is read-only by clients, and set by gloo during validation
-    core.solo.io.Status status = 6 [(gogoproto.nullable) = false, (gogoproto.moretags) = "testdiff:\"ignore\""];
+    // Status is read-only by clients, and set by gloo during validation.
+    //
+    // Note to devs: we include the status in the proxy hash to avoid a race condition between the gateway writing
+    // a new proxy in the proxy reconciler that is functionally equivalent (but with pending status) and gloo syncing
+    // the proxy status of the same new snapshot.
+    core.solo.io.Status status = 6 [(gogoproto.nullable) = false];
 
     // Metadata contains the object metadata for this resource
     core.solo.io.Metadata metadata = 7 [(gogoproto.nullable) = false];
