@@ -14,5 +14,6 @@ func TransitionFunction(original, desired *v1.Proxy) (bool, error) {
 	if ok {
 		return !equal, nil
 	}
-	return false, nil
+	// default behavior: perform the update if one if the objects are not hashable
+	return true, nil
 }
