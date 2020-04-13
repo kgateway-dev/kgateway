@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix race condition with proxy status and proxy status propagation (i.e., virtual service status) when multiple
+      resources are applied at the same time by including the proxy status in the proxy hash.
+    issueLink: https://github.com/solo-io/gloo/issues/2714
