@@ -128,6 +128,40 @@ var _ = Describe("ReconcileGatewayProxies", func() {
 		BeforeEach(func() {
 			reconcile()
 		})
+
+		Context("updating status", func() {
+			It("it carries over gloo status if proxy changed from gateway's point of view but not gloo's", func() {
+				// update snapshot gateway generation for reconcile
+				// will change gateway's view of the proxy, but the generation change is opaque to gloo
+				snap.Gateways[0].Metadata.Generation = 100
+				snap.Gateways[1].Metadata.Generation = 100
+				snap.Gateways[2].Metadata.Generation = 100
+				genProxy()
+
+				// simulate gloo accepting the proxy resource
+				liveProxy, err := proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{})
+				Expect(err).NotTo(HaveOccurred())
+				liveProxy.Status.State = core.Status_Accepted
+				liveProxy, err = proxyClient.Write(liveProxy, clients.WriteOpts{OverwriteExisting: true})
+				Expect(err).NotTo(HaveOccurred())
+
+				// we expect the initial proxy listener to have generation 0
+				Expect(liveProxy.Listeners[0]).To(HaveGeneration(0))
+
+				reconcile()
+				px := getProxy()
+
+				// typically the reconciler sets resources to pending for processing, but here
+				// we expect the status to be carried over because nothing changed from gloo's
+				// point of view
+				Expect(px.GetStatus().State).To(Equal(core.Status_Accepted))
+
+				// after reconcile with the updated snapshot, we confirm that gateway-specific
+				// parts of the proxy have been updated
+				Expect(px.Listeners[0]).To(HaveGeneration(100))
+			})
+		})
+
 		Context("a gateway has a reported error", func() {
 			It("only updates the valid listeners", func() {
 				snap.Gateways[0].Metadata.Generation = 100
