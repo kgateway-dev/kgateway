@@ -74,10 +74,14 @@ type JobSpec struct {
 	*PodSpec
 }
 
+type DeploymentSpecSansResources struct {
+	Replicas  int              `json:"replicas" desc:"number of instances to deploy"`
+	CustomEnv []*appsv1.EnvVar `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
+}
+
 type DeploymentSpec struct {
-	Replicas  int                   `json:"replicas" desc:"number of instances to deploy"`
+	DeploymentSpecSansResources
 	Resources *ResourceRequirements `json:"resources,omitempty" desc:"resources for the main pod in the deployment"`
-	CustomEnv []*appsv1.EnvVar      `json:"customEnv,omitempty" desc:"custom extra environment variables for the container"`
 }
 
 type Integrations struct {
@@ -222,7 +226,7 @@ type GatewayProxyKind struct {
 	DaemonSet  *DaemonSetSpec          `json:"daemonSet,omitempty" desc:"set to deploy as a kubernetes daemonset, otherwise nil"`
 }
 type GatewayProxyDeployment struct {
-	*DeploymentSpec
+	*DeploymentSpecSansResources
 }
 
 type DaemonSetSpec struct {
