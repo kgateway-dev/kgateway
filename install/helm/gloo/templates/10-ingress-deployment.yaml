@@ -25,6 +25,9 @@ spec:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
+{{- if .Values.ingressProxy.deployment.resources }}
+        resources:
+{{ toYaml .Values.ingressProxy.deployment.resources | indent 10}}
         env:
 {{- if .Values.ingress.deployment.customEnv }}
 {{ toYaml .Values.ingress.deployment.customEnv | indent 8 }}
