@@ -29,7 +29,14 @@ spec:
         - image: {{ template "gloo.image" $image }}
           imagePullPolicy: {{ $image.pullPolicy }}
           name: access-logger
+{{- if .Values.accessLogger.resources }}
+          resources:
+{{ toYaml .Values.accessLogger.resources | indent 12}}
+{{- end}}
           env:
+{{- if .Values.accessLogger.customEnv }}
+{{ toYaml .Values.accessLogger.customEnv | indent 10 }}
+{{- end }}
           - name: POD_NAMESPACE
             valueFrom:
               fieldRef:

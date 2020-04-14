@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    description: >
+      Fix documented helm values for gateway proxy resources. Allow ingress resources to be set, and allow access logger
+      resources and custom env to be set, as documented.
+    issueLink: https://github.com/solo-io/gloo/issues/2758
