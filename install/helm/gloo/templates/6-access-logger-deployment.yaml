@@ -32,6 +32,7 @@ spec:
 {{- if .Values.accessLogger.resources }}
           resources:
 {{ toYaml .Values.accessLogger.resources | indent 12}}
+{{- end}}
           env:
 {{- if .Values.accessLogger.customEnv }}
 {{ toYaml .Values.accessLogger.customEnv | indent 10 }}
