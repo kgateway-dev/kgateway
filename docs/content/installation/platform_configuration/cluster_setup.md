@@ -11,9 +11,12 @@ Click on the links below for details specific to your Kubernetes distribution:
 - [Minikube](#minikube)
 - [Minishift](#minishift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
+  - [Private clusters](#private-clusters)
 - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
 - [Amazon Elastic Container Service for Kubernetes (EKS)](#amazon-elastic-container-service-for-kubernetes-eks)
 - [Additional Notes](#additional-notes)
+  - [DNS Records](#dns-records)
+  - [Certificate Management](#certificate-management)
 - [Next Steps](#next-steps)
 
 {{% notice note %}}
@@ -150,7 +153,7 @@ Deploying Gloo in a private GKE cluster requires some additional configuration.
 
 A private cluster cannot access container repositories outside of Google. You will need to configure the private cluster to use Cloud NAT for internet access. You can follow the [Basic GKE example](https://cloud.google.com/nat/docs/gke-example) in the docs from Google. The Gloo containers are hosted on Quay.io.
 
-A private cluster requires firewall rules to be in place for the API server to talk to the Gloo pods. Create a firewall rule allowing TCP and UDP traffic on ports 9977, 9979, 9988, and 9091 from the *master address range* to the node tags. You can follow [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters) for more information.
+A private cluster requires firewall rules to be in place for the API server on the master node(s) to talk to the Gloo pods. Create a firewall rule allowing TCP traffic on port 8443 from the *master address range* to tag for the worker node VMs. You can follow [this guide from Linkerd](https://linkerd.io/2/reference/cluster-configuration/#private-clusters) for more information.
 
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
