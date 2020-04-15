@@ -1,4 +1,4 @@
-FROM alpine:3.11.3
+FROM quay.io/solo-io/envoy-gloo:1.4.2
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \

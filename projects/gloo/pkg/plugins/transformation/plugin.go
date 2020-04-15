@@ -2,7 +2,9 @@ package transformation
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
@@ -31,6 +33,20 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	transformations := in.GetOptions().GetTransformations()
 	if transformations == nil {
 		return nil
+	}
+
+	yml, err := bootstrap.ToYaml(transformations)
+	if err != nil {
+		// should never happen
+		return eris.Errorf("Unable to convert transformation to yaml, error: %v", err)
+	}
+	// indentation needs to match go template indentation so multiline yaml renders properly
+	indentedYml := bootstrap.IndentYaml(string(yml), 18)
+
+	envoyInstance := bootstrap.EnvoyInstance{Transformations: indentedYml}
+	err = envoyInstance.ValidateBootstrap(params.Ctx, bootstrap.TransformationBootstrapTemplate)
+	if err != nil {
+		return err
 	}
 
 	p.RequireTransformationFilter = true

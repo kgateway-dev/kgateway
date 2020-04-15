@@ -23,6 +23,25 @@ var _ = Describe("Plugin", func() {
 		p = NewPlugin()
 		t = &transformation.RouteTransformations{
 			ClearRouteCache: true,
+			ResponseTransformation: &transformation.Transformation{
+				TransformationType: &transformation.Transformation_TransformationTemplate{
+					TransformationTemplate: &transformation.TransformationTemplate{
+						AdvancedTemplates: false,
+						Extractors:        nil,
+						Headers: map[string]*transformation.InjaTemplate{
+							":status": &transformation.InjaTemplate{Text: `{% if default(data.error.message, "") != "" %}400{% else %}{{
+								header(":status") }}{% endif %}`},
+						},
+						BodyTransformation:    nil,
+						ParseBodyBehavior:     0,
+						IgnoreErrorOnParse:    false,
+						DynamicMetadataValues: nil,
+						XXX_NoUnkeyedLiteral:  struct{}{},
+						XXX_unrecognized:      nil,
+						XXX_sizecache:         0,
+					},
+				},
+			},
 		}
 		configStruct, err := conversion.MessageToStruct(t)
 		Expect(err).NotTo(HaveOccurred())
@@ -40,7 +59,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
-	It("sets transformation config for virtual hosts", func() {
+	FIt("sets transformation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
