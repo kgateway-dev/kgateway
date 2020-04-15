@@ -169,7 +169,7 @@ func getEnvoyStatsDump(opts *options.Options) (string, error) {
 			log.Printf("connecting to envoy failed with err %v", err.Error())
 		case res := <-result:
 			return res, nil
-		case <-time.After(time.Second * 3):
+		case <-time.After(time.Second * 30):
 			return "", errors.Errorf("timed out trying to connect to Envoy admin port")
 		}
 	}

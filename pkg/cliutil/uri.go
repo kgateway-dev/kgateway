@@ -200,7 +200,7 @@ func PortForwardGet(ctx context.Context, namespace string, resource string, loca
 		return "", nil, err
 	}
 
-	localCtx, cancel := context.WithTimeout(ctx, time.Second*3)
+	localCtx, cancel := context.WithTimeout(ctx, time.Second*30)
 	defer cancel()
 
 	// wait for port-forward to be ready

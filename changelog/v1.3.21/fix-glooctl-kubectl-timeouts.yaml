@@ -1,0 +1,9 @@
+changelog:
+  - type: FIX
+    description: >
+      Some users saw commands such as glooctl check or glooctl proxy dump fail due to
+      harsh timeout restrictions on the port-forward glooctl does under the covers.
+      This results in "Connection Refused" errors that could have been avoided.
+      This PR updates the port forward timeouts from 3 to 30 seconds to allow these
+      commands more time to finish.
+    issueLink: https://github.com/solo-io/gloo/issues/2771

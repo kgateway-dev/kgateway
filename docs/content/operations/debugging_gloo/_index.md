@@ -177,7 +177,7 @@ Each Gloo control plane component comes with a optional debug port that can be e
 kubectl port-forward  -n gloo-system deploy/gloo  9091:9091
 ```
 
-Now you can navigate to [http://localhost:9091](http://localhost:9091) and you get a simple page with some additional endpoints:
+Now you can navigate to http://localhost:9091 and you get a simple page with some additional endpoints:
 
 * `/debug/pprof`
 * `/logging`

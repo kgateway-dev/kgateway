@@ -84,7 +84,7 @@ func getEnvoyLogs(opts *options.Options) error {
 				return errors.Errorf("cancelled")
 			case err := <-errs:
 				log.Printf("connecting to envoy failed with err %v", err.Error())
-			case <-time.After(time.Second * 3):
+			case <-time.After(time.Second * 30):
 				return errors.Errorf("timed out trying to connect to Envoy admin port")
 			case <-done:
 				break waitForDebugMode
