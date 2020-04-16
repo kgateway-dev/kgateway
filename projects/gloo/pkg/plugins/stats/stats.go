@@ -7,8 +7,8 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/rotisserie/eris"
+	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/stats"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -44,7 +44,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 		return nil
 	}
 
-	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(in.GetOptions().GetStats())
+	vClusters, err := converter{ctx: params.Ctx}.convertVirtualClusters(params, in.GetOptions().GetStats())
 	if err != nil {
 		return err
 	}
@@ -57,7 +57,7 @@ type converter struct {
 	ctx context.Context
 }
 
-func (c converter) convertVirtualClusters(statsConfig *stats.Stats) ([]*envoyroute.VirtualCluster, error) {
+func (c converter) convertVirtualClusters(params plugins.VirtualHostParams, statsConfig *stats.Stats) ([]*envoyroute.VirtualCluster, error) {
 	var result []*envoyroute.VirtualCluster
 	for _, virtualCluster := range statsConfig.VirtualClusters {
 
@@ -78,12 +78,7 @@ func (c converter) convertVirtualClusters(statsConfig *stats.Stats) ([]*envoyrou
 		headermatcher := []*envoyroute.HeaderMatcher{{
 			Name: ":path",
 			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: &envoymatcher.RegexMatcher{
-					EngineType: &envoymatcher.RegexMatcher_GoogleRe2{
-						GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{},
-					},
-					Regex: virtualCluster.Pattern,
-				},
+				SafeRegexMatch: regexutils.NewRegex(params.Ctx, virtualCluster.Pattern),
 			},
 		}}
 

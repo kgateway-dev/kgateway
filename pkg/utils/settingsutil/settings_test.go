@@ -27,6 +27,12 @@ var _ = Describe("Settings", func() {
 		Expect(func() { FromContext(ctx) }).Should(Panic())
 	})
 
+	It("should not when no settings with MaybeFromContext", func() {
+		ctx := context.Background()
+		settings := MaybeFromContext(ctx)
+		Expect(settings).To(BeNil())
+	})
+
 	It("should return true for IsAllNamespacesFromSettings when WatchNamespaces is empty", func() {
 		settings := &v1.Settings{
 			WatchNamespaces: []string{},
