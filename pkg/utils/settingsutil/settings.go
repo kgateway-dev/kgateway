@@ -15,6 +15,9 @@ func WithSettings(ctx context.Context, settings *v1.Settings) context.Context {
 }
 
 func FromContext(ctx context.Context) *v1.Settings {
+	if ctx == nil {
+		return nil
+	}
 	settings := MaybeFromContext(ctx)
 	if settings != nil {
 		return settings
