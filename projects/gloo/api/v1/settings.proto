@@ -387,7 +387,8 @@ message GlooOptions {
     // If not specified, defaults to `false`.
     google.protobuf.BoolValue disable_proxy_garbage_collection = 9;
 
-    // Set this option to specify the default max program size for regexs.
+    // Set this option to specify the default max program size for regexes. If not specified, 
+    // defaults to 100.
     google.protobuf.UInt32Value regex_max_program_size = 10;
 }
 

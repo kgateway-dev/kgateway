@@ -1203,7 +1203,8 @@ type GlooOptions struct {
 	// set to false if you wish to reset the envoy configuration to a clean slate with no routes.
 	// If not specified, defaults to `false`.
 	DisableProxyGarbageCollection *types.BoolValue `protobuf:"bytes,9,opt,name=disable_proxy_garbage_collection,json=disableProxyGarbageCollection,proto3" json:"disable_proxy_garbage_collection,omitempty"`
-	// Set this option to specify the default max program size for regexs.
+	// Set this option to specify the default max program size for regexes. If not specified,
+	// defaults to 100.
 	RegexMaxProgramSize  *types.UInt32Value `protobuf:"bytes,10,opt,name=regex_max_program_size,json=regexMaxProgramSize,proto3" json:"regex_max_program_size,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
