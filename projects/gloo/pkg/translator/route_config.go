@@ -183,7 +183,7 @@ func initRoutes(params plugins.RouteParams, in *v1.Route, routeReport *validatio
 func GlooMatcherToEnvoyMatcher(params plugins.RouteParams, matcher *matchers.Matcher) envoyroute.RouteMatch {
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(params, matcher.GetHeaders()),
-		QueryParameters: envoyQueryMatcher(matcher.GetQueryParameters()),
+		QueryParameters: envoyQueryMatcher(params, matcher.GetQueryParameters()),
 	}
 	if len(matcher.GetMethods()) > 0 {
 		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
@@ -195,7 +195,7 @@ func GlooMatcherToEnvoyMatcher(params plugins.RouteParams, matcher *matchers.Mat
 	}
 	// need to do this because Go's proto implementation makes oneofs private
 	// which genius thought of that?
-	setEnvoyPathMatcher(matcher, &match)
+	setEnvoyPathMatcher(params, matcher, &match)
 	return match
 }
 
@@ -475,7 +475,7 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
+func setEnvoyPathMatcher(params plugins.RouteParams, in *matchers.Matcher, out *envoyroute.RouteMatch) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoyroute.RouteMatch_Path{
@@ -483,12 +483,7 @@ func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
 		}
 	case *matchers.Matcher_Regex:
 		out.PathSpecifier = &envoyroute.RouteMatch_SafeRegex{
-			SafeRegex: &envoy_type_matcher.RegexMatcher{
-				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-				},
-				Regex: path.Regex,
-			},
+			SafeRegex: regexutils.NewRegex(params.Ctx, path.Regex),
 		}
 	case *matchers.Matcher_Prefix:
 		out.PathSpecifier = &envoyroute.RouteMatch_Prefix{
@@ -529,7 +524,7 @@ func envoyHeaderMatcher(params plugins.RouteParams, in []*matchers.HeaderMatcher
 	return out
 }
 
-func envoyQueryMatcher(in []*matchers.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
+func envoyQueryMatcher(params plugins.RouteParams, in []*matchers.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
 	var out []*envoyroute.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroute.QueryParameterMatcher{
@@ -545,10 +540,7 @@ func envoyQueryMatcher(in []*matchers.QueryParameterMatcher) []*envoyroute.Query
 				envoyMatch.QueryParameterMatchSpecifier = &envoyroute.QueryParameterMatcher_StringMatch{
 					StringMatch: &envoy_type_matcher.StringMatcher{
 						MatchPattern: &envoy_type_matcher.StringMatcher_SafeRegex{
-							SafeRegex: &envoy_type_matcher.RegexMatcher{
-								EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
-								Regex:      matcher.Value,
-							},
+							SafeRegex: regexutils.NewRegex(params.Ctx, matcher.Value),
 						},
 					},
 				}
