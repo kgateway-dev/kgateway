@@ -167,7 +167,7 @@ func initRoutes(params plugins.RouteParams, in *v1.Route, routeReport *validatio
 				"no path specifier provided",
 			)
 		}
-		match := GlooMatcherToEnvoyMatcher(params, matcher)
+		match := GlooMatcherToEnvoyMatcher(params.Params, matcher)
 		out[i] = &envoyroute.Route{
 			Match: &match,
 		}
@@ -180,7 +180,7 @@ func initRoutes(params plugins.RouteParams, in *v1.Route, routeReport *validatio
 }
 
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(params plugins.RouteParams, matcher *matchers.Matcher) envoyroute.RouteMatch {
+func GlooMatcherToEnvoyMatcher(params plugins.Params, matcher *matchers.Matcher) envoyroute.RouteMatch {
 	match := envoyroute.RouteMatch{
 		Headers:         envoyHeaderMatcher(params, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(params, matcher.GetQueryParameters()),
@@ -475,7 +475,7 @@ func getSubsets(upstream *v1.Upstream) *v1plugins.SubsetSpec {
 
 }
 
-func setEnvoyPathMatcher(params plugins.RouteParams, in *matchers.Matcher, out *envoyroute.RouteMatch) {
+func setEnvoyPathMatcher(params plugins.Params, in *matchers.Matcher, out *envoyroute.RouteMatch) {
 	switch path := in.GetPathSpecifier().(type) {
 	case *matchers.Matcher_Exact:
 		out.PathSpecifier = &envoyroute.RouteMatch_Path{
@@ -492,7 +492,7 @@ func setEnvoyPathMatcher(params plugins.RouteParams, in *matchers.Matcher, out *
 	}
 }
 
-func envoyHeaderMatcher(params plugins.RouteParams, in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatcher {
+func envoyHeaderMatcher(params plugins.Params, in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	var out []*envoyroute.HeaderMatcher
 	for _, matcher := range in {
 
@@ -524,7 +524,7 @@ func envoyHeaderMatcher(params plugins.RouteParams, in []*matchers.HeaderMatcher
 	return out
 }
 
-func envoyQueryMatcher(params plugins.RouteParams, in []*matchers.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
+func envoyQueryMatcher(params plugins.Params, in []*matchers.QueryParameterMatcher) []*envoyroute.QueryParameterMatcher {
 	var out []*envoyroute.QueryParameterMatcher
 	for _, matcher := range in {
 		envoyMatch := &envoyroute.QueryParameterMatcher{
