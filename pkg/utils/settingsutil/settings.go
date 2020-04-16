@@ -15,15 +15,22 @@ func WithSettings(ctx context.Context, settings *v1.Settings) context.Context {
 }
 
 func FromContext(ctx context.Context) *v1.Settings {
+	settings := MaybeFromContext(ctx)
+	if settings != nil {
+		return settings
+	}
+	// we should always have settings when this method is called.
+	panic("no settings on context")
+}
+
+func MaybeFromContext(ctx context.Context) *v1.Settings {
 	if ctx == nil {
 		return nil
 	}
 	if settings, ok := ctx.Value(settingsKey).(*v1.Settings); ok {
 		return settings
 	}
-
-	// we should always have settings when this method is called.
-	panic("no settings on context")
+	return nil
 }
 
 func IsAllNamespacesFromSettings(s *v1.Settings) bool {

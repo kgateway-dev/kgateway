@@ -57,7 +57,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
 	if rl := in.GetOptions().GetRatelimit(); rl != nil {
-		out.RateLimits = generateCustomEnvoyConfigForVhost(rl.RateLimits)
+		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rl.RateLimits)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 
 	ra := out.GetRoute()
 	if ra != nil {
-		ra.RateLimits = generateCustomEnvoyConfigForVhost(rateLimit.RateLimits)
+		ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimit.RateLimits)
 		ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimit.IncludeVhRateLimits}
 	} else {
 		// TODO(yuval-k): maybe return nil here instead and just log a warning?

@@ -16,6 +16,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	gloo_envoy_core "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -418,6 +419,33 @@ var _ = Describe("Translator", func() {
 			Expect(headerMatch.InvertMatch).To(Equal(false))
 			regex := headerMatch.GetSafeRegexMatch().GetRegex()
 			Expect(regex).To(Equal("testvalue"))
+		})
+
+		It("should translate header matcher with regex becomes regex match, with non default program size", func() {
+
+			settings := &v1.Settings{
+				Gloo: &v1.GlooOptions{
+					RegexMaxProgramSize: &types.UInt32Value{Value: 200},
+				},
+			}
+			params.Ctx = settingsutil.WithSettings(params.Ctx, settings)
+
+			matcher.Headers = []*matchers.HeaderMatcher{
+				{
+					Name:  "test",
+					Value: "testvalue",
+					Regex: true,
+				},
+			}
+			translate()
+
+			headerMatch := routeConfiguration.VirtualHosts[0].Routes[0].Match.Headers[0]
+			Expect(headerMatch.Name).To(Equal("test"))
+			Expect(headerMatch.InvertMatch).To(Equal(false))
+			regex := headerMatch.GetSafeRegexMatch().GetRegex()
+			Expect(regex).To(Equal("testvalue"))
+			maxsize := headerMatch.GetSafeRegexMatch().GetGoogleRe2().GetMaxProgramSize().GetValue()
+			Expect(maxsize).To(BeEquivalentTo(200))
 		})
 
 		It("should translate header matcher logic inversion flag", func() {

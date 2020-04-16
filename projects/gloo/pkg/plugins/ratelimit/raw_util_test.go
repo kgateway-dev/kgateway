@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -144,10 +143,7 @@ func ExpectActionsSame(actions []*gloorl.Action) {
 			for _, h := range headers {
 				if regex := h.GetRegexMatch(); regex != "" {
 					h.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
-						SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-							EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
-							Regex:      regex,
-						},
+						SafeRegexMatch: regexutils.NewRegex(params.Ctx, regex),
 					}
 				}
 			}

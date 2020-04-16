@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix an issue where big regexes were rejected, by allowing configuration of the max regex size.
+    issueLink: https://github.com/solo-io/gloo/issues/2805

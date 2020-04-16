@@ -21,6 +21,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	errors "github.com/rotisserie/eris"
+	regexutils "github.com/solo-io/gloo/pkg/utils/regex"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -136,7 +137,7 @@ func (t *translatorInstance) computeVirtualHost(params plugins.VirtualHostParams
 
 func (t *translatorInstance) envoyRoutes(params plugins.RouteParams, routeReport *validationapi.RouteReport, in *v1.Route) []*envoyroute.Route {
 
-	out := initRoutes(in, routeReport)
+	out := initRoutes(params, in, routeReport)
 
 	for i := range out {
 		t.setAction(params, routeReport, in, out[i])
@@ -146,7 +147,7 @@ func (t *translatorInstance) envoyRoutes(params plugins.RouteParams, routeReport
 }
 
 // creates Envoy routes for each matcher provided on our Gateway route
-func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []*envoyroute.Route {
+func initRoutes(params plugins.RouteParams, in *v1.Route, routeReport *validationapi.RouteReport) []*envoyroute.Route {
 	out := make([]*envoyroute.Route, len(in.Matchers))
 
 	if len(in.Matchers) == 0 {
@@ -166,7 +167,7 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []*envoyro
 				"no path specifier provided",
 			)
 		}
-		match := GlooMatcherToEnvoyMatcher(matcher)
+		match := GlooMatcherToEnvoyMatcher(params, matcher)
 		out[i] = &envoyroute.Route{
 			Match: &match,
 		}
@@ -179,19 +180,16 @@ func initRoutes(in *v1.Route, routeReport *validationapi.RouteReport) []*envoyro
 }
 
 // utility function to transform gloo matcher to envoy route matcher
-func GlooMatcherToEnvoyMatcher(matcher *matchers.Matcher) envoyroute.RouteMatch {
+func GlooMatcherToEnvoyMatcher(params plugins.RouteParams, matcher *matchers.Matcher) envoyroute.RouteMatch {
 	match := envoyroute.RouteMatch{
-		Headers:         envoyHeaderMatcher(matcher.GetHeaders()),
+		Headers:         envoyHeaderMatcher(params, matcher.GetHeaders()),
 		QueryParameters: envoyQueryMatcher(matcher.GetQueryParameters()),
 	}
 	if len(matcher.GetMethods()) > 0 {
 		match.Headers = append(match.Headers, &envoyroute.HeaderMatcher{
 			Name: ":method",
 			HeaderMatchSpecifier: &envoyroute.HeaderMatcher_SafeRegexMatch{
-				SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
-					Regex:      strings.Join(matcher.Methods, "|"),
-				},
+				SafeRegexMatch: regexutils.NewRegex(params.Ctx, strings.Join(matcher.Methods, "|")),
 			},
 		})
 	}
@@ -499,7 +497,7 @@ func setEnvoyPathMatcher(in *matchers.Matcher, out *envoyroute.RouteMatch) {
 	}
 }
 
-func envoyHeaderMatcher(in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatcher {
+func envoyHeaderMatcher(params plugins.RouteParams, in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatcher {
 	var out []*envoyroute.HeaderMatcher
 	for _, matcher := range in {
 
@@ -513,10 +511,7 @@ func envoyHeaderMatcher(in []*matchers.HeaderMatcher) []*envoyroute.HeaderMatche
 		} else {
 			if matcher.Regex {
 				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_SafeRegexMatch{
-					SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
-						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{}},
-						Regex:      matcher.Value,
-					},
+					SafeRegexMatch: regexutils.NewRegex(params.Ctx, matcher.Value),
 				}
 			} else {
 				envoyMatch.HeaderMatchSpecifier = &envoyroute.HeaderMatcher_ExactMatch{

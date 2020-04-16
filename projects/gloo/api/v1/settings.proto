@@ -386,6 +386,9 @@ message GlooOptions {
     // set to false if you wish to reset the envoy configuration to a clean slate with no routes.
     // If not specified, defaults to `false`.
     google.protobuf.BoolValue disable_proxy_garbage_collection = 9;
+
+    // Set this option to specify the default max program size for regexs.
+    google.protobuf.UInt32Value regex_max_program_size = 10;
 }
 
 // Settings specific to the Gateway controller

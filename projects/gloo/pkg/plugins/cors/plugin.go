@@ -1,6 +1,7 @@
 package cors
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -15,6 +16,7 @@ import (
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	regexutils "github.com/solo-io/gloo/pkg/utils/regex"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -51,7 +53,7 @@ func (p *plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 			zap.Any("virtual host", in.Name))
 	}
 	out.Cors = &envoyroute.CorsPolicy{}
-	return p.translateCommonUserCorsConfig(corsPlugin, out.Cors)
+	return p.translateCommonUserCorsConfig(params.Ctx, corsPlugin, out.Cors)
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
@@ -73,14 +75,14 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		outRa = out.GetRoute()
 	}
 	outRa.Cors = &envoyroute.CorsPolicy{}
-	if err := p.translateCommonUserCorsConfig(in.Options.Cors, outRa.Cors); err != nil {
+	if err := p.translateCommonUserCorsConfig(params.Ctx, in.Options.Cors, outRa.Cors); err != nil {
 		return err
 	}
 	p.translateRouteSpecificCorsConfig(in.Options.Cors, outRa.Cors)
 	return nil
 }
 
-func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
+func (p *plugin) translateCommonUserCorsConfig(ctx context.Context, in *cors.CorsPolicy, out *envoyroute.CorsPolicy) error {
 	if len(in.AllowOrigin) == 0 && len(in.AllowOriginRegex) == 0 {
 		return fmt.Errorf("must provide at least one of AllowOrigin or AllowOriginRegex")
 	}
@@ -91,10 +93,7 @@ func (p *plugin) translateCommonUserCorsConfig(in *cors.CorsPolicy, out *envoyro
 	}
 	for _, ao := range in.AllowOriginRegex {
 		out.AllowOriginStringMatch = append(out.AllowOriginStringMatch, &envoymatcher.StringMatcher{
-			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: &envoymatcher.RegexMatcher{
-				EngineType: &envoymatcher.RegexMatcher_GoogleRe2{GoogleRe2: &envoymatcher.RegexMatcher_GoogleRE2{}},
-				Regex:      ao,
-			}},
+			MatchPattern: &envoymatcher.StringMatcher_SafeRegex{SafeRegex: regexutils.NewRegex(ctx, ao)},
 		})
 	}
 	out.AllowMethods = strings.Join(in.AllowMethods, ",")
