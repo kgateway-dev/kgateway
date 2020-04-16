@@ -10,25 +10,17 @@ import (
 )
 
 func NewRegex(ctx context.Context, regex string) *envoy_type_matcher.RegexMatcher {
-
 	settings := settingsutil.MaybeFromContext(ctx)
+	return NewRegexFromSettings(settings, regex)
+}
+
+func NewRegexFromSettings(settings *v1.Settings, regex string) *envoy_type_matcher.RegexMatcher {
 	var programsize *uint32
 	if settings != nil {
 		if max_size := settings.GetGloo().GetRegexMaxProgramSize(); max_size != nil {
 			programsize = &max_size.Value
 		}
 	}
-
-	return NewRegexWithProgramSize(regex, programsize)
-}
-
-func NewRegexFromSettings(settings *v1.Settings, regex string) *envoy_type_matcher.RegexMatcher {
-	var programsize *uint32
-
-	if max_size := settings.GetGloo().GetRegexMaxProgramSize(); max_size != nil {
-		programsize = &max_size.Value
-	}
-
 	return NewRegexWithProgramSize(regex, programsize)
 }
 

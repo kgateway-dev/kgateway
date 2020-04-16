@@ -10,7 +10,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
-	regexutils "github.com/solo-io/gloo/pkg/utils/regex"
+	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	gloorl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

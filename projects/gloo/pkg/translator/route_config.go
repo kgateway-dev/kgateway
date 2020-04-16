@@ -21,7 +21,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	errors "github.com/rotisserie/eris"
-	regexutils "github.com/solo-io/gloo/pkg/utils/regex"
+	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
