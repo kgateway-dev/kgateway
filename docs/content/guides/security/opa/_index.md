@@ -112,17 +112,22 @@ metadata:
 
 Time to test!
 
-We have prepared two virtual services for testing:
+We have prepared two virtual services for testing (click on each to see the content):
 
-<details><summary>[vs-ok.yaml](vs-ok.yaml)</summary>
+<details><summary>Valid VirtualService (vs-ok.yaml)</summary>
+
 ```
-{{% readfile file="guides/security/opa/vs-ok.yaml" %}}
+{{< readfile file="guides/security/opa/vs-ok.yaml" >}}
 ```
+
 </details>
-<details><summary>[vs-err.yaml](vs-err.yaml)</summary>
+
+<details><summary>Denied VirtualService (vs-err.yaml)</summary>
+
 ```
-{{% readfile file="guides/security/opa/vs-err.yaml" %}}
+{{< readfile file="guides/security/opa/vs-err.yaml" >}}
 ```
+
 </details>
 
 Try it:
