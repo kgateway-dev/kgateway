@@ -127,7 +127,7 @@ var _ = Describe("RawUtil", func() {
 })
 
 func ExpectActionsSame(actions []*gloorl.Action) {
-	out := ConvertActions(actions)
+	out := ConvertActions(nil, actions)
 
 	ExpectWithOffset(1, len(actions)).To(Equal(len(out)))
 	for i := range actions {
@@ -144,7 +144,7 @@ func ExpectActionsSame(actions []*gloorl.Action) {
 			for _, h := range headers {
 				if regex := h.GetRegexMatch(); regex != "" {
 					h.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
-						SafeRegexMatch: regexutils.NewRegex(params.Ctx, regex),
+						SafeRegexMatch: regexutils.NewRegex(nil, regex),
 					}
 				}
 			}
