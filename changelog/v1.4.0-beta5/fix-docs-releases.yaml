@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: >
+      There used to be a hardcoded dependency in between the TAGGED_VERSION environment variable
+      and the url of the released docs. Since we need the url of the released docs to be the version
+      number of the branch with the patch set to 0 (e.g. 1.3.0), we need to decouple them.
+    issueLink: https://github.com/solo-io/gloo/issues/2762
