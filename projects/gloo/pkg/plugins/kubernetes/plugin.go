@@ -68,7 +68,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
-	return errors.Errorf("Upstream %s references the service %s which does not exist in namespace %s",
-		in.Metadata.Name, kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
+	upstreamRef := in.GetMetadata().Ref()
+	return errors.Errorf("Upstream %s references the service \"%s\" which does not exist in namespace \"%s\"",
+		upstreamRef.String(), kube.Kube.ServiceName, kube.Kube.ServiceNamespace)
 
 }
