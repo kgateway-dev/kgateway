@@ -1,12 +1,12 @@
 ---
 title: "Last mile helm chart customization with Helm and Kustomize"
 menuTitle: "Kubernetes"
-description: How to install Gloo to run in Gateway Mode on Kubernetes (Default).
+description: How to make tweaks to the existing Gloo helm chart.
 weight: 20
 ---
 
 
-Helm 3.1 supports the notion of a post processing step, that allows customizing a chart,
+Helm 3.1 supports the notion of a post render step, that allows customizing a chart,
 without needed to modify the chart itself.
 
 In this example, we will add a sysctl value to the gateway-proxy pod.
