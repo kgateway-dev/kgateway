@@ -38,20 +38,12 @@ spec:
         configMap:
           name: envoy-sidecar-config
 {{- end }}
-{{- if .Values.gloo.envoyValidation.enabled }}
-      - name: envoy-binary-dir
-        emptyDir: {}
-{{- end }}
       - name: labels-volume
         downwardAPI:
           items:
             - path: "labels"
               fieldRef:
                 fieldPath: metadata.labels
-{{- if .Values.gloo.deployment.extraInitContainersHelper }}
-      initContainers:
-{{- include .Values.gloo.deployment.extraInitContainersHelper $ | nindent 6 }}
-{{- end }}
       containers:
 {{- if .Values.global.glooMtls.enabled }}
       {{- $sdsImage := merge .Values.global.glooMtls.sds.image .Values.global.image }}
@@ -127,10 +119,6 @@ spec:
         - name: labels-volume
           mountPath: /etc/gloo
           readOnly: true
-{{- if .Values.gloo.envoyValidation.enabled }}
-        - name: envoy-binary-dir
-          mountPath: /etc/bin/envoy
-{{- end }}
         env:
 {{- if .Values.gloo.deployment.customEnv }}
 {{ toYaml .Values.gloo.deployment.customEnv | indent 10 }}
