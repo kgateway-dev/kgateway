@@ -27,5 +27,8 @@ spec:
   selector:
     gloo: knative-external-proxy
   type: {{ .Values.settings.integrations.knative.proxy.service.type }}
+  {{- if and (eq .Values.settings.integrations.knative.proxy.service.type "LoadBalancer") .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.settings.integrations.knative.proxy.service.loadBalancerIP }}
+  {{- end }}
 {{- end }}
 {{- end }}
