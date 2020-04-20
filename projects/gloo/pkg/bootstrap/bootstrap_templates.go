@@ -21,7 +21,15 @@ type EnvoyInstance struct {
 	Transformations string
 }
 
-const envoyPath = "/usr/local/bin/envoy"
+const defaultEnvoyPath = "/usr/local/bin/envoy"
+
+func getEnvoyPath() string {
+	ep := os.Getenv("ENVOY_BINARY_PATH")
+	if len(ep) == 0 {
+		ep = defaultEnvoyPath
+	}
+	return ep
+}
 
 func ToYaml(m proto.Message) ([]byte, error) {
 	jsn, err := protoutils.MarshalBytes(m)
@@ -40,6 +48,7 @@ func IndentYaml(yml string, numSpaces int) string {
 
 func (ei *EnvoyInstance) ValidateBootstrap(ctx context.Context, bootstrapTemplate string) error {
 	configYaml := ei.buildBootstrap(bootstrapTemplate)
+	envoyPath := getEnvoyPath()
 	validateCmd := exec.Command(envoyPath, "--mode", "validate", "--config-yaml", configYaml)
 	if output, err := validateCmd.CombinedOutput(); err != nil {
 		if os.IsNotExist(err) {
