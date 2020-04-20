@@ -58,7 +58,7 @@ func (ei *EnvoyInstance) ValidateBootstrap(ctx context.Context, bootstrapTemplat
 				"skipping additional validation of Gloo config.", envoyPath)
 			return nil
 		}
-		return eris.Errorf("%v", string(output), err)
+		return eris.Errorf("envoy validation mode output: %v, error: %v", string(output), err)
 	}
 	return nil
 }
