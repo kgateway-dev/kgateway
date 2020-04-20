@@ -656,7 +656,7 @@ spec:
 ...
 {{< /highlight >}}
 
-Note that alpn_protocols is supported in upstreams starting in gloo 1.3.18.
+Note that alpn_protocols is supported in upstreams starting in gloo 1.3.20.
 
 #### Test
 As this is a bit involved, lets take a step by step approach to test this. This was tested with Istio 1.5.1.
