@@ -70,7 +70,7 @@ type ListenerOptions struct {
 	// Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
 	Extensions *Extensions `protobuf:"bytes,2,opt,name=extensions,proto3" json:"extensions,omitempty"`
 	// Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB
-	// For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto)
+	// For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto)
 	PerConnectionBufferLimitBytes *types.UInt32Value `protobuf:"bytes,3,opt,name=per_connection_buffer_limit_bytes,json=perConnectionBufferLimitBytes,proto3" json:"per_connection_buffer_limit_bytes,omitempty"`
 	XXX_NoUnkeyedLiteral          struct{}           `json:"-"`
 	XXX_unrecognized              []byte             `json:"-"`
