@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/2835
+    description: Expose `perConnectionBufferLimitBytes` as a new listener option. If left unset, Envoy will continue to use the default `1MiB`.
+    
