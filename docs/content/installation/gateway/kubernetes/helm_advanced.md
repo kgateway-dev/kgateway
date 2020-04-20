@@ -111,7 +111,7 @@ kubectl create ns gloo-system
 helm upgrade -i gloo gloo/gloo --namespace gloo-system --post-renderer ./kustomize.sh
 ```
 
-Examine the `gateway-proxy` deploymet, you will see the new value:
+Examine the `gateway-proxy` deployment, you will see the new value:
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
