@@ -1,5 +1,5 @@
 changelog:
-  - type: FIX
+  - type: NON_USER_FACING
     description: >
       There used to be a hardcoded dependency in between the TAGGED_VERSION environment variable
       and the url of the released docs. Since we need the url of the released docs to be the version
