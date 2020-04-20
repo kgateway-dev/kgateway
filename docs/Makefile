@@ -30,7 +30,7 @@ PRODUCT_SCOPE := gloo
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	git -C themes/hugo-theme-soloio checkout d6169728a4b5d7da03153fc6b4141dee5efc372b
+	git -C themes/hugo-theme-soloio checkout 2b7951b673b7af6b82a0ad918f891e7ec8263135
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 

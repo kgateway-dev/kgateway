@@ -8,7 +8,13 @@ make serve-site
 
 ## Deploying to a versioned test site
 
-To test the versioned docs locally, run `docker pull` to get the appropriate gloo-docs images (e.g. `docker pull gcr.io/solo-public/gloo-docs:1.2.0`).
+To test the versioned docs locally:
+
+```
+eval $(minikube docker-env)
+```
+
+Run `docker pull` to get the appropriate gloo-docs images (e.g. `docker pull gcr.io/solo-public/gloo-docs:1.2.0`).
 
 ```
 kubectl apply -f docs-staging.yaml
