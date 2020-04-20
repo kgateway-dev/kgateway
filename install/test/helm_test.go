@@ -1185,6 +1185,7 @@ webhooks:
        apiGroups: ["gateway.solo.io"]
        apiVersions: ["v1"]
        resources: ["*"]
+   sideEffects: None
    failurePolicy: Ignore
 
 `)
