@@ -23,7 +23,7 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 
 // Used to set config that are directly on the [Envoy listener](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/listener.proto)
 func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoy_api_v2.Listener) error {
-	if in.GetOptions() == nil || in.GetOptions().GetPerConnectionBufferLimitBytes() == nil || in.GetOptions().GetPerConnectionBufferLimitBytes().Value == 0 {
+	if in.GetOptions().GetPerConnectionBufferLimitBytes() == nil || in.GetOptions().GetPerConnectionBufferLimitBytes().Value == 0 {
 		// Rely on default behavior
 		return nil
 	}
