@@ -41,10 +41,7 @@ func IndentYaml(yml string, numSpaces int) string {
 func (ei *EnvoyInstance) ValidateBootstrap(ctx context.Context, bootstrapTemplate string) error {
 	configYaml := ei.buildBootstrap(bootstrapTemplate)
 	validateCmd := exec.Command(envoyPath, "--mode", "validate", "--config-yaml", configYaml)
-	output := bytes.NewBuffer([]byte{})
-	validateCmd.Stdout = output
-	validateCmd.Stderr = output
-	if err := validateCmd.Run(); err != nil {
+	if output, err := validateCmd.CombinedOutput(); err != nil {
 		if os.IsNotExist(err) {
 			// log a warning and return nil; will allow users to continue to run Gloo locally without
 			// relying on the Gloo container with Envoy already published to the expected directory
@@ -52,7 +49,7 @@ func (ei *EnvoyInstance) ValidateBootstrap(ctx context.Context, bootstrapTemplat
 				"skipping additional validation of Gloo config.", envoyPath)
 			return nil
 		}
-		return eris.Errorf("%v", string(output.Bytes()), err)
+		return eris.Errorf("%v", string(output), err)
 	}
 	return nil
 }
