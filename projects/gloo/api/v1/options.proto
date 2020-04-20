@@ -59,6 +59,10 @@ message ListenerOptions {
     // * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process.
     // Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API.
     Extensions extensions = 2;
+
+    // Soft limit on size of the listener's new connection read and write buffers. If unspecified, defaults to 1MiB
+    // For more info, check out the [Envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/listener.proto)
+    google.protobuf.UInt32Value per_connection_buffer_limit_bytes = 3;
 }
 
 // Optional, feature-specific configuration that lives on http listeners
