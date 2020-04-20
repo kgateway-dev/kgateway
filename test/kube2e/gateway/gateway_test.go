@@ -1362,7 +1362,6 @@ spec:
 			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
 
 			_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
-			//err := exec.Command("kubectl", "apply", "--server-dry-run")
 			Expect(err).ToNot(HaveOccurred())
 
 			err = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
