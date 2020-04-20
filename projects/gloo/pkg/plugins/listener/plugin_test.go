@@ -21,7 +21,7 @@ var _ = Describe("Plugin", func() {
 		plugin = NewPlugin()
 	})
 
-	It("should set HealthyPanicThreshold", func() {
+	It("should set perConnectionBufferLimitBytes", func() {
 
 		in := &v1.Listener{
 			Options: &v1.ListenerOptions{
