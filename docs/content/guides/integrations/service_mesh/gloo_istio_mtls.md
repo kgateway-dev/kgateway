@@ -485,7 +485,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.3.18
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.4.0-beta1
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
