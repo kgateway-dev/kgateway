@@ -437,7 +437,7 @@ $([ "$(uname -s)" = "Linux" ] && echo xdg-open || echo open) $HTTP_GW/productpag
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.5.x requires version 1.3.20 or 1.4.0-beta1, or higher.
+The Gloo integration with Istio 1.5.x requires Gloo version 1.3.20 or 1.4.0-beta1, or higher.
 
 {{% /notice %}}
 
@@ -485,7 +485,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:v1.3.18
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.3.18
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -656,7 +656,7 @@ spec:
 ...
 {{< /highlight >}}
 
-Note that alpn_protocols is supported in upstreams starting gloo 1.3.18.
+Note that alpn_protocols is supported in upstreams starting in gloo 1.3.18.
 
 #### Test
 As this is a bit involved, lets take a step by step approach to test this. This was tested with Istio 1.5.1.
