@@ -6,6 +6,20 @@
 make serve-site
 ```
 
+## Deploying to a versioned test site
+
+To test the versioned docs locally:
+
+```
+eval $(minikube docker-env)
+```
+
+Run `docker pull` to get the appropriate gloo-docs images (e.g. `docker pull gcr.io/solo-public/gloo-docs:1.2.0`).
+
+```
+kubectl apply -f docs-staging.yaml
+```
+
 ## Notes about the build process
 
 - we want documentation to be available in the form of docs.solo.io/gloo/latest/... and also as docs.solo.io/gloo/<some_version/...
