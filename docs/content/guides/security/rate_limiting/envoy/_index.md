@@ -62,7 +62,7 @@ You can specify more than one rate limit action, and the request is throttled if
 An example of the rate limiting actions follows:
 
 ```yaml
-rate_limits:
+rateLimits:
 - actions:
   - requestHeaders:
       descriptorKey: account_id
@@ -172,8 +172,8 @@ That command opens the rate limit server configuration in your editor. Paste the
 ```yaml
 descriptors:
   - key: generic_key
-    rate_limit:
-      requests_per_unit: 1
+    rateLimit:
+      requestsPerUnit: 1
       unit: MINUTE
     value: some_value
 ```
@@ -229,7 +229,7 @@ glooctl edit virtualservice --namespace gloo-system --name default ratelimit cli
 That command opens the virtual service rate limit configuration in your editor. Paste the following rate limit action block into the editor. For your convenience, you can download the rate limiting action [here](vsconfig.yaml). The structure of the virtual service configuration is as described in the [Envoy documentation](https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action). This configuration will be passed to Envoy as is.
 
 ```yaml
-rate_limits:
+rateLimits:
 - actions:
   - generic_key:
       descriptor_value: "some_value"
