@@ -32,7 +32,7 @@ func getEnvoyPath() string {
 
 func ValidateBootstrap(ctx context.Context, bootstrapYaml string) error {
 	envoyPath := getEnvoyPath()
-	validateCmd := exec.Command(envoyPath, "--mode", "validate", "--config-yaml", bootstrapYaml)
+	validateCmd := exec.Command(envoyPath, "--mode", "validate", "--config-yaml", bootstrapYaml, "-l", "critical", "--log-format", "\"%v\"")
 	if output, err := validateCmd.CombinedOutput(); err != nil {
 		if os.IsNotExist(err) {
 			// log a warning and return nil; will allow users to continue to run Gloo locally without
