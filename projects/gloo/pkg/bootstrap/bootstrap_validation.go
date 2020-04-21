@@ -5,9 +5,19 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/solo-io/go-utils/contextutils"
-
+	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
+	v35 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v34 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/go-utils/contextutils"
 )
 
 const defaultEnvoyPath = "/usr/local/bin/envoy"
@@ -34,4 +44,77 @@ func ValidateBootstrap(ctx context.Context, bootstrapYaml string) error {
 		return eris.Errorf("envoy validation mode output: %v, error: %v", string(output), err)
 	}
 	return nil
+}
+
+func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
+	vhosts := []*envoy_config_route_v3.VirtualHost{
+		{
+			Name:    "placeholder_host",
+			Domains: []string{"*"},
+			Routes: []*envoy_config_route_v3.Route{
+				{
+					Action: &envoy_config_route_v3.Route_Route{Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{Cluster: "placeholder_cluster"}},
+					},
+					Match: &envoy_config_route_v3.RouteMatch{
+						PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
+					},
+					TypedPerFilterConfig: map[string]*any.Any{
+						filterName: pluginutils.MustGogoMessageToAnyGoProto(msg),
+					},
+				},
+			},
+		},
+	}
+
+	rc := &envoy_config_route_v3.RouteConfiguration{VirtualHosts: vhosts}
+
+	hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
+		StatPrefix:     "placeholder",
+		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{RouteConfig: rc},
+	}
+
+	hcmAny := pluginutils.MustMessageToAny(hcm)
+	bootstrap := &envoy_config_bootstrap_v3.Bootstrap{
+		Node: &v3.Node{
+			Id:      "imspecial",
+			Cluster: "doesntmatter",
+		},
+		StaticResources: &envoy_config_bootstrap_v3.Bootstrap_StaticResources{
+			Listeners: []*v34.Listener{
+				{
+					Name: "placeholder_listener",
+					Address: &v3.Address{
+						Address: &v3.Address_SocketAddress{SocketAddress: &v3.SocketAddress{
+							Address:       "0.0.0.0",
+							PortSpecifier: &v3.SocketAddress_PortValue{PortValue: 8081},
+						}},
+					},
+					FilterChains: []*v34.FilterChain{
+						{
+							Name: "placeholder_filter_chain",
+							Filters: []*v34.Filter{
+								{
+									ConfigType: &v34.Filter_TypedConfig{
+										TypedConfig: hcmAny,
+									},
+									Name: "envoy.http_connection_manager",
+								},
+							},
+						},
+					},
+				},
+			},
+			Clusters: []*v35.Cluster{
+				{
+					Name:           "placeholder_cluster",
+					ConnectTimeout: &duration.Duration{Seconds: 5},
+				},
+			},
+		},
+	}
+
+	b, _ := protoutils.MarshalBytes(bootstrap)
+	json := string(b)
+	return json // returns a json, but json is valid yaml
 }
