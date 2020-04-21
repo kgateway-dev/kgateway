@@ -3,7 +3,6 @@ package transformation
 import (
 	"context"
 
-	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	v35 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -11,7 +10,6 @@ import (
 	v34 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
@@ -103,19 +101,6 @@ func validateTransformation(ctx context.Context, transformations *transformation
 
 func buildBootstrapYaml(transformations *transformation.RouteTransformations) string {
 
-	configStruct, err := conversion.MessageToStruct(transformations)
-	if err != nil {
-		panic(err)
-	}
-
-	tAnyGogo := pluginutils.MustMessageToAny(transformations)
-
-	// create a typed struct so proto can handle marshalling any types with gogo protos
-	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: tAnyGogo.TypeUrl}
-
-	tAnyGo := pluginutils.MustMessageToAny(ts)
-	tGoAny := &any.Any{Value: tAnyGo.Value, TypeUrl: tAnyGo.TypeUrl}
-
 	vhosts := []*envoy_config_route_v3.VirtualHost{
 		{
 			Name:    "placeholder_host",
@@ -129,7 +114,7 @@ func buildBootstrapYaml(transformations *transformation.RouteTransformations) st
 						PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
 					},
 					TypedPerFilterConfig: map[string]*any.Any{
-						FilterName: tGoAny,
+						FilterName: pluginutils.MustGogoMessageToAnyGoProto(transformations),
 					},
 				},
 			},
