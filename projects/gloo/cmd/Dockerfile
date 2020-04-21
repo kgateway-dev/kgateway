@@ -1,4 +1,5 @@
-FROM quay.io/solo-io/envoy-gloo:1.4.2
+ARG ENVOY_IMAGE
+FROM $ENVOY_IMAGE
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \
