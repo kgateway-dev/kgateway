@@ -6,35 +6,35 @@ weight: 35
 
 Gloo Gateway and Gloo Enterprise both deploy containers that listen on certain ports for incoming traffic. This document lists out the pods and services that make up Gloo and Gloo Enterprise, and the ports which these pods and services listen on. It is also possible to set up mutual TLS (mTLS) for communication between Gloo resources. The addition of mTLS changes the ports and traffic flows slightly, which is addressed in this document as well.
 
-This document is specific to the pods and service deployed in a Kubernetes environment. Deploying Gloo using the HashiCorp stack is also supported, and the port mappings and services should be the same.
+This document is specific to the pods and services deployed in a Kubernetes environment. Deploying Gloo using the HashiCorp stack is also supported, and the port mappings and services should be the same.
 
 {{% notice note %}}
-It is possible to customize some port settings by providing custom values to the Helm chart that installs Gloo OSS and Gloo Enterprise. The port reference below is for an installation of Gloo that uses the default settings in the Helm chart.
+It is possible to customize some port settings by providing custom values to the Helm chart that installs Gloo open-source and Gloo Enterprise. The port reference below is for an installation of Gloo that uses the default settings in the Helm chart.
 {{% /notice %}}
 
 ---
 
-## Gloo Gateway OSS
+## Gloo Gateway Open-source
 
-Gloo open-source is the free, open-source version of Gloo Gateway. The installation process uses a Helm chart to create the necessary custom resource definitions (CRDs), deployments, services, pods, etc. The services and pods listen on specific ports to enable communication between the components that make up Gloo and outside sources that will consume Upstream resources through Gloo.
+Gloo open-source software is the free, open-source version of Gloo Gateway. The installation process uses a Helm chart to create the necessary custom resource definitions (CRDs), deployments, services, pods, etc. The services and pods listen on specific ports to enable communication between the components that make up Gloo and outside sources that will consume Upstream resources through Gloo.
 
 ### What's included
 
 A standard installation of Gloo Gateway includes four primary components:
 
 * **Gateway**
-  * Translate Gateway, Virtual Service, and RouteTable custom resources into a Proxy custom resource.
-  * Validate proposed configurations before application.
+  * Translates Gateway, Virtual Service, and RouteTable custom resources into a Proxy custom resource.
+  * Validates proposed configurations before application.
 * **Gloo**
-  * Create an Envoy configuration from multiple custom resources.
-  * Serve Envoy configurations using xDS.
-  * Validate Proxy configurations for the Gateway.
+  * Creates an Envoy configuration from multiple custom resources.
+  * Serves Envoy configurations using xDS.
+  * Validates Proxy configurations for the Gateway.
 * **Proxy**
-  * Receive and load configuration from Gloo xDS.
-  * Proxy incoming traffic.
+  * Receives and loads configuration from Gloo xDS.
+  * Proxies incoming traffic.
 * **Discovery**
-  * Discover Upstreams in the cluster.
-  * Discover functions with the Function Discovery Service.
+  * Discovers Upstreams in the cluster.
+  * Discovers functions with the Function Discovery Service.
 
 ### Pods and ports
 
