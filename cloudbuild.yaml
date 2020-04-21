@@ -35,7 +35,7 @@ steps:
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
 # The e2e-go-mod-ginkgo container provides everything else needed for running tests
-- name: gcr.io/cloud-builders/gsutil
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
   entrypoint: 'bash'
   args:
   - '-c'
