@@ -604,3 +604,12 @@ build-kind-chart:
 update-licenses:
 # TODO(helm3): fix after we completely drop toml parsing in favor of go modules
 #	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
+
+
+#----------------------------------------------------------------------------------
+# Printing makefile variables utility
+#----------------------------------------------------------------------------------
+
+# use `make print-MAKEFILE_VAR` to print the value of MAKEFILE_VAR
+
+print-%  : ; @echo $($*)
