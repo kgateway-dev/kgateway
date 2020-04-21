@@ -1,4 +1,7 @@
 changelog:
   - type: DEPENDENCY_BUMP
-    description: Bumped the version of helm to pick up the fix which results in deterministic yaml ordering when we do a dry-run install of gloo. 
+    description: Bumped the version of helm to pick up the fix which results in deterministic yaml ordering when we do a dry-run install of gloo.
+    dependencyOwner: helm
+    dependencyRepo: helm
+    dependencyTag: v3.1.2
     issueLink: https://github.com/solo-io/gloo/issues/2754
