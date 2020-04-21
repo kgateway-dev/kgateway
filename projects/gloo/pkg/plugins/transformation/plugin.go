@@ -94,26 +94,27 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 }
 
 func validateTransformation(ctx context.Context, transformations *transformation.RouteTransformations) error {
-	err := bootstrap.ValidateBootstrap(ctx, buildBootstrap(transformations))
+	err := bootstrap.ValidateBootstrap(ctx, buildBootstrapYaml(transformations))
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func buildBootstrap(transformations *transformation.RouteTransformations) string {
+func buildBootstrapYaml(transformations *transformation.RouteTransformations) string {
 
 	configStruct, err := conversion.MessageToStruct(transformations)
 	if err != nil {
 		panic(err)
 	}
-	tAny := pluginutils.MustMessageToAny(transformations) //is gogoproto, no idea how to marshal with goproto
 
-	// create a typed struct so goproto any can handle
-	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: tAny.TypeUrl}
+	tAnyGogo := pluginutils.MustMessageToAny(transformations)
 
-	tAny2 := pluginutils.MustMessageToAny(ts)
-	goAny := &any.Any{Value: tAny2.Value, TypeUrl: tAny2.TypeUrl}
+	// create a typed struct so proto can handle marshalling any types with gogo protos
+	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: tAnyGogo.TypeUrl}
+
+	tAnyGo := pluginutils.MustMessageToAny(ts)
+	tGoAny := &any.Any{Value: tAnyGo.Value, TypeUrl: tAnyGo.TypeUrl}
 
 	vhosts := []*envoy_config_route_v3.VirtualHost{
 		{
@@ -121,23 +122,25 @@ func buildBootstrap(transformations *transformation.RouteTransformations) string
 			Domains: []string{"*"},
 			Routes: []*envoy_config_route_v3.Route{
 				{
-					Action: &envoy_config_route_v3.Route_Route{Route: &envoy_config_route_v3.RouteAction{ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{Cluster: "placeholder_cluster"}}},
+					Action: &envoy_config_route_v3.Route_Route{Route: &envoy_config_route_v3.RouteAction{
+						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{Cluster: "placeholder_cluster"}},
+					},
 					Match: &envoy_config_route_v3.RouteMatch{
 						PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
 					},
 					TypedPerFilterConfig: map[string]*any.Any{
-						FilterName: goAny,
+						FilterName: tGoAny,
 					},
 				},
 			},
 		},
 	}
 
-	rc3 := &envoy_config_route_v3.RouteConfiguration{VirtualHosts: vhosts}
+	rc := &envoy_config_route_v3.RouteConfiguration{VirtualHosts: vhosts}
 
 	hcm := &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager{
 		StatPrefix:     "placeholder",
-		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{RouteConfig: rc3},
+		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{RouteConfig: rc},
 	}
 
 	hcmAny := pluginutils.MustMessageToAny(hcm)
@@ -181,7 +184,6 @@ func buildBootstrap(transformations *transformation.RouteTransformations) string
 	}
 
 	b, _ := protoutils.MarshalBytes(bootstrap)
-	re := string(b)
-
-	return re
+	json := string(b)
+	return json // returns a json, but json is valid yaml
 }
