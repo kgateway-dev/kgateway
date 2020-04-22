@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2807
+    description: Clarify risks of adopting resources into helm release if they don't match.
