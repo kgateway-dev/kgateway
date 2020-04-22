@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/golang/protobuf/ptypes/any"
 	"os"
 	"os/exec"
+
+	"github.com/golang/protobuf/ptypes/any"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
