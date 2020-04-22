@@ -2,18 +2,16 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/golang/protobuf/ptypes/any"
 	"os"
 	"os/exec"
 
 	envoy_config_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
-	v35 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v34 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_config_route_v3 "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_extensions_filters_network_http_connection_manager_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -51,18 +49,8 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 		{
 			Name:    "placeholder_host",
 			Domains: []string{"*"},
-			Routes: []*envoy_config_route_v3.Route{
-				{
-					Action: &envoy_config_route_v3.Route_Route{Route: &envoy_config_route_v3.RouteAction{
-						ClusterSpecifier: &envoy_config_route_v3.RouteAction_Cluster{Cluster: "placeholder_cluster"}},
-					},
-					Match: &envoy_config_route_v3.RouteMatch{
-						PathSpecifier: &envoy_config_route_v3.RouteMatch_Prefix{Prefix: "/"},
-					},
-					TypedPerFilterConfig: map[string]*any.Any{
-						filterName: pluginutils.MustGogoMessageToAnyGoProto(msg),
-					},
-				},
+			TypedPerFilterConfig: map[string]*any.Any{
+				filterName: pluginutils.MustGogoMessageToAnyGoProto(msg),
 			},
 		},
 	}
@@ -103,12 +91,6 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 							},
 						},
 					},
-				},
-			},
-			Clusters: []*v35.Cluster{
-				{
-					Name:           "placeholder_cluster",
-					ConnectTimeout: &duration.Duration{Seconds: 5},
 				},
 			},
 		},
