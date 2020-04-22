@@ -1,4 +1,5 @@
-FROM alpine:3.11.3
+ARG ENVOY_IMAGE
+FROM $ENVOY_IMAGE
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \

@@ -18,9 +18,9 @@ would be written or modified in such a way to cause Gloo to report an error, it 
 API Server before it is written to persistent storage.
 
 Gloo runs a [Kubernetes Validating Admission Webhook](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
-which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes 
+which is invoked whenever a `gateway.solo.io` custom resource is created or modified. This includes
 {{< protobuf name="gateway.solo.io.Gateway" display="Gateways">}},
-{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}}.),
+{{< protobuf name="gateway.solo.io.VirtualService" display="Virtual Services">}},
 and {{< protobuf name="gateway.solo.io.RouteTable" display="Route Tables">}}.
 
 The [validating webhook configuration](https://github.com/solo-io/gloo/blob/master/install/helm/gloo/templates/5-gateway-validation-webhook-configuration.yaml) is enabled by default by Gloo's Helm chart and `glooctl install gateway`. This admission webhook can be disabled 
@@ -106,6 +106,9 @@ We should see the request was rejected:
 Error from server: error when creating "STDIN": admission webhook "gateway.gloo-system.svc" denied the request: resource incompatible with current Gloo snapshot: [Route Error: InvalidMatcherError. Reason: no path specifier provided]
 ```
 
-Great! Validation is working, providing us a quick feedback mechanism and preventing Gloo from receiving invalid config. 
+Great! Validation is working, providing us a quick feedback mechanism and preventing Gloo from receiving invalid config.
+
+Another way to use the validation webhook is via `kubectl apply --server-dry-run`, which allows users to test
+configuration before attempting to apply it to their cluster.
 
 We appreciate questions and feedback on Gloo validation or any other feature on [the solo.io slack channel](https://slack.solo.io/) as well as our [GitHub issues page](https://github.com/solo-io/gloo).

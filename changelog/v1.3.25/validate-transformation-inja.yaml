@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Gloo's validation webhook now validates inja compilation syntax before accepting/rejecting virtual services that
+      use transformations. Note that strict validation is still disabled by default, and must be enabled in the Gloo
+      settings. Users can now rely more on `kubectl apply --server-dry-run` against live clusters to properly validate
+      whether config is valid before attempting to apply them to their cluster.
+    issueLink: https://github.com/solo-io/gloo/issues/2114
+    resolvesIssue: false

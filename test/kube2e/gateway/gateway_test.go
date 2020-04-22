@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds/syncer"
 	gloorest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
@@ -1329,6 +1332,47 @@ spec:
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErr)
 			}
+		})
+
+		It("rejects invalid inja template in transformation", func() {
+			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
+			t := &transformation.RouteTransformations{
+				ClearRouteCache: true,
+				ResponseTransformation: &transformation.Transformation{
+					TransformationType: &transformation.Transformation_TransformationTemplate{
+						TransformationTemplate: &transformation.TransformationTemplate{
+							Headers: map[string]*transformation.InjaTemplate{
+								":status": {Text: injaTransform},
+							},
+						},
+					},
+				},
+			}
+
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+
+			vs := getVirtualService(dest, nil)
+			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{Transformations: t}
+
+			_, err := virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+			Expect(err).ToNot(HaveOccurred())
+
+			err = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{Ctx: ctx})
+			Expect(err).ToNot(HaveOccurred())
+
+			// trim trailing "}", which should invalidate our inja template
+			t.ResponseTransformation.GetTransformationTemplate().Headers[":status"].Text = strings.TrimSuffix(injaTransform, "}")
+
+			_, err = virtualServiceClient.Write(vs, clients.WriteOpts{Ctx: ctx})
+			Expect(err).To(MatchError(ContainSubstring("Failed to parse response template: Failed to parse " +
+				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
 	})
 })

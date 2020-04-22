@@ -43,4 +43,4 @@ admin:
 
 EOF
 
-docker run --rm -ti --network=host -v /tmp/envoy.yaml:/etc/envoy/envoy.yaml:ro soloio/data-plane-ee:v1-304-gce45551
+docker run --rm -ti --network=host -v /tmp/envoy.yaml:/etc/envoy/envoy.yaml:ro quay.io/solo-io/gloo-envoy-wrapper:1.3.20
