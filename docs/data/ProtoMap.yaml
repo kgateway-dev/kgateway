@@ -680,6 +680,12 @@ apis:
   grpc_web.options.gloo.solo.io.GrpcWeb:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto.sk/#GrpcWeb
     package: grpc_web.options.gloo.solo.io
+  grpchttp1reversebridge.options.gloo.solo.io.Config:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpchttp1reversebridge/grpchttp1reversebridge.proto.sk/#Config
+    package: grpchttp1reversebridge.options.gloo.solo.io
+  grpchttp1reversebridge.options.gloo.solo.io.PerFilterConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpchttp1reversebridge/grpchttp1reversebridge.proto.sk/#PerFilterConfig
+    package: grpchttp1reversebridge.options.gloo.solo.io
   hcm.options.gloo.solo.io.HttpConnectionManagerSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/hcm/hcm.proto.sk/#HttpConnectionManagerSettings
     package: hcm.options.gloo.solo.io

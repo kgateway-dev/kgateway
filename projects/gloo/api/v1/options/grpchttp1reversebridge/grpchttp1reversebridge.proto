@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package grpchttp1reversebridge.options.gloo.solo.io;
+
+// Grpchttp1reversebridge configuration
+message Config {
+    // The content-type to pass to the upstream when the gRPC bridge filter is applied.
+    // The filter will also validate that the upstream responds with the same content type.
+    string content_type = 1;
+
+    // If true, Envoy will assume that the upstream doesn’t understand gRPC frames and strip
+    // the gRPC frame from the request, and add it back in to the response. This will hide the
+    // gRPC semantics from the upstream, allowing it to receive and respond with a simple binary
+    // encoded protobuf.
+    string withhold_grpc_frames = 2;
+}
+
+// Grpchttp1reversebridge per filter configuration
+// It used to allow disabling filter by route
+message PerFilterConfig {
+    // It disables filter
+    bool disabled = 1;
+}
