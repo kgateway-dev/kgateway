@@ -3,11 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/solo-io/go-utils/changelogutils"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -28,6 +29,7 @@ type options struct {
 	ctx              context.Context
 	HugoDataSoloOpts HugoDataSoloOpts
 }
+
 type HugoDataSoloOpts struct {
 	product string
 	version string
@@ -75,6 +77,9 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 		Use:   "gen-changelog-md-from-github",
 		Short: "generate a markdown file from Github Release pages API",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if os.Getenv(skipChangelogGeneration) != "" {
+				return nil
+			}
 			return generateChangelogMdFromGithub(opts, args)
 		},
 	}
@@ -136,8 +141,9 @@ func getDocsVersionFromOpts(soloData *HugoDataSoloYaml, hugoOpts HugoDataSoloOpt
 }
 
 const (
-	glooDocGen  = "gloo"
-	glooEDocGen = "glooe"
+	glooDocGen              = "gloo"
+	glooEDocGen             = "glooe"
+	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
 )
 
 var (
@@ -146,6 +152,9 @@ var (
 			glooDocGen,
 			glooEDocGen,
 			arg)
+	}
+	MissingGithubTokenError = func() error {
+		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", skipChangelogGeneration)
 	}
 )
 
@@ -191,11 +200,10 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 		repo = "gloo"
 	case glooEDocGen:
 		repo = "solo-projects"
-		// If the GITHUB_TOKEN is unset, fall back to the uploaded solo-projects changelogs
-		if os.Getenv("GITHUB_TOKEN") == "" {
-			return generateChangelogMd(opts, args)
-		}
 		ctx := context.Background()
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return MissingGithubTokenError()
+		}
 		ts := oauth2.StaticTokenSource(
 			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
 		)
