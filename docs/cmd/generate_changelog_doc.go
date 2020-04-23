@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"sort"
 
 	"github.com/solo-io/go-utils/changelogutils"
+	"golang.org/x/oauth2"
 
 	"gopkg.in/yaml.v2"
 
@@ -199,7 +201,12 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 		return InvalidInputError(target)
 	}
 
-	client := github.NewClient(nil)
+	ctx := context.Background()
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+	)
+	tc := oauth2.NewClient(ctx, ts)
+	client := github.NewClient(tc)
 	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
 		&github.ListOptions{
 			Page:    0,
@@ -208,6 +215,11 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	sort.Slice(allReleases, func(i, j int) bool {
+		return *allReleases[i].TagName > *allReleases[j].TagName
+	})
+
 	for _, release := range allReleases {
 		fmt.Printf("### %v\n\n", *release.TagName)
 		fmt.Printf("%v", *release.Body)
