@@ -1,1 +1,0 @@
-unable to run: GET https://api.github.com/repos/solo-io/solo-projects/releases?per_page=10000000: 404 Not Found []
