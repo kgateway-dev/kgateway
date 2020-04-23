@@ -30,4 +30,8 @@ message ConnectionConfig {
     }
     // Configure OS-level tcp keepalive checks
     TcpKeepAlive tcp_keepalive = 3;
+
+    // Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB).
+    // For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster)
+    google.protobuf.UInt32Value per_connection_buffer_limit_bytes = 4;
 }

@@ -3,6 +3,8 @@ package upstreamconn_test
 import (
 	"time"
 
+	"github.com/gogo/protobuf/types"
+
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -79,5 +81,17 @@ var _ = Describe("Plugin", func() {
 		}
 
 		Expect(*outKeepAlive).To(Equal(expectedValue))
+	})
+
+	It("should set per connection buffer bytes when provided", func() {
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			PerConnectionBufferLimitBytes: &types.UInt32Value{
+				Value: uint32(4096),
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(out.GetPerConnectionBufferLimitBytes().Value).To(BeEquivalentTo(uint32(4096)))
 	})
 })
