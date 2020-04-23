@@ -3,14 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"sort"
-
 	"github.com/solo-io/go-utils/changelogutils"
 	"golang.org/x/oauth2"
-
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -67,9 +64,7 @@ func changelogMdCmd(opts *options) *cobra.Command {
 		Use:   "gen-changelog-md",
 		Short: "generate a markdown file from changelogs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			return generateChangelogMd(opts, args)
-			return nil
 		},
 	}
 	return app
@@ -80,9 +75,7 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 		Use:   "gen-changelog-md-from-github",
 		Short: "generate a markdown file from Github Release pages API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
 			return generateChangelogMdFromGithub(opts, args)
-			return nil
 		},
 	}
 	return app
@@ -190,6 +183,7 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
+	client := github.NewClient(nil)
 	target := args[0]
 	var repo string
 	switch target {
@@ -197,16 +191,20 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 		repo = "gloo"
 	case glooEDocGen:
 		repo = "solo-projects"
+		// If the GITHUB_TOKEN is unset, fall back to the uploaded solo-projects changelogs
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return generateChangelogMd(opts, args)
+		}
+		ctx := context.Background()
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client = github.NewClient(tc)
 	default:
 		return InvalidInputError(target)
 	}
 
-	ctx := context.Background()
-	ts := oauth2.StaticTokenSource(
-		&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
-	)
-	tc := oauth2.NewClient(ctx, ts)
-	client := github.NewClient(tc)
 	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
 		&github.ListOptions{
 			Page:    0,
@@ -215,10 +213,6 @@ func generateChangelogMdFromGithub(opts *options, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	sort.Slice(allReleases, func(i, j int) bool {
-		return *allReleases[i].TagName > *allReleases[j].TagName
-	})
 
 	for _, release := range allReleases {
 		fmt.Printf("### %v\n\n", *release.TagName)
