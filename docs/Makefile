@@ -31,8 +31,8 @@ PRODUCT_SCOPE := gloo
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
 	git -C themes/hugo-theme-soloio checkout 8040f01d542e5a0df557c7aeb3e53e0dbb56bcfc
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md-from-github gloo > content/static/content/gloo-changelog.docgen
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md-from-github glooe > content/static/content/glooe-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
 .PHONY: site-test
 site-test: site-common

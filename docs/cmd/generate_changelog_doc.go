@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/solo-io/go-utils/changelogutils"
 	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
 
@@ -50,7 +49,6 @@ func rootApp(ctx context.Context) *cobra.Command {
 		},
 	}
 	app.AddCommand(writeVersionScopeDataForHugo(opts))
-	app.AddCommand(changelogMdCmd(opts))
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
@@ -61,26 +59,15 @@ func rootApp(ctx context.Context) *cobra.Command {
 	return app
 }
 
-func changelogMdCmd(opts *options) *cobra.Command {
-	app := &cobra.Command{
-		Use:   "gen-changelog-md",
-		Short: "generate a markdown file from changelogs",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			return generateChangelogMd(opts, args)
-		},
-	}
-	return app
-}
-
 func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	app := &cobra.Command{
-		Use:   "gen-changelog-md-from-github",
+		Use:   "gen-changelog-md",
 		Short: "generate a markdown file from Github Release pages API",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if os.Getenv(skipChangelogGeneration) != "" {
 				return nil
 			}
-			return generateChangelogMdFromGithub(opts, args)
+			return generateChangelogMd(args)
 		},
 	}
 	return app
@@ -158,37 +145,7 @@ var (
 	}
 )
 
-func generateChangelogMd(opts *options, args []string) error {
-	if len(args) != 1 {
-		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
-	}
-	target := args[0]
-
-	changelogDirPath := changelogutils.ChangelogDirectory
-	var repoRootPath, repo string
-	switch target {
-	case glooDocGen:
-		repoRootPath = ".."
-		repo = "gloo"
-	case glooEDocGen:
-		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
-		repoRootPath = "../../solo-projects"
-		if os.Getenv("SOLO_PROJECTS_REPO") != "" {
-			repoRootPath = os.Getenv("SOLO_PROJECTS_REPO")
-		}
-		repo = "solo-projects"
-	default:
-		return InvalidInputError(target)
-	}
-
-	// consider writing to stdout to enhance makefile/io readability `go run cmd/main.go > changelogSummary.md`
-	owner := "solo-io"
-	w := os.Stdout
-	err := changelogutils.GenerateChangelogFromLocalDirectory(opts.ctx, repoRootPath, owner, repo, changelogDirPath, w)
-	return err
-}
-
-func generateChangelogMdFromGithub(opts *options, args []string) error {
+func generateChangelogMd(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
