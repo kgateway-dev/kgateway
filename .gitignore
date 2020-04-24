@@ -6,6 +6,7 @@ _artifacts
 .idea
 site
 .firebase
+*.code-workspace
 
 themes
 install/gloo.yaml
