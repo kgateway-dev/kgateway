@@ -86,6 +86,12 @@ CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
+	docker build \
+		--build-arg VERSION=latest \
+		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
+		--build-arg FROM_DIR=./site-latest \
+		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
+	docker push $(GCR_REPO_PREFIX)/gloo-docs:awang_test
 ifeq ($(ON_DEFAULT_BRANCH), true)
 	docker build \
 		--build-arg VERSION=latest \
