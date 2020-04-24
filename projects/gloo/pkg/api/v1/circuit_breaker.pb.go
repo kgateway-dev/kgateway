@@ -25,8 +25,8 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
-// SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+// CircuitBreakerConfig contains the options for customizing circuit breaking behavior.
+// See the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
 // for the meaning of these values.
 type CircuitBreakerConfig struct {
 	MaxConnections       *types.UInt32Value `protobuf:"bytes,1,opt,name=max_connections,json=maxConnections,proto3" json:"max_connections,omitempty"`
