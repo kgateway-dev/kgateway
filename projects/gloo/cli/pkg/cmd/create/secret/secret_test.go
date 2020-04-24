@@ -142,6 +142,20 @@ metadata:
 			Expect(err.Error()).To(Equal(argsutils.NameError))
 		})
 
+		It("should work as with just root ca", func() {
+
+			rootca := mustWriteTestFile("foo")
+			err := testutils.Glooctl("create secret tls valid --namespace gloo-system --rootca " + rootca)
+			Expect(err).NotTo(HaveOccurred())
+			tls := v1.TlsSecret{
+				RootCa: "foo",
+			}
+
+			secret, err := helpers.MustSecretClient().Read("gloo-system", "valid", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(*secret.GetTls()).To(Equal(tls))
+		})
+
 		It("should work as expected with valid and invalid input", func() {
 			type keyPair struct {
 				shouldPass   bool
