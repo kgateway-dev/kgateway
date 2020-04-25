@@ -1,4 +1,4 @@
-FROM alpine:3.11.3
+FROM alpine:3.11.6
 
 # Needed for access to AWS
 RUN apk upgrade --update-cache \
