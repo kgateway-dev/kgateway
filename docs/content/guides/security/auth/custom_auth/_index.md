@@ -115,8 +115,8 @@ kubectl apply --filename auth-service.yaml
 This file contains the deployment, service and upstream definitions.
 
 {{% notice tip %}}
-When running in `minikube` you can easily update this sample auth service. Just download the [Dockerfile](Dockerfile) and 
-the [server.py file](server.py) to a local directory, apply your changes to the server code, and run the following commands:
+When running in `minikube` you can easily update this sample auth service. Just download the [Dockerfile](https://github.com/solo-io/gloo/blob/master/docs/content/guides/security/auth/custom_auth/Dockerfile) and 
+the [server.py file](https://github.com/solo-io/gloo/blob/master/docs/content/guides/security/auth/custom_auth/server.py) to a local directory, apply your changes to the server code, and run the following commands:
 
 ```shell
 eval $(minikube docker-env)
