@@ -441,7 +441,7 @@ The Gloo integration with Istio 1.5.x requires Gloo version 1.3.20 or 1.4.0-beta
 
 {{% /notice %}}
 
-The [recommended way](https://istio.io/blog/2020/proxy-cert/) to adding workloads to the mesh without a proxy, is to used a sidecar to provision the mesh certificates to a shared volume.
+The [recommended way](https://istio.io/blog/2020/proxy-cert/) to adding workloads to the mesh without a proxy, is to use a sidecar to provision the mesh certificates to a shared volume.
 
 To do that, we will update our gateway-proxy deployment as follows:
 
