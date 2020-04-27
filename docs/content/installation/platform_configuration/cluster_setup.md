@@ -128,7 +128,7 @@ gatewayProxies:
       runUnprivileged: true
 ```
 
-You can find more details regarding these Helm values [here]({{< versioned_link_path fromRoot="reference/helm_chart_values" >}}).
+You can find more details regarding these Helm values [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
 
 You can use these Helm values while following the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
