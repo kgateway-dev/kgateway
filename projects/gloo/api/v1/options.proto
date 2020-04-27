@@ -29,6 +29,7 @@ import "gloo/projects/gloo/api/v1/options/wasm/wasm.proto";
 import "gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "gloo/projects/gloo/api/v1/options/healthcheck/healthcheck.proto";
 import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto";
+import "gloo/projects/gloo/api/v1/options/grpchttp1reversebridge/grpchttp1reversebridge.proto";
 
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
@@ -103,6 +104,11 @@ message HttpListenerOptions {
 
     // Enterprise-only: Proxy latency
     envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
+
+    // Grpchttp1reversebridge is an HTTP option which enables envoy gRPC HTTP/1.1 reverse bridge HTTP filter
+    // This is a filter that enables converting an incoming gRPC request into a HTTP/1.1 request to allow a server
+    // that does not understand HTTP/2 or gRPC semantics to handle the request.
+    grpchttp1reversebridge.options.gloo.solo.io.Grpchttp1reversebridge grpchttp1reversebridge = 10;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
