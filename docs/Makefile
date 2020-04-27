@@ -23,7 +23,7 @@ IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 # this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
 PRODUCT_SCOPE := gloo
 
-HUGO_VERSION := 0.57.2
+HUGO_VERSION := 0.69.2
 
 #----------------------------------------------------------------------------------
 # Docs
