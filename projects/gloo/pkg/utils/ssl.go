@@ -36,7 +36,7 @@ var (
 type SslConfigTranslator interface {
 	ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error)
 	ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error)
-	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error)
+	ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error)
 }
 
 type sslConfigTranslator struct {
@@ -47,7 +47,7 @@ func NewSslConfigTranslator() *sslConfigTranslator {
 }
 
 func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc *v1.UpstreamSslConfig) (*envoyauth.UpstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(uc, secrets)
+	common, err := s.ResolveCommonSslConfig(uc, secrets, false)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func (s *sslConfigTranslator) ResolveUpstreamSslConfig(secrets v1.SecretList, uc
 	}, nil
 }
 func (s *sslConfigTranslator) ResolveDownstreamSslConfig(secrets v1.SecretList, dc *v1.SslConfig) (*envoyauth.DownstreamTlsContext, error) {
-	common, err := s.ResolveCommonSslConfig(dc, secrets)
+	common, err := s.ResolveCommonSslConfig(dc, secrets, true)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +187,7 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []st
 	return tlsContext, nil
 }
 
-func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList) (*envoyauth.CommonTlsContext, error) {
+func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.SecretList, mustHaveCert bool) (*envoyauth.CommonTlsContext, error) {
 	var (
 		certChain, privateKey, rootCa string
 		// if using a Secret ref, we will inline the certs in the tls config
@@ -207,7 +207,15 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
 		return s.handleSds(sslSecrets, cs.GetVerifySubjectAltName())
 	} else {
-		return nil, NoCertificateFoundError
+		if mustHaveCert {
+			return nil, NoCertificateFoundError
+		}
+	}
+
+	if mustHaveCert {
+		if certChain == "" || privateKey == "" {
+			return nil, NoCertificateFoundError
+		}
 	}
 
 	dataSource := dataSourceGenerator(inlineDataSource)

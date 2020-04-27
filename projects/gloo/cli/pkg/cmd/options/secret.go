@@ -39,7 +39,7 @@ func (t *TlsSecret) ReadFiles() (string, string, string, error) {
 	}
 
 	// ensure that the key pair is valid
-	if err := t.validateKeyPair(); err != nil {
+	if err := t.validateKeyPairIfExists(); err != nil {
 		return "", "", "", errors.Wrapf(err, "invalid key pair (cert chain file: %v, private key file: %v)", t.CertChainFilename, t.PrivateKeyFilename)
 	}
 
@@ -52,19 +52,31 @@ func (t *TlsSecret) ReadFiles() (string, string, string, error) {
 			return "", "", "", errors.Wrapf(err, "reading root ca file: %v", t.RootCaFilename)
 		}
 	}
-	privateKey, err := ioutil.ReadFile(t.PrivateKeyFilename)
-	if err != nil {
-		return "", "", "", errors.Wrapf(err, "reading private key file: %v", t.PrivateKeyFilename)
-	}
-	certChain, err := ioutil.ReadFile(t.CertChainFilename)
-	if err != nil {
-		return "", "", "", errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
+	var privateKey []byte
+	var certChain []byte
+	if t.keyPairExists() {
+		var err error
+		privateKey, err = ioutil.ReadFile(t.PrivateKeyFilename)
+		if err != nil {
+			return "", "", "", errors.Wrapf(err, "reading private key file: %v", t.PrivateKeyFilename)
+		}
+		certChain, err = ioutil.ReadFile(t.CertChainFilename)
+		if err != nil {
+			return "", "", "", errors.Wrapf(err, "reading cert chain file: %v", t.CertChainFilename)
+		}
 	}
 
 	return string(rootCa), string(privateKey), string(certChain), nil
 }
 
-func (t *TlsSecret) validateKeyPair() error {
+func (t *TlsSecret) keyPairExists() bool {
+	return !(t.CertChainFilename == "" && t.PrivateKeyFilename == "")
+}
+
+func (t *TlsSecret) validateKeyPairIfExists() error {
+	if !t.keyPairExists() {
+		return nil
+	}
 	if _, err := tls.LoadX509KeyPair(t.CertChainFilename, t.PrivateKeyFilename); err != nil {
 		return err
 	}
