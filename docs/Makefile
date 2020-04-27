@@ -23,6 +23,8 @@ IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 # this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
 PRODUCT_SCOPE := gloo
 
+HUGO_VERSION := 0.57.2
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------
@@ -37,6 +39,8 @@ site-common: clean
 .PHONY: site-test
 site-test: site-common
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	cat site/index.json | jq "." > /dev/null
@@ -44,6 +48,8 @@ site-test: site-common
 .PHONY: site-release
 site-release: site-common
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
@@ -60,6 +66,8 @@ site-release: site-common
 
 .PHONY: serve-site
 serve-site: site-test
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml --themesDir themes server -D
 
 .PHONY: clean
