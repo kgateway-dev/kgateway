@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: update dockerfile to use Alpine 3.11.6. Update includes latest security releases and performance improvements.
