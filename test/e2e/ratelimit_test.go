@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -156,9 +157,6 @@ var _ = Describe("Rate Limit", func() {
 			_, err := testClients.ProxyClient.Write(proxy, clients.WriteOpts{})
 			Expect(err).NotTo(HaveOccurred())
 
-			// waiting for envoy to start, so that consistently not rate limited works
-			EventuallyOk("host1", envoyPort)
-
 			ConsistentlyNotRateLimited("host1", envoyPort)
 		})
 	})
@@ -181,6 +179,10 @@ func startSimpleRateLimitServer(acceptAll bool, rlport uint32) *grpc.Server {
 }
 
 func EventuallyOk(hostname string, port uint32) {
+	// wait for three seconds so gloo race can be waited out
+	// it's possible gloo upstreams hit after the proxy does
+	// (gloo resyncs once per second)
+	time.Sleep(3 * time.Second)
 	EventuallyWithOffset(1, func() error {
 		res, err := get(hostname, port)
 		if err != nil {
@@ -194,6 +196,9 @@ func EventuallyOk(hostname string, port uint32) {
 }
 
 func ConsistentlyNotRateLimited(hostname string, port uint32) {
+	// waiting for envoy to start, so that consistently works
+	EventuallyOk(hostname, port)
+
 	ConsistentlyWithOffset(1, func() error {
 		res, err := get(hostname, port)
 		if err != nil {

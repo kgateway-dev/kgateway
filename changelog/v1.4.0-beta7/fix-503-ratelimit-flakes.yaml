@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Fix 503 ratelimit flakes that were caused by tests not waiting properly for a gloo race (expected) to work itself
+      out before making assertions.
+    issueLink: https://github.com/solo-io/gloo/issues/2895
