@@ -279,6 +279,26 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
 	})
 
+	It("translates listener options", func() {
+		proxyClone := proto.Clone(proxy).(*v1.Proxy)
+
+		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &types.UInt32Value{Value:4096}}
+
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).NotTo(HaveOccurred())
+		Expect(snap).NotTo(BeNil())
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+		listeners := snap.GetResources(xds.ListenerType)
+		Expect(listeners.Items).To(HaveKey("http-listener"))
+		listenerResource := listeners.Items["http-listener"]
+		listenerConfiguration := listenerResource.ResourceProto().(*envoyapi.Listener)
+		Expect(listenerConfiguration).NotTo(BeNil())
+		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(Equal(&wrappers.UInt32Value{Value: 4096}))
+	})
+
 	Context("Auth configs", func() {
 		It("will error if auth config is missing", func() {
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)
@@ -1865,6 +1885,12 @@ var _ = Describe("Translator", func() {
 		Expect(report.VirtualHostReports[0].Errors).To(BeEmpty(), "The virtual host with domain * should not have an error")
 		Expect(report.VirtualHostReports[1].Errors).NotTo(BeEmpty(), "The virtual host with an empty domain should report errors")
 		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
+	})
+
+	Context("listener options", func() {
+		It("works", func() {
+
+		})
 	})
 })
 
