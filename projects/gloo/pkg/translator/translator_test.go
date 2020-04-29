@@ -282,7 +282,7 @@ var _ = Describe("Translator", func() {
 	It("translates listener options", func() {
 		proxyClone := proto.Clone(proxy).(*v1.Proxy)
 
-		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &types.UInt32Value{Value:4096}}
+		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &types.UInt32Value{Value: 4096}}
 
 		snap, errs, report, err := translator.Translate(params, proxyClone)
 
