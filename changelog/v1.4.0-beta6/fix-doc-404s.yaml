@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      All docs 404s used to redirect to /gloo/latest/404.html no matter what. This change checks
+      the latest version that the menu navbar was set to, and redirects to that version instead.
+    issueLink: https://github.com/solo-io/gloo/issues/2762

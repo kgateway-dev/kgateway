@@ -131,7 +131,7 @@ global:
             repository: ext-auth-plugins
             registry: quay.io/solo-io
             pullPolicy: IfNotPresent
-            tag: 1.3.0 # change this to your GlooE installation version, or else plugin may be built with different libraries
+            tag: 1.3.0 # change this to your GlooE installation version
 EOF
 {{< /highlight >}}
 

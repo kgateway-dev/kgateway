@@ -47,6 +47,10 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 	}
 
+	if cfg.PerConnectionBufferLimitBytes != nil {
+		out.PerConnectionBufferLimitBytes = gogoutils.UInt32GogoToProto(cfg.PerConnectionBufferLimitBytes)
+	}
+
 	return nil
 }
 

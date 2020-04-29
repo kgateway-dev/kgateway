@@ -435,7 +435,13 @@ $([ "$(uname -s)" = "Linux" ] && echo xdg-open || echo open) $HTTP_GW/productpag
 
 ### Istio 1.5.x
 
-The [recommended way](https://istio.io/blog/2020/proxy-cert/) to adding workloads to the mesh without a proxy, is to used a sidecar to provision the mesh certificates to a shared volume.
+{{% notice warning %}}
+
+The Gloo integration with Istio 1.5.x requires Gloo version 1.3.20 or 1.4.0-beta1, or higher.
+
+{{% /notice %}}
+
+The [recommended way](https://istio.io/blog/2020/proxy-cert/) to adding workloads to the mesh without a proxy, is to use a sidecar to provision the mesh certificates to a shared volume.
 
 To do that, we will update our gateway-proxy deployment as follows:
 
@@ -479,7 +485,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:v1.3.18
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.4.0-beta1
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -650,7 +656,7 @@ spec:
 ...
 {{< /highlight >}}
 
-Note that alpn_protocols is supported in upstreams starting gloo 1.3.18.
+Note that alpn_protocols is supported in upstreams starting in gloo 1.3.20.
 
 #### Test
 As this is a bit involved, lets take a step by step approach to test this. This was tested with Istio 1.5.1.

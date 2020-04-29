@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    description: Allow creating secret with just ca cert with glooctl.
+    issueLink: https://github.com/solo-io/gloo/issues/2823
+  - type: FIX
+    description: Allow specifying empty ssl configs for clients.
+    issueLink: https://github.com/solo-io/gloo/issues/2871

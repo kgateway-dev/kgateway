@@ -35,12 +35,12 @@ steps:
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
 # The e2e-go-mod-ginkgo container provides everything else needed for running tests
-- name: gcr.io/cloud-builders/gsutil
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   entrypoint: 'bash'
   args:
   - '-c'
   - |
-    ENVOY_VERSION=v$$(head -n1 ./projects/envoyinit/cmd/Dockerfile.envoyinit|cut -d: -f2)
+    ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
     gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
     chmod +x /workspace/envoy
   dir: *dir
@@ -61,7 +61,7 @@ steps:
   id: 'setup-aws-creds'
 
 # Helm related setup
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['fetch-helm']
   env:
     - 'TAGGED_VERSION=$TAG_NAME'
@@ -109,7 +109,7 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'docker-login'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['docker']
   env:
     - 'TAGGED_VERSION=$TAG_NAME'
@@ -120,7 +120,7 @@ steps:
   id: 'compile'
 
   # 1) Run make targets to push docker images
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['docker-push']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -141,7 +141,7 @@ steps:
   id: 'gcr-auth'
 
 # Run regression tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['build-test-assets']
   env:
     - 'BUILD_ID=$BUILD_ID'
@@ -178,7 +178,7 @@ steps:
   waitFor: ['build-test-assets', 'docker-push', 'get-regression-clusterlock-credentials']
   id: 'regression-tests-cluster-lock'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', 'push-chart-to-registry', '-B']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
@@ -191,7 +191,7 @@ steps:
   id: 'release-chart'
 
 # 3) Sync helm chart data back to google storage bucket
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['save-helm']
   env:
     - 'TAGGED_VERSION=$TAG_NAME'

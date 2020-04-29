@@ -10,6 +10,7 @@ Click on the links below for details specific to your Kubernetes distribution:
 
 - [Minikube](#minikube)
 - [Minishift](#minishift)
+- [OpenShift](#openshift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
   - [Private clusters](#private-clusters)
 - [Azure Kubernetes Service (AKS)](#azure-kubernetes-service-aks)
@@ -95,6 +96,41 @@ oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
 
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+
+---
+
+## OpenShift
+
+OpenShift has some differences from vanilla Kubernetes, especially related to security. By default, [OpenShift will run containers with a "random" user ID](https://cookbook.openshift.org/users-and-role-based-access-control/why-do-my-applications-run-as-a-random-user-id.html). While administrators can utilize [Security Context Constraints (SCCs)](https://docs.openshift.com/container-platform/4.3/authentication/managing-security-context-constraints.html) to override the default behavior, in many organizations it is often desirable to adhere to OpenShift's default security behavior whenever possible.
+
+In order to respect the default OpenShift behavior, the various Gloo components support running with an arbitrary user ID. Users can enable this behavior by [customizing the Gloo installation via Helm values](https://docs.solo.io/gloo/latest/installation/gateway/kubernetes/#customizing-your-installation-with-helm).
+
+Additionally, OpenShift requires additional SCC configuration for workloads that want to run privileged containers or [utilize elevated capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities).
+
+Gloo provides support for running the `gateway-proxy` (i.e. Envoy) as an unprivileged container and without needing the `NET_BIND_SERVICE` capability (note that this means the proxy can not bind to ports below 1024).
+
+Here is an example `values.yaml` file for Helm which will use floating user IDs for all Gloo components along with not requiring any special security rules:
+```yaml
+gloo:
+  deployment:
+    floatingUserId: true
+discovery:
+  deployment:
+    floatingUserId: true
+gateway:
+  deployment:
+    floatingUserId: true
+gatewayProxies:
+  gatewayProxy:
+    podTemplate:
+      floatingUserId: true
+      disableNetBind: true
+      runUnprivileged: true
+```
+
+You can find more details regarding these Helm values [here]({{< versioned_link_path fromRoot="/reference/helm_chart_values" >}}).
+
+You can use these Helm values while following the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
 
 ---
 

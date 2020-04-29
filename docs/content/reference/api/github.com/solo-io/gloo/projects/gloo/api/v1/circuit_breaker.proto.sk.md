@@ -26,8 +26,8 @@ weight: 5
 ### CircuitBreakerConfig
 
  
-SslConfig contains the options necessary to configure a virtual host or listener to use TLS
-See the [envoy docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
+CircuitBreakerConfig contains the options for customizing circuit breaking behavior.
+See the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
 for the meaning of these values.
 
 ```yaml

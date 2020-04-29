@@ -3,10 +3,11 @@ module github.com/solo-io/gloo
 go 1.14
 
 require (
-	github.com/Masterminds/semver/v3 v3.0.1
+	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.26.2
+	github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533
 	github.com/envoyproxy/go-control-plane v0.9.6-0.20200401235947-be7fefdaf0df
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -21,6 +22,7 @@ require (
 	github.com/golang/mock v1.4.0
 	github.com/golang/protobuf v1.3.3
 	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.3
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de4
 	github.com/hashicorp/consul/api v1.3.0
@@ -60,19 +62,20 @@ require (
 	go.uber.org/multierr v1.4.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/mod v0.1.1-0.20191209134235-331c550502dd
+	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
-	google.golang.org/grpc v1.25.1
+	google.golang.org/grpc v1.27.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.2.7
-	helm.sh/helm/v3 v3.0.0
-	k8s.io/api v0.17.1
-	k8s.io/apiextensions-apiserver v0.17.1
-	k8s.io/apimachinery v0.17.1
+	helm.sh/helm/v3 v3.1.2
+	k8s.io/api v0.17.2
+	k8s.io/apiextensions-apiserver v0.17.2
+	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.1
 	k8s.io/helm v2.16.1+incompatible
-	k8s.io/kubectl v0.17.1
+	k8s.io/kubectl v0.17.2
 	k8s.io/kubernetes v1.17.1
 	k8s.io/utils v0.17.1
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef

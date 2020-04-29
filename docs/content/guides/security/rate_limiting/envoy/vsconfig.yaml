@@ -1,4 +1,4 @@
-rate_limits:
+rateLimits:
 - actions:
   - generic_key:
       descriptor_value: "some_value"

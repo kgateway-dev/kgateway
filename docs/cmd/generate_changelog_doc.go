@@ -6,13 +6,13 @@ import (
 	"io/ioutil"
 	"os"
 
+	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
 
 	"github.com/spf13/cobra"
 
+	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
-
-	"github.com/solo-io/go-utils/changelogutils"
 )
 
 func main() {
@@ -28,6 +28,7 @@ type options struct {
 	ctx              context.Context
 	HugoDataSoloOpts HugoDataSoloOpts
 }
+
 type HugoDataSoloOpts struct {
 	product string
 	version string
@@ -48,7 +49,7 @@ func rootApp(ctx context.Context) *cobra.Command {
 		},
 	}
 	app.AddCommand(writeVersionScopeDataForHugo(opts))
-	app.AddCommand(changelogMdCmd(opts))
+	app.AddCommand(changelogMdFromGithubCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.product, "product", "gloo", "product to which the docs refer (defaults to gloo)")
@@ -57,14 +58,16 @@ func rootApp(ctx context.Context) *cobra.Command {
 
 	return app
 }
-func changelogMdCmd(opts *options) *cobra.Command {
+
+func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	app := &cobra.Command{
 		Use:   "gen-changelog-md",
-		Short: "generate a markdown file from changelogs",
+		Short: "generate a markdown file from Github Release pages API",
 		RunE: func(cmd *cobra.Command, args []string) error {
-
-			return generateChangelogMd(opts, args)
-			return nil
+			if os.Getenv(skipChangelogGeneration) != "" {
+				return nil
+			}
+			return generateChangelogMd(args)
 		},
 	}
 	return app
@@ -125,8 +128,9 @@ func getDocsVersionFromOpts(soloData *HugoDataSoloYaml, hugoOpts HugoDataSoloOpt
 }
 
 const (
-	glooDocGen  = "gloo"
-	glooEDocGen = "glooe"
+	glooDocGen              = "gloo"
+	glooEDocGen             = "glooe"
+	skipChangelogGeneration = "SKIP_CHANGELOG_GENERATION"
 )
 
 var (
@@ -136,34 +140,48 @@ var (
 			glooEDocGen,
 			arg)
 	}
+	MissingGithubTokenError = func() error {
+		return eris.Errorf("Must either set GITHUB_TOKEN or set %s environment variable to true", skipChangelogGeneration)
+	}
 )
 
-func generateChangelogMd(opts *options, args []string) error {
+func generateChangelogMd(args []string) error {
 	if len(args) != 1 {
 		return InvalidInputError(fmt.Sprintf("%v", len(args)-1))
 	}
+	client := github.NewClient(nil)
 	target := args[0]
-
-	changelogDirPath := changelogutils.ChangelogDirectory
-	var repoRootPath, repo string
+	var repo string
 	switch target {
 	case glooDocGen:
-		repoRootPath = ".."
 		repo = "gloo"
 	case glooEDocGen:
-		// files should already be there because we download them in CI, via `download-glooe-changelog` make target
-		repoRootPath = "../../solo-projects"
-		if os.Getenv("SOLO_PROJECTS_REPO") != "" {
-			repoRootPath = os.Getenv("SOLO_PROJECTS_REPO")
-		}
 		repo = "solo-projects"
+		ctx := context.Background()
+		if os.Getenv("GITHUB_TOKEN") == "" {
+			return MissingGithubTokenError()
+		}
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: os.Getenv("GITHUB_TOKEN")},
+		)
+		tc := oauth2.NewClient(ctx, ts)
+		client = github.NewClient(tc)
 	default:
 		return InvalidInputError(target)
 	}
 
-	// consider writing to stdout to enhance makefile/io readability `go run cmd/main.go > changelogSummary.md`
-	owner := "solo-io"
-	w := os.Stdout
-	err := changelogutils.GenerateChangelogFromLocalDirectory(opts.ctx, repoRootPath, owner, repo, changelogDirPath, w)
-	return err
+	allReleases, _, err := client.Repositories.ListReleases(context.Background(), "solo-io", repo,
+		&github.ListOptions{
+			Page:    0,
+			PerPage: 10000000,
+		})
+	if err != nil {
+		return err
+	}
+
+	for _, release := range allReleases {
+		fmt.Printf("### %v\n\n", *release.TagName)
+		fmt.Printf("%v", *release.Body)
+	}
+	return nil
 }

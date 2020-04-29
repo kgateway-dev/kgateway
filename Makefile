@@ -19,6 +19,8 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.4.2
+
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
 # Returns the name of the default branch in the remote `origin` repository, e.g. `master`
@@ -308,6 +310,7 @@ $(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 
 gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -353,6 +356,7 @@ $(OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit $(OUTPUT_DIR)/docker-entrypoint.sh
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -600,3 +604,12 @@ build-kind-chart:
 update-licenses:
 # TODO(helm3): fix after we completely drop toml parsing in favor of go modules
 #	cd hack/utils/oss_compliance && GO111MODULE=on go run main.go
+
+
+#----------------------------------------------------------------------------------
+# Printing makefile variables utility
+#----------------------------------------------------------------------------------
+
+# use `make print-MAKEFILE_VAR` to print the value of MAKEFILE_VAR
+
+print-%  : ; @echo $($*)

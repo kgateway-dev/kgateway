@@ -25,4 +25,8 @@ For example, if you are installing Gloo Enterprise:
 but `settings.watchNamespaces` or `global.glooRbac.create` remain the same.
 {{% /notice %}}
 
+{{% notice note %}}
+If you need further customization of the Helm chart, please read our [advanced customization guide]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" %}}).
+{{% /notice %}}
+
 {{< readfile file="reference/values.txt" markdown="true" >}}

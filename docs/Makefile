@@ -11,6 +11,9 @@
 # remove the "v" prefix
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+# replace the patch version number with "0"
+DOCS_VERSION := $(word 1,$(subst ., ,$(VERSION))).$(word 2,$(subst ., ,$(VERSION))).0
+
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
 
@@ -20,6 +23,8 @@ IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 # this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
 PRODUCT_SCOPE := gloo
 
+HUGO_VERSION := 0.69.2
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------
@@ -27,14 +32,15 @@ PRODUCT_SCOPE := gloo
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	# style updates for putting docs in the gloo repo, see details here https://github.com/solo-io/hugo-theme-soloio/commit/91507dc0e262b5009327a741bc9fd5cc2a949c38
-	git -C themes/hugo-theme-soloio checkout 91507dc0e262b5009327a741bc9fd5cc2a949c38
+	git -C themes/hugo-theme-soloio checkout 8040f01d542e5a0df557c7aeb3e53e0dbb56bcfc
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 
 .PHONY: site-test
 site-test: site-common
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	cat site/index.json | jq "." > /dev/null
@@ -42,12 +48,14 @@ site-test: site-common
 .PHONY: site-release
 site-release: site-common
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
 	cat site/index.json | jq "." > /dev/null
 	mv site site-latest
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION)
+	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(DOCS_VERSION)
 	hugo --config docs.toml
 	mv site site-versioned
 
@@ -58,6 +66,8 @@ site-release: site-common
 
 .PHONY: serve-site
 serve-site: site-test
+	# ensure hugo version locally installed matches the version in cloudbuild CI
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml --themesDir themes server -D
 
 .PHONY: clean
@@ -94,7 +104,7 @@ ifeq ($(ON_DEFAULT_BRANCH), true)
 endif
 ifeq ($(RELEASE),true)
 	docker build \
-		--build-arg VERSION=$(VERSION) \
+		--build-arg VERSION=$(DOCS_VERSION) \
 		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
 		--build-arg FROM_DIR=./site-versioned \
 		-t $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION) .
@@ -104,7 +114,7 @@ endif
 .PHONY: manifest
 manifest:
 	helm template install/helm \
-		--set docsVersion=$(VERSION) \
+		--set docsVersion=$(DOCS_VERSION) \
 		--set image.tag=$(VERSION) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-versioned.yaml

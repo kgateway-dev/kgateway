@@ -33,6 +33,7 @@ Fine tune the settings for connections to an upstream
 "maxRequestsPerConnection": int
 "connectTimeout": .google.protobuf.Duration
 "tcpKeepalive": .gloo.solo.io.ConnectionConfig.TcpKeepAlive
+"perConnectionBufferLimitBytes": .google.protobuf.UInt32Value
 
 ```
 
@@ -41,6 +42,7 @@ Fine tune the settings for connections to an upstream
 | `maxRequestsPerConnection` | `int` | Maximum requests for a single upstream connection (unspecified or zero = no limit). |  |
 | `connectTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The timeout for new network connections to hosts in the cluster. |  |
 | `tcpKeepalive` | [.gloo.solo.io.ConnectionConfig.TcpKeepAlive](../connection.proto.sk/#tcpkeepalive) | Configure OS-level tcp keepalive checks. |  |
+| `perConnectionBufferLimitBytes` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Soft limit on size of the cluster’s connections read and write buffers. If unspecified, an implementation defined default is applied (1MiB). For more info, see the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/cluster.proto#cluster). |  |
 
 
 

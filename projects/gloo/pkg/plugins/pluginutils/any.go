@@ -3,6 +3,9 @@ package pluginutils
 import (
 	"fmt"
 
+	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/proto"
 	goproto "github.com/golang/protobuf/proto"
@@ -47,6 +50,34 @@ func MustAnyToMessage(a *pany.Any) proto.Message {
 		panic(err)
 	}
 	return x.Message
+}
+
+// gogoprotos converted directly to goproto any can't be marshalled unless you wrap
+// the contents of the gogoproto in a typed struct
+func MustGogoMessageToAnyGoProto(msg proto.Message) *pany.Any {
+	any, err := GogoMessageToAnyGoProto(msg)
+	if err != nil {
+		panic(err)
+	}
+	return any
+}
+
+// gogoprotos converted directly to goproto any can't be marshalled unless you wrap
+// the contents of the gogoproto in a typed struct
+func GogoMessageToAnyGoProto(msg proto.Message) (*pany.Any, error) {
+	configStruct, err := conversion.MessageToStruct(msg)
+	if err != nil {
+		return nil, err
+	}
+
+	anyGogo := MustMessageToAny(msg)
+
+	// create a typed struct so go proto can handle marshalling any types derived from gogo protos
+	ts := &udpa_type_v1.TypedStruct{Value: configStruct, TypeUrl: anyGogo.TypeUrl}
+	tsAnyGo := MustMessageToAny(ts)
+
+	anyGo := &pany.Any{Value: tsAnyGo.Value, TypeUrl: tsAnyGo.TypeUrl}
+	return anyGo, nil
 }
 
 func protoToMessageName(msg proto.Message) (string, error) {
