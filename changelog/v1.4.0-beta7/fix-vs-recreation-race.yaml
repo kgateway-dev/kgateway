@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      Fix race condition when adding and deleting a virtual service in quick succession caused a race condition
+      in which the validator rewrote the virtual service when it updated its status.
+    issueLink: https://github.com/solo-io/gloo/issues/2900
