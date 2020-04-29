@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    description: >
+      Add a helm chart value `settings.integrations.knative.proxy.service.loadBalancerIP`.
+      This allows you to assign a static IP to the Knative external proxy.
+    issueLink: https://github.com/solo-io/gloo/issues/2778
