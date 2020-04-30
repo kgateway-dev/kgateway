@@ -1,3 +1,5 @@
 changelog:
   - type: NON_USER_FACING
-    description: Update Gloo mTLS docs. 
+    description: Update Gloo mTLS docs.
+    issueLink: https://github.com/solo-io/gloo/pull/2912
+    resolvesIssue: false
