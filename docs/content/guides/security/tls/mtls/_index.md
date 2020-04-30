@@ -210,7 +210,13 @@ An SDS sidecar is also added to the gateway-proxy deployment:
 
 To make the default extauth server work with mTLS, the extauth deployment adds in an Envoy sidecar and SDS sidecar.
 
-The configuration for the extauth envoy sidecar can be found in the extauth-sidecar-config confimap. 
+The configuration for the extauth envoy sidecar can be found in the extauth-sidecar-config confimap in the gloo-system
+namespace. It:
+
+1) listens to 127.0.0.1:9955 and routes to Gloo's XDS port.
+2) listens to 0.0.0.0:8083 and routes to 127.0.0.1:8084, extauth's Server Port.
+
+The SDS sidecar watches the gloo-mtls-certs and applies those certs along both routes.
 
 ### Rate-limiting Server
 
@@ -218,6 +224,9 @@ To make the default rate-limiting server work with mTLS, the rate-limit deployme
 and SDS sidecar.
 
 The configuration for the extauth envoy sidecar can be found in the rate-limit-sidecar-config confimap.
+It listens to 127.0.0.1:9955 and routes to Gloo's XDS port.
+
+The SDS sidecar watches the gloo-mtls-certs and applies those certs when sending the request for Gloo configuration.
 
 ---
 
