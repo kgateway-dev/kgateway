@@ -52,7 +52,7 @@ require (
 	github.com/solo-io/go-utils v0.14.1
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.13.6-0.20200429222308-db9e50f15d01
+	github.com/solo-io/solo-kit v0.13.6-0.20200430030600-84a7a6f1b225
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
@@ -119,3 +119,5 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.17.1
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
+
+replace github.com/solo-io/solo-kit => ../solo-kit
