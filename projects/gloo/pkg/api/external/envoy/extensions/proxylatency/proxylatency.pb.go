@@ -67,7 +67,6 @@ func (ProxyLatency_Measurement) EnumDescriptor() ([]byte, []int) {
 type ProxyLatency struct {
 	// How to measure the request.
 	Request ProxyLatency_Measurement `protobuf:"varint,1,opt,name=request,proto3,enum=envoy.config.filter.http.proxylatency.v2.ProxyLatency_Measurement" json:"request,omitempty"`
-	// When *_FIRST_OUTGOING is selected for a request, measure the time when decodeHeader for this filter is hit
 	// When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is
 	// instead of when the first byte is sent upstream. This has the advantage of not measuring the time
 	// selected for request measurment, finish measuring proxy latency when decodeHeader for this
