@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Register listener plugin so that listener options are translated to Envoy configuration.
+    issueLink: https://github.com/solo-io/gloo/issues/2904
