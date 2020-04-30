@@ -20,7 +20,7 @@ weight: 20
     - [Customizing Routes](#customizing-routes)
 - [Advanced Use Cases](#advanced-use-cases)
     - [Configuring multiple limits per remote address](#configuring-multiple-limits-per-remote-address)
-    - [Securing rate limit actions](#securing-rate-limit-actions)
+    - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
     - [Improving security further with WAF and authorization](#improving-security-further-with-waf-and-authorization)
 
 ## Overview
@@ -576,7 +576,7 @@ spec:
 
 Now, we'll increment a per-minute and per-second rate limit counter based on the client remote address. 
 
-### Securing rate limit actions 
+### Securing rate limit actions with JWTs
 
 Using headers is a convenient way to determine values for rate limit actions, but it shouldn't be considered secure 
 unless extra care is taken to ensure the headers are defined by a trusted authority. A good solution for this is to 
