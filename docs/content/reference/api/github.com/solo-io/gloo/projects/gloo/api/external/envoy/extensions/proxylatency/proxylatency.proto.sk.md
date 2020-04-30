@@ -32,6 +32,7 @@ incurred by the filter chain in a histogram.
 
 ```yaml
 "request": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
+"measureRequestInternally": bool
 "response": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
 "chargeClusterStat": .google.protobuf.BoolValue
 "chargeListenerStat": .google.protobuf.BoolValue
@@ -41,6 +42,7 @@ incurred by the filter chain in a histogram.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `request` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How to measure the request. |  |
+| `measureRequestInternally` | `bool` | When *_FIRST_OUTGOING is selected for a request, measure the time when decodeHeader for this filter is hit When FIRST_OUTGOING (i.e. LAST_INCOMING_FIRST_OUTGOING or FIRST_INCOMING_FIRST_OUTGOING) is instead of when the first byte is sent upstream. This has the advantage of not measuring the time selected for request measurment, finish measuring proxy latency when decodeHeader for this it takes a connection to form, which may skew the P99. filter is hit instead of when the first byte is sent upstream. This has the advantage of not for this to work the filter should be inserted last, just before the router filter. measuring the time it takes a connection to form, which may skew the P99. For this to work this filter should be inserted last, just before the router filter. This has no effect if other measurement type is selected, and has no effect on how response is measured. |  |
 | `response` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How measure the response. |  |
 | `chargeClusterStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per upstream cluster. If not specified, defaults to true. |  |
 | `chargeListenerStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per listener. If not specified, defaults to true. |  |
@@ -55,8 +57,6 @@ incurred by the filter chain in a histogram.
 How to perform the latency measurement. Given an incoming request from downstream and
 outging request to upstream; or incoming response from upstream and outgoing repsonse to
 downstream, This outlines how to measure the latency used by the proxy.
-Latency is measured in milliseconds will appear as a histogram in the envoy stats, with the
-'proxy_latency' prefix.
 
 | Name | Description |
 | ----- | ----------- | 
