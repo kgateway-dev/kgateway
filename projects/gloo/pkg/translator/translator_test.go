@@ -1886,12 +1886,6 @@ var _ = Describe("Translator", func() {
 		Expect(report.VirtualHostReports[1].Errors).NotTo(BeEmpty(), "The virtual host with an empty domain should report errors")
 		Expect(report.VirtualHostReports[1].Errors[0].Type).To(Equal(validation.VirtualHostReport_Error_EmptyDomainError), "The error reported for the virtual host with empty domain should be the EmptyDomainError")
 	})
-
-	Context("listener options", func() {
-		It("works", func() {
-
-		})
-	})
 })
 
 func sv(s string) *structpb.Value {
