@@ -427,7 +427,7 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 
 func checkSecrets(namespaces []string) (bool, error) {
 	fmt.Printf("Checking secrets... ")
-	client := helpers.MustSecretClientWithOptions(5 * time.Second, namespaces)
+	client := helpers.MustSecretClientWithOptions(5*time.Second, namespaces)
 
 	for _, ns := range namespaces {
 		_, err := client.List(ns, clients.ListOpts{})

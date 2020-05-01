@@ -516,7 +516,7 @@ func secretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, 
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	coreCache, err := cache.NewKubeCoreCacheWithOptions(context.TODO(), clientset, 12 * time.Hour, namespaces)
+	coreCache, err := cache.NewKubeCoreCacheWithOptions(context.TODO(), clientset, 12*time.Hour, namespaces)
 	if err != nil {
 		return nil, err
 	}
