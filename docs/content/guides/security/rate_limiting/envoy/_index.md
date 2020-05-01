@@ -35,7 +35,12 @@ as an alternative.
 Gloo Enterprise includes a rate limit server based on [Lyft's Envoy rate-limit server](https://github.com/lyft/ratelimit). 
 It is already installed when doing `glooctl install gateway enterprise --license-key=...` or 
 using the [Helm install]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}}). 
-To get your trial license key, go to <https://www.solo.io/gloo-trial>
+To get your trial license key, go to <https://www.solo.io/gloo-trial>.
+
+<br /> 
+
+Open source Gloo can take advantage of Envoy rate limiting, but requires users to build their own rate limit server to 
+implement the behavior described below. 
 {{% /notice %}}
 
 Two steps are needed to configure Gloo to leverage the full Envoy Rate Limiter on your routes: 
@@ -50,9 +55,9 @@ These actions define the relationship between a request and its generated descri
 
 ### Descriptors
 
-Rate limiting descriptors define a set (tuple) of keys that must match for the associated rate limit to be applied. 
-The set of keys are expressed as a hierarchy to make configuration easy, but it's the set of keys matching or not that is important. 
-Each descriptor key can have an associated value that is matched as a literal. 
+Rate limiting descriptors define an ordered tuple of keys that must match for the associated rate limit to be applied. 
+The tuple of keys are expressed as a hierarchy to make configuration easy, but it's the complete tuple of keys
+matching or not that is important. Each descriptor key can have an associated value that is matched as a literal. 
 You can define rate limits on a key matching a specific value, or you can omit the value to have the limit applied to 
 any unique value for that key. 
 See the [Lyft rate limiting descriptors](https://github.com/lyft/ratelimit#configuration) for full details.
@@ -92,10 +97,20 @@ spec:
           unit: SECOND  
 ```
 
+{{% notice note %}}
+To apply this as a patch, write it to a file called `patch.yaml`, then apply the patch with the following command: 
+`kubectl patch -n gloo-system settings default --type merge --patch "$(cat patch.yaml)"`.
+
+<br />
+
+This assumes you are trying to patch the default settings resource in the gloo-system namespace. All of the other examples
+on this page for can be applied in the same way. 
+{{% /notice %}}
+
 This defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
 We could define that action on a virtual service like so:
 
-```yaml
+{{< highlight yaml "hl_lines=18-23" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -119,9 +134,9 @@ spec:
               - actions:
                   - genericKey:
                       descriptorValue: "per-minute"
-```
+{{< /highlight >}}
 
-{{% notice warning %}}
+{{% notice note %}}
 In Envoy, the rate limit config is typically defined with snake case ("example_config"), whereas in Gloo and Kubernetes
 it is typically defined with camel case ("exampleConfig"). We'll use camel case notation for the Gloo config here. 
 {{% /notice %}}
@@ -129,7 +144,7 @@ it is typically defined with camel case ("exampleConfig"). We'll use camel case 
 ### Header Values
 
 It may be desirable to create actions based on the value of a header, which is dynamic based on the request, rather than 
-a generic key, that is static based on the route. The follow config will define a descriptor that limits requests to 2 per minute
+a generic key, that is static based on the route. The following configuration will define a descriptor that limits requests to 2 per minute
 for any unique value for `type`:
 
 ```yaml
@@ -144,7 +159,7 @@ spec:
 
 Now we can create a route that triggers a rate limit action for this descriptor:
 
-```yaml
+{{< highlight yaml "hl_lines=18-24" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -169,7 +184,7 @@ spec:
               - requestHeaders:
                   descriptorKey: type
                   headerName: x-type
-```
+{{< /highlight >}}
 
 With this config, a rate limit of 2 per minute will be enforced for requests depending on the value of the `x-type` header, 
 for every unique value. If we only wanted to enforce this limit for a specific value, we could write that value into our descriptor:
@@ -205,7 +220,7 @@ spec:
 
 On the route, we can define an action to count against this descriptor in the following way:
 
-```yaml
+{{< highlight yaml "hl_lines=18-22" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -228,7 +243,7 @@ spec:
         rateLimits:
           - actions:
               - remoteAddress: {}
-```
+{{< /highlight >}}
 
 {{% notice warning %}}
 You may need to make additional configuration changes to Gloo in order for the `remote_address` value to be the real 
@@ -260,7 +275,7 @@ spec:
 This rule enforces a limit of 1 request per minute for any unique combination of `type` and `number` values. We can define 
 multiple actions on our routes to apply this rule:
 
-```yaml
+{{< highlight yaml "hl_lines=18-27" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -288,12 +303,16 @@ spec:
               - requestHeaders:
                   descriptorKey: number
                   headerName: x-number
-```
+{{< /highlight >}}
 
 If a request is routed using this virtual service, and the `x-type` and `x-number` headers are both present on the request, 
 then it will be counted towards the limit we defined above. 
-
 If one or both headers are not present on the request, then no rate limit will be enforced. 
+
+{{% notice warning %}}
+The order of actions must match the order of nesting in the descriptors. So in this example, if the actions were reversed, 
+with the number action before the type action, then the request would not count towards the rate limit quota defined above. 
+{{% /notice %}}
 
 ### Nested Limits
 
@@ -318,7 +337,7 @@ spec:
 This time, on our virtual service, we'll define actions for two separate rate limits - one that increments the counter 
 for the `type` limit specifically, and another to increment the counter for the `type` and `number` pair, when present. 
 
-```yaml
+{{< highlight yaml "hl_lines=18-31" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -350,7 +369,7 @@ spec:
               - requestHeaders:
                   descriptorKey: number
                   headerName: x-number
-```
+{{< /highlight >}}
 
 Note that we now have two different rate limits defined for this virtual service. One contributes to the counter for just `type`, 
 if the `x-type` header is present. The other contributes to the counter for the `type` and `number` pair, if both headers are present. 
@@ -430,7 +449,7 @@ spec:
 So far, we have been configuring rate limit actions on our virtual services as an option under the `virtualHost`. 
 Alternatively, we can define this as an option on the route:
  
-```yaml
+{{< highlight yaml "hl_lines=18-33" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -464,7 +483,7 @@ spec:
                   - requestHeaders:
                       descriptorKey: number
                       headerName: x-number
-```
+{{< /highlight >}}
 
 Note that route-level configuration for rate limiting supports an additional parameter, `includeVhRateLimits`, that can be used
 to ignore the host-level rate limits. 
@@ -499,6 +518,8 @@ This configuration should live on your `Gateway` object, which manages http conn
 {{% notice note %}}
 To apply this as a patch, write it to a file called `patch.yaml`, then apply the patch with the following command: 
 `kubectl patch -n gloo-system gateway gateway-proxy --type merge --patch "$(cat patch.yaml)"`
+
+<br />
 
 This assumes you are trying to patch the default http gateway in the gloo-system namespace.
 {{% /notice %}}
@@ -543,7 +564,7 @@ spec:
 
 And we can configure a route to count towards both limits:
 
-```yaml
+{{< highlight yaml "hl_lines=18-28" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -572,11 +593,15 @@ spec:
                   - genericKey:
                       descriptorValue: "per-second"
                   - remoteAddress: {}
-```
+{{< /highlight >}}
 
 Now, we'll increment a per-minute and per-second rate limit counter based on the client remote address. 
 
-### Securing rate limit actions with JWTs
+### Securing rate limit actions with JWTs 
+
+{{% notice note %}}
+The JWT filter used below is an Enterprise feature. 
+{{% /notice %}}
 
 Using headers is a convenient way to determine values for rate limit actions, but it shouldn't be considered secure 
 unless extra care is taken to ensure the headers are defined by a trusted authority. A good solution for this is to 
@@ -604,7 +629,7 @@ spec:
 Here's an example of a virtual service that takes rate limiting actions based on claims extracted from a JWT after 
 verification:
 
-```yaml
+{{< highlight yaml "hl_lines=18-44" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -662,13 +687,17 @@ spec:
               - requestHeaders:
                   descriptorKey: number
                   headerName: x-number
-```
+{{< /highlight >}}
 
 The virtual service looks the same as before, but now we have an additional JWT configuration section that extracts 
 the `x-type` and `x-header` claims from the verified JWT. If an invalid JWT was provided, the request would be considered
 invalid. Otherwise, the request will be rate limited just like before when the header values came from the user directly. 
 
 ### Improving security further with WAF and authorization
+
+{{% notice note %}}
+The WAF and auth filters used below are Enterprise features. 
+{{% /notice %}}
 
 Now that we are using JWT verification, we can be confident that the request is from an authenticated user, who has been granted
 claims from a trusted identity provider. Using those claims provides us confidence that rate limiting determinations will be made
@@ -684,7 +713,7 @@ apply rate limits to requests that had no `x-type` at all. We also may want to e
 
 Let's add both of these options to our route by modifying our virtual service:
 
-```yaml
+{{< highlight yaml "hl_lines=58-67" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -752,7 +781,7 @@ spec:
         configRef:
           name: opa-auth
           namespace: gloo-system
-```
+{{< /highlight >}}
 
 Note that we have an inline WAF rule that blocks requests with a suspicious `scammer` user agent. We could expand on 
 this to support things like IP whitelisting or other common WAF use cases.  
