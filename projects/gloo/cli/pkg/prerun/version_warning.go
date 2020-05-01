@@ -31,7 +31,6 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 	nsToCheck := opts.Metadata.Namespace
 	// TODO: only use metadata namespace flag, install namespace can be populated from metadata namespace or refactored out of the opts
 	if nsToCheck == flagutils.DefaultNamespace && opts.Install.Namespace != flagutils.DefaultNamespace {
-		// should never happen
 		nsToCheck = opts.Install.Namespace
 	}
 

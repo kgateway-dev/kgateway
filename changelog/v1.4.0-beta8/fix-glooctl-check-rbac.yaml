@@ -10,4 +10,4 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/2581
     description: >-
-      `glooctl check` was always using the default namespace for the version mismatch check. Now it uses the default namespace only if no specific namespace flag was provided. 
+      `glooctl check` was always using the default namespace for the version mismatch check. Now it uses the default namespace only if no specific namespace flag was provided.
