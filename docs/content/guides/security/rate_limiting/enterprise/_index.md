@@ -10,11 +10,6 @@ Envoy queries an external server (backed by redis by default) to achieve global 
 query, and what to do in case the query fails. By default, the timeout is set to 100ms, and the failure policy is
 to allow the request.
 
-{{% notice tip %}}
-You can check if envoy has errors with rate limiting by examining its stats that end in `ratelimit.error`.
-`glooctl proxy stats` displays the stats from one of the envoys in your cluster.
-{{% /notice %}}
-
 To change the timeout to 200ms, use the following command:
 
 ```bash
