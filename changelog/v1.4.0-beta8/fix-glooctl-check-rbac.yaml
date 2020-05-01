@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2820
+    description: `glooctl check` no longer hangs while checking secrets if the user doesn't have cluster-wide permissions.
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2375
+    description: `glooctl check` no longer requires the user to have access to all namespaces. The user must still have access to the namespaces that Gloo watches.
