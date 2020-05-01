@@ -66,6 +66,8 @@ var _ = Describe("Translate Proxy", func() {
 				proxy,
 			},
 		}
+		_, err = proxyClient.Write(proxy, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
