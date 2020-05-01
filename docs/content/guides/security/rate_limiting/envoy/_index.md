@@ -133,7 +133,7 @@ spec:
             rateLimits:
               - actions:
                   - genericKey:
-                      descriptorValue: "per-minute"
+                      descriptorValue: "per-second"
 {{< /highlight >}}
 
 {{% notice note %}}
@@ -825,9 +825,11 @@ metadata:
 
 Let's see what happens after deploying these configurations. First, requests with a scammer `User-Agent` are rejected 
 with a modsecurity intervention:
+```bash
+curl $(glooctl proxy url)/ -H "User-Agent: scammer" -i
+```
 
 ```
-➜ curl $(glooctl proxy url)/ -H "User-Agent: scammer" -i
 HTTP/1.1 403 Forbidden
 content-length: 33
 content-type: text/plain
@@ -838,9 +840,11 @@ ModSecurity: intervention occured%
 ```
 
 Requests without a JWT are blocked:
+```bash
+curl $(glooctl proxy url)/ -i
+```
 
 ```
-➜ curl $(glooctl proxy url)/ -i
 HTTP/1.1 403 Forbidden
 date: Thu, 30 Apr 2020 22:45:15 GMT
 server: envoy
@@ -848,9 +852,11 @@ content-length: 0
 ```
 
 Requests with a JWT that has an invalid signature are blocked:
+```bash
+curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIifQ.invalid"
+```
 
 ```
-➜ curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIifQ.invalid"
 HTTP/1.1 401 Unauthorized
 content-length: 22
 content-type: text/plain
@@ -861,8 +867,11 @@ Jwt verification fails%
 ```
 
 Requests with a valid JWT that has the `SMS` type as a claim are blocked:
+```bash
+curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJTTVMifQ.EviHtVB1mQry8vxraE0tHnuaiaQ_6BWrJmNnyfHmpZWNwWf-RMrljP7KqpuNGtAysFb3YVhsacG0OZ_Ax1A0SBNicsahqlCrTSjIz48Tdz1PNAoGxi9ehLAsqjMMNV05z13YFQHucF1BJ6qaHftVA0AMDm5zXiiMPnW21NNdCghieTiAsyDSS_YXPLV8EfSW8rg0qsb3SvEsEUnF6rR5Ls3jXB-l2hFvRsRHuF4Y79mb_tAYnejoaB4qmVfqy2y9_do-oBnJkI71kfHoF1O-cFT01XOxf5noNvxORQ3GtV3YrWb4fvowWZAPR3Iq4iXkfKnZ2yldth3xrnsVymA3NA"
 ```
-➜ curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJTTVMifQ.EviHtVB1mQry8vxraE0tHnuaiaQ_6BWrJmNnyfHmpZWNwWf-RMrljP7KqpuNGtAysFb3YVhsacG0OZ_Ax1A0SBNicsahqlCrTSjIz48Tdz1PNAoGxi9ehLAsqjMMNV05z13YFQHucF1BJ6qaHftVA0AMDm5zXiiMPnW21NNdCghieTiAsyDSS_YXPLV8EfSW8rg0qsb3SvEsEUnF6rR5Ls3jXB-l2hFvRsRHuF4Y79mb_tAYnejoaB4qmVfqy2y9_do-oBnJkI71kfHoF1O-cFT01XOxf5noNvxORQ3GtV3YrWb4fvowWZAPR3Iq4iXkfKnZ2yldth3xrnsVymA3NA"
+
+```
 HTTP/1.1 403 Forbidden
 date: Thu, 30 Apr 2020 22:49:03 GMT
 server: envoy
@@ -870,8 +879,11 @@ content-length: 0
 ```
 
 Requests with a valid JWT that has no type in the claims are blocked:
+```bash
+curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.ILN6momkxhY01adwnClJfuSqoht5WjNTBjInzT6nx9LN8WkSk3Tg2UrdLTTZ-LNjh805Ltthg5Mt4IRGr5lZ_0_atUBlS-vzC9fNeIsIJIbt8Apl-JnC6LrKFU6EFC9okQyBRyDLhwclDTaLbqY2txK8maaFtlvlr5UY0QvopNSkaTc-lJlCSQf63v_W_VkZrISQAVhYb0r0ptWv6zN0NNe5Fzcw45xjuNUtjMSdI4zDNuc-QuNIs6CKX-iN3FR0zE50Y__T182xVhG78Q0v-jGGQMMtuTLwmn5PCdpQbBoGzVATwuAFiA7WE0M8KDRUmMDJYjWSOBqymfh9WkbSGw"
 ```
-➜ curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCJ9.ILN6momkxhY01adwnClJfuSqoht5WjNTBjInzT6nx9LN8WkSk3Tg2UrdLTTZ-LNjh805Ltthg5Mt4IRGr5lZ_0_atUBlS-vzC9fNeIsIJIbt8Apl-JnC6LrKFU6EFC9okQyBRyDLhwclDTaLbqY2txK8maaFtlvlr5UY0QvopNSkaTc-lJlCSQf63v_W_VkZrISQAVhYb0r0ptWv6zN0NNe5Fzcw45xjuNUtjMSdI4zDNuc-QuNIs6CKX-iN3FR0zE50Y__T182xVhG78Q0v-jGGQMMtuTLwmn5PCdpQbBoGzVATwuAFiA7WE0M8KDRUmMDJYjWSOBqymfh9WkbSGw"
+
+```
 HTTP/1.1 403 Forbidden
 date: Thu, 30 Apr 2020 22:49:54 GMT
 server: envoy
@@ -879,8 +891,11 @@ content-length: 0
 ```
 
 Requests with a valid JWT that has an allowed type (`Messenger`) are rate limited after 1 request:
+```bash
+curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIifQ.gKko2fEw6Jlef3pQzQyk9ygz1Gz7gtyd0TzjHtC7ZSbv_8zUlQCP_AI5dCNQJOcy64pLHN_JB0uBJpbCfPkee01zlKEPaPUVFtBUIcdm9ZwB2J9scuRhdF5A8cU5nv3CwKzJFohKMxxhM29kojC8pG5XhI4l3oJ0elf2TN1YoMm8yc0lEYARBRR6gQMfukydHQFodvS0_hHi35LviM16-fEksjjchOTtHs9XxsXKLAmI00T5JwPzYTyHWYcQGnNHZiXr6-K809NyR-jPwdPCktxYvDkl9muZi1SQ5q779WmgZE-SvGfJNkjkld1LI3Ed_ASmgBwboHLxlcyoge3_tA"
 ```
-➜ curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIifQ.gKko2fEw6Jlef3pQzQyk9ygz1Gz7gtyd0TzjHtC7ZSbv_8zUlQCP_AI5dCNQJOcy64pLHN_JB0uBJpbCfPkee01zlKEPaPUVFtBUIcdm9ZwB2J9scuRhdF5A8cU5nv3CwKzJFohKMxxhM29kojC8pG5XhI4l3oJ0elf2TN1YoMm8yc0lEYARBRR6gQMfukydHQFodvS0_hHi35LviM16-fEksjjchOTtHs9XxsXKLAmI00T5JwPzYTyHWYcQGnNHZiXr6-K809NyR-jPwdPCktxYvDkl9muZi1SQ5q779WmgZE-SvGfJNkjkld1LI3Ed_ASmgBwboHLxlcyoge3_tA"
+
+```
 HTTP/1.1 429 Too Many Requests
 x-envoy-ratelimited: true
 date: Thu, 30 Apr 2020 22:54:01 GMT
@@ -889,8 +904,11 @@ content-length: 0
 ```
 
 Finally, requests with a valid JWT that has an allowed type and a number are rate limited after 10 requests:
-``` 
-➜ curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIiLCJudW1iZXIiOiIxMjMifQ.xN3_MQU6NXHlG2QuAhZsWZlgZLb0htsitPwbsQeilxWAHer7k77zwT59Dehjw1VevYeyMAydu_gIhrXDu6_9keYDbhbd747SOmxNMLdPAnBSPNzukMckALFiG8HqNYeG_dh6ilWfuNZH_GvvMtDfbVqUDiLWepeK-AGZtztYh9CL8xMzqSe26Xh_2UnMQ1oj6hA11BHm0nsZoT1rxIhWAX7NF8RxH27GdzSNeikNN7_5VTbQpUifCTIjs6suvAktXY0y8KU2xEX6Pi2UuE5lYAgCDKe8BCb8QSquYxRQ3qhbPs2fIbwDEmSyueGd38apU4nQ1ryy-KxlsuuH4-ETuA"
+```bash 
+curl $(glooctl proxy url)/ -i -H "x-token: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzb2xvLmlvIiwic3ViIjoiMTIzNDU2Nzg5MCIsInR5cGUiOiJNZXNzZW5nZXIiLCJudW1iZXIiOiIxMjMifQ.xN3_MQU6NXHlG2QuAhZsWZlgZLb0htsitPwbsQeilxWAHer7k77zwT59Dehjw1VevYeyMAydu_gIhrXDu6_9keYDbhbd747SOmxNMLdPAnBSPNzukMckALFiG8HqNYeG_dh6ilWfuNZH_GvvMtDfbVqUDiLWepeK-AGZtztYh9CL8xMzqSe26Xh_2UnMQ1oj6hA11BHm0nsZoT1rxIhWAX7NF8RxH27GdzSNeikNN7_5VTbQpUifCTIjs6suvAktXY0y8KU2xEX6Pi2UuE5lYAgCDKe8BCb8QSquYxRQ3qhbPs2fIbwDEmSyueGd38apU4nQ1ryy-KxlsuuH4-ETuA"
+```
+
+```
 HTTP/1.1 429 Too Many Requests
 x-envoy-ratelimited: true
 date: Thu, 30 Apr 2020 22:55:59 GMT
