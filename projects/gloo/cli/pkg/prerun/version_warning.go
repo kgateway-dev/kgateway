@@ -2,8 +2,9 @@ package prerun
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"os"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
 	"github.com/spf13/cobra"
 
