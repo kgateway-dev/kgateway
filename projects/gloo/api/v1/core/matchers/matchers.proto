@@ -24,12 +24,16 @@ message Matcher {
         // sub-sequence of the *:path* header matches the regex. The regex grammar is defined `here
         // <http://en.cppreference.com/w/cpp/regex/ecmascript>`_.
         //
-        // Examples:
+        // Examples:<br/>
         //
-        // * The regex */b[io]t* matches the path */bit*
-        // * The regex */b[io]t* matches the path */bot*
-        // * The regex */b[io]t* does not match the path */bite*
-        // * The regex */b[io]t* does not match the path */bit/bot*
+        // * The regex */b[io]t* matches the path */bit*<br/>
+        // * The regex */b[io]t* matches the path */bot*<br/>
+        // * The regex */b[io]t* does not match the path */bite*<br/>
+        // * The regex */b[io]t* does not match the path */bit/bot*<br/><br/>
+        //
+        // Note that the complexity of the regex is constrained by the regex engine's "program size" setting.
+        // If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
+        // in the `GlooOptions` section of your `Settings` resource
         string regex = 3;
     }
 
