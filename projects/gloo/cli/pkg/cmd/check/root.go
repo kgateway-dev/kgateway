@@ -50,7 +50,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 }
 
 func CheckResources(opts *options.Options) (bool, error) {
-	err := checkConnection()
+	err := checkConnection(opts.Metadata.Namespace)
 	if err != nil {
 		return false, err
 	}
@@ -427,7 +427,8 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 
 func checkSecrets(namespaces []string) (bool, error) {
 	fmt.Printf("Checking secrets... ")
-	client := helpers.MustSecretClient()
+	client := helpers.MustSecretClientWithOptions(5*time.Second, namespaces)
+
 	for _, ns := range namespaces {
 		_, err := client.List(ns, clients.ListOpts{})
 		if err != nil {
@@ -453,12 +454,12 @@ func renderNamespaceName(namespace, name string) string {
 
 // Checks whether the cluster that the kubeconfig points at is available
 // The timeout for the kubernetes client is set to a low value to notify the user of the failure
-func checkConnection() error {
+func checkConnection(ns string) error {
 	client, err := helpers.GetKubernetesClientWithTimeout(5 * time.Second)
 	if err != nil {
 		return eris.Wrapf(err, "Could not get kubernetes client")
 	}
-	_, err = client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	_, err = client.CoreV1().Namespaces().Get(ns, metav1.GetOptions{})
 	if err != nil {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}

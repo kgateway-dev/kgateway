@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
+
 	"github.com/spf13/cobra"
 
 	"github.com/rotisserie/eris"
@@ -28,7 +30,8 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 		return nil
 	}
 	nsToCheck := opts.Metadata.Namespace
-	if opts.Install.Namespace != "" {
+	// TODO: only use metadata namespace flag, install namespace can be populated from metadata namespace or refactored out of the opts
+	if nsToCheck == flagutils.DefaultNamespace && opts.Install.Namespace != flagutils.DefaultNamespace {
 		nsToCheck = opts.Install.Namespace
 	}
 
