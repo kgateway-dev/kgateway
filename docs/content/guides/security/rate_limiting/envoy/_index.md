@@ -32,7 +32,7 @@ We make the distinction here that this is "Envoy's" rate-limit API because Gloo
 as an alternative.
 
 {{% notice note %}}
-Gloo Enterprise includes a rate limit server based on [Lyft's Envoy rate-limit server](https://github.com/lyft/ratelimit). 
+Gloo Enterprise includes a rate limit server based on the implementation [here](https://github.com/envoyproxy/ratelimit). 
 It is already installed when doing `glooctl install gateway enterprise --license-key=...` or 
 using the [Helm install]({{< versioned_link_path fromRoot="/installation/enterprise#installing-on-kubernetes-with-helm" >}}). 
 To get your trial license key, go to <https://www.solo.io/gloo-trial>.
@@ -46,7 +46,7 @@ implement the behavior described below.
 Two steps are needed to configure Gloo to leverage the full Envoy Rate Limiter on your routes: 
 
 1. In the Gloo Settings manifest, you need to configure all of your 
-[rate limiting descriptors](https://github.com/lyft/ratelimit#configuration). 
+[rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration). 
 Descriptors describe your requests and are used to define the rate limits themselves.
 2. For each Virtual Service, you need to configure 
 [Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action) 
@@ -60,7 +60,7 @@ The tuple of keys are expressed as a hierarchy to make configuration easy, but i
 matching or not that is important. Each descriptor key can have an associated value that is matched as a literal. 
 You can define rate limits on a key matching a specific value, or you can omit the value to have the limit applied to 
 any unique value for that key. 
-See the [Lyft rate limiting descriptors](https://github.com/lyft/ratelimit#configuration) for full details.
+See the Envoy rate limiting [configuration doc](https://github.com/envoyproxy/ratelimit#configuration) for full details.
 
 Rate limit descriptors live in the Gloo Settings manifest, so the examples below will reflect a Gloo Settings configuration 
 or patch. 
