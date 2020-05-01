@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-var _ = Describe("Translate Proxy", func() {
+var _ = FDescribe("Translate Proxy", func() {
 
 	var (
 		xdsCache    *mockXdsCache
@@ -66,8 +66,6 @@ var _ = Describe("Translate Proxy", func() {
 				proxy,
 			},
 		}
-		_, err = proxyClient.Write(proxy, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
 		err = syncer.Sync(context.Background(), snap)
 		Expect(err).NotTo(HaveOccurred())
 
