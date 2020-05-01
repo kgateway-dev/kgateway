@@ -2,6 +2,7 @@ package prerun
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -28,7 +29,9 @@ func VersionMismatchWarning(opts *options.Options, cmd *cobra.Command) error {
 		return nil
 	}
 	nsToCheck := opts.Metadata.Namespace
-	if opts.Install.Namespace != "" {
+	// TODO: only use metadata namespace flag, install namespace can be populated from metadata namespace or refactored out of the opts
+	if nsToCheck == flagutils.DefaultNamespace && opts.Install.Namespace != flagutils.DefaultNamespace {
+		// should never happen
 		nsToCheck = opts.Install.Namespace
 	}
 
