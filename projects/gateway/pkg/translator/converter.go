@@ -222,11 +222,20 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			}
 
 			if action, ok := routeClone.Action.(*gatewayv1.Route_RouteAction); ok {
+				parentNamespace := resource.InputResource().GetMetadata().Namespace
 				if upstream := action.RouteAction.GetSingle().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
-					parentNamespace := resource.InputResource().GetMetadata().Namespace
 					upstream.Namespace = parentNamespace
 					origAction, _ := gatewayRoute.Action.(*gatewayv1.Route_RouteAction)
 					origAction.RouteAction.GetSingle().GetUpstream().Namespace = parentNamespace
+				}
+				if multiDests := action.RouteAction.GetMulti().GetDestinations(); multiDests != nil {
+					for i, dest := range multiDests {
+						if upstream := dest.GetDestination().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
+							upstream.Namespace = parentNamespace
+							origAction, _ := gatewayRoute.Action.(*gatewayv1.Route_RouteAction)
+							origAction.RouteAction.GetMulti().GetDestinations()[i].GetDestination().GetUpstream().Namespace = parentNamespace
+						}
+					}
 				}
 			}
 			glooRoute, err := convertSimpleAction(routeClone)
