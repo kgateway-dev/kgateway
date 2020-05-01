@@ -495,24 +495,28 @@ func SettingsClient(namespaces []string) (v1.SettingsClient, error) {
 }
 
 func MustSecretClient() v1.SecretClient {
-	client, err := secretClient()
+	return MustSecretClientWithOptions(0, nil)
+}
+
+func MustSecretClientWithOptions(timeout time.Duration, namespaces []string) v1.SecretClient {
+	client, err := secretClient(timeout, namespaces)
 	if err != nil {
 		log.Fatalf("failed to create Secret client: %v", err)
 	}
 	return client
 }
 
-func secretClient() (v1.SecretClient, error) {
+func secretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
 	customFactory := getSecretClientFactory()
 	if customFactory != nil {
 		return v1.NewSecretClient(customFactory)
 	}
 
-	clientset, err := GetKubernetesClient()
+	clientset, err := GetKubernetesClientWithTimeout(timeout)
 	if err != nil {
 		return nil, errors.Wrapf(err, "getting kube config")
 	}
-	coreCache, err := cache.NewKubeCoreCache(context.TODO(), clientset)
+	coreCache, err := cache.NewKubeCoreCacheWithOptions(context.TODO(), clientset, 12 * time.Hour, namespaces)
 	if err != nil {
 		return nil, err
 	}
