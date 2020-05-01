@@ -21,7 +21,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
-var _ = FDescribe("Translate Proxy", func() {
+var _ = Describe("Translate Proxy", func() {
 
 	var (
 		xdsCache    *mockXdsCache
