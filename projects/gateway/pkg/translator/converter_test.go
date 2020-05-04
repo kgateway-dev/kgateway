@@ -203,6 +203,89 @@ var _ = Describe("Route converter", func() {
 			Expect(converted[0].Matchers[0]).To(Equal(defaults.DefaultMatcher()))
 		})
 
+		It("uses parent resource's namespace as default if namespace is omitted on routeAction with single upstream destination", func() {
+			route := &v1.Route{
+				Matchers: []*matchers.Matcher{{}}, // empty struct in list of size one should default to '/'
+				Action: &v1.Route_RouteAction{
+					RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Single{
+							Single: &gloov1.Destination{
+								DestinationType: &gloov1.Destination_Upstream{
+									Upstream: &core.ResourceRef{
+										Name: "my-upstream",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{
+				VirtualHost: &v1.VirtualHost{
+					Routes: []*v1.Route{route},
+				},
+				Metadata: core.Metadata{
+					Namespace: "vs-ns",
+				},
+			}
+
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{}),
+				translator.NewRouteTableIndexer(),
+				rpt,
+			)
+			converted, err := rv.ConvertVirtualService(vs)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(converted[0].GetRouteAction().GetSingle().GetUpstream().GetNamespace()).To(Equal("vs-ns"))
+		})
+
+		It("uses parent resource's namespace as default if namespace is omitted on routeAction with multi upstream destination", func() {
+			route := &v1.Route{
+				Matchers: []*matchers.Matcher{{}}, // empty struct in list of size one should default to '/'
+				Action: &v1.Route_RouteAction{
+					RouteAction: &gloov1.RouteAction{
+						Destination: &gloov1.RouteAction_Multi{
+							Multi: &gloov1.MultiDestination{
+								Destinations: []*gloov1.WeightedDestination{
+									{
+										Destination: &gloov1.Destination{
+											DestinationType: &gloov1.Destination_Upstream{
+												Upstream: &core.ResourceRef{
+													Name: "my-upstream",
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+
+			rpt := reporter.ResourceReports{}
+			vs := &v1.VirtualService{
+				VirtualHost: &v1.VirtualHost{
+					Routes: []*v1.Route{route},
+				},
+				Metadata: core.Metadata{
+					Namespace: "vs-ns",
+				},
+			}
+
+			rv := translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{}),
+				translator.NewRouteTableIndexer(),
+				rpt,
+			)
+			converted, err := rv.ConvertVirtualService(vs)
+			Expect(err).NotTo(HaveOccurred())
+			dest0 := converted[0].GetRouteAction().GetMulti().GetDestinations()[0]
+			Expect(dest0.GetDestination().GetUpstream().GetNamespace()).To(Equal("vs-ns"))
+		})
+
 		It("builds correct route name when the parent route is named", func() {
 			ref := core.ResourceRef{
 				Name: "any",
