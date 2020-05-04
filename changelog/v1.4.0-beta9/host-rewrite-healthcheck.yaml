@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2794
+    description: >
+      When static upstreams are converted to Envoy clusters, add hostnames so that host headers for requests
+      and healthchecks are set properly.
