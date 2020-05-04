@@ -13,11 +13,13 @@ import (
 func checkRateLimitConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) bool {
 
 	if strings.TrimSpace(stats) == "" {
-		fmt.Println(genericErrMessage+": could not find any metrics at", promStatsPath, "endpoint of the "+deploymentName+" deployment")
+		fmt.Println(genericErrMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+deploymentName+" deployment")
 		return false
 	}
 
-	if !strings.Contains(stats, "glooe_ratelimit_connected_state 1") {
+	// We'll just look for the presence of the stat that indicates an error. Since this stat was just introduced, we
+	// don't want `glooctl check` to start failing when a user upgrades glooctl but not gloo
+	if strings.Contains(stats, "glooe_ratelimit_connected_state 0") {
 		fmt.Println(connectedStateErrMessage)
 		return false
 	}
