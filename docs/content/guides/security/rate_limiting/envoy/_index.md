@@ -49,7 +49,7 @@ Two steps are needed to configure Gloo to leverage the full Envoy Rate Limiter o
 [rate limiting descriptors](https://github.com/envoyproxy/ratelimit#configuration). 
 Descriptors describe your requests and are used to define the rate limits themselves.
 2. For each Virtual Service, you need to configure 
-[Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action) 
+[Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/route/route_components.proto#envoy-api-msg-route-ratelimit-action) 
 at the Virtual Service level, for each route, or both. 
 These actions define the relationship between a request and its generated descriptors.
 
@@ -67,7 +67,7 @@ or patch.
 
 ### Actions
 
-The [Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action) 
+The [Envoy rate limiting actions](https://www.envoyproxy.io/docs/envoy/v1.14.1/api-v2/api/v2/route/route_components.proto#envoy-api-msg-route-ratelimit-action) 
 associated with the Virtual Service or the individual routes allow you to specify how parts of the request are 
 associated to rate limiting descriptor keys defined in the settings. Essentially, these actions tell Gloo which rate limit counters
 to increment for a particular request. 
@@ -703,7 +703,8 @@ Now that we are using JWT verification, we can be confident that the request is 
 claims from a trusted identity provider. Using those claims provides us confidence that rate limiting determinations will be made
 based on this trusted data. However, we want to further enhance security. 
 
-First, we'll add a Web Application Firewall (WAF) configuration, in order to protect against DOS or other types of malicious 
+First, we'll add a Web Application Firewall (WAF) configuration, in order to protect our proxy, auth, and rate limit server 
+ against DOS or other types of malicious 
 or destructive traffic. Gloo exposes this as another option when configuring routes, and provides the powerful modsecurity 
 rule set and language to define WAF behavior in Envoy. In this example, we'll just use a very simple rule to show how 
 it can be wired up. 
