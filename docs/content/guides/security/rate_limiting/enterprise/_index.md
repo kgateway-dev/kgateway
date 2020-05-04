@@ -34,9 +34,9 @@ First, run this command to port-forward the server (assuming Gloo Enterprise is 
 Now, navigate to `localhost:9091/rlconfig` to see the active configuration, or `localhost:9091` to see all the administrative
 options. 
 
-By default, the rate limit server uses redis as an in-memory cache of the current rate limit counters with their associated timeouts.  
-To see the current value of rate limit counters, you can inspect redis. 
-First, run `kubectl port-forward -n gloo-system deploy/redis 6379`. Then, invoke a tool like [redis_cli](https://redis.io/topics/rediscli)
+By default, the rate limit server uses redis as an in-memory cache of the current rate limit counters with their associated 
+timeouts. To see the current value of rate limit counters, you can inspect redis. First, run 
+`kubectl port-forward -n gloo-system deploy/redis 6379`. Then, invoke a tool like [redis_cli](https://redis.io/topics/rediscli)
 to connect to the instance. `scan 0` is a useful query to see all the current counters, and `get COUNTER` can be used 
 to inspect the current value.  
 

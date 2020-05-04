@@ -137,8 +137,8 @@ spec:
 {{< /highlight >}}
 
 {{% notice note %}}
-In Envoy, the rate limit config is typically defined with snake case ("example_config"), whereas in Gloo and Kubernetes
-it is typically defined with camel case ("exampleConfig"). We'll use camel case notation for the Gloo config here. 
+In Envoy, the rate limit config is typically written with snake case keys ("example_config") in the YAML, whereas in Gloo and Kubernetes
+YAML keys typically use camel case ("exampleConfig"). We'll use camel case notation when writing YAML keys in Gloo config here. 
 {{% /notice %}}
 
 ### Header Values
