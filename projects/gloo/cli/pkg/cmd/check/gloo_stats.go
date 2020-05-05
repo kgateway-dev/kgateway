@@ -23,13 +23,13 @@ func checkRateLimitConnectedState(stats string, deploymentName string, genericEr
 		return false
 	}
 
-	// We'll just look for the presence of the stat that indicates an error. Since this stat was just introduced, we
-	// don't want `glooctl check` to start failing when a user upgrades glooctl but not gloo
+	// glooe publishes this stat when it detects an error in the config
 	if strings.Contains(stats, "glooe_ratelimit_connected_state 0") {
 		fmt.Println(connectedStateErrMessage)
 		return false
 	}
 
+	// glooe uses these stats to indicate when the rate limit server nacks the config
 	totalMetric := "glooe_solo_io_xds_total_entities{resource=\"type.googleapis.com/glooe.solo.io.RateLimitConfig\"}"
 	inSyncMetric := "glooe_solo_io_xds_insync{resource=\"type.googleapis.com/glooe.solo.io.RateLimitConfig\"}"
 	metrics := parseMetrics(stats, []string{totalMetric, inSyncMetric}, deploymentName)
