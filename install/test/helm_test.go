@@ -1118,6 +1118,45 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					FIt("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: true
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
+
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.validation.enabled=false",
+								"gateway.readGatewaysFromAllNamespaces=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
