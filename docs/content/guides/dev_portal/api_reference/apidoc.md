@@ -1,6 +1,6 @@
 
 ---
-title: "devportal.solo.ioapidoc.proto"
+title: "apidoc.proto"
 ---
 
 ## Package : `devportal.solo.io`

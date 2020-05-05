@@ -1,6 +1,6 @@
 
 ---
-title: "devportal.solo.ioaccess_level.proto"
+title: "access_level.proto"
 ---
 
 ## Package : `devportal.solo.io`
