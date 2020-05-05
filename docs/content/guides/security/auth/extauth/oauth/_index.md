@@ -19,7 +19,7 @@ In this guide, we will focus on the format of the Gloo API for OIDC authenticati
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-Following is an example of an `AuthConfig` with an OIDC configuration (for more information on `AuthConfig` CRDs, see the [main page]({{< versioned_link_path fromRoot="/guides/security/auth/#auth-configuration-overview" >}}) 
+Following is an example of an `AuthConfig` with an OIDC configuration (for more information on `AuthConfig` CRDs, see the [main page]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) 
 of the authentication docs):
 
 {{< highlight yaml "hl_lines=8-17" >}}

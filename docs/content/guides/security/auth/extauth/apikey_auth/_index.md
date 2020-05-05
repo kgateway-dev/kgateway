@@ -54,7 +54,7 @@ Now let's configure Gloo to route requests to the upstream we just created. To d
 
 {{< tabs >}}
 {{< tab name="kubectl" codelang="yaml">}}
-{{< readfile file="guides/security/auth/apikey_auth/test-no-auth-vs.yaml">}}
+{{< readfile file="guides/security/auth/extauth/apikey_auth/test-no-auth-vs.yaml">}}
 {{< /tab >}}
 {{< /tabs >}} 
 

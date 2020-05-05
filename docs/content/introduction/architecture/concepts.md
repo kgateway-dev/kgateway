@@ -8,15 +8,15 @@ There are several core concepts that serve as the bedrock on which Gloo is built
 
 In this document we will start with a general overview and then expand on specific topics. Links are included in the list below if you wish to jump to a specific topic.
 
-* [Overview](#overview)
-* [Gateways](#gateways)
-* [Virtual Services](#virtual-services)
-  * [Routes](#routes)
-  * [Matchers](#matchers)
-  * [Destinations](#destinations)
-* [Upstreams](#upstreams)
-  * [Functions](#functions)
-* [Secrets](#secrets)
+- [Overview](#overview)
+- [Gateways](#gateways)
+- [Virtual Services](#virtual-services)
+  - [Routes](#routes)
+  - [Matchers](#matchers)
+  - [Destinations](#destinations)
+- [Upstreams](#upstreams)
+  - [Functions](#functions)
+- [Secrets](#secrets)
 
 ---
 
@@ -74,7 +74,7 @@ In this case, we are setting up an HTTP listener on port 8443. When [VirtualServ
 
 ## Virtual Services
 
-*Virtual Services* define a set of route rules, security configuration (including [TLS, mTLS, SNI]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}), [WAF]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}), [OAuth]({{% versioned_link_path fromRoot="/guides/security/auth/oauth/" %}}), [Data Loss Prevention]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}), and [others]({{% versioned_link_path fromRoot="/guides/security/" %}})), rate limiting, transformations, and other core routing capabilities supported by Gloo.
+*Virtual Services* define a set of route rules, security configuration (including [TLS, mTLS, SNI]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}), [WAF]({{% versioned_link_path fromRoot="/guides/security/waf/" %}}), [OAuth]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/" %}}), [Data Loss Prevention]({{% versioned_link_path fromRoot="/guides/security/data_loss_prevention/" %}}), and [others]({{% versioned_link_path fromRoot="/guides/security/" %}})), rate limiting, transformations, and other core routing capabilities supported by Gloo.
 
 Gloo selects the appropriate Virtual Service (set of routes) based on the domain specified in a request's `Host` header (in HTTP 1.1) or `:authority` header (HTTP 2.0).
 

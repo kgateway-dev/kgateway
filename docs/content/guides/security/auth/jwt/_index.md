@@ -1,6 +1,6 @@
 ---
 title: JSON Web Tokens (JWT)
-weight: 30
+weight: 40
 description: Introduction to JWT and what they are used for
 ---
 
