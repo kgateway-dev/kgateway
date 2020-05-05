@@ -1118,7 +1118,7 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					FIt("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
+					It("correctly allows setting readGatewaysFromAllNamespaces field in the settings when validation disabled", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
 kind: Settings
