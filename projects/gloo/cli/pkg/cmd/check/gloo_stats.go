@@ -13,7 +13,7 @@ import (
 
 const (
 	glooRateLimitConnectedState = "glooe_ratelimit_connected_state"
-	glooStatsPath = "/metrics"
+	glooStatsPath               = "/metrics"
 )
 
 func checkRateLimitConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) bool {
