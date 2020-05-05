@@ -11,6 +11,10 @@ import (
 	v1 "k8s.io/api/apps/v1"
 )
 
+const (
+	glooRateLimitConnectedState = "glooe_ratelimit_connected_state"
+)
+
 func checkRateLimitConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) bool {
 
 	if strings.TrimSpace(stats) == "" {
