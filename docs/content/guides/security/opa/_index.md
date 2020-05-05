@@ -114,21 +114,21 @@ Time to test!
 
 We have prepared two virtual services for testing (click on each to see the content):
 
-<details><summary>Valid VirtualService (vs-ok.yaml)</summary>
+{{% expand "Valid VirtualService (vs-ok.yaml)" %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-ok.yaml" >}}
 ```
 
-</details>
+{{% /expand %}}
 
-<details><summary>Denied VirtualService (vs-err.yaml)</summary>
+{{% expand "Denied VirtualService (vs-err.yaml)" %}}
 
 ```
 {{< readfile file="guides/security/opa/vs-err.yaml" >}}
 ```
 
-</details>
+{{% /expand %}}
 
 Try it:
 ```shell
