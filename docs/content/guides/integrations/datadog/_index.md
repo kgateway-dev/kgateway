@@ -6,6 +6,17 @@ description: Integrate the Datadog agent with your Gloo and Envoy deployment
 
 Datadog is a SaaS platform that allows you to easily collect metrics and events from your environment through integrations with with software like Kubernetes, cloud providers, Linux and more. In this guide, we will show you how Gloo can work with the Datadog Kubernetes integration to deliver information to Datadog for analysis.
 
+Steps:
+
+1. Install Kubernetes and Envoy Integrations
+1. Get the API key for Helm installation
+1. Update the gateway-proxy ConfigMap
+1. Update the gateway-proxy Deployment
+1. Create and edit Datadog values file
+1. Install Datadog using Helm
+1. Validate using kubectl
+1. Profit???
+
 ---
 
 ## Prerequisites
