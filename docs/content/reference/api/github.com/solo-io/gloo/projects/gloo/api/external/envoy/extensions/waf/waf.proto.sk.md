@@ -11,6 +11,9 @@ weight: 5
 #### Types:
 
 
+- [AuditLogging](#auditlogging)
+- [AuditLogAction](#auditlogaction)
+- [AuditLogLocation](#auditloglocation)
 - [ModSecurity](#modsecurity)
 - [RuleSet](#ruleset)
 - [ModSecurityPerRoute](#modsecurityperroute)
@@ -25,6 +28,52 @@ weight: 5
 
 
 ---
+### AuditLogging
+
+
+
+```yaml
+"action": .envoy.config.filter.http.modsecurity.v2.AuditLogging.AuditLogAction
+"location": .envoy.config.filter.http.modsecurity.v2.AuditLogging.AuditLogLocation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `action` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging.AuditLogAction](../waf.proto.sk/#auditlogaction) |  |  |
+| `location` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging.AuditLogLocation](../waf.proto.sk/#auditloglocation) |  |  |
+
+
+
+
+---
+### AuditLogAction
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `NEVER` | Never generate audit logs. |
+| `RELEVANT_ONLY` | When set to RELEVANT_ONLY, this will have similar behavior to `SecAuditEngine RelevantOnly`. |
+| `ALWAYS` | Always generate an audit log entry (as long as the filter is not disabled). |
+
+
+
+
+---
+### AuditLogLocation
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `FILTER_STATE` | Add the audit log to the filter state. it will be under the key "io.solo.modsecurity.audit_log". You can use this formatter in the access log: %FILTER_STATE(io.solo.modsecurity.audit_log)% |
+| `DYNAMIC_METADATA` | Add the audit log to the dynamic metadata. it will be under the filter name "io.solo.filters.http.modsecurity". with "audit_log" as the key. You can use this formatter in the access log: %DYNAMIC_METADATA("io.solo.filters.http.modsecurity:audit_log")% |
+
+
+
+
+---
 ### ModSecurity
 
 
@@ -33,6 +82,8 @@ weight: 5
 "disabled": bool
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
 "customInterventionMessage": string
+"auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
+"regressionLogs": bool
 
 ```
 
@@ -41,6 +92,8 @@ weight: 5
 | `disabled` | `bool` | Disable all rules on the current route. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Global rule sets for the current http connection manager. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
+| `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../waf.proto.sk/#auditlogging) | This instructs the filter what to do with the transaction's audit log. |  |
+| `regressionLogs` | `bool` | log in a format suited for the OWASP regression tests. this format is a multiline log format, so it is disabled for regular use. do not enable this in production!. |  |
 
 
 
@@ -53,6 +106,7 @@ weight: 5
 ```yaml
 "ruleStr": string
 "files": []string
+"directory": string
 
 ```
 
@@ -60,6 +114,7 @@ weight: 5
 | ----- | ---- | ----------- |----------- | 
 | `ruleStr` | `string` | String of rules which are added directly. |  |
 | `files` | `[]string` | Array of files to include. |  |
+| `directory` | `string` | A directory to include. all *.conf files in this directory will be included. sub directories will NOT be checked. |  |
 
 
 
@@ -73,6 +128,7 @@ weight: 5
 "disabled": bool
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
 "customInterventionMessage": string
+"auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
 
 ```
 
@@ -81,6 +137,7 @@ weight: 5
 | `disabled` | `bool` | Disable all rules on the current route. |  |
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Overwrite the global rules on this route. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
+| `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../waf.proto.sk/#auditlogging) | This instructs the filter what to do with the transaction's audit log. |  |
 
 
 
