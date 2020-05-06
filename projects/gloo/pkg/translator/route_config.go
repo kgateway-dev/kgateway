@@ -317,6 +317,7 @@ func (t *translatorInstance) setAction(params plugins.RouteParams, routeReport *
 	}
 }
 
+
 func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.RouteAction, out *envoyroute.RouteAction, routeReport *validationapi.RouteReport) error {
 	switch dest := in.Destination.(type) {
 	case *v1.RouteAction_Single:
@@ -342,6 +343,7 @@ func (t *translatorInstance) setRouteAction(params plugins.RouteParams, in *v1.R
 		md := &v1.MultiDestination{
 			Destinations: upstreamGroup.Destinations,
 		}
+		t.fixUpstreamGroups(upstreamGroup)
 		return t.setWeightedClusters(params, md, out, routeReport)
 	}
 	return errors.Errorf("unknown upstream destination type")

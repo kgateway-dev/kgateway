@@ -2,6 +2,7 @@ package translator
 
 import (
 	errors "github.com/rotisserie/eris"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -19,11 +20,6 @@ func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports
 				continue
 			}
 
-			if upstream := dest.GetDestination().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
-				parentMetadata := ug.GetMetadata()
-				upstream.Namespace = parentMetadata.GetNamespace()
-			}
-
 			upRef, err := usconversions.DestinationToUpstreamRef(dest.Destination)
 			if err != nil {
 				reports.AddError(ug, err)
@@ -38,4 +34,13 @@ func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports
 
 	}
 
+}
+
+func (t *translatorInstance) fixUpstreamGroups(ug *v1.UpstreamGroup) {
+	for _, dest := range ug.Destinations {
+		if upstream := dest.GetDestination().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
+			parentMetadata := ug.GetMetadata()
+			upstream.Namespace = parentMetadata.GetNamespace()
+		}
+	}
 }
