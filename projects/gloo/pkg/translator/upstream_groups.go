@@ -26,7 +26,13 @@ func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports
 				continue
 			}
 
-			if _, err := upstreams.Find(upRef.Namespace, upRef.Name); err != nil {
+			ns := upRef.Namespace
+			if upRef.Namespace == "" {
+				parentMetadata := ug.GetMetadata()
+				ns = parentMetadata.GetNamespace()
+			}
+
+			if _, err := upstreams.Find(ns, upRef.Name); err != nil {
 				reports.AddError(ug, errors.Wrapf(err, "destination # %d: upstream not found", i+1))
 				continue
 			}
