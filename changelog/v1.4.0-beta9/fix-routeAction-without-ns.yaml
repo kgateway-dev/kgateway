@@ -1,5 +1,5 @@
 changelog:
   - type: FIX
     description: >
-      If a virtual service or route table has a route using a routeAction that points to an upstream but does not specify the namespace where the upstream is, Gloo will assume it's in the namespace of the parent resource (the virtual service or the route table itself). Previously, this caused Envoy to be in a bad state.
+      If a virtual service or route table has a route using a routeAction that points to an upstream but does not specify the namespace where the upstream is, Gloo will assume it's in the namespace of the parent resource (the upstream group or the virtual service or route table itself). Previously, this caused Envoy to be in a bad state, and the route would return a 503 error.
     issueLink: https://github.com/solo-io/gloo/issues/2730
