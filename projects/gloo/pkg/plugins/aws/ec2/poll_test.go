@@ -55,6 +55,10 @@ var _ = Describe("polling", func() {
 				Namespace:   "default",
 				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdA"},
 			},
+			Hostname: testPrivateIp1,
+			HealthCheck: &v1.HealthCheckConfig{
+					Hostname: testPrivateIp1,
+			},
 		}})
 	})
 	It("should poll, one key-value filter upstream", func() {
@@ -69,6 +73,10 @@ var _ = Describe("polling", func() {
 				Name:        "ec2-name-u2-namespace-default--222-222-222-222",
 				Namespace:   "default",
 				Annotations: map[string]string{InstanceIdAnnotationKey: "instanceIdB"},
+			},
+			Hostname: testPublicIp1,
+			HealthCheck: &v1.HealthCheckConfig{
+					Hostname: testPublicIp1,
 			},
 		}})
 	})

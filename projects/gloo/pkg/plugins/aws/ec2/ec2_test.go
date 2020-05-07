@@ -119,6 +119,10 @@ var _ = Describe("Plugin", func() {
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
+					Hostname: privateIp,
+					HealthCheck: &v1.HealthCheckConfig{
+						Hostname: privateIp,
+					},
 				}),
 			Entry("should use proper port and ip when specified", &v1.Upstream{
 				UpstreamType: &v1.Upstream_AwsEc2{
@@ -150,6 +154,10 @@ var _ = Describe("Plugin", func() {
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
 					},
+					Hostname: pubIp,
+					HealthCheck: &v1.HealthCheckConfig{
+						Hostname: pubIp,
+					},
 				}),
 			Entry("should accept instances with private ip only", &v1.Upstream{
 				UpstreamType: &v1.Upstream_AwsEc2{
@@ -179,6 +187,10 @@ var _ = Describe("Plugin", func() {
 						Name:        "ec2-name-ex1-namespace-default--5-5-5-5",
 						Namespace:   writeNamespace,
 						Annotations: map[string]string{InstanceIdAnnotationKey: "id1"},
+					},
+					Hostname: privateIp,
+					HealthCheck: &v1.HealthCheckConfig{
+						Hostname: privateIp,
 					},
 				}),
 			Entry("should return nil if no ips are available for the given config", &v1.Upstream{
