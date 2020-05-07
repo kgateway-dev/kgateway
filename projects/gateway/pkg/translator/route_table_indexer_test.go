@@ -8,7 +8,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
-	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -62,18 +61,16 @@ var _ = Describe("RouteTableIndexer", func() {
 	})
 
 	When("an empty list is passed", func() {
-		It("returns nothing without errors", func() {
-			byWeight, weights, errs := indexer.IndexByWeight(nil)
-			Expect(errs).To(BeNil())
+		It("returns nothing", func() {
+			byWeight, weights := indexer.IndexByWeight(nil)
 			Expect(byWeight).To(BeEmpty())
 			Expect(weights).To(BeEmpty())
 		})
 	})
 
 	When("a single route table is passed", func() {
-		It("returns the table without errors", func() {
-			byWeight, weights, errs := indexer.IndexByWeight(v1.RouteTableList{noWeight1})
-			Expect(errs).To(BeNil())
+		It("returns the table", func() {
+			byWeight, weights := indexer.IndexByWeight(v1.RouteTableList{noWeight1})
 			Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
 			Expect(byWeight).To(ConsistOf(BeEquivalentTo(v1.RouteTableList{noWeight1})))
 		})
@@ -82,28 +79,22 @@ var _ = Describe("RouteTableIndexer", func() {
 	Context("multiple route tables are passed", func() {
 
 		When("no route tables have weights", func() {
-			It("correctly indexes them and returns the expected warning", func() {
+			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{noWeight1, noWeight2, noWeight3}
-				byWeight, weights, errs := indexer.IndexByWeight(tables)
+				byWeight, weights := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(1))
 				Expect(weights).To(ConsistOf(BeEquivalentTo(0)))
 
 				Expect(byWeight).To(HaveLen(1))
 				Expect(byWeight[0]).To(ConsistOf(noWeight1, noWeight2, noWeight3))
-
-				Expect(errs).To(ConsistOf(testutils.HaveInErrorChain(
-					translator.RouteTablesWithSameWeightErr(v1.RouteTableList{noWeight1, noWeight2, noWeight3}, 0),
-				)))
 			})
 		})
 
 		When("all route tables have distinct weights", func() {
 			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{weightTen, weightMinus10, weightTwenty, weightZero}
-				byWeight, weights, errs := indexer.IndexByWeight(tables)
-
-				Expect(errs).To(BeNil())
+				byWeight, weights := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(4))
 				Expect(weights).To(Equal([]int32{-10, 0, 10, 20}))
@@ -119,9 +110,7 @@ var _ = Describe("RouteTableIndexer", func() {
 		When("some route tables have weights and others don't", func() {
 			It("correctly indexes them", func() {
 				tables := v1.RouteTableList{weightTen, noWeight1, weightMinus10, weightTwenty}
-				byWeight, weights, errs := indexer.IndexByWeight(tables)
-
-				Expect(errs).To(BeNil())
+				byWeight, weights := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(4))
 				Expect(weights).To(Equal([]int32{-10, 0, 10, 20}))
@@ -135,19 +124,15 @@ var _ = Describe("RouteTableIndexer", func() {
 		})
 
 		When("some route tables have the same weight", func() {
-			It("correctly indexes them and returns the expected warning", func() {
+			It("correctly indexes them", func() {
 				weightTenClone := proto.Clone(weightTen).(*v1.RouteTable)
 				weightTenClone.Metadata.Name = "ten-dup"
 				tables := v1.RouteTableList{weightZero, weightTen, weightTwenty, weightTenClone}
 
-				byWeight, weights, errs := indexer.IndexByWeight(tables)
+				byWeight, weights := indexer.IndexByWeight(tables)
 
 				Expect(weights).To(HaveLen(3))
 				Expect(weights).To(Equal([]int32{0, 10, 20}))
-
-				Expect(errs).To(ConsistOf(testutils.HaveInErrorChain(
-					translator.RouteTablesWithSameWeightErr(v1.RouteTableList{weightTen, weightTenClone}, 10),
-				)))
 
 				Expect(byWeight).To(HaveLen(3))
 				Expect(byWeight[0]).To(ConsistOf(weightZero))

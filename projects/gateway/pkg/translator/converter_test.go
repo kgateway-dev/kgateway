@@ -453,10 +453,8 @@ var _ = Describe("Route converter", func() {
 				Expect(reports).NotTo(BeNil())
 				_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 				Expect(vsReport).NotTo(BeNil())
-				Expect(vsReport.Warnings).To(HaveLen(1))
-				Expect(vsReport.Warnings).To(ConsistOf(
-					translator.RouteTablesWithSameWeightErr(allRouteTables, 0).Error(),
-				))
+				Expect(vsReport.Errors).To(BeNil())
+				Expect(vsReport.Warnings).To(BeNil())
 			})
 		})
 
@@ -695,32 +693,9 @@ var _ = Describe("Route converter", func() {
 				By("virtual service contains all warnings about child route tables with the same weight", func() {
 					_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 					Expect(vsReport).NotTo(BeNil())
-					Expect(vsReport.Warnings).To(HaveLen(3))
-					Expect(vsReport.Warnings).To(ConsistOf(
-						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1, rt2}, 20).Error(),
-						translator.TopLevelVirtualResourceErr(rt3.GetMetadata(), translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3b, rt3c}, 0)).Error(),
-						translator.TopLevelVirtualResourceErr(rt1.GetMetadata(), translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1a, rt1b}, 0)).Error(),
-					))
+					Expect(vsReport.Warnings).To(BeNil())
+					Expect(vsReport.Errors).To(BeNil())
 				})
-
-				By("route table 1 contains a warning about two child route tables with the same weight", func() {
-					_, vsReport := reports.Find("*v1.RouteTable", rt1.Metadata.Ref())
-					Expect(vsReport).NotTo(BeNil())
-					Expect(vsReport.Warnings).To(HaveLen(1))
-					Expect(vsReport.Warnings).To(ConsistOf(
-						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt1a, rt1b}, 0).Error(),
-					))
-				})
-
-				By("route table 3 contains a warning about two child route tables with the same weight", func() {
-					_, vsReport := reports.Find("*v1.RouteTable", rt3.Metadata.Ref())
-					Expect(vsReport).NotTo(BeNil())
-					Expect(vsReport.Warnings).To(HaveLen(1))
-					Expect(vsReport.Warnings).To(ConsistOf(
-						translator.RouteTablesWithSameWeightErr(v1.RouteTableList{rt3b, rt3c}, 0).Error(),
-					))
-				})
-
 			})
 		})
 	})
