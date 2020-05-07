@@ -294,6 +294,10 @@ func createEndpoint(namespace, name string, upstreams []*core.ResourceRef, addre
 		Upstreams: upstreams,
 		Address:   address,
 		Port:      port,
+		Hostname:  address,
+		HealthCheck: &v1.HealthCheckConfig{
+			Hostname: address,
+		},
 		// TODO: add locality info
 	}
 

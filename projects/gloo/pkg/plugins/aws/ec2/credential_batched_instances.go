@@ -154,14 +154,19 @@ func upstreamInstanceToEndpoint(ctx context.Context, writeNamespace string, upst
 	// for easier debugging, add the instance id to the xds output
 	instanceInfo := make(map[string]string)
 	instanceInfo[InstanceIdAnnotationKey] = aws.StringValue(instance.InstanceId)
+	address := aws.StringValue(ipAddr)
 	endpoint := v1.Endpoint{
 		Upstreams: []*core.ResourceRef{&ref},
-		Address:   aws.StringValue(ipAddr),
+		Address:   address,
 		Port:      port,
 		Metadata: core.Metadata{
-			Name:        generateName(ref, aws.StringValue(ipAddr)),
+			Name:        generateName(ref, address),
 			Namespace:   writeNamespace,
 			Annotations: instanceInfo,
+		},
+		Hostname: address,
+		HealthCheck: &v1.HealthCheckConfig{
+			Hostname: address,
 		},
 	}
 	contextutils.LoggerFrom(ctx).Debugw("instance from upstream",

@@ -35,5 +35,9 @@ func EnvoyEndpoint(address string, port uint32) *envoyendpoint.Endpoint {
 				},
 			},
 		},
+		Hostname: address,
+		HealthCheckConfig: &envoyendpoint.Endpoint_HealthCheckConfig{
+			Hostname: address,
+		},
 	}
 }
