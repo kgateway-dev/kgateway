@@ -231,3 +231,31 @@ should respond with
 ModSecurity: intervention occurred
 ```
 There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the core rule set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
+
+## IP Whitelisting
+
+A very common use case in many organizations is restricting access for an API to a specific IP address or subnet range. This requirement manifests in many ways, such as maintaining an access control list (ACL) for certain internal services or enforcing network boundaries between various, discrete environments.
+
+We can utilize the WAF filter and custom modsecurity rules to easily satisfy these requirements. To illustrate this concept, we will outline how to restrict access to a service to our workstation's IP along with any other hosts that are in the same `/16` CIDR block as our IP. This IP whitelisting will be based on the original source IP of a request originating from a developer workstation and flowing through a cloud `LoadBalancer` provisioned by the Kubernetes `Service`.
+
+Since we will be whitelisting IPs that travel through our cloud provider's `LoadBalancer`, we need to ensure the original source IP is preserved. Most commonly, this is configured on `Service` resources by setting the `externalTrafficPolicy: Local`. For our purposes, we will patch the 'gateway-proxy' `Service`:
+
+```
+spec:
+  externalTrafficPolicy: Local
+```
+
+Now the workload behind this `Service` will correctly see the original client IP as the remote address connecting to it. We can then utilize this address in our WAF rules to implement IP whitelisting. In this case, we will add the following patch to our `VirtualService`:
+
+```
+spec:
+  virtualHost:
+    options:
+      waf:
+        ruleSets:
+        - ruleStr: |
+            SecRuleEngine On
+            SecRule REMOTE_ADDR "!@ipMatch 173.175.0.0/16" "phase:1,deny,status:403,id:1,msg:'block ip'"
+```
+
+We are applying a WAF rule at the `virtualHost` level, meaning that the rule will be applied to all routes for this `VirtualService`. The rule we are applying will cause modsecurity to inspect the remote address for the request being processed and if the IP address does not fall in the `173.175.0.0/16` network range, the request will be denied with a 403 status code.
