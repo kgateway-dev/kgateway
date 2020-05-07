@@ -262,6 +262,11 @@ glooctl delete vs --name test-exact-2
 
 Regex matching provides the most flexibility when using path matching, but it also adds complexity. Be sure to fully test your regex expressions before using them in production. Let's create a route that uses a regex matcher to match any path of five characters in the set `[a-z]`.
 
+{{% notice note %}}
+The complexity of the regex is constrained by the regex engine's "program size" setting. If your regex is too complex, you may need to adjust the `regexMaxProgramSize` field
+in the [GlooOptions section of your Settings resource]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#gloooptions" %}}).
+{{% /notice %}}
+
 <video controls loop>
   <source src="https://solo-docs.s3.us-east-2.amazonaws.com/gloo/videos/pathmatch_regexcreate.mp4"  type="video/mp4">
 </video>

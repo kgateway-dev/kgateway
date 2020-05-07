@@ -221,6 +221,20 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				routeClone.Name = ""
 			}
 
+			// if this is a routeAction pointing to an upstream without specifying the namespace, set the namespace to that of the parent resource
+			if action, ok := routeClone.Action.(*gatewayv1.Route_RouteAction); ok {
+				parentNamespace := resource.InputResource().GetMetadata().Namespace
+				if upstream := action.RouteAction.GetSingle().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
+					upstream.Namespace = parentNamespace
+				}
+				if multiDests := action.RouteAction.GetMulti().GetDestinations(); multiDests != nil {
+					for _, dest := range multiDests {
+						if upstream := dest.GetDestination().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
+							upstream.Namespace = parentNamespace
+						}
+					}
+				}
+			}
 			glooRoute, err := convertSimpleAction(routeClone)
 			if err != nil {
 				return nil, err
