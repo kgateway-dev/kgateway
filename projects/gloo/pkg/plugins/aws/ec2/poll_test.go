@@ -57,7 +57,7 @@ var _ = Describe("polling", func() {
 			},
 			Hostname: testPrivateIp1,
 			HealthCheck: &v1.HealthCheckConfig{
-					Hostname: testPrivateIp1,
+				Hostname: testPrivateIp1,
 			},
 		}})
 	})
@@ -76,7 +76,7 @@ var _ = Describe("polling", func() {
 			},
 			Hostname: testPublicIp1,
 			HealthCheck: &v1.HealthCheckConfig{
-					Hostname: testPublicIp1,
+				Hostname: testPublicIp1,
 			},
 		}})
 	})
