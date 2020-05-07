@@ -93,7 +93,7 @@ Now that the `datadog-values.yaml` file is ready, we will use Helm to deploy Dat
 
 ### Install Datadog with Helm
 
-You will need to log into your Datadog account to retrieve the API keys for your installation. We retrieved them in an earlier step. You can find the example Helm command with your API keys on the [Kubernetes integration page]https://app.datadoghq.com/account/settings#agent/kubernetes. 
+You will need to log into your Datadog account to retrieve the API keys for your installation. We retrieved them in an earlier step. You can find the example Helm command with your API keys on the [Kubernetes integration page](https://app.datadoghq.com/account/settings#agent/kubernetes). 
 
 Since we already prepared our `datadog-values.yaml` file in the previous step, we can simply run the following Helm command against the target Kubernetes cluster. Be sure to change the `API_KEY` to the key found in the example command in your Datadog account.
 
