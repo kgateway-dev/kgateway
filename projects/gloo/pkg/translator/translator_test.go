@@ -3,7 +3,6 @@ package translator_test
 import (
 	"context"
 	"fmt"
-
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -938,6 +937,18 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
+		})
+
+		It("should use upstreamGroup's namespace as default if namespace is omitted on upstream destination", func() {
+			upstreamGroup.Destinations[0].Destination.GetUpstream().Namespace = ""
+
+			translate()
+
+			clusters := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetWeightedClusters()
+			Expect(clusters).ToNot(BeNil())
+			Expect(clusters.Clusters).To(HaveLen(2))
+			Expect(clusters.Clusters[0].Name).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
+			Expect(clusters.Clusters[1].Name).To(Equal(UpstreamToClusterName(upstream2.Metadata.Ref())))
 		})
 	})
 
