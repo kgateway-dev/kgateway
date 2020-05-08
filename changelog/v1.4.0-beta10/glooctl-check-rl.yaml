@@ -1,9 +1,0 @@
-changelog:
-  - type: NEW_FEATURE
-    description: >-
-      `glooctl check` now reports an error when Enterprise Gloo is installed and is reporting a stat indicating it is out of sync with the Rate Limit server.
-    issueLink: https://github.com/solo-io/gloo/issues/2832
-  - type: NEW_FEATURE
-    description: >-
-      `glooctl check` now reports an error when Enterprise Gloo is installed and any of the data plane components have reported a nack.
-    issueLink: https://github.com/solo-io/gloo/issues/1627
