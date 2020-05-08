@@ -17,7 +17,7 @@ var (
 func init() {
 
 	GlooComponentLabels = map[string]string{
-		"app": "(gloo,glooe-prometheus)",
+		"app": "(gloo,glooe-prometheus,dev-portal)",
 	}
 
 	GlooNamespacedKinds = []string{
