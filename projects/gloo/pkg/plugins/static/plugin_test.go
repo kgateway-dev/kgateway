@@ -1,6 +1,7 @@
 package static
 
 import (
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -73,6 +74,55 @@ var _ = Describe("Plugin", func() {
 
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
+			expected := []*envoyendpoint.LocalityLbEndpoints{
+				&envoyendpoint.LocalityLbEndpoints{
+					LbEndpoints: []*envoyendpoint.LbEndpoint{
+						&envoyendpoint.LbEndpoint{
+							HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
+								Endpoint: &envoyendpoint.Endpoint{
+									Hostname: "1.2.3.4",
+									Address: &envoycore.Address{
+										Address: &envoycore.Address_SocketAddress{
+											SocketAddress: &envoycore.SocketAddress{
+												Protocol: envoycore.SocketAddress_TCP,
+												Address:  "1.2.3.4",
+												PortSpecifier: &envoycore.SocketAddress_PortValue{
+													PortValue: 1234,
+												},
+											},
+										},
+									},
+									HealthCheckConfig: &envoyendpoint.Endpoint_HealthCheckConfig{
+										Hostname: "1.2.3.4",
+									},
+								},
+							},
+						},
+						&envoyendpoint.LbEndpoint{
+							HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
+								Endpoint: &envoyendpoint.Endpoint{
+									Hostname: "2603:3005:b0b:1d00::b7aa",
+									Address: &envoycore.Address{
+										Address: &envoycore.Address_SocketAddress{
+											SocketAddress: &envoycore.SocketAddress{
+												Protocol: envoycore.SocketAddress_TCP,
+												Address:  "2603:3005:b0b:1d00::b7aa",
+												PortSpecifier: &envoycore.SocketAddress_PortValue{
+													PortValue: 1234,
+												},
+											},
+										},
+									},
+									HealthCheckConfig: &envoyendpoint.Endpoint_HealthCheckConfig{
+										Hostname: "2603:3005:b0b:1d00::b7aa",
+									},
+								},
+							},
+						},
+					},
+				},
+			}
+			Expect(out.GetLoadAssignment().Endpoints).To(Equal(expected))
 		})
 
 		It("use dns if has mixed addresses", func() {

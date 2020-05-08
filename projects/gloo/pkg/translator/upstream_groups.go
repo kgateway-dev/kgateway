@@ -19,6 +19,11 @@ func (t *translatorInstance) verifyUpstreamGroups(params plugins.Params, reports
 				continue
 			}
 
+			if upstream := dest.GetDestination().GetUpstream(); upstream != nil && upstream.GetNamespace() == "" {
+				parentMetadata := ug.GetMetadata()
+				upstream.Namespace = parentMetadata.GetNamespace()
+			}
+
 			upRef, err := usconversions.DestinationToUpstreamRef(dest.Destination)
 			if err != nil {
 				reports.AddError(ug, err)
