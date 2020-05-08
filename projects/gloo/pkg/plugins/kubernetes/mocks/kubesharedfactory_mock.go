@@ -11,30 +11,30 @@ import (
 	v1 "k8s.io/client-go/listers/core/v1"
 )
 
-// MockKubePluginSharedFactory is a mock of KubePluginSharedFactory interface.
+// MockKubePluginSharedFactory is a mock of KubePluginSharedFactory interface
 type MockKubePluginSharedFactory struct {
 	ctrl     *gomock.Controller
 	recorder *MockKubePluginSharedFactoryMockRecorder
 }
 
-// MockKubePluginSharedFactoryMockRecorder is the mock recorder for MockKubePluginSharedFactory.
+// MockKubePluginSharedFactoryMockRecorder is the mock recorder for MockKubePluginSharedFactory
 type MockKubePluginSharedFactoryMockRecorder struct {
 	mock *MockKubePluginSharedFactory
 }
 
-// NewMockKubePluginSharedFactory creates a new mock instance.
+// NewMockKubePluginSharedFactory creates a new mock instance
 func NewMockKubePluginSharedFactory(ctrl *gomock.Controller) *MockKubePluginSharedFactory {
 	mock := &MockKubePluginSharedFactory{ctrl: ctrl}
 	mock.recorder = &MockKubePluginSharedFactoryMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockKubePluginSharedFactory) EXPECT() *MockKubePluginSharedFactoryMockRecorder {
 	return m.recorder
 }
 
-// EndpointsLister mocks base method.
+// EndpointsLister mocks base method
 func (m *MockKubePluginSharedFactory) EndpointsLister(arg0 string) v1.EndpointsLister {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "EndpointsLister", arg0)
@@ -42,13 +42,13 @@ func (m *MockKubePluginSharedFactory) EndpointsLister(arg0 string) v1.EndpointsL
 	return ret0
 }
 
-// EndpointsLister indicates an expected call of EndpointsLister.
+// EndpointsLister indicates an expected call of EndpointsLister
 func (mr *MockKubePluginSharedFactoryMockRecorder) EndpointsLister(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EndpointsLister", reflect.TypeOf((*MockKubePluginSharedFactory)(nil).EndpointsLister), arg0)
 }
 
-// Subscribe mocks base method.
+// Subscribe mocks base method
 func (m *MockKubePluginSharedFactory) Subscribe() <-chan struct{} {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe")
@@ -56,19 +56,19 @@ func (m *MockKubePluginSharedFactory) Subscribe() <-chan struct{} {
 	return ret0
 }
 
-// Subscribe indicates an expected call of Subscribe.
+// Subscribe indicates an expected call of Subscribe
 func (mr *MockKubePluginSharedFactoryMockRecorder) Subscribe() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockKubePluginSharedFactory)(nil).Subscribe))
 }
 
-// Unsubscribe mocks base method.
+// Unsubscribe mocks base method
 func (m *MockKubePluginSharedFactory) Unsubscribe(arg0 <-chan struct{}) {
 	m.ctrl.T.Helper()
 	m.ctrl.Call(m, "Unsubscribe", arg0)
 }
 
-// Unsubscribe indicates an expected call of Unsubscribe.
+// Unsubscribe indicates an expected call of Unsubscribe
 func (mr *MockKubePluginSharedFactoryMockRecorder) Unsubscribe(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Unsubscribe", reflect.TypeOf((*MockKubePluginSharedFactory)(nil).Unsubscribe), arg0)

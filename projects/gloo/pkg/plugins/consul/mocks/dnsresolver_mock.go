@@ -12,30 +12,30 @@ import (
 	gomock "github.com/golang/mock/gomock"
 )
 
-// MockDnsResolver is a mock of DnsResolver interface.
+// MockDnsResolver is a mock of DnsResolver interface
 type MockDnsResolver struct {
 	ctrl     *gomock.Controller
 	recorder *MockDnsResolverMockRecorder
 }
 
-// MockDnsResolverMockRecorder is the mock recorder for MockDnsResolver.
+// MockDnsResolverMockRecorder is the mock recorder for MockDnsResolver
 type MockDnsResolverMockRecorder struct {
 	mock *MockDnsResolver
 }
 
-// NewMockDnsResolver creates a new mock instance.
+// NewMockDnsResolver creates a new mock instance
 func NewMockDnsResolver(ctrl *gomock.Controller) *MockDnsResolver {
 	mock := &MockDnsResolver{ctrl: ctrl}
 	mock.recorder = &MockDnsResolverMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockDnsResolver) EXPECT() *MockDnsResolverMockRecorder {
 	return m.recorder
 }
 
-// Resolve mocks base method.
+// Resolve mocks base method
 func (m *MockDnsResolver) Resolve(arg0 context.Context, arg1 string) ([]net.IPAddr, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Resolve", arg0, arg1)
@@ -44,7 +44,7 @@ func (m *MockDnsResolver) Resolve(arg0 context.Context, arg1 string) ([]net.IPAd
 	return ret0, ret1
 }
 
-// Resolve indicates an expected call of Resolve.
+// Resolve indicates an expected call of Resolve
 func (mr *MockDnsResolverMockRecorder) Resolve(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Resolve", reflect.TypeOf((*MockDnsResolver)(nil).Resolve), arg0, arg1)
