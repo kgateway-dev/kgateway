@@ -12,16 +12,56 @@ import (
 )
 
 const (
-	glooRateLimitConnectedState = "glooe_ratelimit_connected_state"
-	glooStatsPath               = "/metrics"
+	glooDeployment      = "gloo"
+	rateLimitDeployment = "rate-limit"
+	glooStatsPath       = "/metrics"
+
+	glooeTotalEntites   = "glooe_solo_io_xds_total_entities"
+	glooeInSyncEntities = "glooe_solo_io_xds_insync"
 )
 
-func checkRateLimitConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) bool {
+var (
+	resourceNames = []string{
+		"type.googleapis.com/enterprise.gloo.solo.io.ExtAuthConfig",
+		"type.googleapis.com/envoy.api.v2.Cluster",
+		"type.googleapis.com/envoy.api.v2.ClusterLoadAssignment",
+		"type.googleapis.com/envoy.api.v2.Listener",
+		"type.googleapis.com/envoy.api.v2.RouteConfiguration",
+		"type.googleapis.com/glooe.solo.io.RateLimitConfig",
+	}
 
-	if strings.TrimSpace(stats) == "" {
-		fmt.Println(genericErrMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+deploymentName+" deployment")
+	resourcesOutOfSyncMessage = func(resourceNames []string) string {
+		return fmt.Sprintf("Gloo has detected that the data plane is out of sync. The following types of resources have not been accepted: %v. "+
+			"Gloo will not be able to process any other configuration updates until these errors are resolved.", resourceNames)
+	}
+)
+
+func resourcesSyncedOverXds(stats, deploymentName string) bool {
+	var outOfSyncResources []string
+	for _, resourceName := range resourceNames {
+		totalMetric := fmt.Sprintf("%s{resouce=\"%s\"}", glooeTotalEntites, resourceName)
+		inSyncMetric := fmt.Sprintf("%s{resource=\"%s\"}", glooeInSyncEntities, resourceName)
+		metrics := parseMetrics(stats, []string{totalMetric, inSyncMetric}, deploymentName)
+
+		if totalCount, ok := metrics[totalMetric]; ok {
+			if inSyncCount, ok := metrics[inSyncMetric]; ok {
+				if totalCount > inSyncCount {
+					outOfSyncResources = append(outOfSyncResources, resourceName)
+				}
+			}
+		}
+	}
+	if len(outOfSyncResources) > 0 {
+		fmt.Println(resourcesOutOfSyncMessage(outOfSyncResources))
 		return false
 	}
+
+	return true
+}
+
+func checkRateLimitConnectedState(stats string) bool {
+	connectedStateErrMessage := "The rate limit server is out of sync with the Gloo control plane and is not receiving valid gloo config.\n" +
+		"You may want to try using the `glooctl debug logs --errors-only` command to find any relevant error logs."
 
 	// glooe publishes this stat when it detects an error in the config
 	if strings.Contains(stats, "glooe_ratelimit_connected_state 0") {
@@ -29,25 +69,11 @@ func checkRateLimitConnectedState(stats string, deploymentName string, genericEr
 		return false
 	}
 
-	// glooe uses these stats to indicate when the rate limit server nacks the config
-	totalMetric := "glooe_solo_io_xds_total_entities{resource=\"type.googleapis.com/glooe.solo.io.RateLimitConfig\"}"
-	inSyncMetric := "glooe_solo_io_xds_insync{resource=\"type.googleapis.com/glooe.solo.io.RateLimitConfig\"}"
-	metrics := parseMetrics(stats, []string{totalMetric, inSyncMetric}, deploymentName)
-
-	if totalCount, ok := metrics[totalMetric]; ok {
-		if inSyncCount, ok := metrics[inSyncMetric]; ok {
-			if totalCount > inSyncCount {
-				fmt.Println(connectedStateErrMessage)
-				return false
-			}
-		}
-	}
-
 	return true
 }
 
-func checkGlooRateLimitPromStats(ctx context.Context, glooNamespace string, deploymentName string) (bool, error) {
-	errMessage := "Problem while checking for out of sync rate limit server"
+func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
+	errMessage := "Problem while checking for gloo xds errors"
 
 	// port-forward proxy deployment and get prometheus metrics
 	freePort, err := cliutil.GetFreePort()
@@ -58,7 +84,7 @@ func checkGlooRateLimitPromStats(ctx context.Context, glooNamespace string, depl
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
 	// stats is the string containing all stats from /stats/prometheus
-	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+deploymentName,
+	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
@@ -69,21 +95,20 @@ func checkGlooRateLimitPromStats(ctx context.Context, glooNamespace string, depl
 		defer portFwdCmd.Process.Kill()
 	}
 
-	if !checkRateLimitConnectedState(stats, deploymentName, errMessage,
-		"The rate limit server is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+
-			"You may want to try using the `glooctl debug logs --errors-only` command to find any relevant error logs.") {
+	if strings.TrimSpace(stats) == "" {
+		fmt.Println(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
 		return false, nil
 	}
 
-	return true, nil
-}
+	if !resourcesSyncedOverXds(stats, glooDeployment) {
+		return false, nil
+	}
 
-func checkEnterprisePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
 	for _, deployment := range deployments.Items {
-		if deployment.Name == "rate-limit" {
+		if deployment.Name == rateLimitDeployment {
 			fmt.Printf("Checking rate limit server... ")
-			if passed, err := checkGlooRateLimitPromStats(ctx, glooNamespace, "gloo"); !passed || err != nil {
-				return passed, err
+			if !checkRateLimitConnectedState(stats) {
+				return false, nil
 			}
 			fmt.Printf("OK\n")
 		}

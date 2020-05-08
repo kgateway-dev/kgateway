@@ -107,7 +107,7 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
-	ok, err = checkEnterprisePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
+	ok, err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
 	if !ok || err != nil {
 		return ok, err
 	}
