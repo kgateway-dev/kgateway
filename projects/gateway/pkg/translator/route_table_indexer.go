@@ -1,8 +1,9 @@
 package translator
 
 import (
-	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"sort"
+
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 )
 
 type RouteTableIndexer interface {
