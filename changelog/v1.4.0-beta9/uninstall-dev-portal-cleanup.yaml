@@ -3,3 +3,4 @@ changelog:
   issueLink: https://github.com/solo-io/gloo/issues/2836
   description: >
     `glooctl uninstall` now cleans up developer portal resources when Gloo was installed with `glooctl install gateway --dry-run | kubectl apply -f -`.
+  resolvesIssue: false
