@@ -50,6 +50,7 @@ func (s *validator) shouldNotify(snap *v1.ApiSnapshot) bool {
 		toHash := append([]interface{}{}, snap.Upstreams.AsInterfaces()...)
 		toHash = append(toHash, snap.UpstreamGroups.AsInterfaces()...)
 		toHash = append(toHash, snap.Secrets.AsInterfaces()...)
+		toHash = append(toHash, snap.AuthConfigs.AsInterfaces()...)
 		// we also include proxies as this will help
 		// the gateway to resync in case the proxy was deleted
 		toHash = append(toHash, snap.Proxies.AsInterfaces()...)
