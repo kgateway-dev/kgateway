@@ -4,7 +4,7 @@ Please include a summary of the changes.
 
 This bug fixes ... \ This new feature can be used to ...
 
-## Context
+# Context
 
 Users ran into this bug doing ... \ Users needed this feature to ...
 
