@@ -234,7 +234,7 @@ There are a couple important things to note from the config above. The `coreRule
 
 #### Audit Logging
 
-Audit Logging is supported, but it works differently than in other ModSecurity integrations.
+Audit Logging is supported starting Gloo-e v1.4.0-beta6, but it works differently than in other ModSecurity integrations.
 ModSecurity native audit logging is not a good fit for Envoy/Kubernetes cloud native environments.
 ModSecurity has 3 logging engines. They are not a good fit for the following reasons:
 1. Serial - all logs written to one file, which globally locks on each write. This will be horrendous
