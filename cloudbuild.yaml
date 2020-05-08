@@ -4,7 +4,7 @@ steps:
 # All steps after this must set working directory to use the cloned Gloo source
 
 # $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
-# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo ./
+# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo --project solo-public
 - name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
   args:
     - "--repo-name"
@@ -28,7 +28,7 @@ steps:
 
 - name: gcr.io/cloud-builders/gsutil
   entrypoint: 'bash'
-  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf -']
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"']
   dir: *dir
   id: 'untar-mod-cache'
 

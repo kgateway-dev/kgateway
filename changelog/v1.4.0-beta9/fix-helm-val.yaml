@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/2935
+    description: Fix Helm chart bug where the `gateway.readGatewaysFromAllNamespaces` flag was ignored when validation disabled.

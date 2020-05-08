@@ -1,6 +1,0 @@
-descriptors:
-  - key: generic_key
-    value: some_value
-    rateLimit:
-      requestsPerUnit: 1
-      unit: MINUTE

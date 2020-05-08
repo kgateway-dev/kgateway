@@ -208,60 +208,35 @@ An SDS sidecar is also added to the gateway-proxy deployment:
 
 ### Extauth Server
 
-To make the default extauth server work with mTLS, the extauth deployment takes in an additional environment variable:
+To make the default extauth server work with mTLS, the extauth deployment adds in an Envoy sidecar and SDS sidecar.
 
-{{< highlight yaml "hl_lines=2-3" >}}
-        env:
-        - name: GLOO_MTLS
-          value: "true"
-{{< /highlight >}}
+The envoy sidecar is responsible for TLS termination and outgoing encryption, and uses the SDS sidecar to handle cert rotation.
+The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo configuration.
 
-The gloo-mtls-certs are added to the volumes section and mounted in the extauth container:
+The configuration for the extauth envoy sidecar can be found in the extauth-sidecar-config confimap in the gloo-system
+namespace. It:
 
-{{< highlight yaml "hl_lines=2-4 7-10" >}}
-        volumeMounts:
-        - mountPath: /etc/envoy/ssl
-          name: gloo-mtls-certs
-          readOnly: true
-...
-      volumes:
-      - name: gloo-mtls
-        secret:
-          defaultMode: 420
-          secretName: gloo-mtls
-{{< /highlight >}}
+1) listens to 127.0.0.1:9955 and routes to Gloo's XDS port.
+2) listens to 0.0.0.0:8083 and routes to 127.0.0.1:8084, extauth's Server Port.
 
 ### Rate-limiting Server
 
-To make the default rate-limiting server work with mTLS, the rate-limit deployment takes in an additional environment variable as well:
+To make the default rate-limiting server work with mTLS, the rate-limit deployment also adds in an Envoy sidecar
+and SDS sidecar.
 
-{{< highlight yaml "hl_lines=2-3" >}}
-        env:
-        - name: GLOO_MTLS
-          value: "true"
-{{< /highlight >}}
+The envoy sidecar is responsible for TLS termination and outgoing encryption, and uses the SDS sidecar to handle cert rotation.
+The SDS sidecar watches the gloo-mtls-certs kube secret and provides those certs when the envoy sidecar is sending the request for Gloo configuration.
 
-The gloo-mtls-certs are added to the volumes section and mounted in the rate-limit container:
+The configuration for the extauth envoy sidecar can be found in the rate-limit-sidecar-config confimap. It:
 
-{{< highlight yaml "hl_lines=2-4 7-10" >}}
-        volumeMounts:
-        - mountPath: /etc/envoy/ssl
-          name: gloo-mtls-certs
-          readOnly: true
-...
-      volumes:
-      - name: gloo-mtls
-        secret:
-          defaultMode: 420
-          secretName: gloo-mtls
-{{< /highlight >}}
-
+1) listens to 127.0.0.1:9955 and routes to Gloo's XDS port.
 
 ---
 
 ## Cert Rotation
 
-Cert rotation can be done by updating the gloo-mtls-certs secret.
+Cert rotation can be done by updating the gloo-mtls-certs secret. The SDS sidecar will
+automatically pick up the change.
 
 ---
 

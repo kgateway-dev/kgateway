@@ -207,6 +207,52 @@ var _ = Describe("Gateway", func() {
 				}
 			})
 
+			It("works when rapid virtual service creation and deletion causes no race conditions", func() {
+				up := tu.Upstream
+				vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())
+
+				// Write the Virtual Service
+				_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// Wait for proxy to be created
+				var proxyList gloov1.ProxyList
+				Eventually(func() bool {
+					proxyList, err = testClients.ProxyClient.List(writeNamespace, clients.ListOpts{})
+					if err != nil {
+						return false
+					}
+					return len(proxyList) == 1
+				}, "20s", "1s").Should(BeTrue())
+
+				TestUpstreamReachable()
+
+				// Delete the Virtual Service
+				err = testClients.VirtualServiceClient.Delete(writeNamespace, vs.GetMetadata().Name, clients.DeleteOpts{})
+				Expect(err).NotTo(HaveOccurred())
+
+				// The vs should be deleted
+				var vsList gatewayv1.VirtualServiceList
+				Eventually(func() bool {
+					vsList, err = testClients.VirtualServiceClient.List(writeNamespace, clients.ListOpts{})
+					if err != nil {
+						return false
+					}
+					if len(vsList) != 0 {
+						testClients.VirtualServiceClient.Delete(writeNamespace, vs.GetMetadata().Name, clients.DeleteOpts{})
+						return false
+					}
+					return true
+				}, "10s", "0.5s").Should(BeTrue())
+				Consistently(func() bool {
+					vsList, err = testClients.VirtualServiceClient.List(writeNamespace, clients.ListOpts{})
+					if err != nil {
+						return false
+					}
+					return len(vsList) == 0
+				}, "10s", "0.5s").Should(BeTrue())
+			})
+
 			It("should work with no ssl and clean up the envoy config when the virtual service is deleted", func() {
 				up := tu.Upstream
 				vs := getTrivialVirtualServiceForUpstream(writeNamespace, up.Metadata.Ref())

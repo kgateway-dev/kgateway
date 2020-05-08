@@ -144,7 +144,7 @@ metadata:
 spec:
   virtualHost:
     domains:
-      - 'foo's
+      - 'foo'
     routes:
       - matcher:
           prefix: /authenticated
@@ -186,7 +186,7 @@ metadata:
 spec:
   virtualHost:
     domains:
-      - 'foo's
+      - 'foo'
     routes:
       - matcher:
           prefix: /authenticated

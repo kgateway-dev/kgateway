@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Make untar mod cache cloudbuild step succeed regardless because it is only a speed optimization.
+    issueLink: https://github.com/solo-io/gloo/issues/2894

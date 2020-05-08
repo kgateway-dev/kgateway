@@ -279,6 +279,26 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration.GetVirtualHosts()[0].Name).To(Equal("invalid_name"))
 	})
 
+	It("translates listener options", func() {
+		proxyClone := proto.Clone(proxy).(*v1.Proxy)
+
+		proxyClone.GetListeners()[0].Options = &v1.ListenerOptions{PerConnectionBufferLimitBytes: &types.UInt32Value{Value: 4096}}
+
+		snap, errs, report, err := translator.Translate(params, proxyClone)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(errs.Validate()).NotTo(HaveOccurred())
+		Expect(snap).NotTo(BeNil())
+		Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+		listeners := snap.GetResources(xds.ListenerType)
+		Expect(listeners.Items).To(HaveKey("http-listener"))
+		listenerResource := listeners.Items["http-listener"]
+		listenerConfiguration := listenerResource.ResourceProto().(*envoyapi.Listener)
+		Expect(listenerConfiguration).NotTo(BeNil())
+		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(Equal(&wrappers.UInt32Value{Value: 4096}))
+	})
+
 	Context("Auth configs", func() {
 		It("will error if auth config is missing", func() {
 			proxyClone := proto.Clone(proxy).(*v1.Proxy)
@@ -918,6 +938,18 @@ var _ = Describe("Translator", func() {
 				},
 			}
 			Expect(report).To(Equal(expectedReport))
+		})
+
+		It("should use upstreamGroup's namespace as default if namespace is omitted on upstream destination", func() {
+			upstreamGroup.Destinations[0].Destination.GetUpstream().Namespace = ""
+
+			translate()
+
+			clusters := routeConfiguration.VirtualHosts[0].Routes[0].GetRoute().GetWeightedClusters()
+			Expect(clusters).ToNot(BeNil())
+			Expect(clusters.Clusters).To(HaveLen(2))
+			Expect(clusters.Clusters[0].Name).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
+			Expect(clusters.Clusters[1].Name).To(Equal(UpstreamToClusterName(upstream2.Metadata.Ref())))
 		})
 	})
 
