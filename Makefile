@@ -90,12 +90,12 @@ mod-download:
 update-deps: mod-download
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GO111MODULE=off go get -u golang.org/x/tools/cmd/goimports
-	GO111MODULE=off go get -u github.com/gogo/protobuf/gogoproto
-	GO111MODULE=off go get -u github.com/gogo/protobuf/protoc-gen-gogo
-	GO111MODULE=off go get -u github.com/cratonica/2goarray
-	GO111MODULE=off go get -v -u github.com/golang/mock/gomock
-	GO111MODULE=off go install github.com/golang/mock/mockgen
+	go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
+	go get -v github.com/gogo/protobuf/gogoproto@v1.3.1
+	go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+	go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
+	go get -v -u github.com/golang/mock/gomock@v1.4.3
+	go get -v github.com/golang/mock/mockgen@v1.4.3
 
 
 .PHONY: check-format
