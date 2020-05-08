@@ -269,6 +269,9 @@ apis:
   envoy.config.filter.http.gzip.v2.Gzip:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#Gzip
     package: envoy.config.filter.http.gzip.v2
+  envoy.config.filter.http.modsecurity.v2.AuditLogging:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#AuditLogging
+    package: envoy.config.filter.http.modsecurity.v2
   envoy.config.filter.http.modsecurity.v2.ModSecurity:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/waf/waf.proto.sk/#ModSecurity
     package: envoy.config.filter.http.modsecurity.v2
