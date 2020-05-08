@@ -11,7 +11,7 @@ jobs:
         go-version: 1.14
       id: go
     - name: Install Protoc
-      uses: Arduino/actions/setup-protoc@master
+      uses: arduino/setup-protoc@v1.1.0
       with:
         version: '3.6.1'
 
