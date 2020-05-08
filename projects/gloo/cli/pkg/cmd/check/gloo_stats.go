@@ -57,7 +57,6 @@ func ResourcesSyncedOverXds(stats, deploymentName string) bool {
 		fmt.Println(resourcesOutOfSyncMessage(outOfSyncResources))
 		return false
 	}
-
 	return true
 }
 
