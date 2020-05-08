@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/2963
+  description: Add `securityDefinitions` to OpenAPI spec in dev portal docs.
