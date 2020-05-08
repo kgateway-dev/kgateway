@@ -18,6 +18,8 @@ const (
 
 	glooeTotalEntites   = "glooe_solo_io_xds_total_entities"
 	glooeInSyncEntities = "glooe_solo_io_xds_insync"
+
+	GlooeRateLimitDisconnected = "glooe_ratelimit_connected_state 0"
 )
 
 var (
@@ -36,11 +38,11 @@ var (
 	}
 )
 
-func resourcesSyncedOverXds(stats, deploymentName string) bool {
+func ResourcesSyncedOverXds(stats, deploymentName string) bool {
 	var outOfSyncResources []string
 	for _, resourceName := range resourceNames {
-		totalMetric := fmt.Sprintf("%s{resouce=\"%s\"}", glooeTotalEntites, resourceName)
-		inSyncMetric := fmt.Sprintf("%s{resource=\"%s\"}", glooeInSyncEntities, resourceName)
+		totalMetric := fmt.Sprintf(`%s{resource="%s"}`, glooeTotalEntites, resourceName)
+		inSyncMetric := fmt.Sprintf(`%s{resource="%s"}`, glooeInSyncEntities, resourceName)
 		metrics := parseMetrics(stats, []string{totalMetric, inSyncMetric}, deploymentName)
 
 		if totalCount, ok := metrics[totalMetric]; ok {
@@ -59,12 +61,12 @@ func resourcesSyncedOverXds(stats, deploymentName string) bool {
 	return true
 }
 
-func checkRateLimitConnectedState(stats string) bool {
+func CheckRateLimitConnectedState(stats string) bool {
 	connectedStateErrMessage := "The rate limit server is out of sync with the Gloo control plane and is not receiving valid gloo config.\n" +
 		"You may want to try using the `glooctl debug logs --errors-only` command to find any relevant error logs."
 
 	// glooe publishes this stat when it detects an error in the config
-	if strings.Contains(stats, "glooe_ratelimit_connected_state 0") {
+	if strings.Contains(stats, GlooeRateLimitDisconnected) {
 		fmt.Println(connectedStateErrMessage)
 		return false
 	}
@@ -100,14 +102,14 @@ func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments 
 		return false, nil
 	}
 
-	if !resourcesSyncedOverXds(stats, glooDeployment) {
+	if !ResourcesSyncedOverXds(stats, glooDeployment) {
 		return false, nil
 	}
 
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
 			fmt.Printf("Checking rate limit server... ")
-			if !checkRateLimitConnectedState(stats) {
+			if !CheckRateLimitConnectedState(stats) {
 				return false, nil
 			}
 			fmt.Printf("OK\n")
