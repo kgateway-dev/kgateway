@@ -743,6 +743,18 @@ save the changes by clicking "Publish Changes".
   "produces": [
     "application/json"
   ],
+  "securityDefinitions": {
+    "petStoreApiKey": {
+      "type": "apiKey",
+      "name": "api-key",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "petStoreApiKey": []
+    }
+  ],
   "paths": {
     "/pets": {
       "get": {
