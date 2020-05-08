@@ -2,5 +2,7 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/2794
     description: >
-      When static upstreams are converted to Envoy clusters, add hostnames so that host headers for requests
-      and healthchecks are set properly.
+      When static upstreams are converted to Envoy clusters, add hostnames to each
+      endpoint so that host headers for requests and healthchecks are set to the endpoint
+      hostname rather than the Envoy cluster name. This change only applies if `autoHostRewrite`
+      is set to true on route routing to the static upstream.
