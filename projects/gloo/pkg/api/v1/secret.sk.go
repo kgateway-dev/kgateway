@@ -41,13 +41,10 @@ func (r *Secret) GroupVersionKind() schema.GroupVersionKind {
 
 type SecretList []*Secret
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SecretList) Find(namespace, name string) (*Secret, error) {
 	for _, secret := range list {
-		if secret.GetMetadata().Name == name {
-			if namespace == "" || secret.GetMetadata().Namespace == namespace {
-				return secret, nil
-			}
+		if secret.GetMetadata().Name == name && secret.GetMetadata().Namespace == namespace {
+			return secret, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find secret %v.%v", namespace, name)

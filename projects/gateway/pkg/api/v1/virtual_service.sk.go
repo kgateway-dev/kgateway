@@ -45,13 +45,10 @@ func (r *VirtualService) GroupVersionKind() schema.GroupVersionKind {
 
 type VirtualServiceList []*VirtualService
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list VirtualServiceList) Find(namespace, name string) (*VirtualService, error) {
 	for _, virtualService := range list {
-		if virtualService.GetMetadata().Name == name {
-			if namespace == "" || virtualService.GetMetadata().Namespace == namespace {
-				return virtualService, nil
-			}
+		if virtualService.GetMetadata().Name == name && virtualService.GetMetadata().Namespace == namespace {
+			return virtualService, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find virtualService %v.%v", namespace, name)
