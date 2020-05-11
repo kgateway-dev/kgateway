@@ -8,7 +8,9 @@ Create a secret with the given name
 
 ### Synopsis
 
-Create a secret with the given name
+Create a secret with the given name.
+The format of the secret data is: {"tls" : [tls object]}.
+Note that the annotation resource_kind: '*v1.Secret' is needed in order for Gloo to find this secret.
 
 ```
 glooctl create secret tls [flags]
