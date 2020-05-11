@@ -133,8 +133,8 @@ func (u *uninstaller) findCrdNamesForRelease(namespace string) (crdNames []strin
 	}
 
 	rel := releases[0]
-	for _, crd := range rel.Chart.CRDs() {
-		resource, err := makeUnstructured(string(crd.Data))
+	for _, crd := range rel.Chart.CRDObjects() {
+		resource, err := makeUnstructured(string(crd.File.Data))
 		if err != nil {
 			return nil, err
 		}
