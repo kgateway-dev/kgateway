@@ -109,6 +109,17 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		}
 	}
 
+	if hcmSettings.GetProperCaseHeaderKeyFormat() {
+		if cfg.GetHttpProtocolOptions() == nil {
+			cfg.HttpProtocolOptions = &envoycore.Http1ProtocolOptions{}
+		}
+		cfg.HttpProtocolOptions.HeaderKeyFormat = &envoycore.Http1ProtocolOptions_HeaderKeyFormat{
+			HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
+				ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
+			},
+		}
+	}
+
 	if hcmSettings.GetIdleTimeout() != nil {
 		if cfg.GetCommonHttpProtocolOptions() == nil {
 			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
