@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Add a helm chart value `gateway.certGenJob.resources`.
+      This allows you to add resource limits for the certgen pod that is created by the certgen job
