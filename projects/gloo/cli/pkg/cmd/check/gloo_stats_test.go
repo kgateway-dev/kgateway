@@ -67,17 +67,17 @@ glooe_solo_io_xds_total_entities{resource="type.googleapis.com/glooe.solo.io.Rat
 	Context("check rate limit connected state", func() {
 
 		It("returns true when there are no stats", func() {
-			result := check.CheckRateLimitConnectedState("")
+			result := check.RateLimitIsConnected("")
 			Expect(result).To(BeTrue())
 		})
 
 		It("returns true when connected state equals 1", func() {
-			result := check.CheckRateLimitConnectedState("glooe_ratelimit_connected_state 1")
+			result := check.RateLimitIsConnected("glooe_ratelimit_connected_state 1")
 			Expect(result).To(BeTrue())
 		})
 
 		It("returns false when connected state stat equals 0", func() {
-			result := check.CheckRateLimitConnectedState(check.GlooeRateLimitDisconnected)
+			result := check.RateLimitIsConnected(check.GlooeRateLimitDisconnected)
 			Expect(result).To(BeFalse())
 		})
 	})
