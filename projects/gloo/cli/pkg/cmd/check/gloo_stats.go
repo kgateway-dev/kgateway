@@ -60,7 +60,7 @@ func ResourcesSyncedOverXds(stats, deploymentName string) bool {
 	return true
 }
 
-func CheckRateLimitConnectedState(stats string) bool {
+func RateLimitIsConnected(stats string) bool {
 	connectedStateErrMessage := "The rate limit server is out of sync with the Gloo control plane and is not receiving valid gloo config.\n" +
 		"You may want to try using the `glooctl debug logs --errors-only` command to find any relevant error logs."
 
@@ -108,7 +108,7 @@ func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments 
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
 			fmt.Printf("Checking rate limit server... ")
-			if !CheckRateLimitConnectedState(stats) {
+			if !RateLimitIsConnected(stats) {
 				return false, nil
 			}
 			fmt.Printf("OK\n")
