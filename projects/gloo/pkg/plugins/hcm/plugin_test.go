@@ -1,8 +1,9 @@
 package hcm_test
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"time"
+
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -43,9 +44,9 @@ var _ = Describe("Plugin", func() {
 			DelayedCloseTimeout: pd(time.Hour),
 			ServerName:          "ServerName",
 
-			AcceptHttp_10:         true,
+			AcceptHttp_10:             true,
 			ProperCaseHeaderKeyFormat: true,
-			DefaultHostForHttp_10: "DefaultHostForHttp_10",
+			DefaultHostForHttp_10:     "DefaultHostForHttp_10",
 
 			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
