@@ -162,15 +162,7 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 				}
 			}
 
-			// Index by weight. `errs` contains warnings about multiple tables with the same weight.
-			routeTablesByWeight, sortedWeights, errs := rv.routeTableIndexer.IndexByWeight(routeTables)
-			for _, err := range errs {
-				rv.reports.AddWarning(resource.InputResource(), err.Error())
-				if parentRoute != nil { // surface error
-					rv.reports.AddWarning(topLevelVirtualService,
-						TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err).Error())
-				}
-			}
+			routeTablesByWeight, sortedWeights := rv.routeTableIndexer.IndexByWeight(routeTables)
 
 			// Process the route tables in order by weight
 			for _, weight := range sortedWeights {
