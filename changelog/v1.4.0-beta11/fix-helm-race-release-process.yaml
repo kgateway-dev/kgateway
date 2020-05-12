@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix race updating helm index if multiple releases are kicked off at the same time
+    issueLink: https://github.com/solo-io/gloo/issues/2913
