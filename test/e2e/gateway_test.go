@@ -117,7 +117,7 @@ var _ = Describe("Gateway", func() {
 
 		})
 
-		It("should create 2 gateway", func() {
+		It("should create 2 gateways", func() {
 			gatewaycli := testClients.GatewayClient
 			gw, err := gatewaycli.List(writeNamespace, clients.ListOpts{})
 			Expect(err).NotTo(HaveOccurred())

@@ -45,13 +45,10 @@ func (r *Settings) GroupVersionKind() schema.GroupVersionKind {
 
 type SettingsList []*Settings
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list SettingsList) Find(namespace, name string) (*Settings, error) {
 	for _, settings := range list {
-		if settings.GetMetadata().Name == name {
-			if namespace == "" || settings.GetMetadata().Namespace == namespace {
-				return settings, nil
-			}
+		if settings.GetMetadata().Name == name && settings.GetMetadata().Namespace == namespace {
+			return settings, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find settings %v.%v", namespace, name)

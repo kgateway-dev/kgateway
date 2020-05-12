@@ -23,23 +23,139 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+type AuditLogging_AuditLogAction int32
+
+const (
+	// Never generate audit logs.
+	AuditLogging_NEVER AuditLogging_AuditLogAction = 0
+	// When set to RELEVANT_ONLY, this will have similar behavior to `SecAuditEngine RelevantOnly`.
+	AuditLogging_RELEVANT_ONLY AuditLogging_AuditLogAction = 1
+	// Always generate an audit log entry (as long as the filter is not disabled).
+	AuditLogging_ALWAYS AuditLogging_AuditLogAction = 2
+)
+
+var AuditLogging_AuditLogAction_name = map[int32]string{
+	0: "NEVER",
+	1: "RELEVANT_ONLY",
+	2: "ALWAYS",
+}
+
+var AuditLogging_AuditLogAction_value = map[string]int32{
+	"NEVER":         0,
+	"RELEVANT_ONLY": 1,
+	"ALWAYS":        2,
+}
+
+func (x AuditLogging_AuditLogAction) String() string {
+	return proto.EnumName(AuditLogging_AuditLogAction_name, int32(x))
+}
+
+func (AuditLogging_AuditLogAction) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_aaf8967e7dbe03c2, []int{0, 0}
+}
+
+type AuditLogging_AuditLogLocation int32
+
+const (
+	// Add the audit log to the filter state.
+	// it will be under the key "io.solo.modsecurity.audit_log".
+	// You can use this formatter in the access log:
+	// %FILTER_STATE(io.solo.modsecurity.audit_log)%
+	AuditLogging_FILTER_STATE AuditLogging_AuditLogLocation = 0
+	// Add the audit log to the dynamic metadata.
+	// it will be under the filter name "io.solo.filters.http.modsecurity". with "audit_log" as the
+	// key. You can use this formatter in the access log:
+	// %DYNAMIC_METADATA("io.solo.filters.http.modsecurity:audit_log")%
+	AuditLogging_DYNAMIC_METADATA AuditLogging_AuditLogLocation = 1
+)
+
+var AuditLogging_AuditLogLocation_name = map[int32]string{
+	0: "FILTER_STATE",
+	1: "DYNAMIC_METADATA",
+}
+
+var AuditLogging_AuditLogLocation_value = map[string]int32{
+	"FILTER_STATE":     0,
+	"DYNAMIC_METADATA": 1,
+}
+
+func (x AuditLogging_AuditLogLocation) String() string {
+	return proto.EnumName(AuditLogging_AuditLogLocation_name, int32(x))
+}
+
+func (AuditLogging_AuditLogLocation) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_aaf8967e7dbe03c2, []int{0, 1}
+}
+
+type AuditLogging struct {
+	Action               AuditLogging_AuditLogAction   `protobuf:"varint,1,opt,name=action,proto3,enum=envoy.config.filter.http.modsecurity.v2.AuditLogging_AuditLogAction" json:"action,omitempty"`
+	Location             AuditLogging_AuditLogLocation `protobuf:"varint,2,opt,name=location,proto3,enum=envoy.config.filter.http.modsecurity.v2.AuditLogging_AuditLogLocation" json:"location,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
+	XXX_unrecognized     []byte                        `json:"-"`
+	XXX_sizecache        int32                         `json:"-"`
+}
+
+func (m *AuditLogging) Reset()         { *m = AuditLogging{} }
+func (m *AuditLogging) String() string { return proto.CompactTextString(m) }
+func (*AuditLogging) ProtoMessage()    {}
+func (*AuditLogging) Descriptor() ([]byte, []int) {
+	return fileDescriptor_aaf8967e7dbe03c2, []int{0}
+}
+func (m *AuditLogging) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_AuditLogging.Unmarshal(m, b)
+}
+func (m *AuditLogging) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_AuditLogging.Marshal(b, m, deterministic)
+}
+func (m *AuditLogging) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_AuditLogging.Merge(m, src)
+}
+func (m *AuditLogging) XXX_Size() int {
+	return xxx_messageInfo_AuditLogging.Size(m)
+}
+func (m *AuditLogging) XXX_DiscardUnknown() {
+	xxx_messageInfo_AuditLogging.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_AuditLogging proto.InternalMessageInfo
+
+func (m *AuditLogging) GetAction() AuditLogging_AuditLogAction {
+	if m != nil {
+		return m.Action
+	}
+	return AuditLogging_NEVER
+}
+
+func (m *AuditLogging) GetLocation() AuditLogging_AuditLogLocation {
+	if m != nil {
+		return m.Location
+	}
+	return AuditLogging_FILTER_STATE
+}
+
 type ModSecurity struct {
 	// Disable all rules on the current route
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
 	// Global rule sets for the current http connection manager
 	RuleSets []*RuleSet `protobuf:"bytes,2,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
 	// Custom message to display when an intervention occurs
-	CustomInterventionMessage string   `protobuf:"bytes,3,opt,name=custom_intervention_message,json=customInterventionMessage,proto3" json:"custom_intervention_message,omitempty"`
-	XXX_NoUnkeyedLiteral      struct{} `json:"-"`
-	XXX_unrecognized          []byte   `json:"-"`
-	XXX_sizecache             int32    `json:"-"`
+	CustomInterventionMessage string `protobuf:"bytes,3,opt,name=custom_intervention_message,json=customInterventionMessage,proto3" json:"custom_intervention_message,omitempty"`
+	// This instructs the filter what to do with the transaction's audit log.
+	AuditLogging *AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`
+	// log in a format suited for the OWASP regression tests.
+	// this format is a multiline log format, so it is disabled for regular use.
+	// do not enable this in production!
+	RegressionLogs       bool     `protobuf:"varint,4,opt,name=regression_logs,json=regressionLogs,proto3" json:"regression_logs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *ModSecurity) Reset()         { *m = ModSecurity{} }
 func (m *ModSecurity) String() string { return proto.CompactTextString(m) }
 func (*ModSecurity) ProtoMessage()    {}
 func (*ModSecurity) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aaf8967e7dbe03c2, []int{0}
+	return fileDescriptor_aaf8967e7dbe03c2, []int{1}
 }
 func (m *ModSecurity) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ModSecurity.Unmarshal(m, b)
@@ -80,11 +196,28 @@ func (m *ModSecurity) GetCustomInterventionMessage() string {
 	return ""
 }
 
+func (m *ModSecurity) GetAuditLogging() *AuditLogging {
+	if m != nil {
+		return m.AuditLogging
+	}
+	return nil
+}
+
+func (m *ModSecurity) GetRegressionLogs() bool {
+	if m != nil {
+		return m.RegressionLogs
+	}
+	return false
+}
+
 type RuleSet struct {
 	// String of rules which are added directly
 	RuleStr string `protobuf:"bytes,1,opt,name=rule_str,json=ruleStr,proto3" json:"rule_str,omitempty"`
 	// Array of files to include
-	Files                []string `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
+	Files []string `protobuf:"bytes,3,rep,name=files,proto3" json:"files,omitempty"`
+	// A directory to include. all *.conf files in this directory will be
+	// included. sub directories will NOT be checked.
+	Directory            string   `protobuf:"bytes,4,opt,name=directory,proto3" json:"directory,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -94,7 +227,7 @@ func (m *RuleSet) Reset()         { *m = RuleSet{} }
 func (m *RuleSet) String() string { return proto.CompactTextString(m) }
 func (*RuleSet) ProtoMessage()    {}
 func (*RuleSet) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aaf8967e7dbe03c2, []int{1}
+	return fileDescriptor_aaf8967e7dbe03c2, []int{2}
 }
 func (m *RuleSet) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RuleSet.Unmarshal(m, b)
@@ -128,23 +261,32 @@ func (m *RuleSet) GetFiles() []string {
 	return nil
 }
 
+func (m *RuleSet) GetDirectory() string {
+	if m != nil {
+		return m.Directory
+	}
+	return ""
+}
+
 type ModSecurityPerRoute struct {
 	// Disable all rules on the current route
 	Disabled bool `protobuf:"varint,1,opt,name=disabled,proto3" json:"disabled,omitempty"`
 	// Overwrite the global rules on this route
 	RuleSets []*RuleSet `protobuf:"bytes,2,rep,name=rule_sets,json=ruleSets,proto3" json:"rule_sets,omitempty"`
 	// Custom message to display when an intervention occurs
-	CustomInterventionMessage string   `protobuf:"bytes,3,opt,name=custom_intervention_message,json=customInterventionMessage,proto3" json:"custom_intervention_message,omitempty"`
-	XXX_NoUnkeyedLiteral      struct{} `json:"-"`
-	XXX_unrecognized          []byte   `json:"-"`
-	XXX_sizecache             int32    `json:"-"`
+	CustomInterventionMessage string `protobuf:"bytes,3,opt,name=custom_intervention_message,json=customInterventionMessage,proto3" json:"custom_intervention_message,omitempty"`
+	// This instructs the filter what to do with the transaction's audit log.
+	AuditLogging         *AuditLogging `protobuf:"bytes,5,opt,name=audit_logging,json=auditLogging,proto3" json:"audit_logging,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *ModSecurityPerRoute) Reset()         { *m = ModSecurityPerRoute{} }
 func (m *ModSecurityPerRoute) String() string { return proto.CompactTextString(m) }
 func (*ModSecurityPerRoute) ProtoMessage()    {}
 func (*ModSecurityPerRoute) Descriptor() ([]byte, []int) {
-	return fileDescriptor_aaf8967e7dbe03c2, []int{2}
+	return fileDescriptor_aaf8967e7dbe03c2, []int{3}
 }
 func (m *ModSecurityPerRoute) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ModSecurityPerRoute.Unmarshal(m, b)
@@ -185,7 +327,17 @@ func (m *ModSecurityPerRoute) GetCustomInterventionMessage() string {
 	return ""
 }
 
+func (m *ModSecurityPerRoute) GetAuditLogging() *AuditLogging {
+	if m != nil {
+		return m.AuditLogging
+	}
+	return nil
+}
+
 func init() {
+	proto.RegisterEnum("envoy.config.filter.http.modsecurity.v2.AuditLogging_AuditLogAction", AuditLogging_AuditLogAction_name, AuditLogging_AuditLogAction_value)
+	proto.RegisterEnum("envoy.config.filter.http.modsecurity.v2.AuditLogging_AuditLogLocation", AuditLogging_AuditLogLocation_name, AuditLogging_AuditLogLocation_value)
+	proto.RegisterType((*AuditLogging)(nil), "envoy.config.filter.http.modsecurity.v2.AuditLogging")
 	proto.RegisterType((*ModSecurity)(nil), "envoy.config.filter.http.modsecurity.v2.ModSecurity")
 	proto.RegisterType((*RuleSet)(nil), "envoy.config.filter.http.modsecurity.v2.RuleSet")
 	proto.RegisterType((*ModSecurityPerRoute)(nil), "envoy.config.filter.http.modsecurity.v2.ModSecurityPerRoute")
@@ -196,30 +348,73 @@ func init() {
 }
 
 var fileDescriptor_aaf8967e7dbe03c2 = []byte{
-	// 327 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x92, 0xbf, 0x4e, 0xeb, 0x30,
-	0x14, 0xc6, 0x95, 0x1b, 0xdd, 0xdb, 0xc4, 0xdd, 0x72, 0x3b, 0xa4, 0xbd, 0xd2, 0x55, 0xd4, 0x85,
-	0x2c, 0x38, 0xa8, 0x6c, 0x0c, 0x0c, 0x6c, 0x08, 0x55, 0xa2, 0xe9, 0xc6, 0x52, 0xa5, 0xc9, 0x89,
-	0x6b, 0x70, 0x7c, 0x22, 0xfb, 0xa4, 0xd0, 0x37, 0xe2, 0x11, 0x18, 0x79, 0x16, 0x9e, 0x04, 0x35,
-	0xae, 0x50, 0x37, 0xba, 0x32, 0x58, 0x3a, 0x9f, 0xfc, 0x3b, 0x7f, 0x3e, 0xe9, 0x63, 0x0b, 0x21,
-	0x69, 0xd3, 0xad, 0x79, 0x89, 0x4d, 0x66, 0x51, 0xe1, 0xb9, 0xc4, 0x4c, 0x28, 0xc4, 0xac, 0x35,
-	0xf8, 0x08, 0x25, 0x59, 0xa7, 0x8a, 0x56, 0x66, 0xf0, 0x42, 0x60, 0x74, 0xa1, 0x32, 0xd0, 0x5b,
-	0xdc, 0xf5, 0x52, 0x5b, 0x89, 0xda, 0x66, 0xcf, 0x45, 0xbd, 0x7f, 0xbc, 0x35, 0x48, 0x18, 0x9d,
-	0xf5, 0xff, 0xbc, 0x44, 0x5d, 0x4b, 0xc1, 0x6b, 0xa9, 0x08, 0x0c, 0xdf, 0x10, 0xb5, 0xbc, 0xc1,
-	0xca, 0x42, 0xd9, 0x19, 0x49, 0x3b, 0xbe, 0x9d, 0x4d, 0x46, 0x02, 0x05, 0xf6, 0x3d, 0xd9, 0xbe,
-	0x72, 0xed, 0xd3, 0x37, 0x8f, 0x0d, 0xe7, 0x58, 0x2d, 0x0f, 0x60, 0x34, 0x61, 0x41, 0x25, 0x6d,
-	0xb1, 0x56, 0x50, 0xc5, 0x5e, 0xe2, 0xa5, 0x41, 0xfe, 0xa5, 0xa3, 0x39, 0x0b, 0x4d, 0xa7, 0x60,
-	0x65, 0x81, 0x6c, 0xfc, 0x2b, 0xf1, 0xd3, 0xe1, 0xec, 0x82, 0x9f, 0xb8, 0x9e, 0xe7, 0x9d, 0x82,
-	0x25, 0x50, 0x1e, 0x18, 0x57, 0xd8, 0xe8, 0x9a, 0xfd, 0x2b, 0x3b, 0x4b, 0xd8, 0xac, 0xa4, 0x26,
-	0x30, 0x5b, 0xd0, 0x24, 0x51, 0xaf, 0x1a, 0xb0, 0xb6, 0x10, 0x10, 0xfb, 0x89, 0x97, 0x86, 0xf9,
-	0xd8, 0x21, 0xb7, 0x47, 0xc4, 0xdc, 0x01, 0xd3, 0x2b, 0x36, 0x38, 0x0c, 0x8d, 0xc6, 0x2c, 0x70,
-	0x97, 0x91, 0xe9, 0xaf, 0x0e, 0xf3, 0x41, 0xbf, 0x86, 0x4c, 0x34, 0x62, 0xbf, 0x6b, 0xa9, 0xc0,
-	0xc6, 0x7e, 0xe2, 0xa7, 0x61, 0xee, 0xc4, 0xf4, 0xdd, 0x63, 0x7f, 0x8f, 0x6c, 0xdf, 0x83, 0xc9,
-	0xb1, 0x23, 0xf8, 0x41, 0xf6, 0x6f, 0x16, 0xaf, 0x1f, 0xff, 0xbd, 0x87, 0xbb, 0xd3, 0x12, 0xd5,
-	0x3e, 0x89, 0xef, 0x53, 0xb5, 0xfe, 0xd3, 0x67, 0xe2, 0xf2, 0x33, 0x00, 0x00, 0xff, 0xff, 0xdf,
-	0x40, 0xc9, 0xca, 0xa7, 0x02, 0x00, 0x00,
+	// 542 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xec, 0x94, 0xc1, 0x6e, 0xd3, 0x30,
+	0x18, 0xc7, 0x97, 0x94, 0x75, 0x8d, 0xdb, 0x95, 0x60, 0x7a, 0xc8, 0x06, 0x42, 0x55, 0x2e, 0xeb,
+	0x85, 0x04, 0x15, 0x71, 0xd9, 0x01, 0x29, 0xd0, 0x4c, 0xaa, 0x48, 0x0b, 0x73, 0xa3, 0x41, 0x27,
+	0xa4, 0x28, 0x4d, 0x5c, 0xcf, 0x90, 0xc6, 0x95, 0xed, 0x14, 0xfa, 0x2e, 0x3c, 0x00, 0x2f, 0xc1,
+	0x9d, 0xe7, 0xe0, 0x49, 0x50, 0x9c, 0xaa, 0x2b, 0x5c, 0xa8, 0xe0, 0xca, 0x21, 0x92, 0xff, 0xce,
+	0xe7, 0xdf, 0xe7, 0xef, 0xff, 0x59, 0x1f, 0xb8, 0x24, 0x54, 0xde, 0x14, 0x33, 0x27, 0x61, 0x0b,
+	0x57, 0xb0, 0x8c, 0x3d, 0xa6, 0xcc, 0x25, 0x19, 0x63, 0xee, 0x92, 0xb3, 0x0f, 0x38, 0x91, 0xa2,
+	0x52, 0xf1, 0x92, 0xba, 0xf8, 0xb3, 0xc4, 0x3c, 0x8f, 0x33, 0x17, 0xe7, 0x2b, 0xb6, 0x56, 0x32,
+	0x17, 0x94, 0xe5, 0xc2, 0xfd, 0x14, 0xcf, 0xcb, 0xcf, 0x59, 0x72, 0x26, 0x19, 0x3c, 0x53, 0xff,
+	0x9d, 0x84, 0xe5, 0x73, 0x4a, 0x9c, 0x39, 0xcd, 0x24, 0xe6, 0xce, 0x8d, 0x94, 0x4b, 0x67, 0xc1,
+	0x52, 0x81, 0x93, 0x82, 0x53, 0xb9, 0x76, 0x56, 0xfd, 0xd3, 0x0e, 0x61, 0x84, 0xa9, 0x33, 0x6e,
+	0xb9, 0xaa, 0x8e, 0xdb, 0xdf, 0x75, 0xd0, 0xf2, 0x8a, 0x94, 0xca, 0x80, 0x11, 0x42, 0x73, 0x02,
+	0xdf, 0x83, 0x7a, 0x9c, 0x48, 0xca, 0x72, 0x4b, 0xeb, 0x6a, 0xbd, 0x76, 0x7f, 0xe0, 0xec, 0x99,
+	0xc0, 0xd9, 0xc5, 0x6c, 0x85, 0xa7, 0x58, 0x68, 0xc3, 0x84, 0x33, 0xd0, 0xc8, 0x58, 0x12, 0x2b,
+	0xbe, 0xae, 0xf8, 0x17, 0xff, 0xc6, 0x0f, 0x36, 0x34, 0xb4, 0xe5, 0xda, 0xe7, 0xa0, 0xfd, 0x6b,
+	0x76, 0x68, 0x80, 0xc3, 0xb1, 0x7f, 0xe5, 0x23, 0xf3, 0x00, 0xde, 0x03, 0xc7, 0xc8, 0x0f, 0xfc,
+	0x2b, 0x6f, 0x1c, 0x46, 0xaf, 0xc7, 0xc1, 0xd4, 0xd4, 0x20, 0x00, 0x75, 0x2f, 0x78, 0xeb, 0x4d,
+	0x27, 0xa6, 0x6e, 0x9f, 0x03, 0xf3, 0x77, 0x32, 0x34, 0x41, 0xeb, 0x62, 0x18, 0x84, 0x3e, 0x8a,
+	0x26, 0xa1, 0x17, 0xfa, 0xe6, 0x01, 0xec, 0x00, 0x73, 0x30, 0x1d, 0x7b, 0xa3, 0xe1, 0xcb, 0x68,
+	0xe4, 0x87, 0xde, 0xc0, 0x0b, 0x3d, 0x53, 0xb3, 0xbf, 0xe9, 0xa0, 0x39, 0x62, 0xe9, 0x64, 0x73,
+	0x65, 0x78, 0x0a, 0x1a, 0x29, 0x15, 0xf1, 0x2c, 0xc3, 0xa9, 0xf2, 0xb2, 0x81, 0xb6, 0x1a, 0x8e,
+	0x80, 0xc1, 0x8b, 0x0c, 0x47, 0x02, 0x4b, 0x61, 0xe9, 0xdd, 0x5a, 0xaf, 0xd9, 0x7f, 0xb2, 0xb7,
+	0x11, 0xa8, 0xc8, 0xf0, 0x04, 0x4b, 0xd4, 0xe0, 0xd5, 0x42, 0xc0, 0xe7, 0xe0, 0x41, 0x52, 0x08,
+	0xc9, 0x16, 0x11, 0xcd, 0x25, 0xe6, 0x2b, 0x9c, 0x97, 0x37, 0x8f, 0x16, 0x58, 0x88, 0x98, 0x60,
+	0xab, 0xd6, 0xd5, 0x7a, 0x06, 0x3a, 0xa9, 0x42, 0x86, 0x3b, 0x11, 0xa3, 0x2a, 0x00, 0x5e, 0x83,
+	0xe3, 0xb8, 0x2c, 0x3b, 0xca, 0x2a, 0x7b, 0xad, 0xc3, 0xae, 0xd6, 0x6b, 0xf6, 0x9f, 0xfd, 0x55,
+	0x6f, 0x50, 0x2b, 0xde, 0x7d, 0x50, 0x67, 0xe0, 0x2e, 0xc7, 0x84, 0x63, 0x51, 0xbe, 0xde, 0x32,
+	0x81, 0xb0, 0xee, 0x28, 0x37, 0xda, 0xb7, 0xdb, 0x01, 0x23, 0xc2, 0x7e, 0x07, 0x8e, 0x36, 0x95,
+	0xc1, 0x13, 0xd0, 0xa8, 0xec, 0x91, 0x5c, 0x59, 0x67, 0xa0, 0x23, 0x55, 0xab, 0xe4, 0xb0, 0x03,
+	0x0e, 0xe7, 0x34, 0xc3, 0xc2, 0xaa, 0x75, 0x6b, 0x3d, 0x03, 0x55, 0x02, 0x3e, 0x04, 0x46, 0x4a,
+	0x39, 0x4e, 0x24, 0xe3, 0x6b, 0x85, 0x37, 0xd0, 0xed, 0x86, 0xfd, 0x45, 0x07, 0xf7, 0x77, 0x3a,
+	0xf3, 0x06, 0x73, 0xc4, 0x0a, 0x89, 0xff, 0x77, 0x48, 0xa9, 0x17, 0x97, 0x5f, 0x7f, 0x3c, 0xd2,
+	0xae, 0x5f, 0xed, 0x37, 0x9b, 0x96, 0x1f, 0xc9, 0x9f, 0xe7, 0xd3, 0xac, 0xae, 0xa6, 0xcb, 0xd3,
+	0x9f, 0x01, 0x00, 0x00, 0xff, 0xff, 0x9b, 0xbe, 0x4e, 0x0c, 0xf1, 0x04, 0x00, 0x00,
 }
 
+func (this *AuditLogging) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*AuditLogging)
+	if !ok {
+		that2, ok := that.(AuditLogging)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Action != that1.Action {
+		return false
+	}
+	if this.Location != that1.Location {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
 func (this *ModSecurity) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -251,6 +446,12 @@ func (this *ModSecurity) Equal(that interface{}) bool {
 		}
 	}
 	if this.CustomInterventionMessage != that1.CustomInterventionMessage {
+		return false
+	}
+	if !this.AuditLogging.Equal(that1.AuditLogging) {
+		return false
+	}
+	if this.RegressionLogs != that1.RegressionLogs {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
@@ -288,6 +489,9 @@ func (this *RuleSet) Equal(that interface{}) bool {
 			return false
 		}
 	}
+	if this.Directory != that1.Directory {
+		return false
+	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
 	}
@@ -324,6 +528,9 @@ func (this *ModSecurityPerRoute) Equal(that interface{}) bool {
 		}
 	}
 	if this.CustomInterventionMessage != that1.CustomInterventionMessage {
+		return false
+	}
+	if !this.AuditLogging.Equal(that1.AuditLogging) {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {

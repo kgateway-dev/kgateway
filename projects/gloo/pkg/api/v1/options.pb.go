@@ -460,9 +460,12 @@ type RouteOptions struct {
 	Transformations *transformation.RouteTransformations `protobuf:"bytes,1,opt,name=transformations,proto3" json:"transformations,omitempty"`
 	Faults          *faultinjection.RouteFaults          `protobuf:"bytes,2,opt,name=faults,proto3" json:"faults,omitempty"`
 	// For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
-	PrefixRewrite *types.StringValue   `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
-	Timeout       *time.Duration       `protobuf:"bytes,4,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
-	Retries       *retries.RetryPolicy `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
+	PrefixRewrite *types.StringValue `protobuf:"bytes,3,opt,name=prefix_rewrite,json=prefixRewrite,proto3" json:"prefix_rewrite,omitempty"`
+	// Specifies the upstream timeout for the route. If not specified, the default is 15s. This spans between the point
+	// at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has
+	// been completely processed. A value of 0 will disable the route’s timeout.
+	Timeout *time.Duration       `protobuf:"bytes,4,opt,name=timeout,proto3,stdduration" json:"timeout,omitempty"`
+	Retries *retries.RetryPolicy `protobuf:"bytes,5,opt,name=retries,proto3" json:"retries,omitempty"`
 	// Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
 	// underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
 	//

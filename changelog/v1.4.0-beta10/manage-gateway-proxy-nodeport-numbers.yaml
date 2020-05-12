@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Allow nodeport numbers to be pre-defined in the values.yml if setting gateway proxy service to nodeport.
+    issueLink: https://github.com/solo-io/gloo/issues/2899
