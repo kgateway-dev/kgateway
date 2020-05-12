@@ -150,7 +150,7 @@ Then update the `spec.template` section of the yaml with these additional annota
 ```
 
 {{< notice note >}}
-If you upgrade the cluster using Helm, these annotations may be removed. You should also update the values used by Helm to include these annotations.
+If you upgrade the cluster using Helm version 3, these annotations should stay in place. Helm 3 uses a three-way merge when performing an update. Helm version 2 will also attempt a merge, but may have issues with changes made using kubectl edit. You should update the values used by Helm to include these annotations. More information is available [here](https://helm.sh/docs/faq/#improved-upgrade-strategy-3-way-strategic-merge-patches).
 {{< /notice >}}
 
 You can verify that the annotations have been successfully updated by running the following command:
@@ -222,4 +222,6 @@ That means the Datadog agent has fired up the Envoy integration and should be co
 
 ## Summary
 
-In this guide we showed you how to integrate Datadog with Gloo and Envoy proxies. It's important to remember that the changes made to the gateway-proxy ConfigMap and Deployment should also be updated in the Helm values file you use to deploy Gloo. Otherwise you may overwrite the configuration on a future upgrade. It is also possible to configure these settings before Gloo is installed by using a custom values file with the Helm installation.
+In this guide we showed you how to integrate Datadog with Gloo and Envoy proxies. It's important to remember that the changes made to the gateway-proxy ConfigMap and Deployment should also be updated in the Helm values file you use to deploy Gloo. This is especially important if you are using Helm version 2, which does not gracefully handle out-of-band changes. It is also possible to configure these settings before Gloo is installed by using a custom values file with the Helm installation. 
+
+The full list of Helm values is available in the [docs]({{% versioned_link_path fromRoot="/reference/helm_chart_values/" %}}). In particular the values `gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME` and `gatewayProxies.gatewayProxy.configMap.data.NAME` can be updated to have the intended effects. You can also use [Kustomization]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/helm_advanced/" %}}) to patch the produced Helm chart prior to deployment.
