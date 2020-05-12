@@ -22,8 +22,8 @@ func azureCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "azure",
 		Short: `Create an Azure secret with the given name`,
-		Long: `Create an Azure secret with the given name. The format of the secret data is:
-{"azure" : [api-keys jwt]}`,
+		Long: "Create an Azure secret with the given name. The format of the secret data is: " +
+			"`{\"azure\" : [api-keys]}`",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err

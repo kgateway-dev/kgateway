@@ -8,8 +8,7 @@ Create an Azure secret with the given name
 
 ### Synopsis
 
-Create an Azure secret with the given name. The format of the secret data is:
-`{"azure" : [api-keys jwt]}`
+Create an Azure secret with the given name. The format of the secret data is: `{"azure" : [api-keys]}`
 
 ```
 glooctl create secret azure [flags]
@@ -53,3 +52,4 @@ glooctl create secret azure [flags]
 ### SEE ALSO
 
 * [glooctl create secret](../glooctl_create_secret)	 - Create a secret
+

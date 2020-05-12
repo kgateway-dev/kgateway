@@ -8,11 +8,7 @@ Create an ApiKey secret with the given name (Enterprise)
 
 ### Synopsis
 
-Create an ApiKey secret with the given name. The ApiKey secret contains a single apikey.
-This is an enterprise-only feature.
-The format of the secret data is: `{"apiKey" : [apikey string]}`.
-Note that the annotation `resource_kind: '*v1.Secret'` is needed in order for Gloo to find this secret.
-
+Create an ApiKey secret with the given name. The ApiKey secret contains a single apikey. This is an enterprise-only feature. The format of the secret data is: `{"apiKey" : [apikey string]}`. Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret.
 
 ```
 glooctl create secret apikey [flags]
@@ -58,3 +54,4 @@ glooctl create secret apikey [flags]
 ### SEE ALSO
 
 * [glooctl create secret](../glooctl_create_secret)	 - Create a secret
+

@@ -27,8 +27,8 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "aws",
 		Short: `Create an AWS secret with the given name`,
-		Long: `Create an AWS secret with the given name. The format of the secret data is:
-{"aws_access_key_id" : [access-key string] , "aws_secret_access_key" : [secret-key string]}`,
+		Long: "Create an AWS secret with the given name. The format of the secret data is: " +
+			"`{\"aws_access_key_id\" : [access-key string] , \"aws_secret_access_key\" : [secret-key string]}`",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err
