@@ -196,7 +196,9 @@
 |gatewayProxies.NAME.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.NAME.podTemplate.image.pullSecret|string||image pull policy for the container |
 |gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service|
+|gatewayProxies.NAME.podTemplate.httpNodePort|int||HTTP nodeport for the gateway service if using type NodePort|
 |gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service|
+|gatewayProxies.NAME.podTemplate.httpsNodePort|int||HTTPS nodeport for the gateway service if using type NodePort|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
 |gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
 |gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on|
@@ -281,7 +283,9 @@
 |gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||image pull policy for the container |
 |gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service|
+|gatewayProxies.gatewayProxy.podTemplate.httpNodePort|int|0|HTTP nodeport for the gateway service if using type NodePort|
 |gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service|
+|gatewayProxies.gatewayProxy.podTemplate.httpsNodePort|int|0|HTTPS nodeport for the gateway service if using type NodePort|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
 |gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
 |gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on|

@@ -73,13 +73,10 @@ func (r *ClusterIngress) GroupVersionKind() schema.GroupVersionKind {
 
 type ClusterIngressList []*ClusterIngress
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ClusterIngressList) Find(namespace, name string) (*ClusterIngress, error) {
 	for _, clusterIngress := range list {
-		if clusterIngress.GetMetadata().Name == name {
-			if namespace == "" || clusterIngress.GetMetadata().Namespace == namespace {
-				return clusterIngress, nil
-			}
+		if clusterIngress.GetMetadata().Name == name && clusterIngress.GetMetadata().Namespace == namespace {
+			return clusterIngress, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find clusterIngress %v.%v", namespace, name)

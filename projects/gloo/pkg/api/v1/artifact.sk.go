@@ -41,13 +41,10 @@ func (r *Artifact) GroupVersionKind() schema.GroupVersionKind {
 
 type ArtifactList []*Artifact
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list ArtifactList) Find(namespace, name string) (*Artifact, error) {
 	for _, artifact := range list {
-		if artifact.GetMetadata().Name == name {
-			if namespace == "" || artifact.GetMetadata().Namespace == namespace {
-				return artifact, nil
-			}
+		if artifact.GetMetadata().Name == name && artifact.GetMetadata().Namespace == namespace {
+			return artifact, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find artifact %v.%v", namespace, name)

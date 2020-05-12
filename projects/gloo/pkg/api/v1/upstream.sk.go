@@ -45,13 +45,10 @@ func (r *Upstream) GroupVersionKind() schema.GroupVersionKind {
 
 type UpstreamList []*Upstream
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list UpstreamList) Find(namespace, name string) (*Upstream, error) {
 	for _, upstream := range list {
-		if upstream.GetMetadata().Name == name {
-			if namespace == "" || upstream.GetMetadata().Namespace == namespace {
-				return upstream, nil
-			}
+		if upstream.GetMetadata().Name == name && upstream.GetMetadata().Namespace == namespace {
+			return upstream, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find upstream %v.%v", namespace, name)

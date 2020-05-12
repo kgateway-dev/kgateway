@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update docs for 1.3 upgrade to be safer by adopting resources instead of deleting and recreating them.
+    issueLink: https://github.com/solo-io/gloo/issues/2807

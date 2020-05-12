@@ -164,6 +164,9 @@ message RouteOptions {
     fault.options.gloo.solo.io.RouteFaults faults = 2;
     // For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
     google.protobuf.StringValue prefix_rewrite = 3;
+    // Specifies the upstream timeout for the route. If not specified, the default is 15s. This spans between the point
+    // at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has
+    // been completely processed. A value of 0 will disable the route’s timeout.
     google.protobuf.Duration timeout = 4 [(gogoproto.stdduration) = true];
     retries.options.gloo.solo.io.RetryPolicy retries = 5;
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the

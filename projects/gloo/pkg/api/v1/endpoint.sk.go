@@ -41,13 +41,10 @@ func (r *Endpoint) GroupVersionKind() schema.GroupVersionKind {
 
 type EndpointList []*Endpoint
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list EndpointList) Find(namespace, name string) (*Endpoint, error) {
 	for _, endpoint := range list {
-		if endpoint.GetMetadata().Name == name {
-			if namespace == "" || endpoint.GetMetadata().Namespace == namespace {
-				return endpoint, nil
-			}
+		if endpoint.GetMetadata().Name == name && endpoint.GetMetadata().Namespace == namespace {
+			return endpoint, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find endpoint %v.%v", namespace, name)

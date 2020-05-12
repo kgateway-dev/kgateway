@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	"google.golang.org/grpc"
 
@@ -163,11 +164,18 @@ var _ = Describe("Validation Server", func() {
 
 			Eventually(getNotifications, time.Second).Should(HaveLen(2))
 
+			// add an auth config
+			err = v.Sync(ctx, &v1.ApiSnapshot{
+				AuthConfigs: enterprise_gloo_solo_io.AuthConfigList{{}}},
+			)
+			Expect(err).NotTo(HaveOccurred())
+			Eventually(getNotifications, time.Second).Should(HaveLen(3))
+
 			// create jitter by changing upstreams
 			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}}})
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(getNotifications, time.Second).Should(HaveLen(3))
+			Eventually(getNotifications, time.Second).Should(HaveLen(4))
 
 			// test close
 			desiredErr = "transport is closing"
@@ -177,7 +185,7 @@ var _ = Describe("Validation Server", func() {
 			err = v.Sync(ctx, &v1.ApiSnapshot{Upstreams: v1.UpstreamList{{}, {}}})
 			Expect(err).NotTo(HaveOccurred())
 
-			Consistently(getNotifications, time.Second).Should(HaveLen(3))
+			Consistently(getNotifications, time.Second).Should(HaveLen(4))
 		})
 	})
 })

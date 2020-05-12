@@ -22,6 +22,8 @@ message Settings {
     CoreRuleSet core_rule_set = 3;
     // Custom rule sets rules to add
     repeated envoy.config.filter.http.modsecurity.v2.RuleSet rule_sets = 4;
+    // Audit Log settings
+    envoy.config.filter.http.modsecurity.v2.AuditLogging audit_logging = 5;
 }
 
 message CoreRuleSet {

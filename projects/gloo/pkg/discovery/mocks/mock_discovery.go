@@ -14,30 +14,30 @@ import (
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
 )
 
-// MockDiscoveryPlugin is a mock of DiscoveryPlugin interface.
+// MockDiscoveryPlugin is a mock of DiscoveryPlugin interface
 type MockDiscoveryPlugin struct {
 	ctrl     *gomock.Controller
 	recorder *MockDiscoveryPluginMockRecorder
 }
 
-// MockDiscoveryPluginMockRecorder is the mock recorder for MockDiscoveryPlugin.
+// MockDiscoveryPluginMockRecorder is the mock recorder for MockDiscoveryPlugin
 type MockDiscoveryPluginMockRecorder struct {
 	mock *MockDiscoveryPlugin
 }
 
-// NewMockDiscoveryPlugin creates a new mock instance.
+// NewMockDiscoveryPlugin creates a new mock instance
 func NewMockDiscoveryPlugin(ctrl *gomock.Controller) *MockDiscoveryPlugin {
 	mock := &MockDiscoveryPlugin{ctrl: ctrl}
 	mock.recorder = &MockDiscoveryPluginMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockDiscoveryPlugin) EXPECT() *MockDiscoveryPluginMockRecorder {
 	return m.recorder
 }
 
-// DiscoverUpstreams mocks base method.
+// DiscoverUpstreams mocks base method
 func (m *MockDiscoveryPlugin) DiscoverUpstreams(arg0 []string, arg1 string, arg2 clients.WatchOpts, arg3 discovery.Opts) (chan v1.UpstreamList, chan error, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DiscoverUpstreams", arg0, arg1, arg2, arg3)
@@ -47,13 +47,13 @@ func (m *MockDiscoveryPlugin) DiscoverUpstreams(arg0 []string, arg1 string, arg2
 	return ret0, ret1, ret2
 }
 
-// DiscoverUpstreams indicates an expected call of DiscoverUpstreams.
+// DiscoverUpstreams indicates an expected call of DiscoverUpstreams
 func (mr *MockDiscoveryPluginMockRecorder) DiscoverUpstreams(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DiscoverUpstreams", reflect.TypeOf((*MockDiscoveryPlugin)(nil).DiscoverUpstreams), arg0, arg1, arg2, arg3)
 }
 
-// Init mocks base method.
+// Init mocks base method
 func (m *MockDiscoveryPlugin) Init(arg0 plugins.InitParams) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Init", arg0)
@@ -61,13 +61,13 @@ func (m *MockDiscoveryPlugin) Init(arg0 plugins.InitParams) error {
 	return ret0
 }
 
-// Init indicates an expected call of Init.
+// Init indicates an expected call of Init
 func (mr *MockDiscoveryPluginMockRecorder) Init(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Init", reflect.TypeOf((*MockDiscoveryPlugin)(nil).Init), arg0)
 }
 
-// UpdateUpstream mocks base method.
+// UpdateUpstream mocks base method
 func (m *MockDiscoveryPlugin) UpdateUpstream(arg0, arg1 *v1.Upstream) (bool, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateUpstream", arg0, arg1)
@@ -76,13 +76,13 @@ func (m *MockDiscoveryPlugin) UpdateUpstream(arg0, arg1 *v1.Upstream) (bool, err
 	return ret0, ret1
 }
 
-// UpdateUpstream indicates an expected call of UpdateUpstream.
+// UpdateUpstream indicates an expected call of UpdateUpstream
 func (mr *MockDiscoveryPluginMockRecorder) UpdateUpstream(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateUpstream", reflect.TypeOf((*MockDiscoveryPlugin)(nil).UpdateUpstream), arg0, arg1)
 }
 
-// WatchEndpoints mocks base method.
+// WatchEndpoints mocks base method
 func (m *MockDiscoveryPlugin) WatchEndpoints(arg0 string, arg1 v1.UpstreamList, arg2 clients.WatchOpts) (<-chan v1.EndpointList, <-chan error, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "WatchEndpoints", arg0, arg1, arg2)
@@ -92,7 +92,7 @@ func (m *MockDiscoveryPlugin) WatchEndpoints(arg0 string, arg1 v1.UpstreamList, 
 	return ret0, ret1, ret2
 }
 
-// WatchEndpoints indicates an expected call of WatchEndpoints.
+// WatchEndpoints indicates an expected call of WatchEndpoints
 func (mr *MockDiscoveryPluginMockRecorder) WatchEndpoints(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WatchEndpoints", reflect.TypeOf((*MockDiscoveryPlugin)(nil).WatchEndpoints), arg0, arg1, arg2)
