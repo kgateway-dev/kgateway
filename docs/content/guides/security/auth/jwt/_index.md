@@ -1,5 +1,5 @@
 ---
-title: JSON Web Tokens (JWT)
+title: JSON Web Tokens (Enterprise)
 weight: 40
 description: Introduction to JWT and what they are used for
 ---
