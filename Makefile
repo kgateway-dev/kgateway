@@ -425,6 +425,11 @@ $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
 	go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
 	touch $@
 
+package-chart: generate-helm-files
+	mkdir -p $(HELM_SYNC_DIR)/charts
+	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
+	helm repo index $(HELM_SYNC_DIR)
+
 push-chart-to-registry: generate-helm-files
 	mkdir -p $(HELM_REPOSITORY_CACHE)
 	cp $(DOCKER_CONFIG)/config.json $(HELM_REPOSITORY_CACHE)/config.json
