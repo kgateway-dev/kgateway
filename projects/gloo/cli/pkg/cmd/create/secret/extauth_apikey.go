@@ -44,7 +44,8 @@ func ExtAuthApiKeyCmd(opts *options.Options) *cobra.Command {
 		Short: `Create an ApiKey secret with the given name (Enterprise)`,
 		Long: "Create an ApiKey secret with the given name. The ApiKey secret contains a single apikey. " +
 			"This is an enterprise-only feature. The format of the secret data is: `{\"apiKey\" : [apikey string]}`. " +
-			"Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret.",
+			"Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret. " +
+			"If you're creating a secret through another means, you'll need to add that annotation manually.",
 		RunE: func(c *cobra.Command, args []string) error {
 			err := argsutils.MetadataArgsParse(opts, args)
 			if err != nil {
