@@ -413,7 +413,7 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
-HELM_BUCKET := gs://solo-public-tagged-helm
+HELM_BUCKET := gs://solo-public-helm
 
 # Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
@@ -431,8 +431,8 @@ push-chart-to-registry: generate-helm-files
 	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)
 	HELM_EXPERIMENTAL_OCI=1 helm chart push gcr.io/solo-public/gloo-helm:$(VERSION)
 
-.PHONY: fetch-and-save-helm-incremental
-fetch-and-save-helm-incremental: generate-helm-files
+.PHONY: fetch-package-and-save-helm
+fetch-package-and-save-helm: generate-helm-files
 ifeq ($(RELEASE),"true")
 	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
 					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
