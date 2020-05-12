@@ -413,6 +413,7 @@ build: gloo glooctl gateway discovery envoyinit certgen ingress
 
 HELM_SYNC_DIR := $(OUTPUT_DIR)/helm
 HELM_DIR := install/helm/gloo
+HELM_BUCKET := gs://solo-public-tagged-helm
 
 # Creates Chart.yaml and values.yaml. See install/helm/README.md for more info.
 .PHONY: generate-helm-files
@@ -420,13 +421,9 @@ generate-helm-files: $(OUTPUT_DIR)/.helm-prepared
 
 HELM_PREPARED_INPUT := $(HELM_DIR)/generate.go $(wildcard $(HELM_DIR)/generate/*.go)
 $(OUTPUT_DIR)/.helm-prepared: $(HELM_PREPARED_INPUT)
-	GO111MODULE=on go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
-	touch $@
-
-package-chart: generate-helm-files
 	mkdir -p $(HELM_SYNC_DIR)/charts
-	helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR)
-	helm repo index $(HELM_SYNC_DIR)
+	go run $(HELM_DIR)/generate.go --version $(VERSION) --generate-helm-docs
+	touch $@
 
 push-chart-to-registry: generate-helm-files
 	mkdir -p $(HELM_REPOSITORY_CACHE)
@@ -434,15 +431,18 @@ push-chart-to-registry: generate-helm-files
 	HELM_EXPERIMENTAL_OCI=1 helm chart save $(HELM_DIR) gcr.io/solo-public/gloo-helm:$(VERSION)
 	HELM_EXPERIMENTAL_OCI=1 helm chart push gcr.io/solo-public/gloo-helm:$(VERSION)
 
-.PHONY: fetch-helm
-fetch-helm:
-	mkdir -p './_output/helm'
-	gsutil -m rsync -r gs://solo-public-helm/ './_output/helm'
-
-.PHONY: save-helm
-save-helm:
+.PHONY: fetch-and-save-helm-incremental
+fetch-and-save-helm-incremental: generate-helm-files
 ifeq ($(RELEASE),"true")
-	gsutil -m rsync -r './_output/helm' gs://solo-public-helm/
+	until $$(GENERATION=$$(gsutil ls -a $(HELM_BUCKET)/index.yaml | tail -1 | cut -f2 -d '#') && \
+					gsutil cp -v $(HELM_BUCKET)/index.yaml $(HELM_SYNC_DIR)/index.yaml && \
+					helm package --destination $(HELM_SYNC_DIR)/charts $(HELM_DIR) >> /dev/null && \
+					helm repo index $(HELM_SYNC_DIR) --merge $(HELM_SYNC_DIR)/index.yaml && \
+					gsutil -m rsync $(HELM_SYNC_DIR)/charts $(HELM_BUCKET)/charts && \
+					gsutil -h x-goog-if-generation-match:"$$GENERATION" cp $(HELM_SYNC_DIR)/index.yaml $(HELM_BUCKET)/index.yaml); do \
+		echo "Failed to upload new helm index (updated helm index since last download?). Trying again"; \
+		sleep 2; \
+	done
 endif
 
 #----------------------------------------------------------------------------------
