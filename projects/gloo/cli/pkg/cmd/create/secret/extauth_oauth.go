@@ -27,7 +27,7 @@ func ExtAuthOathCmd(opts *options.Options) *cobra.Command {
 		Long: `Create an OAuth secret with the given name. The OAuth secrets contains the client_secret as defined in RFC 6749.
 This is an enterprise-only feature.
 The format of the secret data is: {"oauth" : [client-secret string]}.
-Note that the annotation resource_kind: '*v1.Secret' is needed in order for Gloo to find this secret."`,
+Note that the annotation resource_kind: '*v1.Secret' is needed in order for Gloo to find this secret.`,
 		RunE: func(c *cobra.Command, args []string) error {
 			err := argsutils.MetadataArgsParse(opts, args)
 			if err != nil {
