@@ -492,15 +492,9 @@ endif
 #----------------------------------------------------------------------------------
 # Release
 #----------------------------------------------------------------------------------
-GLOOE_CHANGELOGS_BUCKET=gloo-ee-changelogs
 
 $(OUTPUT_DIR)/gloo-enterprise-version:
 	GO111MODULE=on go run hack/find_latest_enterprise_version.go
-
-.PHONY: download-glooe-changelog
-download-glooe-changelog: $(OUTPUT_DIR)/gloo-enterprise-version
-	mkdir -p '../solo-projects/changelog'
-	gsutil -m cp -r gs://$(GLOOE_CHANGELOGS_BUCKET)/$(shell cat $(OUTPUT_DIR)/gloo-enterprise-version)/* '../solo-projects/changelog'
 
 # The code does the proper checking for a TAGGED_VERSION
 .PHONY: upload-github-release-assets
