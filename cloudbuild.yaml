@@ -60,15 +60,6 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'setup-aws-creds'
 
-# Helm related setup
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  args: ['fetch-helm']
-  env:
-    - 'TAGGED_VERSION=$TAG_NAME'
-  dir: *dir
-  waitFor: ['prepare-workspace']
-  id: 'fetch-helm'
-
 # Docker related setup
 # grab this container immediately in parallel
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
@@ -95,7 +86,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending',  '-noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'fetch-helm', 'set-gcr-zone', 'get-test-credentials']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
@@ -179,7 +170,8 @@ steps:
   id: 'regression-tests-cluster-lock'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  args: ['package-chart', 'render-manifests', 'upload-github-release-assets', 'download-glooe-changelog', 'publish-docs', 'push-chart-to-registry', '-B']
+  args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
+
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
     - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
@@ -189,16 +181,6 @@ steps:
   secretEnv: ['GITHUB_TOKEN']
   waitFor: ['gcr-auth', 'regression-tests', 'regression-tests-cluster-lock']
   id: 'release-chart'
-
-# 3) Sync helm chart data back to google storage bucket
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.2.1'
-  args: ['save-helm']
-  env:
-    - 'TAGGED_VERSION=$TAG_NAME'
-  dir: *dir
-  waitFor: ['release-chart']
-  id: 'save-helm-chart'
-
 secrets:
 - kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
   secretEnv:
