@@ -106,6 +106,7 @@ spec:
           single:
             upstream:
               name: default-grpcstore-demo-80
+              namespace: gloo-system
 ```
 
 The Virtual Service assumes that you are using the namespace `gloo-system` for your Gloo installation. In this initial configuration, we are matching the prefix `/` for all domains. Save the yaml as the file `grpc-vs.yaml` and run the following:
@@ -118,18 +119,10 @@ kubectl apply -f grpc-vs.yaml
 
 The next step is to test connectivity to the service using the tool `grpcurl`. We are going to get the IP address Gloo is using for a proxy, and then issue a request using `grpcurl`. Since we are not using TLS, we will have to use the flag `-plaintext` to allow for unencrypted communications. Later in this guide, we'll show how to add TLS to the configuration.
 
-```bash
-# Get the proxy IP address and port
-IP=$(glooctl proxy address --port http)
-echo $IP
-```
-
-You will get an address in the form of `X.X.X.X:80`.
-
-The output includes the public IP address and port as a single string. `grpcurl` expects a port number as part of the request. The Store service has Server Reflection enabled, which means that we do not have to specify a proto source file for `grpcurl` to use with our request. We are going to use the `list` agrument to enumerate the services available.
+`grpcurl` expects a port number as part of the request. The Store service has Server Reflection enabled, which means that we do not have to specify a proto source file for `grpcurl` to use with our request. We are going to use the `list` argument to enumerate the services available.
 
 ```bash
-grpcurl -plaintext $IP list
+grpcurl -plaintext $(glooctl proxy address --port http) list
 ```
 
 ```console
@@ -140,7 +133,7 @@ solo.examples.v1.StoreService
 Excellent! We were able to communicate with our server and get a list of services. Now let's see what methods are available in `solo.examples.v1.StoreService` using the `describe` argument.
 
 ```bash
-grpcurl -plaintext $IP describe solo.examples.v1.StoreService
+grpcurl -plaintext $(glooctl proxy address --port http) describe solo.examples.v1.StoreService
 ```
 
 ```console
@@ -155,7 +148,7 @@ service StoreService {
 You can continue to describe the individual methods and messages using the same syntax. Let's try using the `CreateItem` method to add an item to the store.
 
 ```bash
-grpcurl -plaintext -d '{"item":{"name":"item1"}}' $IP solo.examples.v1.StoreService/CreateItem
+grpcurl -plaintext -d '{"item":{"name":"item1"}}' $(glooctl proxy address --port http) solo.examples.v1.StoreService/CreateItem
 ```
 
 ```json
@@ -169,7 +162,7 @@ grpcurl -plaintext -d '{"item":{"name":"item1"}}' $IP solo.examples.v1.StoreServ
 We can retrieve all items by using the `ListItems` method:
 
 ```bash
-grpcurl -plaintext $IP solo.examples.v1.StoreService/ListItems
+grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
 ```
 
 ```json
@@ -218,7 +211,7 @@ spec:
 Now if we try to list the items again:
 
 ```bash
-grpcurl -plaintext  $IP solo.examples.v1.StoreService/ListItems
+grpcurl -plaintext $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
 ```
 
 We get an error:
@@ -230,7 +223,7 @@ Error invoking method "solo.examples.v1.StoreService/ListItems": failed to query
 The error message is not strictly true, but it's the best that Envoy can figure out. gRPC is using HTTP/2 and we did not specify a `authority` header, which is the equivalent of a HOST header in curl. Envoy instead used whatever value was in `$IP` as the HOST name.  Let's update our command to use the `-authority` flag.
 
 ```bash
-grpcurl -plaintext  -authority store.example.com $IP solo.examples.v1.StoreService/ListItems
+grpcurl -plaintext -authority store.example.com $(glooctl proxy address --port http) solo.examples.v1.StoreService/ListItems
 ```
 
 We once again get the expect response.
@@ -311,16 +304,12 @@ status:
       state: 1
 {{< /highlight >}}
 
-We'll need to update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. We also need to update the address to use port 443 instead of 80. Let's do that first:
+We'll need to update the `grpcurl` command to use the `-insecure` flag instead of the `-plaintext` flag. We also need to update the address to use port 443 instead of 80.
+
+Alright, let's try to connect to our service on port 443 (note the `--port https` flag) and invoke the `ListItem` method.
 
 ```bash
-IP=$(glooctl proxy address --port https)
-```
-
-Alright, now let's try to connect to our service and invoke the `ListItem` method.
-
-```bash
-grpcurl -insecure -authority store.example.com $IP solo.examples.v1.StoreService/ListItems
+grpcurl -insecure -authority store.example.com $(glooctl proxy address --port https) solo.examples.v1.StoreService/ListItems
 ```
 
 ```console
