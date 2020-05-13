@@ -58,17 +58,15 @@ aws route53 change-resource-record-sets --hosted-zone-id $ZONEID --change-batch 
 
 ### Add a Service
 
-Add a service that will get exposed via gloo. In this document we will use the petclinic spring application. 
+Add a service that will get exposed via Gloo. In this document we will use the petclinic spring application. 
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
 ```
 
 ### Configure access to AWS
 
-We'll need to allow cert manager access to configure DNS records in AWS. 
-See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) 
-for more details on the access requirements for cert-manager. 
+We'll need to allow cert manager access to configure DNS records in AWS. See cert manager [docs](https://docs.cert-manager.io/en/latest/tasks/acme/configuring-dns01/route53.html) for more details on the access requirements for cert-manager. 
 
 Once you have configured access, we will need to add the access keys as a kubernetes secret, so that cert manager can access them:
 
@@ -79,7 +77,7 @@ kubectl create secret generic aws-creds -n cert-manager --from-literal=access_ke
 ```
 
 ### Create a cluster issuer
-Create a cluster issuer for let's encrypt with route53.
+Create a cluster issuer for Let's Encrypt with Route 53.
 
 ```shell
 cat << EOF | kubectl apply -f -
@@ -114,7 +112,7 @@ Ready
 
 ### Create a certificate for our service
 
-Create the certificate for the gloo ingress:
+Create the certificate for the Gloo ingress:
 ```shell
 cat << EOF | kubectl apply -f -
 apiVersion: cert-manager.io/v1alpha2
@@ -146,7 +144,7 @@ Now just create a virtual host with the same secret ref as the name.
 
 ### Expose the service securly via Gloo
 
-Configure gloo's default virtual service to route to the function and use the certificates.
+Configure Gloo's default Virtual Service to route to the function and use the certificates.
 
 ```shell
 cat <<EOF | kubectl create -f -
@@ -223,7 +221,7 @@ EOF
 
 Notice the use of the `http01` solver. By default, cert-manager will create a `Service` of type `NodePort` to be routed via an `Ingress`. However, since we are running Gloo in gateway mode, incoming traffic is routed via a `VirtualService` and does not require a `NodePort`, so we are explicitly setting the `serviceType` to `ClusterIP`. 
 
-Additionally, we are specifying the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP of our external facing LoadBalancer IP. The inline command uses `glooctl proxy address` to get the enxternal facing IP address of our proxy and we append the 'nip.io' domain, leaving us with a domain that looks something like: `34.71.xx.xx.nip.io`.
+Additionally, we are specifying the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP of our external facing LoadBalancer IP. The inline command uses `glooctl proxy address` to get the external facing IP address of our proxy and we append the 'nip.io' domain, leaving us with a domain that looks something like: `34.71.xx.xx.nip.io`.
 
 ### Create the Certificate
 
@@ -251,7 +249,7 @@ Once this `Certificate` resource is created, behind the scenes cert-manager will
 
 ### Routing to the cert-manager pod
 
-Now that the pod which will serve this token is created, we need to configure Gloo to route to it. In this case, we will create a `VirtualService` for our custom domain that will route requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager created pod.
+Now that the pod which will serve this token is created, we need to configure Gloo to route to it. In this case, we will create a Virtual Service for our custom domain that will route requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager created pod.
 
 We can see this pod present in our `default` namespace:
 ```shell
@@ -267,7 +265,7 @@ NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT
 cm-acme-http-solver-f6mdb   ClusterIP      10.35.254.161   <none>           8089/TCP                              2m5s
 ```
 
-With upstream discovery enabled, an upstream to this `Service` will automatically be generated:
+With Upstream discovery enabled, an Upstream to this `Service` will automatically be generated:
 ```shell
 % glooctl get us default-cm-acme-http-solver-f6mdb-8089
 +----------------------------------------+------------+----------+--------------------------------+
@@ -287,7 +285,7 @@ kubectl get orders.acme.cert-manager.io nip-io-556035424-1317610542 -o=jsonpath=
 q5x9q1C4pPg1RtDEiXK9aMAb9ExpepU4Pp14pGKDPXo
 ```
 
-Now we have all the information necessary to create a `VirtualService` to route to this pod at the expected path:
+Now we have all the information necessary to create a Virtual Service to route to this pod at the expected path:
 
 ```shell
 cat << EOF | kubectl apply -f -
@@ -311,7 +309,7 @@ spec:
 EOF
 ```
 
-Note that we are specifying the domain to be our [nip.io](https://nip.io/) domain and routing requests for the path that Let's Encrypt expects, `/.well-known/acme-challenge/<TOKEN>` to the correct upstream.
+Note that we are specifying the domain to be our [nip.io](https://nip.io/) domain and routing requests for the path that Let's Encrypt expects, `/.well-known/acme-challenge/<TOKEN>` to the correct Upstream.
 
 Now that the server can successfully reach the pod, the challenge should be complete, and our `Certificate` will be available for use:
 
@@ -322,13 +320,13 @@ nip-io   True    nip-io-tls   10m
 ```
 
 ### Test
-First, let's make sure we have the petstore installed on our cluster:
+First, let's make sure we have the petstore application installed on our cluster:
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/petstore/petstore.yaml
 ```
 
-Then, we configure our `VirtualService` to use our newly created TLS secret and route to the petstore:
+Then, we configure our Virtual Service to use our newly created TLS secret and route to the petstore application:
 ```shell
 cat << EOF | kubectl apply -f -
 apiVersion: gateway.solo.io/v1
@@ -361,7 +359,7 @@ Now we can `curl` the service:
 [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
 ```
 
-Notice we use the `-k` flag so curl will not verify the certificate, which is necessary as the certificate we generated if from Let's Encrypt's "staging" CA, which is not trusted by our system.
+Notice we use the `-k` flag so curl will not verify the certificate, which is necessary as the certificate we generated was from Let's Encrypt's "staging" CA, which is not trusted by our system.
 
 Finally, we can inspect the certificate being presented by Envoy for this route:
 ```shell
