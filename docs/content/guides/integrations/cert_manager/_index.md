@@ -61,7 +61,7 @@ aws route53 change-resource-record-sets --hosted-zone-id $ZONEID --change-batch 
 Add a service that will get exposed via Gloo. In this document we will use the petclinic spring application. 
 
 ```shell
-kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/master/example/petclinic/petclinic.yaml
+kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
 ```
 
 ### Configure access to AWS
