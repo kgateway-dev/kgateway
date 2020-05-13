@@ -11,13 +11,21 @@ This section refers specifically to the **Gloo Enterprise** external auth server
 
 Gloo Enterprise provides a variety of authentication options to meet the needs of your environment. They range from supporting basic use cases to complex and fine grained secure access control. Architecturally, Gloo uses a dedicated auth server to verify the user credentials and determine their permissions. Gloo provides an auth server that can support several authN/Z implementations and also allows you to provide your auth server to implement custom logic.
 
-The graphic below can help provide context on how and when external authentication is evaluated when a request is received by Gloo and processed by Envoy.
+While some authentication solutions, such as JWT verification, can occur directly in Envoy, many use cases are better served by an external service. Envoy supports an external auth filter, where it reaches out to another service to authenticate and authorize a request, as a general solution for handling a large number of auth use cases at scale. Gloo Enterprise comes with an external auth (Ext Auth) server that has built-in support for all standard authentication and authorization use cases, and a plugin framework for customization.
+
+The graphic below can help provide context on how and when external authentication is evaluated when a request is received by Gloo and processed by Envoy relative to other security features.
 
 ![Gloo Envoy processing stack]({{< versioned_link_path fromRoot="/img/envoy-processing-stack.png" >}})
 
 {{% notice info %}}
 If you are seeing authentication errors for `OPTIONS` requests, and your application is doing CORS, please refer to the [Understanding CORS]({{< versioned_link_path fromRoot="/guides/security/cors" >}}) docs.
 {{% /notice %}}
+
+### Implementations
+
+We have seen how `AuthConfigs` can be used to define granular authentication configurations for `Virtual Services`. For a detailed overview of the authN/authZ models implemented by Gloo, check out the other guides:
+
+{{% children description="true" %}}
 
 ### Switching Between Ext Auth Deployment Modes
 
@@ -143,9 +151,3 @@ There are two exceptions to this rule:
 
 - if the child attribute defines an `AuthConfig`, or
 - if the child explicitly disables authentication via the `disable: true` configuration.
-
-### Implementations
-
-We have seen how `AuthConfigs` can be used to define granular authentication configurations for `Virtual Services`. For a detailed overview of the authN/authZ models implemented by Gloo, check out the other guides:
-
-{{% children description="true" %}}

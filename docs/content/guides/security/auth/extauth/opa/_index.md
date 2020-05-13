@@ -13,15 +13,28 @@ The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open sourc
 Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
 ## Table of Contents
-- [The value is a base64 encoding of the following YAML:](#the-value-is-a-base64-encoding-of-the-following-yaml)
-- [client_secret: secretvalue](#clientsecret-secretvalue)
-- [Gloo expected OAuth client secrets in this format.](#gloo-expected-oauth-client-secrets-in-this-format)
-      - [Create a Policy](#create-a-policy)
-      - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
-      - [Update the Virtual Service](#update-the-virtual-service)
+- [Setup](#setup)
+- [OPA policy overview](#opa-policy-overview)
+    - [OPA input structure](#opa-input-structure)
+- [Validate requests attributes with Open Policy Agent](#validate-requests-attributes-with-open-policy-agent)
+    - [Deploy sample application](#deploy-a-sample-application)
+    - [Creating a Virtual Service](#creating-a-virtual-service)
+    - [Secure the Virtual Service](#securing-the-virtual-service)
+        - [Define an OPA policy](#define-an-opa-policy)
+        - [Create an OPA AuthConfig CRD](#create-an-opa-authconfig-crd)
+        - [Update the Virtual Service](#updating-the-virtual-service)
+    - [Testing our configuration](#testing-the-configuration)
+- [Validate JWTs with Open Policy Agent](#validate-jwts-with-open-policy-agent)
+    - [Deploy sample application](#deploy-sample-application)
+    - [Create a Virtual Service](#create-a-virtual-service)
+    - [Secure the Virtual Service](#secure-the-virtual-service)
+        - [Install Dex](#install-dex)
+        - [Make the client secret accessible to Gloo](#make-the-client-secret-accessible-to-gloo)
+        - [Create a Policy](#create-a-policy)
+        - [Create a multi-step AuthConfig](#create-a-multi-step-authconfig)
+        - [Update the Virtual Service](#update-the-virtual-service)
     - [Testing our configuration](#testing-our-configuration)
-    - [Cleanup](#cleanup-1)
-  - [Troubleshooting OPA](#troubleshooting-opa)
+- [Troubleshooting OPA](#troubleshooting-opa)
 
 ## Setup
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
