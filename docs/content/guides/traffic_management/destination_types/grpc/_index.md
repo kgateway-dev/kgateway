@@ -4,7 +4,7 @@ weight: 125
 description: Routing to gRPC services with a gRPC client
 ---
 
-gRPC has become a popular, high-performance framework used by many applications. In this guide, we will show you how to expose a gRPC *Upstream* through a Gloo *Virtual Service* and connect to it with a gRPC client. Once we have basic connectivity, we will add in TLS connectivity between the gRPC client and the Gloo proxy (Envoy).
+gRPC has become a popular, high-performance framework used by many applications. In this guide, we will show you how to expose a gRPC `Upstream` through a Gloo `Virtual Service` and connect to it with a gRPC client. Once we have basic connectivity, we will add in TLS connectivity between the gRPC client and the Gloo proxy (Envoy).
 
 In this guide we are going to:
 
