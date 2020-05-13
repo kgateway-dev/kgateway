@@ -64,7 +64,7 @@ spec:
     servicePort: 80
     serviceSpec:
       grpc:
-        descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE…bTkwYnpNPQ==
+        descriptors: Q3F3RkNoVm5iMjluYkdVdllYQnBMMmgwZE … bTkwYnpNPQ== # snipped for brevity
         grpcServices:
         - functionNames:
           - CreateItem
