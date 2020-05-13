@@ -37,7 +37,19 @@ kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
 
 ### Verify that gRPC functions were discovered
 
-After a few seconds Gloo should have discovered the service with it's proto descriptor:
+After a few seconds Gloo should have discovered the service:
+
+```shell
+kubectl get upstream -n gloo-system default-grpcstore-demo-80
+```
+
+We should also enable Gloo FDS, if it is not already (whitelist mode by default), so the proto descriptor is found:
+
+```shell script
+kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
+```
+
+FDS should update the discovered upstream:
 
 ```shell
 kubectl get upstream -n gloo-system default-grpcstore-demo-80 -o yaml
