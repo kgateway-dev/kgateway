@@ -11,6 +11,10 @@ This section refers specifically to the **Gloo Enterprise** external auth server
 
 Gloo Enterprise provides a variety of authentication options to meet the needs of your environment. They range from supporting basic use cases to complex and fine grained secure access control. Architecturally, Gloo uses a dedicated auth server to verify the user credentials and determine their permissions. Gloo provides an auth server that can support several authN/Z implementations and also allows you to provide your auth server to implement custom logic.
 
+The graphic below can help provide context on how and when external authentication is evaluated when a request is received by Gloo and processed by Envoy.
+
+![Gloo Envoy processing stack]({{< versioned_link_path fromRoot="/img/envoy-processing-stack.png" >}})
+
 {{% notice info %}}
 If you are seeing authentication errors for `OPTIONS` requests, and your application is doing CORS, please refer to the [Understanding CORS]({{< versioned_link_path fromRoot="/guides/security/cors" >}}) docs.
 {{% /notice %}}
