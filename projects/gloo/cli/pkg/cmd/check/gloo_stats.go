@@ -23,15 +23,6 @@ const (
 )
 
 var (
-	resourceNames = []string{
-		"type.googleapis.com/enterprise.gloo.solo.io.ExtAuthConfig",
-		"type.googleapis.com/envoy.api.v2.Cluster",
-		"type.googleapis.com/envoy.api.v2.ClusterLoadAssignment",
-		"type.googleapis.com/envoy.api.v2.Listener",
-		"type.googleapis.com/envoy.api.v2.RouteConfiguration",
-		"type.googleapis.com/glooe.solo.io.RateLimitConfig",
-	}
-
 	resourcesOutOfSyncMessage = func(resourceNames []string) string {
 		return fmt.Sprintf("Gloo has detected that the data plane is out of sync. The following types of resources have not been accepted: %v. "+
 			"Gloo will not be able to process any other configuration updates until these errors are resolved.", resourceNames)
@@ -40,15 +31,13 @@ var (
 
 func ResourcesSyncedOverXds(stats, deploymentName string) bool {
 	var outOfSyncResources []string
-	for _, resourceName := range resourceNames {
-		totalMetric := fmt.Sprintf(`%s{resource="%s"}`, glooeTotalEntites, resourceName)
-		inSyncMetric := fmt.Sprintf(`%s{resource="%s"}`, glooeInSyncEntities, resourceName)
-		metrics := parseMetrics(stats, []string{totalMetric, inSyncMetric}, deploymentName)
-
-		if totalCount, ok := metrics[totalMetric]; ok {
-			if inSyncCount, ok := metrics[inSyncMetric]; ok {
-				if totalCount > inSyncCount {
-					outOfSyncResources = append(outOfSyncResources, resourceName)
+	metrics := parseMetrics(stats, []string{glooeTotalEntites, glooeInSyncEntities}, deploymentName)
+	for metric, val := range metrics {
+		if strings.HasPrefix(metric, glooeTotalEntites) {
+			inSyncMetric := strings.ReplaceAll(metric, glooeTotalEntites, glooeInSyncEntities)
+			if inSyncVal, ok := metrics[inSyncMetric]; ok {
+				if val > inSyncVal {
+					outOfSyncResources = append(outOfSyncResources, strings.ReplaceAll(metric, glooeTotalEntites, ""))
 				}
 			}
 		}
