@@ -61,6 +61,8 @@ gateway:
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
+    webhook:
+      enabled: true
   deployment:
     image:
       repository: gateway
