@@ -35,9 +35,13 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// Delegate to a function with a simpler signature, will make it easier to reuse
-	return BuildHttpFilters(p.extAuthSettings, params.Snapshot.Upstreams)
+	settings := listener.GetOptions().GetExtauth()
+	if settings == nil {
+		settings = p.extAuthSettings
+	}
+	return BuildHttpFilters(settings, params.Snapshot.Upstreams)
 }
 
 // This function generates the ext_authz PerFilterConfig for this virtual host. If the ext_authz filter was not

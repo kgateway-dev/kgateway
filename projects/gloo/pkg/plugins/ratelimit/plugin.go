@@ -84,13 +84,30 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if p.upstreamRef == nil {
+	var upstreamRef *core.ResourceRef
+	var timeout *time.Duration
+	var denyOnFail bool
+	var rateLimitBeforeAuth bool
+
+	if rlServer := listener.GetOptions().GetRatelimitServer(); rlServer != nil {
+		upstreamRef = rlServer.RatelimitServerRef
+		timeout = rlServer.RequestTimeout
+		denyOnFail = rlServer.DenyOnFail
+		rateLimitBeforeAuth = rlServer.RateLimitBeforeAuth
+	} else {
+		upstreamRef = p.upstreamRef
+		timeout = p.timeout
+		denyOnFail = p.denyOnFail
+		rateLimitBeforeAuth = p.rateLimitBeforeAuth
+	}
+
+	if upstreamRef == nil {
 		return nil, nil
 	}
 
-	customConf := generateEnvoyConfigForCustomFilter(*p.upstreamRef, p.timeout, p.denyOnFail)
+	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(p.rateLimitBeforeAuth))
+	customStagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {
 		return nil, err
 	}
