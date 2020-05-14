@@ -1,4 +1,4 @@
 changelog:
   - type: HELM
-    description: Add new helm value to disable the valdiation admission webhook
+    description: Add new helm value to disable the validation admission webhook
     issueLink: https://github.com/solo-io/gloo/issues/3016
