@@ -84,7 +84,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		filters, err := rlPlugin.HttpFilters(params, listener)
 		Expect(err).NotTo(HaveOccurred(), "Should be able to build rate limit filters")
 		Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
-		Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthZStage), "Should take config from http listener")
+		Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage), "Should take config from http listener, and set stage to AuthNStage")
 	})
 
 	It("should fave fail mode deny off by default", func() {
