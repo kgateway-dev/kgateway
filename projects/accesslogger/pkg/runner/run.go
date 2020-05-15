@@ -5,13 +5,19 @@ import (
 	"fmt"
 	"net"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+
+	"github.com/solo-io/gloo/pkg/utils"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/healthchecker"
 	"github.com/solo-io/go-utils/stats"
 	"go.opencensus.io/plugin/ocgrpc"
+	ocstats "go.opencensus.io/stats"
 	"go.opencensus.io/stats/view"
+	"go.opencensus.io/tag"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
@@ -21,7 +27,23 @@ import (
 
 func init() {
 	view.Register(ocgrpc.DefaultServerViews...)
+	view.Register(accessLogsRequestsView)
 }
+
+var (
+	mAccessLogsRequests    = ocstats.Int64("gloo.solo.io/accesslogging/requests", "The number of requests. Can be lossy.", "1")
+	requestPathKey, _      = tag.NewKey("request_path")
+	responseCodeKey, _     = tag.NewKey("response_code")
+	clusterKey, _          = tag.NewKey("cluster")
+	issuerKey, _           = tag.NewKey("issuer")
+	accessLogsRequestsView = &view.View{
+		Name:        "gloo.solo.io/accesslogging/requests",
+		Measure:     mAccessLogsRequests,
+		Description: "The number of requests",
+		Aggregation: view.Count(),
+		TagKeys:     []tag.Key{requestPathKey, responseCodeKey, clusterKey, issuerKey},
+	}
+)
 
 func Run() {
 	clientSettings := NewSettings()
@@ -40,18 +62,82 @@ func Run() {
 				switch msg := message.GetLogEntries().(type) {
 				case *pb.StreamAccessLogsMessage_HttpLogs:
 					for _, v := range msg.HttpLogs.LogEntry {
+
+						meta := v.GetCommonProperties().GetMetadata().GetFilterMetadata()
+
+						podName := ""
+						// https://docs.solo.io/gloo/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
+						transformationMeta := meta[transformation.FilterName]
+						for tKey, tVal := range transformationMeta.GetFields() {
+							// it would be easy to change this to request/response body by changing the transformation.
+							// similarly, could use it to add information back into the envoy metadata such as
+							// the virtual service name, namespace, base path, and operation path, as this information
+							// is dropped by the time envoy receives configuration and is not available in the metadata.
+							if tKey == "pod_name" {
+								podName = tVal.GetStringValue()
+							}
+						}
+
+						// https://docs.solo.io/gloo/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
+						providerByJwt := meta["envoy.filters.http.jwt_authn"]
+						issuer := ""
+						// we could change the claim to any other jwt claim, such as client_id
+						iss := "iss"
+						jwts := providerByJwt.GetFields()
+						for _, jwt := range jwts {
+							claims := jwt.GetStructValue()
+							if claims != nil {
+								for claim, val := range claims.GetFields() {
+									if claim == iss {
+										issuer = val.GetStringValue()
+									}
+								}
+							}
+						}
+
+						requestPath := v.GetRequest().GetPath()
+						requestOrigPath := v.GetRequest().GetOriginalPath()
+						requestMethod := v.GetRequest().GetRequestMethod()
+						responseCode := v.GetResponse().GetResponseCode().String()
+						cluster := v.GetCommonProperties().GetUpstreamCluster()
+						routeName := v.GetCommonProperties().GetRouteName()
+						startTime := v.GetCommonProperties().GetStartTime()
+						timeToLastUpstreamTxByte := v.GetCommonProperties().GetTimeToLastUpstreamTxByte()
+						upstreamRemoteAddr := v.GetCommonProperties().GetUpstreamRemoteAddress()
+
+						// tag values cannot exceed 255 characters, thus trim if too long
+						var requestPathTrimmed string
+						if len(requestPath) > 255 {
+							requestPathTrimmed = requestPath[0:255]
+						}
+						utils.MeasureOne(
+							ctx,
+							mAccessLogsRequests,
+							tag.Insert(requestPathKey, requestPathTrimmed),
+							tag.Insert(responseCodeKey, responseCode),
+							tag.Insert(clusterKey, cluster),
+							tag.Insert(issuerKey, issuer))
+
 						logger.With(
-							zap.Any("protocol_version", v.ProtocolVersion),
-							zap.Any("request_path", v.Request.Path),
-							zap.Any("request_method", v.Request.RequestMethod),
-							zap.Any("response_status", v.Response.ResponseCode),
+							zap.Any("protocol_version", v.GetProtocolVersion()),
+							zap.Any("request_path", requestPath),
+							zap.Any("request_original_path", requestOrigPath),
+							zap.Any("request_method", requestMethod),
+							zap.Any("response_code", responseCode),
+							zap.Any("cluster", cluster),
+							zap.Any("upstream_remote_address", upstreamRemoteAddr),
+							zap.Any("issuer", issuer),    // requires jwt set up and jwt with 'issuer' claim
+							zap.Any("pod_name", podName), // requires transformation set up with dynamic metadata to be non-empty
+							zap.Any("route_name", routeName),
+							zap.Any("start_time", startTime),
+							zap.Any("time_to_last_upstream_tx_byte", timeToLastUpstreamTxByte),
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
 					for _, v := range msg.TcpLogs.LogEntry {
 						logger.With(
-							zap.Any("upstream_cluster", v.CommonProperties.UpstreamCluster),
-							zap.Any("route_name", v.CommonProperties.RouteName),
+							zap.Any("upstream_cluster", v.GetCommonProperties().GetUpstreamCluster()),
+							zap.Any("route_name", v.GetCommonProperties().GetRouteName()),
 						).Info("received tcp request")
 					}
 				}
