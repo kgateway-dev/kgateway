@@ -99,7 +99,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			extauthPlugin.Init(initParams)
 		})
 
-		FIt("should get extauth settings first from the listener, then from the global settings", func() {
+		It("should get extauth settings first from the listener, then from the global settings", func() {
 			filters, err := extauthPlugin.HttpFilters(params, listener)
 			Expect(err).NotTo(HaveOccurred(), "Should be able to build extauth filters")
 			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
