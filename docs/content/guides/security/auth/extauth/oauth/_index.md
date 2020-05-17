@@ -15,7 +15,10 @@ The goal of OIDC is to address this ambiguity by additionally requiring Identity
 In this guide, we will focus on the format of the Gloo API for OIDC authentication.
 
 {{% notice warning %}}
-This feature requires Gloo's external auth server to communicate with an external OIDC provider/authorization server. Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms. You can increase this timeout by setting the [`requestTimeout` value on external auth settings]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#settings" %}}). The external auth settings can be configured on the [global Gloo `Settings` object]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#settings" %}}).
+This feature requires Gloo's external auth server to communicate with an external OIDC provider/authorization server.
+Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms.
+You can increase this timeout by setting the {{% protobuf name="enterprise.gloo.solo.io.Settings" display="`requestTimeout` value on external auth settings"%}}.
+The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo `Settings` object"%}}.
 {{% /notice %}}
 
 ## Configuration format
