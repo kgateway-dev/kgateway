@@ -105,7 +105,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			// Should take config from http listener
 			Expect(filters[0].Stage.Weight).To(Equal(0))
 			Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
-			Expect(filters[0].HttpFilter.Name).To(Equal("envoy.ext_authz"))
+			Expect(filters[0].HttpFilter.Name).To(Equal(FilterName))
 		})
 	})
 
