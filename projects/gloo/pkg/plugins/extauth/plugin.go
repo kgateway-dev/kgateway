@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	FilterName        = "envoy.ext_authz"
+	FilterName        = "envoy.filters.http.ext_authz"
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
 )
 
-// Note that although this configures the "envoy.ext_authz" filter, we still want the ordering to be within the
+// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
 // AuthNStage because we are using this filter for authentication purposes
 var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
@@ -151,7 +151,7 @@ func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
 		return false
 	}
 
-	// Check for a filter called "envoy.ext_authz"
+	// Check for a filter called "envoy.filters.http.ext_authz"
 	for _, filter := range filters {
 		if filter.HttpFilter.GetName() == FilterName {
 			return true
