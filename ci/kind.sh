@@ -22,6 +22,7 @@ sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | while read f; do kind 
 
 
 make build-kind-chart
+make glooctl-linux-amd64
 
 kubectl create namespace gloo-system || true
 
