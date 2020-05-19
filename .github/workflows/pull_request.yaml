@@ -43,9 +43,8 @@ jobs:
       env:
         # version for tag tags
         VERSION: kind
-      # not sure if we need all binaries below. can remove if we don't.
       run: |
-        ./ci/kind-test.sh
+        ./ci/kind.sh
     - name: Testing - cluster lock
       env:
         RUN_KUBE2E_TESTS: '1'
