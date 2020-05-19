@@ -33,7 +33,7 @@ var (
 	mAccessLogsRequests    = ocstats.Int64("gloo.solo.io/accesslogging/requests", "The number of requests. Can be lossy.", "1")
 	responseCodeKey, _     = tag.NewKey("response_code")
 	clusterKey, _          = tag.NewKey("cluster")
-	issuerKey, _           = tag.NewKey("issuer")
+	requestMethodKey, _    = tag.NewKey("request_method")
 	accessLogsRequestsView = &view.View{
 		Name:        "gloo.solo.io/accesslogging/requests",
 		Measure:     mAccessLogsRequests,
@@ -42,7 +42,7 @@ var (
 		// add more keys here (and in the `utils.MeasureOne()` call) if you want additional dimensions/labels on the
 		// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
 		// prometheus can handle the load.
-		TagKeys: []tag.Key{responseCodeKey, clusterKey, issuerKey},
+		TagKeys: []tag.Key{responseCodeKey, clusterKey, requestMethodKey},
 	}
 )
 
@@ -65,10 +65,10 @@ func Run() {
 					for _, v := range msg.HttpLogs.LogEntry {
 
 						meta := v.GetCommonProperties().GetMetadata().GetFilterMetadata()
-						// we could put any other kind of data into the transformation metadata, including information
-						// that gets dropped once translated into envoy config. For example, virtual service name,
-						// virtual service namespace, virtual service base path, virtual service route (operation path),
-						// the request/response body, etc.
+						// we could put any other kind of data into the transformation metadata, including more
+						// detailed request info or info that gets dropped once translated into envoy config. For
+						// example, virtual service name, virtual service namespace, virtual service base path,
+						// virtual service route (operation path), the request/response body, etc.
 						//
 						// follow the guide here to create requests with the proper transformation to populate 'pod_name' in the access logs:
 						// https://docs.solo.io/gloo/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
@@ -85,19 +85,18 @@ func Run() {
 							mAccessLogsRequests,
 							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
 							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
-							tag.Insert(issuerKey, issuer))
+							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
 						logger.With(
 							zap.Any("protocol_version", v.GetProtocolVersion()),
 							zap.Any("request_path", v.GetRequest().GetPath()),
 							zap.Any("request_original_path", v.GetRequest().GetOriginalPath()),
-							zap.Any("request_method", v.GetRequest().GetRequestMethod()),
+							zap.Any("request_method", v.GetRequest().GetRequestMethod().String()),
 							zap.Any("response_code", v.GetResponse().GetResponseCode().String()),
 							zap.Any("cluster", v.GetCommonProperties().GetUpstreamCluster()),
 							zap.Any("upstream_remote_address", v.GetCommonProperties().GetUpstreamRemoteAddress()),
 							zap.Any("issuer", issuer),    // requires jwt set up and jwt with 'issuer' claim to be non-empty
 							zap.Any("pod_name", podName), // requires transformation set up with dynamic metadata to be non-empty
-							zap.Any("route_name", v.GetCommonProperties().GetRouteName()),
 							zap.Any("start_time", v.GetCommonProperties().GetStartTime()),
 							zap.Any("time_to_last_upstream_tx_byte", v.GetCommonProperties().GetTimeToLastUpstreamTxByte()),
 						).Info("received http request")
