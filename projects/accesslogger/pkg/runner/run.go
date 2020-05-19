@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
-
-	"github.com/solo-io/gloo/pkg/utils"
-
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
+	_struct "github.com/golang/protobuf/ptypes/struct"
+	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/accesslogger/pkg/loggingservice"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/healthchecker"
 	"github.com/solo-io/go-utils/stats"
@@ -39,9 +38,12 @@ var (
 	accessLogsRequestsView = &view.View{
 		Name:        "gloo.solo.io/accesslogging/requests",
 		Measure:     mAccessLogsRequests,
-		Description: "The number of requests",
+		Description: "The number of requests. Can be lossy.",
 		Aggregation: view.Count(),
-		TagKeys:     []tag.Key{requestPathKey, responseCodeKey, clusterKey, issuerKey},
+		// add more keys here (and in the `utils.MeasureOne()` call) if you want additional dimensions/labels on the
+		// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
+		// prometheus can handle the load.
+		TagKeys: []tag.Key{requestPathKey, responseCodeKey, clusterKey, issuerKey},
 	}
 )
 
@@ -64,73 +66,42 @@ func Run() {
 					for _, v := range msg.HttpLogs.LogEntry {
 
 						meta := v.GetCommonProperties().GetMetadata().GetFilterMetadata()
-
-						podName := ""
+						// we could put any other kind of data into the transformation metadata, including information
+						// that gets dropped once translated into envoy config. For example, virtual service name,
+						// virtual service namespace, virtual service base path, virtual service route (operation path),
+						// the request/response body, etc.
+						//
+						// follow the guide here to create requests with the proper transformation to populate 'pod_name' in the access logs:
 						// https://docs.solo.io/gloo/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
-						transformationMeta := meta[transformation.FilterName]
-						for tKey, tVal := range transformationMeta.GetFields() {
-							// it would be easy to change this to request/response body by changing the transformation.
-							// similarly, could use it to add information back into the envoy metadata such as
-							// the virtual service name, namespace, base path, and operation path, as this information
-							// is dropped by the time envoy receives configuration and is not available in the metadata.
-							if tKey == "pod_name" {
-								podName = tVal.GetStringValue()
-							}
-						}
+						podName := getTransformationValueFromDynamicMetadata("pod_name", meta)
 
-						// https://docs.solo.io/gloo/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
-						providerByJwt := meta["envoy.filters.http.jwt_authn"]
-						issuer := ""
 						// we could change the claim to any other jwt claim, such as client_id
-						iss := "iss"
-						jwts := providerByJwt.GetFields()
-						for _, jwt := range jwts {
-							claims := jwt.GetStructValue()
-							if claims != nil {
-								for claim, val := range claims.GetFields() {
-									if claim == iss {
-										issuer = val.GetStringValue()
-									}
-								}
-							}
-						}
+						//
+						// follow the guide here to create requests with a jwt that has the 'issuer' claim, to populate issuer in the access logs:
+						// https://docs.solo.io/gloo/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
+						issuer := getClaimFromJwtInDynamicMetadata("iss", meta)
 
-						requestPath := v.GetRequest().GetPath()
-						requestOrigPath := v.GetRequest().GetOriginalPath()
-						requestMethod := v.GetRequest().GetRequestMethod()
-						responseCode := v.GetResponse().GetResponseCode().String()
-						cluster := v.GetCommonProperties().GetUpstreamCluster()
-						routeName := v.GetCommonProperties().GetRouteName()
-						startTime := v.GetCommonProperties().GetStartTime()
-						timeToLastUpstreamTxByte := v.GetCommonProperties().GetTimeToLastUpstreamTxByte()
-						upstreamRemoteAddr := v.GetCommonProperties().GetUpstreamRemoteAddress()
-
-						// tag values cannot exceed 255 characters, thus trim if too long
-						var requestPathTrimmed string
-						if len(requestPath) > 255 {
-							requestPathTrimmed = requestPath[0:255]
-						}
 						utils.MeasureOne(
 							ctx,
 							mAccessLogsRequests,
-							tag.Insert(requestPathKey, requestPathTrimmed),
-							tag.Insert(responseCodeKey, responseCode),
-							tag.Insert(clusterKey, cluster),
+							tag.Insert(requestPathKey, trimForMetricTag(v.GetRequest().GetPath())),
+							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
+							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
 							tag.Insert(issuerKey, issuer))
 
 						logger.With(
 							zap.Any("protocol_version", v.GetProtocolVersion()),
-							zap.Any("request_path", requestPath),
-							zap.Any("request_original_path", requestOrigPath),
-							zap.Any("request_method", requestMethod),
-							zap.Any("response_code", responseCode),
-							zap.Any("cluster", cluster),
-							zap.Any("upstream_remote_address", upstreamRemoteAddr),
-							zap.Any("issuer", issuer),    // requires jwt set up and jwt with 'issuer' claim
+							zap.Any("request_path", v.GetRequest().GetPath()),
+							zap.Any("request_original_path", v.GetRequest().GetOriginalPath()),
+							zap.Any("request_method", v.GetRequest().GetRequestMethod()),
+							zap.Any("response_code", v.GetResponse().GetResponseCode().String()),
+							zap.Any("cluster", v.GetCommonProperties().GetUpstreamCluster()),
+							zap.Any("upstream_remote_address", v.GetCommonProperties().GetUpstreamRemoteAddress()),
+							zap.Any("issuer", issuer),    // requires jwt set up and jwt with 'issuer' claim to be non-empty
 							zap.Any("pod_name", podName), // requires transformation set up with dynamic metadata to be non-empty
-							zap.Any("route_name", routeName),
-							zap.Any("start_time", startTime),
-							zap.Any("time_to_last_upstream_tx_byte", timeToLastUpstreamTxByte),
+							zap.Any("route_name", v.GetCommonProperties().GetRouteName()),
+							zap.Any("start_time", v.GetCommonProperties().GetStartTime()),
+							zap.Any("time_to_last_upstream_tx_byte", v.GetCommonProperties().GetTimeToLastUpstreamTxByte()),
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
@@ -194,4 +165,43 @@ func StartAccessLog(ctx context.Context, clientSettings Settings, service *loggi
 	}()
 
 	return srv.Serve(lis)
+}
+
+func getTransformationValueFromDynamicMetadata(key string, filterMetadata map[string]*_struct.Struct) string {
+	transformationMeta := filterMetadata[transformation.FilterName]
+	for tKey, tVal := range transformationMeta.GetFields() {
+		// it would be easy to change this to request/response body by changing the transformation.
+		// similarly, could use it to add information back into the envoy metadata such as
+		// the virtual service name, namespace, base path, and operation path, as this information
+		// is dropped by the time envoy receives configuration and is not available in the metadata.
+		if tKey == key {
+			return tVal.GetStringValue()
+		}
+	}
+	return ""
+}
+
+func getClaimFromJwtInDynamicMetadata(claim string, filterMetadata map[string]*_struct.Struct) string {
+	providerByJwt := filterMetadata["envoy.filters.http.jwt_authn"]
+	jwts := providerByJwt.GetFields()
+	for _, jwt := range jwts {
+		claims := jwt.GetStructValue()
+		if claims != nil {
+			for c, val := range claims.GetFields() {
+				if c == claim {
+					return val.GetStringValue()
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// tag values cannot exceed 255 characters, and must contain only ASCII characters
+func trimForMetricTag(value string) string {
+	// tag values cannot exceed 255 characters, thus trim if too long
+	if len(value) > 255 {
+		return value[0:255]
+	}
+	return value
 }
