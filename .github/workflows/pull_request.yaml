@@ -56,14 +56,14 @@ jobs:
         make update-deps
         make build-kind-assets
     - name: Testing - cluster lock
-#      env:
+      env:
 #        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
         CLUSTER_LOCK_TESTS: '1'
       run: |
         ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor test/kube2e
     - name: Testing - no cluster lock
-#      env:
+      env:
 #        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
       run: |
