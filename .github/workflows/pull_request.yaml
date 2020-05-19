@@ -39,13 +39,12 @@ jobs:
         version: v3.2.0
     - name: Setup env
       env:
-        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         # version for tag tags
         VERSION: kind
       # not sure if we need all binaries below. can remove if we don't.
       run: |
         curl -sSL https://github.com/istio/istio/releases/download/1.5.1/istio-1.5.1-linux.tar.gz | tar -xzf - istio-1.5.1/bin/istioctl
-        export PATH=$PWD/istio-1.5.1/bin:$PWD/linux-amd64:$(dirname $KUBECTL):$PATH
+        export PATH=$PWD/istio-1.5.1/bin:$PWD/linux-amd64:$PATH
         go get -u github.com/onsi/ginkgo/ginkgo
         docker pull kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af
         kind load docker-image kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af --nodes kind-control-plane
@@ -55,21 +54,17 @@ jobs:
         make build-kind-assets
     - name: Testing - cluster lock
       env:
-#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
         CLUSTER_LOCK_TESTS: '1'
       run: |
         ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor test/kube2e
     - name: Testing - no cluster lock
       env:
-#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
       run: |
         ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor test/kube2e
     - name: Debug Info
       if: failure()
-#      env:
-#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
       run: |
         # see what's in the cluster if we failed
         kubectl get all -A
