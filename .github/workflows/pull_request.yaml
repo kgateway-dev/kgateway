@@ -39,7 +39,7 @@ jobs:
         version: v3.2.0
     - name: Setup env
       env:
-#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
+        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         # version for tag tags
         VERSION: kind
       # not sure if we need all binaries below. can remove if we don't.
@@ -48,8 +48,6 @@ jobs:
         export PATH=$PWD/istio-1.5.1/bin:$PWD/linux-amd64:$(dirname $KUBECTL):$PATH
         go get -u github.com/onsi/ginkgo/ginkgo
         docker pull kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af
-        docker tag kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af kennship/http-echo:latest
-        kind load docker-image kennship/http-echo:latest
         kind load docker-image kennship/http-echo@sha256:144322e8e96be2be6675dcf6e3ee15697c5d052d14d240e8914871a2a83990af
         docker pull soloio/testrunner@sha256:123bce9529bba376d9dad9e0d162c3627feec1214d5a9a64a15dee582e6676d5
         kind load docker-image soloio/testrunner@sha256:123bce9529bba376d9dad9e0d162c3627feec1214d5a9a64a15dee582e6676d5
