@@ -70,13 +70,17 @@ func Run() {
 						// example, virtual service name, virtual service namespace, virtual service base path,
 						// virtual service route (operation path), the request/response body, etc.
 						//
+						// transformations can live at the virtual host, route, and weighted destination level on the
+						// `Proxy`, so users can add very granular information to the transformation filter metadata by
+						// configuring transformations on VirtualServices, RouteTables, and/or UpstreamGroups.
+						//
 						// follow the guide here to create requests with the proper transformation to populate 'pod_name' in the access logs:
 						// https://docs.solo.io/gloo/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
 						podName := getTransformationValueFromDynamicMetadata("pod_name", meta)
 
 						// we could change the claim to any other jwt claim, such as client_id
 						//
-						// follow the guide here to create requests with a jwt that has the 'issuer' claim, to populate issuer in the access logs:
+						// follow the guide here to create requests with a jwt that has the 'iss' claim, to populate issuer in the access logs:
 						// https://docs.solo.io/gloo/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
 						issuer := getClaimFromJwtInDynamicMetadata("iss", meta)
 
@@ -95,10 +99,12 @@ func Run() {
 							zap.Any("response_code", v.GetResponse().GetResponseCode().String()),
 							zap.Any("cluster", v.GetCommonProperties().GetUpstreamCluster()),
 							zap.Any("upstream_remote_address", v.GetCommonProperties().GetUpstreamRemoteAddress()),
-							zap.Any("issuer", issuer),    // requires jwt set up and jwt with 'issuer' claim to be non-empty
-							zap.Any("pod_name", podName), // requires transformation set up with dynamic metadata to be non-empty
+							zap.Any("issuer", issuer),                                     // requires jwt set up and jwt with 'iss' claim to be non-empty
+							zap.Any("pod_name", podName),                                  // requires transformation set up with dynamic metadata (with 'pod_name' key) to be non-empty
+							zap.Any("route_name", v.GetCommonProperties().GetRouteName()), // empty by default, but name can be set on routes in virtual services or route tables
 							zap.Any("start_time", v.GetCommonProperties().GetStartTime()),
 							zap.Any("time_to_last_upstream_tx_byte", v.GetCommonProperties().GetTimeToLastUpstreamTxByte()),
+							zap.Any("time_to_last_downstream_tx_byte", v.GetCommonProperties().GetTimeToLastDownstreamTxByte()),
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
@@ -167,10 +173,6 @@ func StartAccessLog(ctx context.Context, clientSettings Settings, service *loggi
 func getTransformationValueFromDynamicMetadata(key string, filterMetadata map[string]*_struct.Struct) string {
 	transformationMeta := filterMetadata[transformation.FilterName]
 	for tKey, tVal := range transformationMeta.GetFields() {
-		// it would be easy to change this to request/response body by changing the transformation.
-		// similarly, could use it to add information back into the envoy metadata such as
-		// the virtual service name, namespace, base path, and operation path, as this information
-		// is dropped by the time envoy receives configuration and is not available in the metadata.
 		if tKey == key {
 			return tVal.GetStringValue()
 		}
