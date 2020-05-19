@@ -31,7 +31,6 @@ func init() {
 
 var (
 	mAccessLogsRequests    = ocstats.Int64("gloo.solo.io/accesslogging/requests", "The number of requests. Can be lossy.", "1")
-	requestPathKey, _      = tag.NewKey("request_path")
 	responseCodeKey, _     = tag.NewKey("response_code")
 	clusterKey, _          = tag.NewKey("cluster")
 	issuerKey, _           = tag.NewKey("issuer")
@@ -43,7 +42,7 @@ var (
 		// add more keys here (and in the `utils.MeasureOne()` call) if you want additional dimensions/labels on the
 		// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
 		// prometheus can handle the load.
-		TagKeys: []tag.Key{requestPathKey, responseCodeKey, clusterKey, issuerKey},
+		TagKeys: []tag.Key{responseCodeKey, clusterKey, issuerKey},
 	}
 )
 
@@ -84,7 +83,6 @@ func Run() {
 						utils.MeasureOne(
 							ctx,
 							mAccessLogsRequests,
-							tag.Insert(requestPathKey, trimForMetricTag(v.GetRequest().GetPath())),
 							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
 							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
 							tag.Insert(issuerKey, issuer))
@@ -195,13 +193,4 @@ func getClaimFromJwtInDynamicMetadata(claim string, filterMetadata map[string]*_
 		}
 	}
 	return ""
-}
-
-// tag values cannot exceed 255 characters, and must contain only ASCII characters
-func trimForMetricTag(value string) string {
-	// tag values cannot exceed 255 characters, thus trim if too long
-	if len(value) > 255 {
-		return value[0:255]
-	}
-	return value
 }
