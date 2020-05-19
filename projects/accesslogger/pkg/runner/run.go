@@ -91,6 +91,12 @@ func Run() {
 							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
 							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
+						// this includes the time filters take during the processing of the request and response
+						downstreamRespTime := v.GetCommonProperties().GetTimeToLastRxByte()
+						// this includes the time of request filter processing but does not include the time of
+						// response filter processing; roughly measures the upstream response time
+						upstreamRespTime := v.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
+
 						logger.With(
 							zap.Any("protocol_version", v.GetProtocolVersion()),
 							zap.Any("request_path", v.GetRequest().GetPath()),
@@ -103,8 +109,8 @@ func Run() {
 							zap.Any("pod_name", podName),                                  // requires transformation set up with dynamic metadata (with 'pod_name' key) to be non-empty
 							zap.Any("route_name", v.GetCommonProperties().GetRouteName()), // empty by default, but name can be set on routes in virtual services or route tables
 							zap.Any("start_time", v.GetCommonProperties().GetStartTime()),
-							zap.Any("time_to_last_upstream_tx_byte", v.GetCommonProperties().GetTimeToLastUpstreamTxByte()),
-							zap.Any("time_to_last_downstream_tx_byte", v.GetCommonProperties().GetTimeToLastDownstreamTxByte()),
+							zap.Any("downstream_resp_time", downstreamRespTime),
+							zap.Any("upstream_resp_time", upstreamRespTime),
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
