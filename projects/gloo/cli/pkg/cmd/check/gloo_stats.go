@@ -53,7 +53,7 @@ func RateLimitIsConnected(stats string) bool {
 	connectedStateErrMessage := "The rate limit server is out of sync with the Gloo control plane and is not receiving valid gloo config.\n" +
 		"You may want to try using the `glooctl debug logs --errors-only` command to find any relevant error logs."
 
-	metrics := parseMetrics(stats, []string{ GlooeRateLimitConnectedState }, "gloo")
+	metrics := parseMetrics(stats, []string{GlooeRateLimitConnectedState}, "gloo")
 
 	if val, ok := metrics[GlooeRateLimitConnectedState]; ok && val == 0 {
 		fmt.Println(connectedStateErrMessage)
