@@ -597,6 +597,10 @@ build-kind-chart:
 	helm package --destination $(TEST_ASSET_DIR) $(HELM_DIR)
 	helm repo index $(TEST_ASSET_DIR)
 
+.PHONY: deploy-kind-chart
+deploy-kind-chart:
+	helm install gloo -n gloo-system $(TEST_ASSET_DIR)/gloo-$(VERSION).tgz
+
 #----------------------------------------------------------------------------------
 # Third Party License Management
 #----------------------------------------------------------------------------------
