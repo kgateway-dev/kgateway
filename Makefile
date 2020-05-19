@@ -599,7 +599,7 @@ build-kind-chart:
 
 .PHONY: deploy-kind-chart
 deploy-kind-chart:
-	helm install gloo -n gloo-system $(TEST_ASSET_DIR)/gloo-$(VERSION).tgz
+	helm install gloo -n gloo-system $(TEST_ASSET_DIR)/gloo-$(VERSION).tgz --debug
 
 #----------------------------------------------------------------------------------
 # Third Party License Management
