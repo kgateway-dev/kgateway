@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Added additional metrics reporting and examples to the gRPC access logging service. This service is intended
+      to be built upon to handle specific needs for reporting and observability in different advanced use cases.
+    issueLink: https://github.com/solo-io/gloo/issues/2804
