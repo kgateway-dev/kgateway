@@ -196,7 +196,7 @@ spec:
         name: auth-plugins
 {{< /highlight >}}
 
-Each plugin container image built as described in the *Packaging and publishing the plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/plugin_auth#packaging-and-publishing-the-plugin" >}}) has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available to the `extauth` server.
+Each plugin container image built as described in the *Packaging and publishing the plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth#packaging-and-publishing-the-plugin" >}}) has been added as an `initContainer` to the `extauth` deployment. A volume named `auth-plugins` is mounted in the `initContainer`s and the `extauth` container at `/auth-plugins` path: when the `initContainer`s are run, they will copy the compiled plugin files they contain (in this case `RequiredHeader.so`) to the shared volume, where they become available to the `extauth` server.
 
 Let's verify that the `extauth` server did successfully start by checking its logs.
 
@@ -288,7 +288,7 @@ When referenced on a Virtual Service, this configuration will instruct Gloo to a
 for the next two fields.
 - `pluginFileName`: the name of the compiled plugin that was copied to the `/auth-plugins` directory. Defaults to `<name>.so`.
 - `exportedSymbolName`: the name of the exported symbol Gloo will look for when loading the plugin. Defaults to `<name>`.
-- `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case this will be an instance of `*Config`, as seen in the *Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/plugin_auth#building-an-ext-auth-plugin" >}}).
+- `config`: information that will be used to configure your plugin. Gloo will attempt to parse the value of this attribute into the object pointer returned by your plugin's `NewConfigInstance` function implementation. In our case this will be an instance of `*Config`, as seen in the *Building an Ext Auth plugin* [section]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/plugin_auth#building-an-ext-auth-plugin" >}}).
 
 {{% notice note %}}
 You may have noticed that the `configs` attribute in the above `AuthConfig` is an array. It is possible to define multiple steps in an `AuthConfig`. Steps will be executed in the order they are defined. The first config to deny a request will cause the execution to be interrupted and a response to be returned to the downstream client. The headers produced by each step will be merged into the request to the next one. Check the [plugin developer guide]({{< versioned_link_path fromRoot="/guides/dev/writing_auth_plugins#multi-step-authconfigs" >}}) for more information about how the headers are merged.

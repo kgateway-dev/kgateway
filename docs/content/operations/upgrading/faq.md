@@ -12,13 +12,13 @@ Use `glooctl uninstall --all` followed by the normal installation procedure for 
  
 - **What is the recommended way to upgrade if I'm running Gloo in a production environment, where downtime is unacceptable?**
 
-We are still working on an exact recommendation in this case, but enterprise customers have found success
-in performing a blue/green deployment using two simultaneous deployments of Gloo. There are still questions
-outstanding about, for example, how to maintain Gloo state (virtual services, settings, etc.) across the
-different deployments, if the blue/green deployment is happening across datacenters.
+In Gloo 1.2 and newer, we recommend `helm upgrade` with the proper readiness probes and healthchecks configured (see
+the [1.3.0+ upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/1.3.0" >}})). For versions prior
+to Gloo 1.2, enterprise customers have found success performing a blue/green deployment using two simultaneous deployments
+of Gloo. For a brief example, see the
+[1.0.0 example upgrade]({{< versioned_link_path fromRoot="/operations/upgrading/1.0.0#example-upgrade-process" >}}).
 
-We will be providing more docs on this soon, but in the meantime, reach out to us on our 
-[public Slack](https://slack.solo.io/).
+If you have concerns not addressed in the docs here, reach out to us on our [public Slack](https://slack.solo.io/).
 
 - **What will happen to my upstreams, virtual services, settings, and Gloo state in general?**
 
@@ -29,7 +29,7 @@ adjustment must be made to perform the upgrade.
 As of open-source Gloo version 0.21.1, there is a command available in `glooctl` that can help mitigate
 some concern about Gloo state: `glooctl debug yaml` can be used to dump the current Gloo state to one
 large YAML manifest. While this command is not yet really suitable as a robust backup tool, it is
-a very useful debug tool to have available.
+a useful debug tool to have available.
 
 - **How do I handle upgrading across a breaking change?**
 

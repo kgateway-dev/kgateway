@@ -190,7 +190,10 @@ func filterEndpoints(ctx context.Context, writeNamespace string, kubeEndpoints [
 			}
 			if len(svc.Spec.Ports) == 1 {
 				singlePortService = true
-				kubeServicePort = &svc.Spec.Ports[0]
+				if spec.ServicePort == uint32(svc.Spec.Ports[0].Port) {
+					kubeServicePort = &svc.Spec.Ports[0]
+					break findServicePort
+				}
 			}
 			for _, port := range svc.Spec.Ports {
 				if spec.ServicePort == uint32(port.Port) {

@@ -30,7 +30,7 @@ Envoy Proxy is a data-plane component with powerful routing, observability, and 
 * [Discovery of services running in a hybrid platform]({{< versioned_link_path fromRoot="/introduction/architecture#discovery-architecture" >}}) (like VMs, containers, infrastructure as code, function as a service, etc)
 * Out of the box caching filters - enterprise feature
 * [Rate-limiting service]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple/">}}) with pluggable storage, multiple options for API (simplified, [or more flexible]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/">}}), depending on what you need) - enterprise feature
-* [OIDC integration]({{< versioned_link_path fromRoot="/guides/security/auth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/guides/security/auth/" >}}) - enterprise feature
+* [OIDC integration]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/" >}}), pluggable [external-auth service]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/" >}}) - enterprise feature
 
 
 #### What's the difference between Gloo and Istio
@@ -42,8 +42,8 @@ Gloo is NOT a service mesh but can be deployed complementary to a service mesh l
 * Transformation of request/response to decouple backend APIs from front end
 * Function routing to Google Cloud Function, AWS Lambda, Azure Functions, etc
 * Request/response caching
-* Unified discovery services of infrastructure like Kubernetes, Consul, Vault, Terraform, AWS EC2, VMWare
-* Unified discovery services of functions like REST/OAS spec, gRPC reflection, SOAP/WSDL, GraphQL, WebSockets, Cloud Functions
+* Unified discovery services of infrastructure like Kubernetes, Consul, Vault, AWS EC2
+* Unified discovery services of functions like REST/OAS spec, gRPC reflection, SOAP/WSDL, GraphQL, WebSockets, Cloud Functions, AWS Lambda
 
 See our blog on [API Gateways and Service Mesh](https://medium.com/solo-io/api-gateways-are-going-through-an-identity-crisis-d1d833a313d7) as well as [Integrating Gloo with Istio 1.1](https://medium.com/solo-io/integrating-istio-1-1-mtls-and-gloo-proxy-f84be943e65e)
 

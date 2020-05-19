@@ -30,7 +30,7 @@ virtualHostPlugins:
           namespace: gloo-system
 ```
 
-For more information on the latest configuration format see the [main page]({{< versioned_link_path fromRoot="/guides/security/auth/#auth-configuration-overview" >}}) 
+For more information on the latest configuration format see the [main page]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" >}}) 
 of the authentication section of the docs.
 
 #### GlooE versions >=0.19.0

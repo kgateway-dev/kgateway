@@ -79,9 +79,9 @@ glooctl get upstream default-petstore-8080 --output yaml
 ...
 ```
 
-We can see there are functions on our `default-petstore-8080` Upstream. These functions were populated automatically by the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery`.
+We can see there are functions on our `default-petstore-8080` Upstream. These functions were populated automatically by the `discovery` pod. You can see the function discovery service in action by running `kubectl logs -l gloo=discovery -n gloo-system`.
 
-The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions listed above belongs to the transformation plugin. This powerful plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation) to perform transform requests to the structure expected by our Pet Store application.
+The {{< protobuf name="gloo.solo.io.Upstream" display="function spec" >}} you see on the functions listed above is populated by the transformation plugin. This powerful plugin configures Gloo's [request/response transformation Envoy filter](https://github.com/solo-io/envoy-transformation), transforming requests to the structure expected by our Pet Store application.
 
 In a nutshell, this plugin takes [Inja templates](https://github.com/pantor/inja) for HTTP body, headers, and path as its parameters (documented in the plugin spec) and transforms incoming requests from those templates. Parameters for these templates can come from the request body (if it's JSON), or they can come from parameters specified in the extensions on a route.
 

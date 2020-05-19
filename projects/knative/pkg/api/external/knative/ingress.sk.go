@@ -73,13 +73,10 @@ func (r *Ingress) GroupVersionKind() schema.GroupVersionKind {
 
 type IngressList []*Ingress
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list IngressList) Find(namespace, name string) (*Ingress, error) {
 	for _, ingress := range list {
-		if ingress.GetMetadata().Name == name {
-			if namespace == "" || ingress.GetMetadata().Namespace == namespace {
-				return ingress, nil
-			}
+		if ingress.GetMetadata().Name == name && ingress.GetMetadata().Namespace == namespace {
+			return ingress, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find ingress %v.%v", namespace, name)

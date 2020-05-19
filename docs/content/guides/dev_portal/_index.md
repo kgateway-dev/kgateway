@@ -580,7 +580,7 @@ You should see the response from the server in the "Server response" section.
 We were able to query the published API without providing any credentials, but in a real-world scenario access to the 
 API will most likely need to be secured. The Gloo Enterprise developer portal currently supports self-service for APIs 
 that are secured using API keys. It does so by leveraging the Gloo Enterprise 
-[API keys]({{% versioned_link_path fromRoot="/guides/security/auth/apikey_auth" %}}) authentication feature. 
+[API keys]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/apikey_auth" %}}) authentication feature. 
 In the following sections we will see how to configure Gloo to allow users to generate API keys to send authenticated 
 requests via the interactive API document.
 

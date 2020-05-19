@@ -45,13 +45,10 @@ func (r *Gateway) GroupVersionKind() schema.GroupVersionKind {
 
 type GatewayList []*Gateway
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list GatewayList) Find(namespace, name string) (*Gateway, error) {
 	for _, gateway := range list {
-		if gateway.GetMetadata().Name == name {
-			if namespace == "" || gateway.GetMetadata().Namespace == namespace {
-				return gateway, nil
-			}
+		if gateway.GetMetadata().Name == name && gateway.GetMetadata().Namespace == namespace {
+			return gateway, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find gateway %v.%v", namespace, name)

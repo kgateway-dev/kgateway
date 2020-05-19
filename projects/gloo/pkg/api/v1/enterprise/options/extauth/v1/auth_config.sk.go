@@ -45,13 +45,10 @@ func (r *AuthConfig) GroupVersionKind() schema.GroupVersionKind {
 
 type AuthConfigList []*AuthConfig
 
-// namespace is optional, if left empty, names can collide if the list contains more than one with the same name
 func (list AuthConfigList) Find(namespace, name string) (*AuthConfig, error) {
 	for _, authConfig := range list {
-		if authConfig.GetMetadata().Name == name {
-			if namespace == "" || authConfig.GetMetadata().Namespace == namespace {
-				return authConfig, nil
-			}
+		if authConfig.GetMetadata().Name == name && authConfig.GetMetadata().Namespace == namespace {
+			return authConfig, nil
 		}
 	}
 	return nil, errors.Errorf("list did not find authConfig %v.%v", namespace, name)

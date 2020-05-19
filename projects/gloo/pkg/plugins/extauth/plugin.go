@@ -11,12 +11,12 @@ import (
 )
 
 const (
-	FilterName        = "envoy.ext_authz"
+	FilterName        = "envoy.filters.http.ext_authz"
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
 )
 
-// Note that although this configures the "envoy.ext_authz" filter, we still want the ordering to be within the
+// Note that although this configures the "envoy.filters.http.ext_authz" filter, we still want the ordering to be within the
 // AuthNStage because we are using this filter for authentication purposes
 var FilterStage = plugins.DuringStage(plugins.AuthNStage)
 
@@ -35,9 +35,13 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, _ *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// Delegate to a function with a simpler signature, will make it easier to reuse
-	return BuildHttpFilters(p.extAuthSettings, params.Snapshot.Upstreams)
+	settings := listener.GetOptions().GetExtauth()
+	if settings == nil {
+		settings = p.extAuthSettings
+	}
+	return BuildHttpFilters(settings, params.Snapshot.Upstreams)
 }
 
 // This function generates the ext_authz PerFilterConfig for this virtual host. If the ext_authz filter was not
@@ -151,7 +155,7 @@ func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
 		return false
 	}
 
-	// Check for a filter called "envoy.ext_authz"
+	// Check for a filter called "envoy.filters.http.ext_authz"
 	for _, filter := range filters {
 		if filter.HttpFilter.GetName() == FilterName {
 			return true

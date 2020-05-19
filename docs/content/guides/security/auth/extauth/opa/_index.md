@@ -10,7 +10,7 @@ The OPA feature was introduced with **Gloo Enterprise**, release 0.18.21. If you
 
 The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open source, general-purpose policy engine that can be used to define and enforce versatile policies in a uniform way across your organization. Compared to an RBAC authorization system, OPA allows you to create more fine-grained policies. For more information, see [the official docs](https://www.openpolicyagent.org/docs/latest/comparison-to-other-systems/).
 
-Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
+Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
 ## Table of Contents
 - [Setup](#setup)
@@ -47,7 +47,7 @@ Gloo's OPA integration will populate an `input` document which can be used in yo
 ### OPA input structure
 - `input.check_request` - By default, all OPA policies will contain an [Envoy Auth Service `CheckRequest`](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkrequest). This object contains all the information Envoy has gathered of the request being processed. See the Envoy docs and [proto files for `AttributeContext`](https://github.com/envoyproxy/envoy/blob/b3949eaf2080809b8a3a6cf720eba2cfdf864472/api/envoy/service/auth/v2/attribute_context.proto#L39) for the structure of this object.
 - `input.http_request` - When processing an HTTP request, this field will be populated for convenience. See the [Envoy `HttpRequest` docs](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/attribute_context.proto#service-auth-v2-attributecontext-httprequest) and [proto files](https://github.com/envoyproxy/envoy/blob/b3949eaf2080809b8a3a6cf720eba2cfdf864472/api/envoy/service/auth/v2/attribute_context.proto#L90) for the structure of this object.
-- `input.state.jwt` - When the [OIDC auth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/oauth/" >}}) is utilized, the token retrieved during the OIDC flow is placed into this field. See the section below on [validating JWTs](#validate-jwts-with-open-policy-agent) for an example.
+- `input.state.jwt` - When the [OIDC auth plugin]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/" >}}) is utilized, the token retrieved during the OIDC flow is placed into this field. See the section below on [validating JWTs](#validate-jwts-with-open-policy-agent) for an example.
 
 ## Validate requests attributes with Open Policy Agent
 

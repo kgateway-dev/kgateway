@@ -168,10 +168,15 @@ type ServiceAccount struct {
 }
 
 type GatewayValidation struct {
-	Enabled               bool   `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
-	AlwaysAcceptResources *bool  `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
-	SecretName            string `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
-	FailurePolicy         string `json:"failurePolicy" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
+	Enabled               bool     `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
+	AlwaysAcceptResources *bool    `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
+	SecretName            string   `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
+	FailurePolicy         string   `json:"failurePolicy" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
+	Webhook               *Webhook `json:"webhook" desc:"webhook specific configuration"`
+}
+
+type Webhook struct {
+	Enabled bool `json:"enabled" desc:"enable validation webhook (default true)"`
 }
 
 type GatewayDeployment struct {

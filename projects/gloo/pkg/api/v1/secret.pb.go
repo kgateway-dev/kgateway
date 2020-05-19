@@ -313,6 +313,9 @@ func (m *AzureSecret) GetApiKeys() map[string]string {
 	return nil
 }
 
+//
+//Note that the annotation `resource_kind: '*v1.Secret'` is needed for Gloo to find this secret.
+//Glooctl adds it by default when the tls secret is created via `glooctl create secret tls`.
 type TlsSecret struct {
 	// provided by `glooctl create secret tls`
 	CertChain string `protobuf:"bytes,1,opt,name=cert_chain,json=certChain,proto3" json:"cert_chain,omitempty"`

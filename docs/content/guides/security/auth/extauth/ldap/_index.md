@@ -75,7 +75,7 @@ EOF
 Now we can create a Virtual Service that routes any requests with the `/echo` prefix to the `http-echo` service.
 
 {{< highlight shell "hl_lines=17-21" >}}
-{{< readfile file="guides/security/auth/ldap/vs-echo-no-auth.sh">}}
+{{< readfile file="guides/security/auth/extauth/ldap/vs-echo-no-auth.sh">}}
 {{< /highlight >}}
 
 
@@ -118,7 +118,7 @@ service/ldap created
 
 {{% expand "The details of the script are beyond the scope of this guide; if you are interested, you can inspect them by clicking on this paragraph." %}}
 ```bash
-{{< readfile file="guides/security/auth/ldap/setup-ldap.sh" >}}
+{{< readfile file="guides/security/auth/extauth/ldap/setup-ldap.sh" >}}
 ```
 {{% /expand %}}
 
@@ -318,7 +318,7 @@ Once the `AuthConfig` containing the LDAP configuration has been created, we can
 by adding the following lines to its definition:
 
 {{< highlight shell "hl_lines=22-26" >}}
-{{< readfile file="guides/security/auth/ldap/vs-auth-ldap.sh" >}}
+{{< readfile file="guides/security/auth/extauth/ldap/vs-auth-ldap.sh" >}}
 {{< /highlight >}}
 
 This configures the Virtual Service to authenticate all requests to `/echo` using using the configuration stored in the 

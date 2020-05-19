@@ -88,6 +88,10 @@ message HttpListenerOptions {
     // Currently these extensions will only work if Gloo deployed using the helm flag, wasm.enabled=true
     // These require a special nightly version of envoy which is not deployed by default
     wasm.options.gloo.solo.io.PluginSource wasm = 7;
+    // Enterprise-only: External auth related settings
+    enterprise.gloo.solo.io.Settings extauth = 10;
+    // Enterprise-only: Settings for the rate limiting server itself
+    ratelimit.options.gloo.solo.io.Settings ratelimit_server = 11;
 
     // Gzip is an HTTP option which enables Gloo to compress
     // data returned from an upstream service upon client request.

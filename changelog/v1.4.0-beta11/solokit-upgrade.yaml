@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: Bumped the version of solo-kit to pick up the bug fix
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.13.7
