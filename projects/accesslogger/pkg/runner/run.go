@@ -26,23 +26,43 @@ import (
 
 func init() {
 	view.Register(ocgrpc.DefaultServerViews...)
-	view.Register(accessLogsRequestsView)
+	view.Register(accessLogsRequestsView, accessLogsDownstreamRespTimeView, accessLogsUpstreamRespTimeView)
 }
 
 var (
-	mAccessLogsRequests    = ocstats.Int64("gloo.solo.io/accesslogging/requests", "The number of requests. Can be lossy.", "1")
-	responseCodeKey, _     = tag.NewKey("response_code")
-	clusterKey, _          = tag.NewKey("cluster")
-	requestMethodKey, _    = tag.NewKey("request_method")
+	responseCodeKey, _  = tag.NewKey("response_code")
+	clusterKey, _       = tag.NewKey("cluster")
+	requestMethodKey, _ = tag.NewKey("request_method")
+	// add more keys here (and in the `utils.MeasureOne()` calls) if you want additional dimensions/labels on the
+	// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
+	// prometheus can handle the load.
+	tagKeys = []tag.Key{responseCodeKey, clusterKey, requestMethodKey}
+
+	mAccessLogsRequests    = ocstats.Int64("gloo.solo.io/accesslogging/requests", "The number of requests. Can be lossy.", ocstats.UnitDimensionless)
 	accessLogsRequestsView = &view.View{
 		Name:        "gloo.solo.io/accesslogging/requests",
 		Measure:     mAccessLogsRequests,
 		Description: "The number of requests. Can be lossy.",
 		Aggregation: view.Count(),
-		// add more keys here (and in the `utils.MeasureOne()` call) if you want additional dimensions/labels on the
-		// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
-		// prometheus can handle the load.
-		TagKeys: []tag.Key{responseCodeKey, clusterKey, requestMethodKey},
+		TagKeys:     tagKeys,
+	}
+
+	mAccessLogsDownstreamRespTime    = ocstats.Int64("gloo.solo.io/accesslogging/downstream_resp_time", "The downstream request time (ns). Can be lossy.", ocstats.UnitDimensionless)
+	accessLogsDownstreamRespTimeView = &view.View{
+		Name:        "gloo.solo.io/accesslogging/downstream_resp_time",
+		Measure:     mAccessLogsDownstreamRespTime,
+		Description: "The downstream request time (ns). Can be lossy.",
+		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000),
+		TagKeys:     tagKeys,
+	}
+
+	mAccessLogsUpstreamRespTime    = ocstats.Int64("gloo.solo.io/accesslogging/upstream_resp_time", "The upstream request time (ns). Can be lossy.", ocstats.UnitDimensionless)
+	accessLogsUpstreamRespTimeView = &view.View{
+		Name:        "gloo.solo.io/accesslogging/upstream_resp_time",
+		Measure:     mAccessLogsUpstreamRespTime,
+		Description: "The upstream request time (ns). Can be lossy.",
+		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000),
+		TagKeys:     tagKeys,
 	}
 )
 
@@ -93,9 +113,31 @@ func Run() {
 
 						// this includes the time filters take during the processing of the request and response
 						downstreamRespTime := v.GetCommonProperties().GetTimeToLastRxByte()
-						// this includes the time of request filter processing but does not include the time of
-						// response filter processing; roughly measures the upstream response time
-						upstreamRespTime := v.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
+						downstreamRespTimeNs := int64(downstreamRespTime.GetNanos()) + (downstreamRespTime.GetSeconds()*1 ^ 9)
+
+						timeToFirstUpstreamRxByte := v.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
+						timeToFirstUpstreamRxByteNs := int64(timeToFirstUpstreamRxByte.GetNanos()) + (timeToFirstUpstreamRxByte.GetSeconds()*1 ^ 9)
+						timeToLastUpstreamTxByte := v.GetCommonProperties().GetTimeToLastUpstreamTxByte()
+						timeToLastUpstreamTxByteNs := int64(timeToLastUpstreamTxByte.GetNanos()) + (timeToLastUpstreamTxByte.GetSeconds()*1 ^ 9)
+
+						// this excludes the time filters take during the processing of the request and response
+						upstreamRespTimeNs := timeToFirstUpstreamRxByteNs - timeToLastUpstreamTxByteNs
+
+						utils.Measure(
+							ctx,
+							mAccessLogsDownstreamRespTime,
+							downstreamRespTimeNs,
+							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
+							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
+							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
+
+						utils.Measure(
+							ctx,
+							mAccessLogsUpstreamRespTime,
+							upstreamRespTimeNs,
+							tag.Insert(responseCodeKey, v.GetResponse().GetResponseCode().String()),
+							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
+							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
 						logger.With(
 							zap.Any("protocol_version", v.GetProtocolVersion()),
@@ -109,8 +151,8 @@ func Run() {
 							zap.Any("pod_name", podName),                                  // requires transformation set up with dynamic metadata (with 'pod_name' key) to be non-empty
 							zap.Any("route_name", v.GetCommonProperties().GetRouteName()), // empty by default, but name can be set on routes in virtual services or route tables
 							zap.Any("start_time", v.GetCommonProperties().GetStartTime()),
-							zap.Any("downstream_resp_time", downstreamRespTime),
-							zap.Any("upstream_resp_time", upstreamRespTime),
+							zap.Any("downstream_resp_time", downstreamRespTimeNs),
+							zap.Any("upstream_resp_time", upstreamRespTimeNs),
 						).Info("received http request")
 					}
 				case *pb.StreamAccessLogsMessage_TcpLogs:
