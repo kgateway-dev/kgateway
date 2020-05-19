@@ -21,7 +21,7 @@ jobs:
         go-version: 1.14
     - uses: engineerd/setup-kind@v0.3.0
     - name: Install Protoc
-      uses: arduino/setup-protoc@7ad700d3b20e2a32b35d2c17fbdc463891608381
+      uses: arduino/setup-protoc@v1.1.0
       with:
         version: '3.6.1'
     - uses: azure/setup-kubectl@v1
@@ -34,14 +34,16 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - uses: azure/setup-helm@v1
+      with:
+        version: v3.2.0
     - name: Setup env
       env:
-        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
+#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         # version for tag tags
         VERSION: kind
       # not sure if we need all binaries below. can remove if we don't.
       run: |
-        curl -sSL https://get.helm.sh/helm-v3.2.0-linux-amd64.tar.gz | tar -xzf - linux-amd64/helm
         curl -sSL https://github.com/istio/istio/releases/download/1.5.1/istio-1.5.1-linux.tar.gz | tar -xzf - istio-1.5.1/bin/istioctl
         export PATH=$PWD/istio-1.5.1/bin:$PWD/linux-amd64:$(dirname $KUBECTL):$PATH
         go get -u github.com/onsi/ginkgo/ginkgo
@@ -54,22 +56,22 @@ jobs:
         make update-deps
         make build-kind-assets
     - name: Testing - cluster lock
-      env:
-        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
+#      env:
+#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
         CLUSTER_LOCK_TESTS: '1'
       run: |
         ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor test/kube2e
     - name: Testing - no cluster lock
-      env:
-        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
+#      env:
+#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
         RUN_KUBE2E_TESTS: '1'
       run: |
         ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor test/kube2e
     - name: Debug Info
       if: failure()
-      env:
-        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
+#      env:
+#        KUBECTL: ${{ steps.kubectl.outputs.kubectl-path }}
       run: |
         # see what's in the cluster if we failed
         kubectl get all -A
