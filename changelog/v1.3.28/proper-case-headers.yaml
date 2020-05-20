@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     description: >
       Expose envoy's core.Http1ProtocolOptions.HeaderKeyFormat in the Gloo API as
       httpConnectionManager.http_protocol_options.proper_case_header_key_format. By default,
