@@ -3,6 +3,8 @@ package hcm_test
 import (
 	"time"
 
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
@@ -42,8 +44,9 @@ var _ = Describe("Plugin", func() {
 			DelayedCloseTimeout: pd(time.Hour),
 			ServerName:          "ServerName",
 
-			AcceptHttp_10:         true,
-			DefaultHostForHttp_10: "DefaultHostForHttp_10",
+			AcceptHttp_10:             true,
+			ProperCaseHeaderKeyFormat: true,
+			DefaultHostForHttp_10:     "DefaultHostForHttp_10",
 
 			Tracing: &tracingv1.ListenerTracingSettings{
 				RequestHeadersForTags: []string{"path", "origin"},
@@ -115,6 +118,13 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.DelayedCloseTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.DelayedCloseTimeout)))
 		Expect(cfg.ServerName).To(Equal(hcms.ServerName))
 		Expect(cfg.HttpProtocolOptions.AcceptHttp_10).To(Equal(hcms.AcceptHttp_10))
+		if hcms.ProperCaseHeaderKeyFormat {
+			Expect(cfg.HttpProtocolOptions.HeaderKeyFormat).To(Equal(&envoycore.Http1ProtocolOptions_HeaderKeyFormat{
+				HeaderFormat: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords_{
+					ProperCaseWords: &envoycore.Http1ProtocolOptions_HeaderKeyFormat_ProperCaseWords{},
+				},
+			}))
+		}
 		Expect(cfg.HttpProtocolOptions.DefaultHostForHttp_10).To(Equal(hcms.DefaultHostForHttp_10))
 		Expect(cfg.PreserveExternalRequestId).To(Equal(hcms.PreserveExternalRequestId))
 

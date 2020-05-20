@@ -1,0 +1,12 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Expose envoy's core.Http1ProtocolOptions.HeaderKeyFormat in the Gloo API as
+      httpConnectionManager.http_protocol_options.proper_case_header_key_format. By default,
+      all header keys are lower cased. If proper_case_header_key_format is set to true,
+      envoy formats the header by proper casing words: the first character and any character
+      following a special character will be capitalized if it’s an alpha character.
+      For example, “content-type” becomes “Content-Type”, and “foo$b#$are” becomes “Foo$B#$Are”.
+      Note that while this results in most headers following conventional casing, certain headers
+      are not covered. For example, the “TE” header will be formatted as “Te”.
+    issueLink: https://github.com/solo-io/gloo/issues/2940
