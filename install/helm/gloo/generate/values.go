@@ -278,6 +278,7 @@ type AccessLogger struct {
 	Port        uint   `json:"port,omitempty"`
 	ServiceName string `json:"serviceName,omitempty"`
 	Enabled     bool   `json:"enabled"`
+	Stats       *Stats `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	*DeploymentSpec
 }
 

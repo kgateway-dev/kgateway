@@ -107,6 +107,8 @@ accessLogger:
   image:
     repository: access-logger
   replicas: 1
+  stats:
+    enabled: true
 ingress:
   enabled: false
   deployment:

@@ -421,6 +421,7 @@
 |accessLogger.port|uint|8083||
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
+|accessLogger.stats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||
