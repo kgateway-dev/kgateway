@@ -457,6 +457,7 @@ var _ = Describe("Helm Test", func() {
 						dep.Spec.Template.Spec.Containers[0].Ports = []v1.ContainerPort{
 							{Name: "http", ContainerPort: 8083, Protocol: "TCP"},
 						}
+						dep.Spec.Template.Annotations = statsAnnotations
 						dep.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 						testManifest.ExpectDeploymentAppsV1(dep)
 						testManifest.ExpectService(svc)
