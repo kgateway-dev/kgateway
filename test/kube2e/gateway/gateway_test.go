@@ -486,12 +486,15 @@ var _ = Describe("Kube2e: gateway", func() {
 
 			})
 			AfterEach(func() {
-				UpdateAlwaysAcceptSetting(false)
 				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, invalidVsName, clients.DeleteOpts{})
 				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, validVsName, clients.DeleteOpts{})
 				_ = virtualServiceClient.Delete(testHelper.InstallNamespace, petstoreName, clients.DeleteOpts{})
 				_ = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(petstoreName, nil)
 				_ = kubeClient.AppsV1().Deployments(testHelper.InstallNamespace).Delete(petstoreName, nil)
+				// important that we update the always accept setting after removing resources, or else we can have:
+				// "validation is disabled due to an invalid resource which has been written to storage.
+				// Please correct any Rejected resources to re-enable validation."
+				UpdateAlwaysAcceptSetting(false)
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
