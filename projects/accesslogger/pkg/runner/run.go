@@ -112,7 +112,7 @@ func Run() {
 							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
 						// this includes the time filters take during the processing of the request and response
-						downstreamRespTime := v.GetCommonProperties().GetTimeToLastRxByte()
+						downstreamRespTime := v.GetCommonProperties().GetTimeToLastDownstreamTxByte()
 						downstreamRespTimeNs := int64(downstreamRespTime.GetNanos()) + (downstreamRespTime.GetSeconds()*1 ^ 9)
 
 						timeToFirstUpstreamRxByte := v.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
