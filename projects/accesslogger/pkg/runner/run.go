@@ -33,7 +33,7 @@ var (
 	responseCodeKey, _  = tag.NewKey("response_code")
 	clusterKey, _       = tag.NewKey("cluster")
 	requestMethodKey, _ = tag.NewKey("request_method")
-	// add more keys here (and in the `utils.MeasureOne()` calls) if you want additional dimensions/labels on the
+	// add more keys here (and in the `utils.Measure()` calls) if you want additional dimensions/labels on the
 	// access logging metrics. take care to ensure the cardinality of the values of these keys is low enough that
 	// prometheus can handle the load.
 	tagKeys = []tag.Key{responseCodeKey, clusterKey, requestMethodKey}
