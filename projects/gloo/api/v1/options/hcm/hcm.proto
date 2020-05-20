@@ -49,6 +49,7 @@ message HttpConnectionManagerSettings {
     // For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions
     bool accept_http_10 = 15;
     string default_host_for_http_10 = 16;
+    bool proper_case_header_key_format = 22;
 
     tracing.options.gloo.solo.io.ListenerTracingSettings tracing = 17;
 
