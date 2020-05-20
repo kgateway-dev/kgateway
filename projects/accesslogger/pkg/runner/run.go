@@ -52,7 +52,7 @@ var (
 		Name:        "gloo.solo.io/accesslogging/downstream_resp_time",
 		Measure:     mAccessLogsDownstreamRespTime,
 		Description: "The downstream request time (ns). Can be lossy.",
-		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000),
+		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 9000000, 45000000, 225000000, 1125000000, 3375000000),
 		TagKeys:     tagKeys,
 	}
 
@@ -61,7 +61,7 @@ var (
 		Name:        "gloo.solo.io/accesslogging/upstream_resp_time",
 		Measure:     mAccessLogsUpstreamRespTime,
 		Description: "The upstream request time (ns). Can be lossy.",
-		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 3600000),
+		Aggregation: view.Distribution(0.5, 1, 5, 10, 25, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 300000, 600000, 1800000, 9000000, 45000000, 225000000, 1125000000, 3375000000),
 		TagKeys:     tagKeys,
 	}
 )
