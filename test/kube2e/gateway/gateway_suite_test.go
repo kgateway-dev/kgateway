@@ -24,7 +24,6 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/helper"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -36,12 +35,6 @@ import (
 
 func TestGateway(t *testing.T) {
 	if testutils.AreTestsDisabled() {
-		return
-	}
-
-	if os.Getenv("CLUSTER_LOCK_TESTS") == "1" {
-		log.Warnf("This test does not require using a cluster lock. Cluster lock is enabled so this test is disabled. " +
-			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()

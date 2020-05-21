@@ -11,7 +11,6 @@ import (
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils"
@@ -24,11 +23,6 @@ import (
 
 func TestIngress(t *testing.T) {
 	if testutils.AreTestsDisabled() {
-		return
-	}
-	if os.Getenv("CLUSTER_LOCK_TESTS") != "1" {
-		log.Warnf("This test requires using a cluster lock and is disabled by default. " +
-			"To enable, set CLUSTER_LOCK_TESTS=1 in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
