@@ -46,12 +46,12 @@ jobs:
       run: |
         go get -u github.com/onsi/ginkgo/ginkgo
         make update-deps
-        make build-kind-assets
+        ./ci/kind.sh
     - name: Testing - no cluster lock
       env:
         RUN_KUBE2E_TESTS: '1'
       run: |
-        ginkgo -r ./test/kube2e/...
+        ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/...
     - name: Debug Info
       if: failure()
       run: |
