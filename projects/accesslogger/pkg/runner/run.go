@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net"
 
+	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
+
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -115,15 +117,10 @@ func Run() {
 						downstreamRespTime := v.GetCommonProperties().GetTimeToLastDownstreamTxByte()
 						downstreamRespTimeNs := int64(downstreamRespTime.GetNanos()) + (downstreamRespTime.GetSeconds()*1 ^ 9)
 
-						timeToFirstUpstreamRxByte := v.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
-						timeToFirstUpstreamRxByteNs := int64(timeToFirstUpstreamRxByte.GetNanos()) + (timeToFirstUpstreamRxByte.GetSeconds()*1 ^ 9)
-						timeToLastUpstreamTxByte := v.GetCommonProperties().GetTimeToLastUpstreamTxByte()
-						timeToLastUpstreamTxByteNs := int64(timeToLastUpstreamTxByte.GetNanos()) + (timeToLastUpstreamTxByte.GetSeconds()*1 ^ 9)
-
-						// this excludes the time filters take during the processing of the request and response.
-						// this could, in theory, be negative. for example, the upstream could reject based on the
-						// request headers and respond before the request body had finished transmitting upstream.
-						upstreamRespTimeNs := timeToFirstUpstreamRxByteNs - timeToLastUpstreamTxByteNs
+						// if envoy is buffering the request before sending upstream, you want the following
+						upstreamRespTimeNs := lastToFirstNs(v)
+						// otherwise, you want this
+						// upstreamRespTimeNs := firstToFirstNs(v)
 
 						utils.Measure(
 							ctx,
@@ -243,4 +240,28 @@ func getClaimFromJwtInDynamicMetadata(claim string, filterMetadata map[string]*_
 		}
 	}
 	return ""
+}
+
+func firstToFirstNs(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry) int64 {
+	timeToFirstUpstreamRxByte := entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
+	timeToFirstUpstreamRxByteNs := int64(timeToFirstUpstreamRxByte.GetNanos()) + (timeToFirstUpstreamRxByte.GetSeconds()*1 ^ 9)
+	timeToFirstUpstreamTxByte := entry.GetCommonProperties().GetTimeToFirstUpstreamTxByte()
+	timeToFirstUpstreamTxByteNs := int64(timeToFirstUpstreamTxByte.GetNanos()) + (timeToFirstUpstreamTxByte.GetSeconds()*1 ^ 9)
+
+	// this excludes the time filters take during the processing of the request and response.
+	upstreamRespTimeNs := timeToFirstUpstreamRxByteNs - timeToFirstUpstreamTxByteNs
+	return upstreamRespTimeNs
+}
+
+func lastToFirstNs(entry *envoy_data_accesslog_v2.HTTPAccessLogEntry) int64 {
+	timeToFirstUpstreamRxByte := entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte()
+	timeToFirstUpstreamRxByteNs := int64(timeToFirstUpstreamRxByte.GetNanos()) + (timeToFirstUpstreamRxByte.GetSeconds()*1 ^ 9)
+	timeToLastUpstreamTxByte := entry.GetCommonProperties().GetTimeToLastUpstreamTxByte()
+	timeToLastUpstreamTxByteNs := int64(timeToLastUpstreamTxByte.GetNanos()) + (timeToLastUpstreamTxByte.GetSeconds()*1 ^ 9)
+
+	// this excludes the time filters take during the processing of the request and response.
+	// this could, in theory, be negative. for example, the upstream could reject based on the
+	// request headers and respond before the request body had finished transmitting upstream.
+	upstreamRespTimeNs := timeToFirstUpstreamRxByteNs - timeToLastUpstreamTxByteNs
+	return upstreamRespTimeNs
 }
