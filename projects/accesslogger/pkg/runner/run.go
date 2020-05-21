@@ -111,7 +111,7 @@ func Run() {
 							tag.Insert(clusterKey, v.GetCommonProperties().GetUpstreamCluster()),
 							tag.Insert(requestMethodKey, v.GetRequest().GetRequestMethod().String()))
 
-						// this includes the time filters take during the processing of the request and response
+						// this includes the time filters take during the processing of the request and response.
 						downstreamRespTime := v.GetCommonProperties().GetTimeToLastDownstreamTxByte()
 						downstreamRespTimeNs := int64(downstreamRespTime.GetNanos()) + (downstreamRespTime.GetSeconds()*1 ^ 9)
 
@@ -120,7 +120,9 @@ func Run() {
 						timeToLastUpstreamTxByte := v.GetCommonProperties().GetTimeToLastUpstreamTxByte()
 						timeToLastUpstreamTxByteNs := int64(timeToLastUpstreamTxByte.GetNanos()) + (timeToLastUpstreamTxByte.GetSeconds()*1 ^ 9)
 
-						// this excludes the time filters take during the processing of the request and response
+						// this excludes the time filters take during the processing of the request and response.
+						// this could, in theory, be negative. for example, the upstream could reject based on the
+						// request headers and respond before the request body had finished transmitting upstream.
 						upstreamRespTimeNs := timeToFirstUpstreamRxByteNs - timeToLastUpstreamTxByteNs
 
 						utils.Measure(
