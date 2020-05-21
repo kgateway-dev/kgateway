@@ -1,7 +1,6 @@
 #!/bin/bash
 
-go get -u github.com/onsi/ginkgo/ginkgo
-make update-deps
+make build-kind-assets
 
 # make all the docker images
 # write the output to a temp file so that we can grab the image names out of it
@@ -24,11 +23,11 @@ sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | while read f; do kind 
 make build-kind-chart
 make glooctl-linux-amd64
 
-kubectl create namespace gloo-system || true
-
-make deploy-kind-chart
-
-kubectl -n gloo-system rollout status deployment gloo --timeout=1m
-kubectl -n gloo-system rollout status deployment gateway --timeout=1m
-kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=1m
-kubectl -n gloo-system rollout status deployment discovery --timeout=1m
+#kubectl create namespace gloo-system || true
+#
+#make deploy-kind-chart
+#
+#kubectl -n gloo-system rollout status deployment gloo --timeout=1m
+#kubectl -n gloo-system rollout status deployment gateway --timeout=1m
+#kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=1m
+#kubectl -n gloo-system rollout status deployment discovery --timeout=1m

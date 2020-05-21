@@ -44,7 +44,9 @@ jobs:
         # version for tag tags
         VERSION: kind
       run: |
-        ./ci/kind.sh
+        go get -u github.com/onsi/ginkgo/ginkgo
+        make update-deps
+        make build-kind-assets
     - name: Testing - cluster lock
       env:
         RUN_KUBE2E_TESTS: '1'
