@@ -236,10 +236,9 @@ func getClaimFromJwtInDynamicMetadata(claim string, filterMetadata map[string]*_
 	for _, jwt := range jwts {
 		claims := jwt.GetStructValue()
 		if claims != nil {
-			for c, val := range claims.GetFields() {
-				if c == claim {
-					return val.GetStringValue()
-				}
+			claimsMap := claims.GetFields()
+			if val, ok := claimsMap[claim]; ok {
+				return val.GetStringValue()
 			}
 		}
 	}
