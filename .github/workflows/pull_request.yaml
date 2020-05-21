@@ -51,7 +51,7 @@ jobs:
       env:
         RUN_KUBE2E_TESTS: '1'
       run: |
-        go test ./test/kube2e/...
+        ginkgo -r ./test/kube2e/...
     - name: Debug Info
       if: failure()
       run: |
