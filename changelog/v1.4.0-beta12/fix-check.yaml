@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3030
+    description: >-
+      Fixes a bug where `glooctl check` was always reporting that Gloo was out of sync with the rate limiting server when
+      Enterprise Gloo was installed. 

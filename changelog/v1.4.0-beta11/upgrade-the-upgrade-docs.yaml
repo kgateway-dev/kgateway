@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: upgrade the upgrade docs with newest recommendations
+    issueLink: https://github.com/solo-io/gloo/issues/2902

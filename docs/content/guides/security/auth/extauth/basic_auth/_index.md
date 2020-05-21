@@ -44,7 +44,7 @@ Service to match all requests that:
 - have a path that starts with `/` (this will match all requests).
 
 Apply the following virtual service:
-{{< readfile file="guides/security/auth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
+{{< readfile file="guides/security/auth/extauth/basic_auth/test-no-auth-vs.yaml" markdown="true">}}
 
 Let's send a request that matches the above route to the Gloo Gateway and make sure it works:
 

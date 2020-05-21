@@ -19,12 +19,11 @@ message AccessLoggingService {
 }
 
 message AccessLog {
-
     // type of Access Logging service to implement
     oneof OutputDestination {
         // Output access logs to local file
         FileSink file_sink = 2;
-        // Send access logs to GRPC service
+        // Send access logs to gRPC service
         GrpcService grpc_service = 3;
     }
 }
@@ -35,12 +34,11 @@ message FileSink {
     // the format which the logs should be outputted by
     oneof output_format {
         // the format string by which envoy will format the log lines
-        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-strings
+        // https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#config-access-log-format-strings
         string string_format = 2;
         // the format object by which to envoy will emit the logs in a structured way.
-        // https://www.envoyproxy.io/docs/envoy/latest/configuration/access_log#config-access-log-format-dictionaries
+        // https://www.envoyproxy.io/docs/envoy/v1.14.1/configuration/observability/access_log#format-dictionaries
         google.protobuf.Struct json_format = 3;
-
     }
 }
 

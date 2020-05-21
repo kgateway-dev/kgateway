@@ -17,6 +17,13 @@ provider. This guide is just an example to get you started and does not cover al
 like setting up a domain and SSL certificates.
 
 ## Setup
+{{% notice warning %}}
+This feature requires Gloo's external auth server to communicate with an external OIDC provider/authorization server.
+Because of this interaction, the OIDC flow may take longer than the default timeout of 200ms.
+You can increase this timeout by setting the {{% protobuf name="enterprise.gloo.solo.io.Settings" display="`requestTimeout` value on external auth settings"%}}.
+The external auth settings can be configured on the {{% protobuf name="gloo.solo.io.Settings" display="global Gloo `Settings` object"%}}.
+{{% /notice %}}
+
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 
 ### Deploy sample application
@@ -253,6 +260,8 @@ If you login as the `admin@example.com` user with the password `password`, Gloo 
 of our sample application!
 
 ![Pet Clinic app homepage](./../petclinic-home.png)
+
+If this does not work, one thing to check is the `requestTimeout` setting on your `extauth` Settings. See the warning in the [setup section](#setup) for more details.
 
 ### Logging
 

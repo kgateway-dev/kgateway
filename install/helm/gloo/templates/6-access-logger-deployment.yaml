@@ -1,6 +1,7 @@
 {{- if and .Values.gateway.enabled .Values.accessLogger.enabled }}
 {{- $image := .Values.accessLogger.image }}
-{{- if .Values.global  }}
+{{- $statsConfig := coalesce .Values.accessLogger.stats .Values.global.glooStats -}}
+{{- if .Values.global }}
 {{- $image = merge .Values.accessLogger.image .Values.global.image }}
 {{- end }}
 
@@ -23,6 +24,12 @@ spec:
       labels:
         app: gloo
         gloo: gateway-proxy-access-logger
+      {{- if $statsConfig.enabled }}
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9091"
+        prometheus.io/scrape: "true"
+      {{- end }}
     spec:
       serviceAccountName: gateway-proxy
       containers:

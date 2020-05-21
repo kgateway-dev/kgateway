@@ -17,6 +17,7 @@ import (
 )
 
 const promStatsPath = "/stats/prometheus"
+
 const metricsUpdateInterval = time.Millisecond * 250
 
 func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {

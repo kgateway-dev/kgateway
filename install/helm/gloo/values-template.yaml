@@ -61,6 +61,8 @@ gateway:
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
+    webhook:
+      enabled: true
   deployment:
     image:
       repository: gateway
@@ -105,6 +107,8 @@ accessLogger:
   image:
     repository: access-logger
   replicas: 1
+  stats:
+    enabled: true
 ingress:
   enabled: false
   deployment:

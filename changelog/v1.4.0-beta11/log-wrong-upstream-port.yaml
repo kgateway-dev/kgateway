@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Gloo pod will now log a clear message when an upstream's port does not match that of its underlying kubernetes service.
+    issueLink: https://github.com/solo-io/gloo/issues/2905
+    resolvesIssue: false

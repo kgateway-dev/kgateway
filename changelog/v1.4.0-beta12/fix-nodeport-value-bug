@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    description: >
+      Setting nodeport numbers in values.yml did not work due to a typo in the gateway-proxy-service template.  Fixed the typo.
+    issueLink: https://github.com/solo-io/gloo/issues/3015

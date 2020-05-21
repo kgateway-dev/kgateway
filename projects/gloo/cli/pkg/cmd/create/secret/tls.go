@@ -20,7 +20,10 @@ func tlsCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "tls",
 		Short: `Create a secret with the given name`,
-		Long:  `Create a secret with the given name`,
+		Long: "Create a secret with the given name. " +
+			"The format of the secret data is: `{\"tls\" : [tls object]}`. " +
+			"Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret. " +
+			"If you're creating a secret through another means, you'll need to add that annotation manually.",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err

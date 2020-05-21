@@ -17,14 +17,24 @@ API Gateways act as a control point for the outside world to access the various 
 External authentication is a Gloo Enterprise feature. It is possible to implement a [custom authentication server]({{% versioned_link_path fromRoot="/guides/security/auth/custom_auth/" %}}) when using the open-source version of Gloo.
 {{% /notice %}}
 
+### Humans versus machines
+
+One of the key factors to consider when working with authentication is the consumer of the service. Humans and machines tend to authentication is different ways. A typical human authentication interaction would involved a redirect to an authentication provider, which would allow the human being to input credentials and receive an authentication token. The sections dealing with [external authentication]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/" %}}) and building a custom authentication server can be useful for this context.
+
+Machines are more likely to have a pre-provisioned authentication token using JSON Web Tokens. They will not be using a manual authentication process or be redirected to an Identity Provider. The section dealing with [JSON Web Tokens]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/" %}}) can be useful when planning machine access. 
+
+In addition to considering how machines will authenticate, it is probably a good idea to consider rate-limiting. Machines are more likely to access an endpoint programmatically at a high volume. Implementing rate limits will prevent a particular machine source from overwhelming your service.
+
+### External authentication types
+
 External authentication in Gloo supports several forms of authentication:
 
-* **[Basic authentication]({{% versioned_link_path fromRoot="/guides/security/auth/basic_auth/" %}})** - simple username and password
-* **[OAuth]({{% versioned_link_path fromRoot="/guides/security/auth/oauth/" %}})** - authentication using [OpenID Connect](https://openid.net/connect/) (OIDC)
+* **[Basic authentication]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/basic_auth/" %}})** - simple username and password
+* **[OAuth]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/" %}})** - authentication using [OpenID Connect](https://openid.net/connect/) (OIDC)
 * **[JSON Web Tokens]({{% versioned_link_path fromRoot="/guides/security/auth/jwt/" %}})** - cryptographically signed tokens
-* **[API Keys]({{% versioned_link_path fromRoot="/guides/security/auth/apikey_auth/" %}})** - long-lived, secure UUIDs
-* **[OPA Authorization]({{% versioned_link_path fromRoot="/guides/security/auth/opa/" %}})** - fine-grained policies with the Open Policy Agent
-* **[LDAP]({{% versioned_link_path fromRoot="/guides/security/auth/ldap/" %}})** - Lightweight Directory Access Protocol for common LDAP or Active Directory
+* **[API Keys]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/apikey_auth/" %}})** - long-lived, secure UUIDs
+* **[OPA Authorization]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/opa/" %}})** - fine-grained policies with the Open Policy Agent
+* **[LDAP]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/ldap/" %}})** - Lightweight Directory Access Protocol for common LDAP or Active Directory
 
 ---
 

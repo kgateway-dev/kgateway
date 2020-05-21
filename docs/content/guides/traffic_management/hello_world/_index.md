@@ -281,7 +281,7 @@ We have confirmed that the Pet Store application was deployed successfully and t
 
 ### Add a Routing Rule
 
-Even though the Upstream has been created, Gloo will not route traffic to it until we add some routing rules on a `virtualservice`. Let’s now use glooctl to create a basic route for this Upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
+Even though the Upstream has been created, Gloo will not route traffic to it until we add some routing rules on a Virtual Service. Let’s now use glooctl to create a basic route for this Upstream with the `--prefix-rewrite` flag to rewrite the path on incoming requests to match the path our petstore application expects.
 
 ```shell
 glooctl add route \
@@ -289,6 +289,8 @@ glooctl add route \
   --dest-name default-petstore-8080 \
   --prefix-rewrite /api/pets
 ```
+
+We do not specify a specific Virtual Service, so the route is added to the `default` Virtual Service. If a `default` Virtual Service does not exist, `glooctl` will create one.
 
 ```console
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
@@ -299,10 +301,10 @@ glooctl add route \
 +-----------------+--------------+---------+------+---------+-----------------+---------------------------+
 ```
 
-The initial **STATUS** of the petstore Virtual Service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `virtualservice` with `glooctl`.
+The initial **STATUS** of the petstore Virtual Service will be **Pending**. After a few seconds it should change to **Accepted**. Let’s verify that by retrieving the `default` Virtual Service with `glooctl`.
 
 ```shell
-glooctl get virtualservice
+glooctl get virtualservice default
 ```
 
 ```console
@@ -320,10 +322,10 @@ Let's verify that a Virtual Service was created with that route.
 
 Routes are associated with Virtual Services in Gloo. When we created the route in the previous step, we didn't provide a Virtual Service, so Gloo created a Virtual Service called `default` and added the route. 
 
-With `glooctl`, we can see that the default Virtual Service was created with our route:
+With `glooctl`, we can see that the `default` Virtual Service was created with our route:
 
 ```shell
-glooctl get virtualservice --output kube-yaml
+glooctl get virtualservice default --output kube-yaml
 ```
 
 ```yaml
@@ -355,9 +357,9 @@ virtualHost:
           namespace: gloo-system
 ```
     
-When a Virtual Service is created, Gloo immediately updates the proxy configuration. Since the status of this `virtualservice` is `Accepted`, we know this route is now active. 
+When a Virtual Service is created, Gloo immediately updates the proxy configuration. Since the status of this Virtual Service is `Accepted`, we know this route is now active. 
 
-At this point we have a `virtualservice` with a routing rule sending traffic on the path `/all-pets` to the `upstream` petstore at a path of `/api/pets`.
+At this point we have a Virtual Service with a routing rule sending traffic on the path `/all-pets` to the Upstream `petstore` at a path of `/api/pets`.
 
 ### Test the Route Rule
 
