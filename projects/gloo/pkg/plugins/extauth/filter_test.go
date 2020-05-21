@@ -51,6 +51,64 @@ var _ = Describe("Extauth Http filter builder function", func() {
 		})
 	})
 
+	Context("listener settings override global settings", func() {
+		var (
+			extauthSettings *extauthv1.Settings
+			initParams      plugins.InitParams
+			params          plugins.Params
+			extauthPlugin   *Plugin
+			listener        *gloov1.HttpListener
+			ref             core.ResourceRef
+		)
+
+		BeforeEach(func() {
+			extauthPlugin = &Plugin{}
+			ref = core.ResourceRef{
+				Name:      "test",
+				Namespace: "test",
+			}
+			params.Snapshot = &gloov1.ApiSnapshot{
+				Upstreams: []*gloov1.Upstream{
+					{
+						Metadata: core.Metadata{
+							Name:      "extauth-upstream",
+							Namespace: "ns",
+						},
+					},
+				},
+			}
+			params.Snapshot.Upstreams = []*gloov1.Upstream{
+				{
+					Metadata: core.Metadata{
+						Name:      "test",
+						Namespace: "test",
+					},
+				},
+			}
+			extauthSettings = &extauthv1.Settings{
+				ExtauthzServerRef: &ref,
+				FailureModeAllow:  true,
+			}
+			initParams.Settings = &gloov1.Settings{}
+			extauthPlugin.Init(initParams)
+			listener = &gloov1.HttpListener{
+				Options: &gloov1.HttpListenerOptions{
+					Extauth: extauthSettings,
+				},
+			}
+		})
+
+		It("should get extauth settings first from the listener, then from the global settings", func() {
+			filters, err := extauthPlugin.HttpFilters(params, listener)
+			Expect(err).NotTo(HaveOccurred(), "Should be able to build extauth filters")
+			Expect(filters).To(HaveLen(1), "Should only have created one custom filter")
+			// Should take config from http listener
+			Expect(filters[0].Stage.Weight).To(Equal(0))
+			Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
+			Expect(filters[0].HttpFilter.Name).To(Equal(FilterName))
+		})
+	})
+
 	Context("settings point to a valid ext auth server", func() {
 
 		var (

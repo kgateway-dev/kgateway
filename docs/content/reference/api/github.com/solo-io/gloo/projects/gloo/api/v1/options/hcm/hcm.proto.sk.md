@@ -47,6 +47,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "serverName": string
 "acceptHttp10": bool
 "defaultHostForHttp10": string
+"properCaseHeaderKeyFormat": bool
 "tracing": .tracing.options.gloo.solo.io.ListenerTracingSettings
 "forwardClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails
 "setCurrentClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
@@ -72,6 +73,7 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `serverName` | `string` |  |  |
 | `acceptHttp10` | `bool` | For explanation of these settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/core/protocol.proto#envoy-api-msg-core-http1protocoloptions. |  |
 | `defaultHostForHttp10` | `string` |  |  |
+| `properCaseHeaderKeyFormat` | `bool` |  |  |
 | `tracing` | [.tracing.options.gloo.solo.io.ListenerTracingSettings](../../tracing/tracing.proto.sk/#listenertracingsettings) |  |  |
 | `forwardClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.ForwardClientCertDetails](../hcm.proto.sk/#forwardclientcertdetails) |  |  |
 | `setCurrentClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails](../hcm.proto.sk/#setcurrentclientcertdetails) |  |  |

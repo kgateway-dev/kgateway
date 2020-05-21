@@ -76,8 +76,23 @@ glooe_solo_io_xds_total_entities{resource="type.googleapis.com/glooe.solo.io.Rat
 			Expect(result).To(BeTrue())
 		})
 
-		It("returns false when connected state stat equals 0", func() {
-			result := check.RateLimitIsConnected(check.GlooeRateLimitDisconnected)
+		It("returns true when connected state stat equals 1 regardless of help message", func() {
+			stats := `
+# HELP glooe_ratelimit_connected_state 0 indicates gloo detected an error with the rate limit config and did not update its XDS snapshot, check the gloo logs for errors
+# TYPE glooe_ratelimit_connected_state gauge
+glooe_ratelimit_connected_state 1
+`
+			result := check.RateLimitIsConnected(stats)
+			Expect(result).To(BeTrue())
+		})
+
+		It("returns false when connected state stat equals 0 regardless of help message", func() {
+			stats := `
+# HELP glooe_ratelimit_connected_state 0 indicates gloo detected an error with the rate limit config and did not update its XDS snapshot, check the gloo logs for errors
+# TYPE glooe_ratelimit_connected_state gauge
+glooe_ratelimit_connected_state 0
+`
+			result := check.RateLimitIsConnected(stats)
 			Expect(result).To(BeFalse())
 		})
 	})

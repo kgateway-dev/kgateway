@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update deprecated 'envoy.ext_authz' field to 'envoy.filters.http.ext_authz'.
+    issueLink: https://github.com/solo-io/gloo/issues/1642
+    resolvesIssue: false
