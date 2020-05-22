@@ -1,5 +1,7 @@
 name: Check Code and Docs Gen
 on: pull_request
+env:
+  TAGGED_VERSION: ${{github.event.release.tag_name || '' }}
 jobs:
   build:
     name: Build
@@ -28,3 +30,51 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+  test:
+    name: regression-tests
+    runs-on: ubuntu-18.04
+    steps:
+#      - uses: actions/checkout@v2
+#      - name: Set up Go 1.14
+#        uses: actions/setup-go@v2
+#        with:
+#          go-version: 1.14
+#      - uses: engineerd/setup-kind@v0.3.0
+#        with:
+#          name: kind
+#      - name: Install Protoc
+#        uses: arduino/setup-protoc@v1.1.0
+#        with:
+#          version: '3.6.1'
+      - uses: azure/setup-kubectl@v1
+        id: kubectl
+        with:
+          version: 'v1.18.0'
+#      - uses: actions/cache@v1
+#        with:
+#          path: ~/go/pkg/mod
+#          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+#          restore-keys: |
+#            ${{ runner.os }}-go-
+      - uses: azure/setup-helm@v1
+        with:
+          version: v3.2.0
+      - name: Setup env
+        env:
+          # version for tag tags
+          VERSION: kind
+        run: |
+          go get -u github.com/onsi/ginkgo/ginkgo
+          make update-deps
+          ./ci/kind.sh
+      - name: Testing - no cluster lock
+        env:
+          RUN_KUBE2E_TESTS: '1'
+        run: |
+          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/gateway/...
+      - name: Debug Info
+        if: failure()
+        run: |
+          # see what's in the cluster if we failed
+          kubectl get all -A
+          kubectl get configmaps -A
