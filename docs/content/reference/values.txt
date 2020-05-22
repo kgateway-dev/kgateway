@@ -374,7 +374,8 @@
 |ingress.deployment.resources.limits.cpu|string||amount of CPUs|
 |ingress.deployment.resources.requests.memory|string||amount of memory|
 |ingress.deployment.resources.requests.cpu|string||amount of CPUs|
-|ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''|
+|ingress.requireIngressClass|bool||only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass.|
+|ingress.customIngressClass|bool||Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE').|
 |ingressProxy.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingressProxy.deployment.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |ingressProxy.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
