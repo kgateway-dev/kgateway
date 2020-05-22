@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3051
+    description: >-
+      Fixes a bug where the Gloo Ingress Controller (`ingress` pod) would stop processing Ingress updates when a detected Ingress `backend` incorrectly referenced a service port.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3050
+    description: >-
+      Adds support for the use of named ports on Kubernetes Ingress objects.
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3047
+    description: >-
+      Adds the `customIngressClass` variable to the Gloo Helm Chart, which, when set, will allow overriding the default `kubernetes.io/ingress.class` Ingress Class used by Gloo. Use in combination with `requireIngressClass` to allow multiple Gloo controllers to partition the Ingress objects within a cluster.

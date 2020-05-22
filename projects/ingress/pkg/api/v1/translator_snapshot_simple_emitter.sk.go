@@ -92,6 +92,8 @@ func (c *translatorSimpleEmitter) Snapshots(ctx context.Context) (<-chan *Transl
 					switch typed := res.(type) {
 					case *gloo_solo_io.Upstream:
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
+					case *KubeService:
+						currentSnapshot.Services = append(currentSnapshot.Services, typed)
 					case *Ingress:
 						currentSnapshot.Ingresses = append(currentSnapshot.Ingresses, typed)
 					default:

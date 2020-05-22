@@ -8,6 +8,10 @@
         "package": "gloo.solo.io"
       },
       {
+        "name": "KubeService",
+        "package": "ingress.solo.io"
+      },
+      {
         "name": "Ingress",
         "package": "ingress.solo.io"
       }

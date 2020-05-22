@@ -21,9 +21,14 @@ type translatorSyncer struct {
 	ingressClient       v1.IngressClient
 	proxyReconciler     gloov1.ProxyReconciler
 	requireIngressClass bool
+
+	// support custom ingress class.
+	// only relevant when requireIngressClass is true.
+	// defaults to 'gloo'
+	customIngressClass string
 }
 
-func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool) v1.TranslatorSyncer {
+func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressClient v1.IngressClient, writeErrs chan error, requireIngressClass bool, customIngressClass string) v1.TranslatorSyncer {
 	return &translatorSyncer{
 		writeNamespace:      writeNamespace,
 		writeErrs:           writeErrs,
@@ -31,6 +36,7 @@ func NewSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, ingressCli
 		ingressClient:       ingressClient,
 		proxyReconciler:     gloov1.NewProxyReconciler(proxyClient),
 		requireIngressClass: requireIngressClass,
+		customIngressClass:  customIngressClass,
 	}
 }
 
@@ -50,12 +56,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.TranslatorSnapshot
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	proxy, err := translateProxy(s.writeNamespace, snap, s.requireIngressClass)
-	if err != nil {
-		logger.Warnf("snapshot %v was rejected due to invalid config: %v\n"+
-			"ingress proxy will not be updated.", snapHash, err)
-		return err
-	}
+	proxy := translateProxy(ctx, s.writeNamespace, snap, s.requireIngressClass, s.customIngressClass)
 
 	labels := map[string]string{
 		"created_by": "ingress",

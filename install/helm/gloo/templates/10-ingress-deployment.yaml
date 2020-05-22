@@ -55,6 +55,11 @@ spec:
         - name: "REQUIRE_INGRESS_CLASS"
           value: "true"
   {{- end }}
+
+  {{- if and .Values.ingress.customIngressClass }}
+        - name: "CUSTOM_INGRESS_CLASS"
+          value: "{{ .Values.ingress.customIngressClass }}"
+  {{- end }}
 {{- end }}
 
 

@@ -105,6 +105,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	disableKubeIngress := envTrue("DISABLE_KUBE_INGRESS")
 	requireIngressClass := envTrue("REQUIRE_INGRESS_CLASS")
 	enableKnative := envTrue("ENABLE_KNATIVE_INGRESS")
+	customIngressClass := os.Getenv("CUSTOM_INGRESS_CLASS")
 	knativeVersion := os.Getenv("KNATIVE_VERSION")
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
@@ -139,6 +140,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		KnativeVersion:      knativeVersion,
 		DisableKubeIngress:  disableKubeIngress,
 		RequireIngressClass: requireIngressClass,
+		CustomIngressClass:  customIngressClass,
 	}
 
 	return RunIngress(opts)
@@ -184,8 +186,11 @@ func RunIngress(opts Opts) error {
 		baseIngressClient := ingress.NewResourceClient(kube, &v1.Ingress{})
 		ingressClient := v1.NewIngressClientWithBase(baseIngressClient)
 
-		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, ingressClient)
-		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs, opts.RequireIngressClass)
+		baseKubeServiceClient := service.NewResourceClient(kube, &v1.KubeService{})
+		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
+
+		translatorEmitter := v1.NewTranslatorEmitter(upstreamClient, kubeServiceClient, ingressClient)
+		translatorSync := translator.NewSyncer(opts.WriteNamespace, proxyClient, ingressClient, writeErrs, opts.RequireIngressClass, opts.CustomIngressClass)
 		translatorEventLoop := v1.NewTranslatorEventLoop(translatorEmitter, translatorSync)
 		translatorEventLoopErrs, err := translatorEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)
 		if err != nil {
@@ -193,15 +198,13 @@ func RunIngress(opts Opts) error {
 		}
 		go errutils.AggregateErrs(opts.WatchOpts.Ctx, writeErrs, translatorEventLoopErrs, "ingress_translator_event_loop")
 
-		baseKubeServiceClient := service.NewResourceClient(kube, &v1.KubeService{})
-		kubeServiceClient := v1.NewKubeServiceClientWithBase(baseKubeServiceClient)
 		// note (ilackarms): we must set the selector correctly here or the status syncer will not work
 		// the selector should return exactly 1 service which is our <install-namespace>.ingress-proxy service
 		// TODO (ilackarms): make the service labels configurable
-		kubeServiceClient = service.NewClientWithSelector(kubeServiceClient, map[string]string{
+		ingressServiceClient := service.NewClientWithSelector(kubeServiceClient, map[string]string{
 			"gloo": "ingress-proxy",
 		})
-		statusEmitter := v1.NewStatusEmitter(kubeServiceClient, ingressClient)
+		statusEmitter := v1.NewStatusEmitter(ingressServiceClient, ingressClient)
 		statusSync := status.NewSyncer(ingressClient)
 		statusEventLoop := v1.NewStatusEventLoop(statusEmitter, statusSync)
 		statusEventLoopErrs, err := statusEventLoop.Run(opts.WatchNamespaces, opts.WatchOpts)

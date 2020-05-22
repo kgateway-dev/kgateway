@@ -5,6 +5,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/projects/ingress/pkg/translator"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/ingress/pkg/api/ingress"
@@ -86,7 +88,7 @@ var _ = Describe("StatusSyncer", func() {
 				Name:      "rusty",
 				Namespace: namespace,
 				Annotations: map[string]string{
-					"kubernetes.io/ingress.class": "gloo",
+					translator.IngressClassKey: "gloo",
 				},
 			},
 			Spec: v1beta1.IngressSpec{

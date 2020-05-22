@@ -17,12 +17,14 @@ import (
 
 type TranslatorSnapshot struct {
 	Upstreams gloo_solo_io.UpstreamList
+	Services  KubeServiceList
 	Ingresses IngressList
 }
 
 func (s TranslatorSnapshot) Clone() TranslatorSnapshot {
 	return TranslatorSnapshot{
 		Upstreams: s.Upstreams.Clone(),
+		Services:  s.Services.Clone(),
 		Ingresses: s.Ingresses.Clone(),
 	}
 }
@@ -34,6 +36,9 @@ func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 	if _, err := s.hashUpstreams(hasher); err != nil {
 		return 0, err
 	}
+	if _, err := s.hashServices(hasher); err != nil {
+		return 0, err
+	}
 	if _, err := s.hashIngresses(hasher); err != nil {
 		return 0, err
 	}
@@ -42,6 +47,10 @@ func (s TranslatorSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 
 func (s TranslatorSnapshot) hashUpstreams(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.Upstreams.AsInterfaces()...)
+}
+
+func (s TranslatorSnapshot) hashServices(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Services.AsInterfaces()...)
 }
 
 func (s TranslatorSnapshot) hashIngresses(hasher hash.Hash64) (uint64, error) {
@@ -56,6 +65,11 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("upstreams", UpstreamsHash))
+	ServicesHash, err := s.hashServices(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("services", ServicesHash))
 	IngressesHash, err := s.hashIngresses(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -71,6 +85,7 @@ func (s TranslatorSnapshot) HashFields() []zap.Field {
 type TranslatorSnapshotStringer struct {
 	Version   uint64
 	Upstreams []string
+	Services  []string
 	Ingresses []string
 }
 
@@ -79,6 +94,11 @@ func (ss TranslatorSnapshotStringer) String() string {
 
 	s += fmt.Sprintf("  Upstreams %v\n", len(ss.Upstreams))
 	for _, name := range ss.Upstreams {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
+	s += fmt.Sprintf("  Services %v\n", len(ss.Services))
+	for _, name := range ss.Services {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
@@ -98,6 +118,7 @@ func (s TranslatorSnapshot) Stringer() TranslatorSnapshotStringer {
 	return TranslatorSnapshotStringer{
 		Version:   snapshotHash,
 		Upstreams: s.Upstreams.NamespacesDotNames(),
+		Services:  s.Services.NamespacesDotNames(),
 		Ingresses: s.Ingresses.NamespacesDotNames(),
 	}
 }

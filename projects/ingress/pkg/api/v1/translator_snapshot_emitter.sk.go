@@ -83,29 +83,35 @@ type TranslatorEmitter interface {
 	TranslatorSnapshotEmitter
 	Register() error
 	Upstream() gloo_solo_io.UpstreamClient
+	KubeService() KubeServiceClient
 	Ingress() IngressClient
 }
 
-func NewTranslatorEmitter(upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient) TranslatorEmitter {
-	return NewTranslatorEmitterWithEmit(upstreamClient, ingressClient, make(chan struct{}))
+func NewTranslatorEmitter(upstreamClient gloo_solo_io.UpstreamClient, kubeServiceClient KubeServiceClient, ingressClient IngressClient) TranslatorEmitter {
+	return NewTranslatorEmitterWithEmit(upstreamClient, kubeServiceClient, ingressClient, make(chan struct{}))
 }
 
-func NewTranslatorEmitterWithEmit(upstreamClient gloo_solo_io.UpstreamClient, ingressClient IngressClient, emit <-chan struct{}) TranslatorEmitter {
+func NewTranslatorEmitterWithEmit(upstreamClient gloo_solo_io.UpstreamClient, kubeServiceClient KubeServiceClient, ingressClient IngressClient, emit <-chan struct{}) TranslatorEmitter {
 	return &translatorEmitter{
-		upstream:  upstreamClient,
-		ingress:   ingressClient,
-		forceEmit: emit,
+		upstream:    upstreamClient,
+		kubeService: kubeServiceClient,
+		ingress:     ingressClient,
+		forceEmit:   emit,
 	}
 }
 
 type translatorEmitter struct {
-	forceEmit <-chan struct{}
-	upstream  gloo_solo_io.UpstreamClient
-	ingress   IngressClient
+	forceEmit   <-chan struct{}
+	upstream    gloo_solo_io.UpstreamClient
+	kubeService KubeServiceClient
+	ingress     IngressClient
 }
 
 func (c *translatorEmitter) Register() error {
 	if err := c.upstream.Register(); err != nil {
+		return err
+	}
+	if err := c.kubeService.Register(); err != nil {
 		return err
 	}
 	if err := c.ingress.Register(); err != nil {
@@ -116,6 +122,10 @@ func (c *translatorEmitter) Register() error {
 
 func (c *translatorEmitter) Upstream() gloo_solo_io.UpstreamClient {
 	return c.upstream
+}
+
+func (c *translatorEmitter) KubeService() KubeServiceClient {
+	return c.kubeService
 }
 
 func (c *translatorEmitter) Ingress() IngressClient {
@@ -146,6 +156,14 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	upstreamChan := make(chan upstreamListWithNamespace)
 
 	var initialUpstreamList gloo_solo_io.UpstreamList
+	/* Create channel for KubeService */
+	type kubeServiceListWithNamespace struct {
+		list      KubeServiceList
+		namespace string
+	}
+	kubeServiceChan := make(chan kubeServiceListWithNamespace)
+
+	var initialKubeServiceList KubeServiceList
 	/* Create channel for Ingress */
 	type ingressListWithNamespace struct {
 		list      IngressList
@@ -175,6 +193,24 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 		go func(namespace string) {
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, upstreamErrs, namespace+"-upstreams")
+		}(namespace)
+		/* Setup namespaced watch for KubeService */
+		{
+			services, err := c.kubeService.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial KubeService list")
+			}
+			initialKubeServiceList = append(initialKubeServiceList, services...)
+		}
+		kubeServiceNamespacesChan, kubeServiceErrs, err := c.kubeService.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting KubeService watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, kubeServiceErrs, namespace+"-services")
 		}(namespace)
 		/* Setup namespaced watch for Ingress */
 		{
@@ -207,6 +243,12 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 						return
 					case upstreamChan <- upstreamListWithNamespace{list: upstreamList, namespace: namespace}:
 					}
+				case kubeServiceList := <-kubeServiceNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case kubeServiceChan <- kubeServiceListWithNamespace{list: kubeServiceList, namespace: namespace}:
+					}
 				case ingressList := <-ingressNamespacesChan:
 					select {
 					case <-ctx.Done():
@@ -219,6 +261,8 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 	}
 	/* Initialize snapshot for Upstreams */
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
+	/* Initialize snapshot for Services */
+	currentSnapshot.Services = initialKubeServiceList.Sort()
 	/* Initialize snapshot for Ingresses */
 	currentSnapshot.Ingresses = initialIngressList.Sort()
 
@@ -253,6 +297,7 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 			}
 		}
 		upstreamsByNamespace := make(map[string]gloo_solo_io.UpstreamList)
+		servicesByNamespace := make(map[string]KubeServiceList)
 		ingressesByNamespace := make(map[string]IngressList)
 
 		for {
@@ -288,6 +333,25 @@ func (c *translatorEmitter) Snapshots(watchNamespaces []string, opts clients.Wat
 					upstreamList = append(upstreamList, upstreams...)
 				}
 				currentSnapshot.Upstreams = upstreamList.Sort()
+			case kubeServiceNamespacedList := <-kubeServiceChan:
+				record()
+
+				namespace := kubeServiceNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"kube_service",
+					mTranslatorResourcesIn,
+				)
+
+				// merge lists by namespace
+				servicesByNamespace[namespace] = kubeServiceNamespacedList.list
+				var kubeServiceList KubeServiceList
+				for _, services := range servicesByNamespace {
+					kubeServiceList = append(kubeServiceList, services...)
+				}
+				currentSnapshot.Services = kubeServiceList.Sort()
 			case ingressNamespacedList := <-ingressChan:
 				record()
 

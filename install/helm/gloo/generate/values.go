@@ -288,7 +288,8 @@ type GatewayProxyConfigMap struct {
 type Ingress struct {
 	Enabled             *bool              `json:"enabled"`
 	Deployment          *IngressDeployment `json:"deployment,omitempty"`
-	RequireIngressClass *bool              `json:"requireIngressClass" desc:"only serve traffic for Ingress objects with the annotation 'kubernetes.io/ingress.class: gloo''"`
+	RequireIngressClass *bool              `json:"requireIngressClass" desc:"only serve traffic for Ingress objects with the Ingress Class annotation 'kubernetes.io/ingress.class'. By default the annotation value must be set to 'gloo', however this can be overriden via customIngressClass."`
+	CustomIngress       *bool              `json:"customIngressClass" desc:"Only relevant when requireIngressClass is set to true. Setting this value will cause the Gloo Ingress Controller to process only those Ingress objects which have their ingress class set to this value (e.g. 'kubernetes.io/ingress.class=SOMEVALUE')."`
 }
 
 type IngressDeployment struct {

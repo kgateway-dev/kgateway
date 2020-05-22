@@ -1,7 +1,13 @@
 package translator
 
 import (
+	"context"
 	"sort"
+
+	"github.com/solo-io/gloo/projects/ingress/pkg/api/service"
+	"github.com/solo-io/go-utils/contextutils"
+	kubev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -16,21 +22,40 @@ import (
 	"k8s.io/api/extensions/v1beta1"
 )
 
-func translateProxy(namespace string, snap *v1.TranslatorSnapshot, requireIngressClass bool) (*gloov1.Proxy, error) {
+const defaultIngressClass = "gloo"
+
+const IngressClassKey = "kubernetes.io/ingress.class"
+
+func translateProxy(ctx context.Context, namespace string, snap *v1.TranslatorSnapshot, requireIngressClass bool, ingressClass string) *gloov1.Proxy {
+
+	if ingressClass == "" {
+		ingressClass = defaultIngressClass
+	}
+
 	var ingresses []*v1beta1.Ingress
 	for _, ig := range snap.Ingresses {
 		kubeIngress, err := ingress.ToKube(ig)
 		if err != nil {
-			return nil, err
+			contextutils.LoggerFrom(ctx).Errorf("internal error: parsing internal ingress representation: %v", err)
+			continue
 		}
 		ingresses = append(ingresses, kubeIngress)
 	}
+
+	var services []*kubev1.Service
+	for _, svc := range snap.Services {
+		kubeSvc, err := service.ToKube(svc)
+		if err != nil {
+			contextutils.LoggerFrom(ctx).Errorf("internal error: parsing internal service representation: %v", err)
+			continue
+		}
+		services = append(services, kubeSvc)
+	}
+
 	upstreams := snap.Upstreams
 
-	virtualHostsHttp, secureVirtualHosts, err := virtualHosts(ingresses, upstreams, requireIngressClass)
-	if err != nil {
-		return nil, errors.Wrapf(err, "computing virtual hosts")
-	}
+	virtualHostsHttp, secureVirtualHosts := virtualHosts(ctx, ingresses, upstreams, services, requireIngressClass, ingressClass)
+
 	var virtualHostsHttps []*gloov1.VirtualHost
 	var sslConfigs []*gloov1.SslConfig
 	for _, svh := range secureVirtualHosts {
@@ -75,10 +100,15 @@ func translateProxy(namespace string, snap *v1.TranslatorSnapshot, requireIngres
 			Namespace: namespace,
 		},
 		Listeners: listeners,
-	}, nil
+	}
 }
 
-func upstreamForBackend(upstreams gloov1.UpstreamList, ingressNamespace string, backend v1beta1.IngressBackend) (*gloov1.Upstream, error) {
+func upstreamForBackend(upstreams gloov1.UpstreamList, services []*kubev1.Service, ingressNamespace string, backend v1beta1.IngressBackend) (*gloov1.Upstream, error) {
+	servicePort, err := getServicePort(services, backend.ServiceName, ingressNamespace, backend.ServicePort)
+	if err != nil {
+		return nil, err
+	}
+
 	// find the upstream with the smallest matching selector
 	// longer selectors represent subsets of pods for a service
 	var matchingUpstream *gloov1.Upstream
@@ -87,7 +117,7 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, ingressNamespace string, 
 		case *gloov1.Upstream_Kube:
 			if spec.Kube.ServiceNamespace == ingressNamespace &&
 				spec.Kube.ServiceName == backend.ServiceName &&
-				spec.Kube.ServicePort == uint32(backend.ServicePort.IntVal) {
+				spec.Kube.ServicePort == uint32(servicePort) {
 				if matchingUpstream != nil {
 					originalSelectorLength := len(matchingUpstream.UpstreamType.(*gloov1.Upstream_Kube).Kube.Selector)
 					newSelectorLength := len(spec.Kube.Selector)
@@ -105,24 +135,42 @@ func upstreamForBackend(upstreams gloov1.UpstreamList, ingressNamespace string, 
 	return matchingUpstream, nil
 }
 
+func getServicePort(services []*kubev1.Service, name, namespace string, servicePort intstr.IntOrString) (int32, error) {
+	if servicePort.Type == intstr.Int {
+		return servicePort.IntVal, nil
+	}
+	portName := servicePort.StrVal
+	for _, svc := range services {
+		if svc.Name == name && svc.Namespace == namespace {
+			for _, port := range svc.Spec.Ports {
+				if port.Name == portName {
+					return port.Port, nil
+				}
+			}
+			return 0, errors.Errorf("port %v not found for service %v.%v", portName, name, namespace)
+		}
+	}
+	return 0, errors.Errorf("service %v.%v not found", name, namespace)
+}
+
 type secureVirtualHost struct {
 	vh     *gloov1.VirtualHost
 	secret core.ResourceRef
 }
 
-func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, requireIngressClass bool) ([]*gloov1.VirtualHost, []secureVirtualHost, error) {
+func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, services []*kubev1.Service, requireIngressClass bool, ingressClass string) ([]*gloov1.VirtualHost, []secureVirtualHost) {
 	routesByHostHttp := make(map[string][]*gloov1.Route)
 	routesByHostHttps := make(map[string][]*gloov1.Route)
 	secretsByHost := make(map[string]*core.ResourceRef)
 	var defaultBackend *v1beta1.IngressBackend
 	for _, ing := range ingresses {
-		if requireIngressClass && !isOurIngress(ing) {
+		if requireIngressClass && !isOurIngress(ing, ingressClass) {
 			continue
 		}
 		spec := ing.Spec
 		if spec.Backend != nil {
 			if defaultBackend != nil {
-				log.Warnf("default backend was redeclared in ingress %v, ignoring", ing.Name)
+				contextutils.LoggerFrom(ctx).Warnf("default backend was redeclared in ingress %v, ignoring", ing.Name)
 				continue
 			}
 			defaultBackend = spec.Backend
@@ -155,9 +203,10 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, r
 				continue
 			}
 			for _, route := range rule.HTTP.Paths {
-				upstream, err := upstreamForBackend(upstreams, ing.Namespace, route.Backend)
+				upstream, err := upstreamForBackend(upstreams, services, ing.Namespace, route.Backend)
 				if err != nil {
-					return nil, nil, errors.Wrapf(err, "lookup upstream for ingress %v", ing.Name)
+					contextutils.LoggerFrom(ctx).Errorf("lookup upstream for ingress %v: %v", ing.Name, err)
+					continue
 				}
 
 				pathRegex := route.Path
@@ -207,7 +256,8 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, r
 		glooutils.SortRoutesByPath(routes)
 		secret, ok := secretsByHost[host]
 		if !ok {
-			return nil, nil, errors.Errorf("internal error: secret not found for host %v after processing ingresses", host)
+			contextutils.LoggerFrom(ctx).Errorf("internal error: secret not found for host %v after processing ingresses", host)
+			continue
 		}
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
@@ -225,9 +275,9 @@ func virtualHosts(ingresses []*v1beta1.Ingress, upstreams gloov1.UpstreamList, r
 	sort.SliceStable(virtualHostsHttps, func(i, j int) bool {
 		return virtualHostsHttps[i].vh.Name < virtualHostsHttps[j].vh.Name
 	})
-	return virtualHostsHttp, virtualHostsHttps, nil
+	return virtualHostsHttp, virtualHostsHttps
 }
 
-func isOurIngress(ingress *v1beta1.Ingress) bool {
-	return ingress.Annotations["kubernetes.io/ingress.class"] == "gloo"
+func isOurIngress(ingress *v1beta1.Ingress, ingressClassToUse string) bool {
+	return ingress.Annotations[IngressClassKey] == ingressClassToUse
 }

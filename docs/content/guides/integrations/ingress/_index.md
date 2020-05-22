@@ -6,13 +6,21 @@ description: Setting up Gloo to handle Kubernetes Ingress Objects.
 
 Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command, Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
 
-{{% notice note %}}
-Note: if running multiple ingress controllers in cluster, Gloo can be configured to only process Ingress objects annotated with `kubernetes.io/ingress.class: gloo` 
+## Ingress Class
 
-This feature can be enabled one of the following:
+By default, Gloo ignores the `kubernetes.io/ingress.class` [Ingress Class annotation](https://github.com/kubernetes/ingress-gce/blob/master/docs/faq/README.md#how-do-i-run-multiple-ingress-controllers-in-the-same-cluster) on Ingresses, meaning that Gloo will enable routing for all detected Ingresses regardless of their ingress class.
+
+To have Gloo respect the Ingress Class annotation, such that Gloo will only process Ingresses with the annotation `kubernetes.io/ingress.class: gloo`:
 
 * Setting the `Values.ingress.requireIngressClass=true` in your Helm value overrides
-* Directly setting the environment variable `REQUIRE_INGRESS_CLASS=true` on the Gloo deployment
+* Directly setting the environment variable `REQUIRE_INGRESS_CLASS=true` on the `ingress` deployment
+
+When Gloo is set to require ingress class, the value `gloo` can be customized to match any arbitrary value by doing one of the following:
+
+* Set the `Values.ingress.customIngressClass=VALUE` in your Helm value overrides
+* Directly setting the environment variable `CUSTOM_INGRESS_CLASS=VALUE` on the `ingress` deployment.
+
+This is useful when wishing to use multiple instances of the Gloo ingress controller in the same Kubernetes cluster. 
 
 {{% /notice %}}
 
