@@ -6,6 +6,9 @@ on:
       - 'master'
   pull_request:
 
+env:
+  TAGGED_VERSION: ${{github.event.release.tag_name || '' }}
+
 jobs:
   e2e_test:
     name: End to End Regression Tests

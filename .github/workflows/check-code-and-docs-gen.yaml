@@ -1,7 +1,5 @@
 name: Check Code and Docs Gen
 on: pull_request
-env:
-  TAGGED_VERSION: ${{github.event.release.tag_name || '' }}
 jobs:
 #  build:
 #    name: Build
