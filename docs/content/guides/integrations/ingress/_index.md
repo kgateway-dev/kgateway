@@ -15,6 +15,9 @@ To have Gloo respect the Ingress Class annotation, such that Gloo will only proc
 * Setting the `Values.ingress.requireIngressClass=true` in your Helm value overrides
 * Directly setting the environment variable `REQUIRE_INGRESS_CLASS=true` on the `ingress` deployment
 
+
+{{% notice %}}
+
 When Gloo is set to require ingress class, the value `gloo` can be customized to match any arbitrary value by doing one of the following:
 
 * Set the `Values.ingress.customIngressClass=VALUE` in your Helm value overrides
