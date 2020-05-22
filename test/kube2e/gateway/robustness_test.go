@@ -280,7 +280,7 @@ func createDeploymentAndService(kubeClient kubernetes.Interface, namespace, appN
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Name:  "http-echo",
-						Image: "hashicorp/http-echo@sha256:ba27d460cd1f22a1a4331bdf74f4fccbc025552357e8a3249c40ae216275de96",
+						Image: "hashicorp/http-echo",
 						Args:  []string{fmt.Sprintf("-text=%s", expectedResponse(appName))},
 						Ports: []corev1.ContainerPort{{
 							Name:          "http",
