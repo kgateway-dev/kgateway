@@ -51,7 +51,7 @@ jobs:
         env:
           RUN_KUBE2E_TESTS: '1'
         run: |
-          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/knative/...
+          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/gateway/...
       - name: Debug Info
         if: failure()
         run: |
