@@ -3,30 +3,30 @@ on: pull_request
 env:
   TAGGED_VERSION: ${{github.event.release.tag_name || '' }}
 jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-18.04
-    steps:
-    - name: Set up Go 1.14
-      uses: actions/setup-go@v1
-      with:
-        go-version: 1.14
-      id: go
-    - name: Install Protoc
-      uses: arduino/setup-protoc@v1.1.0
-      with:
-        version: '3.6.1'
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
-    - uses: actions/cache@v1
-      with:
-        path: ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-        restore-keys: |
-          ${{ runner.os }}-go-
-    - name: Generate Code
-      run: |
-        ./ci/check-code-and-docs-gen.sh
+#  build:
+#    name: Build
+#    runs-on: ubuntu-18.04
+#    steps:
+#    - name: Set up Go 1.14
+#      uses: actions/setup-go@v1
+#      with:
+#        go-version: 1.14
+#      id: go
+#    - name: Install Protoc
+#      uses: arduino/setup-protoc@v1.1.0
+#      with:
+#        version: '3.6.1'
+#    - name: Check out code into the Go module directory
+#      uses: actions/checkout@v2
+#    - uses: actions/cache@v1
+#      with:
+#        path: ~/go/pkg/mod
+#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+#        restore-keys: |
+#          ${{ runner.os }}-go-
+#    - name: Generate Code
+#      run: |
+#        ./ci/check-code-and-docs-gen.sh
   test:
     name: regression-tests
     runs-on: ubuntu-18.04
@@ -36,6 +36,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.14
+      - uses: azure/setup-helm@v1
+        with:
+          version: v3.2.0
       - uses: engineerd/setup-kind@v0.3.0
         with:
           name: kind
@@ -53,9 +56,6 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
-      - uses: azure/setup-helm@v1
-        with:
-          version: v3.2.0
       - name: Setup env
         env:
           # version for tag tags
