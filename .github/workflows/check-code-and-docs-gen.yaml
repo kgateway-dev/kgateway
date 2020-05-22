@@ -16,17 +16,14 @@ jobs:
       uses: arduino/setup-protoc@v1.1.0
       with:
         version: '3.6.1'
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
     - uses: actions/cache@v1
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
@@ -34,28 +31,28 @@ jobs:
     name: regression-tests
     runs-on: ubuntu-18.04
     steps:
-#      - uses: actions/checkout@v2
-#      - name: Set up Go 1.14
-#        uses: actions/setup-go@v2
-#        with:
-#          go-version: 1.14
-#      - uses: engineerd/setup-kind@v0.3.0
-#        with:
-#          name: kind
-#      - name: Install Protoc
-#        uses: arduino/setup-protoc@v1.1.0
-#        with:
-#          version: '3.6.1'
+      - uses: actions/checkout@v2
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+      - uses: engineerd/setup-kind@v0.3.0
+        with:
+          name: kind
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v1.1.0
+        with:
+          version: '3.6.1'
       - uses: azure/setup-kubectl@v1
         id: kubectl
         with:
           version: 'v1.18.0'
-#      - uses: actions/cache@v1
-#        with:
-#          path: ~/go/pkg/mod
-#          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-#          restore-keys: |
-#            ${{ runner.os }}-go-
+      - uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
       - uses: azure/setup-helm@v1
         with:
           version: v3.2.0
