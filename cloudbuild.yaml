@@ -132,24 +132,24 @@ steps:
   id: 'gcr-auth'
 
 # Run regression tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-  args: ['build-test-assets']
-  env:
-    - 'BUILD_ID=$BUILD_ID'
-    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-    - 'TAGGED_VERSION=$TAG_NAME'
-  dir: *dir
-  waitFor: ['compile', 'docker-login', 'docker-push', 'test']
-  id: 'build-test-assets'
+#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+#  args: ['build-test-assets']
+#  env:
+#    - 'BUILD_ID=$BUILD_ID'
+#    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+#    - 'TAGGED_VERSION=$TAG_NAME'
+#  dir: *dir
+#  waitFor: ['compile', 'docker-login', 'docker-push', 'test']
+#  id: 'build-test-assets'
 
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-  env:
-    - 'RUN_KUBE2E_TESTS=1'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
-  dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
-  waitFor: ['build-test-assets', 'docker-push']
-  id: 'regression-tests'
+#- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+#  env:
+#    - 'RUN_KUBE2E_TESTS=1'
+#    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
+#  dir: *dir
+#  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
+#  waitFor: ['build-test-assets', 'docker-push']
+#  id: 'regression-tests'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
@@ -160,7 +160,7 @@ steps:
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['gcr-auth', 'regression-tests']
+  waitFor: ['gcr-auth', 'test']
   id: 'release-chart'
 
 secrets:
