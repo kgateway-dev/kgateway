@@ -151,24 +151,6 @@ steps:
   waitFor: ['build-test-assets', 'docker-push']
   id: 'regression-tests'
 
-- name: gcr.io/cloud-builders/gcloud
-  env:
-    - 'KUBECONFIG=/workspace/kube-e2e'
-  args: ['container', 'clusters', 'get-credentials', 'kube2e-tests']
-  waitFor: ['set-gcr-zone']
-  id: 'get-regression-clusterlock-credentials'
-
-- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-  env:
-    - 'KUBECONFIG=/workspace/kube-e2e'
-    - 'RUN_KUBE2E_TESTS=1'
-    - 'CLUSTER_LOCK_TESTS=1'
-    - 'CLOUDSDK_CONTAINER_CLUSTER=kube2e-tests'
-  dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending',  '-noColor', 'test/kube2e']
-  waitFor: ['build-test-assets', 'docker-push', 'get-regression-clusterlock-credentials']
-  id: 'regression-tests-cluster-lock'
-
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
   env:
@@ -178,7 +160,7 @@ steps:
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['gcr-auth', 'regression-tests', 'regression-tests-cluster-lock']
+  waitFor: ['gcr-auth', 'regression-tests']
   id: 'release-chart'
 
 secrets:

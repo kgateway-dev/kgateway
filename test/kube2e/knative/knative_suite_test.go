@@ -7,11 +7,12 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/go-utils/log"
+
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils/helper"
