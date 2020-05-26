@@ -51,7 +51,13 @@ jobs:
         env:
           RUN_KUBE2E_TESTS: '1'
         run: |
-          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/helm/...
+          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/...
+      - name: Testing - cluster lock
+        env:
+          RUN_KUBE2E_TESTS: '1'
+          CLUSTER_LOCK_TESTS: '1'
+        run: |
+          ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/...
       - name: Debug Info
         if: failure()
         run: |
