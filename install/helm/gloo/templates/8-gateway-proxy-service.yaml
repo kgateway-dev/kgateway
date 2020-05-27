@@ -60,8 +60,18 @@ spec:
   {{- if and (eq $spec.service.type "ClusterIP") $spec.service.clusterIP }}
   clusterIP: {{ $spec.service.clusterIP }}
   {{- end }}
-  {{- if and (eq $spec.service.type "LoadBalancer") $spec.service.loadBalancerIP }}
+  {{- if eq $spec.service.type "LoadBalancer" }}
+  {{- if $spec.service.loadBalancerIP }}
   loadBalancerIP: {{ $spec.service.loadBalancerIP }}
-  {{- end }}
+  {{- end }} # $spec.service.loadBalancerIP
+  {{- if $spec.service.loadBalancerSourceRanges }}
+  {{- with $spec.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- range . }}
+    - {{ . }}
+    {{- end }}
+  {{- end }} # with spec.service.loadBalancerSourceRanges
+  {{- end }} # $spec.service.loadBalancerSourceRanges
+  {{- end }} # $spec.service.type "LoadBalancer"
 {{- end }}
 {{ end }}

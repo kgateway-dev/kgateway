@@ -258,14 +258,16 @@ type GatewayProxyPodTemplate struct {
 }
 
 type GatewayProxyService struct {
-	Type                  string            "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
-	HttpPort              int               `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
-	HttpsPort             int               `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
-	ClusterIP             string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
-	ExtraAnnotations      map[string]string `json:"extraAnnotations,omitempty"`
-	ExternalTrafficPolicy string            `json:"externalTrafficPolicy,omitempty"`
-	Name                  string            `json:"name,omitempty", desc:"Custom name override for the service resource of the proxy"`
-	HttpsFirst            bool              `json:"httpsFirst", desc:"List HTTPS port before HTTP"`
+	Type                     string            "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
+	HttpPort                 int               `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
+	HttpsPort                int               `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
+	ClusterIP                string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
+	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
+	ExternalTrafficPolicy    string            `json:"externalTrafficPolicy,omitempty"`
+	Name                     string            `json:"name,omitempty" desc:"Custom name override for the service resource of the proxy"`
+	HttpsFirst               bool              `json:"httpsFirst" desc:"List HTTPS port before HTTP"`
+	LoadBalancerIP           string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
+	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
 }
 
 type Tracing struct {
