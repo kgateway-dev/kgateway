@@ -18,5 +18,7 @@ echo ">> Temporary output file ${TEMP_FILE}"
 sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | while read f; do kind load docker-image --name kind $f; done
 
 git status --porcelain
+git diff
+
 make build-kind-chart
 make glooctl-linux-amd64
