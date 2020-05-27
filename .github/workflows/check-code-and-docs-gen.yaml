@@ -14,17 +14,43 @@ jobs:
       uses: arduino/setup-protoc@v1.1.0
       with:
         version: '3.6.1'
-
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-
     - uses: actions/cache@v1
       with:
         path: ~/go/pkg/mod
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+    - uses: azure/setup-helm@v1
+      with:
+        version: v3.2.0
+    - uses: engineerd/setup-kind@v0.4.0
+      with:
+        name: kind
+    - uses: azure/setup-kubectl@v1
+      id: kubectl
+      with:
+        version: 'v1.18.0'
+    - name: Setup env
+      env:
+        # version for tag tags
+        VERSION: kind
+      run: |
+        ./ci/kind.sh
+        GO111MODULE=off go get -u github.com/onsi/ginkgo/ginkgo
+    - name: Testing - cluster lock
+      env:
+        RUN_KUBE2E_TESTS: '1'
+        CLUSTER_LOCK_TESTS: '1'
+      run: |
+        go test ./test/kube2e/...
+    - name: Debug Info
+      if: failure()
+      run: |
+        # see what's in the cluster if we failed
+        kubectl get all -A
+        kubectl get configmaps -A
