@@ -41,12 +41,18 @@ jobs:
         VERSION: kind
       run: |
         ./ci/kind.sh
+        GO111MODULE=off go get -u github.com/onsi/ginkgo/ginkgo
     - name: Testing - cluster lock
       env:
         RUN_KUBE2E_TESTS: '1'
         CLUSTER_LOCK_TESTS: '1'
       run: |
         go test ./test/kube2e/...
+    - name: Testing - no cluster lock
+      env:
+        RUN_KUBE2E_TESTS: '1'
+      run: |
+        ginkgo -r -failFast -trace -progress -race -compilers=4 -failOnPending -noColor ./test/kube2e/...
     - name: Debug Info
       if: failure()
       run: |
