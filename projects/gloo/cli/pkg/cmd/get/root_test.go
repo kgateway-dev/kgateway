@@ -1,6 +1,8 @@
 package get_test
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/get"
@@ -12,6 +14,8 @@ import (
 )
 
 var _ = Describe("Root", func() {
+
+	emptyFlagsMsg := fmt.Sprintf("Error: %s", get.EmptyGetError.Error())
 
 	BeforeEach(func() {
 		helpers.UseMemoryClients()
@@ -25,8 +29,8 @@ var _ = Describe("Root", func() {
 
 	Context("Empty args and flags", func() {
 		It("should give clear error message", func() {
-			// Ignore the output message since it changes whenever we add flags and it is tested via the cobra lib.
-			_, err := testutils.GlooctlOut("get")
+			msg, err := testutils.GlooctlOut("get")
+			Expect(msg).To(Equal(emptyFlagsMsg))
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(MatchError(get.EmptyGetError))
 		})

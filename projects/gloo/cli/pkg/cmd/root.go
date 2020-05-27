@@ -43,6 +43,7 @@ func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutil
 			}
 			return nil
 		},
+		SilenceUsage: true,
 	}
 
 	flagutils.AddKubeConfigFlag(app.PersistentFlags(), &opts.Top.KubeConfig)
