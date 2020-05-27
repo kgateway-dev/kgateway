@@ -110,10 +110,8 @@ To generate or re-generate code in Gloo, some additional dependencies are requir
 Install Solo-Kit and required go packages:
 
 ```bash
-mkdir -p ${GOPATH}/src/github.com/solo-io
-cd ${GOPATH}/src/github.com/solo-io
-git clone https://github.com/solo-io/solo-kit
-cd gloo
+cd ${GOPATH}/src/github.com/solo-io/gloo
+
 # install required go packages
 make update-deps
 ```
