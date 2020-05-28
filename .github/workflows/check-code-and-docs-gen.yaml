@@ -42,6 +42,8 @@ jobs:
       run: |
         ./ci/kind.sh
         GO111MODULE=off go get -u github.com/onsi/ginkgo/ginkgo
+        docker pull hashicorp/http-echo
+        kind load docker-image hashicorp/http-echo
     - name: Testing - no cluster lock
       env:
         RUN_KUBE2E_TESTS: '1'
