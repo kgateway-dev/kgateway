@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: >
-      Run regression tests in a Github Action instead of cloudbuild.
-    issueLink: https://github.com/solo-io/gloo/issues/2997
