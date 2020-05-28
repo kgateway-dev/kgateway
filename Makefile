@@ -6,7 +6,10 @@ ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 # If you just put your username, then that refers to your account at hub.docker.com
-IMAGE_REPO := quay.io/solo-io
+# To use quay images, set the IMAGE_REPO to "quay.io/solo-io"
+# To use dockerhub images, set the IMAGE_REPO to "soloio"
+# To use gcr images, set the IMAGE_REPO to "gcr.io"
+IMAGE_REPO := soloio
 
 # Kind of a hack to make sure _output exists
 z := $(shell mkdir -p $(OUTPUT_DIR))
@@ -19,7 +22,7 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.4.2
+ENVOY_GLOO_IMAGE ?= $(IMAGE_REPO)/envoy-gloo:1.4.2
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
