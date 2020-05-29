@@ -1,0 +1,6 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/2444
+      description: >
+        Gloo now supports enabling the Envoy buffer filter by configuring `spec.httpGateway.options.buffer` of the desired Gateway.
+    

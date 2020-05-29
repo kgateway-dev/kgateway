@@ -71,6 +71,8 @@ Optional, feature-specific configuration that lives on http listeners
 "ratelimitServer": .ratelimit.options.gloo.solo.io.Settings
 "gzip": .envoy.config.filter.http.gzip.v2.Gzip
 "proxyLatency": .envoy.config.filter.http.proxylatency.v2.ProxyLatency
+"buffer": .envoy.config.filter.http.buffer.v2.Buffer
+"bufferPerRoute": .envoy.config.filter.http.buffer.v2.BufferPerRoute
 
 ```
 
@@ -87,6 +89,8 @@ Optional, feature-specific configuration that lives on http listeners
 | `ratelimitServer` | [.ratelimit.options.gloo.solo.io.Settings](../enterprise/options/ratelimit/ratelimit.proto.sk/#settings) | Enterprise-only: Settings for the rate limiting server itself. |  |
 | `gzip` | [.envoy.config.filter.http.gzip.v2.Gzip](../../external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#gzip) | Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```. |  |
 | `proxyLatency` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency](../../external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency) | Enterprise-only: Proxy latency. |  |
+| `buffer` | [.envoy.config.filter.http.buffer.v2.Buffer](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#buffer) | Buffer can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |  |
+| `bufferPerRoute` | [.envoy.config.filter.http.buffer.v2.BufferPerRoute](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#bufferperroute) |  |  |
 
 
 

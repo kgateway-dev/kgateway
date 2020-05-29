@@ -33,6 +33,7 @@ import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.prot
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
 import "gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
+import "gloo/projects/gloo/api/external/envoy/config/filter/http/buffer/v2/buffer.proto";
 
 import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
@@ -107,6 +108,13 @@ message HttpListenerOptions {
 
     // Enterprise-only: Proxy latency
     envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
+
+    // Buffer can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    envoy.config.filter.http.buffer.v2.Buffer buffer = 12;
+
+    envoy.config.filter.http.buffer.v2.BufferPerRoute buffer_per_route = 13;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
