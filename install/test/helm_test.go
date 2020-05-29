@@ -630,6 +630,14 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectService(gatewayProxyService)
 					})
 
+					It("sets load balancer source ranges", func() {
+						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
+						gatewayProxyService.Spec.LoadBalancerSourceRanges = []string{"130.211.204.1/32", "130.211.204.2/32"}
+						gatewayProxyService.Annotations = map[string]string{"test": "test"}
+						prepareMakefileFromValuesFile("val_lb_source_ranges.yaml")
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
 					It("sets custom service name", func() {
 						gatewayProxyService.ObjectMeta.Name = "gateway-proxy-custom"
 						prepareMakefile(namespace, helmValues{

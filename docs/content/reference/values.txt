@@ -225,8 +225,10 @@
 |gatewayProxies.NAME.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
 |gatewayProxies.NAME.service.externalTrafficPolicy|string|||
-|gatewayProxies.NAME.service.name|string|||
-|gatewayProxies.NAME.service.httpsFirst|bool|||
+|gatewayProxies.NAME.service.name|string||Custom name override for the service resource of the proxy|
+|gatewayProxies.NAME.service.httpsFirst|bool||List HTTPS port before HTTP|
+|gatewayProxies.NAME.service.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
@@ -312,8 +314,10 @@
 |gatewayProxies.gatewayProxy.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
 |gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||
-|gatewayProxies.gatewayProxy.service.name|string|||
-|gatewayProxies.gatewayProxy.service.httpsFirst|bool|false||
+|gatewayProxies.gatewayProxy.service.name|string||Custom name override for the service resource of the proxy|
+|gatewayProxies.gatewayProxy.service.httpsFirst|bool|false|List HTTPS port before HTTP|
+|gatewayProxies.gatewayProxy.service.loadBalancerIP|string||IP address of the load balancer|
+|gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
 |gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are prefferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||

@@ -27,3 +27,31 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+    - uses: azure/setup-helm@v1
+      with:
+        version: v3.2.0
+    - uses: engineerd/setup-kind@v0.4.0
+      with:
+        name: kind
+    - uses: azure/setup-kubectl@v1
+      id: kubectl
+      with:
+        version: 'v1.18.0'
+    - name: Setup env
+      env:
+        # version for tag tags
+        VERSION: kind
+      run: |
+        ./ci/kind.sh
+    - name: Testing - cluster lock
+      env:
+        RUN_KUBE2E_TESTS: '1'
+        CLUSTER_LOCK_TESTS: '1'
+      run: |
+        go test ./test/kube2e/...
+    - name: Debug Info
+      if: failure()
+      run: |
+        # see what's in the cluster if we failed
+        kubectl get all -A
+        kubectl get configmaps -A
