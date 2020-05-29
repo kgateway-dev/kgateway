@@ -2,6 +2,7 @@ package als_test
 
 import (
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -182,11 +183,11 @@ var _ = Describe("Plugin", func() {
 
 			var checkConfig = func(al *envoyal.AccessLog) {
 				Expect(al.Name).To(Equal(util.FileAccessLog))
-				var falCfg envoyalcfg.FileAccessLog
+				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
-				str := falCfg.GetFormat()
+				str := falCfg.GetLogFormat().GetTextFormat()
 				Expect(str).To(Equal(strFormat))
 			}
 
@@ -277,11 +278,11 @@ var _ = Describe("Plugin", func() {
 		Context("json", func() {
 			var checkConfig = func(al *envoyal.AccessLog) {
 				Expect(al.Name).To(Equal(util.FileAccessLog))
-				var falCfg envoyalcfg.FileAccessLog
+				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
-				jsn := falCfg.GetJsonFormat()
+				jsn := falCfg.GetLogFormat().GetJsonFormat()
 				Expect(protoutils.StructPbToGogo(jsn)).To(Equal(jsonFormat))
 			}
 
