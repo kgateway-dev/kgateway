@@ -16,8 +16,6 @@ jobs:
         version: '3.6.1'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
     - uses: actions/cache@v1
       with:
         path: ~/go/pkg/mod
