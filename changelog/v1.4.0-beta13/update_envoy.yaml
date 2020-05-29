@@ -3,5 +3,5 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: envoy-gloo
     dependencyTag: v1.4.3
-    resolvesIssue: https://github.com/solo-io/gloo/issues/3019
+    issueLink: https://github.com/solo-io/gloo/issues/3019
     description: Update envoy to pick-up upstream fix to allow transformations used with AWS Lambda functions.
