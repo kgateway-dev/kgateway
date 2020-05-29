@@ -306,6 +306,8 @@ github.com/envoyproxy/go-control-plane v0.9.1-0.20191026205805-5f8ba28d4473/go.m
 github.com/envoyproxy/go-control-plane v0.9.1/go.mod h1:G1fbsNGAFpC1aaERrShZQVdUV2ZuZuv6FCl2v9JNSxQ=
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200401235947-be7fefdaf0df h1:EVUwAk1TnFLNp9Eu9AThAdaKGgz6x4im5Wv2dF8kBow=
 github.com/envoyproxy/go-control-plane v0.9.6-0.20200401235947-be7fefdaf0df/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
+github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9 h1:AM3AYZI9udpliFfjJTM4E2G9pR+HS5ilXrJGJTvWTJM=
+github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9/go.mod h1:OXl5to++W0ctG+EHWTFUjiypVxC/Y4VLc/KFU+al13s=
 github.com/envoyproxy/protoc-gen-validate v0.1.0 h1:EQciDnbrYxy13PgWoY8AqoxGiPrpgBZ1R8UNe3ddc+A=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
 github.com/euank/go-kmsg-parser v2.0.0+incompatible/go.mod h1:MhmAMZ8V4CYH4ybgdRwPr2TU5ThnS43puaKEMpja1uw=

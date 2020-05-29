@@ -9,6 +9,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
+	golangptypes "github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
@@ -54,14 +55,14 @@ func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLo
 	}
 
 	if config != nil {
-		marshalledConf, err := envoyutil.MessageToStruct(config)
+		marshalledConf, err := golangptypes.MarshalAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return envoyal.AccessLog{}, err
 		}
 
-		s.ConfigType = &envoyal.AccessLog_Config{
-			Config: marshalledConf,
+		s.ConfigType = &envoyal.AccessLog_TypedConfig{
+			TypedConfig: marshalledConf,
 		}
 	}
 

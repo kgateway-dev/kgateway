@@ -4,9 +4,11 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -110,7 +112,7 @@ func handleAccessLogPlugins(service *als.AccessLoggingService, logCfg []*envoyal
 	for _, al := range service.GetAccessLog() {
 		switch cfgType := al.GetOutputDestination().(type) {
 		case *als.AccessLog_FileSink:
-			var cfg envoyalcfg.FileAccessLog
+			var cfg envoyalfile.FileAccessLog
 			if err := copyFileSettings(&cfg, cfgType); err != nil {
 				return nil, err
 			}
@@ -157,20 +159,30 @@ func copyGrpcSettings(cfg *envoyalcfg.HttpGrpcAccessLogConfig, alsSettings *als.
 	return cfg.Validate()
 }
 
-func copyFileSettings(cfg *envoyalcfg.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
+func copyFileSettings(cfg *envoyalfile.FileAccessLog, alsSettings *als.AccessLog_FileSink) error {
 	cfg.Path = alsSettings.FileSink.Path
 	switch fileSinkType := alsSettings.FileSink.GetOutputFormat().(type) {
 	case *als.FileSink_StringFormat:
-		cfg.AccessLogFormat = &envoyalcfg.FileAccessLog_Format{
-			Format: fileSinkType.StringFormat,
+		if fileSinkType.StringFormat != "" {
+			cfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
+				LogFormat: &envoy_config_core_v3.SubstitutionFormatString{
+					Format: &envoy_config_core_v3.SubstitutionFormatString_TextFormat{
+						TextFormat: fileSinkType.StringFormat,
+					},
+				},
+			}
 		}
 	case *als.FileSink_JsonFormat:
 		converted, err := protoutils.StructGogoToPb(fileSinkType.JsonFormat)
 		if err != nil {
 			return err
 		}
-		cfg.AccessLogFormat = &envoyalcfg.FileAccessLog_JsonFormat{
-			JsonFormat: converted,
+		cfg.AccessLogFormat = &envoyalfile.FileAccessLog_LogFormat{
+			LogFormat: &envoy_config_core_v3.SubstitutionFormatString{
+				Format: &envoy_config_core_v3.SubstitutionFormatString_JsonFormat{
+					JsonFormat: converted,
+				},
+			},
 		}
 	}
 	return cfg.Validate()
