@@ -196,10 +196,8 @@
 |gatewayProxies.NAME.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gatewayProxies.NAME.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.NAME.podTemplate.image.pullSecret|string||image pull policy for the container |
-|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service|
-|gatewayProxies.NAME.podTemplate.httpNodePort|int||HTTP nodeport for the gateway service if using type NodePort|
-|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service|
-|gatewayProxies.NAME.podTemplate.httpsNodePort|int||HTTPS nodeport for the gateway service if using type NodePort|
+|gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
+|gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
 |gatewayProxies.NAME.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
 |gatewayProxies.NAME.podTemplate.nodeName|string||name of node to run on|
@@ -222,6 +220,8 @@
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
 |gatewayProxies.NAME.service.httpsPort|int||HTTPS port for the gateway service|
+|gatewayProxies.NAME.service.httpNodePort|int||HTTP nodeport for the gateway service if using type NodePort|
+|gatewayProxies.NAME.service.httpsNodePort|int||HTTPS nodeport for the gateway service if using type NodePort|
 |gatewayProxies.NAME.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.NAME.service.extraAnnotations.NAME|string|||
 |gatewayProxies.NAME.service.externalTrafficPolicy|string|||
@@ -285,10 +285,8 @@
 |gatewayProxies.gatewayProxy.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||image pull policy for the container |
-|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service|
-|gatewayProxies.gatewayProxy.podTemplate.httpNodePort|int|0|HTTP nodeport for the gateway service if using type NodePort|
-|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service|
-|gatewayProxies.gatewayProxy.podTemplate.httpsNodePort|int|0|HTTPS nodeport for the gateway service if using type NodePort|
+|gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
+|gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
 |gatewayProxies.gatewayProxy.podTemplate.extraAnnotations.NAME|string||extra annotations to add to the pod|
 |gatewayProxies.gatewayProxy.podTemplate.nodeName|string||name of node to run on|
@@ -311,6 +309,8 @@
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|
 |gatewayProxies.gatewayProxy.service.httpsPort|int|443|HTTPS port for the gateway service|
+|gatewayProxies.gatewayProxy.service.httpNodePort|int|0|HTTP nodeport for the gateway service if using type NodePort|
+|gatewayProxies.gatewayProxy.service.httpsNodePort|int|0|HTTPS nodeport for the gateway service if using type NodePort|
 |gatewayProxies.gatewayProxy.service.clusterIP|string||static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`|
 |gatewayProxies.gatewayProxy.service.extraAnnotations.NAME|string|||
 |gatewayProxies.gatewayProxy.service.externalTrafficPolicy|string|||

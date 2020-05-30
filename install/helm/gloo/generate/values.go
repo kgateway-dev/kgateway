@@ -240,10 +240,8 @@ type DaemonSetSpec struct {
 
 type GatewayProxyPodTemplate struct {
 	Image            *Image                `json:"image,omitempty"`
-	HttpPort         int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
-	HttpNodePort     int                   `json:"httpNodePort,omitempty" desc:"HTTP nodeport for the gateway service if using type NodePort"`
-	HttpsPort        int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
-	HttpsNodePort    int                   `json:"httpsNodePort,omitempty" desc:"HTTPS nodeport for the gateway service if using type NodePort"`
+	HttpPort         int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
+	HttpsPort        int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
 	ExtraPorts       []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
 	ExtraAnnotations map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
 	NodeName         string                `json:"nodeName,omitempty" desc:"name of node to run on"`
@@ -261,6 +259,8 @@ type GatewayProxyService struct {
 	Type                     string            "json:\"type,omitempty\" desc:\"gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`\""
 	HttpPort                 int               `json:"httpPort,omitempty" desc:"HTTP port for the gateway service"`
 	HttpsPort                int               `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service"`
+	HttpNodePort             int               `json:"httpNodePort,omitempty" desc:"HTTP nodeport for the gateway service if using type NodePort"`
+	HttpsNodePort            int               `json:"httpsNodePort,omitempty" desc:"HTTPS nodeport for the gateway service if using type NodePort"`
 	ClusterIP                string            "json:\"clusterIP,omitempty\" desc:\"static clusterIP (or `None`) when `gatewayProxies[].gatewayProxy.service.type` is `ClusterIP`\""
 	ExtraAnnotations         map[string]string `json:"extraAnnotations,omitempty"`
 	ExternalTrafficPolicy    string            `json:"externalTrafficPolicy,omitempty"`
