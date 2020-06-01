@@ -106,4 +106,93 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
 	})
+
+	It("allows vhost specific disabling of buffer", func() {
+		p := NewPlugin()
+		out := &envoyroute.VirtualHost{}
+		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				BufferPerRoute: &v2.BufferPerRoute{
+					Override: &v2.BufferPerRoute_Buffer{
+						Buffer: &v2.Buffer{
+							MaxRequestBytes: &types.UInt32Value{
+								Value: 4098,
+							},
+						},
+					},
+				},
+			},
+		}, out)
+
+		var cfg envoybuffer.BufferPerRoute
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
+	})
+
+	It("allows vhost specific buffer config", func() {
+		p := NewPlugin()
+		out := &envoyroute.VirtualHost{}
+		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+			Options: &v1.VirtualHostOptions{
+				BufferPerRoute: &v2.BufferPerRoute{
+					Override: &v2.BufferPerRoute_Disabled{
+						Disabled: true,
+					},
+				},
+			},
+		}, out)
+
+		var cfg envoybuffer.BufferPerRoute
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.GetDisabled()).To(Equal(true))
+	})
+
+	It("allows weighted destination specific buffer config", func() {
+		p := NewPlugin()
+		out := &envoyroute.WeightedCluster_ClusterWeight{}
+		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			Options: &v1.WeightedDestinationOptions{
+				BufferPerRoute: &v2.BufferPerRoute{
+					Override: &v2.BufferPerRoute_Disabled{
+						Disabled: true,
+					},
+				},
+			},
+		}, out)
+
+		var cfg envoybuffer.BufferPerRoute
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.GetDisabled()).To(Equal(true))
+	})
+
+	It("allows weighted destination specific disabling of buffer", func() {
+		p := NewPlugin()
+		out := &envoyroute.WeightedCluster_ClusterWeight{}
+		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
+			Options: &v1.WeightedDestinationOptions{
+				BufferPerRoute: &v2.BufferPerRoute{
+					Override: &v2.BufferPerRoute_Buffer{
+						Buffer: &v2.Buffer{
+							MaxRequestBytes: &types.UInt32Value{
+								Value: 4098,
+							},
+						},
+					},
+				},
+			},
+		}, out)
+
+		var cfg envoybuffer.BufferPerRoute
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+
+		Expect(err).NotTo(HaveOccurred())
+		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
+	})
+
 })
