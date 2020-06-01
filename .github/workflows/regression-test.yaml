@@ -1,10 +1,11 @@
-name: Check Code and Docs Gen
+name: Codegen Check + Regression
 on: pull_request
 jobs:
   build:
     name: Build
     runs-on: ubuntu-18.04
     steps:
+    # Codegen Check
     - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
@@ -27,6 +28,7 @@ jobs:
     - name: Generate Code
       run: |
         ./ci/check-code-and-docs-gen.sh
+    # E2E Regression Test
     - uses: azure/setup-helm@v1
       with:
         version: v3.2.0
@@ -37,7 +39,7 @@ jobs:
       id: kubectl
       with:
         version: 'v1.18.0'
-    - name: Setup env
+    - name: Setup test env
       env:
         # version for tag tags
         VERSION: kind
