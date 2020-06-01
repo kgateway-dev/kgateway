@@ -72,7 +72,6 @@ Optional, feature-specific configuration that lives on http listeners
 "gzip": .envoy.config.filter.http.gzip.v2.Gzip
 "proxyLatency": .envoy.config.filter.http.proxylatency.v2.ProxyLatency
 "buffer": .envoy.config.filter.http.buffer.v2.Buffer
-"bufferPerRoute": .envoy.config.filter.http.buffer.v2.BufferPerRoute
 
 ```
 
@@ -90,7 +89,6 @@ Optional, feature-specific configuration that lives on http listeners
 | `gzip` | [.envoy.config.filter.http.gzip.v2.Gzip](../../external/envoy/config/filter/http/gzip/v2/gzip.proto.sk/#gzip) | Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request. Compression is useful in situations where large payloads need to be transmitted without compromising the response time. Example: ``` gzip: contentType: - "application/json" compressionLevel: BEST ```. |  |
 | `proxyLatency` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency](../../external/envoy/extensions/proxylatency/proxylatency.proto.sk/#proxylatency) | Enterprise-only: Proxy latency. |  |
 | `buffer` | [.envoy.config.filter.http.buffer.v2.Buffer](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#buffer) | Buffer can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |  |
-| `bufferPerRoute` | [.envoy.config.filter.http.buffer.v2.BufferPerRoute](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#bufferperroute) |  |  |
 
 
 
@@ -136,6 +134,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "rbac": .rbac.options.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
+"bufferPerRoute": .envoy.config.filter.http.buffer.v2.BufferPerRoute
 
 ```
 
@@ -154,6 +153,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `rbac` | [.rbac.options.gloo.solo.io.ExtensionSettings](../enterprise/options/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
+| `bufferPerRoute` | [.envoy.config.filter.http.buffer.v2.BufferPerRoute](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |  |
 
 
 
@@ -189,6 +189,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "rbac": .rbac.options.gloo.solo.io.ExtensionSettings
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
+"bufferPerRoute": .envoy.config.filter.http.buffer.v2.BufferPerRoute
 
 ```
 
@@ -215,6 +216,7 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `rbac` | [.rbac.options.gloo.solo.io.ExtensionSettings](../enterprise/options/rbac/rbac.proto.sk/#extensionsettings) | Enterprise-only: Config for RBAC (currently only supports RBAC based on JWT claims). |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
+| `bufferPerRoute` | [.envoy.config.filter.http.buffer.v2.BufferPerRoute](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |  |
 
 
 
@@ -255,6 +257,7 @@ is selected for routing.
 "transformations": .envoy.api.v2.filter.http.RouteTransformations
 "extensions": .gloo.solo.io.Extensions
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
+"bufferPerRoute": .envoy.config.filter.http.buffer.v2.BufferPerRoute
 
 ```
 
@@ -264,6 +267,7 @@ is selected for routing.
 | `transformations` | [.envoy.api.v2.filter.http.RouteTransformations](../../external/envoy/extensions/transformation/transformation.proto.sk/#routetransformations) | Transformations to apply. |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |  |
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
+| `bufferPerRoute` | [.envoy.config.filter.http.buffer.v2.BufferPerRoute](../../external/envoy/config/filter/http/buffer/v2/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. |  |
 
 
 
