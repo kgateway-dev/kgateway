@@ -40,9 +40,6 @@ jobs:
       with:
         version: 'v1.18.0'
     - name: Setup test env
-      env:
-        # version for tag tags
-        VERSION: kind
       run: |
         ./ci/kind.sh
     - name: Testing - cluster lock
