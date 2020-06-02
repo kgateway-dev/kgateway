@@ -4,6 +4,6 @@ changelog:
       description: >
         Gloo now supports enabling the Envoy buffer filter by configuring `spec.httpGateway.options.buffer` of the desired Gateway.
         This is also supported on virtual services at the virtual host or route level, and on weighted destinations.
-        See [envoy buffer](https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/http/buffer/v2/buffer.proto)
+        See [envoy buffer](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/buffer/v3/buffer.proto#extensions-filters-http-buffer-v3-buffer)
         for more details.
     

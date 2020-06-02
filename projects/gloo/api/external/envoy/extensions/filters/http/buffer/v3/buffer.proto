@@ -1,18 +1,18 @@
-// copied from https://raw.githubusercontent.com/envoyproxy/envoy/549164c42cae84b59154ca4c36009e408aa10b52/api/envoy/config/filter/http/buffer/v2/buffer.proto
+// copied from https://github.com/envoyproxy/envoy/blob/3b52fc36373272902d9817f0db97dd2fccc40784/api/envoy/extensions/filters/http/buffer/v3/buffer.proto
 
 syntax = "proto3";
 
-package envoy.config.filter.http.buffer.v2;
+package envoy.extensions.filters.http.buffer.v3;
 
 // manually updated this line:
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/buffer/v2";
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3";
 
 
 import "google/protobuf/wrappers.proto";
 
 import "validate/validate.proto";
 
-option java_package = "io.envoyproxy.envoy.config.filter.http.buffer.v2";
+option java_package = "io.envoyproxy.envoy.extensions.filters.http.buffer.v3";
 option java_outer_classname = "BufferProto";
 option java_multiple_files = true;
 

@@ -32,8 +32,8 @@ import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.prot
 
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
 import "gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
-import "gloo/projects/gloo/api/external/envoy/config/filter/http/buffer/v2/buffer.proto";
 
 import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "gloo/projects/gloo/api/v1/enterprise/options/jwt/jwt.proto";
@@ -112,7 +112,7 @@ message HttpListenerOptions {
     // Buffer can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
-    envoy.config.filter.http.buffer.v2.Buffer buffer = 12;
+    envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -165,7 +165,7 @@ message VirtualHostOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
-    envoy.config.filter.http.buffer.v2.BufferPerRoute buffer_per_route = 14;
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -243,7 +243,7 @@ message RouteOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
-    envoy.config.filter.http.buffer.v2.BufferPerRoute buffer_per_route = 22;
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
@@ -278,5 +278,5 @@ message WeightedDestinationOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
-    envoy.config.filter.http.buffer.v2.BufferPerRoute buffer_per_route = 5;
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
 }

@@ -2,14 +2,14 @@ package buffer_test
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/buffer/v2"
 	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/types"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/buffer/v2"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
@@ -31,7 +31,7 @@ var _ = Describe("Plugin", func() {
 	It("copies the buffer config from the listener to the filter", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				Buffer: &v2.Buffer{
+				Buffer: &v3.Buffer{
 					MaxRequestBytes: &types.UInt32Value{
 						Value: 2048,
 					},
@@ -42,7 +42,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter{
-					Name: "envoy.buffer",
+					Name: "envoy.filters.http.buffer",
 					ConfigType: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter_Config{
 						Config: &structpb.Struct{
 							Fields: map[string]*structpb.Value{
@@ -68,8 +68,8 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Disabled{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Disabled{
 						Disabled: true,
 					},
 				},
@@ -88,9 +88,9 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
 			Options: &v1.RouteOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Buffer{
-						Buffer: &v2.Buffer{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Buffer{
+						Buffer: &v3.Buffer{
 							MaxRequestBytes: &types.UInt32Value{
 								Value: 4098,
 							},
@@ -112,8 +112,8 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Disabled{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Disabled{
 						Disabled: true,
 					},
 				},
@@ -132,9 +132,9 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.VirtualHost{}
 		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Buffer{
-						Buffer: &v2.Buffer{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Buffer{
+						Buffer: &v3.Buffer{
 							MaxRequestBytes: &types.UInt32Value{
 								Value: 4098,
 							},
@@ -156,8 +156,8 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Disabled{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Disabled{
 						Disabled: true,
 					},
 				},
@@ -176,9 +176,9 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.WeightedCluster_ClusterWeight{}
 		err := p.ProcessWeightedDestination(plugins.RouteParams{}, &v1.WeightedDestination{
 			Options: &v1.WeightedDestinationOptions{
-				BufferPerRoute: &v2.BufferPerRoute{
-					Override: &v2.BufferPerRoute_Buffer{
-						Buffer: &v2.Buffer{
+				BufferPerRoute: &v3.BufferPerRoute{
+					Override: &v3.BufferPerRoute_Buffer{
+						Buffer: &v3.Buffer{
 							MaxRequestBytes: &types.UInt32Value{
 								Value: 4098,
 							},

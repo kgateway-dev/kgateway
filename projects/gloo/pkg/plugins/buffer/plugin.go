@@ -4,10 +4,10 @@ import (
 	"github.com/rotisserie/eris"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/buffer/v2"
+	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/buffer/v2"
+	buffer "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
