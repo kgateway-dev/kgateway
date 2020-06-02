@@ -1,0 +1,6 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    description: Bumped the version of solo-kit to pick up the improvement making WriteReports safer
+    dependencyOwner: solo-io
+    dependencyRepo: solo-kit
+    dependencyTag: v0.13.8
