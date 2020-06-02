@@ -4,3 +4,4 @@ changelog:
     dependencyOwner: solo-io
     dependencyRepo: solo-kit
     dependencyTag: v0.13.8
+    issueLink: https://github.com/solo-io/gloo/issues/2954
