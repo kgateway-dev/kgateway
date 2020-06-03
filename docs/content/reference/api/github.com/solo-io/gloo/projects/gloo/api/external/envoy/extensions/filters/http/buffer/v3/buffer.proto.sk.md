@@ -58,7 +58,7 @@ copied from https://github.com/envoyproxy/envoy/blob/3b52fc36373272902d9817f0db9
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `disabled` | `bool` | Disable the buffer filter for this particular vhost or route. Only one of `disabled` or `buffer` can be set. |  |
-| `buffer` | [.envoy.extensions.filters.http.buffer.v3.Buffer](../buffer.proto.sk/#buffer) | Override the global configuration of the filter with this new config. Only one of `buffer` or `disabled` can be set. |  |
+| `buffer` | [.envoy.extensions.filters.http.buffer.v3.Buffer](../buffer.proto.sk/#buffer) | Override the global configuration of the buffer filter with this new config. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. Only one of `buffer` or `disabled` can be set. |  |
 
 
 

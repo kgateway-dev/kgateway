@@ -364,6 +364,8 @@ type VirtualHostOptions struct {
 	// BufferPerRoute can be used to set the maximum request size
 	// that the filter will buffer before the connection
 	// manager will stop buffering and return a 413 response.
+	// Note: If you have not set a global config (at the gateway level), this
+	// override will not do anything by itself.
 	BufferPerRoute       *v3.BufferPerRoute `protobuf:"bytes,14,opt,name=buffer_per_route,json=bufferPerRoute,proto3" json:"buffer_per_route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
@@ -562,6 +564,8 @@ type RouteOptions struct {
 	// BufferPerRoute can be used to set the maximum request size
 	// that the filter will buffer before the connection
 	// manager will stop buffering and return a 413 response.
+	// Note: If you have not set a global config (at the gateway level), this
+	// override will not do anything by itself.
 	BufferPerRoute       *v3.BufferPerRoute `protobuf:"bytes,22,opt,name=buffer_per_route,json=bufferPerRoute,proto3" json:"buffer_per_route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
@@ -904,6 +908,8 @@ type WeightedDestinationOptions struct {
 	// BufferPerRoute can be used to set the maximum request size
 	// that the filter will buffer before the connection
 	// manager will stop buffering and return a 413 response.
+	// Note: If you have not set a global config (at the gateway level), this
+	// override will not do anything by itself.
 	BufferPerRoute       *v3.BufferPerRoute `protobuf:"bytes,5,opt,name=buffer_per_route,json=bufferPerRoute,proto3" json:"buffer_per_route,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`

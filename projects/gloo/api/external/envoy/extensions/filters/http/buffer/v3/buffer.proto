@@ -42,7 +42,9 @@ message BufferPerRoute {
     // Disable the buffer filter for this particular vhost or route.
     bool disabled = 1 [(validate.rules).bool = {const: true}];
 
-    // Override the global configuration of the filter with this new config.
+    // Override the global configuration of the buffer filter with this new config.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
     Buffer buffer = 2 [(validate.rules).message = {required: true}];
   }
 }

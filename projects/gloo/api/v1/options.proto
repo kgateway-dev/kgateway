@@ -165,6 +165,8 @@ message VirtualHostOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
 }
 
@@ -243,6 +245,8 @@ message RouteOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
 }
 
@@ -278,5 +282,7 @@ message WeightedDestinationOptions {
     // BufferPerRoute can be used to set the maximum request size
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
 }
