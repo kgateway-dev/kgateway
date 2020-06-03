@@ -15,18 +15,6 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
 )
 
-// We need to test three possible input values for the BufferPerRoute.Disabled field
-// - Undefined: no config is provided
-// - Enabled: config explicitly enables buffer for this route
-// - Disabled: config explicitly disables buffer for this route
-type ConfigState int
-
-const (
-	Undefined ConfigState = iota
-	Enabled
-	Disabled
-)
-
 var _ = Describe("Plugin", func() {
 	It("copies the buffer config from the listener to the filter", func() {
 		filters, err := NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
