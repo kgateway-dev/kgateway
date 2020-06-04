@@ -340,6 +340,10 @@ This is used with custom auth servers.
 "appUrl": string
 "callbackPath": string
 "scopes": []string
+"provideAccessToken": bool
+"introspectionUrl": string
+"userinfoUrl": string
+"tokenIntrospectionCacheTimeout": .google.protobuf.Duration
 
 ```
 
@@ -352,6 +356,10 @@ This is used with custom auth servers.
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
+| `provideAccessToken` | `bool` | whether or not the access token will be provided to Gloo, or if Gloo should fetch instead using issuer. by default (false), Gloo fetches the access token for you using the issuer-registered credentials provided above using OIDC built on a OAuth2.0 authorization code flow. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. |  |
+| `introspectionUrl` | `string` | the url for the OAuth2.0 access token introspection endpoint. if provided, the (opaque) access token provided or received from the oauth authorization endpoint will be validated against this endpoint, or locally cached responses for this access token. |  |
+| `userinfoUrl` | `string` | the url for the OIDC userinfo endpoint. if provided, the (opaque) access token provided or received from the oauth endpoint will be queried and the userinfo response will be put in the `AuthorizationRequest` state. this can be useful to leverage the userinfo response in, for example, an extauth server plugin. |  |
+| `tokenIntrospectionCacheTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | how long the token introspection and/or userinfo endpoint response for a specific access token should be kept in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection result, whichever comes sooner. if omitted, defaults to 10 minutes. |  |
 
 
 

@@ -217,6 +217,32 @@ message OAuth {
 
   // Scopes to request in addition to openid scope.
   repeated string scopes = 6;
+
+  // whether or not the access token will be provided to Gloo, or if Gloo should fetch instead using issuer.
+  // by default (false), Gloo fetches the access token for you using the issuer-registered credentials provided
+  // above using OIDC built on a OAuth2.0 authorization code flow.
+  //
+  // according to https://tools.ietf.org/html/rfc6750 you can pass tokens through:
+  // - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123
+  // - URI query parameter e.g. access_token=mytoken123
+  // - and (preferably) secure cookies
+  bool provide_access_token = 8;
+
+  // the url for the OAuth2.0 access token introspection endpoint.
+  // if provided, the (opaque) access token provided or received from the oauth authorization endpoint
+  // will be validated against this endpoint, or locally cached responses for this access token.
+  string introspection_url = 9;
+
+  // the url for the OIDC userinfo endpoint.
+  // if provided, the (opaque) access token provided or received from the oauth endpoint
+  // will be queried and the userinfo response will be put in the `AuthorizationRequest` state.
+  // this can be useful to leverage the userinfo response in, for example, an extauth server plugin.
+  string userinfo_url = 10;
+
+  // how long the token introspection and/or userinfo endpoint response for a specific access token should be kept
+  // in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the
+  // introspection result, whichever comes sooner. if omitted, defaults to 10 minutes.
+  google.protobuf.Duration token_introspection_cache_timeout = 11 [(gogoproto.stdduration) = true];
 }
 
 message OauthSecret {
