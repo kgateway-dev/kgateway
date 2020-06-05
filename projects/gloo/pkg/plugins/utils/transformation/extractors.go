@@ -86,14 +86,14 @@ func addHeaderExtractorFromParam(ctx context.Context, header, parameter string, 
 	return nil
 }
 
-var rxp = regexp.MustCompile(`\{([\.\-_[:word:]]+)\}`)
+var rxp = regexp.MustCompile(`\{\s*([\.\-_[:word:]]+)\s*\}`)
 
 func getNamesAndRegexFromParamString(paramString string) ([]string, string) {
 	// escape regex
 	// TODO: make sure all envoy regex is being escaped here
 	parameterNames := rxp.FindAllString(paramString, -1)
 	for i, name := range parameterNames {
-		parameterNames[i] = strings.TrimSuffix(strings.TrimPrefix(name, "{"), "}")
+		parameterNames[i] = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(name, "{"), "}"))
 	}
 
 	return parameterNames, buildRegexString(rxp, paramString)
