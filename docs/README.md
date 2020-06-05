@@ -20,6 +20,8 @@ Run `docker pull` to get the appropriate gloo-docs images (e.g. `docker pull gcr
 kubectl apply -f docs-staging.yaml
 ```
 
+Then run `glooctl proxy url` to find the address to go to (e.g. http://some-ip-address:30357/gloo/latest).
+
 ## Notes about the build process
 
 - we want documentation to be available in the form of docs.solo.io/gloo/latest/... and also as docs.solo.io/gloo/<some_version/...
