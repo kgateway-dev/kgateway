@@ -23,7 +23,7 @@ The easiest way to install with this value is using helm 3 as follows:
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 
 helm repo update
-
+kubectl create ns gloo-system
 helm install --namespace gloo-system --set global.wasm.enabled=true gloo gloo/gloo
 {{< /tab >}}
 {{< /tabs >}}
