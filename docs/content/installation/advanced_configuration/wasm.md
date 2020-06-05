@@ -57,11 +57,12 @@ and change the `httpGateway` object to the following:
   httpGateway:
     options:
       wasm:
-        config: |
-          {}
-        image: webassemblyhub.io/yuval-k/metrics:v1
-        name: yuval
-        root_id: stats_root_id
+        filters:
+        - config: |
+            {}
+          image: webassemblyhub.io/yuval-k/metrics:v1
+          name: yuval
+          root_id: stats_root_id
 ```
 
 Once that is saved, the hard work has been done. All traffic on the http gateway will call the wasm filter.
