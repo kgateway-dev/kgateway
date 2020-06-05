@@ -739,7 +739,7 @@ curl -v $(glooctl proxy url)/productpage
 
 ### Istio 1.6.x
 
-Running Gloo with Istio 1.6.0 is largely the same as the instructions above for 1.5.x. The only minor differences are bumping the verison of istio to 1.6.0, and changing the readiness port from 15020 to 15021. In all other ways, the setup is identical to the 1.5.x instructions above.
+Running Gloo with Istio 1.6.0 is largely the same as the instructions above for 1.5.x. The only minor differences are bumping the verison of Istio to 1.6.0, and changing the readiness port from 15020 to 15021. In all other ways, the setup is identical to the 1.5.x instructions above.
 
 #### Test
 As this is a bit involved, lets take a step by step approach to test this. This was tested with Istio version 1.6.0 and gloo versions 1.3.20 and 1.4.0-beta13.
