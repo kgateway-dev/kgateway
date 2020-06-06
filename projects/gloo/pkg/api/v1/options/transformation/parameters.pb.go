@@ -33,7 +33,7 @@ type Parameters struct {
 	//   extensions:
 	//     parameters:
 	//         headers:
-	//           x-user-id: { userId }
+	//           x-user-id: '{userId}'
 	Headers map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// part of the (or the entire) path that will be used extract data for processing output templates
 	// Gloo will search for parameters by their name in header value strings, enclosed in single
