@@ -139,7 +139,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
-			Expect(tt.GetMergeExtractorsToBody()).NotTo(Equal(nil))
+			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
 
 			extrs := tt.GetExtractors()
 			Expect(extrs["what"].GetHeader()).To(Equal(":path"))
