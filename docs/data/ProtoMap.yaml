@@ -35,6 +35,24 @@ apis:
   consul.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto.sk/#UpstreamSpec
     package: consul.options.gloo.solo.io
+  core.gloo.solo.io.CallCredentials:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#CallCredentials
+    package: core.gloo.solo.io
+  core.gloo.solo.io.SDSConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#SDSConfig
+    package: core.gloo.solo.io
+  core.gloo.solo.io.SSLFiles:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#SSLFiles
+    package: core.gloo.solo.io
+  core.gloo.solo.io.SslConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#SslConfig
+    package: core.gloo.solo.io
+  core.gloo.solo.io.SslParameters:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#SslParameters
+    package: core.gloo.solo.io
+  core.gloo.solo.io.UpstreamSslConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/core/ssl.proto.sk/#UpstreamSslConfig
+    package: core.gloo.solo.io
   core.solo.io.Metadata:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io
@@ -257,30 +275,9 @@ apis:
   envoy.api.v2.route.WeightedCluster:
     relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#WeightedCluster
     package: envoy.api.v2.route
-  envoy.config.core.v3.Address:
-    relativepath: reference/api/envoy/config/core/v3/address.proto.sk/#Address
-    package: envoy.config.core.v3
   envoy.config.core.v3.Locality:
     relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Locality
     package: envoy.config.core.v3
-  envoy.config.core.v3.Pipe:
-    relativepath: reference/api/envoy/config/core/v3/address.proto.sk/#Pipe
-    package: envoy.config.core.v3
-  envoy.config.core.v3.SocketAddress:
-    relativepath: reference/api/envoy/config/core/v3/address.proto.sk/#SocketAddress
-    package: envoy.config.core.v3
-  envoy.config.endpoint.v3.Endpoint:
-    relativepath: reference/api/envoy/config/endpoint/v3/endpoint_components.proto.sk/#Endpoint
-    package: envoy.config.endpoint.v3
-  envoy.config.endpoint.v3.LbEndpoint:
-    relativepath: reference/api/envoy/config/endpoint/v3/endpoint_components.proto.sk/#LbEndpoint
-    package: envoy.config.endpoint.v3
-  envoy.config.endpoint.v3.Locality:
-    relativepath: reference/api/envoy/config/endpoint/v3/endpoint_components.proto.sk/#Locality
-    package: envoy.config.endpoint.v3
-  envoy.config.endpoint.v3.LocalityLbEndpoints:
-    relativepath: reference/api/envoy/config/endpoint/v3/endpoint_components.proto.sk/#LocalityLbEndpoints
-    package: envoy.config.endpoint.v3
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
     package: envoy.config.filter.http.aws_lambda.v2
@@ -599,9 +596,6 @@ apis:
   gloo.solo.io.WeightedDestinationOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options.proto.sk/#WeightedDestinationOptions
     package: gloo.solo.io
-  glooe.solo.io.Failover:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/failover.proto.sk/#Failover
-    package: glooe.solo.io
   glooe.solo.io.RateLimitConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/ratelimit.proto.sk/#RateLimitConfig
     package: glooe.solo.io

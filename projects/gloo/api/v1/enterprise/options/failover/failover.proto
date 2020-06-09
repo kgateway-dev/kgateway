@@ -7,7 +7,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
-import "gloo/projects/gloo/api/v1/ssl.proto";
+import "gloo/projects/gloo/api/v1/core/ssl.proto";
 import "envoy/config/core/v3/base.proto";
 
 message Failover {
@@ -82,7 +82,7 @@ message Endpoint {
     // :ref:`auto_host_rewrite <envoy_api_field_config.route.v3.RouteAction.auto_host_rewrite>`.
     string hostname = 3;
 
-    .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
+    .core.gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
 }
 
 // An Endpoint that Envoy can route traffic to.
