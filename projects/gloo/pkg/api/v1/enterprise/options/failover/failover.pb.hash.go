@@ -147,18 +147,13 @@ func (m *Endpoint) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetAddress()).(safe_hasher.SafeHasher); ok {
-		if _, err = h.Hash(hasher); err != nil {
-			return 0, err
-		}
-	} else {
-		if val, err := hashstructure.Hash(m.GetAddress(), nil); err != nil {
-			return 0, err
-		} else {
-			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-				return 0, err
-			}
-		}
+	if _, err = hasher.Write([]byte(m.GetAddress())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetPort())
+	if err != nil {
+		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetHealthCheckConfig()).(safe_hasher.SafeHasher); ok {
@@ -173,10 +168,6 @@ func (m *Endpoint) Hash(hasher hash.Hash64) (uint64, error) {
 				return 0, err
 			}
 		}
-	}
-
-	if _, err = hasher.Write([]byte(m.GetHostname())); err != nil {
-		return 0, err
 	}
 
 	if h, ok := interface{}(m.GetUpstreamSslConfig()).(safe_hasher.SafeHasher); ok {
@@ -315,7 +306,7 @@ func (m *ExplicitFailover_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64,
 		return 0, err
 	}
 
-	for _, v := range m.GetEndpoints() {
+	for _, v := range m.GetLocalityEndpoints() {
 
 		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {

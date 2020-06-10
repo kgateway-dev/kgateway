@@ -82,13 +82,13 @@ the list, first being `0` through `n-1`.
 
 
 ```yaml
-"endpoints": []failover.options.gloo.solo.io.LocalityLbEndpoints
+"localityEndpoints": []failover.options.gloo.solo.io.LocalityLbEndpoints
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `endpoints` | [[]failover.options.gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
+| `localityEndpoints` | [[]failover.options.gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
 
 
 
@@ -120,18 +120,18 @@ Represents a single instance of an upstream
 Upstream host identifier.
 
 ```yaml
-"address": .failover.options.gloo.solo.io.Address
+"address": string
+"port": int
 "healthCheckConfig": .failover.options.gloo.solo.io.Endpoint.HealthCheckConfig
-"hostname": string
 "upstreamSslConfig": .core.gloo.solo.io.UpstreamSslConfig
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `address` | [.failover.options.gloo.solo.io.Address](../failover.proto.sk/#address) | The upstream host address. .. attention:: The form of host address depends on the given cluster type. For STATIC or EDS, it is expected to be a direct IP address (or something resolvable by the specified :ref:`resolver <envoy_api_field_config.core.v3.SocketAddress.resolver_name>` in the Address). For LOGICAL or STRICT DNS, it is expected to be hostname, and will be resolved via DNS. |  |
+| `address` | `string` | Address (hostname or IP). |  |
+| `port` | `int` | Port the instance is listening on. |  |
 | `healthCheckConfig` | [.failover.options.gloo.solo.io.Endpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. .. attention:: This takes into effect only for upstream clusters with :ref:`active health checking <arch_overview_health_checking>` enabled. |  |
-| `hostname` | `string` | The hostname associated with this endpoint. This hostname is not used for routing or address resolution. If provided, it will be associated with the endpoint, and can be used for features that require a hostname, like :ref:`auto_host_rewrite <envoy_api_field_config.route.v3.RouteAction.auto_host_rewrite>`. |  |
 | `upstreamSslConfig` | [.core.gloo.solo.io.UpstreamSslConfig](../../../../core/ssl.proto.sk/#upstreamsslconfig) |  |  |
 
 
