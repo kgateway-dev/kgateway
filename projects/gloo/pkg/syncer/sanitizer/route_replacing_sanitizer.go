@@ -7,7 +7,7 @@ import (
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
@@ -18,7 +18,6 @@ import (
 
 	"go.uber.org/zap"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
@@ -67,10 +66,10 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*Route
 }
 
 func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*listener.Listener, *cluster.Cluster, error) {
-	hcmConfig := &v2.HttpConnectionManager{
-		CodecType:  v2.HttpConnectionManager_AUTO,
+	hcmConfig := &v3.HttpConnectionManager{
+		CodecType:  v3.HttpConnectionManager_AUTO,
 		StatPrefix: fallbackListenerName,
-		RouteSpecifier: &v2.HttpConnectionManager_RouteConfig{
+		RouteSpecifier: &v3.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoyroute.RouteConfiguration{
 				Name: "fallback_routes",
 				VirtualHosts: []*envoyroute.VirtualHost{{
@@ -96,7 +95,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 				}},
 			},
 		},
-		HttpFilters: []*v2.HttpFilter{{
+		HttpFilters: []*v3.HttpFilter{{
 			Name: util.Router,
 		}},
 	}
@@ -195,14 +194,14 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	return xdsSnapshot, nil
 }
 
-func getRoutes(snap envoycache.Snapshot) ([]*envoyapi.RouteConfiguration, error) {
+func getRoutes(snap envoycache.Snapshot) ([]*envoyroute.RouteConfiguration, error) {
 	routeConfigProtos := snap.GetResources(xds.RouteType)
-	var routeConfigs []*envoyapi.RouteConfiguration
+	var routeConfigs []*envoyroute.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {
-		routeConfig, ok := routeConfigProto.ResourceProto().(*envoyapi.RouteConfiguration)
+		routeConfig, ok := routeConfigProto.ResourceProto().(*envoyroute.RouteConfiguration)
 		if !ok {
-			return nil, eris.Errorf("invalid type, expected *envoyapi.RouteConfiguration, found %T", routeConfigProto)
+			return nil, eris.Errorf("invalid type, expected *envoyroute.RouteConfiguration, found %T", routeConfigProto)
 		}
 		routeConfigs = append(routeConfigs, routeConfig)
 	}
@@ -224,7 +223,7 @@ func getClusters(snap *v1.ApiSnapshot) map[string]struct{} {
 	return validClusters
 }
 
-func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyapi.RouteConfiguration) ([]*envoyroute.RouteConfiguration, bool) {
+func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Context, validClusters map[string]struct{}, routeConfigs []*envoyroute.RouteConfiguration) ([]*envoyroute.RouteConfiguration, bool) {
 	var sanitizedRouteConfigs []*envoyroute.RouteConfiguration
 
 	isInvalid := func(cluster string) bool {

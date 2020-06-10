@@ -89,7 +89,7 @@ func (s *EnvoySnapshot) Consistent() error {
 
 	routes := GetResourceReferences(s.Listeners.Items)
 	if len(routes) != len(s.Routes.Items) {
-		return fmt.Errorf("mismatched route reference and resource lengths: %v != %d", routes, len(s.Routes.Items))
+		return fmt.Errorf("mismatched route reference and resource lengths: len(%v) != %d", routes, len(s.Routes.Items))
 	}
 	return cache.Superset(routes, s.Routes.Items)
 }
