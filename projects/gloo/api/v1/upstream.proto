@@ -25,7 +25,7 @@ import "gloo/projects/gloo/api/v1/options/azure/azure.proto";
 import "gloo/projects/gloo/api/v1/options/consul/consul.proto";
 import "gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
 import "gloo/projects/gloo/api/v1/options.proto";
-import "gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto";
+import "gloo/projects/gloo/api/v1/failover.proto";
 
 
 /*
@@ -79,7 +79,7 @@ message Upstream {
     }
 
     // Failover endpoints for this upstream. If nil no failovers will be applied.
-    failover.options.gloo.solo.io.Failover failover = 18;
+    gloo.solo.io.Failover failover = 18;
 }
 
 // created by discovery services

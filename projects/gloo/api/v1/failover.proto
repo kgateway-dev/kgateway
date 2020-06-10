@@ -1,13 +1,13 @@
 syntax = "proto3";
-package failover.options.gloo.solo.io;
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/failover";
+package gloo.solo.io;
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
-import "gloo/projects/gloo/api/v1/core/ssl.proto";
+import "gloo/projects/gloo/api/v1/ssl.proto";
 import "solo-kit/api/v1/ref.proto";
 import "envoy/config/core/v3/base.proto";
 
@@ -46,10 +46,6 @@ message Failover {
     repeated PrioritizedLocality prioritized_localities = 2;
 }
 
-// Upstream host identifier.
-message Endpoint {
-}
-
 // An Endpoint that Envoy can route traffic to.
 // [#next-free-field: 6]
 message LbEndpoint {
@@ -86,7 +82,7 @@ message LbEndpoint {
     //   :ref:`active health checking <arch_overview_health_checking>` enabled.
     HealthCheckConfig health_check_config = 3;
 
-    .core.gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
+    .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
 
     // The optional load balancing weight of the upstream host; at least 1.
     // Envoy uses the load balancing weight in some of the built in load
