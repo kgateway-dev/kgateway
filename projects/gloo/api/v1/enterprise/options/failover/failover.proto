@@ -8,6 +8,7 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
 import "gloo/projects/gloo/api/v1/core/ssl.proto";
+import "solo-kit/api/v1/ref.proto";
 import "envoy/config/core/v3/base.proto";
 
 /*
@@ -31,7 +32,17 @@ message Failover {
     envoy.config.core.v3.Locality locality = 1;
 
     message PrioritizedLocality {
-        repeated LocalityLbEndpoints locality_endpoints = 2;
+        message Explicit {
+            repeated LocalityLbEndpoints locality_endpoints = 1;
+        }
+
+        oneof discovery_method {
+
+            Explicit explicit = 1;
+
+            core.solo.io.ResourceRef kube_service = 2;
+        }
+
     }
 
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
