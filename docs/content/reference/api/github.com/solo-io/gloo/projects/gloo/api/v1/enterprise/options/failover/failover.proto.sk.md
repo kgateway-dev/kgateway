@@ -13,6 +13,7 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
+- [Explicit](#explicit)
 - [Endpoint](#endpoint)
 - [HealthCheckConfig](#healthcheckconfig)
 - [LbEndpoint](#lbendpoint)
@@ -60,6 +61,25 @@ the list, first being `0` through `n-1`.
 
 ---
 ### PrioritizedLocality
+
+
+
+```yaml
+"explicit": .failover.options.gloo.solo.io.Failover.PrioritizedLocality.Explicit
+"kubeService": .core.solo.io.ResourceRef
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `explicit` | [.failover.options.gloo.solo.io.Failover.PrioritizedLocality.Explicit](../failover.proto.sk/#explicit) |  Only one of `explicit` or `kubeService` can be set. |  |
+| `kubeService` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  Only one of `kubeService` or `explicit` can be set. |  |
+
+
+
+
+---
+### Explicit
 
 
 
