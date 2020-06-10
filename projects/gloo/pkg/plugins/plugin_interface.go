@@ -45,11 +45,16 @@ type RouteActionParams struct {
 	Upstream Plugins
 */
 
+// UpstreamPlugin is called after the envoy Cluster has been created for the input Upstream, and allows
+// the cluster to be edited before being sent to envoy via CDS
 type UpstreamPlugin interface {
 	Plugin
 	ProcessUpstream(params Params, in *v1.Upstream, out *envoyapi.Cluster) error
 }
 
+// Endpoint is called after the envoy ClusterLoadAssignment has been created for the input Upstream, and allows
+// the endpoints to be edited before being sent to envoy via EDS
+// If one wishes to also modify the corresponding envoy Cluster the above UpstreamPlugin interface should be used.
 type EndpointPlugin interface {
 	Plugin
 	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
