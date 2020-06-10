@@ -6,8 +6,8 @@ import (
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 )
 
 var _ = Describe("Upgradeconfig", func() {
