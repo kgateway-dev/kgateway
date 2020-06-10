@@ -32,17 +32,13 @@ message Failover {
     envoy.config.core.v3.Locality locality = 1;
 
     message PrioritizedLocality {
-        message Explicit {
-            repeated LocalityLbEndpoints locality_endpoints = 1;
-        }
 
-        oneof discovery_method {
+        repeated LocalityLbEndpoints locality_endpoints = 1;
 
-            Explicit explicit = 1;
-
-            core.solo.io.ResourceRef kube_service = 2;
-        }
-
+        // A list of references to kubernetes services to be used as endpoints for this priority.
+        // As each kubernetes service must be located in the current cluster, the locality will be
+        // left empty, and all endpoints from these services will be given the same load_balancing_weight.
+        repeated core.solo.io.ResourceRef kube_services = 2;
     }
 
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each

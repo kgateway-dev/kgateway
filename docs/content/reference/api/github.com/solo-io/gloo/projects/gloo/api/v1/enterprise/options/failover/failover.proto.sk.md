@@ -13,7 +13,6 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
-- [Explicit](#explicit)
 - [Endpoint](#endpoint)
 - [HealthCheckConfig](#healthcheckconfig)
 - [LbEndpoint](#lbendpoint)
@@ -65,32 +64,15 @@ the list, first being `0` through `n-1`.
 
 
 ```yaml
-"explicit": .failover.options.gloo.solo.io.Failover.PrioritizedLocality.Explicit
-"kubeService": .core.solo.io.ResourceRef
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `explicit` | [.failover.options.gloo.solo.io.Failover.PrioritizedLocality.Explicit](../failover.proto.sk/#explicit) |  Only one of `explicit` or `kubeService` can be set. |  |
-| `kubeService` | [.core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) |  Only one of `kubeService` or `explicit` can be set. |  |
-
-
-
-
----
-### Explicit
-
-
-
-```yaml
 "localityEndpoints": []failover.options.gloo.solo.io.LocalityLbEndpoints
+"kubeServices": []core.solo.io.ResourceRef
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `localityEndpoints` | [[]failover.options.gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
+| `kubeServices` | [[]core.solo.io.ResourceRef](../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A list of references to kubernetes services to be used as endpoints for this priority. As each kubernetes service must be located in the current cluster, the locality will be left empty, and all endpoints from these services will be given the same load_balancing_weight. |  |
 
 
 
