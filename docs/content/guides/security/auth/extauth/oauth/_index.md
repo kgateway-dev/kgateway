@@ -54,7 +54,7 @@ spec:
 The `AuthConfig` consists of a single `config` of type `oauth`. Let's go through each of its attributes:
 
 - `issuer_url`: The url of the OpenID Connect identity provider. Gloo will automatically discover OpenID Connect 
-configuration by querying the `.well-known/open-configuration` endpoint on the `issuer_url`. For example, if you are 
+configuration by querying the `.well-known/openid-configuration` endpoint on the `issuer_url`. For example, if you are 
 using Google as an identity provider, Gloo will expect to find OIDC discovery information at 
 `https://accounts.google.com/.well-known/openid-configuration`.
 - `auth_endpoint_query_params`: A map of query parameters appended to the issuer url in the form
