@@ -15,6 +15,7 @@
 package xds
 
 import (
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -73,6 +74,15 @@ func (e *EnvoyResource) Name() string {
 	case *route.RouteConfiguration:
 		return v.GetName()
 	case *listener.Listener:
+		return v.GetName()
+	// adding cases below as temporary solution to enable incremental changes
+	case *v2.ClusterLoadAssignment:
+		return v.GetClusterName()
+	case *v2.Cluster:
+		return v.GetName()
+	case *v2.RouteConfiguration:
+		return v.GetName()
+	case *v2.Listener:
 		return v.GetName()
 	default:
 		return ""
