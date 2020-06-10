@@ -356,14 +356,8 @@ apis:
   envoy.type.Percent:
     relativepath: reference/api/envoy/type/percent.proto.sk/#Percent
     package: envoy.type
-  failover.options.gloo.solo.io.Address:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Address
-    package: failover.options.gloo.solo.io
   failover.options.gloo.solo.io.Endpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Endpoint
-    package: failover.options.gloo.solo.io
-  failover.options.gloo.solo.io.ExplicitFailover:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#ExplicitFailover
     package: failover.options.gloo.solo.io
   failover.options.gloo.solo.io.Failover:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Failover
