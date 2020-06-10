@@ -76,8 +76,18 @@ func (m *WasmFilter) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if _, err = hasher.Write([]byte(m.GetConfig())); err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetConfig()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetConfig(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	if h, ok := interface{}(m.GetFilterStage()).(safe_hasher.SafeHasher); ok {

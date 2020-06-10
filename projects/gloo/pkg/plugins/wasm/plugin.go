@@ -131,7 +131,7 @@ func (p *Plugin) ensurePluginInCache(filter *wasm.WasmFilter) (*CachedPlugin, er
 	}, nil
 }
 
-func (p *Plugin) verifyConfiguration(schema Schema, config string) error {
+func (p *Plugin) verifyConfiguration(schema Schema, config *types.Any) error {
 	// everything goes now-a-days
 	return nil
 }
