@@ -1,9 +1,9 @@
 package translator
 
 import (
+	"context"
+
 	structpb "github.com/golang/protobuf/ptypes/struct"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -17,26 +17,17 @@ const SoloAnnotations = "io.solo.annotations"
 
 // Endpoints
 
-func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.ClusterLoadAssignment {
+func computeClusterEndpoints(ctx context.Context, upstreams []*v1.Upstream, endpoints []*v1.Endpoint) []*envoyapi.ClusterLoadAssignment {
 
-	_, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusterEndpoints")
+	_, span := trace.StartSpan(ctx, "gloo.translator.computeClusterEndpoints")
 	defer span.End()
 
 	var clusterEndpointAssignments []*envoyapi.ClusterLoadAssignment
-	for _, upstream := range params.Snapshot.Upstreams {
-		clusterEndpoints := endpointsForUpstream(upstream, params.Snapshot.Endpoints)
+	for _, upstream := range upstreams {
+		clusterEndpoints := endpointsForUpstream(upstream, endpoints)
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
 		if len(clusterEndpoints) > 0 {
 			loadAssignment := loadAssignmentForUpstream(upstream, clusterEndpoints)
-			for _, plug := range t.plugins {
-				upstreamPlug, ok := plug.(plugins.EndpointPlugin)
-				if !ok {
-					continue
-				}
-				if err := upstreamPlug.ProcessEndpoints(params, upstream, loadAssignment); err != nil {
-					reports.AddError(upstream, err)
-				}
-			}
 			clusterEndpointAssignments = append(clusterEndpointAssignments, loadAssignment)
 		}
 	}

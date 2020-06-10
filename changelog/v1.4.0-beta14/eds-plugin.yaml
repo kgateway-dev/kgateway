@@ -1,6 +1,0 @@
-changelog:
-- type: NEW_FEATURE
-  issueLink: https://github.com/solo-io/gloo/issues/3131
-  description: >
-    Support go plugins to Gloo which allow for adding/editing of EDS endpoints before they are sent to envoy.
-    This plugin will be called from within the Gloo translator and allow for extension of Gloo EDS programmatically.

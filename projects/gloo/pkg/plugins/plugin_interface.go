@@ -50,11 +50,6 @@ type UpstreamPlugin interface {
 	ProcessUpstream(params Params, in *v1.Upstream, out *envoyapi.Cluster) error
 }
 
-type EndpointPlugin interface {
-	Plugin
-	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
-}
-
 /*
 	Routing Plugins
 */

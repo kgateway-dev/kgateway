@@ -1494,28 +1494,6 @@ var _ = Describe("Translator", func() {
 
 	})
 
-	Context("EndpointPlugin", func() {
-		var (
-			endpointPlugin *endpointPluginMock
-		)
-		BeforeEach(func() {
-			endpointPlugin = &endpointPluginMock{}
-			registeredPlugins = append(registeredPlugins, endpointPlugin)
-		})
-
-		It("should call the endpoint plugin", func() {
-			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
-				Expect(out.GetEndpoints()).To(HaveLen(1))
-				Expect(out.GetClusterName()).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
-				Expect(out.GetEndpoints()[0].GetLbEndpoints()).To(HaveLen(1))
-				return nil
-			}
-
-			translate()
-		})
-
-	})
-
 	Context("Route option on direct response actions", func() {
 
 		BeforeEach(func() {
@@ -1940,16 +1918,4 @@ func (p *routePluginMock) Init(params plugins.InitParams) error {
 
 func (p *routePluginMock) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error {
 	return p.ProcessRouteFunc(params, in, out)
-}
-
-type endpointPluginMock struct {
-	ProcessEndpointFunc func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
-}
-
-func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
-	return e.ProcessEndpointFunc(params, in, out)
-}
-
-func (e *endpointPluginMock) Init(params plugins.InitParams) error {
-	return nil
 }
