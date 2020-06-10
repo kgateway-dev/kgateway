@@ -48,6 +48,12 @@ message Failover {
 
 // Upstream host identifier.
 message Endpoint {
+}
+
+// An Endpoint that Envoy can route traffic to.
+// [#next-free-field: 6]
+message LbEndpoint {
+
     // The optional health check configuration.
     message HealthCheckConfig {
         // Optional alternative health check port value.
@@ -81,12 +87,6 @@ message Endpoint {
     HealthCheckConfig health_check_config = 3;
 
     .core.gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
-}
-
-// An Endpoint that Envoy can route traffic to.
-// [#next-free-field: 6]
-message LbEndpoint {
-    Endpoint endpoint = 1;
 
     // The optional load balancing weight of the upstream host; at least 1.
     // Envoy uses the load balancing weight in some of the built in load
@@ -96,7 +96,7 @@ message LbEndpoint {
     // weighted by the endpoint's locality's load balancing weight from
     // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
     // weight in a locality.
-    google.protobuf.UInt32Value load_balancing_weight = 4;
+    google.protobuf.UInt32Value load_balancing_weight = 5;
 }
 
 // A group of endpoints belonging to a Locality.
@@ -118,7 +118,7 @@ message LocalityLbEndpoints {
     // Locality weights are only considered when :ref:`locality weighted load
     // balancing <arch_overview_load_balancing_locality_weighted_lb>` is
     // configured. These weights are ignored otherwise. If no weights are
-    // specified when locality weighted load balancing is enabled, the locality is
+    // specified when locality weighted load balancing is enabled, the locality isga
     // assigned no load.
     google.protobuf.UInt32Value load_balancing_weight = 3;
 }
