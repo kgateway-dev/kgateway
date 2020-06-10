@@ -75,7 +75,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 		},
 	}
 
-	return pluginutils.SetVhostTypedPerFilterConfig(out, FilterName, config)
+	return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
 }
 
 // This function generates the ext_authz TypedPerFilterConfig for this route:
@@ -109,7 +109,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		},
 	}
 
-	return pluginutils.SetRouteTypedPerFilterConfig(out, FilterName, config)
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
 }
 
 // This function generates the ext_authz TypedPerFilterConfig for this weightedDestination:
@@ -143,7 +143,7 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 		},
 	}
 
-	return pluginutils.SetWeightedClusterTypedPerFilterConfig(out, FilterName, config)
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
 }
 
 func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
@@ -165,15 +165,15 @@ func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
 }
 
 func markVirtualHostNoAuth(out *envoyroute.VirtualHost) error {
-	return pluginutils.SetVhostTypedPerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetVhostPerFilterConfig(out, FilterName, getNoAuthConfig())
 }
 
 func markWeightedClusterNoAuth(out *envoyroute.WeightedCluster_ClusterWeight) error {
-	return pluginutils.SetWeightedClusterTypedPerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, getNoAuthConfig())
 }
 
 func markRouteNoAuth(out *envoyroute.Route) error {
-	return pluginutils.SetRouteTypedPerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, getNoAuthConfig())
 }
 
 func getNoAuthConfig() *envoyauth.ExtAuthzPerRoute {

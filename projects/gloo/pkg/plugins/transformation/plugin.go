@@ -43,7 +43,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetVhostTypedPerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetVhostPerFilterConfig(out, FilterName, transformations)
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
@@ -58,7 +58,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetRouteTypedPerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetRoutePerFilterConfig(out, FilterName, transformations)
 }
 
 func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.WeightedDestination, out *envoyroute.WeightedCluster_ClusterWeight) error {
@@ -73,7 +73,7 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 	}
 
 	p.RequireTransformationFilter = true
-	return pluginutils.SetWeightedClusterTypedPerFilterConfig(out, FilterName, transformations)
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, transformations)
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {

@@ -44,19 +44,19 @@ var _ = Describe("TypedPerFilterConfig", func() {
 		})
 
 		It("should add typed per filter config to route", func() {
-			err := SetRouteTypedPerFilterConfig(out, name, msg)
+			err := SetRoutePerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
 		})
 		It("should add typed per filter config to vhost", func() {
 			out := &envoyroute.VirtualHost{}
-			err := SetVhostTypedPerFilterConfig(out, name, msg)
+			err := SetVhostPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
 		})
 		It("should add typed per filter config to cluster weight", func() {
 			out := &envoyroute.WeightedCluster_ClusterWeight{}
-			err := SetWeightedClusterTypedPerFilterConfig(out, name, msg)
+			err := SetWeightedClusterPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
 		})
@@ -94,7 +94,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config to upstream", func() {
 
-			err := MarkTypedPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return msg, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -103,7 +103,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config only to relevant upstream", func() {
 
-			err := MarkTypedPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				return nil, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -168,7 +168,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 		It("should add typed per filter config only to relevant upstream in mutiple dest", func() {
 
-			err := MarkTypedPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+			err := MarkPerFilterConfig(context.TODO(), &v1.ApiSnapshot{}, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 				if spec.GetUpstream().Name == "yes" {
 					return msg, nil
 				}
@@ -231,7 +231,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 
 			It("should add typed per filter config only to relevant upstream in mutiple dest", func() {
 
-				err := MarkTypedPerFilterConfig(context.TODO(), snap, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
+				err := MarkPerFilterConfig(context.TODO(), snap, in, out, name, func(spec *v1.Destination) (proto.Message, error) {
 					if spec.GetUpstream().Name == "yes" {
 						return msg, nil
 					}

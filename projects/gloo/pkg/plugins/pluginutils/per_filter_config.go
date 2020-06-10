@@ -13,19 +13,19 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func SetRouteTypedPerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
+func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
 	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
 }
-func SetVhostTypedPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
+func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
 	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
 }
-func SetWeightedClusterTypedPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
+func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
 	if out.GetTypedPerFilterConfig() == nil {
 		out.TypedPerFilterConfig = make(map[string]*any.Any)
 	}
@@ -36,7 +36,7 @@ func SetWeightedClusterTypedPerFilterConfig(out *envoyroute.WeightedCluster_Clus
 type TypedPerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
 
 // call this from
-func MarkTypedPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoyroute.Route, filterName string, typedPerFilterConfig TypedPerFilterConfigFunc) error {
+func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoyroute.Route, filterName string, typedPerFilterConfig TypedPerFilterConfigFunc) error {
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err

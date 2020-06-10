@@ -54,7 +54,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 		return generateEnvoyConfigForHttpFault(routeAbort, routeDelay), nil
 	}
-	return pluginutils.MarkTypedPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName, markFilterConfigFunc)
+	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName, markFilterConfigFunc)
 }
 
 func toEnvoyAbort(abort *fault.RouteAbort) *envoyhttpfault.FaultAbort {
