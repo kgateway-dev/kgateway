@@ -10,7 +10,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
-var _ = FDescribe("Any", func() {
+var _ = Describe("Any", func() {
 
 	It("should convert golang message to any", func() {
 		msg := &structpb.Struct{

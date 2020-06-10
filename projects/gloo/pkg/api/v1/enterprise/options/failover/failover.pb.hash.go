@@ -40,14 +40,14 @@ func (m *Failover) Hash(hasher hash.Hash64) (uint64, error) {
 
 	switch m.Method.(type) {
 
-	case *Failover_Simple:
+	case *Failover_Explicit:
 
-		if h, ok := interface{}(m.GetSimple()).(safe_hasher.SafeHasher); ok {
+		if h, ok := interface{}(m.GetExplicit()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetSimple(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetExplicit(), nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -62,7 +62,7 @@ func (m *Failover) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *Simple) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ExplicitFailover) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -70,7 +70,7 @@ func (m *Simple) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("failover.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/failover.Simple")); err != nil {
+	if _, err = hasher.Write([]byte("failover.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/failover.ExplicitFailover")); err != nil {
 		return 0, err
 	}
 
@@ -303,7 +303,7 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *Simple_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *ExplicitFailover_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -311,7 +311,7 @@ func (m *Simple_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("failover.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/failover.Simple_PrioritizedLocality")); err != nil {
+	if _, err = hasher.Write([]byte("failover.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/failover.ExplicitFailover_PrioritizedLocality")); err != nil {
 		return 0, err
 	}
 

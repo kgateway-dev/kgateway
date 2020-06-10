@@ -10,13 +10,30 @@ import "google/protobuf/wrappers.proto";
 import "gloo/projects/gloo/api/v1/core/ssl.proto";
 import "envoy/config/core/v3/base.proto";
 
+/*
+    Failover configuration for an upstream.
+
+    Failover allows for optional fallback endpoints in the case that the primary set of endpoints is deemed
+    unhealthy. As failover requires knowledge of the health of each set of endpoints, active or passive
+    health checks must be configured on an upstream using failover in order for it to work properly.
+*/
 message Failover {
+    // The method by which to configure failover for the upstream
     oneof method {
-        Simple simple = 1;
+        ExplicitFailover explicit = 1;
     }
 }
 
-message Simple {
+/*
+    ExplicitFailover closely resembles the Envoy config which this is translated to, with one notable exception.
+    The priorities are not defined on the `LocalityLbEndpoints` but rather inferred from the list of
+    `PrioritizedLocality`. More information on envoy prioritization can be found
+    [here](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/priority#arch-overview-load-balancing-priority-levels).
+    In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by it's index in
+    the list, first being `0` through `n-1`.
+
+*/
+message ExplicitFailover {
     // Identifies location of where the parent upstream hosts run.
     envoy.config.core.v3.Locality locality = 1;
 
@@ -24,6 +41,8 @@ message Simple {
         repeated LocalityLbEndpoints endpoints = 2;
     }
 
+    // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
+    // list of `LocalityLbEndpoints` is determined by it's index in the list.
     repeated PrioritizedLocality prioritized_localities = 2;
 }
 

@@ -12,7 +12,7 @@ weight: 5
 
 
 - [Failover](#failover)
-- [Simple](#simple)
+- [ExplicitFailover](#explicitfailover)
 - [PrioritizedLocality](#prioritizedlocality)
 - [Address](#address)
 - [Endpoint](#endpoint)
@@ -32,35 +32,46 @@ weight: 5
 ---
 ### Failover
 
+ 
+Failover configuration for an upstream.
 
+Failover allows for optional fallback endpoints in the case that the primary set of endpoints is deemed
+unhealthy. As failover requires knowledge of the health of each set of endpoints, active or passive
+health checks must be configured on an upstream using failover in order for it to work properly.
 
 ```yaml
-"simple": .failover.options.gloo.solo.io.Simple
+"explicit": .failover.options.gloo.solo.io.ExplicitFailover
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `simple` | [.failover.options.gloo.solo.io.Simple](../failover.proto.sk/#simple) |  |  |
+| `explicit` | [.failover.options.gloo.solo.io.ExplicitFailover](../failover.proto.sk/#explicitfailover) |  |  |
 
 
 
 
 ---
-### Simple
+### ExplicitFailover
 
-
+ 
+ExplicitFailover closely resembles the Envoy config which this is translated to, with one notable exception.
+The priorities are not defined on the `LocalityLbEndpoints` but rather inferred from the list of
+`PrioritizedLocality`. More information on envoy prioritization can be found
+[here](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/priority#arch-overview-load-balancing-priority-levels).
+In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by it's index in
+the list, first being `0` through `n-1`.
 
 ```yaml
 "locality": .envoy.config.core.v3.Locality
-"prioritizedLocalities": []failover.options.gloo.solo.io.Simple.PrioritizedLocality
+"prioritizedLocalities": []failover.options.gloo.solo.io.ExplicitFailover.PrioritizedLocality
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `locality` | [.envoy.config.core.v3.Locality](../../../../../../../../../../../envoy/config/core/v3/base.proto.sk/#locality) | Identifies location of where the parent upstream hosts run. |  |
-| `prioritizedLocalities` | [[]failover.options.gloo.solo.io.Simple.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) |  |  |
+| `prioritizedLocalities` | [[]failover.options.gloo.solo.io.ExplicitFailover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by it's index in the list. |  |
 
 
 

@@ -362,6 +362,9 @@ apis:
   failover.options.gloo.solo.io.Endpoint:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Endpoint
     package: failover.options.gloo.solo.io
+  failover.options.gloo.solo.io.ExplicitFailover:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#ExplicitFailover
+    package: failover.options.gloo.solo.io
   failover.options.gloo.solo.io.Failover:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Failover
     package: failover.options.gloo.solo.io
@@ -370,9 +373,6 @@ apis:
     package: failover.options.gloo.solo.io
   failover.options.gloo.solo.io.LocalityLbEndpoints:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#LocalityLbEndpoints
-    package: failover.options.gloo.solo.io
-  failover.options.gloo.solo.io.Simple:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/failover/failover.proto.sk/#Simple
     package: failover.options.gloo.solo.io
   fault.options.gloo.solo.io.RouteAbort:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/faultinjection/fault.proto.sk/#RouteAbort
