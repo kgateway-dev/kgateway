@@ -228,6 +228,18 @@ this feature makes it easy to implement **authorization** for authenticated user
 
 In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo's **OpenID Connect** (OIDC) authentication module.
 
+{{% notice note %}}
+It is possible to use the OPA without the OIDC authentication module.
+Each request that is passed to the OPA check contains all HTTP request headers as part of the
+[ `CheckRequest`](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkrequest)
+object provided in `input.check_request`.
+
+For example, a JWT passed via a `api-token` header could be used in a policy as
+```
+jwt := input.check_request.attributes.request.http.headers["api-token"]
+```
+{{% /notice %}}
+
 ### Deploy sample application
 {{% notice warning %}}
 The sample `petclinic` application deploys a MySql server. If you are using `minikube` v1.5 to run this guide, this 
