@@ -28,7 +28,7 @@ import "envoy/config/core/v3/base.proto";
 
 */
 message Failover {
-    // Identifies location of where the parent upstream hosts run.
+    // Identifies where the parent upstream hosts run.
     envoy.config.core.v3.Locality locality = 1;
 
     message PrioritizedLocality {
