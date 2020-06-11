@@ -81,7 +81,6 @@ var _ = Describe("Translator", func() {
 		cluster            *envoyapi.Cluster
 		listener           *envoyapi.Listener
 		endpoints          envoycache.Resources
-		endpoint           *envoyapi.ClusterLoadAssignment
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
@@ -257,9 +256,6 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration).NotTo(BeNil())
 
 		endpoints = snap.GetResources(xds.EndpointType)
-		endpointResource := endpoints.Items["test_gloo-system"]
-		endpoint = endpointResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
-		Expect(endpoint).NotTo(BeNil())
 
 		snapshot = snap
 	}
@@ -1527,6 +1523,9 @@ var _ = Describe("Translator", func() {
 			}
 
 			translate()
+			endpointResource := endpoints.Items["test_gloo-system"]
+			endpoint := endpointResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+			Expect(endpoint).NotTo(BeNil())
 			Expect(endpoint.Endpoints).To(HaveLen(2))
 			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
 		})
