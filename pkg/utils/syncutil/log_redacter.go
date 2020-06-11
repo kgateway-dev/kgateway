@@ -14,9 +14,8 @@ import (
 const (
 	Redacted = "[REDACTED]"
 
-	LogRedactorTag           = "logging"
-	LogRedactorTagValue      = "redact"
-	SerializationFieldPrefix = "XXX"
+	LogRedactorTag      = "logging"
+	LogRedactorTagValue = "redact"
 )
 
 // stringify the contents of the snapshot
