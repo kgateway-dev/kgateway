@@ -306,7 +306,7 @@ message ExtAuthConfig {
     string client_id = 1;
 
     // your client secret as registered with the issuer
-    string client_secret = 2;
+    string client_secret = 2 [(gogoproto.moretags) = "logging:\"redact\""];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
@@ -330,7 +330,7 @@ message ExtAuthConfig {
 
   message ApiKeyAuthConfig {
     // a map of valid apikeys to their associated plaintext users.
-    map<string, string> valid_api_key_and_user = 1;
+    map<string, string> valid_api_key_and_user = 1 [(gogoproto.moretags) = "logging:\"redact\""];
   }
 
   message OpaAuthConfig {

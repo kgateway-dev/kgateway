@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: Add Go tags to the extauth config protos to allow redacting sensitive data in log statements in the extauth server.
+    issueLink: https://github.com/solo-io/gloo/issues/3105
+    resolvesIssue: false
