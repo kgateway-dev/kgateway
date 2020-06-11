@@ -221,12 +221,24 @@ rm policy.rego
 ```
 
 ## Validate JWTs with Open Policy Agent
-The Open Policy Agent policy language has in-built support for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you 
-to define policies based on the claims contained in a JWT. If you are using an **authentication** mechanism that conveys 
-identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)), this feature makes 
-it easy to implement **authorization** for authenticated users.
+The Open Policy Agent policy language has [in-built support](https://www.openpolicyagent.org/docs/latest/policy-reference/#token-verification)
+for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you to define policies based on the claims contained in a JWT.
+If you are using an **authentication** mechanism that conveys identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)),
+this feature makes it easy to implement **authorization** for authenticated users.
 
 In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo's **OpenID Connect** (OIDC) authentication module.
+
+{{% notice note %}}
+It is possible to use the OPA without the OIDC authentication module.
+Each request that is passed to the OPA check contains all HTTP request headers as part of the
+[ `CheckRequest`](https://www.envoyproxy.io/docs/envoy/latest/api-v2/service/auth/v2/external_auth.proto#service-auth-v2-checkrequest)
+object provided in `input.check_request`.
+
+For example, a JWT passed via a `api-token` header could be used in a policy as
+```
+jwt := input.check_request.attributes.request.http.headers["api-token"]
+```
+{{% /notice %}}
 
 ### Deploy sample application
 {{% notice warning %}}
