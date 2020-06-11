@@ -221,10 +221,10 @@ rm policy.rego
 ```
 
 ## Validate JWTs with Open Policy Agent
-The Open Policy Agent policy language has in-built support for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you 
-to define policies based on the claims contained in a JWT. If you are using an **authentication** mechanism that conveys 
-identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)), this feature makes 
-it easy to implement **authorization** for authenticated users.
+The Open Policy Agent policy language has [in-built support](https://www.openpolicyagent.org/docs/latest/policy-reference/#token-verification)
+for [JSON Web Tokens](https://jwt.io/) (JWTs), allowing you to define policies based on the claims contained in a JWT.
+If you are using an **authentication** mechanism that conveys identity information via JWTs (e.g. [OpenID Connect](https://en.wikipedia.org/wiki/OpenID_Connect)),
+this feature makes it easy to implement **authorization** for authenticated users.
 
 In this guide we will see how to use OPA to enforce policies on the JWTs produced by Gloo's **OpenID Connect** (OIDC) authentication module.
 
