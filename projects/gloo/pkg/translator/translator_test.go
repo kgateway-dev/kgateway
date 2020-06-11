@@ -6,6 +6,7 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
@@ -80,6 +81,7 @@ var _ = Describe("Translator", func() {
 		cluster            *envoyapi.Cluster
 		listener           *envoyapi.Listener
 		endpoints          envoycache.Resources
+		endpoint           *envoyapi.ClusterLoadAssignment
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoyapi.RouteConfiguration
 	)
@@ -255,6 +257,9 @@ var _ = Describe("Translator", func() {
 		Expect(routeConfiguration).NotTo(BeNil())
 
 		endpoints = snap.GetResources(xds.EndpointType)
+		endpointResource := endpoints.Items["test_gloo-system"]
+		endpoint = endpointResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+		Expect(endpoint).NotTo(BeNil())
 
 		snapshot = snap
 	}
@@ -1504,14 +1509,26 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("should call the endpoint plugin", func() {
+
+			additionalEndpoint := &envoy_api_v2_endpoint.LocalityLbEndpoints{
+				Locality: &envoycore.Locality{
+					Region: "region",
+					Zone:   "a",
+				},
+				Priority: 10,
+			}
 			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
 				Expect(out.GetEndpoints()).To(HaveLen(1))
 				Expect(out.GetClusterName()).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
 				Expect(out.GetEndpoints()[0].GetLbEndpoints()).To(HaveLen(1))
+
+				out.Endpoints = append(out.Endpoints, additionalEndpoint)
 				return nil
 			}
 
 			translate()
+			Expect(endpoint.Endpoints).To(HaveLen(2))
+			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
 		})
 
 	})
