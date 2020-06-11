@@ -6,15 +6,16 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/gogo/protobuf/proto"
+	"github.com/mitchellh/reflectwalk"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	xdsproto "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 )
 
 const (
 	Redacted = "[REDACTED]"
 
-	TagName                  = "logging"
-	TagValue                 = "redact"
+	LogRedactorTag           = "logging"
+	LogRedactorTagValue      = "redact"
 	SerializationFieldPrefix = "XXX"
 )
 
@@ -62,55 +63,54 @@ func StringifySnapshot(snapshot interface{}) string {
 	return stringBuilder.String()
 }
 
-type Logger interface {
-	Infof(format string, args ...interface{})
-	Errorf(format string, args ...interface{})
+type ProtoRedactor interface {
+	// Build a JSON string representation of the proto message, zeroing-out all fields in the proto that match some criteria
+	BuildRedactedJsonString(message proto.Message) (string, error)
 }
 
-// Convert all the configs into JSON, but without XXX_ serialization fields and without struct fields tagged with "logging: redact", then log them in that form
-func LogRedactedExtAuthConfigs(logger Logger, configs []*xdsproto.ExtAuthConfig) {
-	logger.Infof("Processing %d new configs", len(configs))
-	for _, authConfig := range configs {
-		for _, authConfigSpec := range authConfig.Configs {
-			redactedJson := redactObject(authConfigSpec)
-			jsonBytes, err := json.Marshal(redactedJson)
-			if err == nil {
-				logger.Infof("New config: %s", string(jsonBytes))
-			} else {
-				logger.Errorf("Failed to convert auth config into redacted JSON for logging: %+v", err)
-			}
-		}
+// build a ProtoRedactor that zeroes out fields that have the given struct tag set to the given value
+func NewProtoRedactor(tagName, tagValue string) ProtoRedactor {
+	return &protoRedactor{
+		tagName:  tagName,
+		tagValue: tagValue,
 	}
 }
 
-func redactObject(o interface{}) map[string]interface{} {
-	if reflect.ValueOf(o).IsNil() {
-		return nil
+type protoRedactor struct {
+	tagName  string
+	tagValue string
+}
+
+func (p *protoRedactor) BuildRedactedJsonString(message proto.Message) (string, error) {
+	// make a clone so that we can mutate it and zero-out fields
+	clone := proto.Clone(message)
+
+	walker := &structWalker{
+		tagName:  p.tagName,
+		tagValue: p.tagValue,
 	}
-	jsonRepresentation := map[string]interface{}{}
-	if o == struct{}{} {
-		return jsonRepresentation
-	}
-	elem := reflect.ValueOf(o).Elem()
-	for i := 0; i < elem.NumField(); i++ {
-		fieldName := elem.Type().Field(i).Name
-
-		if strings.HasPrefix(fieldName, SerializationFieldPrefix) {
-			continue
-		}
-
-		fieldValue := elem.Field(i).Interface()
-		kind := elem.Field(i).Kind()
-
-		tagValue := elem.Type().Field(i).Tag.Get(TagName)
-		if kind == reflect.Struct || kind == reflect.Interface || kind == reflect.Ptr {
-			jsonRepresentation[fieldName] = redactObject(fieldValue)
-		} else if tagValue == TagValue {
-			jsonRepresentation[fieldName] = Redacted
-		} else {
-			jsonRepresentation[fieldName] = fieldValue
-		}
+	err := reflectwalk.Walk(clone, walker)
+	if err != nil {
+		return "", err
 	}
 
-	return jsonRepresentation
+	bytes, err := json.Marshal(clone)
+	return string(bytes), err
+}
+
+// run the StructField callback for every field in the proto
+type structWalker struct {
+	tagName  string
+	tagValue string
+}
+
+func (s *structWalker) Struct(reflect.Value) error {
+	return nil
+}
+
+func (s *structWalker) StructField(field reflect.StructField, value reflect.Value) error {
+	if field.Tag.Get(s.tagName) == s.tagValue {
+		value.Set(reflect.Zero(value.Type()))
+	}
+	return nil
 }

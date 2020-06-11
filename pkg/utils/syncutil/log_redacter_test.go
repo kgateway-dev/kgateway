@@ -58,7 +58,11 @@ var _ = Describe("Log Redacter", func() {
 	})
 
 	DescribeTable("AuthConfig logging", func(secretPhrase string, config *xdsproto.ExtAuthConfig) {
-		syncutil.LogRedactedExtAuthConfigs(&fakeLogger{secretPhrase: secretPhrase}, []*xdsproto.ExtAuthConfig{config})
+		redactor := syncutil.NewProtoRedactor(syncutil.LogRedactorTag, syncutil.LogRedactorTagValue)
+
+		jsonString, err := redactor.BuildRedactedJsonString(config)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(jsonString).NotTo(ContainSubstring(secretPhrase))
 	}, Entry("can hide OAuth secret data", "client-secret-data-should-be-redacted", &xdsproto.ExtAuthConfig{
 		AuthConfigRefName: "ref-name",
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
