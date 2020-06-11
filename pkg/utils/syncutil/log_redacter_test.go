@@ -1,8 +1,6 @@
 package syncutil_test
 
 import (
-	"fmt"
-
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -156,18 +154,3 @@ var _ = Describe("Log Redacter", func() {
 	}),
 	)
 })
-
-type fakeLogger struct {
-	// fail if this secret phrase shows up in any content that's logged
-	secretPhrase string
-}
-
-func (f *fakeLogger) Infof(format string, args ...interface{}) {
-	logLine := fmt.Sprintf(format, args...)
-	Expect(logLine).NotTo(ContainSubstring(f.secretPhrase))
-}
-
-func (f *fakeLogger) Errorf(format string, args ...interface{}) {
-	logLine := fmt.Sprintf(format, args...)
-	Expect(logLine).NotTo(ContainSubstring(f.secretPhrase))
-}
