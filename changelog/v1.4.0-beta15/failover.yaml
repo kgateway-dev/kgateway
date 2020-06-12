@@ -1,0 +1,7 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3141
+  resolvesIssue: false
+  description: >
+    Define the API to specify Prioritized Failover in Gloo. This API allows for a user to define a list of endpoint
+    sets which will be used in the case that the main upstream endpoint becomes unhealthy.
