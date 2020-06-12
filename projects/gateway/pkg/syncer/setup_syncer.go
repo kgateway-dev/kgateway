@@ -100,6 +100,10 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 
 		allowMissingLinks := AllowMissingLinks
 
+		if allowMissing := validationCfg.AllowMissingLinks; allowMissing != nil {
+			allowMissingLinks = allowMissing.GetValue()
+		}
+
 		validation = &translator.ValidationOpts{
 			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
 			ValidatingWebhookPort:        defaults.ValidationWebhookBindPort,
