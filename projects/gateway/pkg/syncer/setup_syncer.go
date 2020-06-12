@@ -37,7 +37,6 @@ import (
 // TODO: switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
 var AcceptAllResourcesByDefault = true
 
-// TODO: expose AllowMissingLinks as a setting
 var AllowMissingLinks = true
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
