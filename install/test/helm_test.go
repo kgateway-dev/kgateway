@@ -1065,6 +1065,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowMissingLinks: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
@@ -1102,6 +1103,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowMissingLinks: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
@@ -1182,6 +1184,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowMissingLinks: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
