@@ -52,7 +52,6 @@ spec:
       alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
       allowMissingLinks: {{ .Values.gateway.validation.allowMissingLinks }}
 {{- end }}
-{{- end }}
 
 {{- if ne .Values.discovery.fdsMode "" }}
   discovery:
