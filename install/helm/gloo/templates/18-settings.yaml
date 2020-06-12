@@ -49,10 +49,8 @@ spec:
     validation:
       proxyValidationServerAddr: gloo:{{ .Values.gloo.deployment.validationPort }}
 {{- /* need to do this weird if/else because Helm cannot differentiate between 'false' and 'unset' */}}
-{{- if .Values.gateway.validation.alwaysAcceptResources }}
-      alwaysAccept: true
-{{- else }}
-      alwaysAccept: false
+      alwaysAccept: {{ .Values.gateway.validation.alwaysAcceptResources }}
+      allowMissingLinks: {{ .Values.gateway.validation.allowMissingLinks }}
 {{- end }}
 {{- end }}
 
