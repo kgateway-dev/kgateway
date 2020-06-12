@@ -50,7 +50,7 @@ spec:
           allowPrivilegeEscalation: false
           runAsNonRoot: true
           {{- if not .Values.gateway.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" .Values.gateway.deployment.runAsUser -}}
+          runAsUser: {{ printf "%.0f" (float64 .Values.gateway.deployment.runAsUser) -}}
           {{- end }}
           capabilities:
             drop:

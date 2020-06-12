@@ -122,7 +122,7 @@ spec:
           {{- if $spec.podTemplate.runUnprivileged }}
           runAsNonRoot: true
           {{- if not $spec.podTemplate.floatingUserId }}
-          runAsUser: {{ printf "%.0f" $spec.podTemplate.runAsUser -}}
+          runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
           {{- end }}
           {{- end}}
           capabilities:
