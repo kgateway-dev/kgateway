@@ -5,11 +5,10 @@
 package mocks
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	chart "helm.sh/helm/v3/pkg/chart"
 	release "helm.sh/helm/v3/pkg/release"
+	reflect "reflect"
 )
 
 // MockHelmInstallation is a mock of HelmInstallation interface

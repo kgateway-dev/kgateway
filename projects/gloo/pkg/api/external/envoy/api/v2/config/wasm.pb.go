@@ -5,12 +5,11 @@ package config
 
 import (
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/gogo/protobuf/proto"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

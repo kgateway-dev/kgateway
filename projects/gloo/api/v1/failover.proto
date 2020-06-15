@@ -41,7 +41,7 @@ message Failover {
     }
 
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
-    // list of `LocalityLbEndpoints` is determined by it's index in the list.
+    // list of `LocalityLbEndpoints` is determined by its index in the list.
     repeated PrioritizedLocality prioritized_localities = 2;
 }
 
@@ -58,11 +58,8 @@ message LbEndpoint {
         // to have different health check address port.
         uint32 port_value = 1;
 
-        // By default, the host header for L7 health checks is controlled by cluster level configuration
-        // (see: :ref:`host <envoy_api_field_config.core.v3.HealthCheck.HttpHealthCheck.host>` and
-        // :ref:`authority <envoy_api_field_config.core.v3.HealthCheck.GrpcHealthCheck.authority>`). Setting this
-        // to a non-empty value allows overriding the cluster level configuration for a specific
-        // endpoint.
+        // By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
+        // to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
         string hostname = 2;
     }
 
@@ -94,7 +91,7 @@ message LbEndpoint {
 // generally only done if the different groups need to have different load
 // balancing weights or different priorities.
 message LocalityLbEndpoints {
-    // Identifies location of where the upstream hosts run.
+    // Identifies where the parent upstream hosts run.
     Locality locality = 1;
 
     // The group of endpoints belonging to the locality specified.
@@ -104,12 +101,6 @@ message LocalityLbEndpoints {
     // balancing weight for a locality is divided by the sum of the weights of all
     // localities  at the same priority level to produce the effective percentage
     // of traffic for the locality.
-    //
-    // Locality weights are only considered when :ref:`locality weighted load
-    // balancing <arch_overview_load_balancing_locality_weighted_lb>` is
-    // configured. These weights are ignored otherwise. If no weights are
-    // specified when locality weighted load balancing is enabled, the locality isga
-    // assigned no load.
     google.protobuf.UInt32Value load_balancing_weight = 3;
 }
 

@@ -6,13 +6,12 @@ package v1
 import (
 	bytes "bytes"
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -45,7 +44,7 @@ type Failover struct {
 	// Identifies where the parent upstream hosts run.
 	Locality *Locality `protobuf:"bytes,1,opt,name=locality,proto3" json:"locality,omitempty"`
 	// PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
-	// list of `LocalityLbEndpoints` is determined by it's index in the list.
+	// list of `LocalityLbEndpoints` is determined by its index in the list.
 	PrioritizedLocalities []*Failover_PrioritizedLocality `protobuf:"bytes,2,rep,name=prioritized_localities,json=prioritizedLocalities,proto3" json:"prioritized_localities,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}                        `json:"-"`
 	XXX_unrecognized      []byte                          `json:"-"`
@@ -232,11 +231,8 @@ type LbEndpoint_HealthCheckConfig struct {
 	// check port. Setting this with a non-zero value allows an upstream host
 	// to have different health check address port.
 	PortValue uint32 `protobuf:"varint,1,opt,name=port_value,json=portValue,proto3" json:"port_value,omitempty"`
-	// By default, the host header for L7 health checks is controlled by cluster level configuration
-	// (see: :ref:`host <envoy_api_field_config.core.v3.HealthCheck.HttpHealthCheck.host>` and
-	// :ref:`authority <envoy_api_field_config.core.v3.HealthCheck.GrpcHealthCheck.authority>`). Setting this
-	// to a non-empty value allows overriding the cluster level configuration for a specific
-	// endpoint.
+	// By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
+	// to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
 	Hostname             string   `protobuf:"bytes,2,opt,name=hostname,proto3" json:"hostname,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -286,7 +282,7 @@ func (m *LbEndpoint_HealthCheckConfig) GetHostname() string {
 // generally only done if the different groups need to have different load
 // balancing weights or different priorities.
 type LocalityLbEndpoints struct {
-	// Identifies location of where the upstream hosts run.
+	// Identifies where the parent upstream hosts run.
 	Locality *Locality `protobuf:"bytes,1,opt,name=locality,proto3" json:"locality,omitempty"`
 	// The group of endpoints belonging to the locality specified.
 	LbEndpoints []*LbEndpoint `protobuf:"bytes,2,rep,name=lb_endpoints,json=lbEndpoints,proto3" json:"lb_endpoints,omitempty"`
@@ -294,12 +290,6 @@ type LocalityLbEndpoints struct {
 	// balancing weight for a locality is divided by the sum of the weights of all
 	// localities  at the same priority level to produce the effective percentage
 	// of traffic for the locality.
-	//
-	// Locality weights are only considered when :ref:`locality weighted load
-	// balancing <arch_overview_load_balancing_locality_weighted_lb>` is
-	// configured. These weights are ignored otherwise. If no weights are
-	// specified when locality weighted load balancing is enabled, the locality isga
-	// assigned no load.
 	LoadBalancingWeight  *types.UInt32Value `protobuf:"bytes,3,opt,name=load_balancing_weight,json=loadBalancingWeight,proto3" json:"load_balancing_weight,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`

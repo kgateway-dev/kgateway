@@ -53,7 +53,7 @@ the list, first being `0` through `n-1`.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
-| `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by it's index in the list. |  |
+| `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by its index in the list. |  |
 
 
 
@@ -118,7 +118,7 @@ The optional health check configuration.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `portValue` | `int` | Optional alternative health check port value. By default the health check address port of an upstream host is the same as the host's serving address port. This provides an alternative health check port. Setting this with a non-zero value allows an upstream host to have different health check address port. |  |
-| `hostname` | `string` | By default, the host header for L7 health checks is controlled by cluster level configuration (see: :ref:`host <envoy_api_field_config.core.v3.HealthCheck.HttpHealthCheck.host>` and :ref:`authority <envoy_api_field_config.core.v3.HealthCheck.GrpcHealthCheck.authority>`). Setting this to a non-empty value allows overriding the cluster level configuration for a specific endpoint. |  |
+| `hostname` | `string` | By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this to a non-empty value allows overriding the cluster level configuration for a specific endpoint. |  |
 
 
 
@@ -141,9 +141,9 @@ balancing weights or different priorities.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies location of where the upstream hosts run. |  |
+| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
 | `lbEndpoints` | [[]gloo.solo.io.LbEndpoint](../failover.proto.sk/#lbendpoint) | The group of endpoints belonging to the locality specified. |  |
-| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. Locality weights are only considered when :ref:`locality weighted load balancing <arch_overview_load_balancing_locality_weighted_lb>` is configured. These weights are ignored otherwise. If no weights are specified when locality weighted load balancing is enabled, the locality isga assigned no load. |  |
+| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. |  |
 
 
 
