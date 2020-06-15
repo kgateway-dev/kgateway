@@ -5,12 +5,13 @@
 package mocks
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	discovery "github.com/solo-io/gloo/projects/gloo/pkg/discovery"
 	plugins "github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	clients "github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	reflect "reflect"
 )
 
 // MockDiscoveryPlugin is a mock of DiscoveryPlugin interface
