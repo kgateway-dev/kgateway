@@ -460,8 +460,8 @@ Policy for how Gloo should handle invalid config
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `replaceInvalidRoutes` | `bool` | if set to `true`, Gloo removes any routes from the provided configuration which point to a missing destination. Routes that are removed in this way will instead return a configurable direct response to clients. When routes are replaced, Gloo will configure Envoy with a special listener which serves direct responses. Note: enabling this option allows Gloo to accept partially valid proxy configurations. |  |
-| `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code default is 404. |  |
-| `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
+| `invalidRouteResponseCode` | `int` | replaced routes reply to clients with this response code. default is 404. |  |
+| `invalidRouteResponseBody` | `string` | replaced routes reply to clients with this response body. default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'. |  |
 
 
 
@@ -508,12 +508,12 @@ options for configuring admission control / validation
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `proxyValidationServerAddr` | `string` | Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988` This field is required in order to enable fine-grained admission control. |  |
+| `proxyValidationServerAddr` | `string` | Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`. This field is required in order to enable fine-grained admission control. |  |
 | `validationWebhookTlsCert` | `string` | Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`. |  |
 | `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |  |
 | `ignoreGlooValidationFailure` | `bool` | When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |  |
-| `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |  |
-| `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true) By settings to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |  |
+| `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error. Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat. Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |  |
+| `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true). By settings to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |  |
 
 
 

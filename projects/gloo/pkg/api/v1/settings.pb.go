@@ -1355,12 +1355,12 @@ type GlooOptions_InvalidConfigPolicy struct {
 	// will instead return a configurable direct response to clients. When routes are replaced,
 	// Gloo will configure Envoy with a special listener which serves direct responses.
 	//
-	// Note: enabling this option allows Gloo to accept partially valid proxy configurations
+	// Note: enabling this option allows Gloo to accept partially valid proxy configurations.
 	ReplaceInvalidRoutes bool `protobuf:"varint,1,opt,name=replace_invalid_routes,json=replaceInvalidRoutes,proto3" json:"replace_invalid_routes,omitempty"`
-	// replaced routes reply to clients with this response code
-	// default is 404
+	// replaced routes reply to clients with this response code.
+	// default is 404.
 	InvalidRouteResponseCode uint32 `protobuf:"varint,2,opt,name=invalid_route_response_code,json=invalidRouteResponseCode,proto3" json:"invalid_route_response_code,omitempty"`
-	// replaced routes reply to clients with this response body
+	// replaced routes reply to clients with this response body.
 	// default is 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
 	InvalidRouteResponseBody string   `protobuf:"bytes,3,opt,name=invalid_route_response_body,json=invalidRouteResponseBody,proto3" json:"invalid_route_response_body,omitempty"`
 	XXX_NoUnkeyedLiteral     struct{} `json:"-"`
@@ -1415,13 +1415,13 @@ func (m *GlooOptions_InvalidConfigPolicy) GetInvalidRouteResponseBody() string {
 
 // Settings specific to the Gateway controller
 type GatewayOptions struct {
-	// Address of the `gloo` config validation server. Defaults to `gloo:9988`
+	// Address of the `gloo` config validation server. Defaults to `gloo:9988`.
 	ValidationServerAddr string `protobuf:"bytes,1,opt,name=validation_server_addr,json=validationServerAddr,proto3" json:"validation_server_addr,omitempty"`
 	// If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)
 	// of Gateways, Virtual Services, and Route Tables when running in Kubernetes.
 	Validation *GatewayOptions_ValidationOptions `protobuf:"bytes,3,opt,name=validation,proto3" json:"validation,omitempty"`
 	// When true, the Gateway controller will consume Gateway custom resources from all watch namespaces, rather
-	// than just the Gateway CRDs in its own namespace
+	// than just the Gateway CRDs in its own namespace.
 	ReadGatewaysFromAllNamespaces bool `protobuf:"varint,4,opt,name=read_gateways_from_all_namespaces,json=readGatewaysFromAllNamespaces,proto3" json:"read_gateways_from_all_namespaces,omitempty"`
 	// Deprecated.
 	// This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo.
@@ -1486,23 +1486,23 @@ func (m *GatewayOptions) GetAlwaysSortRouteTableRoutes() bool {
 
 // options for configuring admission control / validation
 type GatewayOptions_ValidationOptions struct {
-	// Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`
-	// This field is required in order to enable fine-grained admission control
+	// Address of the `gloo` proxy validation grpc server. Defaults to `gloo:9988`.
+	// This field is required in order to enable fine-grained admission control.
 	ProxyValidationServerAddr string `protobuf:"bytes,2,opt,name=proxy_validation_server_addr,json=proxyValidationServerAddr,proto3" json:"proxy_validation_server_addr,omitempty"`
-	// Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`
+	// Path to TLS Certificate for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.crt`.
 	ValidationWebhookTlsCert string `protobuf:"bytes,3,opt,name=validation_webhook_tls_cert,json=validationWebhookTlsCert,proto3" json:"validation_webhook_tls_cert,omitempty"`
-	// Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`
+	// Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`.
 	ValidationWebhookTlsKey string `protobuf:"bytes,4,opt,name=validation_webhook_tls_key,json=validationWebhookTlsKey,proto3" json:"validation_webhook_tls_key,omitempty"`
 	// When Gateway cannot communicate with Gloo (e.g. Gloo is offline)
 	// resources will be rejected by default.
 	// Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting
-	// resources due to network errors
+	// resources due to network errors.
 	IgnoreGlooValidationFailure bool `protobuf:"varint,5,opt,name=ignore_gloo_validation_failure,json=ignoreGlooValidationFailure,proto3" json:"ignore_gloo_validation_failure,omitempty"`
-	// Always accept resources even if validation produced an error
-	// Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat
-	// Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage
+	// Always accept resources even if validation produced an error.
+	// Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat.
+	// Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage.
 	AlwaysAccept *types.BoolValue `protobuf:"bytes,6,opt,name=always_accept,json=alwaysAccept,proto3" json:"always_accept,omitempty"`
-	// Accept resources if validation produced a warning (defaults to true)
+	// Accept resources if validation produced a warning (defaults to true).
 	// By settings to false, this means that validation will start rejecting resources that would result
 	// in warnings, rather than just those that would result in errors.
 	AllowWarnings        *types.BoolValue `protobuf:"bytes,7,opt,name=allow_warnings,json=allowWarnings,proto3" json:"allow_warnings,omitempty"`
