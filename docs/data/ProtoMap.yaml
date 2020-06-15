@@ -257,9 +257,6 @@ apis:
   envoy.api.v2.route.WeightedCluster:
     relativepath: reference/api/envoy/api/v2/route/route.proto.sk/#WeightedCluster
     package: envoy.api.v2.route
-  envoy.config.core.v3.Locality:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Locality
-    package: envoy.config.core.v3
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
     package: envoy.config.filter.http.aws_lambda.v2
@@ -460,6 +457,9 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.LoadBalancerConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto.sk/#LoadBalancerConfig
+    package: gloo.solo.io
+  gloo.solo.io.Locality:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#Locality
     package: gloo.solo.io
   gloo.solo.io.LocalityLbEndpoints:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LocalityLbEndpoints

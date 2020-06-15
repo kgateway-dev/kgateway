@@ -16,6 +16,7 @@ weight: 5
 - [LbEndpoint](#lbendpoint)
 - [HealthCheckConfig](#healthcheckconfig)
 - [LocalityLbEndpoints](#localitylbendpoints)
+- [Locality](#locality)
   
 
 
@@ -40,18 +41,18 @@ Failover closely resembles the Envoy config which this is translated to, with on
 The priorities are not defined on the `LocalityLbEndpoints` but rather inferred from the list of
 `PrioritizedLocality`. More information on envoy prioritization can be found
 [here](https://www.envoyproxy.io/docs/envoy/v1.14.1/intro/arch_overview/upstream/load_balancing/priority#arch-overview-load-balancing-priority-levels).
-In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by it's index in
+In practice this means that the priority of a given set of `LocalityLbEndpoints` is determined by its index in
 the list, first being `0` through `n-1`.
 
 ```yaml
-"locality": .envoy.config.core.v3.Locality
+"locality": .gloo.solo.io.Locality
 "prioritizedLocalities": []gloo.solo.io.Failover.PrioritizedLocality
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `locality` | [.envoy.config.core.v3.Locality](../../../../../../../../envoy/config/core/v3/base.proto.sk/#locality) | Identifies location of where the parent upstream hosts run. |  |
+| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
 | `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by it's index in the list. |  |
 
 
@@ -81,7 +82,6 @@ the list, first being `0` through `n-1`.
 
  
 An Endpoint that Envoy can route traffic to.
-[#next-free-field: 6]
 
 ```yaml
 "address": string
@@ -96,7 +96,7 @@ An Endpoint that Envoy can route traffic to.
 | ----- | ---- | ----------- |----------- | 
 | `address` | `string` | Address (hostname or IP). |  |
 | `port` | `int` | Port the instance is listening on. |  |
-| `healthCheckConfig` | [.gloo.solo.io.LbEndpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. .. attention:: This takes into effect only for upstream clusters with :ref:`active health checking <arch_overview_health_checking>` enabled. |  |
+| `healthCheckConfig` | [.gloo.solo.io.LbEndpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. This takes into effect only for upstreams with active health checking enabled. |  |
 | `upstreamSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) |  |  |
 | `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The optional load balancing weight of the upstream host; at least 1. Envoy uses the load balancing weight in some of the built in load balancers. The load balancing weight for an endpoint is divided by the sum of the weights of all endpoints in the endpoint's locality to produce a percentage of traffic for the endpoint. This percentage is then further weighted by the endpoint's locality's load balancing weight from LocalityLbEndpoints. If unspecified, each host is presumed to have equal weight in a locality. |  |
 
@@ -133,7 +133,7 @@ generally only done if the different groups need to have different load
 balancing weights or different priorities.
 
 ```yaml
-"locality": .envoy.config.core.v3.Locality
+"locality": .gloo.solo.io.Locality
 "lbEndpoints": []gloo.solo.io.LbEndpoint
 "loadBalancingWeight": .google.protobuf.UInt32Value
 
@@ -141,9 +141,31 @@ balancing weights or different priorities.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `locality` | [.envoy.config.core.v3.Locality](../../../../../../../../envoy/config/core/v3/base.proto.sk/#locality) | Identifies location of where the upstream hosts run. |  |
+| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies location of where the upstream hosts run. |  |
 | `lbEndpoints` | [[]gloo.solo.io.LbEndpoint](../failover.proto.sk/#lbendpoint) | The group of endpoints belonging to the locality specified. |  |
 | `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. Locality weights are only considered when :ref:`locality weighted load balancing <arch_overview_load_balancing_locality_weighted_lb>` is configured. These weights are ignored otherwise. If no weights are specified when locality weighted load balancing is enabled, the locality isga assigned no load. |  |
+
+
+
+
+---
+### Locality
+
+ 
+Identifies location of where either Envoy runs or where upstream hosts run.
+
+```yaml
+"region": string
+"zone": string
+"subZone": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `region` | `string` | Region this zone belongs to. |  |
+| `zone` | `string` | Defines the local service zone where Envoy is running. The meaning of zone is context dependent, e.g. `Availability Zone (AZ) <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_ on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on GCP, etc. |  |
+| `subZone` | `string` | When used for locality of upstream hosts, this field further splits zone into smaller chunks of sub-zones so they can be load balanced independently. |  |
 
 
 

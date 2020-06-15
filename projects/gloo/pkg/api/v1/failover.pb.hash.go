@@ -203,6 +203,34 @@ func (m *LocalityLbEndpoints) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *Locality) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Locality")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetRegion())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetZone())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetSubZone())); err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *Failover_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

@@ -9,7 +9,6 @@ option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
 import "gloo/projects/gloo/api/v1/ssl.proto";
 import "solo-kit/api/v1/ref.proto";
-import "envoy/config/core/v3/base.proto";
 
 /*
 
@@ -29,7 +28,7 @@ import "envoy/config/core/v3/base.proto";
 */
 message Failover {
     // Identifies where the parent upstream hosts run.
-    envoy.config.core.v3.Locality locality = 1;
+    Locality locality = 1;
 
     message PrioritizedLocality {
 
@@ -47,7 +46,6 @@ message Failover {
 }
 
 // An Endpoint that Envoy can route traffic to.
-// [#next-free-field: 6]
 message LbEndpoint {
 
     // The optional health check configuration.
@@ -75,11 +73,7 @@ message LbEndpoint {
 
     // The optional health check configuration is used as configuration for the
     // health checker to contact the health checked host.
-    //
-    // .. attention::
-    //
-    //   This takes into effect only for upstream clusters with
-    //   :ref:`active health checking <arch_overview_health_checking>` enabled.
+    // This takes into effect only for upstreams with active health checking enabled
     HealthCheckConfig health_check_config = 3;
 
     .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
@@ -101,7 +95,7 @@ message LbEndpoint {
 // balancing weights or different priorities.
 message LocalityLbEndpoints {
     // Identifies location of where the upstream hosts run.
-    envoy.config.core.v3.Locality locality = 1;
+    Locality locality = 1;
 
     // The group of endpoints belonging to the locality specified.
     repeated LbEndpoint lb_endpoints = 2;
@@ -117,4 +111,22 @@ message LocalityLbEndpoints {
     // specified when locality weighted load balancing is enabled, the locality isga
     // assigned no load.
     google.protobuf.UInt32Value load_balancing_weight = 3;
+}
+
+// Identifies location of where either Envoy runs or where upstream hosts run.
+message Locality {
+    // Region this zone belongs to.
+    string region = 1;
+
+    // Defines the local service zone where Envoy is running. The meaning of zone
+    // is context dependent, e.g. `Availability Zone (AZ)
+    // <https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html>`_
+    // on AWS, `Zone <https://cloud.google.com/compute/docs/regions-zones/>`_ on
+    // GCP, etc.
+    string zone = 2;
+
+    // When used for locality of upstream hosts, this field further splits zone
+    // into smaller chunks of sub-zones so they can be load balanced
+    // independently.
+    string sub_zone = 3;
 }
