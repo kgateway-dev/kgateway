@@ -76,6 +76,7 @@ gateway:
     restartPolicy: OnFailure
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
+    runAsUser: 10101
   proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxy:
