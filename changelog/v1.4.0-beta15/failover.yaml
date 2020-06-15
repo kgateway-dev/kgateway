@@ -4,4 +4,6 @@ changelog:
   resolvesIssue: false
   description: >
     Define the API to specify Prioritized Failover in Gloo. This API allows for a user to define a list of endpoint
-    sets which will be used in the case that the main upstream endpoint becomes unhealthy.
+    sets which will be used in the case that the main upstream endpoint becomes unhealthy. Failover supports optional
+    locality weighted load balancing which assigns additional weighted load balancing based on the locality
+    assigned to each of the endpoint sets.
