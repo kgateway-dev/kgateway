@@ -61,7 +61,7 @@ gateway:
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
-    allowMissingLinks: true
+    allowWarnings: true
     webhook:
       enabled: true
   deployment:

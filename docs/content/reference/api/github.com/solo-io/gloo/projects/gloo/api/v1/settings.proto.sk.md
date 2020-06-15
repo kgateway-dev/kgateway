@@ -502,7 +502,7 @@ options for configuring admission control / validation
 "validationWebhookTlsKey": string
 "ignoreGlooValidationFailure": bool
 "alwaysAccept": .google.protobuf.BoolValue
-"allowMissingLinks": .google.protobuf.BoolValue
+"allowWarnings": .google.protobuf.BoolValue
 
 ```
 
@@ -513,7 +513,7 @@ options for configuring admission control / validation
 | `validationWebhookTlsKey` | `string` | Path to TLS Private Key for Kubernetes Validating webhook. Defaults to `/etc/gateway/validation-certs/tls.key`. |  |
 | `ignoreGlooValidationFailure` | `bool` | When Gateway cannot communicate with Gloo (e.g. Gloo is offline) resources will be rejected by default. Enable the `ignoreGlooValidationFailure` to prevent the Validation server from rejecting resources due to network errors. |  |
 | `alwaysAccept` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Always accept resources even if validation produced an error Validation will still log the error and increment the validation.gateway.solo.io/resources_rejected stat Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage. |  |
-| `allowMissingLinks` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Allow missing links between resources (defaults to true) By settings to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |  |
+| `allowWarnings` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Accept resources if validation produced a warning (defaults to true) By settings to false, this means that validation will start rejecting resources that would result in warnings, rather than just those that would result in errors. |  |
 
 
 

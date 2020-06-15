@@ -1,8 +1,8 @@
 changelog:
   - type: FIX
     description: >-
-      Expose a validation setting (`allowMissingLinks`, default `true`) in the API and in helm that was intended to be
+      Expose a validation setting (`allowWarnings`, default `true`) in the API and in helm that was intended to be
       exposed. When set to false, the validation webhook will begin rejecting resources that cause warnings in
-      addition to resources that would cause errors. For this to take affect, note that the validation setting
+      addition to resources that would cause errors. For this to take effect, note that the validation setting
       `alwaysAccept` must be set to false. (default `true`)
     issueLink: https://github.com/solo-io/gloo/issues/3099

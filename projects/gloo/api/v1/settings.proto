@@ -420,10 +420,10 @@ message GatewayOptions {
         // Currently defaults to true - must be set to `false` to prevent writing invalid resources to storage
         google.protobuf.BoolValue always_accept = 6;
 
-        // Allow missing links between resources (defaults to true)
+        // Accept resources if validation produced a warning (defaults to true)
         // By settings to false, this means that validation will start rejecting resources that would result
         // in warnings, rather than just those that would result in errors.
-        google.protobuf.BoolValue allow_missing_links = 7;
+        google.protobuf.BoolValue allow_warnings = 7;
     }
 
     // If provided, the Gateway will perform [Dynamic Admission Control](https://kubernetes.io/docs/reference/access-authn-authz/extensible-admission-controllers/)

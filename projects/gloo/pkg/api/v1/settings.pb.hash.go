@@ -1062,12 +1062,12 @@ func (m *GatewayOptions_ValidationOptions) Hash(hasher hash.Hash64) (uint64, err
 		}
 	}
 
-	if h, ok := interface{}(m.GetAllowMissingLinks()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetAllowWarnings()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetAllowMissingLinks(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetAllowWarnings(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
