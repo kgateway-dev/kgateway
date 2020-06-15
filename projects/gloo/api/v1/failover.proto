@@ -8,7 +8,6 @@ import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 import "google/protobuf/wrappers.proto";
 import "gloo/projects/gloo/api/v1/ssl.proto";
-import "solo-kit/api/v1/ref.proto";
 
 /*
 
@@ -32,12 +31,22 @@ message Failover {
 
     message PrioritizedLocality {
 
+        message ServiceRef {
+            // The name of the Kubernetes Service
+            string service_name = 1;
+            // The namespace where the Service lives
+            string service_namespace = 2;
+            // The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding
+            // port on the pod for routing.
+            uint32 service_port = 3;
+        }
+
         repeated LocalityLbEndpoints locality_endpoints = 1;
 
         // A list of references to kubernetes services to be used as endpoints for this priority.
         // As each kubernetes service must be located in the current cluster, the locality will be
         // left empty, and all endpoints from these services will be given the same load_balancing_weight.
-        repeated core.solo.io.ResourceRef kube_services = 2;
+        repeated ServiceRef kube_services = 2;
     }
 
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each

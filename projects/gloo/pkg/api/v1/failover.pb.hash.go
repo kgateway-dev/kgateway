@@ -283,6 +283,35 @@ func (m *Failover_PrioritizedLocality) Hash(hasher hash.Hash64) (uint64, error) 
 }
 
 // Hash function
+func (m *Failover_PrioritizedLocality_ServiceRef) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.Failover_PrioritizedLocality_ServiceRef")); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetServiceName())); err != nil {
+		return 0, err
+	}
+
+	if _, err = hasher.Write([]byte(m.GetServiceNamespace())); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetServicePort())
+	if err != nil {
+		return 0, err
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *LbEndpoint_HealthCheckConfig) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
