@@ -57,7 +57,7 @@ type validator struct {
 	translator                   translator.Translator
 	validationClient             validation.ProxyValidationServiceClient
 	ignoreProxyValidationFailure bool
-	allowBrokenLinks             bool
+	allowWarnings                bool
 	writeNamespace               string
 }
 
@@ -66,16 +66,16 @@ type ValidatorConfig struct {
 	validationClient             validation.ProxyValidationServiceClient
 	writeNamespace               string
 	ignoreProxyValidationFailure bool
-	allowBrokenLinks             bool
+	allowWarnings                bool
 }
 
-func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowBrokenLinks bool) ValidatorConfig {
+func NewValidatorConfig(translator translator.Translator, validationClient validation.ProxyValidationServiceClient, writeNamespace string, ignoreProxyValidationFailure, allowWarnings bool) ValidatorConfig {
 	return ValidatorConfig{
 		translator:                   translator,
 		validationClient:             validationClient,
 		writeNamespace:               writeNamespace,
 		ignoreProxyValidationFailure: ignoreProxyValidationFailure,
-		allowBrokenLinks:             allowBrokenLinks,
+		allowWarnings:                allowWarnings,
 	}
 }
 
@@ -85,7 +85,7 @@ func NewValidator(cfg ValidatorConfig) *validator {
 		validationClient:             cfg.validationClient,
 		writeNamespace:               cfg.writeNamespace,
 		ignoreProxyValidationFailure: cfg.ignoreProxyValidationFailure,
-		allowBrokenLinks:             cfg.allowBrokenLinks,
+		allowWarnings:                cfg.allowWarnings,
 	}
 }
 
@@ -170,7 +170,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 		gatewayList := gatewaysByProxy[proxyName]
 		proxy, reports := v.translator.Translate(ctx, proxyName, v.writeNamespace, &snap, gatewayList)
 		validate := reports.ValidateStrict
-		if v.allowBrokenLinks {
+		if v.allowWarnings {
 			validate = reports.Validate
 		}
 		if err := validate(); err != nil {
@@ -298,7 +298,7 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 
 	if len(parentGateways) > 0 {
 		err := VirtualServiceDeleteErr(parentGateways)
-		if !v.allowBrokenLinks {
+		if !v.allowWarnings {
 			contextutils.LoggerFrom(ctx).Infof("Rejected deletion of Virtual Service %v: %v", vsRef, err)
 			return err
 		}
@@ -376,7 +376,7 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.Res
 
 	if len(parentVirtualServices) > 0 || len(parentRouteTables) > 0 {
 		err := RouteTableDeleteErr(parentVirtualServices, parentRouteTables)
-		if !v.allowBrokenLinks {
+		if !v.allowWarnings {
 			contextutils.LoggerFrom(ctx).Debugw("Rejected deletion of Route Table %v: %v", rtRef, err)
 			return err
 		}

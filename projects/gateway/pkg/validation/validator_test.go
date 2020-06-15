@@ -104,7 +104,7 @@ var _ = Describe("Validator", func() {
 					Expect(proxyReports).To(HaveLen(0))
 				})
 			})
-			Context("allowBrokenLinks=true", func() {
+			Context("allowWarnings=true", func() {
 				BeforeEach(func() {
 					v = NewValidator(NewValidatorConfig(t, vc, ns, true, true))
 				})
