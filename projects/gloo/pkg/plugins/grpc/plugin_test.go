@@ -94,7 +94,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		It("should process route", func() {
+		PIt("should process route", func() {
 
 			var routeParams plugins.RouteParams
 			routeIn := &v1.Route{
