@@ -11,30 +11,30 @@ import (
 	metricsservice "github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
 )
 
-// MockStorageClient is a mock of StorageClient interface.
+// MockStorageClient is a mock of StorageClient interface
 type MockStorageClient struct {
 	ctrl     *gomock.Controller
 	recorder *MockStorageClientMockRecorder
 }
 
-// MockStorageClientMockRecorder is the mock recorder for MockStorageClient.
+// MockStorageClientMockRecorder is the mock recorder for MockStorageClient
 type MockStorageClientMockRecorder struct {
 	mock *MockStorageClient
 }
 
-// NewMockStorageClient creates a new mock instance.
+// NewMockStorageClient creates a new mock instance
 func NewMockStorageClient(ctrl *gomock.Controller) *MockStorageClient {
 	mock := &MockStorageClient{ctrl: ctrl}
 	mock.recorder = &MockStorageClientMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use.
+// EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockStorageClient) EXPECT() *MockStorageClientMockRecorder {
 	return m.recorder
 }
 
-// GetUsage mocks base method.
+// GetUsage mocks base method
 func (m *MockStorageClient) GetUsage() (*metricsservice.GlobalUsage, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUsage")
@@ -43,13 +43,13 @@ func (m *MockStorageClient) GetUsage() (*metricsservice.GlobalUsage, error) {
 	return ret0, ret1
 }
 
-// GetUsage indicates an expected call of GetUsage.
+// GetUsage indicates an expected call of GetUsage
 func (mr *MockStorageClientMockRecorder) GetUsage() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUsage", reflect.TypeOf((*MockStorageClient)(nil).GetUsage))
 }
 
-// RecordUsage mocks base method.
+// RecordUsage mocks base method
 func (m *MockStorageClient) RecordUsage(arg0 *metricsservice.GlobalUsage) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "RecordUsage", arg0)
@@ -57,7 +57,7 @@ func (m *MockStorageClient) RecordUsage(arg0 *metricsservice.GlobalUsage) error 
 	return ret0
 }
 
-// RecordUsage indicates an expected call of RecordUsage.
+// RecordUsage indicates an expected call of RecordUsage
 func (mr *MockStorageClientMockRecorder) RecordUsage(arg0 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RecordUsage", reflect.TypeOf((*MockStorageClient)(nil).RecordUsage), arg0)
