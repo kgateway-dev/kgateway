@@ -103,7 +103,7 @@ func setConfig(out map[string]*any.Any, filterName string, config proto.Message)
 	if config == nil {
 		return nil
 	}
-	configStruct, err := MessageToAny(config)
+	configStruct, err := GogoMessageToAnyGoProto(config)
 	if err != nil {
 		return err
 	}

@@ -4,14 +4,21 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/solo-io/gloo/pkg/utils"
+	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
 	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 )
 
 var _ = Describe("Plugin", func() {
@@ -76,4 +83,82 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("route", func() {
+
+		ps := &transformapi.Parameters{
+			Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
+			Headers: map[string]string{
+				"header-simple":            "{simple}",
+				"header-simple-with-space": "{ simple_with_space }",
+				"header-nested":            "{something.nested}",
+			},
+		}
+
+		It("should process route", func() {
+
+			var routeParams plugins.RouteParams
+			routeIn := &v1.Route{
+				Action: &v1.Route_RouteAction{
+					RouteAction: &v1.RouteAction{
+						Destination: &v1.RouteAction_Single{
+							Single: &v1.Destination{
+								DestinationSpec: &v1.DestinationSpec{
+									DestinationType: &v1.DestinationSpec_Grpc{
+										Grpc: &v1grpc.DestinationSpec{
+											Package:    "foo",
+											Service:    "bar",
+											Function:   "func",
+											Parameters: ps,
+										},
+									},
+								},
+								DestinationType: &v1.Destination_Upstream{
+									Upstream: utils.ResourceRefPtr(upstream.Metadata.Ref()),
+								},
+							},
+						},
+					},
+				},
+			}
+
+			routeOut := &envoyroute.Route{
+				Match: &envoyroute.RouteMatch{
+					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
+				},
+				Action: &envoyroute.Route_Route{
+					Route: &envoyroute.RouteAction{},
+				},
+			}
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			err = p.ProcessRoute(routeParams, routeIn, routeOut)
+			Expect(err).NotTo(HaveOccurred())
+
+			var cfg envoy_transform.RouteTransformations
+			err = ptypes.UnmarshalAny(routeOut.GetTypedPerFilterConfig()[transformation.FilterName], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
+			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
+
+			extrs := tt.GetExtractors()
+			Expect(extrs["what"].GetHeader()).To(Equal(":path"))
+			Expect(extrs["what"].GetSubgroup()).To(Equal(uint32(1)))
+
+			Expect(extrs["ever"].GetHeader()).To(Equal(":path"))
+			Expect(extrs["ever"].GetSubgroup()).To(Equal(uint32(2)))
+
+			Expect(extrs["nested.field"].GetHeader()).To(Equal(":path"))
+			Expect(extrs["nested.field"].GetSubgroup()).To(Equal(uint32(3)))
+
+			Expect(extrs["simple"].GetHeader()).To(Equal("header-simple"))
+			Expect(extrs["simple"].GetSubgroup()).To(Equal(uint32(1)))
+
+			Expect(extrs["simple_with_space"].GetHeader()).To(Equal("header-simple-with-space"))
+			Expect(extrs["simple_with_space"].GetSubgroup()).To(Equal(uint32(1)))
+
+			Expect(extrs["something.nested"].GetHeader()).To(Equal("header-nested"))
+			Expect(extrs["something.nested"].GetSubgroup()).To(Equal(uint32(1)))
+		})
+	})
 })
