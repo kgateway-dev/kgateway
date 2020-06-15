@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    description: >
+      Allow for spaces around parameter names in gRPC parameter options
+    issueLink: https://github.com/solo-io/gloo/issues/3123

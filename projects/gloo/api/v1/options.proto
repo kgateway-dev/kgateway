@@ -32,6 +32,7 @@ import "gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.prot
 
 import "gloo/projects/gloo/api/external/envoy/extensions/transformation/transformation.proto";
 import "gloo/projects/gloo/api/external/envoy/extensions/proxylatency/proxylatency.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto";
 import "gloo/projects/gloo/api/external/envoy/config/filter/http/gzip/v2/gzip.proto";
 
 import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
@@ -107,6 +108,11 @@ message HttpListenerOptions {
 
     // Enterprise-only: Proxy latency
     envoy.config.filter.http.proxylatency.v2.ProxyLatency proxy_latency = 9;
+
+    // Buffer can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners
@@ -156,6 +162,12 @@ message VirtualHostOptions {
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 12;
     // Enterprise-only: Config for data loss prevention
     dlp.options.gloo.solo.io.Config dlp = 13;
+    // BufferPerRoute can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
 }
 
 // Optional, feature-specific configuration that lives on routes.
@@ -229,6 +241,13 @@ message RouteOptions {
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 18;
     // Enterprise-only: Config for data loss prevention
     dlp.options.gloo.solo.io.Config dlp = 20;
+
+    // BufferPerRoute can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 22;
 }
 
 // Configuration for Destinations that are tied to the UpstreamSpec or ServiceSpec on that destination
@@ -260,4 +279,10 @@ message WeightedDestinationOptions {
     Extensions extensions = 3;
     // Enterprise-only: Authentication configuration
     enterprise.gloo.solo.io.ExtAuthExtension extauth = 4;
+    // BufferPerRoute can be used to set the maximum request size
+    // that the filter will buffer before the connection
+    // manager will stop buffering and return a 413 response.
+    // Note: If you have not set a global config (at the gateway level), this
+    // override will not do anything by itself.
+    envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 5;
 }

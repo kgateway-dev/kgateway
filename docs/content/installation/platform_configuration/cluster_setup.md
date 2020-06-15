@@ -304,7 +304,7 @@ While these additional sections are not required to set up your Kubernetes clust
 
 ### DNS Records
 
-Kubernetes DNS will take care of the internal DNS for the cluster, but it does not publish public DNS records for services running inside the cluster including Gloo Gateway. Using a tool like [external-dns](https://github.com/kubernetes-incubator/external-dns) will enable you to set up DNS records for Gloo and make your services publicly accessible.
+Kubernetes DNS will take care of the internal DNS for the cluster, but it does not publish public DNS records for services running inside the cluster including Gloo Gateway. 
 
 ### Certificate Management
 

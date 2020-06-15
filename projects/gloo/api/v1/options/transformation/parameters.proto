@@ -18,7 +18,7 @@ message Parameters {
     //   extensions:
     //     parameters:
     //         headers:
-    //           x-user-id: { userId }
+    //           x-user-id: '{userId}'
     map<string, string> headers = 1;
     // part of the (or the entire) path that will be used extract data for processing output templates
     // Gloo will search for parameters by their name in header value strings, enclosed in single

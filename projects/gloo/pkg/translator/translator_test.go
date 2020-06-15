@@ -3,6 +3,7 @@ package translator_test
 import (
 	"context"
 	"fmt"
+
 	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -1496,6 +1497,43 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("EndpointPlugin", func() {
+		var (
+			endpointPlugin *endpointPluginMock
+		)
+		BeforeEach(func() {
+			endpointPlugin = &endpointPluginMock{}
+			registeredPlugins = append(registeredPlugins, endpointPlugin)
+		})
+
+		It("should call the endpoint plugin", func() {
+
+			additionalEndpoint := &envoyendpoint.LocalityLbEndpoints{
+				Locality: &envoycorev3.Locality{
+					Region: "region",
+					Zone:   "a",
+				},
+				Priority: 10,
+			}
+			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyendpoint.ClusterLoadAssignment) error {
+				Expect(out.GetEndpoints()).To(HaveLen(1))
+				Expect(out.GetClusterName()).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
+				Expect(out.GetEndpoints()[0].GetLbEndpoints()).To(HaveLen(1))
+
+				out.Endpoints = append(out.Endpoints, additionalEndpoint)
+				return nil
+			}
+
+			translate()
+			endpointResource := endpoints.Items["test_gloo-system"]
+			endpoint := endpointResource.ResourceProto().(*envoyendpoint.ClusterLoadAssignment)
+			Expect(endpoint).NotTo(BeNil())
+			Expect(endpoint.Endpoints).To(HaveLen(2))
+			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
+		})
+
+	})
+
 	Context("Route option on direct response actions", func() {
 
 		BeforeEach(func() {
@@ -1920,4 +1958,16 @@ func (p *routePluginMock) Init(params plugins.InitParams) error {
 
 func (p *routePluginMock) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return p.ProcessRouteFunc(params, in, out)
+}
+
+type endpointPluginMock struct {
+	ProcessEndpointFunc func(params plugins.Params, in *v1.Upstream, out *envoyendpoint.ClusterLoadAssignment) error
+}
+
+func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoyendpoint.ClusterLoadAssignment) error {
+	return e.ProcessEndpointFunc(params, in, out)
+}
+
+func (e *endpointPluginMock) Init(params plugins.InitParams) error {
+	return nil
 }

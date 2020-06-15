@@ -8,7 +8,7 @@ In this tutorial we will see how to use [Access Logs]({{< versioned_link_path fr
 
 ### Setup
 Let's start by setting up the virtual service and settings resources to match the rule priority
-[example]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/rulepriority/#test-the-example" %}}).
+[example]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/#rule-priority-and-weights" %}}).
 
 Let's also update the default `Gateway` resource to enable access logging:
 
