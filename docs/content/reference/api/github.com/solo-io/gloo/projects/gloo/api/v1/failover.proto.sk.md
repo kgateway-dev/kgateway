@@ -13,7 +13,6 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
-- [ServiceRef](#serviceref)
 - [LbEndpoint](#lbendpoint)
 - [HealthCheckConfig](#healthcheckconfig)
 - [LocalityLbEndpoints](#localitylbendpoints)
@@ -66,35 +65,12 @@ the list, first being `0` through `n-1`.
 
 ```yaml
 "localityEndpoints": []gloo.solo.io.LocalityLbEndpoints
-"kubeServices": []gloo.solo.io.Failover.PrioritizedLocality.ServiceRef
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `localityEndpoints` | [[]gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
-| `kubeServices` | [[]gloo.solo.io.Failover.PrioritizedLocality.ServiceRef](../failover.proto.sk/#serviceref) | A list of references to kubernetes services to be used as endpoints for this priority. As each kubernetes service must be located in the current cluster, the locality will be left empty, and all endpoints from these services will be given the same load_balancing_weight. |  |
-
-
-
-
----
-### ServiceRef
-
-
-
-```yaml
-"serviceName": string
-"serviceNamespace": string
-"servicePort": int
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `serviceName` | `string` | The name of the Kubernetes Service. |  |
-| `serviceNamespace` | `string` | The namespace where the Service lives. |  |
-| `servicePort` | `int` | The access port of the kubernetes service is listening. This port is used by Gloo to look up the corresponding port on the pod for routing. |  |
 
 
 
