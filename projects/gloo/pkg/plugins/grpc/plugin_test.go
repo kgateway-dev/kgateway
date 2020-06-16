@@ -1,7 +1,6 @@
 package grpc
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -94,6 +93,66 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
+		basicRegex := "([\\-._[:alnum:]]+)"
+		complexRegex := "/([\\-._[:alnum:]]+)/([\\-._[:alnum:]]+)/([\\-._[:alnum:]]+)/too"
+		expected := &envoy_transform.RouteTransformations{
+			RequestTransformation: &envoy_transform.Transformation{
+				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
+					TransformationTemplate: &envoy_transform.TransformationTemplate{
+						Extractors: map[string]*envoy_transform.Extraction{
+							"what": {
+								Source:   &envoy_transform.Extraction_Header{":path"},
+								Subgroup: 1,
+								Regex:    complexRegex,
+							},
+							"ever": {
+								Source:   &envoy_transform.Extraction_Header{":path"},
+								Subgroup: 2,
+								Regex:    complexRegex,
+							},
+							"method": {
+								Source:   &envoy_transform.Extraction_Header{":method"},
+								Subgroup: 1,
+								Regex:    basicRegex,
+							},
+							"nested.field": {
+								Source:   &envoy_transform.Extraction_Header{":path"},
+								Subgroup: 3,
+								Regex:    complexRegex,
+							},
+							"path": {
+								Source:   &envoy_transform.Extraction_Header{":path"},
+								Subgroup: 1,
+								Regex:    basicRegex,
+							},
+							"simple": {
+								Source:   &envoy_transform.Extraction_Header{"header-simple"},
+								Subgroup: 1,
+								Regex:    basicRegex,
+							},
+							"simple_with_space": {
+								Source:   &envoy_transform.Extraction_Header{"header-simple-with-space"},
+								Subgroup: 1,
+								Regex:    basicRegex,
+							},
+							"something.nested": {
+								Source:   &envoy_transform.Extraction_Header{"header-nested"},
+								Subgroup: 1,
+								Regex:    basicRegex,
+							},
+						},
+						Headers: map[string]*envoy_transform.InjaTemplate{
+							":method": {Text: "POST"},
+							":path":   {Text: "/f4951089/test/foo.bar/func?{{ default(query_string, \"\")}}"},
+						},
+						BodyTransformation: &envoy_transform.TransformationTemplate_MergeExtractorsToBody{
+							MergeExtractorsToBody: &envoy_transform.MergeExtractorsToBody{},
+						},
+					},
+				},
+			},
+		}
+
 		It("should process route", func() {
 
 			var routeParams plugins.RouteParams
@@ -134,34 +193,9 @@ var _ = Describe("Plugin", func() {
 			err = p.ProcessRoute(routeParams, routeIn, routeOut)
 			Expect(err).NotTo(HaveOccurred())
 
-			configStruct, err := pluginutils.AnyGogoProtoToStructPb(routeOut.GetTypedPerFilterConfig()[transformation.FilterName])
+			configStruct, err := pluginutils.MessageToAny(expected)
 			Expect(err).NotTo(HaveOccurred())
-
-			var cfg envoy_transform.RouteTransformations
-			err = conversion.StructToMessage(&configStruct, &cfg)
-			Expect(err).NotTo(HaveOccurred())
-
-			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
-			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
-
-			extrs := tt.GetExtractors()
-			Expect(extrs["what"].GetHeader()).To(Equal(":path"))
-			Expect(extrs["what"].GetSubgroup()).To(Equal(uint32(1)))
-
-			Expect(extrs["ever"].GetHeader()).To(Equal(":path"))
-			Expect(extrs["ever"].GetSubgroup()).To(Equal(uint32(2)))
-
-			Expect(extrs["nested.field"].GetHeader()).To(Equal(":path"))
-			Expect(extrs["nested.field"].GetSubgroup()).To(Equal(uint32(3)))
-
-			Expect(extrs["simple"].GetHeader()).To(Equal("header-simple"))
-			Expect(extrs["simple"].GetSubgroup()).To(Equal(uint32(1)))
-
-			Expect(extrs["simple_with_space"].GetHeader()).To(Equal("header-simple-with-space"))
-			Expect(extrs["simple_with_space"].GetSubgroup()).To(Equal(uint32(1)))
-
-			Expect(extrs["something.nested"].GetHeader()).To(Equal("header-nested"))
-			Expect(extrs["something.nested"].GetSubgroup()).To(Equal(uint32(1)))
+			Expect(routeOut.GetTypedPerFilterConfig()).To(HaveKeyWithValue(transformation.FilterName, configStruct))
 		})
 	})
 })
