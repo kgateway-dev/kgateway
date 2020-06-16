@@ -2,14 +2,13 @@ package pluginutils
 
 import (
 	"fmt"
-
 	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-
 	gogoproto "github.com/gogo/protobuf/proto"
 	goproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	pany "github.com/golang/protobuf/ptypes/any"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 func MessageToAny(msg goproto.Message) (*pany.Any, error) {
@@ -77,6 +76,20 @@ func GogoMessageToAnyGoProto(msg goproto.Message) (*pany.Any, error) {
 
 	anyGo := &pany.Any{Value: tsAnyGo.Value, TypeUrl: tsAnyGo.TypeUrl}
 	return anyGo, nil
+}
+
+// gogoproto any represented as a goproto can't be unmarshalled unless you unwrap
+// the contents of the goproto from the typed struct (see function above)
+// You may want to follow this with conversion.StructToMessage
+func AnyGogoProtoToStructPb(a *pany.Any) (structpb.Struct, error) {
+	msg, err := AnyToMessage(a)
+	if err != nil {
+		return structpb.Struct{}, err
+	}
+	ts := msg.(*udpa_type_v1.TypedStruct)
+
+	configStruct := ts.GetValue()
+	return *configStruct, nil
 }
 
 func protoToMessageName(msg goproto.Message) (string, error) {

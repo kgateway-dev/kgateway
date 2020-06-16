@@ -1,9 +1,9 @@
 package grpc
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"github.com/solo-io/gloo/pkg/utils"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -12,13 +12,13 @@ import (
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes"
 )
 
 var _ = Describe("Plugin", func() {
@@ -134,8 +134,11 @@ var _ = Describe("Plugin", func() {
 			err = p.ProcessRoute(routeParams, routeIn, routeOut)
 			Expect(err).NotTo(HaveOccurred())
 
+			configStruct, err := pluginutils.AnyGogoProtoToStructPb(routeOut.GetTypedPerFilterConfig()[transformation.FilterName])
+			Expect(err).NotTo(HaveOccurred())
+
 			var cfg envoy_transform.RouteTransformations
-			err = ptypes.UnmarshalAny(routeOut.GetTypedPerFilterConfig()[transformation.FilterName], &cfg)
+			err = conversion.StructToMessage(&configStruct, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
