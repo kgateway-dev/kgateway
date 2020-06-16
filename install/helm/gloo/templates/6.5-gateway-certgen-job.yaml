@@ -30,7 +30,7 @@ spec:
           securityContext:
             runAsNonRoot: true
             {{- if not .Values.gateway.certGenJob.floatingUserId }}
-            runAsUser: {{ printf "%.0f" .Values.gateway.certGenJob.runAsUser -}}
+            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
             {{- end }}
           env:
             - name: POD_NAMESPACE
