@@ -30,71 +30,73 @@ message Failover {
     Locality locality = 1;
 
     message PrioritizedLocality {
+
+        // A group of endpoints belonging to a Locality.
+        // One can have multiple LocalityLbEndpoints for a locality, but this is
+        // generally only done if the different groups need to have different load
+        // balancing weights or different priorities.
+        message LocalityLbEndpoints {
+
+            // An Endpoint that Envoy can route traffic to.
+            message LbEndpoint {
+
+                // The optional health check configuration.
+                message HealthCheckConfig {
+                    // Optional alternative health check port value.
+                    //
+                    // By default the health check address port of an upstream host is the same
+                    // as the host's serving address port. This provides an alternative health
+                    // check port. Setting this with a non-zero value allows an upstream host
+                    // to have different health check address port.
+                    uint32 port_value = 1;
+
+                    // By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
+                    // to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
+                    string hostname = 2;
+                }
+
+                // Address (hostname or IP)
+                string address = 1;
+                // Port the instance is listening on
+                uint32 port = 2;
+
+                // The optional health check configuration is used as configuration for the
+                // health checker to contact the health checked host.
+                // This takes into effect only for upstreams with active health checking enabled
+                HealthCheckConfig health_check_config = 3;
+
+                .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
+
+                // The optional load balancing weight of the upstream host; at least 1.
+                // Envoy uses the load balancing weight in some of the built in load
+                // balancers. The load balancing weight for an endpoint is divided by the sum
+                // of the weights of all endpoints in the endpoint's locality to produce a
+                // percentage of traffic for the endpoint. This percentage is then further
+                // weighted by the endpoint's locality's load balancing weight from
+                // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
+                // weight in a locality.
+                google.protobuf.UInt32Value load_balancing_weight = 5;
+            }
+
+            // Identifies where the parent upstream hosts run.
+            Locality locality = 1;
+
+            // The group of endpoints belonging to the locality specified.
+            repeated LbEndpoint lb_endpoints = 2;
+
+            // Optional: Per priority/region/zone/sub_zone weight; at least 1. The load
+            // balancing weight for a locality is divided by the sum of the weights of all
+            // localities  at the same priority level to produce the effective percentage
+            // of traffic for the locality.
+            google.protobuf.UInt32Value load_balancing_weight = 3;
+        }
+
         repeated LocalityLbEndpoints locality_endpoints = 1;
     }
 
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
     // list of `LocalityLbEndpoints` is determined by its index in the list.
     repeated PrioritizedLocality prioritized_localities = 2;
-}
-
-// An Endpoint that Envoy can route traffic to.
-message LbEndpoint {
-
-    // The optional health check configuration.
-    message HealthCheckConfig {
-        // Optional alternative health check port value.
-        //
-        // By default the health check address port of an upstream host is the same
-        // as the host's serving address port. This provides an alternative health
-        // check port. Setting this with a non-zero value allows an upstream host
-        // to have different health check address port.
-        uint32 port_value = 1;
-
-        // By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this
-        // to a non-empty value allows overriding the cluster level configuration for a specific endpoint.
-        string hostname = 2;
-    }
-
-    // Address (hostname or IP)
-    string address = 1;
-    // Port the instance is listening on
-    uint32 port = 2;
-
-    // The optional health check configuration is used as configuration for the
-    // health checker to contact the health checked host.
-    // This takes into effect only for upstreams with active health checking enabled
-    HealthCheckConfig health_check_config = 3;
-
-    .gloo.solo.io.UpstreamSslConfig upstream_ssl_config = 4;
-
-    // The optional load balancing weight of the upstream host; at least 1.
-    // Envoy uses the load balancing weight in some of the built in load
-    // balancers. The load balancing weight for an endpoint is divided by the sum
-    // of the weights of all endpoints in the endpoint's locality to produce a
-    // percentage of traffic for the endpoint. This percentage is then further
-    // weighted by the endpoint's locality's load balancing weight from
-    // LocalityLbEndpoints. If unspecified, each host is presumed to have equal
-    // weight in a locality.
-    google.protobuf.UInt32Value load_balancing_weight = 5;
-}
-
-// A group of endpoints belonging to a Locality.
-// One can have multiple LocalityLbEndpoints for a locality, but this is
-// generally only done if the different groups need to have different load
-// balancing weights or different priorities.
-message LocalityLbEndpoints {
-    // Identifies where the parent upstream hosts run.
-    Locality locality = 1;
-
-    // The group of endpoints belonging to the locality specified.
-    repeated LbEndpoint lb_endpoints = 2;
-
-    // Optional: Per priority/region/zone/sub_zone weight; at least 1. The load
-    // balancing weight for a locality is divided by the sum of the weights of all
-    // localities  at the same priority level to produce the effective percentage
-    // of traffic for the locality.
-    google.protobuf.UInt32Value load_balancing_weight = 3;
 }
 
 // Identifies location of where either Envoy runs or where upstream hosts run.

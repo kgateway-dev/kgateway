@@ -13,9 +13,9 @@ weight: 5
 
 - [Failover](#failover)
 - [PrioritizedLocality](#prioritizedlocality)
+- [LocalityLbEndpoints](#localitylbendpoints)
 - [LbEndpoint](#lbendpoint)
 - [HealthCheckConfig](#healthcheckconfig)
-- [LocalityLbEndpoints](#localitylbendpoints)
 - [Locality](#locality)
   
 
@@ -64,13 +64,38 @@ the list, first being `0` through `n-1`.
 
 
 ```yaml
-"localityEndpoints": []gloo.solo.io.LocalityLbEndpoints
+"localityEndpoints": []gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `localityEndpoints` | [[]gloo.solo.io.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
+| `localityEndpoints` | [[]gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints](../failover.proto.sk/#localitylbendpoints) |  |  |
+
+
+
+
+---
+### LocalityLbEndpoints
+
+ 
+A group of endpoints belonging to a Locality.
+One can have multiple LocalityLbEndpoints for a locality, but this is
+generally only done if the different groups need to have different load
+balancing weights or different priorities.
+
+```yaml
+"locality": .gloo.solo.io.Locality
+"lbEndpoints": []gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints.LbEndpoint
+"loadBalancingWeight": .google.protobuf.UInt32Value
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
+| `lbEndpoints` | [[]gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints.LbEndpoint](../failover.proto.sk/#lbendpoint) | The group of endpoints belonging to the locality specified. |  |
+| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. |  |
 
 
 
@@ -84,7 +109,7 @@ An Endpoint that Envoy can route traffic to.
 ```yaml
 "address": string
 "port": int
-"healthCheckConfig": .gloo.solo.io.LbEndpoint.HealthCheckConfig
+"healthCheckConfig": .gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints.LbEndpoint.HealthCheckConfig
 "upstreamSslConfig": .gloo.solo.io.UpstreamSslConfig
 "loadBalancingWeight": .google.protobuf.UInt32Value
 
@@ -94,7 +119,7 @@ An Endpoint that Envoy can route traffic to.
 | ----- | ---- | ----------- |----------- | 
 | `address` | `string` | Address (hostname or IP). |  |
 | `port` | `int` | Port the instance is listening on. |  |
-| `healthCheckConfig` | [.gloo.solo.io.LbEndpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. This takes into effect only for upstreams with active health checking enabled. |  |
+| `healthCheckConfig` | [.gloo.solo.io.Failover.PrioritizedLocality.LocalityLbEndpoints.LbEndpoint.HealthCheckConfig](../failover.proto.sk/#healthcheckconfig) | The optional health check configuration is used as configuration for the health checker to contact the health checked host. This takes into effect only for upstreams with active health checking enabled. |  |
 | `upstreamSslConfig` | [.gloo.solo.io.UpstreamSslConfig](../ssl.proto.sk/#upstreamsslconfig) |  |  |
 | `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | The optional load balancing weight of the upstream host; at least 1. Envoy uses the load balancing weight in some of the built in load balancers. The load balancing weight for an endpoint is divided by the sum of the weights of all endpoints in the endpoint's locality to produce a percentage of traffic for the endpoint. This percentage is then further weighted by the endpoint's locality's load balancing weight from LocalityLbEndpoints. If unspecified, each host is presumed to have equal weight in a locality. |  |
 
@@ -117,31 +142,6 @@ The optional health check configuration.
 | ----- | ---- | ----------- |----------- | 
 | `portValue` | `int` | Optional alternative health check port value. By default the health check address port of an upstream host is the same as the host's serving address port. This provides an alternative health check port. Setting this with a non-zero value allows an upstream host to have different health check address port. |  |
 | `hostname` | `string` | By default, the host header for L7 health checks is controlled by cluster level configuration. Setting this to a non-empty value allows overriding the cluster level configuration for a specific endpoint. |  |
-
-
-
-
----
-### LocalityLbEndpoints
-
- 
-A group of endpoints belonging to a Locality.
-One can have multiple LocalityLbEndpoints for a locality, but this is
-generally only done if the different groups need to have different load
-balancing weights or different priorities.
-
-```yaml
-"locality": .gloo.solo.io.Locality
-"lbEndpoints": []gloo.solo.io.LbEndpoint
-"loadBalancingWeight": .google.protobuf.UInt32Value
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
-| `lbEndpoints` | [[]gloo.solo.io.LbEndpoint](../failover.proto.sk/#lbendpoint) | The group of endpoints belonging to the locality specified. |  |
-| `loadBalancingWeight` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Optional: Per priority/region/zone/sub_zone weight; at least 1. The load balancing weight for a locality is divided by the sum of the weights of all localities at the same priority level to produce the effective percentage of traffic for the locality. |  |
 
 
 
