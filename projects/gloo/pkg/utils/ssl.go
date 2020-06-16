@@ -13,6 +13,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
+//go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/gloo/pkg/utils SslConfigTranslator
+
 const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
 )
