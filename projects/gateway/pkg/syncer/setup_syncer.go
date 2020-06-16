@@ -37,8 +37,7 @@ import (
 // TODO: switch AcceptAllResourcesByDefault to false after validation has been tested in user environments
 var AcceptAllResourcesByDefault = true
 
-// TODO: expose AllowMissingLinks as a setting
-var AllowMissingLinks = true
+var AllowWarnings = true
 
 func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory.InMemoryResourceCache, settings *gloov1.Settings) error {
 	var (
@@ -98,7 +97,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			alwaysAcceptResources = alwaysAccept.GetValue()
 		}
 
-		allowMissingLinks := AllowMissingLinks
+		allowWarnings := AllowWarnings
+
+		if allowWarning := validationCfg.AllowWarnings; allowWarning != nil {
+			allowWarnings = allowWarning.GetValue()
+		}
 
 		validation = &translator.ValidationOpts{
 			ProxyValidationServerAddress: validationCfg.GetProxyValidationServerAddr(),
@@ -107,7 +110,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 			ValidatingWebhookKeyPath:     validationCfg.GetValidationWebhookTlsKey(),
 			IgnoreProxyValidationFailure: validationCfg.GetIgnoreGlooValidationFailure(),
 			AlwaysAcceptResources:        alwaysAcceptResources,
-			AllowMissingLinks:            allowMissingLinks,
+			AllowWarnings:                allowWarnings,
 		}
 		if validation.ProxyValidationServerAddress == "" {
 			validation.ProxyValidationServerAddress = defaults.GlooProxyValidationServerAddr
@@ -195,7 +198,7 @@ func RunGateway(opts translator.Opts) error {
 		// this constructor should be called within a lock
 		validationClient             validation.ProxyValidationServiceClient
 		ignoreProxyValidationFailure bool
-		allowMissingLinks            bool
+		allowWarnings                bool
 	)
 
 	// construct the channel that resyncs the API Translator loop
@@ -217,7 +220,7 @@ func RunGateway(opts translator.Opts) error {
 		}
 
 		ignoreProxyValidationFailure = opts.Validation.IgnoreProxyValidationFailure
-		allowMissingLinks = opts.Validation.AllowMissingLinks
+		allowWarnings = opts.Validation.AllowWarnings
 	}
 
 	emitter := v1.NewApiEmitterWithEmit(virtualServiceClient, routeTableClient, gatewayClient, notifications)
@@ -227,7 +230,7 @@ func RunGateway(opts translator.Opts) error {
 		validationClient,
 		opts.WriteNamespace,
 		ignoreProxyValidationFailure,
-		allowMissingLinks,
+		allowWarnings,
 	))
 
 	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
