@@ -72,7 +72,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		clusters := snap.GetResources(xds.ClusterType)
+		clusters := snap.GetResources(xds.ClusterTypev2)
 
 		Expect(clusters.Items).To(HaveLen(1))
 		Expect(clusters.Items[goodClusterName].ResourceProto()).To(Equal(goodCluster))

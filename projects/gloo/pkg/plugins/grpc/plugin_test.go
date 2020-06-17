@@ -193,9 +193,9 @@ var _ = Describe("Plugin", func() {
 			err = p.ProcessRoute(routeParams, routeIn, routeOut)
 			Expect(err).NotTo(HaveOccurred())
 
-			configStruct, err := pluginutils.MessageToAny(expected)
+			expectedAny, err := pluginutils.MessageToAny(expected)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(routeOut.GetTypedPerFilterConfig()).To(HaveKeyWithValue(transformation.FilterName, configStruct))
+			Expect(routeOut.GetTypedPerFilterConfig()).To(HaveKeyWithValue(transformation.FilterName, expectedAny))
 		})
 	})
 })

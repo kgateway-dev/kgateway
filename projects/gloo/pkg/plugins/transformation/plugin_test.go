@@ -24,10 +24,10 @@ var _ = Describe("Plugin", func() {
 		t = &transformation.RouteTransformations{
 			ClearRouteCache: true,
 		}
-		configStruct, err := pluginutils.MessageToAny(t)
+		configAny, err := pluginutils.MessageToAny(t)
 		Expect(err).NotTo(HaveOccurred())
 
-		expected = configStruct
+		expected = configAny
 	})
 
 	It("sets transformation config for weighted destinations", func() {

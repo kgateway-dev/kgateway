@@ -171,8 +171,8 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 
 	replacedRouteConfigs, needsListener := s.replaceMissingClusterRoutes(ctx, validClusters, routeConfigs)
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterType)
-	listeners := xdsSnapshot.GetResources(xds.ListenerType)
+	clusters := xdsSnapshot.GetResources(xds.ClusterTypev2)
+	listeners := xdsSnapshot.GetResources(xds.ListenerTypev2)
 
 	if needsListener {
 		s.insertFallbackListener(&listeners)
@@ -180,7 +180,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 	}
 
 	xdsSnapshot = xds.NewSnapshotFromResources(
-		xdsSnapshot.GetResources(xds.EndpointType),
+		xdsSnapshot.GetResources(xds.EndpointTypev2),
 		clusters,
 		translator.MakeRdsResources(replacedRouteConfigs),
 		listeners,
@@ -195,7 +195,7 @@ func (s *RouteReplacingSanitizer) SanitizeSnapshot(ctx context.Context, glooSnap
 }
 
 func getRoutes(snap envoycache.Snapshot) ([]*envoyroute.RouteConfiguration, error) {
-	routeConfigProtos := snap.GetResources(xds.RouteType)
+	routeConfigProtos := snap.GetResources(xds.RouteTypev2)
 	var routeConfigs []*envoyroute.RouteConfiguration
 
 	for _, routeConfigProto := range routeConfigProtos.Items {

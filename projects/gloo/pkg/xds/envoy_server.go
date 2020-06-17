@@ -44,26 +44,26 @@ func NewEnvoyServer(genericServer server.Server) EnvoyServer {
 }
 
 func (s *envoyServer) StreamEndpoints(stream v2.EndpointDiscoveryService_StreamEndpointsServer) error {
-	return s.Server.Stream(stream, EndpointType)
+	return s.Server.Stream(stream, EndpointTypev2)
 }
 
 func (s *envoyServer) StreamClusters(stream v2.ClusterDiscoveryService_StreamClustersServer) error {
-	return s.Server.Stream(stream, ClusterType)
+	return s.Server.Stream(stream, ClusterTypev2)
 }
 
 func (s *envoyServer) StreamRoutes(stream v2.RouteDiscoveryService_StreamRoutesServer) error {
-	return s.Server.Stream(stream, RouteType)
+	return s.Server.Stream(stream, RouteTypev2)
 }
 
 func (s *envoyServer) StreamListeners(stream v2.ListenerDiscoveryService_StreamListenersServer) error {
-	return s.Server.Stream(stream, ListenerType)
+	return s.Server.Stream(stream, ListenerTypev2)
 }
 
 func (s *envoyServer) FetchEndpoints(ctx context.Context, req *v2.DiscoveryRequest) (*v2.DiscoveryResponse, error) {
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = EndpointType
+	req.TypeUrl = EndpointTypev2
 	return s.Server.Fetch(ctx, req)
 }
 
@@ -71,7 +71,7 @@ func (s *envoyServer) FetchClusters(ctx context.Context, req *v2.DiscoveryReques
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = ClusterType
+	req.TypeUrl = ClusterTypev2
 	return s.Server.Fetch(ctx, req)
 }
 
@@ -79,7 +79,7 @@ func (s *envoyServer) FetchRoutes(ctx context.Context, req *v2.DiscoveryRequest)
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = RouteType
+	req.TypeUrl = RouteTypev2
 	return s.Server.Fetch(ctx, req)
 }
 
@@ -87,7 +87,7 @@ func (s *envoyServer) FetchListeners(ctx context.Context, req *v2.DiscoveryReque
 	if req == nil {
 		return nil, status.Errorf(codes.Unavailable, "empty request")
 	}
-	req.TypeUrl = ListenerType
+	req.TypeUrl = ListenerTypev2
 	return s.Server.Fetch(ctx, req)
 }
 
