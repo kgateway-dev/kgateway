@@ -22,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -1498,14 +1499,19 @@ var _ = Describe("Translator", func() {
 	Context("EndpointPlugin", func() {
 		var (
 			endpointPlugin *endpointPluginMock
+			upstreamList   v1.UpstreamList
 		)
 		BeforeEach(func() {
 			endpointPlugin = &endpointPluginMock{}
 			registeredPlugins = append(registeredPlugins, endpointPlugin)
+			upstreamList = params.Snapshot.Upstreams.Clone()
+		})
+
+		AfterEach(func() {
+			params.Snapshot.Upstreams = upstreamList
 		})
 
 		It("should call the endpoint plugin", func() {
-
 			additionalEndpoint := &envoy_api_v2_endpoint.LocalityLbEndpoints{
 				Locality: &envoycore.Locality{
 					Region: "region",
@@ -1513,6 +1519,7 @@ var _ = Describe("Translator", func() {
 				},
 				Priority: 10,
 			}
+
 			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
 				Expect(out.GetEndpoints()).To(HaveLen(1))
 				Expect(out.GetClusterName()).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
@@ -1528,6 +1535,33 @@ var _ = Describe("Translator", func() {
 			Expect(endpoint).NotTo(BeNil())
 			Expect(endpoint.Endpoints).To(HaveLen(2))
 			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
+		})
+
+		It("should call the endpoint plugin with an empty endpoint", func() {
+			// Create an empty consul upstream just to get EDS
+			emptyUpstream := &v1.Upstream{
+				Metadata: core.Metadata{
+					Namespace: "empty_namespace",
+					Name:      "empty_name",
+				},
+				UpstreamType: &v1.Upstream_Consul{
+					Consul: &consul2.UpstreamSpec{},
+				},
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, emptyUpstream)
+
+			foundEmptyUpstream := false
+
+			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
+				if in.Metadata.Name == emptyUpstream.Metadata.Name &&
+					in.Metadata.Namespace == emptyUpstream.Metadata.Namespace {
+					foundEmptyUpstream = true
+				}
+				return nil
+			}
+
+			translate()
+			Expect(foundEmptyUpstream).To(BeTrue())
 		})
 
 	})

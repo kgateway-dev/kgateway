@@ -78,7 +78,7 @@ message Upstream {
         aws_ec2.options.gloo.solo.io.UpstreamSpec aws_ec2 = 17;
     }
 
-    // Failover endpoints for this upstream. If nil no failovers will be applied.
+    // Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.
     gloo.solo.io.Failover failover = 18;
 }
 

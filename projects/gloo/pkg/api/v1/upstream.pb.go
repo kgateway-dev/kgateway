@@ -72,7 +72,7 @@ type Upstream struct {
 	//	*Upstream_Consul
 	//	*Upstream_AwsEc2
 	UpstreamType isUpstream_UpstreamType `protobuf_oneof:"upstream_type"`
-	// Failover endpoints for this upstream. If nil no failovers will be applied.
+	// Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.
 	Failover             *Failover `protobuf:"bytes,18,opt,name=failover,proto3" json:"failover,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
