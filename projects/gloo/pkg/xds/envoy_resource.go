@@ -16,8 +16,10 @@ package xds
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	listenerv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	hcmv2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -75,7 +77,7 @@ func (e *EnvoyResource) Name() string {
 		return v.GetName()
 	case *listener.Listener:
 		return v.GetName()
-	// adding cases below as temporary solution to enable incremental changes
+	// keeping cases below as temporary solution to enable incremental changes
 	case *v2.ClusterLoadAssignment:
 		return v.GetClusterName()
 	case *v2.Cluster:
@@ -221,6 +223,50 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 					}
 
 					if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
+						out[rds.Rds.RouteConfigName] = true
+					}
+
+				}
+			}
+		// keeping cases below as temporary solution to enable incremental changes
+		case *v2.ClusterLoadAssignment:
+			// no dependencies
+		case *v2.Cluster:
+			// for EDS type, use cluster name or ServiceName override
+			if v.GetType() == v2.Cluster_EDS {
+				if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
+					out[v.EdsClusterConfig.ServiceName] = true
+				} else {
+					out[v.Name] = true
+				}
+			}
+		case *v2.RouteConfiguration:
+			// References to clusters in both routes (and listeners) are not included
+			// in the result, because the clusters are retrieved in bulk currently,
+			// and not by name.
+		case *v2.Listener:
+			// extract route configuration names from HTTP connection manager
+			for _, chain := range v.FilterChains {
+				for _, filter := range chain.Filters {
+					if filter.Name != util.HTTPConnectionManager {
+						continue
+					}
+
+					config := &hcmv2.HttpConnectionManager{}
+
+					switch filterConfig := filter.ConfigType.(type) {
+					case *listenerv2.Filter_Config:
+						if conversion.StructToMessage(filterConfig.Config, config) != nil {
+							continue
+
+						}
+					case *listenerv2.Filter_TypedConfig:
+						if ptypes.UnmarshalAny(filterConfig.TypedConfig, config) != nil {
+							continue
+						}
+					}
+
+					if rds, ok := config.RouteSpecifier.(*hcmv2.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
 						out[rds.Rds.RouteConfigName] = true
 					}
 
