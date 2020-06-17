@@ -17,6 +17,7 @@ import (
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	static_plugin_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
+	"github.com/solo-io/gloo/test/helpers"
 	testgrpcservice "github.com/solo-io/gloo/test/v1helpers/test_grpc_service"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"google.golang.org/grpc"
@@ -33,12 +34,17 @@ type ReceivedRequest struct {
 }
 
 func NewTestHttpUpstream(ctx context.Context, addr string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, "")
+	backendPort, responses := runTestServer(ctx, "", false)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
 func NewTestHttpUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
-	backendPort, responses := runTestServer(ctx, reply)
+	backendPort, responses := runTestServer(ctx, reply, false)
+	return newTestUpstream(addr, []uint32{backendPort}, responses)
+}
+
+func NewTestHttpsUpstreamWithReply(ctx context.Context, addr, reply string) *TestUpstream {
+	backendPort, responses := runTestServer(ctx, reply, true)
 	return newTestUpstream(addr, []uint32{backendPort}, responses)
 }
 
@@ -112,7 +118,7 @@ func newTestUpstream(addr string, ports []uint32, responses <-chan *ReceivedRequ
 	}
 }
 
-func runTestServer(ctx context.Context, reply string) (uint32, <-chan *ReceivedRequest) {
+func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-chan *ReceivedRequest) {
 	bodyChan := make(chan *ReceivedRequest, 100)
 	handlerFunc := func(rw http.ResponseWriter, r *http.Request) {
 		var rr ReceivedRequest
@@ -158,6 +164,16 @@ func runTestServer(ctx context.Context, reply string) (uint32, <-chan *ReceivedR
 	go func() {
 		defer GinkgoRecover()
 		h := &http.Server{Handler: mux}
+		if serveTls {
+			certs, err := tls.X509KeyPair([]byte(helpers.Certificate()), []byte(helpers.PrivateKey()))
+			if err != nil {
+				Expect(err).NotTo(HaveOccurred())
+			}
+			listener = tls.NewListener(listener, &tls.Config{
+				Certificates: []tls.Certificate{certs},
+			})
+		}
+
 		go func() {
 			defer GinkgoRecover()
 			if err := h.Serve(listener); err != nil {

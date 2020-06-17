@@ -123,6 +123,7 @@
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
+|gateway.validation.allowWarnings|bool|true|set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected.|
 |gateway.validation.secretName|string|gateway-validation-certs|Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled.|
 |gateway.validation.failurePolicy|string|Ignore|failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore |
 |gateway.validation.webhook.enabled|bool|true|enable validation webhook (default true)|
@@ -167,6 +168,8 @@
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
 |gateway.certGenJob.ttlSecondsAfterFinished|int|60|Clean up the finished job after this many seconds. Defaults to 60|
+|gateway.certGenJob.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
+|gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
@@ -245,6 +248,9 @@
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.-[]|uint8|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.always_accept.-|int32|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.-[]|uint8|||
+|gatewayProxies.NAME.gatewaySettings.options.validation.allow_warnings.-|int32|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.-[]|uint8|||
 |gatewayProxies.NAME.gatewaySettings.options.validation.-|int32|||
 |gatewayProxies.NAME.gatewaySettings.options.read_gateways_from_all_namespaces|bool|||
@@ -334,6 +340,9 @@
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.value|bool|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.-[]|uint8|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.always_accept.-|int32|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.value|bool|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.-[]|uint8|||
+|gatewayProxies.gatewayProxy.gatewaySettings.options.validation.allow_warnings.-|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.-[]|uint8|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.validation.-|int32|||
 |gatewayProxies.gatewayProxy.gatewaySettings.options.read_gateways_from_all_namespaces|bool|false||

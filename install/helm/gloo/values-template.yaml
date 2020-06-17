@@ -61,6 +61,7 @@ gateway:
     failurePolicy: "Ignore"
     secretName: gateway-validation-certs
     alwaysAcceptResources: true
+    allowWarnings: true
     webhook:
       enabled: true
   deployment:
@@ -75,6 +76,7 @@ gateway:
     restartPolicy: OnFailure
     setTtlAfterFinished: true
     ttlSecondsAfterFinished: 60
+    runAsUser: 10101
   proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxy:

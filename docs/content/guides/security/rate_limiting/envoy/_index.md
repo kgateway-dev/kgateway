@@ -20,6 +20,7 @@ weight: 20
     - [Customizing Routes](#customizing-routes)
 - [Advanced Use Cases](#advanced-use-cases)
     - [Configuring multiple limits per remote address](#configuring-multiple-limits-per-remote-address)
+    - [Traffic prioritization based on HTTP method](#traffic-prioritization-based-on-http-method)
     - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
     - [Improving security further with WAF and authorization](#improving-security-further-with-waf-and-authorization)
 
@@ -597,6 +598,69 @@ spec:
 
 Now, we'll increment a per-minute and per-second rate limit counter based on the client remote address. 
 
+### Traffic prioritization based on HTTP method
+
+A useful tactic for building resilient, distributed systems is to implement different rate limits for different "priorities" or "classes" of traffic. This practice is strongly related to the concept of [_load shedding_](https://landing.google.com/sre/workbook/chapters/managing-load/).
+
+Suppose you have exposed an API that supports both `GET` and `POST` methods for listing data and creating  resources respectively. While both pieces of functionality are important, ultimately the `POST` action is more important to your business, so you want to protect the availability of the `POST` function at the expense of the less important `GET` function.
+
+To implement this, we will build on the previous example and provide a global limit per remote client for all traffic classes as well a smaller limit for the less important `GET` method. This allows our system to drop the lower priority traffic and protect the higher priority traffic.
+
+We can implement this in Gloo using a descriptor for the method of incoming request in conjunction with the remote client:
+
+```yaml
+spec:
+  ratelimit:
+    descriptors:
+    # allow 5 calls per minute for any unique host
+    - key: remote_address
+      rateLimit:
+        requestsPerUnit: 5
+        unit: MINUTE
+    # specifically limit GET requests from unique hosts to 2 per min
+    - key: method
+      value: GET
+      descriptors:
+      - key: remote_address
+        rateLimit:
+          requestsPerUnit: 2
+          unit: MINUTE
+```
+
+With these limits in place, we are ensuring that the server doesn't get overwhelmed with `GETs`. Now we can add an action to extract the method from the `:method` psuedo-header:
+
+{{< highlight yaml "hl_lines=18-28" >}}
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: example
+  namespace: gloo-system
+spec:
+  virtualHost:
+    domains:
+      - '*'
+    routes:
+      - matchers:
+          - prefix: /
+        routeAction:
+          single:
+            upstream:
+              name: default-example-80
+              namespace: gloo-system
+        options:
+          ratelimit:
+            rateLimits:
+              - actions:
+                - remoteAddress: {}
+              - actions:
+                - requestHeaders:
+                    descriptorKey: method
+                    headerName: :method
+                - remoteAddress: {}
+{{< /highlight >}}
+
+How the route will have a per-client limit for general protection while a smaller limit is in place for `GET` requests to prevent lower priority traffic from overwhelming the system.
+
 ### Securing rate limit actions with JWTs 
 
 {{% notice note %}}
@@ -691,7 +755,7 @@ spec:
 
 The virtual service looks the same as before, but now we have an additional JWT configuration section that extracts 
 the `x-type` and `x-header` claims from the verified JWT. If an invalid JWT was provided, the request would be considered
-invalid. Otherwise, the request will be rate limited just like before when the header values came from the user directly. 
+invalid. Otherwise, the request will be rate limited just like before when the header values came from the user directly.
 
 ### Improving security further with WAF and authorization
 

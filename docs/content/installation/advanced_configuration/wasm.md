@@ -23,7 +23,7 @@ The easiest way to install with this value is using helm 3 as follows:
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 
 helm repo update
-
+kubectl create ns gloo-system
 helm install --namespace gloo-system --set global.wasm.enabled=true gloo gloo/gloo
 {{< /tab >}}
 {{< /tabs >}}
@@ -57,11 +57,12 @@ and change the `httpGateway` object to the following:
   httpGateway:
     options:
       wasm:
-        config: |
-          {}
-        image: webassemblyhub.io/yuval-k/metrics:v1
-        name: yuval
-        root_id: stats_root_id
+        filters:
+        - config: |
+            {}
+          image: webassemblyhub.io/yuval-k/metrics:v1
+          name: yuval
+          root_id: stats_root_id
 ```
 
 Once that is saved, the hard work has been done. All traffic on the http gateway will call the wasm filter.

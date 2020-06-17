@@ -21,6 +21,9 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	if desired.ConnectionConfig == nil {
 		desired.ConnectionConfig = original.ConnectionConfig
 	}
+	if desired.Failover == nil {
+		desired.Failover = original.Failover
+	}
 
 	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {

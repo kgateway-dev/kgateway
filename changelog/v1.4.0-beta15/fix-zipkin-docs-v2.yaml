@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix docs to use v2 endpoint of zipkin
+    issueLink: https://github.com/solo-io/gloo/issues/3089

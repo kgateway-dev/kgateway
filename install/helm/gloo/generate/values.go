@@ -169,7 +169,8 @@ type ServiceAccount struct {
 
 type GatewayValidation struct {
 	Enabled               bool     `json:"enabled" desc:"enable Gloo API Gateway validation hook (default true)"`
-	AlwaysAcceptResources *bool    `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
+	AlwaysAcceptResources bool     `json:"alwaysAcceptResources" desc:"unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright."`
+	AllowWarnings         bool     `json:"allowWarnings" desc:"set this to false in order to ensure validation webhook rejects resources that would have warning status or rejected status, rather than just rejected."`
 	SecretName            string   `json:"secretName" desc:"Name of the Kubernetes Secret containing TLS certificates used by the validation webhook server. This secret will be created by the certGen Job if the certGen Job is enabled."`
 	FailurePolicy         string   `json:"failurePolicy" desc:"failurePolicy defines how unrecognized errors from the Gateway validation endpoint are handled - allowed values are 'Ignore' or 'Fail'. Defaults to Ignore "`
 	Webhook               *Webhook `json:"webhook" desc:"webhook specific configuration"`
@@ -194,9 +195,11 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 bool `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	Enabled                 bool    `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished     bool    `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished int     `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	FloatingUserId          bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser               float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 }
 
 type GatewayProxy struct {

@@ -848,6 +848,20 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("allows setting custom runAsUser", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.runAsUser=10102",
+								"gatewayProxies.gatewayProxy.podTemplate.runUnprivileged=true",
+							},
+						})
+						uid := int64(10102)
+						truez := true
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = &truez
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("enables anti affinity ", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.antiAffinity=true"},
@@ -1065,6 +1079,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowWarnings: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
@@ -1102,6 +1117,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowWarnings: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
@@ -1182,6 +1198,7 @@ spec:
    readGatewaysFromAllNamespaces: false
    validation:
      alwaysAccept: true
+     allowWarnings: true
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
@@ -1341,6 +1358,9 @@ spec:
         - image: quay.io/solo-io/certgen:` + version + `
           imagePullPolicy: IfNotPresent
           name: certgen
+          securityContext:
+            runAsUser: 10101
+            runAsNonRoot: true
           env:
             - name: POD_NAMESPACE
               valueFrom:
@@ -1523,6 +1543,15 @@ metadata:
 								Name:  wasm.WasmEnabled,
 								Value: "true",
 							})
+						testManifest.ExpectDeploymentAppsV1(glooDeployment)
+					})
+
+					It("should allow overriding runAsUser", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gloo.deployment.runAsUser=10102"},
+						})
+						uid := int64(10102)
+						glooDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 
@@ -1731,6 +1760,15 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
+
+					It("allows setting custom runAsUser", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gateway.deployment.runAsUser=10102"},
+						})
+						uid := int64(10102)
+						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
+						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+					})
 				})
 
 				Context("discovery deployment", func() {
@@ -1834,6 +1872,15 @@ metadata:
 								"discovery.deployment.customEnv[0].Value=test",
 							},
 						})
+						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					It("allows setting custom runAsUser", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"discovery.deployment.runAsUser=10102"},
+						})
+						uid := int64(10102)
+						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
 					})
 				})

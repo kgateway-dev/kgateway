@@ -50,6 +50,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "azure": .azure.options.gloo.solo.io.UpstreamSpec
 "consul": .consul.options.gloo.solo.io.UpstreamSpec
 "awsEc2": .aws_ec2.options.gloo.solo.io.UpstreamSpec
+"failover": .gloo.solo.io.Failover
 
 ```
 
@@ -72,6 +73,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `azure` | [.azure.options.gloo.solo.io.UpstreamSpec](../options/azure/azure.proto.sk/#upstreamspec) |  Only one of `azure`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
 | `consul` | [.consul.options.gloo.solo.io.UpstreamSpec](../options/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
 | `awsEc2` | [.aws_ec2.options.gloo.solo.io.UpstreamSpec](../options/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, or `consul` can be set. |  |
+| `failover` | [.gloo.solo.io.Failover](../failover.proto.sk/#failover) | Failover endpoints for this upstream. If omitted (the default) no failovers will be applied. |  |
 
 
 

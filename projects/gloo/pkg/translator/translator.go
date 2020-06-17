@@ -5,6 +5,7 @@ import (
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/mitchellh/hashstructure"
@@ -80,7 +81,7 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 	clusters := t.computeClusters(params, reports)
 	logger.Debugf("computing envoy endpoints for proxy: %v", proxy.Metadata.Name)
 
-	endpoints := computeClusterEndpoints(params.Ctx, params.Snapshot.Upstreams, params.Snapshot.Endpoints)
+	endpoints := t.computeClusterEndpoints(params, reports)
 
 	// Find all the EDS clusters without endpoints (can happen with kube service that have no endpoints), and create a zero sized load assignment
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
@@ -96,6 +97,22 @@ ClusterLoop:
 		}
 		emptyendpointlist := &envoyapi.ClusterLoadAssignment{
 			ClusterName: c.Name,
+		}
+		// make sure to call EndpointPlugin with empty endpoint
+		for _, upstream := range params.Snapshot.Upstreams {
+			if UpstreamToClusterName(core.ResourceRef{
+				Name:      upstream.Metadata.Name,
+				Namespace: upstream.Metadata.Namespace,
+			}) == c.Name {
+				for _, plugin := range t.plugins {
+					ep, ok := plugin.(plugins.EndpointPlugin)
+					if ok {
+						if err := ep.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
+							reports.AddError(upstream, err)
+						}
+					}
+				}
+			}
 		}
 
 		endpoints = append(endpoints, emptyendpointlist)

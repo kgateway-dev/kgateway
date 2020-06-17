@@ -6,6 +6,7 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyrouteapi "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
@@ -21,6 +22,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
@@ -1494,6 +1496,76 @@ var _ = Describe("Translator", func() {
 
 	})
 
+	Context("EndpointPlugin", func() {
+		var (
+			endpointPlugin *endpointPluginMock
+			upstreamList   v1.UpstreamList
+		)
+		BeforeEach(func() {
+			endpointPlugin = &endpointPluginMock{}
+			registeredPlugins = append(registeredPlugins, endpointPlugin)
+			upstreamList = params.Snapshot.Upstreams.Clone()
+		})
+
+		AfterEach(func() {
+			params.Snapshot.Upstreams = upstreamList
+		})
+
+		It("should call the endpoint plugin", func() {
+			additionalEndpoint := &envoy_api_v2_endpoint.LocalityLbEndpoints{
+				Locality: &envoycore.Locality{
+					Region: "region",
+					Zone:   "a",
+				},
+				Priority: 10,
+			}
+
+			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
+				Expect(out.GetEndpoints()).To(HaveLen(1))
+				Expect(out.GetClusterName()).To(Equal(UpstreamToClusterName(upstream.Metadata.Ref())))
+				Expect(out.GetEndpoints()[0].GetLbEndpoints()).To(HaveLen(1))
+
+				out.Endpoints = append(out.Endpoints, additionalEndpoint)
+				return nil
+			}
+
+			translate()
+			endpointResource := endpoints.Items["test_gloo-system"]
+			endpoint := endpointResource.ResourceProto().(*envoyapi.ClusterLoadAssignment)
+			Expect(endpoint).NotTo(BeNil())
+			Expect(endpoint.Endpoints).To(HaveLen(2))
+			Expect(endpoint.Endpoints[1]).To(Equal(additionalEndpoint))
+		})
+
+		It("should call the endpoint plugin with an empty endpoint", func() {
+			// Create an empty consul upstream just to get EDS
+			emptyUpstream := &v1.Upstream{
+				Metadata: core.Metadata{
+					Namespace: "empty_namespace",
+					Name:      "empty_name",
+				},
+				UpstreamType: &v1.Upstream_Consul{
+					Consul: &consul2.UpstreamSpec{},
+				},
+			}
+			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, emptyUpstream)
+
+			foundEmptyUpstream := false
+
+			endpointPlugin.ProcessEndpointFunc = func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
+				if in.Metadata.Name == emptyUpstream.Metadata.Name &&
+					in.Metadata.Namespace == emptyUpstream.Metadata.Namespace {
+					foundEmptyUpstream = true
+				}
+				return nil
+			}
+
+			translate()
+			Expect(foundEmptyUpstream).To(BeTrue())
+		})
+
+	})
+
 	Context("Route option on direct response actions", func() {
 
 		BeforeEach(func() {
@@ -1918,4 +1990,16 @@ func (p *routePluginMock) Init(params plugins.InitParams) error {
 
 func (p *routePluginMock) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyrouteapi.Route) error {
 	return p.ProcessRouteFunc(params, in, out)
+}
+
+type endpointPluginMock struct {
+	ProcessEndpointFunc func(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
+}
+
+func (e *endpointPluginMock) ProcessEndpoints(params plugins.Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error {
+	return e.ProcessEndpointFunc(params, in, out)
+}
+
+func (e *endpointPluginMock) Init(params plugins.InitParams) error {
+	return nil
 }
