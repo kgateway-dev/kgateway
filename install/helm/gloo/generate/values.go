@@ -195,9 +195,11 @@ type Job struct {
 
 type CertGenJob struct {
 	Job
-	Enabled                 bool `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
-	SetTtlAfterFinished     bool `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
-	TtlSecondsAfterFinished int  `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	Enabled                 bool    `json:"enabled" desc:"enable the job that generates the certificates for the validating webhook at install time (default true)"`
+	SetTtlAfterFinished     bool    `json:"setTtlAfterFinished" desc:"Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true"`
+	TtlSecondsAfterFinished int     `json:"ttlSecondsAfterFinished" desc:"Clean up the finished job after this many seconds. Defaults to 60"`
+	FloatingUserId          bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser               float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
 }
 
 type GatewayProxy struct {

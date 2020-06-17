@@ -27,6 +27,11 @@ spec:
         - image: {{template "gloo.image" $image}}
           imagePullPolicy: {{ $image.pullPolicy }}
           name: certgen
+          securityContext:
+            runAsNonRoot: true
+            {{- if not .Values.gateway.certGenJob.floatingUserId }}
+            runAsUser: {{ printf "%.0f" (float64 .Values.gateway.certGenJob.runAsUser) -}}
+            {{- end }}
           env:
             - name: POD_NAMESPACE
               valueFrom:

@@ -1306,6 +1306,9 @@ spec:
         - image: quay.io/solo-io/certgen:` + version + `
           imagePullPolicy: IfNotPresent
           name: certgen
+          securityContext:
+            runAsUser: 10101
+            runAsNonRoot: true
           env:
             - name: POD_NAMESPACE
               valueFrom:
