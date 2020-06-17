@@ -4,12 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	envoycorev3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycorev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
@@ -562,18 +562,18 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can translate the http health check", func() {
-			expectedResult := []*envoycore.HealthCheck{
+			expectedResult := []*envoycorev2.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
 					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
-					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
-						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
+					HealthChecker: &envoycorev2.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoycorev2.HealthCheck_HttpHealthCheck{
 							Host:                   "host",
 							Path:                   "path",
 							ServiceName:            "svc",
-							RequestHeadersToAdd:    []*envoycore.HeaderValueOption{},
+							RequestHeadersToAdd:    []*envoycorev2.HeaderValueOption{},
 							RequestHeadersToRemove: []string{},
 							UseHttp2:               true,
 							ExpectedStatuses:       []*envoy_type.Int64Range{},
@@ -589,14 +589,14 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can translate the grpc health check", func() {
-			expectedResult := []*envoycore.HealthCheck{
+			expectedResult := []*envoycorev2.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
 					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
-					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
-						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
+					HealthChecker: &envoycorev2.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoycorev2.HealthCheck_GrpcHealthCheck{
 							ServiceName: "svc",
 							Authority:   "authority",
 						},
@@ -1515,7 +1515,7 @@ var _ = Describe("Translator", func() {
 
 		It("should call the endpoint plugin", func() {
 			additionalEndpoint := &envoyendpoint.LocalityLbEndpoints{
-				Locality: &envoycorev3.Locality{
+				Locality: &envoycore.Locality{
 					Region: "region",
 					Zone:   "a",
 				},
@@ -1611,8 +1611,8 @@ var _ = Describe("Translator", func() {
 			Expect(routeConfiguration.VirtualHosts[0].Routes).To(HaveLen(1))
 			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(HaveLen(1))
 			Expect(routeConfiguration.VirtualHosts[0].Routes[0].ResponseHeadersToAdd).To(ConsistOf(
-				&envoycorev3.HeaderValueOption{
-					Header: &envoycorev3.HeaderValue{
+				&envoycore.HeaderValueOption{
+					Header: &envoycore.HeaderValue{
 						Key:   "client-id",
 						Value: "%REQ(client-id)%",
 					},

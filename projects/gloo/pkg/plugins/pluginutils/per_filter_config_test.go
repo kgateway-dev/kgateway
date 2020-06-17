@@ -46,19 +46,19 @@ var _ = Describe("TypedPerFilterConfig", func() {
 		It("should add typed per filter config to route", func() {
 			err := SetRoutePerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 		It("should add typed per filter config to vhost", func() {
 			out := &envoyroute.VirtualHost{}
 			err := SetVhostPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 		It("should add typed per filter config to cluster weight", func() {
 			out := &envoyroute.WeightedCluster_ClusterWeight{}
 			err := SetWeightedClusterPerFilterConfig(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 	})
 
@@ -98,7 +98,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 				return msg, nil
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+			Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 		})
 
 		It("should add typed per filter config only to relevant upstream", func() {
@@ -176,7 +176,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(yescluster.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+			Expect(yescluster.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 			Expect(nocluster.TypedPerFilterConfig).ToNot(HaveKey(name))
 			Expect(out.TypedPerFilterConfig).ToNot(HaveKey(name))
 
@@ -239,7 +239,7 @@ var _ = Describe("TypedPerFilterConfig", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				Expect(yescluster.TypedPerFilterConfig).To(HaveKeyWithValue(name, Equal(message)))
+				Expect(yescluster.TypedPerFilterConfig).To(HaveKeyWithValue(name, message))
 				Expect(nocluster.TypedPerFilterConfig).ToNot(HaveKey(name))
 				Expect(out.TypedPerFilterConfig).ToNot(HaveKey(name))
 
