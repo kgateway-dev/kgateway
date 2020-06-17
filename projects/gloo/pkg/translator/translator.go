@@ -108,7 +108,7 @@ ClusterLoop:
 					ep, ok := plugin.(plugins.EndpointPlugin)
 					if ok {
 						if err := ep.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
-							return nil, nil, nil, err
+							reports.AddError(upstream, err)
 						}
 					}
 				}
