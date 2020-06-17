@@ -5,6 +5,7 @@ import (
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
@@ -98,6 +99,22 @@ ClusterLoop:
 		}
 		emptyendpointlist := &envoyendpoint.ClusterLoadAssignment{
 			ClusterName: c.Name,
+		}
+		// make sure to call EndpointPlugin with empty endpoint
+		for _, upstream := range params.Snapshot.Upstreams {
+			if UpstreamToClusterName(core.ResourceRef{
+				Name:      upstream.Metadata.Name,
+				Namespace: upstream.Metadata.Namespace,
+			}) == c.Name {
+				for _, plugin := range t.plugins {
+					ep, ok := plugin.(plugins.EndpointPlugin)
+					if ok {
+						if err := ep.ProcessEndpoints(params, upstream, emptyendpointlist); err != nil {
+							reports.AddError(upstream, err)
+						}
+					}
+				}
+			}
 		}
 
 		endpoints = append(endpoints, emptyendpointlist)

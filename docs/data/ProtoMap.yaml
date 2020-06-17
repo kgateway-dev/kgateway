@@ -416,6 +416,9 @@ apis:
   gloo.solo.io.Extensions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/extensions.proto.sk/#Extensions
     package: gloo.solo.io
+  gloo.solo.io.Failover:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#Failover
+    package: gloo.solo.io
   gloo.solo.io.GatewayOptions:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/settings.proto.sk/#GatewayOptions
     package: gloo.solo.io
@@ -440,6 +443,9 @@ apis:
   gloo.solo.io.KubernetesServiceDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#KubernetesServiceDestination
     package: gloo.solo.io
+  gloo.solo.io.LbEndpoint:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LbEndpoint
+    package: gloo.solo.io
   gloo.solo.io.Listener:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#Listener
     package: gloo.solo.io
@@ -451,6 +457,12 @@ apis:
     package: gloo.solo.io
   gloo.solo.io.LoadBalancerConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/load_balancer.proto.sk/#LoadBalancerConfig
+    package: gloo.solo.io
+  gloo.solo.io.Locality:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#Locality
+    package: gloo.solo.io
+  gloo.solo.io.LocalityLbEndpoints:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/failover.proto.sk/#LocalityLbEndpoints
     package: gloo.solo.io
   gloo.solo.io.MultiDestination:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/proxy.proto.sk/#MultiDestination
