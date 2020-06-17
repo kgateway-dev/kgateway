@@ -61,6 +61,10 @@ const (
 var (
 	// ResponseTypes are supported response types.
 	ResponseTypes = []string{
+		EndpointType,
+		ClusterType,
+		RouteType,
+		ListenerType,
 		EndpointTypev2,
 		ClusterTypev2,
 		RouteTypev2,
@@ -107,13 +111,13 @@ func (e *EnvoyResource) ResourceProto() cache.ResourceProto {
 func (e *EnvoyResource) Type() string {
 	switch e.ProtoMessage.(type) {
 	case *endpoint.ClusterLoadAssignment:
-		return EndpointTypev2
+		return EndpointType
 	case *cluster.Cluster:
-		return ClusterTypev2
+		return ClusterType
 	case *route.RouteConfiguration:
-		return RouteTypev2
+		return RouteType
 	case *listener.Listener:
-		return ListenerTypev2
+		return ListenerType
 	// keeping cases below in case- as temporary solution to enable incremental changes
 	case *v2.ClusterLoadAssignment:
 		return EndpointTypev2
@@ -141,7 +145,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// for EDS type, use cluster name or ServiceName override
 		if v.GetType() == cluster.Cluster_EDS {
 			rr := cache.XdsResourceReference{
-				Type: EndpointTypev2,
+				Type: EndpointType,
 			}
 			if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
 				rr.Name = v.EdsClusterConfig.ServiceName
@@ -178,7 +182,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 
 				if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
 					rr := cache.XdsResourceReference{
-						Type: RouteTypev2,
+						Type: RouteType,
 						Name: rds.Rds.RouteConfigName,
 					}
 					out[rr] = true

@@ -81,7 +81,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	}
 	endpoints := GetResourceReferences(s.Clusters.Items)
 	if len(endpoints) != len(s.Endpoints.Items) {
-		return fmt.Errorf("mismatched endpoint reference and resource lengths: %v != %d", endpoints, len(s.Endpoints.Items))
+		return fmt.Errorf("mismatched endpoint reference and resource lengths: len(%v) != %d", endpoints, len(s.Endpoints.Items))
 	}
 	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
 		return err
