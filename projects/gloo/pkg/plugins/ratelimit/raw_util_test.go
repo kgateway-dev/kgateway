@@ -134,12 +134,13 @@ func ExpectActionsSame(actions []*gloorl.Action) {
 	copy(actionsCopy, actions) // don't modify actions- caller won't expect it
 	for i := range actionsCopy {
 
-		// regex api is different. fix that.
+		// Envoy regex API has changed. Adjust `actionsCopy` so we can check for equality.
+		// gloorl.Action is based on an old Envoy API with a RegexMatch case. The new API has a SafeRegexMatch instead.
 		headers := actionsCopy[i].GetHeaderValueMatch().GetHeaders()
 		regexMatchValues := make([]string, len(headers))
 		for j, h := range headers {
 			if regex := h.GetRegexMatch(); regex != "" {
-				// remove deprecated regexMatch to avoid unmarshal errors but store value for comparison
+				// remove deprecated RegexMatch field to avoid unmarshal errors but store its value for checking equality below
 				regexMatchValues[j] = regex
 				h.HeaderMatchSpecifier = nil
 			}
@@ -152,9 +153,10 @@ func ExpectActionsSame(actions []*gloorl.Action) {
 		remarshalled := new(envoyvhostratelimit.RateLimit_Action)
 		err := jsonpb.UnmarshalString(ins, remarshalled)
 
-		// regex api is different. fix that.
+		// Envoy regex API has changed. Adjust `remarshalled` so we can check for equality.
 		for j, h := range remarshalled.GetHeaderValueMatch().GetHeaders() {
 			if regex := regexMatchValues[j]; regex != "" {
+				// put back the stored RegexMatch value, now as a SafeRegexMatch
 				h.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
 					SafeRegexMatch: regexutils.NewRegex(nil, regex),
 				}

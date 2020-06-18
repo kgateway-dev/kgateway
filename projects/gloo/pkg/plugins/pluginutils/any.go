@@ -3,6 +3,8 @@ package pluginutils
 import (
 	"fmt"
 
+	errors "github.com/rotisserie/eris"
+
 	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	gogoproto "github.com/gogo/protobuf/proto"
@@ -87,7 +89,10 @@ func AnyGogoProtoToStructPb(a *pany.Any) (structpb.Struct, error) {
 	if err != nil {
 		return structpb.Struct{}, err
 	}
-	ts := msg.(*udpa_type_v1.TypedStruct)
+	ts, ok := msg.(*udpa_type_v1.TypedStruct)
+	if !ok {
+		return structpb.Struct{}, errors.Errorf("%v is not a TypedStruct", a)
+	}
 
 	configStruct := ts.GetValue()
 	return *configStruct, nil
