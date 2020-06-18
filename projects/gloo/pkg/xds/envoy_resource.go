@@ -42,11 +42,11 @@ func NewEnvoyResource(r cache.ResourceProto) *EnvoyResource {
 
 // Resource types in xDS v3.
 const (
-	typePrefix   = cache.TypePrefix + "/envoy.config."
-	EndpointType = typePrefix + "endpoint.v3." + "ClusterLoadAssignment"
-	ClusterType  = typePrefix + "cluster.v3." + "Cluster"
-	RouteType    = typePrefix + "route.v3." + "RouteConfiguration"
-	ListenerType = typePrefix + "listener.v3." + "Listener"
+	typePrefixv3   = cache.TypePrefix + "/envoy.config."
+	EndpointTypev3 = typePrefixv3 + "endpoint.v3." + "ClusterLoadAssignment"
+	ClusterTypev3  = typePrefixv3 + "cluster.v3." + "Cluster"
+	RouteTypev3    = typePrefixv3 + "route.v3." + "RouteConfiguration"
+	ListenerTypev3 = typePrefixv3 + "listener.v3." + "Listener"
 )
 
 // Resource types in xDS v2.
@@ -61,10 +61,10 @@ const (
 var (
 	// ResponseTypes are supported response types.
 	ResponseTypes = []string{
-		EndpointType,
-		ClusterType,
-		RouteType,
-		ListenerType,
+		EndpointTypev3,
+		ClusterTypev3,
+		RouteTypev3,
+		ListenerTypev3,
 		EndpointTypev2,
 		ClusterTypev2,
 		RouteTypev2,
@@ -111,13 +111,13 @@ func (e *EnvoyResource) ResourceProto() cache.ResourceProto {
 func (e *EnvoyResource) Type() string {
 	switch e.ProtoMessage.(type) {
 	case *endpoint.ClusterLoadAssignment:
-		return EndpointType
+		return EndpointTypev3
 	case *cluster.Cluster:
-		return ClusterType
+		return ClusterTypev3
 	case *route.RouteConfiguration:
-		return RouteType
+		return RouteTypev3
 	case *listener.Listener:
-		return ListenerType
+		return ListenerTypev3
 	// keeping cases below in case- as temporary solution to enable incremental changes
 	case *v2.ClusterLoadAssignment:
 		return EndpointTypev2
@@ -145,7 +145,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// for EDS type, use cluster name or ServiceName override
 		if v.GetType() == cluster.Cluster_EDS {
 			rr := cache.XdsResourceReference{
-				Type: EndpointType,
+				Type: EndpointTypev3,
 			}
 			if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
 				rr.Name = v.EdsClusterConfig.ServiceName
@@ -182,7 +182,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 
 				if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
 					rr := cache.XdsResourceReference{
-						Type: RouteType,
+						Type: RouteTypev3,
 						Name: rds.Rds.RouteConfigName,
 					}
 					out[rr] = true

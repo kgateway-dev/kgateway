@@ -19,13 +19,13 @@ func PathAsString(matcher *matchers.Matcher) string {
 
 func EnvoyPathAsString(matcher *route.RouteMatch) string {
 	switch path := matcher.GetPathSpecifier().(type) {
-	//	TODO add the other cases? Didn't have SafeRegex before either
-	//	*RouteMatch_SafeRegex
-	//	*RouteMatch_ConnectMatcher_
 	case *route.RouteMatch_Prefix:
 		return path.Prefix
 	case *route.RouteMatch_Path:
 		return path.Path
+	case *route.RouteMatch_SafeRegex:
+		return path.SafeRegex.Regex
+	//case *route.RouteMatch_ConnectMatcher_: CONNECT request- doesn't have a path
 	case *route.RouteMatch_HiddenEnvoyDeprecatedRegex:
 		return path.HiddenEnvoyDeprecatedRegex
 	}
