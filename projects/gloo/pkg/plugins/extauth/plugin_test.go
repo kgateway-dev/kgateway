@@ -3,10 +3,11 @@ package extauth_test
 import (
 	"context"
 
-	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -37,15 +38,15 @@ func (c ConfigState) String() string {
 	return [...]string{"Undefined", "Enabled", "Disabled"}[c]
 }
 
-// Maps an expected PerFilterConfig value to a function that can be used to assert it.
-var validationFuncForConfigValue = map[ConfigState]func(e envoyPerFilterConfig) bool{
+// Maps an expected TypedPerFilterConfig value to a function that can be used to assert it.
+var validationFuncForConfigValue = map[ConfigState]func(e envoyTypedPerFilterConfig) bool{
 	Undefined: IsNotSet,
 	Enabled:   IsEnabled,
 	Disabled:  IsDisabled,
 }
 
 // These tests are aimed at verifying that each resource that supports extauth configurations (virtual hosts, routes, weighted destinations)
-// results in the expected PerFilterConfiguration on the corresponding Envoy resource (virtual hosts, routes, weighted cluster).
+// results in the expected TypedPerFilterConfiguration on the corresponding Envoy resource (virtual hosts, routes, weighted cluster).
 //
 // Since the outcome on one resource is currently independent from the outcome on its parent (or children), we currently
 // only test the three different input types (enabled, disabled, undefined) on each of the three resources (9 tests).
@@ -57,7 +58,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 		func(input, expected ConfigState) {
 			pluginContext := getPluginContext(input, Undefined, Undefined)
 
-			var out envoyv2.VirtualHost
+			var out envoyroute.VirtualHost
 			err := pluginContext.PluginInstance.ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
@@ -71,7 +72,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 		func(input, expected ConfigState) {
 			pluginContext := getPluginContext(Undefined, input, Undefined)
 
-			var out envoyv2.Route
+			var out envoyroute.Route
 			err := pluginContext.PluginInstance.ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
@@ -85,7 +86,7 @@ var _ = Describe("Process Custom Extauth configuration", func() {
 		func(input, expected ConfigState) {
 			pluginContext := getPluginContext(Undefined, Undefined, input)
 
-			var out envoyv2.WeightedCluster_ClusterWeight
+			var out envoyroute.WeightedCluster_ClusterWeight
 			err := pluginContext.PluginInstance.ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
@@ -273,35 +274,35 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	}
 }
 
-type envoyPerFilterConfig interface {
-	GetPerFilterConfig() map[string]*structpb.Struct
+type envoyTypedPerFilterConfig interface {
+	GetTypedPerFilterConfig() map[string]*any.Any
 }
 
 // Returns true if the ext_authz filter is explicitly disabled
-func IsDisabled(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+func IsDisabled(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[FilterName]; !ok {
+	if _, ok := e.GetTypedPerFilterConfig()[FilterName]; !ok {
 		return false
 	}
-	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	msg, err := pluginutils.AnyToMessage(e.GetTypedPerFilterConfig()[FilterName])
+	cfg := msg.(*envoyauth.ExtAuthzPerRoute)
 	Expect(err).NotTo(HaveOccurred())
 
 	return cfg.GetDisabled()
 }
 
 // Returns true if the ext_authz filter is enabled and if the ContextExtensions have the expected number of entries.
-func IsEnabled(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+func IsEnabled(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[FilterName]; !ok {
+	if _, ok := e.GetTypedPerFilterConfig()[FilterName]; !ok {
 		return false
 	}
-	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	msg, err := pluginutils.AnyToMessage(e.GetTypedPerFilterConfig()[FilterName])
+	cfg := msg.(*envoyauth.ExtAuthzPerRoute)
 	Expect(err).NotTo(HaveOccurred())
 
 	if cfg.GetCheckSettings() == nil {
@@ -312,11 +313,11 @@ func IsEnabled(e envoyPerFilterConfig) bool {
 	return len(ctxExtensions) == 1 && ctxExtensions["some"] == "context"
 }
 
-// Returns true if no PerFilterConfig is set for the ext_authz filter
-func IsNotSet(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+// Returns true if no TypedPerFilterConfig is set for the ext_authz filter
+func IsNotSet(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return true
 	}
-	_, ok := e.GetPerFilterConfig()[FilterName]
+	_, ok := e.GetTypedPerFilterConfig()[FilterName]
 	return !ok
 }

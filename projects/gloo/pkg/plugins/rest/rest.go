@@ -14,7 +14,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/errors"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	glooplugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"

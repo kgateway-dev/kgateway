@@ -3,7 +3,7 @@ package sanitizer_test
 import (
 	"context"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/rotisserie/eris"
@@ -26,7 +26,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			},
 		}
 		goodClusterName = translator.UpstreamToClusterName(us.Metadata.Ref())
-		goodCluster     = &envoyapi.Cluster{
+		goodCluster     = &envoycluster.Cluster{
 			Name: goodClusterName,
 		}
 
@@ -37,7 +37,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 			},
 		}
 		badClusterName = translator.UpstreamToClusterName(badUs.Metadata.Ref())
-		badCluster     = &envoyapi.Cluster{
+		badCluster     = &envoycluster.Cluster{
 			Name: badClusterName,
 		}
 	)
@@ -72,7 +72,7 @@ var _ = Describe("UpstreamRemovingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		clusters := snap.GetResources(xds.ClusterType)
+		clusters := snap.GetResources(xds.ClusterTypev2)
 
 		Expect(clusters.Items).To(HaveLen(1))
 		Expect(clusters.Items[goodClusterName].ResourceProto()).To(Equal(goodCluster))

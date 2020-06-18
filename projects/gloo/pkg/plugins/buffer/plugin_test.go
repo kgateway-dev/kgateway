@@ -1,11 +1,11 @@
 package buffer_test
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/types"
+	"github.com/golang/protobuf/ptypes"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -65,7 +65,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -89,7 +89,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
@@ -109,7 +109,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -133,7 +133,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
@@ -153,7 +153,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -177,7 +177,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = ptypes.UnmarshalAny(out.GetTypedPerFilterConfig()[FilterName], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))

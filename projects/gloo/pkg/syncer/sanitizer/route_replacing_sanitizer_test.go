@@ -4,10 +4,9 @@ import (
 	"context"
 	"net/http"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -130,7 +129,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		config = &listener.Filter_TypedConfig{}
 
 		// make Consistent() happy
-		listener = &envoyapi.Listener{
+		listener = &listener.Listener{
 			FilterChains: []*listener.FilterChain{{
 				Filters: []*listener.Filter{{
 					Name:       util.HTTPConnectionManager,
@@ -151,7 +150,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	It("replaces routes which point to a missing cluster", func() {
-		routeCfg := &envoyapi.RouteConfiguration{
+		routeCfg := &route.RouteConfiguration{
 			Name: routeCfgName,
 			VirtualHosts: []*route.VirtualHost{
 				{
@@ -169,7 +168,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 			},
 		}
 
-		expectedRoutes := &envoyapi.RouteConfiguration{
+		expectedRoutes := &route.RouteConfiguration{
 			Name: routeCfgName,
 			VirtualHosts: []*route.VirtualHost{
 				{
@@ -215,9 +214,9 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		snap, err := sanitizer.SanitizeSnapshot(context.TODO(), glooSnapshot, xdsSnapshot, reports)
 		Expect(err).NotTo(HaveOccurred())
 
-		routeCfgs := snap.GetResources(xds.RouteType)
-		listeners := snap.GetResources(xds.ListenerType)
-		clusters := snap.GetResources(xds.ClusterType)
+		routeCfgs := snap.GetResources(xds.RouteTypev2)
+		listeners := snap.GetResources(xds.ListenerTypev2)
+		clusters := snap.GetResources(xds.ClusterTypev2)
 
 		sanitizedRoutes := routeCfgs.Items[routeCfg.GetName()]
 		listenersWithFallback := listeners.Items[fallbackListenerName]

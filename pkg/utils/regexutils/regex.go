@@ -3,7 +3,7 @@ package regexutils
 import (
 	"context"
 
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

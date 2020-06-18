@@ -1,7 +1,7 @@
 package utils
 
 import (
-	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 )
 
@@ -23,8 +23,11 @@ func EnvoyPathAsString(matcher *route.RouteMatch) string {
 		return path.Prefix
 	case *route.RouteMatch_Path:
 		return path.Path
-	case *route.RouteMatch_Regex:
-		return path.Regex
+	case *route.RouteMatch_SafeRegex:
+		return path.SafeRegex.Regex
+	//case *route.RouteMatch_ConnectMatcher_: CONNECT request- doesn't have a path
+	case *route.RouteMatch_HiddenEnvoyDeprecatedRegex:
+		return path.HiddenEnvoyDeprecatedRegex
 	}
 	return ""
 }

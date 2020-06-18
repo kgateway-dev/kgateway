@@ -1,8 +1,8 @@
 package shadowing
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -34,8 +34,8 @@ var _ = Describe("Plugin", func() {
 		out := &envoyroute.Route{}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
-		checkFraction(out.GetRoute().RequestMirrorPolicy.RuntimeFraction, 100)
-		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
+		checkFraction(out.GetRoute().RequestMirrorPolicies[0].RuntimeFraction, 100)
+		Expect(out.GetRoute().RequestMirrorPolicies[0].Cluster).To(Equal("some-upstream_default"))
 	})
 
 	It("should work on valid inputs, with initialized outputs", func() {
@@ -62,8 +62,8 @@ var _ = Describe("Plugin", func() {
 		}
 		err := p.ProcessRoute(plugins.RouteParams{}, in, out)
 		Expect(err).NotTo(HaveOccurred())
-		checkFraction(out.GetRoute().RequestMirrorPolicy.RuntimeFraction, 100)
-		Expect(out.GetRoute().RequestMirrorPolicy.Cluster).To(Equal("some-upstream_default"))
+		checkFraction(out.GetRoute().RequestMirrorPolicies[0].RuntimeFraction, 100)
+		Expect(out.GetRoute().RequestMirrorPolicies[0].Cluster).To(Equal("some-upstream_default"))
 		Expect(out.GetRoute().PrefixRewrite).To(Equal("/something/set/by/another/plugin"))
 	})
 

@@ -16,10 +16,9 @@ import (
 
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	errors "github.com/rotisserie/eris"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -36,7 +35,7 @@ var (
 	SubsetsMisconfiguredErr = errors.New("route has a subset config, but the upstream does not.")
 )
 
-func (t *translatorInstance) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, routeCfgName string, listenerReport *validationapi.ListenerReport) *envoyapi.RouteConfiguration {
+func (t *translatorInstance) computeRouteConfig(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, routeCfgName string, listenerReport *validationapi.ListenerReport) *envoyroute.RouteConfiguration {
 	if listener.GetHttpListener() == nil {
 		return nil
 	}
@@ -58,7 +57,7 @@ func (t *translatorInstance) computeRouteConfig(params plugins.Params, proxy *v1
 		)
 	}
 
-	return &envoyapi.RouteConfiguration{
+	return &envoyroute.RouteConfiguration{
 		Name:         routeCfgName,
 		VirtualHosts: virtualHosts,
 	}

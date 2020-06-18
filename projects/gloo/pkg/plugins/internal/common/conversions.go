@@ -1,7 +1,7 @@
 package common
 
 import (
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/types"
 )
 

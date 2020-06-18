@@ -6,8 +6,9 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -57,7 +58,7 @@ type UpstreamPlugin interface {
 // If one wishes to also modify the corresponding envoy Cluster the above UpstreamPlugin interface should be used.
 type EndpointPlugin interface {
 	Plugin
-	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
+	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyendpoint.ClusterLoadAssignment) error
 }
 
 /*

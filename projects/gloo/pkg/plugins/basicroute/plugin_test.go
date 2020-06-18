@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -144,7 +144,7 @@ var _ = Describe("host rewrite", func() {
 
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
+			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "/"},
 		}
 		out := &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
@@ -157,13 +157,13 @@ var _ = Describe("host rewrite", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(Equal("/foo"))
+		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/foo"))
 	})
 
 	It("distinguishes between empty string and nil", func() {
 		p := NewPlugin()
 		routeAction := &envoyroute.RouteAction{
-			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewrite{HostRewrite: "/"},
+			HostRewriteSpecifier: &envoyroute.RouteAction_HostRewriteLiteral{HostRewriteLiteral: "/"},
 		}
 		out := &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
@@ -176,7 +176,7 @@ var _ = Describe("host rewrite", func() {
 			Options: &v1.RouteOptions{},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(Equal("/"))
+		Expect(routeAction.GetHostRewriteLiteral()).To(Equal("/"))
 
 		// should rewrite host rewrite
 		err = p.ProcessRoute(plugins.RouteParams{}, &v1.Route{
@@ -185,7 +185,7 @@ var _ = Describe("host rewrite", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(routeAction.GetHostRewrite()).To(BeEmpty())
+		Expect(routeAction.GetHostRewriteLiteral()).To(BeEmpty())
 	})
 
 	It("sets auto_host_rewrite", func() {

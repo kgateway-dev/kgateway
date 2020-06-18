@@ -3,7 +3,7 @@ package buffer
 import (
 	"github.com/rotisserie/eris"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"

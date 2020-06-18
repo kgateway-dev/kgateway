@@ -3,17 +3,18 @@ package pluginutils
 import (
 	"fmt"
 
+	errors "github.com/rotisserie/eris"
+
 	udpa_type_v1 "github.com/cncf/udpa/go/udpa/type/v1"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-
 	gogoproto "github.com/gogo/protobuf/proto"
-	"github.com/golang/protobuf/proto"
 	goproto "github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	pany "github.com/golang/protobuf/ptypes/any"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
-func MessageToAny(msg proto.Message) (*pany.Any, error) {
+func MessageToAny(msg goproto.Message) (*pany.Any, error) {
 
 	name, err := protoToMessageName(msg)
 	if err != nil {
@@ -29,7 +30,7 @@ func MessageToAny(msg proto.Message) (*pany.Any, error) {
 	}, nil
 }
 
-func MustMessageToAny(msg proto.Message) *pany.Any {
+func MustMessageToAny(msg goproto.Message) *pany.Any {
 	anymsg, err := MessageToAny(msg)
 	if err != nil {
 		panic(err)
@@ -37,13 +38,13 @@ func MustMessageToAny(msg proto.Message) *pany.Any {
 	return anymsg
 }
 
-func AnyToMessage(a *pany.Any) (proto.Message, error) {
+func AnyToMessage(a *pany.Any) (goproto.Message, error) {
 	var x ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(a, &x)
 	return x.Message, err
 }
 
-func MustAnyToMessage(a *pany.Any) proto.Message {
+func MustAnyToMessage(a *pany.Any) goproto.Message {
 	var x ptypes.DynamicAny
 	err := ptypes.UnmarshalAny(a, &x)
 	if err != nil {
@@ -54,7 +55,7 @@ func MustAnyToMessage(a *pany.Any) proto.Message {
 
 // gogoprotos converted directly to goproto any can't be marshalled unless you wrap
 // the contents of the gogoproto in a typed struct
-func MustGogoMessageToAnyGoProto(msg proto.Message) *pany.Any {
+func MustGogoMessageToAnyGoProto(msg goproto.Message) *pany.Any {
 	any, err := GogoMessageToAnyGoProto(msg)
 	if err != nil {
 		panic(err)
@@ -64,7 +65,7 @@ func MustGogoMessageToAnyGoProto(msg proto.Message) *pany.Any {
 
 // gogoprotos converted directly to goproto any can't be marshalled unless you wrap
 // the contents of the gogoproto in a typed struct
-func GogoMessageToAnyGoProto(msg proto.Message) (*pany.Any, error) {
+func GogoMessageToAnyGoProto(msg goproto.Message) (*pany.Any, error) {
 	configStruct, err := conversion.MessageToStruct(msg)
 	if err != nil {
 		return nil, err
@@ -80,7 +81,24 @@ func GogoMessageToAnyGoProto(msg proto.Message) (*pany.Any, error) {
 	return anyGo, nil
 }
 
-func protoToMessageName(msg proto.Message) (string, error) {
+// gogoproto any represented as a goproto can't be unmarshalled unless you unwrap
+// the contents of the goproto from the typed struct (see function above)
+// You may want to follow this with conversion.StructToMessage
+func AnyGogoProtoToStructPb(a *pany.Any) (structpb.Struct, error) {
+	msg, err := AnyToMessage(a)
+	if err != nil {
+		return structpb.Struct{}, err
+	}
+	ts, ok := msg.(*udpa_type_v1.TypedStruct)
+	if !ok {
+		return structpb.Struct{}, errors.Errorf("%v is not a TypedStruct", a)
+	}
+
+	configStruct := ts.GetValue()
+	return *configStruct, nil
+}
+
+func protoToMessageName(msg goproto.Message) (string, error) {
 	typeUrlPrefix := "type.googleapis.com/"
 
 	if s := gogoproto.MessageName(msg); s != "" {
@@ -91,22 +109,22 @@ func protoToMessageName(msg proto.Message) (string, error) {
 	return "", fmt.Errorf("can't determine message name")
 }
 
-func protoToMessageBytes(msg proto.Message) ([]byte, error) {
+func protoToMessageBytes(msg goproto.Message) ([]byte, error) {
 	if b, err := protoToMessageBytesGolang(msg); err == nil {
 		return b, nil
 	}
 	return protoToMessageBytesGogo(msg)
 }
 
-func protoToMessageBytesGogo(msg proto.Message) ([]byte, error) {
+func protoToMessageBytesGogo(msg goproto.Message) ([]byte, error) {
 	b := gogoproto.NewBuffer(nil)
 	b.SetDeterministic(true)
 	err := b.Marshal(msg)
 	return b.Bytes(), err
 }
 
-func protoToMessageBytesGolang(msg proto.Message) ([]byte, error) {
-	b := proto.NewBuffer(nil)
+func protoToMessageBytesGolang(msg goproto.Message) ([]byte, error) {
+	b := goproto.NewBuffer(nil)
 	b.SetDeterministic(true)
 	err := b.Marshal(msg)
 	return b.Bytes(), err

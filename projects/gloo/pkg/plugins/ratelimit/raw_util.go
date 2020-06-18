@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
