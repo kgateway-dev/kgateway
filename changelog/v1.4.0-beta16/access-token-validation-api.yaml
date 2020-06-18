@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3055
+    resolvesIssue: false
+    description: >
+      Define the API to specify access token validation for external authentication in Gloo Enterprise. This
+      API allows for a user to perform additional validation on the access token received during an OAuth2.0 flow and
+      use it in authorization decisions. The userinfo metadata can also be queried and leveraged in an extauth plugin.
+      Further, users can perform the first leg of an OAuth2.0 flow outside of Gloo and only use Gloo to validate access
+      tokens that have been provided on the incoming request.
