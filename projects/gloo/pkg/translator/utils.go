@@ -3,10 +3,8 @@ package translator
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -37,14 +35,14 @@ func NewFilterWithConfig(name string, config proto.Message) (*envoylistener.Filt
 	}
 
 	if config != nil {
-		marshalledConf, err := pluginutils.MessageToAny(config)
+		marshalledConf, err := envoyutil.MessageToStruct(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return &envoylistener.Filter{}, err
 		}
 
-		s.ConfigType = &envoylistener.Filter_TypedConfig{
-			TypedConfig: marshalledConf,
+		s.ConfigType = &envoylistener.Filter_Config{
+			Config: marshalledConf,
 		}
 	}
 
@@ -93,7 +91,7 @@ func ParseConfig(c configObject, config proto.Message) error {
 	if any != nil {
 		return ptypes.UnmarshalAny(any, config)
 	}
-	structt := c.GetHiddenEnvoyDeprecatedConfig()
+	structt := c.GetConfig()
 	if structt != nil {
 		return envoyutil.StructToMessage(structt, config)
 	}
@@ -101,6 +99,6 @@ func ParseConfig(c configObject, config proto.Message) error {
 }
 
 type configObject interface {
-	GetHiddenEnvoyDeprecatedConfig() *structpb.Struct
+	GetConfig() *structpb.Struct
 	GetTypedConfig() *any.Any
 }
