@@ -95,7 +95,7 @@ data:
       access_log_path: /dev/null
       address:
         socket_address:
-          address: 127.0.0.1
+          address: {{ .Values.ingressProxy.loopBackAddress }}
           port_value: 19000
 {{- if .Values.ingressProxy.tracing }}
     tracing:

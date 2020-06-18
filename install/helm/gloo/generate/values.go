@@ -96,10 +96,11 @@ type Knative struct {
 }
 
 type KnativeProxy struct {
-	Image     *Image  `json:"image,omitempty"`
-	HttpPort  int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing   *string `json:"tracing,omitempty" desc:"tracing configuration"`
+	Image           *Image  `json:"image,omitempty"`
+	HttpPort        int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort       int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing         *string `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress string  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	*DeploymentSpec
 	*ServiceSpec
 }
@@ -215,6 +216,7 @@ type GatewayProxy struct {
 	Stats                       *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                  bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	ExtraProxyVolumeMountHelper string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
+	LoopBackAddress             string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -301,9 +303,10 @@ type IngressDeployment struct {
 }
 
 type IngressProxy struct {
-	Deployment *IngressProxyDeployment `json:"deployment,omitempty"`
-	ConfigMap  *IngressProxyConfigMap  `json:"configMap,omitempty"`
-	Tracing    *string                 `json:"tracing,omitempty"`
+	Deployment      *IngressProxyDeployment `json:"deployment,omitempty"`
+	ConfigMap       *IngressProxyConfigMap  `json:"configMap,omitempty"`
+	Tracing         *string                 `json:"tracing,omitempty"`
+	LoopBackAddress string                  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	*ServiceSpec
 }
 
