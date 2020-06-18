@@ -19,7 +19,7 @@ For example, Gloo's data plane (the `gateway-proxy` pod) has ReadOnly file syste
 * **Disable Kubernetes destinations**
     - Gloo out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo pod doesn't cache both upstreams and Kubernetes destinations. 
 
-## Enable edge proxy health checks
+## Enable health checks
 
 {{% notice warning %}}
 Liveness/readiness probes on Envoy are disabled by default. This is because Envoy's behavior can be surprising: When there are no
@@ -27,6 +27,20 @@ routes configured, Envoy reports itself as un-ready. As it becomes configured wi
 report itself as ready.
 {{% /notice %}}
 
-* **Enable liveness/readiness probes**
+* **Enable liveness/readiness probes for Envoy**
     - To enable liveness and readiness probes, specify `gatewayProxies.gatewayProxy.podTemplate.probes=true` in your Helm installation.
 If you are running Gloo Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
+* **Enable liveness/readiness probes for Gloo**
+    - If the `gloo` pod resides behind a load balancer, then be sure to set up health checks on Gloo using its readiness probe. This should be configured by default on the `gloo` deployment
+
+## Envoy performance
+
+* **Enable Envoy's gzip filter**
+    - Optionally, you may choose to enable Envoy's gzip filter through Gloo. More information on that can be found [here]({{% versioned_link_path fromRoot="/installation/advanced_configuration/gzip/" %}}).
+* **Set up an EDS warming timeout**
+    - Set up the endpoints warming timeout to some nonzero value. More details [here]({{%versioned_link_path fromRoot="/operations/upgrading/1.3.0/#recommended-settings" %}}).
+
+## Other Envoy-specific guidance
+
+* Envoy has a list of edge proxy best-practices in their docs. You may also want to consult that to see what is applicable for your use case. Find those docs [here](https://www.envoyproxy.io/docs/envoy/latest/configuration/best_practices/edge#best-practices-edge).
+    - In particular, you may especially want to set `use_remote_address` to true. More details [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto#envoy-v3-api-field-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-use-remote-address)
