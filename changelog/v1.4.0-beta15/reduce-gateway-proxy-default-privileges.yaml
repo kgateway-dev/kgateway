@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Default gateway proxy to running as non-root and
+      disabling NET_BIND_SERVICE by default.
+    issueLink: https://github.com/solo-io/gloo/issues/3084
+    resolvesIssue: false
