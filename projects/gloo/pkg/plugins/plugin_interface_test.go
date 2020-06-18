@@ -3,10 +3,10 @@ package plugins
 import (
 	"sort"
 
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/any"
 
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -56,17 +56,41 @@ var _ = Describe("Plugin", func() {
 		sort.Sort(filters)
 		ExpectNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 
-		By("verify stable sort")
-		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"a": nil}}}}
-		secondFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"b": nil}}}}
-		thirdFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"c": nil}}}}
+		By("verify stable sort- check TypeUrl field")
+		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "a"}}}
+		secondFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "b"}}}
+		thirdFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "c"}}}
 		filters = StagedHttpFilterList{
 			StagedHttpFilter{firstFilter, DuringStage(RouteStage)},
 			StagedHttpFilter{secondFilter, DuringStage(RouteStage)},
 			StagedHttpFilter{thirdFilter, DuringStage(RouteStage)},
 		}
 		sort.Sort(filters)
-		ExpectFilterConfigOrders(filters, []string{"a", "b", "c"})
+		ExpectFilterConfigOrders(filters, []string{"a", "b", "c"}, []string{"", "", ""})
+
+		By("verify stable sort- check Value field")
+		firstFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{Value: []byte("a")}}}
+		secondFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{Value: []byte("b")}}}
+		thirdFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{Value: []byte("c")}}}
+		filters = StagedHttpFilterList{
+			StagedHttpFilter{firstFilter, DuringStage(RouteStage)},
+			StagedHttpFilter{secondFilter, DuringStage(RouteStage)},
+			StagedHttpFilter{thirdFilter, DuringStage(RouteStage)},
+		}
+		sort.Sort(filters)
+		ExpectFilterConfigOrders(filters, []string{"", "", ""}, []string{"a", "b", "c"})
+
+		By("verify stable sort- check both fields")
+		firstFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "a", Value: []byte("b")}}}
+		secondFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "a", Value: []byte("c")}}}
+		thirdFilter = &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{&any.Any{TypeUrl: "b", Value: []byte("a")}}}
+		filters = StagedHttpFilterList{
+			StagedHttpFilter{firstFilter, DuringStage(RouteStage)},
+			StagedHttpFilter{secondFilter, DuringStage(RouteStage)},
+			StagedHttpFilter{thirdFilter, DuringStage(RouteStage)},
+		}
+		sort.Sort(filters)
+		ExpectFilterConfigOrders(filters, []string{"a", "a", "b"}, []string{"b", "c", "a"})
 	})
 
 	It("should order listener filter stages correctly", func() {
@@ -101,11 +125,12 @@ func ExpectNameOrder(filters StagedHttpFilterList, names []string) {
 	}
 }
 
-func ExpectFilterConfigOrders(filters StagedHttpFilterList, names []string) {
-	Expect(len(filters)).To(Equal(len(names)))
+func ExpectFilterConfigOrders(filters StagedHttpFilterList, typeUrls []string, values []string) {
+	Expect(len(filters)).To(Equal(len(typeUrls)))
+	Expect(len(filters)).To(Equal(len(values)))
 	for i, filter := range filters {
-		v, ok := filter.HttpFilter.ConfigType.(*envoyhttp.HttpFilter_Config).Config.Fields[names[i]]
-		Expect(ok).To(BeTrue())
-		Expect(v).To(BeNil())
+		v := filter.HttpFilter.ConfigType.(*envoyhttp.HttpFilter_TypedConfig).TypedConfig
+		Expect(v.TypeUrl).To(Equal(typeUrls[i]))
+		Expect(string(v.Value)).To(Equal(values[i]))
 	}
 }

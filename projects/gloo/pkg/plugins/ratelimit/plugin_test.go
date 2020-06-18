@@ -3,7 +3,7 @@ package ratelimit_test
 import (
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
@@ -15,8 +15,8 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
@@ -89,7 +89,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
-			cfg := getConfig(f.HttpFilter)
+			cfg := getTypedConfig(f.HttpFilter)
 			Expect(cfg.FailureModeDeny).To(BeFalse())
 		}
 
@@ -109,7 +109,7 @@ var _ = Describe("RateLimit Plugin", func() {
 			},
 		}
 
-		cfg := getConfig(filters[0].HttpFilter)
+		cfg := getTypedConfig(filters[0].HttpFilter)
 		Expect(cfg).To(BeEquivalentTo(expectedConfig))
 	})
 
@@ -119,7 +119,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		timeout := DefaultTimeout
 		Expect(filters).To(HaveLen(1))
 		for _, f := range filters {
-			cfg := getConfig(f.HttpFilter)
+			cfg := getTypedConfig(f.HttpFilter)
 			Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&timeout)))
 		}
 	})
@@ -180,7 +180,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
-				cfg := getConfig(f.HttpFilter)
+				cfg := getTypedConfig(f.HttpFilter)
 				Expect(cfg.FailureModeDeny).To(BeTrue())
 			}
 		})
@@ -199,7 +199,7 @@ var _ = Describe("RateLimit Plugin", func() {
 
 			Expect(filters).To(HaveLen(1))
 			for _, f := range filters {
-				cfg := getConfig(f.HttpFilter)
+				cfg := getTypedConfig(f.HttpFilter)
 				t := time.Second
 				Expect(cfg.Timeout).To(Equal(gogoutils.DurationStdToProto(&t)))
 			}
@@ -208,10 +208,10 @@ var _ = Describe("RateLimit Plugin", func() {
 
 })
 
-func getConfig(f *envoyhttp.HttpFilter) *envoyratelimit.RateLimit {
-	cfg := f.GetConfig()
+func getTypedConfig(f *envoyhttp.HttpFilter) *envoyratelimit.RateLimit {
+	cfg := f.GetTypedConfig()
 	rcfg := new(envoyratelimit.RateLimit)
-	err := conversion.StructToMessage(cfg, rcfg)
+	err := ptypes.UnmarshalAny(cfg, rcfg)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return rcfg
 }
