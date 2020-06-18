@@ -1,7 +1,7 @@
 package als_test
 
 import (
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
@@ -14,10 +14,11 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -104,7 +105,7 @@ var _ = Describe("Plugin", func() {
 				Name: util.HTTPConnectionManager,
 			}}
 
-			outl := &envoylistener.Listener{
+			outl := &envoyapi.Listener{
 				FilterChains: []*envoylistener.FilterChain{{
 					Filters: filters,
 				}},
@@ -137,7 +138,7 @@ var _ = Describe("Plugin", func() {
 				Name: util.TCPProxy,
 			}}
 
-			outl := &envoylistener.Listener{
+			outl := &envoyapi.Listener{
 				FilterChains: []*envoylistener.FilterChain{{
 					Filters: filters,
 				}},
@@ -220,7 +221,7 @@ var _ = Describe("Plugin", func() {
 					Name: util.HTTPConnectionManager,
 				}}
 
-				outl := &envoylistener.Listener{
+				outl := &envoyapi.Listener{
 					FilterChains: []*envoylistener.FilterChain{{
 						Filters: filters,
 					}},
@@ -253,7 +254,7 @@ var _ = Describe("Plugin", func() {
 					Name: util.TCPProxy,
 				}}
 
-				outl := &envoylistener.Listener{
+				outl := &envoyapi.Listener{
 					FilterChains: []*envoylistener.FilterChain{{
 						Filters: filters,
 					}},
@@ -315,7 +316,7 @@ var _ = Describe("Plugin", func() {
 					Name: util.HTTPConnectionManager,
 				}}
 
-				outl := &envoylistener.Listener{
+				outl := &envoyapi.Listener{
 					FilterChains: []*envoylistener.FilterChain{{
 						Filters: filters,
 					}},
@@ -348,7 +349,7 @@ var _ = Describe("Plugin", func() {
 					Name: util.TCPProxy,
 				}}
 
-				outl := &envoylistener.Listener{
+				outl := &envoyapi.Listener{
 					FilterChains: []*envoylistener.FilterChain{{
 						Filters: filters,
 					}},

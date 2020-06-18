@@ -16,8 +16,9 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -88,7 +89,7 @@ var _ = Describe("Plugin", func() {
 			Name: util.HTTPConnectionManager,
 		}}
 
-		outl := &envoylistener.Listener{
+		outl := &envoyapi.Listener{
 			FilterChains: []*envoylistener.FilterChain{{
 				Filters: filters,
 			}},
@@ -157,7 +158,7 @@ var _ = Describe("Plugin", func() {
 			hcms    *hcm.HttpConnectionManagerSettings
 			hl      *v1.HttpListener
 			in      *v1.Listener
-			outl    *envoylistener.Listener
+			outl    *envoyapi.Listener
 			filters []*envoylistener.Filter
 			p       *Plugin
 		)
@@ -181,7 +182,7 @@ var _ = Describe("Plugin", func() {
 				Name: util.HTTPConnectionManager,
 			}}
 
-			outl = &envoylistener.Listener{
+			outl = &envoyapi.Listener{
 				FilterChains: []*envoylistener.FilterChain{{
 					Filters: filters,
 				}},
