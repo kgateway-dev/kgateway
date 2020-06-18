@@ -715,13 +715,15 @@ var _ = Describe("Helm Test", func() {
 						}}
 						truez := true
 						falsez := false
+						defaultUser := int64(10101)
 						deploy.Spec.Template.Spec.Containers[0].SecurityContext = &v1.SecurityContext{
 							Capabilities: &v1.Capabilities{
-								Add:  []v1.Capability{"NET_BIND_SERVICE"},
 								Drop: []v1.Capability{"ALL"},
 							},
 							ReadOnlyRootFilesystem:   &truez,
 							AllowPrivilegeEscalation: &falsez,
+							RunAsNonRoot:             &truez,
+							RunAsUser:                &defaultUser,
 						}
 						deploy.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
 						gatewayProxyDeployment = deploy
