@@ -9,3 +9,4 @@ changelog:
       used for Envoy's readiness probes in a Kubernetes environment. In "ingress" installations of Gloo, Envoy's
       admin port address is configured using the Helm string value `ingressProxy.loopBackAddress`. And in "knative" installations,
       it is configured using the Helm string value `settings.integrations.knative.proxy.loopBackAddress`.
+    issueLink: https://github.com/solo-io/gloo/issues/3114
