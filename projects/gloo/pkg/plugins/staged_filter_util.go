@@ -1,9 +1,9 @@
 package plugins
 
 import (
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/proto"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
+	"github.com/golang/protobuf/ptypes"
 )
 
 func NewStagedFilter(name string, stage FilterStage) StagedHttpFilter {
@@ -22,14 +22,14 @@ func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterSt
 
 	if config != nil {
 
-		marshalledConf, err := protoutils.MarshalStruct(config)
+		marshalledConf, err := ptypes.MarshalAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return StagedHttpFilter{}, err
 		}
 
-		s.HttpFilter.ConfigType = &envoyhttp.HttpFilter_Config{
-			Config: marshalledConf,
+		s.HttpFilter.ConfigType = &envoyhttp.HttpFilter_TypedConfig{
+			TypedConfig: marshalledConf,
 		}
 	}
 
