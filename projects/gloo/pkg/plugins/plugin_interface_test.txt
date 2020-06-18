@@ -1,11 +1,12 @@
 package plugins
 
 import (
+	"github.com/golang/protobuf/ptypes/any"
 	"sort"
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -57,7 +58,7 @@ var _ = Describe("Plugin", func() {
 		ExpectNameOrder(filters, []string{"A", "B", "Waf", "C", "D", "E", "F", "G", "H"})
 
 		By("verify stable sort")
-		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"a": nil}}}}
+		firstFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_TypedConfig{TypedConfig: &any.Any{Fields: map[string]*structpb.Value{"a": nil}}}}
 		secondFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"b": nil}}}}
 		thirdFilter := &envoyhttp.HttpFilter{Name: "A", ConfigType: &envoyhttp.HttpFilter_Config{Config: &structpb.Struct{Fields: map[string]*structpb.Value{"c": nil}}}}
 		filters = StagedHttpFilterList{
