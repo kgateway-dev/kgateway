@@ -1,4 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Add docs indicating the Helm value to set when enabling health checks on Envoy.
-    issueLink: https://github.com/solo-io/gloo/issues/3114
