@@ -30,8 +30,8 @@ report itself as ready.
 * **Enable liveness/readiness probes for Envoy**
     - To enable liveness and readiness probes, specify `gatewayProxies.gatewayProxy.podTemplate.probes=true` in your Helm installation.
 If you are running Gloo Enterprise, you'll need to prefix that Helm values key with `"gloo."`; e.g. `gloo.gatewayProxies.gatewayProxy.podTemplate.probes=true`.
-* **Enable liveness/readiness probes for Gloo**
-    - If the `gloo` pod resides behind a load balancer, then be sure to set up health checks on Gloo using its readiness probe. This should be configured by default on the `gloo` deployment
+* **Configure your load balancer correctly**
+    - If you are running Gloo behind a load balancer, be sure to configure your load balancer properly to consume the readiness probe mentioned above.
 
 ## Envoy performance
 
