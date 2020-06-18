@@ -3,8 +3,8 @@ package aws
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	gogoproto "github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -283,7 +283,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			err = conversion.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
+			err = ptypes.UnmarshalAny(filters[0].HttpFilter.GetTypedConfig(), cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}
