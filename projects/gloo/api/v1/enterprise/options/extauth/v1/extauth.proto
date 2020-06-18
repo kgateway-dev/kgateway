@@ -269,13 +269,13 @@ message OidcAuthorizationCode {
 
 message AccessTokenValidation {
 
+  // fields 2 and 3 reserved for jwt and hmac validation
+  reserved 2, 3;
+
   oneof validation_type {
     // the url for the OAuth2.0 access token introspection endpoint.
     // if provided, the (opaque) access token provided or received from the oauth authorization endpoint
     // will be validated against this endpoint, or locally cached responses for this access token.
-    //
-    // TODO(kdorosh) can this be discovered at well-known?
-    // TODO(kdorosh) fields 2 and 3 reserved for jwt and hmac validation
     string introspection_url = 1;
   }
 
@@ -283,14 +283,12 @@ message AccessTokenValidation {
   // if provided, the (opaque) access token provided or received from the oauth endpoint
   // will be queried and the userinfo response (or cached response) will be put in the `AuthorizationRequest` state.
   // this can be useful to leverage the userinfo response in, for example, an extauth server plugin.
-  //
-  // TODO(kdorosh) can this be discovered at well-known?
   string userinfo_url = 4;
 
   // how long the token introspection and/or userinfo endpoint response for a specific access token should be kept
   // in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the
   // introspection result, whichever comes sooner. if omitted, defaults to 10 minutes.
-  google.protobuf.Duration token_introspection_cache_timeout = 5 [(gogoproto.stdduration) = true];
+  google.protobuf.Duration cache_timeout = 5 [(gogoproto.stdduration) = true];
 }
 
 message OauthSecret {

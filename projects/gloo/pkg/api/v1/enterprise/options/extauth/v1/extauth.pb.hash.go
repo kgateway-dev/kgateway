@@ -663,12 +663,12 @@ func (m *AccessTokenValidation) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetTokenIntrospectionCacheTimeout()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetCacheTimeout()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetTokenIntrospectionCacheTimeout(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetCacheTimeout(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
