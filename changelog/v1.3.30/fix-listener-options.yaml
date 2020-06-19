@@ -2,3 +2,6 @@ changelog:
   - type: FIX
     description: Register listener plugin so that listener options are translated to Envoy configuration.
     issueLink: https://github.com/solo-io/gloo/issues/2904
+  - type: FIX
+    description: Expose `perConnectionBufferLimitBytes` as an optional configuration on an upstream connection. If unset, Envoy uses the default of 1MiB.
+    issueLink: https://github.com/solo-io/gloo/issues/2861
