@@ -18,6 +18,7 @@ settings:
       enabled: false
       version: "0.10.0"
       proxy:
+        loopBackAddress: 127.0.0.1
         image:
           repository: gloo-envoy-wrapper
         httpPort: 80
@@ -104,6 +105,7 @@ gatewayProxies:
     tracing:
     configMap:
       data:
+    loopBackAddress: 127.0.0.1
 accessLogger:
   enabled: false
   port: 8083
@@ -120,6 +122,7 @@ ingress:
       repository: ingress
     replicas: 1
 ingressProxy:
+  loopBackAddress: 127.0.0.1
   deployment:
     image:
       repository: gloo-envoy-wrapper

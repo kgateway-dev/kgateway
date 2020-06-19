@@ -234,7 +234,7 @@ data:
             - endpoint:
                 address:
                   socket_address:
-                    address: 127.0.0.1
+                    address: {{ $spec.loopBackAddress }}
                     port_value: 19000
 {{- end}} # if or $statsConfig.enabled ($spec.readConfig)
 
@@ -259,7 +259,7 @@ data:
       access_log_path: /dev/null
       address:
         socket_address:
-          address: 127.0.0.1
+          address: {{ $spec.loopBackAddress }}
           port_value: 19000
 {{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
 {{- end }} # range $name, $spec := .Values.gatewayProxies
