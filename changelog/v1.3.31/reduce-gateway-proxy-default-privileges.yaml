@@ -1,0 +1,13 @@
+changelog:
+  - type: FIX
+    description: >
+      Default gateway proxy to running as non-root and
+      disabling NET_BIND_SERVICE by default.
+    issueLink: https://github.com/solo-io/gloo/issues/3084
+    resolvesIssue: false
+  - type: FIX
+    description: >
+      Enable certgen to run in a fully restricted kubernetes environment.
+      Certgen now runs without root privileges.
+    issueLink: https://github.com/solo-io/gloo/issues/3084
+    resolvesIssue: false
