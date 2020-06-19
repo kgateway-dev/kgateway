@@ -10,8 +10,8 @@ import (
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycorev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
@@ -52,7 +52,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -82,7 +82,7 @@ var _ = Describe("Translator", func() {
 
 		snapshot           envoycache.Snapshot
 		cluster            *envoyapi.Cluster
-		listener           *envoyapi.Listener
+		listener           *envoylistener.Listener
 		endpoints          envoycache.Resources
 		hcmCfg             *envoyhttp.HttpConnectionManager
 		routeConfiguration *envoyroute.RouteConfiguration
@@ -244,7 +244,7 @@ var _ = Describe("Translator", func() {
 
 		listeners := snap.GetResources(xds.ListenerTypev2)
 		listenerResource := listeners.Items["http-listener"]
-		listener = listenerResource.ResourceProto().(*envoyapi.Listener)
+		listener = listenerResource.ResourceProto().(*envoylistener.Listener)
 		Expect(listener).NotTo(BeNil())
 
 		hcmFilter := listener.FilterChains[0].Filters[0]
@@ -298,7 +298,7 @@ var _ = Describe("Translator", func() {
 		listeners := snap.GetResources(xds.ListenerTypev2)
 		Expect(listeners.Items).To(HaveKey("http-listener"))
 		listenerResource := listeners.Items["http-listener"]
-		listenerConfiguration := listenerResource.ResourceProto().(*envoyapi.Listener)
+		listenerConfiguration := listenerResource.ResourceProto().(*envoylistener.Listener)
 		Expect(listenerConfiguration).NotTo(BeNil())
 		Expect(listenerConfiguration.PerConnectionBufferLimitBytes).To(Equal(&wrappers.UInt32Value{Value: 4096}))
 	})
@@ -803,7 +803,9 @@ var _ = Describe("Translator", func() {
 
 			// get http filters
 			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			typedConfig, err := pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			originalHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 
 			By("add the upstreams and compare the new version and http filters")
 
@@ -820,7 +822,10 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+
+			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			upstreamsHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
 
 			// reset modified global variables
@@ -841,7 +846,9 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			flipOrderHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
 		})
 
@@ -1632,14 +1639,14 @@ var _ = Describe("Translator", func() {
 			Expect(listeners).NotTo(HaveLen(0))
 			val, found := listeners["tcp-listener"]
 			Expect(found).To(BeTrue())
-			listener, ok := val.ResourceProto().(*envoyapi.Listener)
+			listener, ok := val.ResourceProto().(*envoylistener.Listener)
 			Expect(ok).To(BeTrue())
 			Expect(listener.GetName()).To(Equal("tcp-listener"))
 			Expect(listener.GetFilterChains()).To(HaveLen(1))
 			fc := listener.GetFilterChains()[0]
 			Expect(fc.Filters).To(HaveLen(1))
 			tcpFilter := fc.Filters[0]
-			cfg := tcpFilter.GetConfig()
+			cfg := tcpFilter.GetTypedConfig()
 			Expect(cfg).NotTo(BeNil())
 			var typedCfg envoytcp.TcpProxy
 			Expect(ParseConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
@@ -1651,7 +1658,7 @@ var _ = Describe("Translator", func() {
 	Context("Ssl", func() {
 
 		var (
-			listener *envoyapi.Listener
+			listener *envoylistener.Listener
 		)
 
 		prep := func(s []*v1.SslConfig) {
@@ -1680,7 +1687,7 @@ var _ = Describe("Translator", func() {
 			Expect(listeners).To(HaveLen(1))
 			val, found := listeners["http-listener"]
 			Expect(found).To(BeTrue())
-			listener = val.ResourceProto().(*envoyapi.Listener)
+			listener = val.ResourceProto().(*envoylistener.Listener)
 		}
 		tlsContext := func(fc *envoylistener.FilterChain) *envoyauth.DownstreamTlsContext {
 			if fc.TransportSocket == nil {

@@ -5,6 +5,7 @@ import (
 	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -52,7 +53,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}},
 	}
 
-	healthCheckFilter, err := plugins.NewStagedFilterWithConfig(util.HealthCheck, hc, pluginStage)
+	healthCheckFilter, err := pluginutils.NewStagedFilterWithConfig(util.HealthCheck, hc, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}
