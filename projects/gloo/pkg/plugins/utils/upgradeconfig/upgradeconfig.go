@@ -1,8 +1,8 @@
 package upgradeconfig
 
 import (
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/hashicorp/go-multierror"
 	errors "github.com/rotisserie/eris"
 )
