@@ -34,7 +34,7 @@ var _ = Describe("Plugin", func() {
 					Name: "envoy.filters.http.buffer",
 					ConfigType: &envoyhttpconnectionmanager.HttpFilter_TypedConfig{
 						TypedConfig: pluginutils.MustMessageToAny(&envoybuffer.Buffer{
-							MaxRequestBytes: &wrappers.UInt32Value{Value:2048.000000},
+							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
 						}),
 					},
 				},

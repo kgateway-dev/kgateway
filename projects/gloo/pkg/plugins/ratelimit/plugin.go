@@ -2,8 +2,9 @@ package ratelimit
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"time"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"

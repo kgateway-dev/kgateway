@@ -40,11 +40,11 @@ var _ = Describe("Plugin", func() {
 					Name: "envoy.gzip",
 					ConfigType: &envoyhttpconnectionmanager.HttpFilter_TypedConfig{
 						TypedConfig: pluginutils.MustMessageToAny(&envoygzip.Gzip{
-							MemoryLevel: &wrappers.UInt32Value{Value: 10.000000},
-							ContentLength: &wrappers.UInt32Value{Value: 10.000000},
-							CompressionLevel: 10.000000,
+							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
+							ContentLength:       &wrappers.UInt32Value{Value: 10.000000},
+							CompressionLevel:    10.000000,
 							CompressionStrategy: 10.000000,
-							WindowBits: &wrappers.UInt32Value{Value: 10.000000},
+							WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
 						}),
 					},
 				},
