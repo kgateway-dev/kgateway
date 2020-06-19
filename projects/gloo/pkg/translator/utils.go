@@ -7,13 +7,11 @@ import (
 
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
 	golangptypes "github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -93,14 +91,9 @@ func ParseConfig(c configObject, config proto.Message) error {
 	if any != nil {
 		return ptypes.UnmarshalAny(any, config)
 	}
-	structt := c.GetHiddenEnvoyDeprecatedConfig()
-	if structt != nil {
-		return envoyutil.StructToMessage(structt, config)
-	}
 	return nil
 }
 
 type configObject interface {
-	GetHiddenEnvoyDeprecatedConfig() *structpb.Struct
 	GetTypedConfig() *any.Any
 }
