@@ -90,7 +90,7 @@ install-tools:
 
 
 # use "current" instead of the default "latest" so we don't accidentally push something with this tag 
-CURRENT_TAG:=shaneod
+CURRENT_TAG:=current
 
 .PHONY: docker-push-docs
 docker-push-docs: site-release manifest
