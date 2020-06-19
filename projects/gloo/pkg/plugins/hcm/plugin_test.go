@@ -3,7 +3,7 @@ package hcm_test
 import (
 	"time"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
@@ -16,8 +16,8 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -131,7 +131,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
 
 		trace := cfg.Tracing
-		Expect(trace.RequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
+		Expect(trace.HiddenEnvoyDeprecatedRequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
 		Expect(trace.Verbose).To(BeTrue())
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))
