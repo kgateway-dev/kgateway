@@ -303,7 +303,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 			MatchIncomingRequestRoute: true,
 		}
 
-		shf, err := plugins.NewStagedFilterWithConfig(filterName, filterConfig, pluginStage)
+		shf, err := pluginutils.NewStagedFilterWithConfig(filterName, filterConfig, pluginStage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "ERROR: marshaling GrpcJsonTranscoder config")
 		}

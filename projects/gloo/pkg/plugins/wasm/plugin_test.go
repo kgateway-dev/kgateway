@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/opencontainers/go-digest"
@@ -105,9 +105,10 @@ var _ = Describe("wasm plugin", func() {
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(HaveLen(1))
-		typedConfig := f[0].HttpFilter.GetTypedConfig()
+		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
+		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
 		var pc config.WasmService
-		Expect(ptypes.UnmarshalAny(typedConfig, &pc)).NotTo(HaveOccurred())
+		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
