@@ -4,7 +4,7 @@
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: gloo-role-binding-ingress-{{ .Release.Namespace }}
+  name: gloo-role-binding-ingress{{ include "gloo.rbacNameSuffix" . }}
   labels:
     app: gloo
     gloo: rbac
@@ -20,7 +20,7 @@ subjects:
   namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole
-  name: gloo-role-ingress
+  name: gloo-role-ingress-{{ .Release.Namespace }}
   apiGroup: rbac.authorization.k8s.io
 
 {{- end -}}
