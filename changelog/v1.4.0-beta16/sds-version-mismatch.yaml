@@ -2,4 +2,4 @@ changelog:
 - type: FIX
   description: Switch envoy sidecar SDS config to api `v3` to work with the updated SDS server.
   resolvesIssue: false
-  issueLink: https://github.com/solo-io/gloo/pull/3192
+  issueLink: https://github.com/solo-io/gloo/pull/3191
