@@ -1,5 +1,6 @@
 changelog:
-- type: FIX
-  description: Switch envoy sidecar SDS config to api `v3` to work with the updated SDS server.
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/2815
   resolvesIssue: false
-  issueLink: https://github.com/solo-io/gloo/pull/3192
+  description: >
+    This is the second chunk of work for the upgrade to v3 of the Envoy xDS API. It largely replaces v2 of the listener package with v3 in our code but includes many interdependent changes.
