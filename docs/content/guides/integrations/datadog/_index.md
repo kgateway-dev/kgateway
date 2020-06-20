@@ -156,7 +156,7 @@ If you upgrade the cluster using Helm version 3, these annotations should stay i
 You can verify that the annotations have been successfully updated by running the following command:
 
 ```bash
-kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq .items[].metadata.annotations
+kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq '.items | .[].metadata.annotations'
 ```
 
 ### Updating the Envoy configuration
@@ -194,7 +194,7 @@ Then save the change. The Envoy pod will update within a few seconds with the ne
 We can check that the Datadog agent has enabled Envoy metrics collection by running the `agent status` command against the daemonset pod that is on the same node as the `gateway-proxy` pod. First we can get the worker node in question by running:
 
 ```bash
-NODE_NAME=$(kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq .items[].spec.nodeName -r)
+NODE_NAME=$(kubectl get pods -n gloo-system -l gloo=gateway-proxy -o json | jq '.items | .[].spec.nodeName' -r)
 ```
 
 Then we can get the daemonset pod for Datadog by running the following:
