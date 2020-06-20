@@ -889,7 +889,7 @@ var _ = Describe("Helm Test", func() {
 							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
-										"wget", "-O", "/dev/null", "localhost:19000/ready",
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/ready",
 									},
 								},
 							},
@@ -901,7 +901,7 @@ var _ = Describe("Helm Test", func() {
 							Handler: v1.Handler{
 								Exec: &v1.ExecAction{
 									Command: []string{
-										"wget", "-O", "/dev/null", "localhost:19000/server_info",
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
 									},
 								},
 							},

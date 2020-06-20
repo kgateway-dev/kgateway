@@ -9,6 +9,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
@@ -122,7 +123,7 @@ ClusterLoop:
 
 	var (
 		routeConfigs []*envoyroute.RouteConfiguration
-		listeners    []*envoyapi.Listener
+		listeners    []*envoylistener.Listener
 	)
 
 	proxyRpt := validation.MakeReport(proxy)
@@ -174,7 +175,7 @@ ClusterLoop:
 // the top level Translate function should aggregate these into a finished snapshot
 type listenerResources struct {
 	routeConfig *envoyroute.RouteConfiguration
-	listener    *envoyapi.Listener
+	listener    *envoylistener.Listener
 }
 
 func (t *translatorInstance) computeListenerResources(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *listenerResources {
@@ -201,7 +202,7 @@ func (t *translatorInstance) computeListenerResources(params plugins.Params, pro
 func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	endpoints []*envoyendpoint.ClusterLoadAssignment,
 	routeConfigs []*envoyroute.RouteConfiguration,
-	listeners []*envoyapi.Listener) envoycache.Snapshot {
+	listeners []*envoylistener.Listener) envoycache.Snapshot {
 
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
 

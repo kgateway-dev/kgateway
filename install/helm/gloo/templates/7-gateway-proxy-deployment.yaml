@@ -162,7 +162,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - localhost:19000/ready
+            - {{ $spec.loopBackAddress }}:19000/ready
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
@@ -172,7 +172,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - localhost:19000/server_info
+            - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
