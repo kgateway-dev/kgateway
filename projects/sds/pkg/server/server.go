@@ -14,12 +14,12 @@ import (
 
 	"google.golang.org/grpc"
 
-	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	secret "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
+	auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	sds "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-	server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
 // These values must match the values in the envoy sidecar's common_tls_context
@@ -46,7 +46,7 @@ func SetupEnvoySDS() (*grpc.Server, cache.SnapshotCache) {
 	svr := server.NewServer(context.Background(), snapshotCache, nil)
 
 	// register services
-	secret.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
+	sds.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
 	return grpcServer, snapshotCache
 }
 
@@ -107,10 +107,10 @@ func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile str
 }
 
 func serverCertSecret(certFile, keyFile string) cache_types.Resource {
-	return &tls.Secret{
+	return &auth.Secret{
 		Name: serverCert,
-		Type: &tls.Secret_TlsCertificate{
-			TlsCertificate: &tls.TlsCertificate{
+		Type: &auth.Secret_TlsCertificate{
+			TlsCertificate: &auth.TlsCertificate{
 				CertificateChain: &core.DataSource{
 					Specifier: &core.DataSource_Filename{
 						Filename: certFile,
@@ -127,10 +127,10 @@ func serverCertSecret(certFile, keyFile string) cache_types.Resource {
 }
 
 func validationContextSecret(caFile string) cache_types.Resource {
-	return &tls.Secret{
+	return &auth.Secret{
 		Name: validationContext,
-		Type: &tls.Secret_ValidationContext{
-			ValidationContext: &tls.CertificateValidationContext{
+		Type: &auth.Secret_ValidationContext{
+			ValidationContext: &auth.CertificateValidationContext{
 				TrustedCa: &core.DataSource{
 					Specifier: &core.DataSource_Filename{
 						Filename: caFile,

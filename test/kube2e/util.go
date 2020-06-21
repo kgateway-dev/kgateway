@@ -46,32 +46,19 @@ func GlooctlCheckEventuallyHealthy(testHelper *helper.SoloTestHelper, timeoutInt
 	}, timeoutInterval, "5s").Should(BeNil())
 }
 
-func GetHelmValuesOverrideFile() (filename string, cleanup func()) {
-	values, err := ioutil.TempFile("", "values-*.yaml")
+func GetHelmValuesOverrideFile(values string) (filename string, cleanup func()) {
+	valuesFile, err := ioutil.TempFile("", "values-*.yaml")
 	Expect(err).NotTo(HaveOccurred())
 
 	// disabling usage statistics is not important to the functionality of the tests,
 	// but we don't want to report usage in CI since we only care about how our users are actually using Gloo.
 	// install to a single namespace so we can run multiple invocations of the regression tests against the
 	// same cluster in CI.
-	_, err = values.Write([]byte(`
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-gloo:
-  deployment:
-    disableUsageStatistics: true
-`))
+	_, err = valuesFile.Write([]byte(values))
 	Expect(err).NotTo(HaveOccurred())
 
-	err = values.Close()
+	err = valuesFile.Close()
 	Expect(err).NotTo(HaveOccurred())
 
-	return values.Name(), func() { _ = os.Remove(values.Name()) }
+	return valuesFile.Name(), func() { _ = os.Remove(valuesFile.Name()) }
 }
