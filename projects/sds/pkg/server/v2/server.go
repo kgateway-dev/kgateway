@@ -1,13 +1,9 @@
-package server
+package sds_server_v2
 
 import (
 	"context"
-	"fmt"
-	"hash/fnv"
-	"io/ioutil"
-	"net"
 
-	"github.com/solo-io/go-utils/hashutils"
+	sds_server "github.com/solo-io/gloo/projects/sds/pkg/server"
 	"go.uber.org/zap"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -39,58 +35,25 @@ func (h *EnvoyKey) ID(_ *core.Node) string {
 	return sdsClient
 }
 
-func SetupEnvoySDS() (*grpc.Server, cache.SnapshotCache) {
-	grpcServer := grpc.NewServer(grpcOptions...)
+func NewEnvoySdsServerV2(ctx context.Context, grpcServer *grpc.Server) sds_server.EnvoySdsServer {
 	hasher := &EnvoyKey{}
 	snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
-	svr := server.NewServer(context.Background(), snapshotCache, nil)
-
+	srv := server.NewServer(ctx, snapshotCache, nil)
 	// register services
-	sds.RegisterSecretDiscoveryServiceServer(grpcServer, svr)
-	return grpcServer, snapshotCache
+	sds.RegisterSecretDiscoveryServiceServer(grpcServer, srv)
+	return &envoySdsServerV2{
+		srv:           srv,
+		snapshotCache: snapshotCache,
+	}
 }
 
-func RunSDSServer(ctx context.Context, grpcServer *grpc.Server, serverAddress string) (<-chan struct{}, error) {
-	lis, err := net.Listen("tcp", serverAddress)
-	if err != nil {
-		return nil, err
-	}
-	contextutils.LoggerFrom(ctx).Infof("sds server listening on %s", serverAddress)
-	go func() {
-		if err = grpcServer.Serve(lis); err != nil {
-			contextutils.LoggerFrom(ctx).Fatalw("fatal error in gRPC server", zap.String("address", serverAddress), zap.Error(err))
-		}
-	}()
-	serverStopped := make(chan struct{})
-	go func() {
-		<-ctx.Done()
-		contextutils.LoggerFrom(ctx).Infof("stopping sds server on %s\n", serverAddress)
-		grpcServer.GracefulStop()
-		serverStopped <- struct{}{}
-	}()
-	return serverStopped, nil
+type envoySdsServerV2 struct {
+	srv           server.Server
+	snapshotCache cache.SnapshotCache
 }
 
-func GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile string) (string, error) {
-	var err error
-	key, err := ioutil.ReadFile(sslKeyFile)
-	if err != nil {
-		return "", err
-	}
-	cert, err := ioutil.ReadFile(sslCertFile)
-	if err != nil {
-		return "", err
-	}
-	ca, err := ioutil.ReadFile(sslCaFile)
-	if err != nil {
-		return "", err
-	}
-	hash, err := hashutils.HashAllSafe(fnv.New64(), key, cert, ca)
-	return fmt.Sprintf("%d", hash), err
-}
-
-func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string, snapshotCache cache.SnapshotCache) error {
-	snapshotVersion, err := GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
+func (e *envoySdsServerV2) UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string) error {
+	snapshotVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
 	if err != nil {
 		contextutils.LoggerFrom(ctx).Info("Error getting snapshot version", zap.Error(err))
 		return err
@@ -103,7 +66,7 @@ func UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile str
 	}
 	secretSnapshot := cache.Snapshot{}
 	secretSnapshot.Resources[cache_types.Secret] = cache.NewResources(snapshotVersion, items)
-	return snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
+	return e.snapshotCache.SetSnapshot(sdsClient, secretSnapshot)
 }
 
 func serverCertSecret(certFile, keyFile string) cache_types.Resource {

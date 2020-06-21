@@ -1,4 +1,4 @@
-package server
+package sds_server_v2
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 
 func TestSDSServer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SDS Server Suite")
+	RunSpecs(t, "SDS Server V2 Suite")
 }
