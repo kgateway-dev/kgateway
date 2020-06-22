@@ -7,13 +7,13 @@ import (
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 )
 
 var _ = Describe("ClusterExtensions", func() {
 
 	var (
-		out  *envoyapi.Cluster
+		out  *envoycluster.Cluster
 		msg  *structpb.Struct
 		name string
 	)
@@ -30,7 +30,7 @@ var _ = Describe("ClusterExtensions", func() {
 	})
 	Context("set per filter config", func() {
 		BeforeEach(func() {
-			out = &envoyapi.Cluster{}
+			out = &envoycluster.Cluster{}
 		})
 
 		It("should add per filter config to route", func() {

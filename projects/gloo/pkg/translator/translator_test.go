@@ -9,10 +9,9 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycorev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/ptypes/duration"
@@ -45,13 +44,12 @@ import (
 
 	"github.com/solo-io/gloo/pkg/utils"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -81,7 +79,7 @@ var _ = Describe("Translator", func() {
 		routes            []*v1.Route
 
 		snapshot           envoycache.Snapshot
-		cluster            *envoyapi.Cluster
+		cluster            *envoycluster.Cluster
 		listener           *envoylistener.Listener
 		endpoints          envoycache.Resources
 		hcmCfg             *envoyhttp.HttpConnectionManager
@@ -239,7 +237,7 @@ var _ = Describe("Translator", func() {
 
 		clusters := snap.GetResources(xds.ClusterTypev2)
 		clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
-		cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+		cluster = clusterResource.ResourceProto().(*envoycluster.Cluster)
 		Expect(cluster).NotTo(BeNil())
 
 		listeners := snap.GetResources(xds.ListenerTypev2)
@@ -562,21 +560,21 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can translate the http health check", func() {
-			expectedResult := []*envoycorev2.HealthCheck{
+			expectedResult := []*envoycore.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
 					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
-					HealthChecker: &envoycorev2.HealthCheck_HttpHealthCheck_{
-						HttpHealthCheck: &envoycorev2.HealthCheck_HttpHealthCheck{
-							Host:                   "host",
-							Path:                   "path",
-							ServiceName:            "svc",
-							RequestHeadersToAdd:    []*envoycorev2.HeaderValueOption{},
-							RequestHeadersToRemove: []string{},
-							UseHttp2:               true,
-							ExpectedStatuses:       []*envoy_type.Int64Range{},
+					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
+							Host:                             "host",
+							Path:                             "path",
+							HiddenEnvoyDeprecatedServiceName: "svc",
+							RequestHeadersToAdd:              []*envoycore.HeaderValueOption{},
+							RequestHeadersToRemove:           []string{},
+							HiddenEnvoyDeprecatedUseHttp2:    true,
+							ExpectedStatuses:                 []*envoy_type.Int64Range{},
 						},
 					},
 				},
@@ -589,14 +587,14 @@ var _ = Describe("Translator", func() {
 		})
 
 		It("can translate the grpc health check", func() {
-			expectedResult := []*envoycorev2.HealthCheck{
+			expectedResult := []*envoycore.HealthCheck{
 				{
 					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
 					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
 					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
 					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
-					HealthChecker: &envoycorev2.HealthCheck_GrpcHealthCheck_{
-						GrpcHealthCheck: &envoycorev2.HealthCheck_GrpcHealthCheck{
+					HealthChecker: &envoycore.HealthCheck_GrpcHealthCheck_{
+						GrpcHealthCheck: &envoycore.HealthCheck_GrpcHealthCheck{
 							ServiceName: "svc",
 							Authority:   "authority",
 						},
@@ -1099,7 +1097,7 @@ var _ = Describe("Translator", func() {
 				translateWithEndpoints()
 
 				Expect(cluster.LbSubsetConfig).ToNot(BeNil())
-				Expect(cluster.LbSubsetConfig.FallbackPolicy).To(Equal(envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT))
+				Expect(cluster.LbSubsetConfig.FallbackPolicy).To(Equal(envoycluster.Cluster_LbSubsetConfig_ANY_ENDPOINT))
 				Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(1))
 				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys).To(HaveLen(1))
 				Expect(cluster.LbSubsetConfig.SubsetSelectors[0].Keys[0]).To(Equal("testkey"))
@@ -1280,10 +1278,10 @@ var _ = Describe("Translator", func() {
 			// Clusters have been created for the two "fake" upstreams
 			clusters := snapshot.GetResources(xds.ClusterTypev2)
 			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
-			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			cluster = clusterResource.ResourceProto().(*envoycluster.Cluster)
 			Expect(cluster).NotTo(BeNil())
 			clusterResource = clusters.Items[UpstreamToClusterName(fakeUsList[1].Metadata.Ref())]
-			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			cluster = clusterResource.ResourceProto().(*envoycluster.Cluster)
 			Expect(cluster).NotTo(BeNil())
 
 			// A route to the kube service has been configured
@@ -1433,19 +1431,19 @@ var _ = Describe("Translator", func() {
 			// A cluster has been created for the "fake" upstream and has the expected subset config
 			clusters := snapshot.GetResources(xds.ClusterTypev2)
 			clusterResource := clusters.Items[UpstreamToClusterName(fakeUsList[0].Metadata.Ref())]
-			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			cluster = clusterResource.ResourceProto().(*envoycluster.Cluster)
 			Expect(cluster).NotTo(BeNil())
 			Expect(cluster.LbSubsetConfig).NotTo(BeNil())
 			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(HaveLen(3))
 			// Order is important here
 			Expect(cluster.LbSubsetConfig.SubsetSelectors).To(ConsistOf(
-				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+				&envoycluster.Cluster_LbSubsetConfig_LbSubsetSelector{
 					Keys: []string{dc(east), dc(west)},
 				},
-				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+				&envoycluster.Cluster_LbSubsetConfig_LbSubsetSelector{
 					Keys: []string{tag(dev), tag(prod)},
 				},
-				&envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+				&envoycluster.Cluster_LbSubsetConfig_LbSubsetSelector{
 					Keys: []string{dc(east), dc(west), tag(dev), tag(prod)},
 				},
 			))

@@ -1,11 +1,12 @@
 package gogoutils
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	envoycluster_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 // Converts between Envoy and Gloo/solokit versions of envoy protos
@@ -129,13 +130,13 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck) (*envoycore.HealthChe
 	case *envoycore_gloo.HealthCheck_HttpHealthCheck_:
 		hc.HealthChecker = &envoycore.HealthCheck_HttpHealthCheck_{
 			HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
-				Host:                   typed.HttpHealthCheck.GetHost(),
-				Path:                   typed.HttpHealthCheck.GetPath(),
-				UseHttp2:               typed.HttpHealthCheck.GetUseHttp2(),
-				ServiceName:            typed.HttpHealthCheck.GetServiceName(),
-				RequestHeadersToAdd:    ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
-				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+				Host:                             typed.HttpHealthCheck.GetHost(),
+				Path:                             typed.HttpHealthCheck.GetPath(),
+				HiddenEnvoyDeprecatedUseHttp2:    typed.HttpHealthCheck.GetUseHttp2(),
+				HiddenEnvoyDeprecatedServiceName: typed.HttpHealthCheck.GetServiceName(),
+				RequestHeadersToAdd:              ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
+				RequestHeadersToRemove:           typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+				ExpectedStatuses:                 ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
 			},
 		}
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
@@ -148,15 +149,15 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck) (*envoycore.HealthChe
 	case *envoycore_gloo.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
 		case *envoycore_gloo.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructGogoToPb(typedConfig.Config)
+			converted, err := pluginutils.GogoMessageToAnyGoProto(typedConfig.Config)
 			if err != nil {
 				return nil, err
 			}
 			hc.HealthChecker = &envoycore.HealthCheck_CustomHealthCheck_{
 				CustomHealthCheck: &envoycore.HealthCheck_CustomHealthCheck{
 					Name: typed.CustomHealthCheck.GetName(),
-					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_Config{
-						Config: converted,
+					ConfigType: &envoycore.HealthCheck_CustomHealthCheck_TypedConfig{
+						TypedConfig: converted,
 					},
 				},
 			}
@@ -226,8 +227,8 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 			HttpHealthCheck: &envoycore_gloo.HealthCheck_HttpHealthCheck{
 				Host:                   typed.HttpHealthCheck.GetHost(),
 				Path:                   typed.HttpHealthCheck.GetPath(),
-				UseHttp2:               typed.HttpHealthCheck.GetUseHttp2(),
-				ServiceName:            typed.HttpHealthCheck.GetServiceName(),
+				UseHttp2:               typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedUseHttp2(),
+				ServiceName:            typed.HttpHealthCheck.GetHiddenEnvoyDeprecatedServiceName(),
 				RequestHeadersToAdd:    ToGlooHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
 				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
 				ExpectedStatuses:       ToGlooInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
@@ -242,8 +243,8 @@ func ToGlooHealthCheck(check *envoycore.HealthCheck) (*envoycore_gloo.HealthChec
 		}
 	case *envoycore.HealthCheck_CustomHealthCheck_:
 		switch typedConfig := typed.CustomHealthCheck.GetConfigType().(type) {
-		case *envoycore.HealthCheck_CustomHealthCheck_Config:
-			converted, err := protoutils.StructPbToGogo(typedConfig.Config)
+		case *envoycore.HealthCheck_CustomHealthCheck_HiddenEnvoyDeprecatedConfig:
+			converted, err := protoutils.StructPbToGogo(typedConfig.HiddenEnvoyDeprecatedConfig)
 			if err != nil {
 				return nil, err
 			}

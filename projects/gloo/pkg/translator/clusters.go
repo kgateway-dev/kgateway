@@ -4,9 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -18,7 +17,7 @@ import (
 	"go.opencensus.io/trace"
 )
 
-func (t *translatorInstance) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.Cluster {
+func (t *translatorInstance) computeClusters(params plugins.Params, reports reporter.ResourceReports) []*envoycluster.Cluster {
 
 	ctx, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusters")
 	params.Ctx = ctx
@@ -26,7 +25,7 @@ func (t *translatorInstance) computeClusters(params plugins.Params, reports repo
 
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_clusters")
 	var (
-		clusters []*envoyapi.Cluster
+		clusters []*envoycluster.Cluster
 	)
 
 	// snapshot contains both real and service-derived upstreams
@@ -37,7 +36,7 @@ func (t *translatorInstance) computeClusters(params plugins.Params, reports repo
 	return clusters
 }
 
-func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoycluster.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
 	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports)
 
@@ -58,7 +57,7 @@ func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.
 	return out
 }
 
-func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
+func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoycluster.Cluster {
 	hcConfig, err := createHealthCheckConfig(upstream)
 	if err != nil {
 		reports.AddError(upstream, err)
@@ -69,7 +68,7 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 	}
 
 	circuitBreakers := t.settings.GetGloo().GetCircuitBreakers()
-	out := &envoyapi.Cluster{
+	out := &envoycluster.Cluster{
 		Name:             UpstreamToClusterName(upstream.Metadata.Ref()),
 		Metadata:         new(envoycore.Metadata),
 		CircuitBreakers:  getCircuitBreakers(upstream.CircuitBreakers, circuitBreakers),
@@ -137,7 +136,7 @@ func createOutlierDetectionConfig(upstream *v1.Upstream) (*envoycluster.OutlierD
 	return gogoutils.ToEnvoyOutlierDetection(upstream.GetOutlierDetection()), nil
 }
 
-func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
+func createLbConfig(upstream *v1.Upstream) *envoycluster.Cluster_LbSubsetConfig {
 	specGetter, ok := upstream.UpstreamType.(v1.SubsetSpecGetter)
 	if !ok {
 		return nil
@@ -147,11 +146,11 @@ func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
 		return nil
 	}
 
-	subsetConfig := &envoyapi.Cluster_LbSubsetConfig{
-		FallbackPolicy: envoyapi.Cluster_LbSubsetConfig_ANY_ENDPOINT,
+	subsetConfig := &envoycluster.Cluster_LbSubsetConfig{
+		FallbackPolicy: envoycluster.Cluster_LbSubsetConfig_ANY_ENDPOINT,
 	}
 	for _, keys := range glooSubsetConfig.Selectors {
-		subsetConfig.SubsetSelectors = append(subsetConfig.SubsetSelectors, &envoyapi.Cluster_LbSubsetConfig_LbSubsetSelector{
+		subsetConfig.SubsetSelectors = append(subsetConfig.SubsetSelectors, &envoycluster.Cluster_LbSubsetConfig_LbSubsetSelector{
 			Keys: keys.Keys,
 		})
 	}
@@ -160,14 +159,14 @@ func createLbConfig(upstream *v1.Upstream) *envoyapi.Cluster_LbSubsetConfig {
 }
 
 // TODO: add more validation here
-func validateCluster(c *envoyapi.Cluster) error {
+func validateCluster(c *envoycluster.Cluster) error {
 	if c.GetClusterType() != nil {
 		// TODO(yuval-k): this is a custom cluster, we cant validate it for now.
 		return nil
 	}
 	clusterType := c.GetType()
-	if clusterType == envoyapi.Cluster_STATIC || clusterType == envoyapi.Cluster_STRICT_DNS || clusterType == envoyapi.Cluster_LOGICAL_DNS {
-		if len(c.Hosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
+	if clusterType == envoycluster.Cluster_STATIC || clusterType == envoycluster.Cluster_STRICT_DNS || clusterType == envoycluster.Cluster_LOGICAL_DNS {
+		if len(c.HiddenEnvoyDeprecatedHosts) == 0 && (c.LoadAssignment == nil || len(c.LoadAssignment.Endpoints) == 0) {
 			return eris.Errorf("cluster type %v specified but LoadAssignment was empty", clusterType.String())
 		}
 	}
