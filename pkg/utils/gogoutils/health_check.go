@@ -130,13 +130,13 @@ func ToEnvoyHealthCheck(check *envoycore_gloo.HealthCheck) (*envoycore.HealthChe
 	case *envoycore_gloo.HealthCheck_HttpHealthCheck_:
 		hc.HealthChecker = &envoycore.HealthCheck_HttpHealthCheck_{
 			HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
-				Host:                   typed.HttpHealthCheck.GetHost(),
-				Path:                   typed.HttpHealthCheck.GetPath(),
-				HiddenEnvoyDeprecatedUseHttp2:               typed.HttpHealthCheck.GetUseHttp2(),
-				HiddenEnvoyDeprecatedServiceName:            typed.HttpHealthCheck.GetServiceName(),
-				RequestHeadersToAdd:    ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
-				RequestHeadersToRemove: typed.HttpHealthCheck.GetRequestHeadersToRemove(),
-				ExpectedStatuses:       ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
+				Host:                             typed.HttpHealthCheck.GetHost(),
+				Path:                             typed.HttpHealthCheck.GetPath(),
+				HiddenEnvoyDeprecatedUseHttp2:    typed.HttpHealthCheck.GetUseHttp2(),
+				HiddenEnvoyDeprecatedServiceName: typed.HttpHealthCheck.GetServiceName(),
+				RequestHeadersToAdd:              ToEnvoyHeaderValueOptionList(typed.HttpHealthCheck.GetRequestHeadersToAdd()),
+				RequestHeadersToRemove:           typed.HttpHealthCheck.GetRequestHeadersToRemove(),
+				ExpectedStatuses:                 ToEnvoyInt64RangeList(typed.HttpHealthCheck.GetExpectedStatuses()),
 			},
 		}
 	case *envoycore_gloo.HealthCheck_GrpcHealthCheck_:
