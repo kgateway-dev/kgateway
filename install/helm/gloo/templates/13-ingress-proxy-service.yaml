@@ -26,7 +26,7 @@ spec:
   selector:
     gloo: ingress-proxy
   type: {{ .Values.ingressProxy.service.type }}
-  {{- if .Values.ingressProxy.service.loadBalancerIP }}
+  {{- if and (eq .Values.ingressProxy.service.type "LoadBalancer") .Values.ingressProxy.service.loadBalancerIP }}
   loadBalancerIP: {{ .Values.ingressProxy.service.loadBalancerIP }}
   {{- end }}
 {{- end }}

@@ -38,7 +38,7 @@ type Namespace struct {
 }
 
 type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a
 cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
@@ -329,6 +329,7 @@ type ServiceSpec struct {
 type Service struct {
 	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
+	LoadBalancerIP   string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 }
 
 type IngressProxyConfigMap struct {
