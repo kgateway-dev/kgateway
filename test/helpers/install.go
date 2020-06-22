@@ -10,7 +10,6 @@ import (
 	"time"
 
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/helper"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -77,6 +76,6 @@ func TearDownTestHelper(testHelper *helper.SoloTestHelper) {
 	Expect(testHelper).ToNot(BeNil())
 	err := testHelper.UninstallGloo()
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+	_, err = MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
 	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
