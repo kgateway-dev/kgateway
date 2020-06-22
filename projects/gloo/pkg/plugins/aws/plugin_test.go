@@ -1,7 +1,7 @@
 package aws
 
 import (
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	gogoproto "github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -28,7 +28,7 @@ var _ = Describe("Plugin", func() {
 		plugin      plugins.Plugin
 		upstream    *v1.Upstream
 		route       *v1.Route
-		out         *envoyapi.Cluster
+		out         *envoycluster.Cluster
 		outroute    *envoyroute.Route
 		lpe         *AWSLambdaProtocolExtension
 	)
@@ -83,7 +83,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		out = &envoyapi.Cluster{}
+		out = &envoycluster.Cluster{}
 		outroute = &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{

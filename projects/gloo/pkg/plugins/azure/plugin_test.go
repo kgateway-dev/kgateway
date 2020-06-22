@@ -2,9 +2,8 @@ package azure_test
 
 import (
 	"context"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -19,7 +18,7 @@ import (
 var _ = Describe("Plugin", func() {
 	var (
 		p      plugins.Plugin
-		out    *envoyapi.Cluster
+		out    *envoycluster.Cluster
 		params plugins.Params
 	)
 
@@ -27,7 +26,7 @@ var _ = Describe("Plugin", func() {
 		var b bool
 		p = azureplugin.NewPlugin(&b)
 		p.Init(plugins.InitParams{Ctx: context.TODO()})
-		out = &envoyapi.Cluster{}
+		out = &envoycluster.Cluster{}
 		params = plugins.Params{}
 	})
 
@@ -87,8 +86,8 @@ var _ = Describe("Plugin", func() {
 
 				tlsContext := pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
-				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
+				Expect(out.GetType()).To(Equal(envoycluster.Cluster_LOGICAL_DNS))
+				Expect(out.DnsLookupFamily).To(Equal(envoycluster.Cluster_V4_ONLY))
 			})
 
 		})
@@ -105,8 +104,8 @@ var _ = Describe("Plugin", func() {
 				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 				tlsContext := pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
-				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
-				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
+				Expect(out.GetType()).To(Equal(envoycluster.Cluster_LOGICAL_DNS))
+				Expect(out.DnsLookupFamily).To(Equal(envoycluster.Cluster_V4_ONLY))
 			})
 		})
 	})

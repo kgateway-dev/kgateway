@@ -10,7 +10,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/lbhash"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -27,10 +27,10 @@ var _ = Describe("Plugin", func() {
 		params   plugins.Params
 		plugin   *Plugin
 		upstream *v1.Upstream
-		out      *envoyapi.Cluster
+		out      *envoycluster.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoyapi.Cluster)
+		out = new(envoycluster.Cluster)
 
 		params = plugins.Params{}
 		upstream = &v1.Upstream{}
@@ -69,7 +69,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RANDOM))
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_RANDOM))
 	})
 	Context("p2c", func() {
 		BeforeEach(func() {
@@ -82,7 +82,7 @@ var _ = Describe("Plugin", func() {
 		It("should set lb policy p2c", func() {
 			err := plugin.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_LEAST_REQUEST))
+			Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig().ChoiceCount.Value).To(BeEquivalentTo(5))
 		})
 		It("should set lb policy p2c with default config", func() {
@@ -95,7 +95,7 @@ var _ = Describe("Plugin", func() {
 
 			err := plugin.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_LEAST_REQUEST))
+			Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_LEAST_REQUEST))
 			Expect(out.GetLeastRequestLbConfig()).To(BeNil())
 		})
 	})
@@ -108,7 +108,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_ROUND_ROBIN))
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_ROUND_ROBIN))
 	})
 
 	It("should set lb policy ring hash - basic config", func() {
@@ -119,7 +119,7 @@ var _ = Describe("Plugin", func() {
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_RING_HASH))
 	})
 
 	It("should set lb policy ring hash - full config", func() {
@@ -153,12 +153,12 @@ status: {}
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_RING_HASH))
-		Expect(out.LbConfig).To(Equal(&envoyapi.Cluster_RingHashLbConfig_{
-			RingHashLbConfig: &envoyapi.Cluster_RingHashLbConfig{
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_RING_HASH))
+		Expect(out.LbConfig).To(Equal(&envoycluster.Cluster_RingHashLbConfig_{
+			RingHashLbConfig: &envoycluster.Cluster_RingHashLbConfig{
 				MinimumRingSize: &wrappers.UInt64Value{Value: 100},
 				MaximumRingSize: &wrappers.UInt64Value{Value: 200},
-				HashFunction:    envoyapi.Cluster_RingHashLbConfig_XX_HASH,
+				HashFunction:    envoycluster.Cluster_RingHashLbConfig_XX_HASH,
 			},
 		}))
 	})
@@ -171,7 +171,7 @@ status: {}
 		}
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_MAGLEV))
 	})
 
 	It("should set lb policy maglev - full config", func() {
@@ -197,7 +197,7 @@ status: {}
 		Expect(yamlForm).To(Equal(sampleInputYaml))
 		err = plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.LbPolicy).To(Equal(envoyapi.Cluster_MAGLEV))
+		Expect(out.LbPolicy).To(Equal(envoycluster.Cluster_MAGLEV))
 		Expect(out.LbConfig).To(BeNil())
 	})
 
