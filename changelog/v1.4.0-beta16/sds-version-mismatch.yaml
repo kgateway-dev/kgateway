@@ -2,6 +2,8 @@ changelog:
 - type: FIX
   description: >
     Re add SDS V2 API to SDS container along side new V3 API so that both may run simultaneously while we
-    transition to V3 API in envoy across different components.
+    transition to V3 API in envoy across different components. This change only affects gloo running in MTLS mode.
+    In addition, removing the top level locality field of the Failover API introduce in `v1.4.0-beta15` as it does not
+    have any meaningful effect on the underlying implementation.
   resolvesIssue: false
   issueLink: https://github.com/solo-io/gloo/pull/3191
