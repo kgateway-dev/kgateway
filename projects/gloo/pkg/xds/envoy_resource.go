@@ -15,11 +15,8 @@
 package xds
 
 import (
-	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	listenerv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	hcmv2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -49,15 +46,6 @@ const (
 	ListenerTypev3 = typePrefixv3 + "listener.v3." + "Listener"
 )
 
-// Resource types in xDS v2.
-const (
-	typePrefixv2   = cache.TypePrefix + "/envoy.api.v2."
-	EndpointTypev2 = typePrefixv2 + "ClusterLoadAssignment"
-	ClusterTypev2  = typePrefixv2 + "Cluster"
-	RouteTypev2    = typePrefixv2 + "RouteConfiguration"
-	ListenerTypev2 = typePrefixv2 + "Listener"
-)
-
 var (
 	// ResponseTypes are supported response types.
 	ResponseTypes = []string{
@@ -65,10 +53,6 @@ var (
 		ClusterTypev3,
 		RouteTypev3,
 		ListenerTypev3,
-		EndpointTypev2,
-		ClusterTypev2,
-		RouteTypev2,
-		ListenerTypev2,
 	}
 )
 
@@ -90,15 +74,6 @@ func (e *EnvoyResource) Name() string {
 		return v.GetName()
 	case *listener.Listener:
 		return v.GetName()
-	// keeping cases below as temporary solution to enable incremental changes
-	case *v2.ClusterLoadAssignment:
-		return v.GetClusterName()
-	case *v2.Cluster:
-		return v.GetName()
-	case *v2.RouteConfiguration:
-		return v.GetName()
-	case *v2.Listener:
-		return v.GetName()
 	default:
 		return ""
 	}
@@ -118,15 +93,6 @@ func (e *EnvoyResource) Type() string {
 		return RouteTypev3
 	case *listener.Listener:
 		return ListenerTypev3
-	// keeping cases below in case- as temporary solution to enable incremental changes
-	case *v2.ClusterLoadAssignment:
-		return EndpointTypev2
-	case *v2.Cluster:
-		return ClusterTypev2
-	case *v2.RouteConfiguration:
-		return RouteTypev2
-	case *v2.Listener:
-		return ListenerTypev2
 	default:
 		return ""
 	}
@@ -183,57 +149,6 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 				if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
 					rr := cache.XdsResourceReference{
 						Type: RouteTypev3,
-						Name: rds.Rds.RouteConfigName,
-					}
-					out[rr] = true
-				}
-			}
-		}
-	// keeping cases below in case- as temporary solution to enable incremental changes
-	case *v2.ClusterLoadAssignment:
-		// no dependencies
-	case *v2.Cluster:
-		// for EDS type, use cluster name or ServiceName override
-		if v.GetType() == v2.Cluster_EDS {
-			rr := cache.XdsResourceReference{
-				Type: EndpointTypev2,
-			}
-			if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
-				rr.Name = v.EdsClusterConfig.ServiceName
-			} else {
-				rr.Name = v.Name
-			}
-			out[rr] = true
-		}
-	case *v2.RouteConfiguration:
-		// References to clusters in both routes (and listeners) are not included
-		// in the result, because the clusters are retrieved in bulk currently,
-		// and not by name.
-	case *v2.Listener:
-		// extract route configuration names from HTTP connection manager
-		for _, chain := range v.FilterChains {
-			for _, filter := range chain.Filters {
-				if filter.Name != util.HTTPConnectionManager {
-					continue
-				}
-
-				config := &hcm.HttpConnectionManager{}
-
-				switch filterConfig := filter.ConfigType.(type) {
-				case *listenerv2.Filter_Config:
-					if conversion.StructToMessage(filterConfig.Config, config) != nil {
-						continue
-
-					}
-				case *listenerv2.Filter_TypedConfig:
-					if ptypes.UnmarshalAny(filterConfig.TypedConfig, config) != nil {
-						continue
-					}
-				}
-
-				if rds, ok := config.RouteSpecifier.(*hcm.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
-					rr := cache.XdsResourceReference{
-						Type: RouteTypev2,
 						Name: rds.Rds.RouteConfigName,
 					}
 					out[rr] = true
@@ -301,50 +216,6 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 
 				}
 			}
-		// keeping cases below as temporary solution to enable incremental changes
-		case *v2.ClusterLoadAssignment:
-			// no dependencies
-		case *v2.Cluster:
-			// for EDS type, use cluster name or ServiceName override
-			if v.GetType() == v2.Cluster_EDS {
-				if v.EdsClusterConfig != nil && v.EdsClusterConfig.ServiceName != "" {
-					out[v.EdsClusterConfig.ServiceName] = true
-				} else {
-					out[v.Name] = true
-				}
-			}
-		case *v2.RouteConfiguration:
-			// References to clusters in both routes (and listeners) are not included
-			// in the result, because the clusters are retrieved in bulk currently,
-			// and not by name.
-		case *v2.Listener:
-			// extract route configuration names from HTTP connection manager
-			for _, chain := range v.FilterChains {
-				for _, filter := range chain.Filters {
-					if filter.Name != util.HTTPConnectionManager {
-						continue
-					}
-
-					config := &hcmv2.HttpConnectionManager{}
-
-					switch filterConfig := filter.ConfigType.(type) {
-					case *listenerv2.Filter_Config:
-						if conversion.StructToMessage(filterConfig.Config, config) != nil {
-							continue
-
-						}
-					case *listenerv2.Filter_TypedConfig:
-						if ptypes.UnmarshalAny(filterConfig.TypedConfig, config) != nil {
-							continue
-						}
-					}
-
-					if rds, ok := config.RouteSpecifier.(*hcmv2.HttpConnectionManager_Rds); ok && rds != nil && rds.Rds != nil {
-						out[rds.Rds.RouteConfigName] = true
-					}
-
-				}
-			}
 		}
 	}
 	return out
@@ -360,15 +231,6 @@ func GetResourceName(res cache.ResourceProto) string {
 	case *route.RouteConfiguration:
 		return v.GetName()
 	case *listener.Listener:
-		return v.GetName()
-	// keeping cases below in case- as temporary solution to enable incremental changes
-	case *v2.ClusterLoadAssignment:
-		return v.GetClusterName()
-	case *v2.Cluster:
-		return v.GetName()
-	case *v2.RouteConfiguration:
-		return v.GetName()
-	case *v2.Listener:
 		return v.GetName()
 	default:
 		return ""

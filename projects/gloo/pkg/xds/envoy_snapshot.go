@@ -108,15 +108,6 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return s.Routes
 	case ListenerTypev3:
 		return s.Listeners
-	// keeping cases below as temporary solution to enable incremental changes
-	case EndpointTypev2:
-		return s.Endpoints
-	case ClusterTypev2:
-		return s.Clusters
-	case RouteTypev2:
-		return s.Routes
-	case ListenerTypev2:
-		return s.Listeners
 	}
 	return cache.Resources{}
 }
