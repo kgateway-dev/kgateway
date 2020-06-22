@@ -9,6 +9,7 @@ import (
 	sds_server_v2 "github.com/solo-io/gloo/projects/sds/pkg/server/v2"
 	sds_server_v3 "github.com/solo-io/gloo/projects/sds/pkg/server/v3"
 	"github.com/solo-io/go-utils/contextutils"
+	"google.golang.org/grpc"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -21,6 +22,8 @@ var (
 	// This must match the value of the sds_config target_uri in the envoy instance that it is providing
 	// secrets to.
 	sdsServerAddress = "127.0.0.1:8234"
+
+	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
 )
 
 func main() {

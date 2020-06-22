@@ -76,7 +76,7 @@ func StartTestHelper() {
 
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
+	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile(helmValues)
 	defer cleanupFunc()
 
 	err = testHelper.InstallGloo(helper.GATEWAY, 5*time.Minute, helper.ExtraArgs("--values", valueOverrideFile))

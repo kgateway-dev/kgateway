@@ -32,10 +32,10 @@ func Run(
 	// Initialize the Server
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	// Initialize the Services
-	var sdsServers []sds_server.EnvoySdsServer
-	for _, factory := range sdsServerFactories {
-		sdsServers = append(sdsServers, factory(ctx, grpcServer))
+	// initialize the sds services
+	sdsServers := make(sds_server.EnvoySdsServerList, 0, len(sdsServerFactories))
+	for _, v := range sdsServerFactories {
+		sdsServers = append(sdsServers, v(ctx, grpcServer))
 	}
 
 	// Run the gRPC Server
@@ -44,11 +44,15 @@ func Run(
 		return err
 	}
 
+	// Get initial snapshot version
+	initialVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
+	if err != nil {
+		return err
+	}
+
 	// Initialize the SDS config
-	for _, srv := range sdsServers {
-		if err = srv.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile); err != nil {
-			return err
-		}
+	if err = sdsServers.UpdateSDSConfig(ctx, initialVersion, sslKeyFile, sslCertFile, sslCaFile); err != nil {
+		return err
 	}
 
 	// create a new file watcher
@@ -68,9 +72,13 @@ func Run(
 			// watch for events
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
-				for _, srv := range sdsServers {
-					srv.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile)
+				// get updated snapshot version
+				snapshotVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Warnw("Failed to update snapshot version", zap.Error(err))
+					continue
 				}
+				sdsServers.UpdateSDSConfig(ctx, snapshotVersion, sslKeyFile, sslCertFile, sslCaFile)
 				watchFiles(ctx, watcher, sslKeyFile, sslCertFile, sslCaFile)
 			// watch for errors
 			case err := <-watcher.Errors:

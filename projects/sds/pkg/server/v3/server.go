@@ -4,8 +4,6 @@ import (
 	"context"
 
 	sds_server "github.com/solo-io/gloo/projects/sds/pkg/server"
-	"go.uber.org/zap"
-
 	"github.com/solo-io/go-utils/contextutils"
 
 	"google.golang.org/grpc"
@@ -53,12 +51,9 @@ type envoySdsServerV3 struct {
 	snapshotCache cache.SnapshotCache
 }
 
-func (e envoySdsServerV3) UpdateSDSConfig(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile string) error {
-	snapshotVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
-	if err != nil {
-		contextutils.LoggerFrom(ctx).Info("Error getting snapshot version", zap.Error(err))
-		return err
-	}
+func (e envoySdsServerV3) UpdateSDSConfig(
+	ctx context.Context,
+	snapshotVersion, sslKeyFile, sslCertFile, sslCaFile string) error {
 	contextutils.LoggerFrom(ctx).Infof("Updating SDS config. Snapshot version is %s", snapshotVersion)
 
 	items := []cache_types.Resource{
