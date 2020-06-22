@@ -14,8 +14,8 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
