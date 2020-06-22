@@ -1,5 +1,7 @@
 changelog:
 - type: FIX
-  description: Switch envoy sidecar SDS config to api `v3` to work with the updated SDS server.
+  description: >
+    Re add SDS V2 API to SDS container along side new V3 API so that both may run simultaneously while we
+    transition to V3 API in envoy across different components.
   resolvesIssue: false
   issueLink: https://github.com/solo-io/gloo/pull/3191
