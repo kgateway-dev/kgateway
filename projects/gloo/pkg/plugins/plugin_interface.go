@@ -50,7 +50,7 @@ type RouteActionParams struct {
 // the cluster to be edited before being sent to envoy via CDS
 type UpstreamPlugin interface {
 	Plugin
-	ProcessUpstream(params Params, in *v1.Upstream, out *envoycluster.Cluster) error // TODO should be 13 implementations
+	ProcessUpstream(params Params, in *v1.Upstream, out *envoycluster.Cluster) error
 }
 
 // Endpoint is called after the envoy ClusterLoadAssignment has been created for the input Upstream, and allows
