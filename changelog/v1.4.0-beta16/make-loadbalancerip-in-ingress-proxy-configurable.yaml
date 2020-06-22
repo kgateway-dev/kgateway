@@ -1,4 +1,4 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: HELM
     description: The loadBalancerIP for the ingress-proxy service can now be configured in helm.
     issueLink: https://github.com/solo-io/gloo/issues/3184
