@@ -1,4 +1,4 @@
-package run_test
+package sds_server_v2_test
 
 import (
 	"context"
@@ -7,12 +7,9 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	envoy_service_discovery_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	envoy_service_secret_v3 "github.com/envoyproxy/go-control-plane/envoy/service/secret/v3"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
 	sds_server "github.com/solo-io/gloo/projects/sds/pkg/server"
 	sds_server_v2 "github.com/solo-io/gloo/projects/sds/pkg/server/v2"
-	sds_server_v3 "github.com/solo-io/gloo/projects/sds/pkg/server/v3"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 
@@ -62,66 +59,61 @@ var _ = Describe("SDS Server E2E Test", func() {
 		_ = fs.RemoveAll(dir)
 	})
 
-	It("runs and stops correctly V2", func() {
-		ctx, cancel := context.WithCancel(context.Background())
+	It("correctly picks up multiple cert rotations", func() {
+
 		sdsServers := []sds_server.EnvoySdsServerFactory{
 			sds_server_v2.NewEnvoySdsServerV2,
-			sds_server_v3.NewEnvoySdsServerV3,
 		}
-		go func() {
-			if err := run.Run(ctx, keyNameSymlink, certNameSymlink, caNameSymlink, testServerAddress, sdsServers); err != nil {
-				Expect(err).To(BeNil())
-			}
-		}()
+		go run.Run(context.Background(), keyNameSymlink, certNameSymlink, caNameSymlink, testServerAddress, sdsServers)
 
 		// Connect with the server
 		var conn *grpc.ClientConn
-		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
+		conn, err = grpc.Dial(testServerAddress, grpc.WithInsecure())
 		Expect(err).To(BeNil())
 		defer conn.Close()
 		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
-		_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+		snapshotVersion, err := sds_server.GetSnapshotVersion(keyName, certName, caName)
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("11240719828806193304"))
+		resp, err := client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+		Expect(err).To(BeNil())
+		Eventually(func() bool {
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			Expect(err).To(BeNil())
+			return resp.VersionInfo == snapshotVersion
+		}, "5s", "1s").Should(BeTrue())
+
+		// Cert rotation #1
+		err = os.Remove(keyName)
+		Expect(err).To(BeNil())
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
 		Expect(err).To(BeNil())
 
-		// Cancel the context in order to stop the gRPC server
-		cancel()
-
-		// The gRPC server should stop eventually
+		snapshotVersion, err = sds_server.GetSnapshotVersion(keyName, certName, caName)
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("15601967965718698291"))
+		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
-			return err != nil
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			Expect(err).To(BeNil())
+			return resp.VersionInfo == snapshotVersion
+		}, "5s", "1s").Should(BeTrue())
+
+		// Cert rotation #2
+		err = os.Remove(keyName)
+		Expect(err).To(BeNil())
+		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
+		Expect(err).To(BeNil())
+
+		snapshotVersion, err = sds_server.GetSnapshotVersion(keyName, certName, caName)
+		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("11448956642433776987"))
+		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+		Expect(err).To(BeNil())
+		Eventually(func() bool {
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			Expect(err).To(BeNil())
+			return resp.VersionInfo == snapshotVersion
 		}, "5s", "1s").Should(BeTrue())
 	})
-
-	It("runs and stops correctly V3", func() {
-		ctx, cancel := context.WithCancel(context.Background())
-		sdsServers := []sds_server.EnvoySdsServerFactory{
-			sds_server_v2.NewEnvoySdsServerV2,
-			sds_server_v3.NewEnvoySdsServerV3,
-		}
-		go func() {
-			if err := run.Run(ctx, keyNameSymlink, certNameSymlink, caNameSymlink, testServerAddress, sdsServers); err != nil {
-				Expect(err).To(BeNil())
-			}
-		}()
-
-		// Connect with the server
-		var conn *grpc.ClientConn
-		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
-		Expect(err).To(BeNil())
-		defer conn.Close()
-		client := envoy_service_secret_v3.NewSecretDiscoveryServiceClient(conn)
-		_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
-		Expect(err).To(BeNil())
-
-		// Cancel the context in order to stop the gRPC server
-		cancel()
-
-		// The gRPC server should stop eventually
-		Eventually(func() bool {
-			_, err = client.FetchSecrets(context.TODO(), &envoy_service_discovery_v3.DiscoveryRequest{})
-			return err != nil
-		}, "5s", "1s").Should(BeTrue())
-	})
-
 })

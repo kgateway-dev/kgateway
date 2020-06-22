@@ -6,7 +6,7 @@ import (
 	"github.com/avast/retry-go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 )
 
@@ -19,7 +19,7 @@ var locker *clusterlock.TestClusterLocker
 
 var _ = BeforeSuite(func() {
 	var err error
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
+	locker, err = clusterlock.NewTestClusterLocker(helpers.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 })

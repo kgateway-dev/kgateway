@@ -1,4 +1,4 @@
-package server
+package sds_server_v3_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSDSServer(t *testing.T) {
+func TestV3(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "SDS Server Suite")
+	RunSpecs(t, "V3 Suite")
 }

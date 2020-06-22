@@ -1,4 +1,4 @@
-package gateway_test
+package gateway_mtls_test
 
 import (
 	"fmt"
@@ -33,7 +33,7 @@ func TestGateway(t *testing.T) {
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
-	RunSpecs(t, "Gateway Suite")
+	RunSpecs(t, "Gateway MTLS Suite")
 }
 
 var testHelper *helper.SoloTestHelper
@@ -51,6 +51,11 @@ global:
   glooRbac:
     namespaced: true
     nameSuffix: e2e-test-rbac-suffix
+  glooMtls:
+    enabled: true
+    sds:
+      image:
+        registry: quay.io/solo-io
 settings:
   singleNamespace: true
   create: true

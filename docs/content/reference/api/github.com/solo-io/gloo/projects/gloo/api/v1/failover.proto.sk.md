@@ -45,14 +45,12 @@ In practice this means that the priority of a given set of `LocalityLbEndpoints`
 the list, first being `0` through `n-1`.
 
 ```yaml
-"locality": .gloo.solo.io.Locality
 "prioritizedLocalities": []gloo.solo.io.Failover.PrioritizedLocality
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `locality` | [.gloo.solo.io.Locality](../failover.proto.sk/#locality) | Identifies where the parent upstream hosts run. |  |
 | `prioritizedLocalities` | [[]gloo.solo.io.Failover.PrioritizedLocality](../failover.proto.sk/#prioritizedlocality) | PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each list of `LocalityLbEndpoints` is determined by its index in the list. |  |
 
 

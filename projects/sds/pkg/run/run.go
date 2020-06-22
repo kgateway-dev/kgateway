@@ -2,33 +2,56 @@ package run
 
 import (
 	"context"
+	"net"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	sds_server "github.com/solo-io/gloo/projects/sds/pkg/server"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/solo-io/gloo/projects/sds/pkg/server"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddress string) error {
-	ctx, cancel := context.WithCancel(ctx)
+var (
+	grpcOptions = []grpc.ServerOption{grpc.MaxConcurrentStreams(10000)}
+)
 
-	// Set up the gRPC server
-	grpcServer, snapshotCache := server.SetupEnvoySDS()
+func Run(
+	rootCtx context.Context,
+	sslKeyFile, sslCertFile,
+	sslCaFile,
+	sdsServerAddress string,
+	sdsServerFactories []sds_server.EnvoySdsServerFactory,
+) error {
+	ctx, cancel := context.WithCancel(rootCtx)
+
+	// Initialize the Server
+	grpcServer := grpc.NewServer(grpcOptions...)
+
+	// initialize the sds services
+	sdsServers := make(sds_server.EnvoySdsServerList, 0, len(sdsServerFactories))
+	for _, v := range sdsServerFactories {
+		sdsServers = append(sdsServers, v(ctx, grpcServer))
+	}
 
 	// Run the gRPC Server
-	serverStopped, err := server.RunSDSServer(ctx, grpcServer, sdsServerAddress) // runs the grpc server in internal goroutines
+	serverStopped, err := runSDSServer(ctx, grpcServer, sdsServerAddress) // runs the grpc server in internal goroutines
+	if err != nil {
+		return err
+	}
+
+	// Get initial snapshot version
+	initialVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
 	if err != nil {
 		return err
 	}
 
 	// Initialize the SDS config
-	err = server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
-	if err != nil {
+	if err = sdsServers.UpdateSDSConfig(ctx, initialVersion, sslKeyFile, sslCertFile, sslCaFile); err != nil {
 		return err
 	}
 
@@ -49,7 +72,13 @@ func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddre
 			// watch for events
 			case event := <-watcher.Events:
 				contextutils.LoggerFrom(ctx).Infow("received event", zap.Any("event", event))
-				server.UpdateSDSConfig(ctx, sslKeyFile, sslCertFile, sslCaFile, snapshotCache)
+				// get updated snapshot version
+				snapshotVersion, err := sds_server.GetSnapshotVersion(sslKeyFile, sslCertFile, sslCaFile)
+				if err != nil {
+					contextutils.LoggerFrom(ctx).Warnw("Failed to update snapshot version", zap.Error(err))
+					continue
+				}
+				sdsServers.UpdateSDSConfig(ctx, snapshotVersion, sslKeyFile, sslCertFile, sslCaFile)
 				watchFiles(ctx, watcher, sslKeyFile, sslCertFile, sslCaFile)
 			// watch for errors
 			case err := <-watcher.Errors:
@@ -69,6 +98,27 @@ func Run(ctx context.Context, sslKeyFile, sslCertFile, sslCaFile, sdsServerAddre
 	case <-time.After(3 * time.Second):
 		return nil
 	}
+}
+
+func runSDSServer(ctx context.Context, grpcServer *grpc.Server, serverAddress string) (<-chan struct{}, error) {
+	lis, err := net.Listen("tcp", serverAddress)
+	if err != nil {
+		return nil, err
+	}
+	contextutils.LoggerFrom(ctx).Infof("sds server listening on %s", serverAddress)
+	go func() {
+		if err = grpcServer.Serve(lis); err != nil {
+			contextutils.LoggerFrom(ctx).Fatalw("fatal error in gRPC server", zap.String("address", serverAddress), zap.Error(err))
+		}
+	}()
+	serverStopped := make(chan struct{})
+	go func() {
+		<-ctx.Done()
+		contextutils.LoggerFrom(ctx).Infof("stopping sds server on %s\n", serverAddress)
+		grpcServer.GracefulStop()
+		serverStopped <- struct{}{}
+	}()
+	return serverStopped, nil
 }
 
 func watchFiles(ctx context.Context, watcher *fsnotify.Watcher, sslKeyFile string, sslCertFile string, sslCaFile string) {
