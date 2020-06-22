@@ -5,7 +5,7 @@ import (
 
 	"github.com/rotisserie/eris"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -77,7 +77,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	return false, nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
 	_, ok := in.UpstreamType.(*v1.Upstream_AwsEc2)
 	if !ok {
 		return nil

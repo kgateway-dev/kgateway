@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -50,7 +50,7 @@ type RouteActionParams struct {
 // the cluster to be edited before being sent to envoy via CDS
 type UpstreamPlugin interface {
 	Plugin
-	ProcessUpstream(params Params, in *v1.Upstream, out *envoyapi.Cluster) error
+	ProcessUpstream(params Params, in *v1.Upstream, out *envoycluster.Cluster) error // TODO should be 13 implementations
 }
 
 // Endpoint is called after the envoy ClusterLoadAssignment has been created for the input Upstream, and allows
@@ -251,5 +251,5 @@ func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
 */
 type ClusterGeneratorPlugin interface {
 	Plugin
-	GeneratedClusters(params Params) ([]*envoyapi.Cluster, error)
+	GeneratedClusters(params Params) ([]*envoycluster.Cluster, error)
 }
