@@ -229,7 +229,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	filterconfig := &AWSLambdaConfig{UseDefaultCredentials: &types.BoolValue{Value: p.enableCredentialsDiscovey}}
-	f, err := pluginutils.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
+	f, err := plugins.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
 	if err != nil {
 		return nil, err
 	}

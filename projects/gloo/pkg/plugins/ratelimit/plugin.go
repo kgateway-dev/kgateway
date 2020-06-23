@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -109,7 +107,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
+	customStagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {
 		return nil, err
 	}

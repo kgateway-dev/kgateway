@@ -9,8 +9,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -114,7 +112,7 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 	}
 
 	pluginStage := TransformWasmFilterStage(wasmFilter.GetFilterStage())
-	stagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, filterCfg, pluginStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, filterCfg, pluginStage)
 	if err != nil {
 		return nil, err
 	}

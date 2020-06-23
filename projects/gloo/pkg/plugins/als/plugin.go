@@ -1,14 +1,14 @@
 package als
 
 import (
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
-	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -36,7 +36,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoylistener.Listener) error {
+func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
 	if in.GetOptions() == nil {
 		return nil
 	}

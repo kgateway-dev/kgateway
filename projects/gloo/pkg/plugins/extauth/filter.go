@@ -4,8 +4,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
@@ -54,7 +52,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}

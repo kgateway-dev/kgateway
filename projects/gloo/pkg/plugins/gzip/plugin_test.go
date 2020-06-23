@@ -1,17 +1,15 @@
 package gzip_test
 
 import (
-	envoygzip "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/gzip/v2"
-	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/filter/http/gzip/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var _ = Describe("Plugin", func() {
@@ -36,16 +34,38 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
-				HttpFilter: &envoyhttpconnectionmanager.HttpFilter{
+				HttpFilter: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter{
 					Name: "envoy.gzip",
-					ConfigType: &envoyhttpconnectionmanager.HttpFilter_TypedConfig{
-						TypedConfig: pluginutils.MustMessageToAny(&envoygzip.Gzip{
-							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
-							ContentLength:       &wrappers.UInt32Value{Value: 10.000000},
-							CompressionLevel:    10.000000,
-							CompressionStrategy: 10.000000,
-							WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
-						}),
+					ConfigType: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter_Config{
+						Config: &structpb.Struct{
+							Fields: map[string]*structpb.Value{
+								"memoryLevel": {
+									Kind: &structpb.Value_NumberValue{
+										NumberValue: 10.000000,
+									},
+								},
+								"contentLength": {
+									Kind: &structpb.Value_NumberValue{
+										NumberValue: 10.000000,
+									},
+								},
+								"compressionLevel": {
+									Kind: &structpb.Value_NumberValue{
+										NumberValue: 10.000000,
+									},
+								},
+								"compressionStrategy": {
+									Kind: &structpb.Value_NumberValue{
+										NumberValue: 10.000000,
+									},
+								},
+								"windowBits": {
+									Kind: &structpb.Value_NumberValue{
+										NumberValue: 10.000000,
+									},
+								},
+							},
+						},
 					},
 				},
 				Stage: plugins.FilterStage{
