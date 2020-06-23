@@ -22,7 +22,7 @@ rules:
   resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices", "routetables", "authconfigs"]
   verbs: ["*"]
 - apiGroups: ["extensions", ""]
-  resources: ["ingresses"]
+  resources: ["ingresses", "ingresses/status"]
   verbs: ["*"]
 {{- end -}}
 

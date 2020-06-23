@@ -131,6 +131,17 @@ func (rc *ResourceClient) Read(namespace, name string, opts clients.ReadOpts) (r
 }
 
 func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	updated, err := rc.write(resource, opts)
+	if err != nil {
+		return nil, err
+	}
+	// workaround for setting ingress status
+	clone := resources.Clone(resource)
+	clone.SetMetadata(updated.GetMetadata())
+	return rc.writeStatus(clone, opts)
+}
+
+func (rc *ResourceClient) write(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
 	opts = opts.WithDefaults()
 	if err := resources.Validate(resource); err != nil {
 		return nil, errors.Wrapf(err, "validation error")
@@ -162,6 +173,45 @@ func (rc *ResourceClient) Write(resource resources.Resource, opts clients.WriteO
 	} else {
 		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Create(ingressObj); err != nil {
 			return nil, errors.Wrapf(err, "creating kube ingressObj %v", ingressObj.Name)
+		}
+	}
+
+	// return a read object to update the resource version
+	return rc.Read(ingressObj.Namespace, ingressObj.Name, clients.ReadOpts{Ctx: opts.Ctx})
+}
+
+func (rc *ResourceClient) writeStatus(resource resources.Resource, opts clients.WriteOpts) (resources.Resource, error) {
+	opts = opts.WithDefaults()
+	if err := resources.Validate(resource); err != nil {
+		return nil, errors.Wrapf(err, "validation error")
+	}
+	meta := resource.GetMetadata()
+	meta.Namespace = clients.DefaultNamespaceIfEmpty(meta.Namespace)
+
+	// mutate and return clone
+	clone := resources.Clone(resource)
+	clone.SetMetadata(meta)
+	ingressObj, err := ToKube(resource)
+	if err != nil {
+		return nil, err
+	}
+
+	original, err := rc.Read(meta.Namespace, meta.Name, clients.ReadOpts{
+		Ctx: opts.Ctx,
+	})
+	if original != nil && err == nil {
+		if !opts.OverwriteExisting {
+			return nil, errors.NewExistErr(meta)
+		}
+		if meta.ResourceVersion != original.GetMetadata().ResourceVersion {
+			return nil, errors.NewResourceVersionErr(meta.Namespace, meta.Name, meta.ResourceVersion, original.GetMetadata().ResourceVersion)
+		}
+		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).UpdateStatus(ingressObj); err != nil {
+			return nil, errors.Wrapf(err, "updating kube ingressObj status %v", ingressObj.Name)
+		}
+	} else {
+		if _, err := rc.kube.ExtensionsV1beta1().Ingresses(ingressObj.Namespace).Create(ingressObj); err != nil {
+			return nil, errors.Wrapf(err, "creating kube ingressObj status %v", ingressObj.Name)
 		}
 	}
 
