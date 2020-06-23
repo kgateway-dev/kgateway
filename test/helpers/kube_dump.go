@@ -6,8 +6,9 @@ import (
 	"io"
 	"os/exec"
 
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/cliutil/install"
+
+	errors "github.com/rotisserie/eris"
 )
 
 var dumpCommands = func(namespace string) []string {

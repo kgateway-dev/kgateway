@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/gloo/test/helpers"
 
 	"github.com/avast/retry-go"
+	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 
 	"github.com/solo-io/go-utils/testutils/helper"
@@ -57,7 +58,7 @@ var _ = BeforeSuite(func() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
-	locker, err = clusterlock.NewTestClusterLocker(helpers.MustKubeClient(), clusterlock.Options{})
+	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
 

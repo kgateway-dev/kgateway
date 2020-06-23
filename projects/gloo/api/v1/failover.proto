@@ -26,12 +26,15 @@ import "gloo/projects/gloo/api/v1/ssl.proto";
 
 */
 message Failover {
+    // Identifies where the parent upstream hosts run.
+    Locality locality = 1;
+
     // PrioritizedLocality is an implicitly prioritized list of lists of `LocalityLbEndpoints`. The priority of each
     // list of `LocalityLbEndpoints` is determined by its index in the list.
-    repeated PrioritizedLocality prioritized_localities = 1;
+    repeated PrioritizedLocality prioritized_localities = 2;
 
     message PrioritizedLocality {
-        repeated LocalityLbEndpoints locality_endpoints = 2;
+        repeated LocalityLbEndpoints locality_endpoints = 1;
     }
 }
 
