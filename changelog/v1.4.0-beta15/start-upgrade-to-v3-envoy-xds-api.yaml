@@ -1,6 +1,0 @@
-changelog:
-- type: NON_USER_FACING
-  issueLink: https://github.com/solo-io/gloo/issues/2815
-  resolvesIssue: false 
-  description: > 
-    This is the first chunk of work for the upgrade to v3 of the Envoy xDS API. It largely replaces v2 of the route package with v3 in our code but includes many interdependent changes. 

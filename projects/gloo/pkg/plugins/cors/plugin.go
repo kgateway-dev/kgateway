@@ -11,11 +11,11 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 
-	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"

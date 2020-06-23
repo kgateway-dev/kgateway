@@ -2,7 +2,7 @@ package loadbalancer
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/rotisserie/eris"

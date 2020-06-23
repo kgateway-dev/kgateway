@@ -38,8 +38,8 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSn
 
 	contextutils.LoggerFrom(ctx).Debug("removing errored upstreams and checking consistency")
 
-	clusters := xdsSnapshot.GetResources(xds.ClusterTypev2)
-	endpoints := xdsSnapshot.GetResources(xds.EndpointTypev2)
+	clusters := xdsSnapshot.GetResources(xds.ClusterType)
+	endpoints := xdsSnapshot.GetResources(xds.EndpointType)
 
 	var removed int64
 
@@ -62,8 +62,8 @@ func (s *UpstreamRemovingSanitizer) SanitizeSnapshot(ctx context.Context, glooSn
 	xdsSnapshot = xds.NewSnapshotFromResources(
 		endpoints,
 		clusters,
-		xdsSnapshot.GetResources(xds.RouteTypev2),
-		xdsSnapshot.GetResources(xds.ListenerTypev2),
+		xdsSnapshot.GetResources(xds.RouteType),
+		xdsSnapshot.GetResources(xds.ListenerType),
 	)
 
 	// If the snapshot is not consistent,

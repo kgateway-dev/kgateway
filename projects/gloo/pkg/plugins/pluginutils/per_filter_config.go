@@ -4,39 +4,39 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/golang/protobuf/ptypes/any"
-
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
 func SetRoutePerFilterConfig(out *envoyroute.Route, filterName string, protoext proto.Message) error {
-	if out.GetTypedPerFilterConfig() == nil {
-		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
-	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
+	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
 func SetVhostPerFilterConfig(out *envoyroute.VirtualHost, filterName string, protoext proto.Message) error {
-	if out.GetTypedPerFilterConfig() == nil {
-		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
-	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
+	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
 func SetWeightedClusterPerFilterConfig(out *envoyroute.WeightedCluster_ClusterWeight, filterName string, protoext proto.Message) error {
-	if out.GetTypedPerFilterConfig() == nil {
-		out.TypedPerFilterConfig = make(map[string]*any.Any)
+	if out.PerFilterConfig == nil {
+		out.PerFilterConfig = make(map[string]*structpb.Struct)
 	}
-	return setConfig(out.TypedPerFilterConfig, filterName, protoext)
+	return setConfig(out.PerFilterConfig, filterName, protoext)
 }
 
 // Return Per-Filter config for destinations, we put them on the Route (single dest) or WeightedCluster (multi dest)
-type TypedPerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
+type PerFilterConfigFunc func(spec *v1.Destination) (proto.Message, error)
 
 // call this from
-func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoyroute.Route, filterName string, typedPerFilterConfig TypedPerFilterConfigFunc) error {
+func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route, out *envoyroute.Route, filterName string, perFilterConfig PerFilterConfigFunc) error {
 	inAction, outAction, err := getRouteActions(in, out)
 	if err != nil {
 		return err
@@ -50,15 +50,15 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 			return NewUpstreamGroupNotFoundErr(*dest.UpstreamGroup)
 		}
 
-		return configureMultiDest(upstreamGroup.Destinations, outAction, filterName, typedPerFilterConfig)
+		return configureMultiDest(upstreamGroup.Destinations, outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Multi:
 
-		return configureMultiDest(dest.Multi.Destinations, outAction, filterName, typedPerFilterConfig)
+		return configureMultiDest(dest.Multi.Destinations, outAction, filterName, perFilterConfig)
 	case *v1.RouteAction_Single:
-		if out.GetTypedPerFilterConfig() == nil {
-			out.TypedPerFilterConfig = make(map[string]*any.Any)
+		if out.PerFilterConfig == nil {
+			out.PerFilterConfig = make(map[string]*structpb.Struct)
 		}
-		return configureSingleDest(dest.Single, out.TypedPerFilterConfig, filterName, typedPerFilterConfig)
+		return configureSingleDest(dest.Single, out.PerFilterConfig, filterName, perFilterConfig)
 	}
 
 	err = errors.Errorf("unexpected destination type %v", reflect.TypeOf(inAction.Destination).Name())
@@ -67,7 +67,7 @@ func MarkPerFilterConfig(ctx context.Context, snap *v1.ApiSnapshot, in *v1.Route
 	return err
 }
 
-func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.RouteAction, filterName string, typedPerFilterConfig TypedPerFilterConfigFunc) error {
+func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.RouteAction, filterName string, perFilterConfig PerFilterConfigFunc) error {
 
 	multiClusterSpecifier, ok := outAction.ClusterSpecifier.(*envoyroute.RouteAction_WeightedClusters)
 	if !ok {
@@ -79,10 +79,10 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 		return errors.Errorf("number of input destinations did not match number of destination weighted clusters")
 	}
 	for i := range in {
-		if out.Clusters[i].GetTypedPerFilterConfig() == nil {
-			out.Clusters[i].TypedPerFilterConfig = make(map[string]*any.Any)
+		if out.Clusters[i].PerFilterConfig == nil {
+			out.Clusters[i].PerFilterConfig = make(map[string]*structpb.Struct)
 		}
-		err := configureSingleDest(in[i].Destination, out.Clusters[i].TypedPerFilterConfig, filterName, typedPerFilterConfig)
+		err := configureSingleDest(in[i].Destination, out.Clusters[i].PerFilterConfig, filterName, perFilterConfig)
 		if err != nil {
 			return err
 		}
@@ -91,22 +91,22 @@ func configureMultiDest(in []*v1.WeightedDestination, outAction *envoyroute.Rout
 	return nil
 }
 
-func configureSingleDest(in *v1.Destination, out map[string]*any.Any, filterName string, typedPerFilterConfig TypedPerFilterConfigFunc) error {
-	config, err := typedPerFilterConfig(in)
+func configureSingleDest(in *v1.Destination, out map[string]*structpb.Struct, filterName string, perFilterConfig PerFilterConfigFunc) error {
+	config, err := perFilterConfig(in)
 	if err != nil {
 		return err
 	}
 	return setConfig(out, filterName, config)
 }
 
-func setConfig(out map[string]*any.Any, filterName string, config proto.Message) error {
+func setConfig(out map[string]*structpb.Struct, filterName string, config proto.Message) error {
 	if config == nil {
 		return nil
 	}
-	configAny, err := MessageToAny(config)
+	configStruct, err := conversion.MessageToStruct(config)
 	if err != nil {
 		return err
 	}
-	out[filterName] = configAny
+	out[filterName] = configStruct
 	return nil
 }

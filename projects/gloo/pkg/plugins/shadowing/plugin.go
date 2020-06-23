@@ -1,8 +1,8 @@
 package shadowing
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/shadowing"
@@ -62,10 +62,10 @@ func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing
 	if spec.Percentage < 0 || spec.Percentage > 100 {
 		return InvalidNumeratorError(spec.Percentage)
 	}
-	out.RequestMirrorPolicies = []*envoyroute.RouteAction_RequestMirrorPolicy{{
+	out.RequestMirrorPolicy = &envoyroute.RouteAction_RequestMirrorPolicy{
 		Cluster:         translator.UpstreamToClusterName(*spec.Upstream),
 		RuntimeFraction: getFractionalPercent(spec.Percentage),
-	}}
+	}
 	return nil
 }
 

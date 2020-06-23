@@ -81,7 +81,7 @@ func (s *EnvoySnapshot) Consistent() error {
 	}
 	endpoints := GetResourceReferences(s.Clusters.Items)
 	if len(endpoints) != len(s.Endpoints.Items) {
-		return fmt.Errorf("mismatched endpoint reference and resource lengths: length of %v does not equal length of %v", endpoints, s.Endpoints.Items)
+		return fmt.Errorf("mismatched endpoint reference and resource lengths: %v != %d", endpoints, len(s.Endpoints.Items))
 	}
 	if err := cache.Superset(endpoints, s.Endpoints.Items); err != nil {
 		return err
@@ -89,7 +89,7 @@ func (s *EnvoySnapshot) Consistent() error {
 
 	routes := GetResourceReferences(s.Listeners.Items)
 	if len(routes) != len(s.Routes.Items) {
-		return fmt.Errorf("mismatched route reference and resource lengths: length of %v does not equal length of %v", routes, s.Routes.Items)
+		return fmt.Errorf("mismatched route reference and resource lengths: %v != %d", routes, len(s.Routes.Items))
 	}
 	return cache.Superset(routes, s.Routes.Items)
 }
@@ -100,22 +100,13 @@ func (s *EnvoySnapshot) GetResources(typ string) cache.Resources {
 		return cache.Resources{}
 	}
 	switch typ {
-	case EndpointTypev3:
+	case EndpointType:
 		return s.Endpoints
-	case ClusterTypev3:
+	case ClusterType:
 		return s.Clusters
-	case RouteTypev3:
+	case RouteType:
 		return s.Routes
-	case ListenerTypev3:
-		return s.Listeners
-	// keeping cases below as temporary solution to enable incremental changes
-	case EndpointTypev2:
-		return s.Endpoints
-	case ClusterTypev2:
-		return s.Clusters
-	case RouteTypev2:
-		return s.Routes
-	case ListenerTypev2:
+	case ListenerType:
 		return s.Listeners
 	}
 	return cache.Resources{}

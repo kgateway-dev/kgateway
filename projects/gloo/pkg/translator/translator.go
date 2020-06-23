@@ -8,8 +8,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/mitchellh/hashstructure"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -97,7 +95,7 @@ ClusterLoop:
 				continue ClusterLoop
 			}
 		}
-		emptyendpointlist := &envoyendpoint.ClusterLoadAssignment{
+		emptyendpointlist := &envoyapi.ClusterLoadAssignment{
 			ClusterName: c.Name,
 		}
 		// make sure to call EndpointPlugin with empty endpoint
@@ -121,7 +119,7 @@ ClusterLoop:
 	}
 
 	var (
-		routeConfigs []*envoyroute.RouteConfiguration
+		routeConfigs []*envoyapi.RouteConfiguration
 		listeners    []*envoyapi.Listener
 	)
 
@@ -173,7 +171,7 @@ ClusterLoop:
 // the set of resources returned by one iteration for a single v1.Listener
 // the top level Translate function should aggregate these into a finished snapshot
 type listenerResources struct {
-	routeConfig *envoyroute.RouteConfiguration
+	routeConfig *envoyapi.RouteConfiguration
 	listener    *envoyapi.Listener
 }
 
@@ -199,8 +197,8 @@ func (t *translatorInstance) computeListenerResources(params plugins.Params, pro
 }
 
 func generateXDSSnapshot(clusters []*envoyapi.Cluster,
-	endpoints []*envoyendpoint.ClusterLoadAssignment,
-	routeConfigs []*envoyroute.RouteConfiguration,
+	endpoints []*envoyapi.ClusterLoadAssignment,
+	routeConfigs []*envoyapi.RouteConfiguration,
 	listeners []*envoyapi.Listener) envoycache.Snapshot {
 
 	var endpointsProto, clustersProto, listenersProto []envoycache.Resource
@@ -244,7 +242,7 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
 }
 
-func MakeRdsResources(routeConfigs []*envoyroute.RouteConfiguration) envoycache.Resources {
+func MakeRdsResources(routeConfigs []*envoyapi.RouteConfiguration) envoycache.Resources {
 	var routesProto []envoycache.Resource
 
 	for _, routeCfg := range routeConfigs {
