@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Revert envoy v2 -> v3 migration thus far to ensure Gloo stability, and approach the migration with more time and care.
+    issueLink: https://github.com/solo-io/gloo/issues/2815
+    resolvesIssue: false
