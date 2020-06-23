@@ -221,6 +221,7 @@
 |gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run envoy as an unprivileged user|
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
@@ -314,6 +315,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run envoy as an unprivileged user|
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|

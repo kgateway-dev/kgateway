@@ -258,6 +258,7 @@ type GatewayProxyPodTemplate struct {
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser        float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup          float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 }
 
 type GatewayProxyService struct {

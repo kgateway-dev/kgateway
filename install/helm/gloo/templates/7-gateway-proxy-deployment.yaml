@@ -70,6 +70,8 @@ spec:
 {{- end}}
     spec:
 {{- if $spec.kind.deployment }}
+      securityContext:
+        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) -}}
 {{- if $spec.antiAffinity }}
       affinity:
         podAntiAffinity:
