@@ -2048,6 +2048,7 @@ metadata:
 					ingressProxyService.Spec.LoadBalancerIP = "1.2.3.4"
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
+							"ingress.enabled=true",
 							"ingressProxy.service.loadBalancerIP=1.2.3.4",
 						},
 					})
