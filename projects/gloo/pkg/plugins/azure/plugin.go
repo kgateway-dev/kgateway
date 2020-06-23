@@ -7,10 +7,10 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/gogo/protobuf/proto"
 	transformationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -43,7 +43,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Azure)
 	if !ok {
 		// not ours
@@ -53,11 +53,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	p.recordedUpstreams[in.Metadata.Ref()] = azureUpstream
 
 	// configure Envoy cluster routing info
-	out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-		Type: envoycluster.Cluster_LOGICAL_DNS,
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_LOGICAL_DNS,
 	}
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
-	out.DnsLookupFamily = envoycluster.Cluster_V4_ONLY
+	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	hostname := GetHostname(upstreamSpec.Azure)
 
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, hostname, 443)

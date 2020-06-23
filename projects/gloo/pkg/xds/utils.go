@@ -1,15 +1,15 @@
 package xds
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
-func SetEdsOnCluster(out *envoycluster.Cluster) {
-	out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-		Type: envoycluster.Cluster_EDS,
+func SetEdsOnCluster(out *envoyapi.Cluster) {
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_EDS,
 	}
-	out.EdsClusterConfig = &envoycluster.Cluster_EdsClusterConfig{
+	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{
 			ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
 				Ads: &envoycore.AggregatedConfigSource{},

@@ -1,13 +1,13 @@
 package pluginutils
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 )
 
-func EnvoySingleEndpointLoadAssignment(out *envoycluster.Cluster, address string, port uint32) {
-	out.LoadAssignment = &envoyendpoint.ClusterLoadAssignment{
+func EnvoySingleEndpointLoadAssignment(out *envoyapi.Cluster, address string, port uint32) {
+	out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 		ClusterName: out.Name,
 		Endpoints: []*envoyendpoint.LocalityLbEndpoints{
 			{

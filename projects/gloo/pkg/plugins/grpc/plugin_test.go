@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/types"
 )
@@ -27,14 +27,14 @@ var _ = Describe("Plugin", func() {
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
-		out          *envoycluster.Cluster
+		out          *envoyapi.Cluster
 		grpcSpec     *pluginsv1.ServiceSpec_Grpc
 	)
 
 	BeforeEach(func() {
 		b := false
 		p = NewPlugin(&b)
-		out = new(envoycluster.Cluster)
+		out = new(envoyapi.Cluster)
 
 		grpcSpec = &pluginsv1.ServiceSpec_Grpc{
 			Grpc: &v1grpc.ServiceSpec{

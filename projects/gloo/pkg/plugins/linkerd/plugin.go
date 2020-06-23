@@ -8,7 +8,7 @@ import (
 
 	usconversions "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -163,6 +163,6 @@ func createHeaderForUpstream(us *kubernetes.UpstreamSpec) *envoycore.HeaderValue
 	return header
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
+func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	return nil
 }

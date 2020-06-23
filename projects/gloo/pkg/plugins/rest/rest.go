@@ -13,7 +13,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/errors"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -47,7 +47,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoycluster.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, _ *envoyapi.Cluster) error {
 	if withServiceSpec, ok := in.UpstreamType.(UpstreamWithServiceSpec); ok {
 		serviceSpec := withServiceSpec.GetServiceSpec()
 		if serviceSpec == nil {

@@ -3,9 +3,9 @@ package pipe
 import (
 	"errors"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -20,7 +20,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
+func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	// not ours
 	pipeSpec, ok := in.UpstreamType.(*v1.Upstream_Pipe)
 	if !ok {
@@ -28,14 +28,14 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	spec := pipeSpec.Pipe
-	out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-		Type: envoycluster.Cluster_STATIC,
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_STATIC,
 	}
 	if spec.Path == "" {
 		return errors.New("no path provided")
 	}
 
-	out.LoadAssignment = &envoyendpoint.ClusterLoadAssignment{
+	out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 		ClusterName: out.Name,
 		Endpoints:   []*envoyendpoint.LocalityLbEndpoints{{}},
 	}

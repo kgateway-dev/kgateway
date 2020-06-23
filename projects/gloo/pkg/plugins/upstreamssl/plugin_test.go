@@ -1,8 +1,8 @@
 package upstreamssl_test
 
 import (
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -20,10 +20,10 @@ var _ = Describe("Plugin", func() {
 		plugin   *Plugin
 		upstream *v1.Upstream
 		tlsConf  *v1.TlsSecret
-		out      *envoycluster.Cluster
+		out      *envoyapi.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoycluster.Cluster)
+		out = new(envoyapi.Cluster)
 
 		tlsConf = &v1.TlsSecret{}
 		params = plugins.Params{

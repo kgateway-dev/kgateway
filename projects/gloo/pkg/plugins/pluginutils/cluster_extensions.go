@@ -1,13 +1,13 @@
 package pluginutils
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/golang/protobuf/proto"
 	anypb "github.com/golang/protobuf/ptypes/any"
 	errors "github.com/rotisserie/eris"
 )
 
-func SetExtenstionProtocolOptions(out *envoycluster.Cluster, filterName string, protoext proto.Message) error {
+func SetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {
 	protoextAny, err := MessageToAny(protoext)
 	if err != nil {
 		return errors.Wrapf(err, "converting extension "+filterName+" protocol options to struct")

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"net/url"
 
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -38,7 +38,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	staticSpec, ok := in.UpstreamType.(*v1.Upstream_Static)
 	if !ok {
 		// not ours
@@ -49,8 +49,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	var foundSslPort bool
 	var hostname string
 
-	out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-		Type: envoycluster.Cluster_STATIC,
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_STATIC,
 	}
 	for _, host := range spec.Hosts {
 		if host.Addr == "" {
@@ -72,7 +72,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		}
 
 		if out.LoadAssignment == nil {
-			out.LoadAssignment = &envoyendpoint.ClusterLoadAssignment{
+			out.LoadAssignment = &envoyapi.ClusterLoadAssignment{
 				ClusterName: out.Name,
 				Endpoints:   []*envoyendpoint.LocalityLbEndpoints{{}},
 			}
@@ -121,12 +121,12 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	// the upstream has a DNS name. We need Envoy to resolve the DNS name
 	if hostname != "" {
 		// set the type to strict dns
-		out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-			Type: envoycluster.Cluster_STRICT_DNS,
+		out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+			Type: envoyapi.Cluster_STRICT_DNS,
 		}
 
 		// fix issue where ipv6 addr cannot bind
-		out.DnsLookupFamily = envoycluster.Cluster_V4_ONLY
+		out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	}
 
 	return nil

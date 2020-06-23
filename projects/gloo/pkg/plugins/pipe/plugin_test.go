@@ -1,7 +1,7 @@
 package pipe_test
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -19,12 +19,12 @@ var _ = Describe("Plugin", func() {
 		params       plugins.Params
 		upstream     *v1.Upstream
 		upstreamSpec *v1pipe.UpstreamSpec
-		out          *envoycluster.Cluster
+		out          *envoyapi.Cluster
 	)
 
 	BeforeEach(func() {
 		p = NewPlugin()
-		out = new(envoycluster.Cluster)
+		out = new(envoyapi.Cluster)
 		out.Name = "foo"
 
 		p.Init(plugins.InitParams{})
@@ -45,7 +45,7 @@ var _ = Describe("Plugin", func() {
 	It("should translate upstream", func() {
 		err := p.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.GetType()).To(Equal(envoycluster.Cluster_STATIC))
+		Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
 		Expect(out.GetLoadAssignment().GetClusterName()).To(Equal(out.Name))
 		addr := out.GetLoadAssignment().GetEndpoints()[0].GetLbEndpoints()[0].GetEndpoint().GetAddress().GetPipe().GetPath()
 		Expect(addr).To(Equal("/foo"))

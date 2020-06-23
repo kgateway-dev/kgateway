@@ -7,7 +7,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -90,7 +90,7 @@ func (t *translatorInstance) Translate(params plugins.Params, proxy *v1.Proxy) (
 	// this is important as otherwise envoy will wait for them forever wondering their fate and not doing much else.
 ClusterLoop:
 	for _, c := range clusters {
-		if c.GetType() != envoycluster.Cluster_EDS {
+		if c.GetType() != envoyapi.Cluster_EDS {
 			continue
 		}
 		for _, ep := range endpoints {
@@ -199,7 +199,7 @@ func (t *translatorInstance) computeListenerResources(params plugins.Params, pro
 	}
 }
 
-func generateXDSSnapshot(clusters []*envoycluster.Cluster,
+func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 	endpoints []*envoyendpoint.ClusterLoadAssignment,
 	routeConfigs []*envoyroute.RouteConfiguration,
 	listeners []*envoylistener.Listener) envoycache.Snapshot {
