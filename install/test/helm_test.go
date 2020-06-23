@@ -716,6 +716,12 @@ var _ = Describe("Helm Test", func() {
 						truez := true
 						falsez := false
 						defaultUser := int64(10101)
+
+						deploy.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+							FSGroup:   &defaultUser,
+							RunAsUser: &defaultUser,
+						}
+
 						deploy.Spec.Template.Spec.Containers[0].SecurityContext = &v1.SecurityContext{
 							Capabilities: &v1.Capabilities{
 								Drop: []v1.Capability{"ALL"},
@@ -859,6 +865,7 @@ var _ = Describe("Helm Test", func() {
 						})
 						uid := int64(10102)
 						truez := true
+						gatewayProxyDeployment.Spec.Template.Spec.SecurityContext.RunAsUser = &uid
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsNonRoot = &truez
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)

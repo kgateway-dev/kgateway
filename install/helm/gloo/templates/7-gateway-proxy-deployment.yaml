@@ -69,9 +69,10 @@ spec:
         readconfig-port: "8082"
 {{- end}}
     spec:
-{{- if $spec.kind.deployment }}
       securityContext:
-        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) -}}
+        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
+        runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
+{{- if $spec.kind.deployment }}
 {{- if $spec.antiAffinity }}
       affinity:
         podAntiAffinity:
