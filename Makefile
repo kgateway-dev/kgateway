@@ -561,6 +561,7 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
