@@ -113,6 +113,7 @@ accessLogger:
   serviceName: AccessLog
   image:
     repository: access-logger
+  runAsUser: 10101
   replicas: 1
   stats:
     enabled: true

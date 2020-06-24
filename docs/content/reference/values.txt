@@ -446,6 +446,8 @@
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
 |accessLogger.stats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
+|accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||

@@ -459,6 +459,13 @@ var _ = Describe("Helm Test", func() {
 						}
 						dep.Spec.Template.Annotations = statsAnnotations
 						dep.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
+
+						truez := true
+						defaultUser := int64(10101)
+						dep.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+							RunAsUser:    &defaultUser,
+							RunAsNonRoot: &truez,
+						}
 						testManifest.ExpectDeploymentAppsV1(dep)
 						testManifest.ExpectService(svc)
 					})

@@ -282,11 +282,13 @@ type Tracing struct {
 }
 
 type AccessLogger struct {
-	Image       *Image `json:"image,omitempty"`
-	Port        uint   `json:"port,omitempty"`
-	ServiceName string `json:"serviceName,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Stats       *Stats `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	Image       *Image  `json:"image,omitempty"`
+	Port        uint    `json:"port,omitempty"`
+	ServiceName string  `json:"serviceName,omitempty"`
+	Enabled     bool    `json:"enabled"`
+	Stats       *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	RunAsUser   float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup     float64 `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	*DeploymentSpec
 }
 
