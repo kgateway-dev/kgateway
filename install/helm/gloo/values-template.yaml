@@ -122,6 +122,7 @@ ingress:
     image:
       repository: ingress
     replicas: 1
+    runAsUser: 10101
 ingressProxy:
   loopBackAddress: 127.0.0.1
   deployment:

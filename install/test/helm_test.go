@@ -2197,6 +2197,10 @@ metadata:
 									Labels: ingressPodLabels,
 								},
 								Spec: v1.PodSpec{
+									SecurityContext: &v1.PodSecurityContext{
+										RunAsUser:    pointer.Int64Ptr(10101),
+										RunAsNonRoot: pointer.BoolPtr(true),
+									},
 									Containers: []v1.Container{
 										{
 											Name: "ingress",

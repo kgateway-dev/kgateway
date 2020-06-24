@@ -21,6 +21,37 @@ var _ = Describe("Deployment Privileges Test", func() {
 					expectNonRoot(testManifest)
 				})
 
+				It("is running all deployments with non root user permissions with mTLS enabled", func() {
+					testManifest, err := testCase.renderer.RenderManifest(namespace, helmValues{
+						valuesArgs: []string{"global.glooMtls.enabled=true"},
+					})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the priviliges unit test")
+
+					expectNonRoot(testManifest)
+				})
+
+				It("is running all deployments with non root user permissions with knative enabled", func() {
+					testManifest, err := testCase.renderer.RenderManifest(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.enabled=false",
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=v0.10.0",
+						},
+					})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the priviliges unit test")
+
+					expectNonRoot(testManifest)
+				})
+
+				It("is running all deployments with non root user permissions with ingress enabled", func() {
+					testManifest, err := testCase.renderer.RenderManifest(namespace, helmValues{
+						valuesArgs: []string{"ingress.enabled=true"},
+					})
+					Expect(err).NotTo(HaveOccurred(), "Should be able to render the manifest in the priviliges unit test")
+
+					expectNonRoot(testManifest)
+				})
+
 			})
 		})
 	}

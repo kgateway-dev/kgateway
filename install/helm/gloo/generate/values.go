@@ -320,6 +320,8 @@ type IngressProxyDeployment struct {
 	HttpsPort        int               `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	FloatingUserId   bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser        float64           `json:"runAsUser" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
 	*DeploymentSpec
 }
 

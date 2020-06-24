@@ -54,6 +54,11 @@ spec:
         name: envoy-sidecar
         image: {{ template "gloo.image" $envoyImage }}
         imagePullPolicy: {{ $envoyImage.pullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          {{- if not .Values.gloo.deployment.floatingUserId }}
+          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
+          {{- end }}
         ports:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
@@ -73,6 +78,11 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
+        securityContext:
+          runAsNonRoot: true
+          {{- if not .Values.gloo.deployment.floatingUserId }}
+          runAsUser: {{ printf "%.0f" (float64 .Values.gloo.deployment.runAsUser)}}
+          {{- end }}
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
