@@ -54,7 +54,7 @@ var _ = Describe("CustomAuth", func() {
 				Name:      "custom-auth",
 				Namespace: "default",
 			},
-			UseHttp2: true,
+			UseHttp2: &types.BoolValue{Value: true},
 			UpstreamType: &gloov1.Upstream_Static{
 				Static: &static.UpstreamSpec{
 					Hosts: []*static.Host{{

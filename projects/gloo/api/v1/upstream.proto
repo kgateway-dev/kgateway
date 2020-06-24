@@ -26,6 +26,7 @@ import "gloo/projects/gloo/api/v1/options/consul/consul.proto";
 import "gloo/projects/gloo/api/v1/options/aws/ec2/aws_ec2.proto";
 import "gloo/projects/gloo/api/v1/options.proto";
 import "gloo/projects/gloo/api/v1/failover.proto";
+import "google/protobuf/wrappers.proto";
 
 
 /*
@@ -64,7 +65,7 @@ message Upstream {
     // Use http2 when communicating with this upstream
     // this field is evaluated `true` for upstreams
     // with a grpc service spec. otherwise defaults to `false`
-    bool use_http2 = 10;
+    google.protobuf.BoolValue use_http2 = 10;
 
     // Note to developers: new Upstream plugins must be added to this oneof field
     // to be usable by Gloo. (plugins currently need to be compiled into Gloo)

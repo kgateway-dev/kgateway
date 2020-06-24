@@ -30,6 +30,9 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	if desired.OutlierDetection == nil {
 		desired.OutlierDetection = original.OutlierDetection
 	}
+	if desired.UseHttp2 == nil {
+		desired.UseHttp2 = original.UseHttp2
+	}
 
 	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {

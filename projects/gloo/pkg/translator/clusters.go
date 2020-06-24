@@ -192,7 +192,7 @@ func getCircuitBreakers(cfgs ...*v1.CircuitBreakerConfig) *envoycluster.CircuitB
 }
 
 func getHttp2ptions(us *v1.Upstream) *envoycore.Http2ProtocolOptions {
-	if us.GetUseHttp2() {
+	if us.GetUseHttp2().GetValue() {
 		return &envoycore.Http2ProtocolOptions{}
 	}
 	return nil

@@ -1,6 +1,8 @@
 package utils_test
 
 import (
+	"reflect"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/cluster"
 	envoycore_gloo "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/core"
@@ -24,6 +26,7 @@ var _ = Describe("UpdateUpstream", func() {
 			HealthChecks:       []*envoycore_gloo.HealthCheck{{}},
 			OutlierDetection:   &cluster.OutlierDetection{Consecutive_5Xx: &types.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}},
+			UseHttp2:           &types.BoolValue{Value: true},
 		}
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(original.SslConfig))
@@ -33,6 +36,7 @@ var _ = Describe("UpdateUpstream", func() {
 		Expect(desired.HealthChecks).To(Equal(original.HealthChecks))
 		Expect(desired.OutlierDetection).To(Equal(original.OutlierDetection))
 		Expect(desired.Failover).To(Equal(original.Failover))
+		Expect(desired.UseHttp2).To(Equal(original.UseHttp2))
 	})
 
 	It("should update config when one is desired", func() {
@@ -47,6 +51,7 @@ var _ = Describe("UpdateUpstream", func() {
 		desiredHealthChecks := []*envoycore_gloo.HealthCheck{{}}
 		desiredOutlierDetection := &cluster.OutlierDetection{Consecutive_5Xx: &types.UInt32Value{Value: 9}}
 		desiredFailover := &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}}}
+		desiredUseHttp2 := &types.BoolValue{Value: true}
 		desired := &gloov1.Upstream{
 			SslConfig:          desiredSslConfig,
 			CircuitBreakers:    desiredCircuitBreaker,
@@ -55,6 +60,7 @@ var _ = Describe("UpdateUpstream", func() {
 			HealthChecks:       desiredHealthChecks,
 			OutlierDetection:   desiredOutlierDetection,
 			Failover:           desiredFailover,
+			UseHttp2:           desiredUseHttp2,
 		}
 		original := &gloov1.Upstream{
 			SslConfig:          &gloov1.UpstreamSslConfig{Sni: "testsni"},
@@ -64,7 +70,9 @@ var _ = Describe("UpdateUpstream", func() {
 			HealthChecks:       []*envoycore_gloo.HealthCheck{{}, {}},
 			OutlierDetection:   &cluster.OutlierDetection{ConsecutiveGatewayFailure: &types.UInt32Value{Value: 9}},
 			Failover:           &gloov1.Failover{PrioritizedLocalities: []*gloov1.Failover_PrioritizedLocality{{}, {}}},
+			UseHttp2:           &types.BoolValue{Value: false},
 		}
+
 		utils.UpdateUpstream(original, desired)
 		Expect(desired.SslConfig).To(Equal(desiredSslConfig))
 		Expect(desired.CircuitBreakers).To(Equal(desiredCircuitBreaker))
@@ -73,6 +81,17 @@ var _ = Describe("UpdateUpstream", func() {
 		Expect(desired.HealthChecks).To(Equal(desiredHealthChecks))
 		Expect(desired.OutlierDetection).To(Equal(desiredOutlierDetection))
 		Expect(desired.Failover).To(Equal(desiredFailover))
+		Expect(desired.UseHttp2).To(Equal(desiredUseHttp2))
+	})
+
+	It("will fail if the upstream proto has a new top level field", func() {
+		// This test is important as it checks whether the upstream struct/proto have a new top level field.
+		// This should happen very rarely, and should be used as an indication that the `UpdateUpstream` function
+		// most likely needs to change.
+		Expect(reflect.TypeOf(gloov1.Upstream{}).NumField()).To(
+			Equal(15),
+			"wrong number of fields found",
+		)
 	})
 
 })

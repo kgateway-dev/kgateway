@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/test/helpers"
 
 	pb "github.com/envoyproxy/go-control-plane/envoy/service/ratelimit/v2"
@@ -82,7 +83,7 @@ var _ = Describe("Rate Limit", func() {
 					Name:      "rl-server",
 					Namespace: "default",
 				},
-				UseHttp2: true,
+				UseHttp2: &types.BoolValue{Value: true},
 				UpstreamType: &gloov1.Upstream_Static{
 					Static: &gloov1static.UpstreamSpec{
 						Hosts: []*gloov1static.Host{{
