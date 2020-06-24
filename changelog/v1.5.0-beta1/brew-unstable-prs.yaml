@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Stop opening PRs to homebrew-core for non-stable versions, which is disallowed per https://docs.brew.sh/Acceptable-Formulae#stable-versions.
+    issueLink: https://github.com/solo-io/gloo/issues/3178
