@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Placeholder to ensure changelog bot is expecting the right next version.
