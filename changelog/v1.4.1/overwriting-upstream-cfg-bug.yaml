@@ -1,0 +1,5 @@
+changelog:
+- type: FIX
+  description: >
+    Fix bug in UDS where Health Checks and Outlier Detection config are being overwritten by updated upstreams.
+  issueLink: https://github.com/solo-io/gloo/issues/3216

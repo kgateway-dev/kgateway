@@ -24,6 +24,12 @@ func UpdateUpstream(original, desired *v1.Upstream) {
 	if desired.Failover == nil {
 		desired.Failover = original.Failover
 	}
+	if len(desired.HealthChecks) == 0 {
+		desired.HealthChecks = original.HealthChecks
+	}
+	if desired.OutlierDetection == nil {
+		desired.OutlierDetection = original.OutlierDetection
+	}
 
 	if desiredSubsetMutator, ok := desired.UpstreamType.(v1.SubsetSpecMutator); ok {
 		if desiredSubsetMutator.GetSubsetSpec() == nil {
