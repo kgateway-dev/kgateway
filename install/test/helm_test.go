@@ -2,14 +2,12 @@ package test
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"html/template"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
-	"github.com/solo-io/go-utils/manifesttestutils"
 	"k8s.io/apimachinery/pkg/util/sets"
 
 	"github.com/gogo/protobuf/proto"
@@ -20,10 +18,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -67,19 +63,9 @@ func GetTestExtraEnvVar() v1.EnvVar {
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
-	var skRes *skres.Resource
-	Expect(json.Unmarshal(byt, &skRes)).NotTo(HaveOccurred())
-	res.SetMetadata(kubeutils.FromKubeMeta(skRes.ObjectMeta))
-	if withStatus, ok := res.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = skRes.Status
-		})
-	}
-	if skRes.Spec != nil {
-		if err := skprotoutils.UnmarshalMap(*skRes.Spec, res); err != nil {
-			Expect(err).NotTo(HaveOccurred())
-		}
-	}
+
+	err = skprotoutils.UnmarshalResource(byt, res)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 var _ = Describe("Helm Test", func() {
@@ -460,13 +446,6 @@ var _ = Describe("Helm Test", func() {
 						}
 						dep.Spec.Template.Annotations = statsAnnotations
 						dep.Spec.Template.Spec.ServiceAccountName = "gateway-proxy"
-
-						truez := true
-						defaultUser := int64(10101)
-						dep.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
-							RunAsUser:    &defaultUser,
-							RunAsNonRoot: &truez,
-						}
 						testManifest.ExpectDeploymentAppsV1(dep)
 						testManifest.ExpectService(svc)
 					})
@@ -2205,10 +2184,6 @@ metadata:
 									Labels: ingressPodLabels,
 								},
 								Spec: v1.PodSpec{
-									SecurityContext: &v1.PodSecurityContext{
-										RunAsUser:    pointer.Int64Ptr(10101),
-										RunAsNonRoot: pointer.BoolPtr(true),
-									},
 									Containers: []v1.Container{
 										{
 											Name: "ingress",
@@ -2248,75 +2223,6 @@ metadata:
 					testManifest.ExpectDeploymentAppsV1(glooDeploymentPostMerge)
 					testManifest.ExpectDeploymentAppsV1(ingressDeploymentPostMerge)
 				})
-			})
-
-			Describe("Deployment Privileges Test", func() {
-
-				// Helper func for testing pod & container root privileges logic
-				expectNonRoot := func(testManifest manifesttestutils.TestManifest) {
-					deployments := testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
-						return resource.GetKind() == "Deployment"
-					})
-
-					Expect(deployments.NumResources()).NotTo(BeZero())
-
-					deployments.ExpectAll(func(resource *unstructured.Unstructured) {
-						rawDeploy, err := resource.MarshalJSON()
-						Expect(err).NotTo(HaveOccurred())
-
-						deploy := appsv1.Deployment{}
-						err = json.Unmarshal(rawDeploy, &deploy)
-						Expect(err).NotTo(HaveOccurred())
-
-						Expect(deploy.Spec.Template).NotTo(BeNil())
-
-						podLevelSecurity := false
-						// Check for root at the pod level
-						if deploy.Spec.Template.Spec.SecurityContext != nil {
-							Expect(deploy.Spec.Template.Spec.SecurityContext.RunAsUser).NotTo(Equal(0))
-							podLevelSecurity = true
-						}
-
-						// Check for root at the container level
-						for _, container := range deploy.Spec.Template.Spec.Containers {
-							if !podLevelSecurity {
-								// If pod level security is not set, containers need to explicitly not be run as root
-								Expect(container.SecurityContext).NotTo(BeNil())
-								Expect(container.SecurityContext.RunAsUser).NotTo(Equal(0))
-							} else if container.SecurityContext != nil {
-								// If podLevel security is set to non-root, make sure containers don't override it:
-								Expect(container.SecurityContext.RunAsUser).NotTo(Equal(0))
-							}
-						}
-					})
-				}
-				Context("Gloo", func() {
-					Context("all cluster-scoped deployments", func() {
-						It("is running all deployments with non root user permissions by default", func() {
-
-							prepareMakefile(namespace, helmValues{})
-
-							expectNonRoot(testManifest)
-						})
-
-						It("is running all deployments with non root user permissions with knative, accessLogger, ingress, and mTLS enabled", func() {
-
-							prepareMakefile(namespace, helmValues{
-								valuesArgs: []string{
-									"gateway.enabled=false",
-									"settings.integrations.knative.enabled=true",
-									"settings.integrations.knative.version=v0.10.0",
-									"accessLogger.enabled=true",
-									"ingress.enabled=true",
-									"global.glooMtls.enabled=true",
-								},
-							})
-
-							expectNonRoot(testManifest)
-						})
-					})
-				})
-
 			})
 		})
 	}

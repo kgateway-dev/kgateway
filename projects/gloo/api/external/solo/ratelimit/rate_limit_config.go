@@ -88,4 +88,5 @@ func (r *RateLimitConfig) SetStatus(status core.Status) {
 
 	r.Status.State = outputState
 	r.Status.Message = status.Reason
+	r.Status.ObservedGeneration = r.Generation
 }
