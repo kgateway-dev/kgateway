@@ -102,8 +102,8 @@ var _ = Describe("Plugin", func() {
 		It("can copy over tcp plugin settings", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
+				Destination: &v1.TcpHost_TcpRouteAction{
+					Destination: &v1.TcpHost_TcpRouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
@@ -133,8 +133,8 @@ var _ = Describe("Plugin", func() {
 		It("can transform a single destination", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
+				Destination: &v1.TcpHost_TcpRouteAction{
+					Destination: &v1.TcpHost_TcpRouteAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
@@ -161,8 +161,8 @@ var _ = Describe("Plugin", func() {
 		It("can transform a multi destination", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Multi{
+				Destination: &v1.TcpHost_TcpRouteAction{
+					Destination: &v1.TcpHost_TcpRouteAction_Multi{
 						Multi: &v1.MultiDestination{
 							Destinations: wd,
 						},
@@ -195,8 +195,8 @@ var _ = Describe("Plugin", func() {
 			})
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_UpstreamGroup{
+				Destination: &v1.TcpHost_TcpRouteAction{
+					Destination: &v1.TcpHost_TcpRouteAction_UpstreamGroup{
 						UpstreamGroup: &core.ResourceRef{
 							Namespace: ns,
 							Name:      "one",
