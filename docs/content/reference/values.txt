@@ -369,6 +369,8 @@
 |ingress.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |ingress.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingress.deployment.image.pullSecret|string||image pull policy for the container |
+|ingress.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|ingress.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.customEnv[].name|string|||
 |ingress.deployment.customEnv[].value|string|||

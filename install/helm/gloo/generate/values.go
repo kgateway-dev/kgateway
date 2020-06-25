@@ -304,7 +304,9 @@ type Ingress struct {
 }
 
 type IngressDeployment struct {
-	Image *Image `json:"image,omitempty"`
+	Image          *Image  `json:"image,omitempty"`
+	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	*DeploymentSpec
 }
 
