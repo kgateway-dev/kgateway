@@ -160,7 +160,7 @@ Note: the destination spec and subsets are not supported in this context and wil
 "single": .gloo.solo.io.Destination
 "multi": .gloo.solo.io.MultiDestination
 "upstreamGroup": .core.solo.io.ResourceRef
-"forwardSniClusterName": .google.protobuf.BoolValue
+"forwardSniClusterName": .google.protobuf.Empty
 
 ```
 
@@ -169,7 +169,7 @@ Note: the destination spec and subsets are not supported in this context and wil
 | `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, or `forwardSniClusterName` can be set. |  |
 | `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, or `forwardSniClusterName` can be set. |  |
 | `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, or `forwardSniClusterName` can be set. |  |
-| `forwardSniClusterName` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Forwards the SNI name into the destination cluster https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |  |
+| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the SNI name into the destination cluster https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |  |
 
 
 

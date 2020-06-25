@@ -220,6 +220,30 @@ var _ = Describe("Plugin", func() {
 			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "two"})))
 			Expect(clusters.Clusters[1].Weight).To(Equal(uint32(1)))
 		})
+		It("can add the forward sni cluster name filter", func() {
+			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+				Name: "one",
+				Destination: &v1.TcpHost_TcpRouteAction{
+					Destination: &v1.TcpHost_TcpRouteAction_ForwardSniClusterName{
+						ForwardSniClusterName: &types.Empty{},
+					},
+				},
+				SslConfig: nil,
+			})
+			p := NewPlugin()
+			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filterChains).To(HaveLen(1))
+			Expect(filterChains[0].Filters).To(HaveLen(2))
+			Expect(filterChains[0].Filters[0].Name).To(Equal(SniFilter))
+
+			var cfg envoytcp.TcpProxy
+			err = translatorutil.ParseConfig(filterChains[0].Filters[1], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+			cluster, ok := cfg.GetClusterSpecifier().(*envoytcp.TcpProxy_Cluster)
+			Expect(ok).To(BeTrue(), "must be a single cluster type")
+			Expect(cluster.Cluster).To(Equal(""))
+		})
 	})
 
 })
