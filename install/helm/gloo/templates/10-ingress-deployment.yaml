@@ -30,11 +30,6 @@ spec:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress
-        securityContext:
-          runAsNonRoot: true
-          {{- if not .Values.ingress.deployment.floatingUserId }}
-          runAsUser: {{ printf "%.0f" (float64 .Values.ingress.deployment.runAsUser) -}}
-          {{- end }}
 {{- if .Values.ingress.deployment.resources }}
         resources:
 {{ toYaml .Values.ingress.deployment.resources | indent 10}}
