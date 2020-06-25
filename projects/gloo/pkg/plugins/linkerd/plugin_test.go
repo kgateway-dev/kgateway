@@ -3,8 +3,8 @@ package linkerd
 import (
 	"fmt"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"

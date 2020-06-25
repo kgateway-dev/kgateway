@@ -36,7 +36,7 @@ var _ = Describe("EnvoySnapshot", func() {
 		Expect(reflect.DeepEqual(untouched, clone)).To(BeTrue())
 
 		// Mutate the clone
-		clone.GetResources(xds.EndpointTypev2).Items[""].(*xds.EnvoyResource).ResourceProto().(*any.Any).Value = []byte("new_endpoint")
+		clone.GetResources(xds.EndpointType).Items[""].(*xds.EnvoyResource).ResourceProto().(*any.Any).Value = []byte("new_endpoint")
 
 		// Verify that original snapshot was not mutated
 		Expect(reflect.DeepEqual(toBeCloned, clone)).To(BeFalse())

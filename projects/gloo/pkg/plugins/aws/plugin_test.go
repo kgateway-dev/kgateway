@@ -1,10 +1,10 @@
 package aws
 
 import (
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	gogoproto "github.com/gogo/protobuf/proto"
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
@@ -28,7 +28,7 @@ var _ = Describe("Plugin", func() {
 		plugin      plugins.Plugin
 		upstream    *v1.Upstream
 		route       *v1.Route
-		out         *envoycluster.Cluster
+		out         *envoyapi.Cluster
 		outroute    *envoyroute.Route
 		lpe         *AWSLambdaProtocolExtension
 	)
@@ -83,7 +83,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}
 
-		out = &envoycluster.Cluster{}
+		out = &envoyapi.Cluster{}
 		outroute = &envoyroute.Route{
 			Action: &envoyroute.Route_Route{
 				Route: &envoyroute.RouteAction{
@@ -176,8 +176,8 @@ var _ = Describe("Plugin", func() {
 			upstream.UpstreamType = nil
 			err := plugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(out.TypedExtensionProtocolOptions).To(BeEmpty())
-			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(filterName))
+			Expect(out.ExtensionProtocolOptions).To(BeEmpty())
+			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 
 		})
 	})
@@ -195,7 +195,7 @@ var _ = Describe("Plugin", func() {
 		It("should process route", func() {
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).To(HaveKey(filterName))
+			Expect(outroute.PerFilterConfig).To(HaveKey(filterName))
 		})
 
 		It("should not process with no spec", func() {
@@ -203,7 +203,7 @@ var _ = Describe("Plugin", func() {
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(filterName))
+			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
 
 		It("should not process with a function mismatch", func() {
@@ -211,7 +211,7 @@ var _ = Describe("Plugin", func() {
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).To(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(filterName))
+			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
 
 		It("should not process with no spec", func() {
@@ -220,15 +220,15 @@ var _ = Describe("Plugin", func() {
 
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).NotTo(HaveKey(filterName))
+			Expect(outroute.PerFilterConfig).NotTo(HaveKey(filterName))
 		})
 
 		It("should process route with response transform", func() {
 			route.GetRouteAction().GetSingle().GetDestinationSpec().GetAws().ResponseTransformation = true
 			err := plugin.(plugins.RoutePlugin).ProcessRoute(plugins.RouteParams{VirtualHostParams: vhostParams}, route, outroute)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(outroute.TypedPerFilterConfig).To(HaveKey(filterName))
-			Expect(outroute.TypedPerFilterConfig).To(HaveKey(transformation.FilterName))
+			Expect(outroute.PerFilterConfig).To(HaveKey(filterName))
+			Expect(outroute.PerFilterConfig).To(HaveKey(transformation.FilterName))
 		})
 	})
 
@@ -283,9 +283,7 @@ var _ = Describe("Plugin", func() {
 			filters, err := plugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(1))
-			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
-			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-			err = types.UnmarshalAny(gogoTypedConfig, cfg)
+			err = conversion.StructToMessage(filters[0].HttpFilter.GetConfig(), cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 		}

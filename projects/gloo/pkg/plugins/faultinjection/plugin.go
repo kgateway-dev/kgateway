@@ -1,9 +1,9 @@
 package faultinjection
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoycommonfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/common/fault/v3"
-	envoyhttpfault "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/fault/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
+	envoyfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
@@ -34,7 +34,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(FilterName, pluginStage),
+		plugins.NewStagedFilter(FilterName, pluginStage),
 	}, nil
 }
 
@@ -57,38 +57,38 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName, markFilterConfigFunc)
 }
 
-func toEnvoyAbort(abort *fault.RouteAbort) *envoyhttpfault.FaultAbort {
+func toEnvoyAbort(abort *fault.RouteAbort) *envoyfault.FaultAbort {
 	if abort == nil {
 		return nil
 	}
 	percentage := common.ToEnvoyPercentage(abort.Percentage)
-	errorType := &envoyhttpfault.FaultAbort_HttpStatus{
+	errorType := &envoyfault.FaultAbort_HttpStatus{
 		HttpStatus: uint32(abort.HttpStatus),
 	}
-	return &envoyhttpfault.FaultAbort{
+	return &envoyfault.FaultAbort{
 		Percentage: percentage,
 		ErrorType:  errorType,
 	}
 }
 
-func toEnvoyDelay(delay *fault.RouteDelay) *envoycommonfault.FaultDelay {
+func toEnvoyDelay(delay *fault.RouteDelay) *v2.FaultDelay {
 	if delay == nil {
 		return nil
 	}
 	percentage := common.ToEnvoyPercentage(delay.Percentage)
-	delaySpec := &envoycommonfault.FaultDelay_FixedDelay{
+	delaySpec := &v2.FaultDelay_FixedDelay{
 		FixedDelay: gogoutils.DurationStdToProto(delay.FixedDelay),
 	}
-	return &envoycommonfault.FaultDelay{
+	return &v2.FaultDelay{
 		Percentage:         percentage,
 		FaultDelaySecifier: delaySpec,
 	}
 }
 
-func generateEnvoyConfigForHttpFault(routeAbort *fault.RouteAbort, routeDelay *fault.RouteDelay) *envoyhttpfault.HTTPFault {
+func generateEnvoyConfigForHttpFault(routeAbort *fault.RouteAbort, routeDelay *fault.RouteDelay) *envoyfault.HTTPFault {
 	abort := toEnvoyAbort(routeAbort)
 	delay := toEnvoyDelay(routeDelay)
-	return &envoyhttpfault.HTTPFault{
+	return &envoyfault.HTTPFault{
 		Abort: abort,
 		Delay: delay,
 	}

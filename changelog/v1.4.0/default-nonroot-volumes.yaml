@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Default gateway proxy to mount volumes as non-root.
+    issueLink: https://github.com/solo-io/gloo/issues/3084
+    resolvesIssue: false

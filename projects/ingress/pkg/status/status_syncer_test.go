@@ -117,7 +117,7 @@ var _ = Describe("StatusSyncer", func() {
 		})
 
 		kubeSvcClient := kube.CoreV1().Services(namespace)
-		svc, err := kubeSvcClient.Create(&kubev1.Service{
+		svc_def := kubev1.Service{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "dusty",
 				Namespace: namespace,
@@ -137,7 +137,17 @@ var _ = Describe("StatusSyncer", func() {
 				},
 				Type: kubev1.ServiceTypeLoadBalancer,
 			},
-		})
+			Status: kubev1.ServiceStatus{
+				LoadBalancer: kubev1.LoadBalancerStatus{
+					Ingress: []kubev1.LoadBalancerIngress{
+						{
+							Hostname: "hostname",
+						},
+					},
+				},
+			},
+		}
+		svc, err := kubeSvcClient.Create(&svc_def)
 		Expect(err).NotTo(HaveOccurred())
 
 		_, err = kube.CoreV1().Pods(namespace).Create(&kubev1.Pod{
@@ -163,8 +173,12 @@ var _ = Describe("StatusSyncer", func() {
 		svc, err = kubeSvcClient.Get(svc.Name, metav1.GetOptions{})
 		Expect(err).NotTo(HaveOccurred())
 
-		// note (ilackarms): unless running on a cloud provider that supports
-		// kube lb ingress, the status ips for the service and ingress will be empty
+		if len(svc.Status.LoadBalancer.Ingress) == 0 {
+			// kubernetes does set ingress lb, set service status explicitly instead
+			svc, err = kubeSvcClient.UpdateStatus(&svc_def)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
 		Eventually(func() ([]kubev1.LoadBalancerIngress, error) {
 			ing, err := kubeIngressClient.Get(kubeIng.Name, metav1.GetOptions{})
 			if err != nil {

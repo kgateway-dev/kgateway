@@ -8,10 +8,10 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/hashicorp/go-multierror"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
@@ -62,7 +62,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	return nil
 }
 
-func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoycluster.Cluster) error {
+func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
 	upstreamSpec, ok := in.UpstreamType.(*v1.Upstream_Aws)
 	if !ok {
 		// not ours
@@ -74,11 +74,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	lambdaHostname := getLambdaHostname(upstreamSpec.Aws)
 
 	// configure Envoy cluster routing info
-	out.ClusterDiscoveryType = &envoycluster.Cluster_Type{
-		Type: envoycluster.Cluster_LOGICAL_DNS,
+	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
+		Type: envoyapi.Cluster_LOGICAL_DNS,
 	}
 	// TODO(yuval-k): why do we need to make sure we use ipv4 only dns?
-	out.DnsLookupFamily = envoycluster.Cluster_V4_ONLY
+	out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	pluginutils.EnvoySingleEndpointLoadAssignment(out, lambdaHostname, 443)
 
 	tlsContext := &envoyauth.UpstreamTlsContext{
@@ -229,7 +229,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	filterconfig := &AWSLambdaConfig{UseDefaultCredentials: &types.BoolValue{Value: p.enableCredentialsDiscovey}}
-	f, err := pluginutils.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
+	f, err := plugins.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
 	if err != nil {
 		return nil, err
 	}

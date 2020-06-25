@@ -6,8 +6,9 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"go.opencensus.io/trace"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyendpoints "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -16,12 +17,12 @@ const SoloAnnotations = "io.solo.annotations"
 
 // Endpoints
 
-func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, reports reporter.ResourceReports) []*envoyendpoints.ClusterLoadAssignment {
+func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, reports reporter.ResourceReports) []*envoyapi.ClusterLoadAssignment {
 
 	_, span := trace.StartSpan(params.Ctx, "gloo.translator.computeClusterEndpoints")
 	defer span.End()
 
-	var clusterEndpointAssignments []*envoyendpoints.ClusterLoadAssignment
+	var clusterEndpointAssignments []*envoyapi.ClusterLoadAssignment
 	for _, upstream := range params.Snapshot.Upstreams {
 		clusterEndpoints := endpointsForUpstream(upstream, params.Snapshot.Endpoints)
 		// if there are any endpoints for this upstream, it's using eds and we need to create a load assignment for it
@@ -42,7 +43,7 @@ func (t *translatorInstance) computeClusterEndpoints(params plugins.Params, repo
 	return clusterEndpointAssignments
 }
 
-func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.Endpoint) *envoyendpoints.ClusterLoadAssignment {
+func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.Endpoint) *envoyapi.ClusterLoadAssignment {
 	clusterName := UpstreamToClusterName(upstream.Metadata.Ref())
 	var endpoints []*envoyendpoints.LbEndpoint
 	for _, addr := range clusterEndpoints {
@@ -77,7 +78,7 @@ func loadAssignmentForUpstream(upstream *v1.Upstream, clusterEndpoints []*v1.End
 		endpoints = append(endpoints, &lbEndpoint)
 	}
 
-	return &envoyendpoints.ClusterLoadAssignment{
+	return &envoyapi.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints: []*envoyendpoints.LocalityLbEndpoints{{
 			LbEndpoints: endpoints,

@@ -7,9 +7,9 @@ description: Produce an access log representing traffic passing through the prox
 A common use case for the API gateway is to produce an **access log** (sometimes referred to as an audit log). The entries of an access log represent traffic through the proxy. The access log entries can be customized to include 
 data from the request, the routing destination, and the response. The proxy can be configured to output multiple access logs with different configuration.
 
-An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a grpc server for custom handling. 
+An access log may be written locally to a file or the `stdout` pipe in the proxy container, or it can be exported to a gRPC server for custom handling.
 
-With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.  
+With Gloo (starting in `0.18.1`), access logs can be enabled and customized per Envoy listener by modifying the **Gateway** Custom Resource.
 
 ### Data Available for Logging
 
@@ -116,7 +116,7 @@ $ kubectl logs -n gloo-system deploy/gateway-proxy
 [2020-03-17T18:49:50.298Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 2 2 "-" "curl/7.54.0" "6fce19d1-63a9-438b-94ac-b4ec212b9027" "35.196.131.38" "10.52.0.54:8080"
 [2020-03-17T18:49:52.141Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 0 "-" "curl/7.54.0" "ff80348a-5b69-4485-ac73-73f3fe825532" "35.196.131.38" "10.52.0.54:8080"
 [2020-03-17T18:49:53.685Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 0 "-" "curl/7.54.0" "2a66949f-55e5-4dae-a03c-5f749ce4867c" "35.196.131.38" "10.52.0.54:8080"
-[2020-03-17T18:49:55.191Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "4a0013d3-f0e6-44b8-ad5f-fa181852e6cd" "35.196.131.38" "10.52.0.54:8080"```
+[2020-03-17T18:49:55.191Z] "GET /sample-route-1 HTTP/1.1" 200 - 0 86 1 1 "-" "curl/7.54.0" "4a0013d3-f0e6-44b8-ad5f-fa181852e6cd" "35.196.131.38" "10.52.0.54:8080"
 ```
 
 For more details about the Envoy string format, check out the [envoy docs](https://www.envoyproxy.io/docs/envoy/v1.10.0/configuration/access_log#config-access-log-format-strings). 
@@ -208,16 +208,16 @@ $ kubectl exec -n gloo-system -it deploy/gateway-proxy -- cat /dev/access-logs.j
 {"upstreamCluster":"default-petstore-8080_gloo-system","protocol":"HTTP/1.1","upstreamHost":"10.52.0.54:8080","duration":"1"}
 ```
 
-### GRPC Access Logging
+### gRPC Access Logging
 
 The previous section reviewed the different ways you can configure access logging to output to a file local to the 
-proxy container. Alternatively, it may be desirable to configure Envoy to emit access logs to a grpc endpoint. This would be
+proxy container. Alternatively, it may be desirable to configure Envoy to emit access logs to a gRPC endpoint. This would be
 a custom service deployed to your cluster that receives access log events and then does something with them - such 
-as writing them to a file in the access log grpc service container, or sending them to an enterprise logging backend.  
+as writing them to a file in the access log gRPC service container, or sending them to an enterprise logging backend.
 
-#### Deploying the open source GPRC access logger
+#### Deploying the open source gRPC access logger
 
-Open source Gloo includes an optional GRPC access log server implementation that can be turned on and deployed using 
+Open source Gloo includes an optional gRPC access log server implementation that can be turned on and deployed using
 the following helm values:
 
 ```yaml
@@ -294,7 +294,7 @@ The code for this server implementation is available [here](https://github.com/s
 
 #### Building a custom service
 
-If you are building a custom access logging grpc service, you will need get it deployed alongside Gloo. The Envoy 
+If you are building a custom access logging gRPC service, you will need get it deployed alongside Gloo. The Envoy
 config (that Gloo stores in `gateway-proxy-envoy-config`) will need to include a new static cluster pointing to your 
 custom access log server. Once you have a named static cluster in your envoy config, you can reference it in 
 your **gateway** CRD. 

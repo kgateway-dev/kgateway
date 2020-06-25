@@ -1,14 +1,14 @@
 package transformation_test
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/golang/protobuf/ptypes/any"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 )
 
@@ -16,7 +16,7 @@ var _ = Describe("Plugin", func() {
 	var (
 		p        *Plugin
 		t        *transformation.RouteTransformations
-		expected *any.Any
+		expected *structpb.Struct
 	)
 
 	BeforeEach(func() {
@@ -24,10 +24,10 @@ var _ = Describe("Plugin", func() {
 		t = &transformation.RouteTransformations{
 			ClearRouteCache: true,
 		}
-		configAny, err := pluginutils.MessageToAny(t)
+		configStruct, err := conversion.MessageToStruct(t)
 		Expect(err).NotTo(HaveOccurred())
 
-		expected = configAny
+		expected = configStruct
 	})
 
 	It("sets transformation config for weighted destinations", func() {
@@ -38,7 +38,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets transformation config for virtual hosts", func() {
 		out := &envoyroute.VirtualHost{}
@@ -48,7 +48,7 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 	It("sets transformation config for routes", func() {
 
@@ -59,6 +59,6 @@ var _ = Describe("Plugin", func() {
 			},
 		}, out)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(out.TypedPerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
+		Expect(out.PerFilterConfig).To(HaveKeyWithValue(FilterName, expected))
 	})
 })

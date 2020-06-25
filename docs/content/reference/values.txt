@@ -41,6 +41,7 @@
 |settings.integrations.knative.proxy.resources.requests.cpu|string||amount of CPUs|
 |settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
 |settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
@@ -220,6 +221,7 @@
 |gatewayProxies.NAME.podTemplate.runUnprivileged|bool||run envoy as an unprivileged user|
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
@@ -313,6 +315,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.runUnprivileged|bool|true|run envoy as an unprivileged user|
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|
@@ -430,6 +433,7 @@
 |ingressProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |ingressProxy.service.type|string|LoadBalancer|K8s service type|
 |ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
+|ingressProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
 |accessLogger.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |accessLogger.image.repository|string|access-logger|image name (repository) for the container.|

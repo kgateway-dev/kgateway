@@ -1,9 +1,9 @@
 package tracing
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tracing"
@@ -35,12 +35,12 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				HiddenEnvoyDeprecatedOperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
-				HiddenEnvoyDeprecatedRequestHeadersForTags: []string{"header1", "header2"},
-				ClientSampling:  &envoy_type.Percent{Value: 10},
-				RandomSampling:  &envoy_type.Percent{Value: 20},
-				OverallSampling: &envoy_type.Percent{Value: 30},
-				Verbose:         true,
+				OperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
+				RequestHeadersForTags: []string{"header1", "header2"},
+				ClientSampling:        &envoy_type.Percent{Value: 10},
+				RandomSampling:        &envoy_type.Percent{Value: 20},
+				OverallSampling:       &envoy_type.Percent{Value: 30},
+				Verbose:               true,
 			},
 		}
 		Expect(cfg).To(Equal(expected))
@@ -56,11 +56,11 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				HiddenEnvoyDeprecatedOperationName: envoyhttp.HttpConnectionManager_Tracing_INGRESS,
-				ClientSampling:                     &envoy_type.Percent{Value: 100},
-				RandomSampling:                     &envoy_type.Percent{Value: 100},
-				OverallSampling:                    &envoy_type.Percent{Value: 100},
-				Verbose:                            false,
+				OperationName:   envoyhttp.HttpConnectionManager_Tracing_INGRESS,
+				ClientSampling:  &envoy_type.Percent{Value: 100},
+				RandomSampling:  &envoy_type.Percent{Value: 100},
+				OverallSampling: &envoy_type.Percent{Value: 100},
+				Verbose:         false,
 			},
 		}
 		Expect(cfg).To(Equal(expected))

@@ -4,11 +4,10 @@ import (
 	"context"
 	"sort"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -50,7 +49,7 @@ type RouteActionParams struct {
 // the cluster to be edited before being sent to envoy via CDS
 type UpstreamPlugin interface {
 	Plugin
-	ProcessUpstream(params Params, in *v1.Upstream, out *envoycluster.Cluster) error
+	ProcessUpstream(params Params, in *v1.Upstream, out *envoyapi.Cluster) error
 }
 
 // Endpoint is called after the envoy ClusterLoadAssignment has been created for the input Upstream, and allows
@@ -58,7 +57,7 @@ type UpstreamPlugin interface {
 // If one wishes to also modify the corresponding envoy Cluster the above UpstreamPlugin interface should be used.
 type EndpointPlugin interface {
 	Plugin
-	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyendpoint.ClusterLoadAssignment) error
+	ProcessEndpoints(params Params, in *v1.Upstream, out *envoyapi.ClusterLoadAssignment) error
 }
 
 /*
@@ -88,7 +87,7 @@ type WeightedDestinationPlugin interface {
 
 type ListenerPlugin interface {
 	Plugin
-	ProcessListener(params Params, in *v1.Listener, out *envoylistener.Listener) error
+	ProcessListener(params Params, in *v1.Listener, out *envoyapi.Listener) error
 }
 
 type ListenerFilterPlugin interface {
@@ -251,5 +250,5 @@ func RelativeToStage(wellKnown WellKnownFilterStage, weight int) FilterStage {
 */
 type ClusterGeneratorPlugin interface {
 	Plugin
-	GeneratedClusters(params Params) ([]*envoycluster.Cluster, error)
+	GeneratedClusters(params Params) ([]*envoyapi.Cluster, error)
 }

@@ -1,0 +1,9 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Stop opening PRs to homebrew-core for non-stable versions, which is disallowed per https://docs.brew.sh/Acceptable-Formulae#stable-versions.
+    issueLink: https://github.com/solo-io/gloo/issues/3178
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: go-utils
+    dependencyTag: v0.16.1
+    description: Update go-utils to version 0.16.1, which includes non-user-facing fixes to Go package layouts and our release scripts.

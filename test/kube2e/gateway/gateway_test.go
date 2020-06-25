@@ -477,7 +477,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, time.Second*10).Should(And(HaveOccurred(), MatchError(ContainSubstring("could not render proxy"))))
 
 				// disable strict validation
-				helpers.UpdateAlwaysAcceptSetting(testHelper.InstallNamespace, true)
+				UpdateAlwaysAcceptSetting(true)
 
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
@@ -494,7 +494,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// important that we update the always accept setting after removing resources, or else we can have:
 				// "validation is disabled due to an invalid resource which has been written to storage.
 				// Please correct any Rejected resources to re-enable validation."
-				helpers.UpdateAlwaysAcceptSetting(testHelper.InstallNamespace, false)
+				UpdateAlwaysAcceptSetting(false)
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -650,7 +650,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			var vs *gatewayv1.VirtualService
 			BeforeEach(func() {
 
-				helpers.UpdateSettings(testHelper.InstallNamespace, func(settings *gloov1.Settings) {
+				UpdateSettings(func(settings *gloov1.Settings) {
 					Expect(settings.Gloo).NotTo(BeNil())
 					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
 					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
@@ -685,7 +685,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			AfterEach(func() {
 				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
 
-				helpers.UpdateSettings(testHelper.InstallNamespace, func(settings *gloov1.Settings) {
+				UpdateSettings(func(settings *gloov1.Settings) {
 					Expect(settings.Gloo).NotTo(BeNil())
 					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
 					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false

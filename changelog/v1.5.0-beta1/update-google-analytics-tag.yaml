@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update the google analytics tag on docs.solo.io subdomain
+    issueLink: https://github.com/solo-io/gloo/issues/3180

@@ -7,9 +7,10 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoylistener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
@@ -20,7 +21,7 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoylistener.Listener {
+func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
 
 	validateListenerPorts(proxy, listenerReport)
@@ -51,7 +52,7 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 		}
 	}
 
-	out := &envoylistener.Listener{
+	out := &envoyapi.Listener{
 		Name: listener.Name,
 		Address: &envoycore.Address{
 			Address: &envoycore.Address_SocketAddress{

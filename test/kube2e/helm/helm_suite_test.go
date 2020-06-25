@@ -8,13 +8,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/solo-io/go-utils/log"
+
+	"github.com/solo-io/gloo/test/kube2e"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/solo-io/gloo/test/helpers"
+
+	"github.com/solo-io/go-utils/testutils/helper"
+
+	"github.com/solo-io/go-utils/testutils"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/solo-io/gloo/test/helpers"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/go-utils/testutils"
-	"github.com/solo-io/go-utils/testutils/helper"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
@@ -33,29 +40,10 @@ func TestHelm(t *testing.T) {
 	RunSpecs(t, "Helm Suite")
 }
 
-const (
-	helmValues = `
-global:
-  image:
-    pullPolicy: IfNotPresent
-  glooRbac:
-    namespaced: true
-    nameSuffix: e2e-test-rbac-suffix
-settings:
-  singleNamespace: true
-  create: true
-gloo:
-  deployment:
-    disableUsageStatistics: true
-`
-)
-
 var testHelper *helper.SoloTestHelper
 
 var _ = BeforeSuite(StartTestHelper)
-var _ = AfterSuite(func() {
-	helpers.TearDownTestHelper(testHelper)
-})
+var _ = AfterSuite(TearDownTestHelper)
 
 func StartTestHelper() {
 	cwd, err := os.Getwd()
@@ -73,7 +61,7 @@ func StartTestHelper() {
 
 	// Register additional fail handlers
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, "knative-serving", testHelper.InstallNamespace))
-	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile(helmValues)
+	valueOverrideFile, cleanupFunc := kube2e.GetHelmValuesOverrideFile()
 	defer cleanupFunc()
 
 	// install gloo with helm
@@ -88,6 +76,14 @@ func StartTestHelper() {
 	// Check that everything is OK
 	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "40s")
 
+}
+
+func TearDownTestHelper() {
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }
 
 func runAndCleanCommand(name string, arg ...string) []byte {

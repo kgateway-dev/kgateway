@@ -3,7 +3,7 @@ package utils
 import (
 	"errors"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 )
 
 var (

@@ -1,7 +1,7 @@
 package basicroute
 
 import (
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -122,7 +122,7 @@ func applyHostRewrite(in *v1.Route, out *envoyroute.Route) error {
 	}
 	switch rewriteType := hostRewriteType.(type) {
 	case *v1.RouteOptions_HostRewrite:
-		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewriteLiteral{HostRewriteLiteral: rewriteType.HostRewrite}
+		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_HostRewrite{HostRewrite: rewriteType.HostRewrite}
 	case *v1.RouteOptions_AutoHostRewrite:
 		routeAction.Route.HostRewriteSpecifier = &envoyroute.RouteAction_AutoHostRewrite{
 			AutoHostRewrite: gogoutils.BoolGogoToProto(rewriteType.AutoHostRewrite),

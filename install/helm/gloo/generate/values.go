@@ -38,7 +38,7 @@ type Namespace struct {
 }
 
 type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a
 cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
@@ -258,6 +258,7 @@ type GatewayProxyPodTemplate struct {
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser        float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup          float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 }
 
 type GatewayProxyService struct {
@@ -329,6 +330,7 @@ type ServiceSpec struct {
 type Service struct {
 	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
+	LoadBalancerIP   string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 }
 
 type IngressProxyConfigMap struct {

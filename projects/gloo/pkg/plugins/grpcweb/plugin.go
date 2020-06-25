@@ -1,7 +1,6 @@
 package grpcweb
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -53,6 +52,6 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(util.GRPCWeb, pluginStage),
+		plugins.NewStagedFilter(util.GRPCWeb, pluginStage),
 	}, nil
 }

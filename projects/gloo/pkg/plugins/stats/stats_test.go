@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"

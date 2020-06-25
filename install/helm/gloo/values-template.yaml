@@ -92,6 +92,7 @@ gatewayProxies:
       httpPort: 8080
       httpsPort: 8443
       runAsUser: 10101
+      fsGroup: 10101
       runUnprivileged: true
       disableNetBind: true
     service:

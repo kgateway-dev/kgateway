@@ -32,7 +32,7 @@ HUGO_VERSION := 0.69.2
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	git -C themes/hugo-theme-soloio checkout 31d95780b1a7ce0263a64c7ba22409825df5eaaf
+	git -C themes/hugo-theme-soloio checkout 654684e74999c6e388564598c371854b4fad01a1
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 

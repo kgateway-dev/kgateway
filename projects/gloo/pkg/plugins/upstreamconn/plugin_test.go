@@ -5,8 +5,8 @@ import (
 
 	"github.com/gogo/protobuf/types"
 
-	envoycluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -23,10 +23,10 @@ var _ = Describe("Plugin", func() {
 		params   plugins.Params
 		plugin   *Plugin
 		upstream *v1.Upstream
-		out      *envoycluster.Cluster
+		out      *envoyapi.Cluster
 	)
 	BeforeEach(func() {
-		out = new(envoycluster.Cluster)
+		out = new(envoyapi.Cluster)
 
 		params = plugins.Params{}
 		upstream = &v1.Upstream{}

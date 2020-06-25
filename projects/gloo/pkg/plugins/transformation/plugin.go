@@ -3,7 +3,7 @@ package transformation
 import (
 	"context"
 
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -78,7 +78,7 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(FilterName, pluginStage),
+		plugins.NewStagedFilter(FilterName, pluginStage),
 	}, nil
 }
 
