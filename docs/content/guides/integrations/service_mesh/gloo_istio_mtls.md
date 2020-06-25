@@ -15,16 +15,6 @@ This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, 1.5.1, and 1.6.0.
 
 This guide was tested with Gloo v1.3.1 except where noted.
 
-{{% notice note %}}
-Please note that for Gloo versions 1.1.x and up, you must disable function discovery before editing the upstream:
-
-```bash
-kubectl label namespace default discovery.solo.io/function_discovery=disabled
-```
-
-This prevents your upstream changes from being overwritten by Gloo.
-{{% /notice %}}
-
 ### Kubernetes versions
 
 This guide was tested with GKE v1.15.
@@ -113,6 +103,12 @@ kubectl edit deploy/gateway-proxy -n gloo-system
 Edit the Upstream with this command:
 ```bash
 kubectl edit upstream default-productpage-9080 --namespace gloo-system
+```
+
+For Gloo versions 1.1.x and up, you must disable function discovery before editing the Upstream to prevent your change from being overwritten by Gloo:
+
+```bash
+kubectl label namespace default discovery.solo.io/function_discovery=disabled
 ```
 
 To test this out, we need a route in Gloo:
