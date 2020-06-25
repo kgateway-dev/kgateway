@@ -253,12 +253,12 @@ func (m *TcpHost) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	if h, ok := interface{}(m.GetDestination()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetSslConfig()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetDestination(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetSslConfig(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -267,12 +267,12 @@ func (m *TcpHost) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	if h, ok := interface{}(m.GetSslConfig()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetDestination()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetSslConfig(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetDestination(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
