@@ -108,7 +108,7 @@ func (p *Plugin) tcpProxyFilters(
 		return nil, err
 	}
 	switch dest := host.GetDestination().GetDestination().(type) {
-	case *v1.TcpHost_TcpRouteAction_Single:
+	case *v1.TcpHost_TcpAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
 		if err != nil {
 			return nil, err
@@ -116,7 +116,7 @@ func (p *Plugin) tcpProxyFilters(
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: translatorutil.UpstreamToClusterName(*usRef),
 		}
-	case *v1.TcpHost_TcpRouteAction_Multi:
+	case *v1.TcpHost_TcpAction_Multi:
 		wc, err := p.convertToWeightedCluster(dest.Multi)
 		if err != nil {
 			return nil, err
@@ -124,7 +124,7 @@ func (p *Plugin) tcpProxyFilters(
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_WeightedClusters{
 			WeightedClusters: wc,
 		}
-	case *v1.TcpHost_TcpRouteAction_UpstreamGroup:
+	case *v1.TcpHost_TcpAction_UpstreamGroup:
 		upstreamGroupRef := dest.UpstreamGroup
 		upstreamGroup, err := params.Snapshot.UpstreamGroups.Find(upstreamGroupRef.Namespace, upstreamGroupRef.Name)
 		if err != nil {
@@ -141,7 +141,7 @@ func (p *Plugin) tcpProxyFilters(
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_WeightedClusters{
 			WeightedClusters: wc,
 		}
-	case *v1.TcpHost_TcpRouteAction_ForwardSniClusterName:
+	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		// Pass an empty cluster as it will be overwritten by SNI Cluster
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: "",

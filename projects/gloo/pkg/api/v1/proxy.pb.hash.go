@@ -943,7 +943,7 @@ func (m *DirectResponseAction) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *TcpHost_TcpRouteAction) Hash(hasher hash.Hash64) (uint64, error) {
+func (m *TcpHost_TcpAction) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
 	}
@@ -951,13 +951,13 @@ func (m *TcpHost_TcpRouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 		hasher = fnv.New64()
 	}
 	var err error
-	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.TcpHost_TcpRouteAction")); err != nil {
+	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.TcpHost_TcpAction")); err != nil {
 		return 0, err
 	}
 
 	switch m.Destination.(type) {
 
-	case *TcpHost_TcpRouteAction_Single:
+	case *TcpHost_TcpAction_Single:
 
 		if h, ok := interface{}(m.GetSingle()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
@@ -973,7 +973,7 @@ func (m *TcpHost_TcpRouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *TcpHost_TcpRouteAction_Multi:
+	case *TcpHost_TcpAction_Multi:
 
 		if h, ok := interface{}(m.GetMulti()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
@@ -989,7 +989,7 @@ func (m *TcpHost_TcpRouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *TcpHost_TcpRouteAction_UpstreamGroup:
+	case *TcpHost_TcpAction_UpstreamGroup:
 
 		if h, ok := interface{}(m.GetUpstreamGroup()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
@@ -1005,7 +1005,7 @@ func (m *TcpHost_TcpRouteAction) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
-	case *TcpHost_TcpRouteAction_ForwardSniClusterName:
+	case *TcpHost_TcpAction_ForwardSniClusterName:
 
 		if h, ok := interface{}(m.GetForwardSniClusterName()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {

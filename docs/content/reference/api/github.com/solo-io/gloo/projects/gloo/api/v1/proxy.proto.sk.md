@@ -15,7 +15,7 @@ weight: 5
 - [Listener](#listener)
 - [TcpListener](#tcplistener)
 - [TcpHost](#tcphost)
-- [TcpRouteAction](#tcprouteaction)
+- [TcpAction](#tcpaction)
 - [HttpListener](#httplistener)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
@@ -135,7 +135,7 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 
 ```yaml
 "name": string
-"destination": .gloo.solo.io.TcpHost.TcpRouteAction
+"destination": .gloo.solo.io.TcpHost.TcpAction
 "sslConfig": .gloo.solo.io.SslConfig
 
 ```
@@ -143,14 +143,14 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the tcp host. names must be unique for each tcp host within a listener. |  |
-| `destination` | [.gloo.solo.io.TcpHost.TcpRouteAction](../proxy.proto.sk/#tcprouteaction) |  |  |
+| `destination` | [.gloo.solo.io.TcpHost.TcpAction](../proxy.proto.sk/#tcpaction) |  |  |
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
 
 
 
 
 ---
-### TcpRouteAction
+### TcpAction
 
  
 Name of the destinations the gateway can route to.

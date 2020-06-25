@@ -619,17 +619,17 @@ func ValidateRouteDestinations(snap *v1.ApiSnapshot, action *v1.RouteAction) err
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations' or 'upstreamGroup' for action")
 }
 
-func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpRouteAction) error {
+func ValidateTcpRouteDestinations(snap *v1.ApiSnapshot, action *v1.TcpHost_TcpAction) error {
 	upstreams := snap.Upstreams
 	// make sure the destination itself has the right structure
 	switch dest := action.Destination.(type) {
-	case *v1.TcpHost_TcpRouteAction_Single:
+	case *v1.TcpHost_TcpAction_Single:
 		return validateSingleDestination(upstreams, dest.Single)
-	case *v1.TcpHost_TcpRouteAction_Multi:
+	case *v1.TcpHost_TcpAction_Multi:
 		return validateMultiDestination(upstreams, dest.Multi.Destinations)
-	case *v1.TcpHost_TcpRouteAction_UpstreamGroup:
+	case *v1.TcpHost_TcpAction_UpstreamGroup:
 		return validateUpstreamGroup(snap, dest.UpstreamGroup)
-	case *v1.TcpHost_TcpRouteAction_ForwardSniClusterName:
+	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		return nil
 	}
 	return errors.Errorf("must specify either 'singleDestination', 'multipleDestinations', 'upstreamGroup' or 'forwardSniClusterName' for action")
