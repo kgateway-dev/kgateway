@@ -910,6 +910,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			_, err = kubeClient.CoreV1().Services(testHelper.InstallNamespace).Update(gwSvc)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(httpEcho.Terminate()).NotTo(HaveOccurred())
+			kubeClient.CoreV1().Services(testHelper.InstallNamespace).Delete(helper.HttpEchoName, &metav1.DeleteOptions{})
 		})
 
 		It("correctly routes to the service (tcp)", func() {
@@ -921,7 +922,10 @@ var _ = Describe("Kube2e: gateway", func() {
 						Single: &gloov1.Destination{
 							DestinationType: &gloov1.Destination_Kube{
 								Kube: &gloov1.KubernetesServiceDestination{
-									Ref:  *usRef,
+									Ref: core.ResourceRef{
+										Name:      helper.HttpEchoName,
+										Namespace: testHelper.InstallNamespace,
+									},
 									Port: uint32(helper.HttpEchoPort),
 								},
 							},
@@ -972,8 +976,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				return eris.Errorf("proxy did not contain expected route")
 			}, "15s", "0.5s").Should(BeNil())
 
-			responseString := fmt.Sprintf("Connected to %s",
-				gatewayProxy)
+			responseString := fmt.Sprintf(`"hostname":"%s"`, gatewayProxy)
 
 			httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
 				Protocol:          "http",
@@ -984,7 +987,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, responseString, 1, 30*time.Second)
 		})
 
-		FIt("correctly routes to the service (tcp/tls)", func() {
+		It("correctly routes to the service (tcp/tls)", func() {
 			// Create secret to use for ssl routing
 			createdSecret, err := kubeClient.CoreV1().Secrets(testHelper.InstallNamespace).Create(helpers.GetKubeSecret("secret", testHelper.InstallNamespace))
 			Expect(err).NotTo(HaveOccurred())
@@ -1043,8 +1046,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				return nil
 			}, "15s", "0.5s").ShouldNot(BeNil())
 
-			responseString := fmt.Sprintf("Connected to %s",
-				gatewayProxy)
+			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(*usRef))
 
 			httpEcho.CurlEventuallyShouldOutput(helper.CurlOpts{
 				Protocol:          "https",

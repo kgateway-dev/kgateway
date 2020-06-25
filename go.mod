@@ -51,7 +51,7 @@ require (
 	github.com/sergi/go-diff v1.0.0
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.16.1
+	github.com/solo-io/go-utils v0.16.2
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/solo-kit v0.13.8
@@ -122,5 +122,3 @@ replace (
 	k8s.io/sample-controller => k8s.io/sample-controller v0.17.1
 	k8s.io/utils => k8s.io/utils v0.0.0-20190801114015-581e00157fb1
 )
-
-replace github.com/solo-io/go-utils => /Users/eitanya/src/solo-io/go-utils

@@ -94,8 +94,6 @@ func (p *Plugin) tcpProxyFilters(
 	cfg := &envoytcp.TcpProxy{
 		StatPrefix: statPrefix,
 	}
-	// Will be set to true if Sni Filter is necessary
-	var sniClusterCfg bool
 
 	if plugins != nil {
 		if tcpSettings := plugins.GetTcpProxySettings(); tcpSettings != nil {
@@ -107,6 +105,7 @@ func (p *Plugin) tcpProxyFilters(
 	if err := translatorutil.ValidateTcpRouteDestinations(params.Snapshot, host.GetDestination()); err != nil {
 		return nil, err
 	}
+	var filters []*envoylistener.Filter
 	switch dest := host.GetDestination().GetDestination().(type) {
 	case *v1.TcpHost_TcpAction_Single:
 		usRef, err := usconversion.DestinationToUpstreamRef(dest.Single)
@@ -146,22 +145,19 @@ func (p *Plugin) tcpProxyFilters(
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: "",
 		}
-		sniClusterCfg = true
+		// append empty sni-forward-filter to pass the SNI name to the cluster field above
+		//
+		filters = append(filters, &envoylistener.Filter{
+			Name: SniFilter,
+		})
 	default:
 		return nil, NoDestinationTypeError(host)
 	}
-	var filters []*envoylistener.Filter
+
 	tcpFilter, err := translatorutil.NewFilterWithConfig(util.TCPProxy, cfg)
 	if err != nil {
 		return nil, err
 	}
-	if sniClusterCfg {
-		// if sniClusterCfg append empty sniFilter
-		filters = append(filters, &envoylistener.Filter{
-			Name: SniFilter,
-		})
-	}
-	// Always append TCP filter after sni filter
 	filters = append(filters, tcpFilter)
 
 	return filters, nil
