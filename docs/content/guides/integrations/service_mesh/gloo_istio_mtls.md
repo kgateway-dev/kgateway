@@ -16,11 +16,13 @@ This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, 1.5.1, and 1.6.0.
 This guide was tested with Gloo v1.3.1 except where noted.
 
 {{% notice note %}}
-Please note that for Gloo versions 1.1.x and up, you must run:
+Please note that for Gloo versions 1.1.x and up, you must disable function discovery before editing the upstream:
 
-`kubectl label namespace default discovery.solo.io/function_discovery=disabled`
+```bash
+kubectl label namespace default discovery.solo.io/function_discovery=disabled
+```
 
-before editing the Upstream. This prevents your changes from being overwritten.
+This prevents your upstream changes from being overwritten by Gloo.
 {{% /notice %}}
 
 ### Kubernetes versions
