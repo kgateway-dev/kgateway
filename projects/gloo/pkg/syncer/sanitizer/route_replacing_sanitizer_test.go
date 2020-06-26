@@ -8,6 +8,7 @@ import (
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )

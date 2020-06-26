@@ -8,9 +8,9 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"go.uber.org/zap"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
