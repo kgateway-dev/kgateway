@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"os"
 	"os/exec"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/golang/protobuf/ptypes/any"
 

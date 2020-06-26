@@ -2,8 +2,9 @@ package ratelimit
 
 import (
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"time"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
