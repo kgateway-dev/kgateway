@@ -1024,14 +1024,14 @@ var _ = Describe("Kube2e: gateway", func() {
 			}, "15s", "0.5s").Should(Not(BeNil()))
 
 			// wait for the expected proxy configuration to be accepted
-			Eventually(func() *types.Empty {
+			Eventually(func() (*types.Empty, error) {
 				proxy, err := proxyClient.Read(testHelper.InstallNamespace, defaults.GatewayProxyName, clients.ReadOpts{Ctx: ctx})
 				if err != nil {
-					return nil
+					return nil, err
 				}
 
 				if status := proxy.Status; status.State != core.Status_Accepted {
-					return nil
+					return nil, eris.New("proxy not in accepted state")
 				}
 
 				for _, l := range proxy.Listeners {
@@ -1041,11 +1041,11 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 					for _, tcph := range tcpListener.TcpHosts {
 						if action := tcph.GetDestination(); action != nil {
-							return action.GetForwardSniClusterName()
+							return action.GetForwardSniClusterName(), nil
 						}
 					}
 				}
-				return nil
+				return nil, eris.New("proxy has no active listeners")
 			}, "15s", "0.5s").ShouldNot(BeNil())
 
 			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(*usRef))
