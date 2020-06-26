@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Add `glooctl` install instructions to dev portal docs.
+  issueLink: https://github.com/solo-io/gloo/issues/3146
