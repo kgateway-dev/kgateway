@@ -858,7 +858,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				Protocol:   "TCP",
 			}
 
-			initializeGateway = func(host *gloov1.TcpHost) {
+			initializeTcpGateway = func(host *gloov1.TcpHost) {
 				defaultGateway = defaults.DefaultTcpGateway(testHelper.InstallNamespace)
 				tcpGateway := defaultGateway.GetTcpGateway()
 				Expect(tcpGateway).NotTo(BeNil())
@@ -934,7 +934,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				},
 			}
 
-			initializeGateway(host)
+			initializeTcpGateway(host)
 
 			// wait for default gateway to be created
 			Eventually(func() *gatewayv1.Gateway {
@@ -1008,12 +1008,14 @@ var _ = Describe("Kube2e: gateway", func() {
 							Namespace: createdSecret.GetNamespace(),
 						},
 					},
-					// force http1, as defaulting to 2 fails
+					// Force http1, as defaulting to 2 fails. The service in question is an http1 service, but as this
+					// is a standard TCP connection envoy does not know that, so it must rely on ALPN to figure that out.
+					// However, by default the ALPN is set to []string{"h2", "http/1.1"} which favors http2.
 					AlpnProtocols: []string{"http/1.1"},
 				},
 			}
 
-			initializeGateway(host)
+			initializeTcpGateway(host)
 
 			// wait for default gateway to be created
 			Eventually(func() *gatewayv1.Gateway {

@@ -114,7 +114,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 
 			p := NewPlugin()
@@ -145,7 +144,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -168,7 +166,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -203,7 +200,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -228,7 +224,6 @@ var _ = Describe("Plugin", func() {
 						ForwardSniClusterName: &types.Empty{},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -236,6 +231,8 @@ var _ = Describe("Plugin", func() {
 			Expect(filterChains).To(HaveLen(1))
 			Expect(filterChains[0].Filters).To(HaveLen(2))
 			Expect(filterChains[0].Filters[0].Name).To(Equal(SniFilter))
+			Expect(filterChains[0].Filters[0].GetConfig()).To(BeNil())
+			Expect(filterChains[0].Filters[0].GetTypedConfig()).To(BeNil())
 
 			var cfg envoytcp.TcpProxy
 			err = translatorutil.ParseConfig(filterChains[0].Filters[1], &cfg)

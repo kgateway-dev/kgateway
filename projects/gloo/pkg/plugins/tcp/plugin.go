@@ -146,7 +146,6 @@ func (p *Plugin) tcpProxyFilters(
 			Cluster: "",
 		}
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
-		//
 		filters = append(filters, &envoylistener.Filter{
 			Name: SniFilter,
 		})
