@@ -34,7 +34,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(FilterName, pluginStage),
+		pluginutils.NewStagedFilter(FilterName, pluginStage),
 	}, nil
 }
 

@@ -1,6 +1,7 @@
 package extauth
 
 import (
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"strings"
 	"time"
 
@@ -52,7 +53,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
+	stagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}

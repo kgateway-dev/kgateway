@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"time"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -107,7 +108,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
+	customStagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {
 		return nil, err
 	}

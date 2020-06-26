@@ -4,6 +4,7 @@ package wasm
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"net/http"
 	"os"
 	"strings"
@@ -112,7 +113,7 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 	}
 
 	pluginStage := TransformWasmFilterStage(wasmFilter.GetFilterStage())
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, filterCfg, pluginStage)
+	stagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, filterCfg, pluginStage)
 	if err != nil {
 		return nil, err
 	}
