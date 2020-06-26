@@ -21,7 +21,7 @@ The Gloo Developer Portal can be installed as part of Gloo Enterprise by providi
 value during your installation or upgrade process. Please refer to the Gloo Enterprise [installation guide](https://docs.solo.io/gloo/latest/installation/enterprise/) 
 for more details on the various installation options.
 
-You can install Gloo Enterprise with the Developer Portal either via `helm` via `gloooctl`:
+You can install Gloo Enterprise with the Developer Portal either via `helm` or via `gloooctl`:
 
 {{< tabs >}}
 {{% tab name="helm" %}}
