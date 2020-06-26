@@ -1,8 +1,9 @@
 package plugins
 
 import (
-	"github.com/golang/protobuf/ptypes/any"
 	"sort"
+
+	"github.com/golang/protobuf/ptypes/any"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"

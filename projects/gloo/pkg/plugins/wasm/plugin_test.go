@@ -2,8 +2,9 @@ package wasm
 
 import (
 	"fmt"
-	"github.com/gogo/protobuf/types"
 	"os"
+
+	"github.com/gogo/protobuf/types"
 
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"

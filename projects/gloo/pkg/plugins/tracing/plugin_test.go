@@ -37,10 +37,10 @@ var _ = Describe("Plugin", func() {
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
 				HiddenEnvoyDeprecatedOperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				HiddenEnvoyDeprecatedRequestHeadersForTags: []string{"header1", "header2"},
-				ClientSampling:        &envoy_type.Percent{Value: 10},
-				RandomSampling:        &envoy_type.Percent{Value: 20},
-				OverallSampling:       &envoy_type.Percent{Value: 30},
-				Verbose:               true,
+				ClientSampling:  &envoy_type.Percent{Value: 10},
+				RandomSampling:  &envoy_type.Percent{Value: 20},
+				OverallSampling: &envoy_type.Percent{Value: 30},
+				Verbose:         true,
 			},
 		}
 		Expect(cfg).To(Equal(expected))

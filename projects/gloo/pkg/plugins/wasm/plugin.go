@@ -4,11 +4,12 @@ package wasm
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
