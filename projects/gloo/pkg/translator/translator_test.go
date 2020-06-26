@@ -192,8 +192,8 @@ var _ = Describe("Translator", func() {
 				TcpListener: &v1.TcpListener{
 					TcpHosts: []*v1.TcpHost{
 						{
-							Destination: &v1.RouteAction{
-								Destination: &v1.RouteAction_Single{
+							Destination: &v1.TcpHost_TcpAction{
+								Destination: &v1.TcpHost_TcpAction_Single{
 									Single: &v1.Destination{
 										DestinationType: &v1.Destination_Upstream{
 											Upstream: &core.ResourceRef{

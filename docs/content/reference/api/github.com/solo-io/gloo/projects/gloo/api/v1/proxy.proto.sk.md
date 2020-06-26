@@ -15,6 +15,7 @@ weight: 5
 - [Listener](#listener)
 - [TcpListener](#tcplistener)
 - [TcpHost](#tcphost)
+- [TcpAction](#tcpaction)
 - [HttpListener](#httplistener)
 - [VirtualHost](#virtualhost)
 - [Route](#route)
@@ -134,16 +135,41 @@ e.g. performing SSL termination, HTTP retries, and rate limiting.
 
 ```yaml
 "name": string
-"destination": .gloo.solo.io.RouteAction
 "sslConfig": .gloo.solo.io.SslConfig
+"destination": .gloo.solo.io.TcpHost.TcpAction
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `name` | `string` | the logical name of the tcp host. names must be unique for each tcp host within a listener. |  |
-| `destination` | [.gloo.solo.io.RouteAction](../proxy.proto.sk/#routeaction) | Name of the destinations the gateway can route to. Note: the destination spec and subsets are not supported in this context and will be ignored. |  |
 | `sslConfig` | [.gloo.solo.io.SslConfig](../ssl.proto.sk/#sslconfig) | If provided, the Gateway will serve TLS/SSL traffic for this set of routes. |  |
+| `destination` | [.gloo.solo.io.TcpHost.TcpAction](../proxy.proto.sk/#tcpaction) |  |  |
+
+
+
+
+---
+### TcpAction
+
+ 
+Name of the destinations the gateway can route to.
+Note: the destination spec and subsets are not supported in this context and will be ignored.
+
+```yaml
+"single": .gloo.solo.io.Destination
+"multi": .gloo.solo.io.MultiDestination
+"upstreamGroup": .core.solo.io.ResourceRef
+"forwardSniClusterName": .google.protobuf.Empty
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `single` | [.gloo.solo.io.Destination](../proxy.proto.sk/#destination) | Use SingleDestination to route to a single upstream. Only one of `single`, `multi`, or `forwardSniClusterName` can be set. |  |
+| `multi` | [.gloo.solo.io.MultiDestination](../proxy.proto.sk/#multidestination) | Use MultiDestination to load balance requests between multiple upstreams (by weight). Only one of `multi`, `single`, or `forwardSniClusterName` can be set. |  |
+| `upstreamGroup` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | Use a reference to an upstream group for routing. Only one of `upstreamGroup`, `single`, or `forwardSniClusterName` can be set. |  |
+| `forwardSniClusterName` | [.google.protobuf.Empty](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/empty) | Forwards the SNI name into the destination cluster https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster. Only one of `forwardSniClusterName`, `single`, or `upstreamGroup` can be set. |  |
 
 
 

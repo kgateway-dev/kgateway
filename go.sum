@@ -1013,8 +1013,8 @@ github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1
 github.com/solo-io/go-utils v0.11.0/go.mod h1:R8lbLuLtMaTOhD+6wGpdxj60r1Vwt63fHe1UxlObHig=
 github.com/solo-io/go-utils v0.11.7/go.mod h1:D5lbi4EyIMq+T5gzjJacu0Ou4Z1brL7g2YYYYgYBJso=
 github.com/solo-io/go-utils v0.13.0/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
-github.com/solo-io/go-utils v0.14.1 h1:V61dGoFiM2XKUMl+PdQAteXAXn2Ra98Dal5qSO9uKxk=
-github.com/solo-io/go-utils v0.14.1/go.mod h1:pA8kwWDNlJueffTcC1BYddTerO8zpUUGl5/7JGeC5iU=
+github.com/solo-io/go-utils v0.16.2 h1:h5UOA2BQ32R4prHL7FV19vsrHZvICnhsqgY0/ok9et0=
+github.com/solo-io/go-utils v0.16.2/go.mod h1:uIPAgEuwiEwpBaFv1uI7j4CUVaFYR5iHmTYuIUlLY2Q=
 github.com/solo-io/protoc-gen-ext v0.0.7 h1:s9uFGtAoSsXL7vukWKPgofkxzHUeje7m6+0C3rYA2fU=
 github.com/solo-io/protoc-gen-ext v0.0.7/go.mod h1:zZIFs9Ch3EU3uQgL2ZwCHlUGAtwiz4Cbw6tBcmaNsEk=
 github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4tPthhnYko=
