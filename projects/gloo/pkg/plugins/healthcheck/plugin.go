@@ -6,7 +6,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -53,7 +53,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		}},
 	}
 
-	healthCheckFilter, err := pluginutils.NewStagedFilterWithConfig(util.HealthCheck, hc, pluginStage)
+	healthCheckFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.HealthCheck, hc, pluginStage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "generating filter config")
 	}

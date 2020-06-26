@@ -21,7 +21,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 )
 
 type EnvoyResource struct {
@@ -125,7 +125,7 @@ func (e *EnvoyResource) References() []cache.XdsResourceReference {
 		// extract route configuration names from HTTP connection manager
 		for _, chain := range v.FilterChains {
 			for _, filter := range chain.Filters {
-				if filter.Name != util.HTTPConnectionManager {
+				if filter.Name != wellknown.HTTPConnectionManager {
 					continue
 				}
 
@@ -189,7 +189,7 @@ func GetResourceReferences(resources map[string]cache.Resource) map[string]bool 
 			// extract route configuration names from HTTP connection manager
 			for _, chain := range v.FilterChains {
 				for _, filter := range chain.Filters {
-					if filter.Name != util.HTTPConnectionManager {
+					if filter.Name != wellknown.HTTPConnectionManager {
 						continue
 					}
 

@@ -16,7 +16,7 @@ import (
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"go.uber.org/zap"
 )
 
@@ -153,7 +153,7 @@ func (p *Plugin) tcpProxyFilters(
 		return nil, NoDestinationTypeError(host)
 	}
 
-	tcpFilter, err := translatorutil.NewFilterWithConfig(util.TCPProxy, cfg)
+	tcpFilter, err := translatorutil.NewFilterWithConfig(wellknown.TCPProxy, cfg)
 	if err != nil {
 		return nil, err
 	}

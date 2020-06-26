@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -38,7 +38,7 @@ var _ = Describe("Plugin", func() {
 		)
 
 		var checkConfig = func(al *envoyal.AccessLog) {
-			Expect(al.Name).To(Equal(util.HTTPGRPCAccessLog))
+			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
 			var falCfg envoyalcfg.HttpGrpcAccessLogConfig
 			err := translatorutil.ParseConfig(al, &falCfg)
 			Expect(err).NotTo(HaveOccurred())
@@ -102,7 +102,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			filters := []*envoylistener.Filter{{
-				Name: util.HTTPConnectionManager,
+				Name: wellknown.HTTPConnectionManager,
 			}}
 
 			outl := &envoyapi.Listener{
@@ -135,7 +135,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			filters := []*envoylistener.Filter{{
-				Name: util.TCPProxy,
+				Name: wellknown.TCPProxy,
 			}}
 
 			outl := &envoyapi.Listener{
@@ -182,7 +182,7 @@ var _ = Describe("Plugin", func() {
 		Context("string", func() {
 
 			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(util.FileAccessLog))
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
@@ -218,7 +218,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.HTTPConnectionManager,
+					Name: wellknown.HTTPConnectionManager,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -251,7 +251,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.TCPProxy,
+					Name: wellknown.TCPProxy,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -277,7 +277,7 @@ var _ = Describe("Plugin", func() {
 
 		Context("json", func() {
 			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(util.FileAccessLog))
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
@@ -313,7 +313,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.HTTPConnectionManager,
+					Name: wellknown.HTTPConnectionManager,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -346,7 +346,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.TCPProxy,
+					Name: wellknown.TCPProxy,
 				}}
 
 				outl := &envoyapi.Listener{

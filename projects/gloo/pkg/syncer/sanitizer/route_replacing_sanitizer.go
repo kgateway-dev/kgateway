@@ -9,7 +9,7 @@ import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
@@ -96,7 +96,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 			},
 		},
 		HttpFilters: []*v2.HttpFilter{{
-			Name: util.Router,
+			Name: wellknown.Router,
 		}},
 	}
 
@@ -116,7 +116,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 		},
 		FilterChains: []*listener.FilterChain{{
 			Filters: []*listener.Filter{{
-				Name: util.HTTPConnectionManager,
+				Name: wellknown.HTTPConnectionManager,
 				ConfigType: &listener.Filter_TypedConfig{
 					TypedConfig: typedHcmConfig,
 				},

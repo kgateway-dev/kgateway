@@ -3,6 +3,7 @@ package gzip_test
 import (
 	envoygzip "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/gzip/v2"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -37,7 +38,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.gzip",
+					Name: wellknown.Gzip,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: pluginutils.MustMessageToAny(&envoygzip.Gzip{
 							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
