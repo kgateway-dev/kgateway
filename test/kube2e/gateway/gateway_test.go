@@ -1046,7 +1046,7 @@ var _ = Describe("Kube2e: gateway", func() {
 					}
 				}
 				return nil, eris.New("proxy has no active listeners")
-			}, "15s", "0.5s").ShouldNot(BeNil())
+			}, "15s", "0.5s").Should(Equal(&types.Empty{}))
 
 			responseString := fmt.Sprintf(`"hostname":"%s"`, translator.UpstreamToClusterName(*usRef))
 
