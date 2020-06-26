@@ -4,6 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
@@ -15,7 +16,7 @@ import (
 )
 
 const (
-	FilterName = "envoy.fault"
+	FilterName = wellknown.Fault
 )
 
 var pluginStage = plugins.DuringStage(plugins.FaultStage)

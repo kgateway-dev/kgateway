@@ -2,6 +2,7 @@ package ratelimit
 
 import (
 	"fmt"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
@@ -23,7 +24,7 @@ const (
 	customStage    = 1
 	DefaultTimeout = 100 * time.Millisecond
 
-	FilterName = "envoy.rate_limit"
+	FilterName = wellknown.RateLimit
 )
 
 var (

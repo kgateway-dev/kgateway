@@ -1,6 +1,7 @@
 package static
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"net"
 
 	"fmt"
@@ -112,7 +113,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				Sni: hostname,
 			}
 			out.TransportSocket = &envoycore.TransportSocket{
-				Name:       pluginutils.TlsTransportSocket,
+				Name:       wellknown.TransportSocketTls,
 				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 			}
 		}

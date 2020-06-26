@@ -229,7 +229,7 @@ func (p *Plugin) newSslFilterChain(
 		},
 		Filters: listenerFiltersCopy,
 		TransportSocket: &envoycore.TransportSocket{
-			Name:       pluginutils.TlsTransportSocket,
+			Name:       wellknown.TransportSocketTls,
 			ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(downstreamConfig)},
 		},
 		UseProxyProto: gogoutils.BoolGogoToProto(useProxyProto),

@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"os"
 	"os/exec"
 
@@ -87,7 +88,7 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 									ConfigType: &v34.Filter_TypedConfig{
 										TypedConfig: hcmAny,
 									},
-									Name: "envoy.http_connection_manager",
+									Name: wellknown.HTTPConnectionManager,
 								},
 							},
 						},

@@ -5,6 +5,7 @@ import (
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -31,7 +32,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoyhcm.HttpFilter{
-					Name: "envoy.filters.http.buffer",
+					Name: wellknown.Buffer,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
 						TypedConfig: pluginutils.MustMessageToAny(&envoybuffer.Buffer{
 							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},

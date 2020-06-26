@@ -1,6 +1,7 @@
 package buffer
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -16,7 +17,7 @@ import (
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-const FilterName = "envoy.filters.http.buffer"
+const FilterName = wellknown.Buffer
 
 func NewPlugin() *Plugin {
 	return &Plugin{}

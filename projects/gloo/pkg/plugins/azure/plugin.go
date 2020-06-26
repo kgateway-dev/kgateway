@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/go-utils/contextutils"
@@ -67,7 +68,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Sni: hostname,
 	}
 	out.TransportSocket = &envoycore.TransportSocket{
-		Name:       pluginutils.TlsTransportSocket,
+		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 	}
 
