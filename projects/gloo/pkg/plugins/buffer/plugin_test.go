@@ -2,17 +2,18 @@ package buffer_test
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoybuffer "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/buffer/v3"
+	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/types"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/buffer/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
 var _ = Describe("Plugin", func() {
@@ -29,18 +30,12 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
-				HttpFilter: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter{
+				HttpFilter: &envoyhcm.HttpFilter{
 					Name: "envoy.filters.http.buffer",
-					ConfigType: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter_Config{
-						Config: &structpb.Struct{
-							Fields: map[string]*structpb.Value{
-								"maxRequestBytes": {
-									Kind: &structpb.Value_NumberValue{
-										NumberValue: 2048.000000,
-									},
-								},
-							},
-						},
+					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
+						TypedConfig: pluginutils.MustMessageToAny(&envoybuffer.Buffer{
+							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
+						}),
 					},
 				},
 				Stage: plugins.FilterStage{

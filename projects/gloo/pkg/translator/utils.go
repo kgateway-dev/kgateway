@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
@@ -43,6 +44,27 @@ func NewFilterWithConfig(name string, config proto.Message) (*envoylistener.Filt
 
 		s.ConfigType = &envoylistener.Filter_Config{
 			Config: marshalledConf,
+		}
+	}
+
+	return s, nil
+}
+
+func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener.Filter, error) {
+
+	s := &envoylistener.Filter{
+		Name: name,
+	}
+
+	if config != nil {
+		marshalledConf, err := pluginutils.MessageToAny(config)
+		if err != nil {
+			// this should NEVER HAPPEN!
+			return &envoylistener.Filter{}, err
+		}
+
+		s.ConfigType = &envoylistener.Filter_TypedConfig{
+			TypedConfig: marshalledConf,
 		}
 	}
 
@@ -100,5 +122,17 @@ func ParseConfig(c configObject, config proto.Message) error {
 
 type configObject interface {
 	GetConfig() *structpb.Struct
+	GetTypedConfig() *any.Any
+}
+
+func ParseTypedConfig(c typedConfigObject, config proto.Message) error {
+	any := c.GetTypedConfig()
+	if any != nil {
+		return ptypes.UnmarshalAny(any, config)
+	}
+	return nil
+}
+
+type typedConfigObject interface {
 	GetTypedConfig() *any.Any
 }

@@ -50,7 +50,7 @@ import (
 	. "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1plugins "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
@@ -801,7 +801,9 @@ var _ = Describe("Translator", func() {
 
 			// get http filters
 			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			originalHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			typedConfig, err := pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			originalHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 
 			By("add the upstreams and compare the new version and http filters")
 
@@ -818,7 +820,9 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			upstreamsHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			upstreamsHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
 
 			// reset modified global variables
@@ -839,7 +843,9 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			flipOrderHttpFilters := hcmFilter.GetConfigType().(*envoylistener.Filter_Config).Config.Fields["http_filters"].GetListValue().Values
+			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			Expect(err).NotTo(HaveOccurred())
+			flipOrderHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
 		})
 

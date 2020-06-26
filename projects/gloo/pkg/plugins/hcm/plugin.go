@@ -4,8 +4,8 @@ import (
 	"context"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -76,7 +76,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 				}
 
-				fc.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &cfg)
+				fc.Filters[i], err = translatorutil.NewFilterWithTypedConfig(util.HTTPConnectionManager, &cfg)
 				// this should never error
 				if err != nil {
 					return err

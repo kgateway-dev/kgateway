@@ -2,6 +2,7 @@ package wasm
 
 import (
 	"fmt"
+	"github.com/gogo/protobuf/types"
 	"os"
 
 	"github.com/golang/mock/gomock"
@@ -9,7 +10,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/opencontainers/go-digest"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
@@ -105,9 +105,10 @@ var _ = Describe("wasm plugin", func() {
 		f, err := p.HttpFilters(plugins.Params{}, hl)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(f).To(HaveLen(1))
-		typedConfig := f[0].HttpFilter.GetConfig()
+		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
+		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
 		var pc config.WasmService
-		Expect(protoutils.UnmarshalStruct(typedConfig, &pc)).NotTo(HaveOccurred())
+		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
