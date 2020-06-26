@@ -6,7 +6,8 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoyalv2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyutil "github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -65,6 +66,26 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener
 		}
 
 		s.ConfigType = &envoylistener.Filter_TypedConfig{
+			TypedConfig: marshalledConf,
+		}
+	}
+
+	return s, nil
+}
+
+func NewAccessLogv2WithConfig(name string, config proto.Message) (envoyalv2.AccessLog, error) {
+	s := envoyalv2.AccessLog{
+		Name: name,
+	}
+
+	if config != nil {
+		marshalledConf, err := golangptypes.MarshalAny(config)
+		if err != nil {
+			// this should NEVER HAPPEN!
+			return envoyalv2.AccessLog{}, err
+		}
+
+		s.ConfigType = &envoyalv2.AccessLog_TypedConfig{
 			TypedConfig: marshalledConf,
 		}
 	}
