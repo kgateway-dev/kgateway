@@ -10,6 +10,7 @@ import (
 	envoy_data_accesslog_v2 "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 	envoyals "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/gogo/protobuf/proto"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -66,7 +67,7 @@ var _ = Describe("Grpc Web", func() {
 							Name:      "grpc-service",
 							Namespace: "default",
 						},
-						UseHttp2: true,
+						UseHttp2: &types.BoolValue{Value: true},
 						UpstreamType: &gloov1.Upstream_Static{
 							Static: &static_plugin_gloo.UpstreamSpec{
 								Hosts: []*static_plugin_gloo.Host{

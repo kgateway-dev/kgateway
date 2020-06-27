@@ -69,6 +69,14 @@ spec:
         readconfig-port: "8082"
 {{- end}}
     spec:
+
+{{- if $spec.podTemplate.runUnprivileged }}
+      securityContext:
+        fsGroup: {{ printf "%.0f" (float64 $spec.podTemplate.fsGroup) }}
+        {{- if not $spec.podTemplate.floatingUserId }}
+        runAsUser: {{ printf "%.0f" (float64 $spec.podTemplate.runAsUser) -}}
+        {{- end}}
+{{- end}}
 {{- if $spec.kind.deployment }}
 {{- if $spec.antiAffinity }}
       affinity:
@@ -162,7 +170,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - localhost:19000/ready
+            - {{ $spec.loopBackAddress }}:19000/ready
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
@@ -172,7 +180,7 @@ spec:
             - wget
             - -O
             - /dev/null
-            - localhost:19000/server_info
+            - {{ $spec.loopBackAddress }}:19000/server_info
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10

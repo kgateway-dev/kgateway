@@ -21,13 +21,34 @@ The Gloo Developer Portal can be installed as part of Gloo Enterprise by providi
 value during your installation or upgrade process. Please refer to the Gloo Enterprise [installation guide](https://docs.solo.io/gloo/latest/installation/enterprise/) 
 for more details on the various installation options.
 
-To install Gloo Enterprise with the Developer Portal you can run:
+You can install Gloo Enterprise with the Developer Portal either via `helm` or via `gloooctl`:
 
-```yaml
+{{< tabs >}}
+{{% tab name="helm" %}}
+```shell script
 helm install glooe glooe/gloo-ee --namespace gloo-system \
   --set-string license_key=YOUR_LICENSE_KEY \
   --set devPortal.enabled=true
 ```
+{{% /tab %}}
+{{% tab name="glooctl" %}}
+
+First we need to create a values file:
+
+```shell script
+cat << EOF > values.yaml
+devPortal:
+  enabled: true
+EOF
+```
+
+Then we can install with the above values:
+
+```shell script
+glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY --values values.yaml
+```
+{{% /tab %}}
+{{< /tabs >}}
 
 If the installation was successful you should see the following when running `kubectl get pods -n gloo-system`:
 

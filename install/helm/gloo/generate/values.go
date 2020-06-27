@@ -38,7 +38,7 @@ type Namespace struct {
 }
 
 type Crds struct {
-	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a 
+	Create bool `json:"create" desc:"create CRDs for Gloo (turn off if installing with Helm to a
 cluster that already has Gloo CRDs). This field is deprecated and is included only to ensure backwards-compatibility with Helm 2."`
 }
 
@@ -96,10 +96,11 @@ type Knative struct {
 }
 
 type KnativeProxy struct {
-	Image     *Image  `json:"image,omitempty"`
-	HttpPort  int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing   *string `json:"tracing,omitempty" desc:"tracing configuration"`
+	Image           *Image  `json:"image,omitempty"`
+	HttpPort        int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort       int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing         *string `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress string  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	*DeploymentSpec
 	*ServiceSpec
 }
@@ -218,6 +219,7 @@ type GatewayProxy struct {
 	Stats                       *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
 	ReadConfig                  bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	ExtraProxyVolumeMountHelper string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
+	LoopBackAddress             string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -256,6 +258,7 @@ type GatewayProxyPodTemplate struct {
 	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
 	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser        float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup          float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 }
 
 type GatewayProxyService struct {
@@ -279,11 +282,13 @@ type Tracing struct {
 }
 
 type AccessLogger struct {
-	Image       *Image `json:"image,omitempty"`
-	Port        uint   `json:"port,omitempty"`
-	ServiceName string `json:"serviceName,omitempty"`
-	Enabled     bool   `json:"enabled"`
-	Stats       *Stats `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	Image       *Image  `json:"image,omitempty"`
+	Port        uint    `json:"port,omitempty"`
+	ServiceName string  `json:"serviceName,omitempty"`
+	Enabled     bool    `json:"enabled"`
+	Stats       *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	RunAsUser   float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup     float64 `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	*DeploymentSpec
 }
 
@@ -299,14 +304,17 @@ type Ingress struct {
 }
 
 type IngressDeployment struct {
-	Image *Image `json:"image,omitempty"`
+	Image          *Image  `json:"image,omitempty"`
+	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	*DeploymentSpec
 }
 
 type IngressProxy struct {
-	Deployment *IngressProxyDeployment `json:"deployment,omitempty"`
-	ConfigMap  *IngressProxyConfigMap  `json:"configMap,omitempty"`
-	Tracing    *string                 `json:"tracing,omitempty"`
+	Deployment      *IngressProxyDeployment `json:"deployment,omitempty"`
+	ConfigMap       *IngressProxyConfigMap  `json:"configMap,omitempty"`
+	Tracing         *string                 `json:"tracing,omitempty"`
+	LoopBackAddress string                  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	*ServiceSpec
 }
 
@@ -316,6 +324,8 @@ type IngressProxyDeployment struct {
 	HttpsPort        int               `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
 	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
+	FloatingUserId   bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser        float64           `json:"runAsUser" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
 	*DeploymentSpec
 }
 
@@ -326,6 +336,7 @@ type ServiceSpec struct {
 type Service struct {
 	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
+	LoadBalancerIP   string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 }
 
 type IngressProxyConfigMap struct {

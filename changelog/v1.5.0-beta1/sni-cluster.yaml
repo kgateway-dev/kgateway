@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3223
+  description: >
+    Add the envoy Upstream Cluster from SNI filter to the TCP proxy. This filter allows for the sni name of a tls request
+    to be used as the cluster name when routing requests through a TCP listener.

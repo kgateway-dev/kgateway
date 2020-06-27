@@ -4,7 +4,7 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-    name: gloo-role-ingress
+    name: gloo-role-ingress{{ include "gloo.rbacNameSuffix" . }}
     labels:
         app: gloo
         gloo: rbac
@@ -22,7 +22,7 @@ rules:
   resources: ["settings", "upstreams","upstreamgroups", "proxies","virtualservices", "routetables", "authconfigs"]
   verbs: ["*"]
 - apiGroups: ["extensions", ""]
-  resources: ["ingresses"]
+  resources: ["ingresses", "ingresses/status"]
   verbs: ["*"]
 {{- end -}}
 

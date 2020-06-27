@@ -60,7 +60,7 @@ var _ = Describe("UdsConvert", func() {
 				Port: 123,
 			}
 			up := createUpstream(context.TODO(), svc, port)
-			Expect(up.GetUseHttp2()).To(BeTrue())
+			Expect(up.GetUseHttp2().GetValue()).To(BeTrue())
 		})
 
 		DescribeTable("should create upstream with use_http2=true when port name starts with known prefix", func(portname string) {
@@ -75,7 +75,7 @@ var _ = Describe("UdsConvert", func() {
 				Name: portname,
 			}
 			up := createUpstream(context.TODO(), svc, port)
-			Expect(up.GetUseHttp2()).To(BeTrue())
+			Expect(up.GetUseHttp2().GetValue()).To(BeTrue())
 		},
 			Entry("exactly grpc", "grpc"),
 			Entry("prefix grpc", "grpc-test"),

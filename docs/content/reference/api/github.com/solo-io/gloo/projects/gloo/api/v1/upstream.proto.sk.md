@@ -42,7 +42,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "connectionConfig": .gloo.solo.io.ConnectionConfig
 "healthChecks": []envoy.api.v2.core.HealthCheck
 "outlierDetection": .envoy.api.v2.cluster.OutlierDetection
-"useHttp2": bool
+"useHttp2": .google.protobuf.BoolValue
 "kube": .kubernetes.options.gloo.solo.io.UpstreamSpec
 "static": .static.options.gloo.solo.io.UpstreamSpec
 "pipe": .pipe.options.gloo.solo.io.UpstreamSpec
@@ -65,7 +65,7 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `connectionConfig` | [.gloo.solo.io.ConnectionConfig](../connection.proto.sk/#connectionconfig) |  |  |
 | `healthChecks` | [[]envoy.api.v2.core.HealthCheck](../../external/envoy/api/v2/core/health_check.proto.sk/#healthcheck) |  |  |
 | `outlierDetection` | [.envoy.api.v2.cluster.OutlierDetection](../../external/envoy/api/v2/cluster/outlier_detection.proto.sk/#outlierdetection) |  |  |
-| `useHttp2` | `bool` | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |  |
+| `useHttp2` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use http2 when communicating with this upstream this field is evaluated `true` for upstreams with a grpc service spec. otherwise defaults to `false`. |  |
 | `kube` | [.kubernetes.options.gloo.solo.io.UpstreamSpec](../options/kubernetes/kubernetes.proto.sk/#upstreamspec) |  Only one of `kube`, `static`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
 | `static` | [.static.options.gloo.solo.io.UpstreamSpec](../options/static/static.proto.sk/#upstreamspec) |  Only one of `static`, `kube`, `pipe`, `aws`, `azure`, or `awsEc2` can be set. |  |
 | `pipe` | [.pipe.options.gloo.solo.io.UpstreamSpec](../options/pipe/pipe.proto.sk/#upstreamspec) |  Only one of `pipe`, `kube`, `static`, `aws`, `azure`, or `awsEc2` can be set. |  |

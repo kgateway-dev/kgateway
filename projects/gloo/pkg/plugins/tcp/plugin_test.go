@@ -102,8 +102,8 @@ var _ = Describe("Plugin", func() {
 		It("can copy over tcp plugin settings", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
@@ -114,7 +114,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 
 			p := NewPlugin()
@@ -133,8 +132,8 @@ var _ = Describe("Plugin", func() {
 		It("can transform a single destination", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Single{
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_Single{
 						Single: &v1.Destination{
 							DestinationType: &v1.Destination_Upstream{
 								Upstream: &core.ResourceRef{
@@ -145,7 +144,6 @@ var _ = Describe("Plugin", func() {
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -161,14 +159,13 @@ var _ = Describe("Plugin", func() {
 		It("can transform a multi destination", func() {
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_Multi{
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_Multi{
 						Multi: &v1.MultiDestination{
 							Destinations: wd,
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -195,15 +192,14 @@ var _ = Describe("Plugin", func() {
 			})
 			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
 				Name: "one",
-				Destination: &v1.RouteAction{
-					Destination: &v1.RouteAction_UpstreamGroup{
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_UpstreamGroup{
 						UpstreamGroup: &core.ResourceRef{
 							Namespace: ns,
 							Name:      "one",
 						},
 					},
 				},
-				SslConfig: nil,
 			})
 			p := NewPlugin()
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
@@ -219,6 +215,31 @@ var _ = Describe("Plugin", func() {
 			Expect(clusters.Clusters[0].Weight).To(Equal(uint32(5)))
 			Expect(clusters.Clusters[1].Name).To(Equal(translatorutil.UpstreamToClusterName(core.ResourceRef{Namespace: ns, Name: "two"})))
 			Expect(clusters.Clusters[1].Weight).To(Equal(uint32(1)))
+		})
+		It("can add the forward sni cluster name filter", func() {
+			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
+				Name: "one",
+				Destination: &v1.TcpHost_TcpAction{
+					Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
+						ForwardSniClusterName: &types.Empty{},
+					},
+				},
+			})
+			p := NewPlugin()
+			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filterChains).To(HaveLen(1))
+			Expect(filterChains[0].Filters).To(HaveLen(2))
+			Expect(filterChains[0].Filters[0].Name).To(Equal(SniFilter))
+			Expect(filterChains[0].Filters[0].GetConfig()).To(BeNil())
+			Expect(filterChains[0].Filters[0].GetTypedConfig()).To(BeNil())
+
+			var cfg envoytcp.TcpProxy
+			err = translatorutil.ParseConfig(filterChains[0].Filters[1], &cfg)
+			Expect(err).NotTo(HaveOccurred())
+			cluster, ok := cfg.GetClusterSpecifier().(*envoytcp.TcpProxy_Cluster)
+			Expect(ok).To(BeTrue(), "must be a single cluster type")
+			Expect(cluster.Cluster).To(Equal(""))
 		})
 	})
 

@@ -1080,8 +1080,8 @@ var _ = Describe("Translator", func() {
 			}
 			tcpHost = &gloov1.TcpHost{
 				Name: "host-one",
-				Destination: &gloov1.RouteAction{
-					Destination: &gloov1.RouteAction_UpstreamGroup{
+				Destination: &gloov1.TcpHost_TcpAction{
+					Destination: &gloov1.TcpHost_TcpAction_UpstreamGroup{
 						UpstreamGroup: &core.ResourceRef{
 							Namespace: ns,
 							Name:      "ug-name",

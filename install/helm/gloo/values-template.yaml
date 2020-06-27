@@ -18,6 +18,7 @@ settings:
       enabled: false
       version: "0.10.0"
       proxy:
+        loopBackAddress: 127.0.0.1
         image:
           repository: gloo-envoy-wrapper
         httpPort: 80
@@ -91,6 +92,9 @@ gatewayProxies:
       httpPort: 8080
       httpsPort: 8443
       runAsUser: 10101
+      fsGroup: 10101
+      runUnprivileged: true
+      disableNetBind: true
     service:
       type: LoadBalancer
       # clusterIP: None
@@ -102,12 +106,14 @@ gatewayProxies:
     tracing:
     configMap:
       data:
+    loopBackAddress: 127.0.0.1
 accessLogger:
   enabled: false
   port: 8083
   serviceName: AccessLog
   image:
     repository: access-logger
+  runAsUser: 10101
   replicas: 1
   stats:
     enabled: true
@@ -117,7 +123,9 @@ ingress:
     image:
       repository: ingress
     replicas: 1
+    runAsUser: 10101
 ingressProxy:
+  loopBackAddress: 127.0.0.1
   deployment:
     image:
       repository: gloo-envoy-wrapper
