@@ -394,7 +394,6 @@ Deprecated: Prefer OAuth2
 "appUrl": string
 "callbackPath": string
 "scopes": []string
-"accessTokenValidation": .enterprise.gloo.solo.io.AccessTokenValidation
 
 ```
 
@@ -407,7 +406,6 @@ Deprecated: Prefer OAuth2
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
-| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | optional configuration for validation of the access token received during the OIDC flow. |  |
 
 
 

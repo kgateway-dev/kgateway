@@ -263,8 +263,8 @@ message OidcAuthorizationCode {
   // Scopes to request in addition to openid scope.
   repeated string scopes = 7;
 
-  // optional configuration for validation of the access token received during the OIDC flow
-  AccessTokenValidation access_token_validation = 8;
+  // TODO(kdorosh) add optional configuration for validation of the access token received during the OIDC flow
+  // AccessTokenValidation access_token_validation = 8;
 }
 
 message AccessTokenValidation {
