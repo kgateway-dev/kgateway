@@ -408,7 +408,7 @@ message ExtAuthConfig {
     string client_id = 1;
 
     // your client secret as registered with the issuer
-    string client_secret = 2 [(gogoproto.moretags) = "logging:\"redact\"", deprecated=true];
+    string client_secret = 2 [(gogoproto.moretags) = "logging:\"redact\""];
 
     // The url of the issuer. We will look for OIDC information in issuerUrl+
     // ".well-known/openid-configuration"
