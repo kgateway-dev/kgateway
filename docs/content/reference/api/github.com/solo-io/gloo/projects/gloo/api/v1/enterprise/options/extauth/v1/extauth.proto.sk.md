@@ -36,6 +36,7 @@ weight: 5
 - [ConnectionPool](#connectionpool)
 - [ExtAuthConfig](#extauthconfig)
 - [OAuthConfig](#oauthconfig)
+- [OAuth2Config](#oauth2config)
 - [ApiKeyAuthConfig](#apikeyauthconfig)
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
@@ -581,7 +582,8 @@ is requested (meaning that all the polled connections are in use), the connectio
 ---
 ### OAuthConfig
 
-
+ 
+Deprecated, prefer OAuth2Config
 
 ```yaml
 "clientId": string
@@ -603,6 +605,25 @@ is requested (meaning that all the polled connections are in use), the connectio
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |
+
+
+
+
+---
+### OAuth2Config
+
+
+
+```yaml
+"oidcAuthorizationCode": .enterprise.gloo.solo.io.OidcAuthorizationCode
+"accessTokenValidation": .enterprise.gloo.solo.io.AccessTokenValidation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `oidcAuthorizationCode` | [.enterprise.gloo.solo.io.OidcAuthorizationCode](../extauth.proto.sk/#oidcauthorizationcode) | provide issuer location and let gloo handle OIDC flow for you. requests authorized by validating the contents of ID token. can also authorize the access token if configured. Only one of `oidcAuthorizationCode` or `accessTokenValidation` can be set. |  |
+| `accessTokenValidation` | [.enterprise.gloo.solo.io.AccessTokenValidation](../extauth.proto.sk/#accesstokenvalidation) | provide the access token on the request and let gloo handle authorization. according to https://tools.ietf.org/html/rfc6750 you can pass tokens through: - form-encoded body parameter. recommended, more likely to appear. e.g.: Authorization: Bearer mytoken123 - URI query parameter e.g. access_token=mytoken123 - and (preferably) secure cookies. Only one of `accessTokenValidation` or `oidcAuthorizationCode` can be set. |  |
 
 
 
