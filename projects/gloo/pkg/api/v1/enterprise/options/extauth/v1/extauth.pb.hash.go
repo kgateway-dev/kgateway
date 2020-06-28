@@ -1472,6 +1472,22 @@ func (m *ExtAuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		}
 
+	case *ExtAuthConfig_Config_Oauth2:
+
+		if h, ok := interface{}(m.GetOauth2()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetOauth2(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	case *ExtAuthConfig_Config_BasicAuth:
 
 		if h, ok := interface{}(m.GetBasicAuth()).(safe_hasher.SafeHasher); ok {

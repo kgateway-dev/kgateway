@@ -439,8 +439,13 @@ message ExtAuthConfig {
   }
 
   message Config {
+
+    // TODO(kdorosh) confirm these were removed?
+    reserved 1, 2;
+
     oneof auth_config {
       OAuthConfig oauth = 3;
+      OAuth2Config oauth2 = 9;
       BasicAuth basic_auth = 4;
       ApiKeyAuthConfig api_key_auth = 5;
       AuthPlugin plugin_auth = 6;

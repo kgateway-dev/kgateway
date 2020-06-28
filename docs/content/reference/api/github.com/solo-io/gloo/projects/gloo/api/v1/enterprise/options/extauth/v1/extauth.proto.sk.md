@@ -672,6 +672,7 @@ Deprecated, prefer OAuth2Config
 
 ```yaml
 "oauth": .enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig
+"oauth2": .enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config
 "basicAuth": .enterprise.gloo.solo.io.BasicAuth
 "apiKeyAuth": .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig
 "pluginAuth": .enterprise.gloo.solo.io.AuthPlugin
@@ -682,12 +683,13 @@ Deprecated, prefer OAuth2Config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `basicAuth`, `pluginAuth`, or `ldap` can be set. |  |
-| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
-| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `basicAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
+| `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `apiKeyAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig](../extauth.proto.sk/#apikeyauthconfig) |  Only one of `apiKeyAuth`, `oauth`, `oauth2`, `basicAuth`, `pluginAuth`, or `ldap` can be set. |  |
+| `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `opaAuth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OpaAuthConfig](../extauth.proto.sk/#opaauthconfig) |  Only one of `opaAuth`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, or `ldap` can be set. |  |
+| `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, or `opaAuth` can be set. |  |
 
 
 
