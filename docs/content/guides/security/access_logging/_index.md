@@ -274,9 +274,13 @@ spec:
             staticClusterName: access_log_cluster
 ```
 
+{{% notice note %}}
+You may want to add additional configuration for the {{% protobuf name="als.options.gloo.solo.io.GrpcService" display="GrpcService"%}} such as additional request headers to log so they can be accessed in the gRPC access logs.
+{{% /notice %}}
+
 This will cause requests to the HTTP port to be logged to standard out in the `gateway-proxy-access-logger` container:
 ```
-$ k logs -n gloo-system deploy/gateway-proxy-access-logger
+$ kubectl logs -n gloo-system deploy/gateway-proxy-access-logger
 ```
 
 ```
