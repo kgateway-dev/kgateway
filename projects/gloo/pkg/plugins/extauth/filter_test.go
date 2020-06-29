@@ -1,6 +1,7 @@
 package extauth_test
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"time"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -105,7 +106,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			// Should take config from http listener
 			Expect(filters[0].Stage.Weight).To(Equal(0))
 			Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
-			Expect(filters[0].HttpFilter.Name).To(Equal(FilterName))
+			Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.HTTPExternalAuthorization))
 		})
 	})
 
@@ -119,7 +120,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 
 		getExtAuthz := func(extAuthFilter plugins.StagedHttpFilter) *envoyauth.ExtAuthz {
 			ExpectWithOffset(1, extAuthFilter).NotTo(BeNil())
-			ExpectWithOffset(1, extAuthFilter.HttpFilter.Name).To(Equal(FilterName))
+			ExpectWithOffset(1, extAuthFilter.HttpFilter.Name).To(Equal(wellknown.HTTPExternalAuthorization))
 
 			filterConfig := &envoyauth.ExtAuthz{}
 			err := translator.ParseConfig(extAuthFilter.HttpFilter, filterConfig)

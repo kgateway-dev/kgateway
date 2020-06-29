@@ -2,6 +2,7 @@ package static
 
 import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -166,7 +167,7 @@ var _ = Describe("Plugin", func() {
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
 			out.TransportSocket = &envoycore.TransportSocket{
-				Name:       pluginutils.TlsTransportSocket,
+				Name:       wellknown.TransportSocketTls,
 				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(existing)},
 			}
 			upstreamSpec.UseTls = true

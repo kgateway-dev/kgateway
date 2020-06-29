@@ -8,7 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -86,7 +86,7 @@ var _ = Describe("Plugin", func() {
 		}
 
 		filters := []*envoylistener.Filter{{
-			Name: util.HTTPConnectionManager,
+			Name: wellknown.HTTPConnectionManager,
 		}}
 
 		outl := &envoyapi.Listener{
@@ -179,7 +179,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			filters = []*envoylistener.Filter{{
-				Name: util.HTTPConnectionManager,
+				Name: wellknown.HTTPConnectionManager,
 			}}
 
 			outl = &envoyapi.Listener{

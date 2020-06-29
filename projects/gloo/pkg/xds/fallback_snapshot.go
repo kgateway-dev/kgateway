@@ -7,6 +7,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -64,7 +65,7 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		},
 		HttpFilters: []*envoyhttpconnectionmanager.HttpFilter{
 			{
-				Name: "envoy.router",
+				Name: wellknown.Router,
 			},
 		},
 	}
@@ -90,7 +91,7 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		FilterChains: []*envoylistener.FilterChain{{
 			Filters: []*envoylistener.Filter{
 				{
-					Name:       "envoy.http_connection_manager",
+					Name:       wellknown.HTTPConnectionManager,
 					ConfigType: &envoylistener.Filter_Config{Config: pbst},
 				},
 			},

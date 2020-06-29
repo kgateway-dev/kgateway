@@ -3,16 +3,13 @@ package gzip
 import (
 	"github.com/rotisserie/eris"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
-
-const filterName = util.Gzip
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
@@ -36,7 +33,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	gzipFilter, err := plugins.NewStagedFilterWithConfig(filterName, gzipConfig, pluginStage)
+	gzipFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Gzip, gzipConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}

@@ -2,6 +2,7 @@ package gzip_test
 
 import (
 	envoy_config_filter_network_http_connection_manager_v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
@@ -35,7 +36,7 @@ var _ = Describe("Plugin", func() {
 		Expect(filters).To(Equal([]plugins.StagedHttpFilter{
 			plugins.StagedHttpFilter{
 				HttpFilter: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter{
-					Name: "envoy.gzip",
+					Name: wellknown.Gzip,
 					ConfigType: &envoy_config_filter_network_http_connection_manager_v2.HttpFilter_Config{
 						Config: &structpb.Struct{
 							Fields: map[string]*structpb.Value{

@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"net/url"
 	"unicode/utf8"
 
@@ -86,7 +87,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		Sni: lambdaHostname,
 	}
 	out.TransportSocket = &envoycore.TransportSocket{
-		Name:       pluginutils.TlsTransportSocket,
+		Name:       wellknown.TransportSocketTls,
 		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
 	}
 

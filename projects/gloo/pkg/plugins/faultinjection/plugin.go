@@ -4,6 +4,7 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/fault/v2"
 	envoyfault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	fault "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/faultinjection"
@@ -12,10 +13,6 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-)
-
-const (
-	FilterName = "envoy.fault"
 )
 
 var pluginStage = plugins.DuringStage(plugins.FaultStage)
@@ -34,7 +31,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(FilterName, pluginStage),
+		plugins.NewStagedFilter(wellknown.Fault, pluginStage),
 	}, nil
 }
 
@@ -54,7 +51,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 		return generateEnvoyConfigForHttpFault(routeAbort, routeDelay), nil
 	}
-	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName, markFilterConfigFunc)
+	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, wellknown.Fault, markFilterConfigFunc)
 }
 
 func toEnvoyAbort(abort *fault.RouteAbort) *envoyfault.FaultAbort {

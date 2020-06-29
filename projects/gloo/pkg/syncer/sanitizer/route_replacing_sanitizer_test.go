@@ -15,7 +15,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -133,7 +133,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 		listener = &envoyapi.Listener{
 			FilterChains: []*listener.FilterChain{{
 				Filters: []*listener.Filter{{
-					Name:       util.HTTPConnectionManager,
+					Name:       wellknown.HTTPConnectionManager,
 					ConfigType: config,
 				}},
 			}},

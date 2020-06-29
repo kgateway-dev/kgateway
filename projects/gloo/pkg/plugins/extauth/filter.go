@@ -1,6 +1,7 @@
 package extauth
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"strings"
 	"time"
 
@@ -52,7 +53,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := plugins.NewStagedFilterWithConfig(FilterName, extAuthCfg, FilterStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}

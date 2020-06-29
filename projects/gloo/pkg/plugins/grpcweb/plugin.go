@@ -1,8 +1,7 @@
 package grpcweb
 
 import (
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
-
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -52,6 +51,6 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(util.GRPCWeb, pluginStage),
+		plugins.NewStagedFilter(wellknown.GRPCWeb, pluginStage),
 	}, nil
 }
