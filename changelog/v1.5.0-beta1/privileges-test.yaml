@@ -1,0 +1,6 @@
+changelog:
+    - type: NON_USER_FACING
+      description: Add tests to ensure all deployments run as non-root users by default.
+      issueLink:  https://github.com/solo-io/gloo/issues/3084
+      resolvesIssue: false
+  

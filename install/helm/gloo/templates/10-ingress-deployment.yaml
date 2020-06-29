@@ -21,6 +21,11 @@ spec:
       labels:
         gloo: ingress
     spec:
+      securityContext:
+        runAsNonRoot: true
+        {{- if not .Values.ingress.deployment.floatingUserId }}
+        runAsUser: {{ printf "%.0f" (float64 .Values.ingress.deployment.runAsUser) -}}
+        {{- end }}
       containers:
       - image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}

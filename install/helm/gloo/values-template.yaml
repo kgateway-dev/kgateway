@@ -113,6 +113,7 @@ accessLogger:
   serviceName: AccessLog
   image:
     repository: access-logger
+  runAsUser: 10101
   replicas: 1
   stats:
     enabled: true
@@ -122,6 +123,7 @@ ingress:
     image:
       repository: ingress
     replicas: 1
+    runAsUser: 10101
 ingressProxy:
   loopBackAddress: 127.0.0.1
   deployment:

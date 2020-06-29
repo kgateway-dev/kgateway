@@ -6,6 +6,7 @@ gateway:
   enabled: false
 ingress:
   deployment:
+    runAsUser: 10101
     image:
       # This is where we override the ingress image
       registry: docker.io/ilackarms

@@ -53,7 +53,7 @@ require (
 	github.com/sergi/go-diff v1.0.0
 	github.com/solo-io/envoy-operator v0.1.1
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.15.2
+	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.5.0

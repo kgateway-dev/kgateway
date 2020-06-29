@@ -32,6 +32,11 @@ spec:
       {{- end }}
     spec:
       serviceAccountName: gateway-proxy
+      securityContext:
+        runAsNonRoot: true
+        {{- if not .Values.accessLogger.floatingUserId }}
+        runAsUser: {{ printf "%.0f" (float64 .Values.accessLogger.runAsUser) -}}
+        {{- end }}
       containers:
         - image: {{ template "gloo.image" $image }}
           imagePullPolicy: {{ $image.pullPolicy }}

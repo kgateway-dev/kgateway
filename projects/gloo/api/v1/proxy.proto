@@ -3,6 +3,7 @@ package gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1";
 
 import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
 import "google/protobuf/struct.proto";
 
 import "gogoproto/gogo.proto";
@@ -110,11 +111,34 @@ message TcpListener {
 message TcpHost {
     // the logical name of the tcp host. names must be unique for each tcp host within a listener
     string name = 1;
-    // Name of the destinations the gateway can route to.
-    // Note: the destination spec and subsets are not supported in this context and will be ignored.
-    RouteAction destination = 2;
+
+    reserved 2;
+
     // If provided, the Gateway will serve TLS/SSL traffic for this set of routes
     gloo.solo.io.SslConfig ssl_config = 3;
+
+    // Name of the destinations the gateway can route to.
+    // Note: the destination spec and subsets are not supported in this context and will be ignored.
+    message TcpAction {
+
+        oneof destination {
+
+            // Use SingleDestination to route to a single upstream
+            Destination single = 1;
+
+            // Use MultiDestination to load balance requests between multiple upstreams (by weight)
+            MultiDestination multi = 2;
+
+            // Use a reference to an upstream group for routing.
+            core.solo.io.ResourceRef upstream_group = 3;
+
+            // Forwards the SNI name into the destination cluster
+            // https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster
+            google.protobuf.Empty forward_sni_cluster_name = 4;
+        };
+    }
+
+    TcpAction destination = 4;
 }
 
 // Use this listener to configure proxy behavior for any HTTP-level features including defining routes (via virtual services).
