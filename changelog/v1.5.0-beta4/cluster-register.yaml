@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add cluster registration to glooctl to integrate Gloo with multicluster control planes.
+    issueLink: TODO
