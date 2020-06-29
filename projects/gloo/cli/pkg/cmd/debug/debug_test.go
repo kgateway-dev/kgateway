@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	installcmd "github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/install"
@@ -39,9 +40,14 @@ var _ = Describe("Debug", func() {
 		It("should create a tar file at location specified in --file when --zip is enabled", func() {
 			opts := options.Options{}
 			opts.Metadata.Namespace = "gloo-system"
-			opts.Top.File = "/tmp/log.tgz"
 			opts.Top.Zip = true
-			err := DebugLogs(&opts, ioutil.Discard)
+
+			dir, err := ioutil.TempDir("", "testDir")
+			Expect(err).NotTo(HaveOccurred())
+			defer os.RemoveAll(dir)
+			opts.Top.File = filepath.Join(dir, "log.tgz")
+
+			err = DebugLogs(&opts, ioutil.Discard)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = os.Stat(opts.Top.File)
@@ -54,9 +60,14 @@ var _ = Describe("Debug", func() {
 		It("should create a text file at location specified in --file when --zip is not enabled", func() {
 			opts := options.Options{}
 			opts.Metadata.Namespace = "gloo-system"
-			opts.Top.File = "/tmp/log.txt"
 			opts.Top.Zip = false
-			err := DebugLogs(&opts, ioutil.Discard)
+
+			dir, err := ioutil.TempDir("", "testDir")
+			Expect(err).NotTo(HaveOccurred())
+			defer os.RemoveAll(dir)
+			opts.Top.File = filepath.Join(dir, "log.txt")
+
+			err = DebugLogs(&opts, ioutil.Discard)
 			Expect(err).NotTo(HaveOccurred())
 
 			_, err = os.Stat(opts.Top.File)
