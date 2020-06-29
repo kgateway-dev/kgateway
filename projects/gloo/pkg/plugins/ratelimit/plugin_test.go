@@ -1,8 +1,9 @@
 package ratelimit_test
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"time"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"

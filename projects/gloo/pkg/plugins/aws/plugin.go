@@ -3,9 +3,10 @@ package aws
 import (
 	"context"
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"net/url"
 	"unicode/utf8"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 

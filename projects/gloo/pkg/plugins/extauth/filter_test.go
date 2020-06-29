@@ -1,8 +1,9 @@
 package extauth_test
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"time"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"

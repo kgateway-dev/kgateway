@@ -1,8 +1,9 @@
 package static
 
 import (
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"net"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"fmt"
 	"net/url"

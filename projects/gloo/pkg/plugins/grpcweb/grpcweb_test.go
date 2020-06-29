@@ -1,9 +1,9 @@
 package grpcweb_test
 
 import (
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
 

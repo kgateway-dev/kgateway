@@ -5,10 +5,10 @@ import (
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/protocol_upgrade"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
