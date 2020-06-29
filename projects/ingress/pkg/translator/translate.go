@@ -247,7 +247,7 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 		glooutils.SortRoutesByPath(routes)
 		virtualHostsHttp = append(virtualHostsHttp, &gloov1.VirtualHost{
 			Name:    host + "-http",
-			Domains: []string{host},
+			Domains: []string{host, host + ":80"},
 			Routes:  routes,
 		})
 	}
@@ -262,7 +262,7 @@ func virtualHosts(ctx context.Context, ingresses []*v1beta1.Ingress, upstreams g
 		virtualHostsHttps = append(virtualHostsHttps, secureVirtualHost{
 			vh: &gloov1.VirtualHost{
 				Name:    host + "-https",
-				Domains: []string{host},
+				Domains: []string{host, host + ":443"},
 				Routes:  routes,
 			},
 			secret: *secret,
