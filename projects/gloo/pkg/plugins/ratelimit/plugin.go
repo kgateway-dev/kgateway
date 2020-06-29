@@ -25,7 +25,7 @@ const (
 	customStage    = 1
 	DefaultTimeout = 100 * time.Millisecond
 
-	FilterName = wellknown.RateLimit
+	FilterName = wellknown.HTTPRateLimit
 )
 
 var (
