@@ -50,6 +50,21 @@ var _ = Describe("Debug", func() {
 			err = os.RemoveAll(opts.Top.File)
 			Expect(err).NotTo(HaveOccurred())
 		})
+
+		It("should create a text file at location specified in --file when --zip is not enabled", func() {
+			opts := options.Options{}
+			opts.Metadata.Namespace = "gloo-system"
+			opts.Top.File = "/tmp/log.txt"
+			opts.Top.Zip = false
+			err := DebugLogs(&opts, ioutil.Discard)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = os.Stat(opts.Top.File)
+			Expect(err).NotTo(HaveOccurred())
+
+			err = os.RemoveAll(opts.Top.File)
+			Expect(err).NotTo(HaveOccurred())
+		})
 	})
 
 	Context("yaml dumper", func() {
