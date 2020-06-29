@@ -81,7 +81,7 @@ var _ = Describe("RateLimit Plugin", func() {
 		// Should set the stage to -1 before the AuthNStage because we set RateLimitBeforeAuth = true
 		Expect(filters[0].Stage.Weight).To(Equal(-1))
 		Expect(filters[0].Stage.RelativeTo).To(Equal(plugins.AuthNStage))
-		Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.RateLimit))
+		Expect(filters[0].HttpFilter.Name).To(Equal(wellknown.HTTPRateLimit))
 	})
 
 	It("should fave fail mode deny off by default", func() {

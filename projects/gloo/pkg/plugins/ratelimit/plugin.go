@@ -107,7 +107,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.RateLimit, customConf, DetermineFilterStage(rateLimitBeforeAuth))
+	customStagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPRateLimit, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {
 		return nil, err
 	}
