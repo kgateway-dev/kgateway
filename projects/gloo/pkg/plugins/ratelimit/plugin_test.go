@@ -3,8 +3,8 @@ package ratelimit_test
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes"
 
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
