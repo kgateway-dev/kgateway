@@ -28,6 +28,7 @@ type Options struct {
 	Get       Get
 	Add       Add
 	Remove    Remove
+	Hub       Hub
 }
 
 type Top struct {
@@ -395,4 +396,21 @@ type OpaAuth struct {
 
 	Query   string
 	Modules []string
+}
+
+type Hub struct {
+	Cluster Cluster
+}
+
+type Cluster struct {
+	Register Register
+}
+
+type Register struct {
+	RemoteKubeConfig           string
+	RemoteContext              string
+	ClusterName                string
+	LocalClusterDomainOverride string
+	FederationNamespace        string
+	TargetNamespace            string
 }
