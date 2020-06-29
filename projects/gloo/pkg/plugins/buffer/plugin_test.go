@@ -61,7 +61,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -85,7 +85,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
@@ -105,7 +105,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -129,7 +129,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))
@@ -149,7 +149,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetDisabled()).To(Equal(true))
@@ -173,7 +173,7 @@ var _ = Describe("Plugin", func() {
 		}, out)
 
 		var cfg envoybuffer.BufferPerRoute
-		err = conversion.StructToMessage(out.GetPerFilterConfig()[FilterName], &cfg)
+		err = conversion.StructToMessage(out.GetPerFilterConfig()[wellknown.Buffer], &cfg)
 
 		Expect(err).NotTo(HaveOccurred())
 		Expect(cfg.GetBuffer().GetMaxRequestBytes().GetValue()).To(Equal(uint32(4098)))

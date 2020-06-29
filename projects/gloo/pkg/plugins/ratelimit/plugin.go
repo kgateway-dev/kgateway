@@ -24,8 +24,6 @@ const (
 
 	customStage    = 1
 	DefaultTimeout = 100 * time.Millisecond
-
-	FilterName = wellknown.HTTPRateLimit
 )
 
 var (
@@ -111,7 +109,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 
 	customConf := generateEnvoyConfigForCustomFilter(*upstreamRef, timeout, denyOnFail)
 
-	customStagedFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, customConf, DetermineFilterStage(rateLimitBeforeAuth))
+	customStagedFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.HTTPRateLimit, customConf, DetermineFilterStage(rateLimitBeforeAuth))
 	if err != nil {
 		return nil, err
 	}

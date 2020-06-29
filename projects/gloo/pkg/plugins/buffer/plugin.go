@@ -17,8 +17,6 @@ import (
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-const FilterName = wellknown.Buffer
-
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -41,7 +39,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	bufferFilter, err := pluginutils.NewStagedFilterWithConfig(FilterName, bufferConfig, pluginStage)
+	bufferFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.Buffer, bufferConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
@@ -56,12 +54,12 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	}
 
 	if bufPerRoute.GetDisabled() {
-		return pluginutils.SetRoutePerFilterConfig(out, FilterName, getNoBufferConfig())
+		return pluginutils.SetRoutePerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
-		return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
+		return pluginutils.SetRoutePerFilterConfig(out, wellknown.Buffer, config)
 	}
 
 	return nil
@@ -74,12 +72,12 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	}
 
 	if bufPerRoute.GetDisabled() {
-		return pluginutils.SetVhostPerFilterConfig(out, FilterName, getNoBufferConfig())
+		return pluginutils.SetVhostPerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
-		return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
+		return pluginutils.SetVhostPerFilterConfig(out, wellknown.Buffer, config)
 	}
 
 	return nil
@@ -92,12 +90,12 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 	}
 
 	if bufPerRoute.GetDisabled() {
-		return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, getNoBufferConfig())
+		return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.Buffer, getNoBufferConfig())
 	}
 
 	if bufPerRoute.GetBuffer() != nil {
 		config := getBufferConfig(bufPerRoute)
-		return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
+		return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.Buffer, config)
 	}
 
 	return nil

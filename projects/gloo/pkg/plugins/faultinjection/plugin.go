@@ -15,10 +15,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 )
 
-const (
-	FilterName = wellknown.Fault
-)
-
 var pluginStage = plugins.DuringStage(plugins.FaultStage)
 
 type Plugin struct {
@@ -35,7 +31,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	// put the filter in the chain, but the actual faults will be configured on the routes
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(FilterName, pluginStage),
+		pluginutils.NewStagedFilter(wellknown.Fault, pluginStage),
 	}, nil
 }
 
@@ -55,7 +51,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 		return generateEnvoyConfigForHttpFault(routeAbort, routeDelay), nil
 	}
-	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, FilterName, markFilterConfigFunc)
+	return pluginutils.MarkPerFilterConfig(params.Ctx, params.Snapshot, in, out, wellknown.Fault, markFilterConfigFunc)
 }
 
 func toEnvoyAbort(abort *fault.RouteAbort) *envoyfault.FaultAbort {

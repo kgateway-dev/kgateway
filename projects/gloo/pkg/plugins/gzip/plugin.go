@@ -13,8 +13,6 @@ import (
 // filter should be called after routing decision has been made
 var pluginStage = plugins.DuringStage(plugins.RouteStage)
 
-const filterName = wellknown.Gzip
-
 func NewPlugin() *Plugin {
 	return &Plugin{}
 }
@@ -37,7 +35,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	gzipFilter, err := pluginutils.NewStagedFilterWithConfig(filterName, gzipConfig, pluginStage)
+	gzipFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.Gzip, gzipConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}

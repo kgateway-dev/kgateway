@@ -12,7 +12,6 @@ import (
 )
 
 const (
-	FilterName        = wellknown.HTTPExternalAuthorization
 	DefaultAuthHeader = "x-user-id"
 	HttpServerUri     = "http://not-used.example.com/"
 )
@@ -77,7 +76,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 		},
 	}
 
-	return pluginutils.SetVhostPerFilterConfig(out, FilterName, config)
+	return pluginutils.SetVhostPerFilterConfig(out, wellknown.HTTPExternalAuthorization, config)
 }
 
 // This function generates the ext_authz PerFilterConfig for this route:
@@ -111,7 +110,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *rou
 		},
 	}
 
-	return pluginutils.SetRoutePerFilterConfig(out, FilterName, config)
+	return pluginutils.SetRoutePerFilterConfig(out, wellknown.HTTPExternalAuthorization, config)
 }
 
 // This function generates the ext_authz PerFilterConfig for this weightedDestination:
@@ -145,7 +144,7 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 		},
 	}
 
-	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, config)
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.HTTPExternalAuthorization, config)
 }
 
 func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
@@ -158,7 +157,7 @@ func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
 
 	// Check for a filter called "envoy.filters.http.ext_authz"
 	for _, filter := range filters {
-		if filter.HttpFilter.GetName() == FilterName {
+		if filter.HttpFilter.GetName() == wellknown.HTTPExternalAuthorization {
 			return true
 		}
 	}
@@ -167,15 +166,15 @@ func (p *Plugin) isExtAuthzFilterConfigured(upstreams v1.UpstreamList) bool {
 }
 
 func markVirtualHostNoAuth(out *envoyroute.VirtualHost) error {
-	return pluginutils.SetVhostPerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetVhostPerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 
 func markWeightedClusterNoAuth(out *envoyroute.WeightedCluster_ClusterWeight) error {
-	return pluginutils.SetWeightedClusterPerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetWeightedClusterPerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 
 func markRouteNoAuth(out *envoyroute.Route) error {
-	return pluginutils.SetRoutePerFilterConfig(out, FilterName, getNoAuthConfig())
+	return pluginutils.SetRoutePerFilterConfig(out, wellknown.HTTPExternalAuthorization, getNoAuthConfig())
 }
 
 func getNoAuthConfig() *envoyauth.ExtAuthzPerRoute {

@@ -3,6 +3,8 @@ package extauth_test
 import (
 	"context"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
@@ -282,11 +284,11 @@ func IsDisabled(e envoyPerFilterConfig) bool {
 	if e.GetPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[FilterName]; !ok {
+	if _, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	return cfg.GetDisabled()
@@ -297,11 +299,11 @@ func IsEnabled(e envoyPerFilterConfig) bool {
 	if e.GetPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[FilterName]; !ok {
+	if _, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
 		return false
 	}
 	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[FilterName], &cfg)
+	err := conversion.StructToMessage(e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization], &cfg)
 	Expect(err).NotTo(HaveOccurred())
 
 	if cfg.GetCheckSettings() == nil {
@@ -317,6 +319,6 @@ func IsNotSet(e envoyPerFilterConfig) bool {
 	if e.GetPerFilterConfig() == nil {
 		return true
 	}
-	_, ok := e.GetPerFilterConfig()[FilterName]
+	_, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]
 	return !ok
 }
