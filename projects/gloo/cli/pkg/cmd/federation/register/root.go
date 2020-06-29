@@ -21,7 +21,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddRegisterFlags(pflags, &opts.Hub.Cluster.Register)
+	flagutils.AddRegisterFlags(pflags, &opts.Cluster.Register)
 	// this flag is mainly for demo, testing, and debugging purposes
 	pflags.Lookup(flagutils.LocalClusterDomainOverride).Hidden = true
 	cliutils.ApplyOptions(cmd, optionsFunc)

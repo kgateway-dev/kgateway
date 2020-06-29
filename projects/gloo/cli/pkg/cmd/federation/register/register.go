@@ -32,7 +32,7 @@ var glooFederationPolicyRules = []v1.PolicyRule{
 
 func Register(opts *options.Options) error {
 	ctx := context.TODO()
-	registerOpts := opts.Hub.Cluster.Register
+	registerOpts := opts.Cluster.Register
 
 	remoteConfigPath := registerOpts.RemoteKubeConfig
 	remoteContext := registerOpts.RemoteContext
@@ -43,16 +43,14 @@ func Register(opts *options.Options) error {
 	}
 
 	registrantOpts := register.Options{
-		ClusterName: registerOpts.ClusterName,
-		RemoteCtx:   remoteContext,
-		// TODO parameterize
+		ClusterName:     registerOpts.ClusterName,
+		RemoteCtx:       remoteContext,
 		Namespace:       registerOpts.FederationNamespace,
-		RemoteNamespace: registerOpts.TargetNamespace,
+		RemoteNamespace: registerOpts.RemoteNamespace,
 	}
 
 	rbacOptions := register.RbacOptions{
 		Options: registrantOpts,
-		Roles:   nil,
 		ClusterRoles: []*v1.ClusterRole{
 			{
 				ObjectMeta: metav1.ObjectMeta{

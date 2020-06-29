@@ -28,7 +28,7 @@ type Options struct {
 	Get       Get
 	Add       Add
 	Remove    Remove
-	Hub       Hub
+	Cluster   Cluster
 }
 
 type Top struct {
@@ -398,10 +398,6 @@ type OpaAuth struct {
 	Modules []string
 }
 
-type Hub struct {
-	Cluster Cluster
-}
-
 type Cluster struct {
 	Register Register
 }
@@ -412,5 +408,5 @@ type Register struct {
 	ClusterName                string
 	LocalClusterDomainOverride string
 	FederationNamespace        string
-	TargetNamespace            string
+	RemoteNamespace            string
 }
