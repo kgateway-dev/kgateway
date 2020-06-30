@@ -2,8 +2,7 @@ package translator
 
 import (
 	"fmt"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
@@ -59,7 +58,7 @@ func NewFilterWithTypedConfig(name string, config proto.Message) (*envoylistener
 	}
 
 	if config != nil {
-		marshalledConf, err := pluginutils.MessageToAny(config)
+		marshalledConf, err := utils.MessageToAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return &envoylistener.Filter{}, err

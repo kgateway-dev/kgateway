@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -145,7 +145,7 @@ var _ = Describe("Plugin", func() {
 			if out.TransportSocket == nil {
 				return nil
 			}
-			return pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			return utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 		}
 		It("doesn't have ssl by default", func() {
 			p.ProcessUpstream(params, upstream, out)
@@ -168,7 +168,7 @@ var _ = Describe("Plugin", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
 			out.TransportSocket = &envoycore.TransportSocket{
 				Name:       wellknown.TransportSocketTls,
-				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(existing)},
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
 			}
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)

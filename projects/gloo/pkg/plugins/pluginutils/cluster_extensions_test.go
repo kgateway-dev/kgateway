@@ -4,6 +4,7 @@ import (
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 
@@ -36,7 +37,7 @@ var _ = Describe("ClusterExtensions", func() {
 		It("should add per filter config to route", func() {
 			err := SetExtenstionProtocolOptions(out, name, msg)
 			Expect(err).NotTo(HaveOccurred())
-			anyMsg, err := MessageToAny(msg)
+			anyMsg, err := utils.MessageToAny(msg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.TypedExtensionProtocolOptions).To(HaveKeyWithValue(name, BeEquivalentTo(anyMsg)))
 		})

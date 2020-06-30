@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"os"
 	"os/exec"
 
@@ -17,7 +18,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/go-utils/contextutils"
 )
 
@@ -53,7 +53,7 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 			Name:    "placeholder_host",
 			Domains: []string{"*"},
 			TypedPerFilterConfig: map[string]*any.Any{
-				filterName: pluginutils.MustGogoMessageToAnyGoProto(msg),
+				filterName: utils.MustGogoMessageToAnyGoProto(msg),
 			},
 		},
 	}
@@ -65,7 +65,7 @@ func BuildPerFilterBootstrapYaml(filterName string, msg proto.Message) string {
 		RouteSpecifier: &envoy_extensions_filters_network_http_connection_manager_v3.HttpConnectionManager_RouteConfig{RouteConfig: rc},
 	}
 
-	hcmAny := pluginutils.MustMessageToAny(hcm)
+	hcmAny := utils.MustMessageToAny(hcm)
 	bootstrap := &envoy_config_bootstrap_v3.Bootstrap{
 		Node: &v3.Node{
 			Id:      "imspecial",

@@ -14,7 +14,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/buffer"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("Plugin", func() {
@@ -34,7 +34,7 @@ var _ = Describe("Plugin", func() {
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: wellknown.Buffer,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: pluginutils.MustMessageToAny(&envoybuffer.Buffer{
+						TypedConfig: utils.MustMessageToAny(&envoybuffer.Buffer{
 							MaxRequestBytes: &wrappers.UInt32Value{Value: 2048.000000},
 						}),
 					},

@@ -1,10 +1,10 @@
-package pluginutils_test
+package utils_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	gogostructpb "github.com/gogo/protobuf/types"
 	structpb "github.com/golang/protobuf/ptypes/struct"

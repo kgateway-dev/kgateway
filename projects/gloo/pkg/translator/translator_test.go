@@ -24,7 +24,6 @@ import (
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	consul2 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 	validationutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
@@ -34,7 +33,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
-	sslutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
@@ -169,7 +168,7 @@ var _ = Describe("Translator", func() {
 		getPlugins := func() []plugins.Plugin {
 			return registeredPlugins
 		}
-		translator = NewTranslator(sslutils.NewSslConfigTranslator(), settings, getPlugins)
+		translator = NewTranslator(glooutils.NewSslConfigTranslator(), settings, getPlugins)
 		httpListener := &v1.Listener{
 			Name:        "http-listener",
 			BindAddress: "127.0.0.1",
@@ -801,7 +800,7 @@ var _ = Describe("Translator", func() {
 
 			// get http filters
 			hcmFilter := listener.GetFilterChains()[0].GetFilters()[0]
-			typedConfig, err := pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			typedConfig, err := glooutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
 			Expect(err).NotTo(HaveOccurred())
 			originalHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 
@@ -820,7 +819,7 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			typedConfig, err = glooutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
 			Expect(err).NotTo(HaveOccurred())
 			upstreamsHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(upstreamsHttpFilters).ToNot(Equal(originalHttpFilters))
@@ -843,7 +842,7 @@ var _ = Describe("Translator", func() {
 
 			// get and compare http filters
 			hcmFilter = listener.GetFilterChains()[0].GetFilters()[0]
-			typedConfig, err = pluginutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
+			typedConfig, err = glooutils.AnyToMessage(hcmFilter.GetConfigType().(*envoylistener.Filter_TypedConfig).TypedConfig)
 			Expect(err).NotTo(HaveOccurred())
 			flipOrderHttpFilters := typedConfig.(*envoyhttp.HttpConnectionManager).HttpFilters
 			Expect(flipOrderHttpFilters).To(Equal(upstreamsHttpFilters))
@@ -1690,7 +1689,7 @@ var _ = Describe("Translator", func() {
 			if fc.TransportSocket == nil {
 				return nil
 			}
-			return pluginutils.MustAnyToMessage(fc.TransportSocket.GetTypedConfig()).(*envoyauth.DownstreamTlsContext)
+			return glooutils.MustAnyToMessage(fc.TransportSocket.GetTypedConfig()).(*envoyauth.DownstreamTlsContext)
 		}
 		Context("files", func() {
 

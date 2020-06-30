@@ -12,7 +12,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 var _ = Describe("Plugin", func() {
@@ -40,7 +40,7 @@ var _ = Describe("Plugin", func() {
 				HttpFilter: &envoyhcm.HttpFilter{
 					Name: wellknown.Gzip,
 					ConfigType: &envoyhcm.HttpFilter_TypedConfig{
-						TypedConfig: pluginutils.MustMessageToAny(&envoygzip.Gzip{
+						TypedConfig: utils.MustMessageToAny(&envoygzip.Gzip{
 							MemoryLevel:         &wrappers.UInt32Value{Value: 10.000000},
 							ContentLength:       &wrappers.UInt32Value{Value: 10.000000},
 							CompressionLevel:    10.000000,

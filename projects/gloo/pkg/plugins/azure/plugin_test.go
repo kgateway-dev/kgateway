@@ -2,6 +2,7 @@ package azure_test
 
 import (
 	"context"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
@@ -9,7 +10,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/azure"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	azureplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/onsi/ginkgo"
@@ -85,7 +85,7 @@ var _ = Describe("Plugin", func() {
 				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
 				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
 
-				tlsContext := pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))
@@ -103,7 +103,7 @@ var _ = Describe("Plugin", func() {
 				Expect(out.LoadAssignment.Endpoints).Should(HaveLen(1))
 				// Expect(out.Hosts[0].GetSocketAddress().Address).To(Equal("my-appwhos.azurewebsites.net"))
 				// Expect(out.Hosts[0].GetSocketAddress().PortSpecifier.(*envoycore.SocketAddress_PortValue).PortValue).To(BeEquivalentTo(443))
-				tlsContext := pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+				tlsContext := utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 				Expect(tlsContext.Sni).To(Equal("my-appwhos.azurewebsites.net"))
 				Expect(out.GetType()).To(Equal(envoyapi.Cluster_LOGICAL_DNS))
 				Expect(out.DnsLookupFamily).To(Equal(envoyapi.Cluster_V4_ONLY))

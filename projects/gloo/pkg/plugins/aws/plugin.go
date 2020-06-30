@@ -3,6 +3,7 @@ package aws
 import (
 	"context"
 	"fmt"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"net/url"
 	"unicode/utf8"
 
@@ -89,7 +90,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	out.TransportSocket = &envoycore.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(tlsContext)},
+		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
 	}
 
 	accessKey := ""

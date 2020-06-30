@@ -6,7 +6,6 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
@@ -33,7 +32,7 @@ func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	out.TransportSocket = &envoycore.TransportSocket{
 		Name:       wellknown.TransportSocketTls,
-		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(cfg)},
+		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
 	}
 	return nil
 }

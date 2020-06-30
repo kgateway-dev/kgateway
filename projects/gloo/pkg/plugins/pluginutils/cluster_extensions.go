@@ -5,10 +5,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	anypb "github.com/golang/protobuf/ptypes/any"
 	errors "github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 func SetExtenstionProtocolOptions(out *envoyapi.Cluster, filterName string, protoext proto.Message) error {
-	protoextAny, err := MessageToAny(protoext)
+	protoextAny, err := utils.MessageToAny(protoext)
 	if err != nil {
 		return errors.Wrapf(err, "converting extension "+filterName+" protocol options to struct")
 	}
