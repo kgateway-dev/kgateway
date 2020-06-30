@@ -6,7 +6,7 @@ import (
 
 	endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	v2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
@@ -18,8 +18,10 @@ import (
 	"go.uber.org/zap"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	corev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyroutev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyroute "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	"github.com/gogo/protobuf/proto"
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -66,11 +68,11 @@ func NewRouteReplacingSanitizer(cfg *v1.GlooOptions_InvalidConfigPolicy) (*Route
 }
 
 func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*envoyapi.Listener, *envoyapi.Cluster, error) {
-	hcmConfig := &v2.HttpConnectionManager{
-		CodecType:  v2.HttpConnectionManager_AUTO,
+	hcmConfig := &envoyhcm.HttpConnectionManager{
+		CodecType:  envoyhcm.HttpConnectionManager_AUTO,
 		StatPrefix: fallbackListenerName,
-		RouteSpecifier: &v2.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoyapi.RouteConfiguration{
+		RouteSpecifier: &envoyhcm.HttpConnectionManager_RouteConfig{
+			RouteConfig: &envoyroute.RouteConfiguration{
 				Name: "fallback_routes",
 				VirtualHosts: []*envoyroute.VirtualHost{{
 					Name:    "fallback_virtualhost",
@@ -95,7 +97,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 				}},
 			},
 		},
-		HttpFilters: []*v2.HttpFilter{{
+		HttpFilters: []*envoyhcm.HttpFilter{{
 			Name: wellknown.Router,
 		}},
 	}
@@ -107,9 +109,9 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 
 	fallbackListener := &envoyapi.Listener{
 		Name: fallbackListenerName,
-		Address: &core.Address{
-			Address: &core.Address_Pipe{
-				Pipe: &core.Pipe{
+		Address: &corev2.Address{
+			Address: &corev2.Address_Pipe{
+				Pipe: &corev2.Pipe{
 					Path: fallbackListenerSocket,
 				},
 			},
@@ -133,9 +135,9 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 				LbEndpoints: []*endpoint.LbEndpoint{{
 					HostIdentifier: &endpoint.LbEndpoint_Endpoint{
 						Endpoint: &endpoint.Endpoint{
-							Address: &core.Address{
-								Address: &core.Address_Pipe{
-									Pipe: &core.Pipe{
+							Address: &corev2.Address{
+								Address: &corev2.Address_Pipe{
+									Pipe: &corev2.Pipe{
 										Path: fallbackListenerSocket,
 									},
 								},
@@ -247,7 +249,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 					continue
 				}
 				switch action := routeAction.GetClusterSpecifier().(type) {
-				case *envoyroute.RouteAction_Cluster:
+				case *envoyroutev2.RouteAction_Cluster:
 					if isInvalid(action.Cluster) {
 						debugW("replacing route in virtual host with invalid cluster",
 							zap.Any("cluster", action.Cluster), zap.Any("route", j), zap.Any("virtualhost", i))
@@ -255,7 +257,7 @@ func (s *RouteReplacingSanitizer) replaceMissingClusterRoutes(ctx context.Contex
 						replaced++
 						anyRoutesReplaced = true
 					}
-				case *envoyroute.RouteAction_WeightedClusters:
+				case *envoyroutev2.RouteAction_WeightedClusters:
 					for _, weightedCluster := range action.WeightedClusters.GetClusters() {
 						if isInvalid(weightedCluster.GetName()) {
 							debugW("replacing route in virtual host with invalid weighted cluster",
