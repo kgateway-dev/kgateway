@@ -92,10 +92,6 @@ settings:
 
 and use it to override default values in the Gloo Helm chart:
 
-```shell script
-helm install gloo glooe/gloo-ee --namespace gloo-system -f vals.yaml --create-namespace
-```
-
 {{< tabs >}}
 {{< tab name="Helm 2" codelang="shell">}}
 helm install glooe/gloo-ee --name gloo --namespace gloo-system \
