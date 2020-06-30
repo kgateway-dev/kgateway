@@ -39,7 +39,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	bufferFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.Buffer, bufferConfig, pluginStage)
+	bufferFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Buffer, bufferConfig, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}

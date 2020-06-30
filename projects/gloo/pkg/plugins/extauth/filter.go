@@ -4,13 +4,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -55,7 +53,7 @@ func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) (
 		return nil, err
 	}
 
-	stagedFilter, err := pluginutils.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
+	stagedFilter, err := plugins.NewStagedFilterWithConfig(wellknown.HTTPExternalAuthorization, extAuthCfg, FilterStage)
 	if err != nil {
 		return nil, err
 	}

@@ -1,20 +1,19 @@
-package pluginutils
+package plugins
 
 import (
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/gogo/protobuf/proto"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
-func NewStagedFilter(name string, stage plugins.FilterStage) plugins.StagedHttpFilter {
+func NewStagedFilter(name string, stage FilterStage) StagedHttpFilter {
 	s, _ := NewStagedFilterWithConfig(name, nil, stage)
 	return s
 }
 
-func NewStagedFilterWithConfig(name string, config proto.Message, stage plugins.FilterStage) (plugins.StagedHttpFilter, error) {
+func NewStagedFilterWithConfig(name string, config proto.Message, stage FilterStage) (StagedHttpFilter, error) {
 
-	s := plugins.StagedHttpFilter{
+	s := StagedHttpFilter{
 		HttpFilter: &envoyhttp.HttpFilter{
 			Name: name,
 		},
@@ -26,7 +25,7 @@ func NewStagedFilterWithConfig(name string, config proto.Message, stage plugins.
 		marshalledConf, err := utils.MessageToAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
-			return plugins.StagedHttpFilter{}, err
+			return StagedHttpFilter{}, err
 		}
 
 		s.HttpFilter.ConfigType = &envoyhttp.HttpFilter_TypedConfig{

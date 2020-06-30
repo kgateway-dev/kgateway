@@ -78,7 +78,7 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 
 func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(FilterName, pluginStage),
+		plugins.NewStagedFilter(FilterName, pluginStage),
 	}, nil
 }
 

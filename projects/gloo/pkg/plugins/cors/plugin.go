@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
-
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
@@ -127,6 +125,6 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		pluginutils.NewStagedFilter(wellknown.CORS, pluginStage),
+		plugins.NewStagedFilter(wellknown.CORS, pluginStage),
 	}, nil
 }
