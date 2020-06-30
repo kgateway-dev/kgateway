@@ -63,7 +63,7 @@ Navigate to the `docs` folder from the Gloo repo root and run `make` to start up
 SKIP_CHANGELOG_GENERATION=true make serve-site -b
 ```
 
-That command will download any Go dependencies and render the site using Hugo and launch a local version of the site running on port 1313. The `SKIP_CHANGELOG_GENERATION' part at the beginning tells the program to avoid pulling Gloo Enterprise documentation. You should see output similar to this:
+That command will download any Go dependencies and render the site using Hugo and launch a local version of the site running on port 1313. The `SKIP_CHANGELOG_GENERATION` part at the beginning tells the program to avoid pulling Gloo Enterprise documentation. You should see output similar to this:
 
 ```console
 Environment: "development"
