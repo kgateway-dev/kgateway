@@ -19,6 +19,11 @@ For example, Gloo's data plane (the `gateway-proxy` pod) has ReadOnly file syste
 * **Disable Kubernetes destinations**
     - Gloo out of the box routes to upstreams. It can also route directly to Kubernetes destinations (bypassing upstreams). Upstreams is the recommended abstraction to which to route in VirtualServices, and you can disable the Kubernetes destinations with the `settings.gloo.disableKubernetesDestinations`. This saves on memory overhead so Gloo pod doesn't cache both upstreams and Kubernetes destinations. 
 
+## Enable replacing invalid routes
+
+* **Configure invalidConfigPolicy**
+    - In some cases, it may be desirable to update a virtual service even if its config becomes partially invalid. This is particularly useful when delegating to Route Tables as it ensures that a single Route Table will not block updates for other Route Tables which share the same Virtual Service. More information on why and how to enable this can be found [here]({{% versioned_link_path fromRoot="/traffic_management/configuration_validation/invalid_route_replacement/" %}})
+
 ## Enable health checks
 
 {{% notice warning %}}
