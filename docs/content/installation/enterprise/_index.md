@@ -61,10 +61,16 @@ helm repo add glooe http://storage.googleapis.com/gloo-ee-helm
 
 Finally, install Gloo using the following command:
 
-```shell
-helm install glooe/gloo-ee --name glooe --namespace gloo-system \
-  --set-string license_key=YOUR_LICENSE_KEY
-```
+{{< tabs >}}
+{{< tab name="Helm 2" codelang="shell">}}
+helm install glooe/gloo-ee --name gloo --namespace gloo-system \
+  --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
+{{< /tab >}}
+{{< tab name="Helm 3" codelang="shell">}}
+helm install gloo glooe/gloo-ee --namespace gloo-system \
+  --create-namespace --set-string license_key=YOUR_LICENSE_KEY
+{{< /tab >}}
+{{< /tabs >}}
 
 Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
 
@@ -86,9 +92,20 @@ settings:
 
 and use it to override default values in the Gloo Helm chart:
 
-```shell
-helm install gloo/gloo --name gloo-custom-0-7-6 --namespace my-namespace -f value-overrides.yaml
+```shell script
+helm install gloo glooe/gloo-ee --namespace gloo-system -f vals.yaml --create-namespace
 ```
+
+{{< tabs >}}
+{{< tab name="Helm 2" codelang="shell">}}
+helm install glooe/gloo-ee --name gloo --namespace gloo-system \
+  -f value-overrides.yaml --set gloo.crds.create=true --set-string license_key=YOUR_LICENSE_KEY
+{{< /tab >}}
+{{< tab name="Helm 3" codelang="shell">}}
+helm install gloo glooe/gloo-ee --namespace gloo-system \
+  -f value-overrides.yaml --create-namespace --set-string license_key=YOUR_LICENSE_KEY
+{{< /tab >}}
+{{< /tabs >}}
 
 #### List of Gloo Helm chart values
 
