@@ -1,5 +1,5 @@
 changelog:
-- type: NEW_FEATURE
+- type: NON_USER_FACING
   issueLink: https://github.com/solo-io/gloo/issues/3223
   description: >
     Backport ability to add the envoy Upstream Cluster from SNI filter to the TCP proxy.
