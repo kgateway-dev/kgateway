@@ -1,7 +1,8 @@
 package als_test
 
 import (
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
+	envoyalv2 "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
@@ -17,8 +18,8 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -38,6 +39,20 @@ var _ = Describe("Plugin", func() {
 		)
 
 		var checkConfig = func(al *envoyal.AccessLog) {
+			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+			var falCfg envoyalcfg.HttpGrpcAccessLogConfig
+			err := translatorutil.ParseTypedConfig(al, &falCfg)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
+			Expect(falCfg.CommonConfig.LogName).To(Equal(logName))
+			envoyGrpc := falCfg.CommonConfig.GetGrpcService().GetEnvoyGrpc()
+			Expect(envoyGrpc).NotTo(BeNil())
+			Expect(envoyGrpc.ClusterName).To(Equal(translatorutil.UpstreamToClusterName(usRef)))
+		}
+
+		var checkConfigv2 = func(al *envoyalv2.AccessLog) {
 			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
 			var falCfg envoyalcfg.HttpGrpcAccessLogConfig
 			err := translatorutil.ParseConfig(al, &falCfg)
@@ -154,7 +169,7 @@ var _ = Describe("Plugin", func() {
 
 			Expect(cfg.AccessLog).To(HaveLen(1))
 			al := cfg.AccessLog[0]
-			checkConfig(al)
+			checkConfigv2(al)
 		})
 	})
 
@@ -182,6 +197,16 @@ var _ = Describe("Plugin", func() {
 		Context("string", func() {
 
 			var checkConfig = func(al *envoyal.AccessLog) {
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
+				var falCfg envoyalfile.FileAccessLog
+				err := translatorutil.ParseTypedConfig(al, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.Path).To(Equal(path))
+				str := falCfg.GetLogFormat().GetTextFormat()
+				Expect(str).To(Equal(strFormat))
+			}
+
+			var checkConfigv2 = func(al *envoyalv2.AccessLog) {
 				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
@@ -270,13 +295,23 @@ var _ = Describe("Plugin", func() {
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
 				al := cfg.AccessLog[0]
-				checkConfig(al)
+				checkConfigv2(al)
 			})
 
 		})
 
 		Context("json", func() {
 			var checkConfig = func(al *envoyal.AccessLog) {
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
+				var falCfg envoyalfile.FileAccessLog
+				err := translatorutil.ParseTypedConfig(al, &falCfg)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(falCfg.Path).To(Equal(path))
+				jsn := falCfg.GetLogFormat().GetJsonFormat()
+				Expect(protoutils.StructPbToGogo(jsn)).To(Equal(jsonFormat))
+			}
+
+			var checkConfigv2 = func(al *envoyalv2.AccessLog) {
 				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
 				err := translatorutil.ParseConfig(al, &falCfg)
@@ -365,7 +400,7 @@ var _ = Describe("Plugin", func() {
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
 				al := cfg.AccessLog[0]
-				checkConfig(al)
+				checkConfigv2(al)
 			})
 		})
 	})
