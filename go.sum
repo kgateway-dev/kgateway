@@ -1047,6 +1047,8 @@ github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
 github.com/solo-io/skv2 v0.5.0 h1:8pW5PPGs3RSSYexuP0VdiqZdrfXVj0M/3v8F6/eaPFw=
 github.com/solo-io/skv2 v0.5.0/go.mod h1:68YUGLJvRWsZ2UUCsr/tT7noYI3yX9CmRgW+j0OqAJE=
+github.com/solo-io/skv2 v0.6.0 h1:25eqGxoV95q9aR5W4xSdM0qeAsaEiryqnQD8SWiUhgQ=
+github.com/solo-io/skv2 v0.6.0/go.mod h1:EbaG2+5bpOSUNIIEBqAK/yfALx5ZuSN/+37h17l+t4Q=
 github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
 github.com/solo-io/solo-kit v0.12.1/go.mod h1:oNDT3CNTgdjNh5tgkr4Wj8tj+h0VtJjfT/ZaZ8e1/js=
 github.com/solo-io/solo-kit v0.12.2/go.mod h1:oNDT3CNTgdjNh5tgkr4Wj8tj+h0VtJjfT/ZaZ8e1/js=
@@ -1577,6 +1579,8 @@ sigs.k8s.io/aws-iam-authenticator v0.5.0/go.mod h1:hGGN2wp01A1NU/88s8Wjfa3nY5bZY
 sigs.k8s.io/controller-runtime v0.4.0/go.mod h1:ApC79lpY3PHW9xj/w9pj+lYkLgwAAUZwfXkME1Lajns=
 sigs.k8s.io/controller-runtime v0.5.1 h1:TNidCfVoU/cs2i+9xoTcL/l7yhl0bDhYXU0NCG6wmiE=
 sigs.k8s.io/controller-runtime v0.5.1/go.mod h1:Uojny7gvg55YLQnEGnPzRE3dC4ik2tRlZJgOUCWXAV4=
+sigs.k8s.io/controller-runtime v0.5.6 h1:84kdvjIfX6N/ExK5g99dnuuB5SeUsC798q6BfSzM7O0=
+sigs.k8s.io/controller-runtime v0.5.6/go.mod h1:JZUwSMVbxDupo0lTJSSFP5pimEyxGynROImSsqIOx1A=
 sigs.k8s.io/kustomize v2.0.3+incompatible h1:JUufWFNlI44MdtnjUqVnvh29rR37PQFzPbLXqhyOyX0=
 sigs.k8s.io/kustomize v2.0.3+incompatible/go.mod h1:MkjgH3RdOWrievjo6c9T245dYlB5QeXV4WCbnt/PEpU=
 sigs.k8s.io/structured-merge-diff v0.0.0-20190525122527-15d366b2352e/go.mod h1:wWxsB5ozmmv/SG7nM11ayaAW51xMvak/t1r0CSlcokI=
