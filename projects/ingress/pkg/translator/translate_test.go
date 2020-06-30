@@ -201,6 +201,7 @@ var _ = Describe("Translate", func() {
 										Name: "wow.com-http",
 										Domains: []string{
 											"wow.com",
+											"wow.com:80",
 										},
 										Routes: []*gloov1.Route{
 											{
@@ -241,6 +242,7 @@ var _ = Describe("Translate", func() {
 										Name: "wow.com-https",
 										Domains: []string{
 											"wow.com",
+											"wow.com:443",
 										},
 										Routes: []*gloov1.Route{
 											{
@@ -298,7 +300,7 @@ var _ = Describe("Translate", func() {
 										Namespace: "example",
 									},
 								},
-								SniDomains: []string{"wow.com"},
+								SniDomains: []string{"wow.com", "wow.com:443"},
 							},
 						},
 					},
@@ -366,6 +368,7 @@ var _ = Describe("Translate", func() {
 				},
 				SniDomains: []string{
 					"api-dev.intellishift.com",
+					"api-dev.intellishift.com:443",
 				},
 			},
 			{
@@ -377,6 +380,7 @@ var _ = Describe("Translate", func() {
 				},
 				SniDomains: []string{
 					"ui-dev.intellishift.com",
+					"ui-dev.intellishift.com:443",
 				},
 			},
 		}))
@@ -405,7 +409,7 @@ var _ = Describe("Translate", func() {
 		vhosts := proxy.Listeners[0].GetHttpListener().GetVirtualHosts()
 		Expect(vhosts).To(HaveLen(1))
 		// expect only ing1 to have been translated
-		Expect(vhosts[0].Domains).To(Equal([]string{host1}))
+		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":80"}))
 	})
 	It("respects a custom ingress class", func() {
 
@@ -434,7 +438,7 @@ var _ = Describe("Translate", func() {
 		vhosts := proxy.Listeners[0].GetHttpListener().GetVirtualHosts()
 		Expect(vhosts).To(HaveLen(1))
 		// expect only ing1 to have been translated
-		Expect(vhosts[0].Domains).To(Equal([]string{host1}))
+		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":80"}))
 	})
 	It("supports named ports", func() {
 
