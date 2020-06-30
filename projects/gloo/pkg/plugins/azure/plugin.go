@@ -3,6 +3,7 @@ package azure
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"

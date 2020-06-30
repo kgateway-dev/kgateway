@@ -1,8 +1,9 @@
 package static
 
 import (
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"net"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 

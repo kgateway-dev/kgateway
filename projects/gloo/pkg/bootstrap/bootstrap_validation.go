@@ -2,9 +2,10 @@ package bootstrap
 
 import (
 	"context"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"os"
 	"os/exec"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 

@@ -2,9 +2,10 @@ package translator
 
 import (
 	"fmt"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"sort"
 	"strings"
+
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
