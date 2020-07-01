@@ -1,8 +1,9 @@
 package hcm_test
 
 import (
-	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	"time"
+
+	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
