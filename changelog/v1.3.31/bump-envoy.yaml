@@ -1,0 +1,7 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.14.3-patch1
+    description: >
+      Updated envoy-gloo to one based on enovy 1.14.3, which includes a security release.
