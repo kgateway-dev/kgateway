@@ -1642,7 +1642,7 @@ var _ = Describe("Translator", func() {
 			fc := listener.GetFilterChains()[0]
 			Expect(fc.Filters).To(HaveLen(1))
 			tcpFilter := fc.Filters[0]
-			cfg := tcpFilter.GetConfig()
+			cfg := tcpFilter.GetTypedConfig()
 			Expect(cfg).NotTo(BeNil())
 			var typedCfg envoytcp.TcpProxy
 			Expect(ParseTypedConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
