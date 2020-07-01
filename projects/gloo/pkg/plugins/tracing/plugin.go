@@ -1,6 +1,8 @@
 package tracing
 
 import (
+	"strconv"
+
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
@@ -11,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
-	"strconv"
 )
 
 // default all tracing percentages to 100%
@@ -54,7 +55,7 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 			Tag: "header" + strconv.Itoa(i+1),
 			Type: &envoytracing.CustomTag_RequestHeader{
 				RequestHeader: &envoytracing.CustomTag_Header{
-					Name:"header" + strconv.Itoa(i+1),
+					Name: "header" + strconv.Itoa(i+1),
 				},
 			},
 		}
