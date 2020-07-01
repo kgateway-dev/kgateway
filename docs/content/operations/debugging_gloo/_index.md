@@ -189,7 +189,7 @@ With these endpoints, you can profile the behavior of the component, adjust its 
 
 ### All else fails
 
-Again, f all else fails, you can capture the state of Gloo configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+Again, if all else fails, you can capture the state of Gloo configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
 
 ```bash
 glooctl debug logs -f gloo-logs.log
