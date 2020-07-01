@@ -73,10 +73,10 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				ClientSampling:                     &envoy_type.Percent{Value: 100},
-				RandomSampling:                     &envoy_type.Percent{Value: 100},
-				OverallSampling:                    &envoy_type.Percent{Value: 100},
-				Verbose:                            false,
+				ClientSampling:  &envoy_type.Percent{Value: 100},
+				RandomSampling:  &envoy_type.Percent{Value: 100},
+				OverallSampling: &envoy_type.Percent{Value: 100},
+				Verbose:         false,
 			},
 		}
 		Expect(cfg).To(Equal(expected))
