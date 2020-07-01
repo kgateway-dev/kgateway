@@ -36,7 +36,6 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				HiddenEnvoyDeprecatedOperationName: envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				CustomTags: []*envoytracing.CustomTag{
 					{
 						Tag: "header1",
@@ -74,7 +73,6 @@ var _ = Describe("Plugin", func() {
 		Expect(err).To(BeNil())
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
-				HiddenEnvoyDeprecatedOperationName: envoyhttp.HttpConnectionManager_Tracing_INGRESS,
 				ClientSampling:                     &envoy_type.Percent{Value: 100},
 				RandomSampling:                     &envoy_type.Percent{Value: 100},
 				OverallSampling:                    &envoy_type.Percent{Value: 100},
