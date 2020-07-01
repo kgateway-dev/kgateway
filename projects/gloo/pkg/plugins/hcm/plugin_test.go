@@ -1,6 +1,7 @@
 package hcm_test
 
 import (
+	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	"time"
 
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -132,7 +133,23 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
 
 		trace := cfg.Tracing
-		Expect(trace.HiddenEnvoyDeprecatedRequestHeadersForTags).To(ConsistOf([]string{"path", "origin"}))
+		Expect(trace.CustomTags).To(ConsistOf([]*envoytracing.CustomTag{
+			{
+				Tag: "path",
+				Type: &envoytracing.CustomTag_RequestHeader{
+					RequestHeader: &envoytracing.CustomTag_Header{
+						Name: "path",
+					},
+				},
+			},
+			{
+				Tag: "origin",
+				Type: &envoytracing.CustomTag_RequestHeader{
+					RequestHeader: &envoytracing.CustomTag_Header{
+						Name: "origin",
+					},
+				},
+			}}))
 		Expect(trace.Verbose).To(BeTrue())
 		Expect(trace.ClientSampling.Value).To(Equal(100.0))
 		Expect(trace.RandomSampling.Value).To(Equal(100.0))

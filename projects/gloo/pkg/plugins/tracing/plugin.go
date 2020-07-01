@@ -3,6 +3,7 @@ package tracing
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/types"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -46,7 +47,19 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	// this plugin will overwrite any prior tracing config
 	trCfg := &envoyhttp.HttpConnectionManager_Tracing{}
 
-	trCfg.HiddenEnvoyDeprecatedRequestHeadersForTags = tracingSettings.RequestHeadersForTags
+	var customTags []*envoytracing.CustomTag
+	for _, h := range tracingSettings.RequestHeadersForTags {
+		tag := &envoytracing.CustomTag{
+			Tag: h,
+			Type: &envoytracing.CustomTag_RequestHeader{
+				RequestHeader: &envoytracing.CustomTag_Header{
+					Name: h,
+				},
+			},
+		}
+		customTags = append(customTags, tag)
+	}
+	trCfg.CustomTags = customTags
 	trCfg.Verbose = tracingSettings.Verbose
 
 	// Gloo configures envoy as an ingress, rather than an egress

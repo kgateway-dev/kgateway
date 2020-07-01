@@ -3,6 +3,7 @@ package tracing
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytracing "github.com/envoyproxy/go-control-plane/envoy/type/tracing/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/hcm"
@@ -36,7 +37,24 @@ var _ = Describe("Plugin", func() {
 		expected := &envoyhttp.HttpConnectionManager{
 			Tracing: &envoyhttp.HttpConnectionManager_Tracing{
 				HiddenEnvoyDeprecatedOperationName:         envoyhttp.HttpConnectionManager_Tracing_INGRESS,
-				HiddenEnvoyDeprecatedRequestHeadersForTags: []string{"header1", "header2"},
+				CustomTags: []*envoytracing.CustomTag{
+					{
+						Tag: "header1",
+						Type: &envoytracing.CustomTag_RequestHeader{
+							RequestHeader: &envoytracing.CustomTag_Header{
+								Name: "header1",
+							},
+						},
+					},
+					{
+						Tag: "header2",
+						Type: &envoytracing.CustomTag_RequestHeader{
+							RequestHeader: &envoytracing.CustomTag_Header{
+								Name: "header2",
+							},
+						},
+					},
+				},
 				ClientSampling:  &envoy_type.Percent{Value: 10},
 				RandomSampling:  &envoy_type.Percent{Value: 20},
 				OverallSampling: &envoy_type.Percent{Value: 30},
