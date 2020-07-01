@@ -11,6 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	hcmp "github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
+	"strconv"
 )
 
 // default all tracing percentages to 100%
@@ -48,12 +49,12 @@ func (p *Plugin) ProcessHcmSettings(cfg *envoyhttp.HttpConnectionManager, hcmSet
 	trCfg := &envoyhttp.HttpConnectionManager_Tracing{}
 
 	var customTags []*envoytracing.CustomTag
-	for _, h := range tracingSettings.RequestHeadersForTags {
+	for i, _ := range tracingSettings.RequestHeadersForTags {
 		tag := &envoytracing.CustomTag{
-			Tag: h,
+			Tag: "header" + strconv.Itoa(i+1),
 			Type: &envoytracing.CustomTag_RequestHeader{
 				RequestHeader: &envoytracing.CustomTag_Header{
-					Name: h,
+					Name:"header" + strconv.Itoa(i+1),
 				},
 			},
 		}
