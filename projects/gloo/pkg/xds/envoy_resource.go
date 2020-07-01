@@ -17,10 +17,6 @@ package xds
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	listenerv3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -67,15 +63,6 @@ func (e *EnvoyResource) Self() cache.XdsResourceReference {
 // GetResourceName returns the resource name for a valid xDS response type.
 func (e *EnvoyResource) Name() string {
 	switch v := e.ProtoMessage.(type) {
-	case *endpoint.ClusterLoadAssignment:
-		return v.GetClusterName()
-	case *cluster.Cluster:
-		return v.GetName()
-	case *route.RouteConfiguration:
-		return v.GetName()
-	case *listenerv3.Listener:
-		return v.GetName()
-	// keeping cases below as temporary solution to enable incremental changes
 	case *v2.ClusterLoadAssignment:
 		return v.GetClusterName()
 	case *v2.Cluster:
@@ -95,15 +82,6 @@ func (e *EnvoyResource) ResourceProto() cache.ResourceProto {
 
 func (e *EnvoyResource) Type() string {
 	switch e.ProtoMessage.(type) {
-	case *endpoint.ClusterLoadAssignment:
-		return EndpointType
-	case *cluster.Cluster:
-		return ClusterType
-	case *route.RouteConfiguration:
-		return RouteType
-	case *listenerv3.Listener:
-		return ListenerType
-	// keeping cases below in case- as temporary solution to enable incremental changes
 	case *v2.ClusterLoadAssignment:
 		return EndpointType
 	case *v2.Cluster:
