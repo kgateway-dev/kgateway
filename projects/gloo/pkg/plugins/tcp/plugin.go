@@ -153,7 +153,7 @@ func (p *Plugin) tcpProxyFilters(
 		return nil, NoDestinationTypeError(host)
 	}
 
-	tcpFilter, err := translatorutil.NewFilterWithConfig(wellknown.TCPProxy, cfg)
+	tcpFilter, err := translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, cfg)
 	if err != nil {
 		return nil, err
 	}

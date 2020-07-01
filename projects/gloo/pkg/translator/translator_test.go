@@ -246,7 +246,7 @@ var _ = Describe("Translator", func() {
 
 		hcmFilter := listener.FilterChains[0].Filters[0]
 		hcmCfg = &envoyhttp.HttpConnectionManager{}
-		err = ParseConfig(hcmFilter, hcmCfg)
+		err = ParseTypedConfig(hcmFilter, hcmCfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		routes := snap.GetResources(xds.RouteType)
@@ -1645,7 +1645,7 @@ var _ = Describe("Translator", func() {
 			cfg := tcpFilter.GetConfig()
 			Expect(cfg).NotTo(BeNil())
 			var typedCfg envoytcp.TcpProxy
-			Expect(ParseConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
+			Expect(ParseTypedConfig(tcpFilter, &typedCfg)).NotTo(HaveOccurred())
 			clusterSpec := typedCfg.GetCluster()
 			Expect(clusterSpec).To(Equal("test_gloo-system"))
 		})

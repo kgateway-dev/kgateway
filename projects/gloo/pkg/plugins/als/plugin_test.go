@@ -116,7 +116,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoyhttp.HttpConnectionManager
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.AccessLog).To(HaveLen(1))
@@ -149,7 +149,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.AccessLog).To(HaveLen(1))
@@ -232,7 +232,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -265,7 +265,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -327,7 +327,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -360,7 +360,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))

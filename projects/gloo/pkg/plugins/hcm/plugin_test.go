@@ -104,7 +104,7 @@ var _ = Describe("Plugin", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		var cfg envoyhttp.HttpConnectionManager
-		err = translatorutil.ParseConfig(filters[0], &cfg)
+		err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(cfg.UseRemoteAddress).To(Equal(gogoutils.BoolGogoToProto(hcms.UseRemoteAddress)))
@@ -215,7 +215,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoyhttp.HttpConnectionManager
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))
@@ -229,7 +229,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoyhttp.HttpConnectionManager
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(len(cfg.GetUpgradeConfigs())).To(Equal(1))

@@ -66,7 +66,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithConfig(wellknown.HTTPConnectionManager, &hcmCfg)
+					f.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &hcmCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -83,7 +83,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 				if filter.Name == wellknown.TCPProxy {
 					// get config
 					var tcpCfg envoytcp.TcpProxy
-					err := translatorutil.ParseConfig(filter, &tcpCfg)
+					err := translatorutil.ParseTypedConfig(filter, &tcpCfg)
 					// this should never error
 					if err != nil {
 						return err
@@ -95,7 +95,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 						return err
 					}
 
-					f.Filters[i], err = translatorutil.NewFilterWithConfig(wellknown.TCPProxy, &tcpCfg)
+					f.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.TCPProxy, &tcpCfg)
 					// this should never error
 					if err != nil {
 						return err
