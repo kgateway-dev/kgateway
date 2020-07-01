@@ -168,6 +168,12 @@ message VirtualHostOptions {
     // Note: If you have not set a global config (at the gateway level), this
     // override will not do anything by itself.
     envoy.extensions.filters.http.buffer.v3.BufferPerRoute buffer_per_route = 14;
+
+    // are these the right types, or should they just be bools?
+    // is this the right place?
+    google.protobuf.BoolValue include_request_attempt_count = 15;
+
+    google.protobuf.BoolValue include_attempt_count_in_response = 16;
 }
 
 // Optional, feature-specific configuration that lives on routes.
