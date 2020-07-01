@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add note about OPA version logging to docs
+    issueLink: https://github.com/solo-io/gloo/issues/3136
