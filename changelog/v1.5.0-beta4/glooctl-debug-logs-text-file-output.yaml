@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Make glooctl debug command respect -f flag for unzipped log output
+    issueLink: https://github.com/solo-io/gloo/issues/3124

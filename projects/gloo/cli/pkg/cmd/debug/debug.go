@@ -41,6 +41,12 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 	defer fs.RemoveAll(dir)
 	storageClient := debugutils.NewFileStorageClient(fs)
 
+	// if writing to a non-zipped file, create a channel to collect logs
+	var fileBuf chan string
+	if !opts.Top.Zip && opts.Top.File != "" {
+		fileBuf = make(chan string, len(responses))
+	}
+
 	eg := errgroup.Group{}
 	for _, response := range responses {
 		response := response
@@ -58,6 +64,8 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 						Resource: strings.NewReader(logs.String()),
 						Name:     response.ResourceId(),
 					})
+				} else if opts.Top.File != "" {
+					fileBuf <- logs.String()
 				} else {
 					err = displayLogs(w, logs)
 					if err != nil {
@@ -80,6 +88,19 @@ func DebugLogs(opts *options.Options, w io.Writer) error {
 		err = zip(fs, dir, opts.Top.File)
 		if err != nil {
 			return err
+		}
+	} else if opts.Top.File != "" {
+		// collect logs from fileBuf channel and write to
+		// fileName specified by opts.Top.File  when "-f" flag is used without ""--zip"
+		logFile, err := os.OpenFile(opts.Top.File, os.O_WRONLY|os.O_CREATE, filePermissions)
+		if err != nil {
+			return err
+		}
+		defer logFile.Close()
+
+		close(fileBuf)
+		for writeVal := range fileBuf {
+			logFile.WriteString(writeVal)
 		}
 	}
 
