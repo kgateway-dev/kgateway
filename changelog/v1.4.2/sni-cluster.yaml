@@ -1,5 +1,5 @@
 changelog:
-- type: NON_USER_FACING
+- type: FIX
   issueLink: https://github.com/solo-io/gloo/issues/3223
   description: >
-    Backport ability to add the envoy Upstream Cluster from SNI filter to the TCP proxy.
+    Fix TCP multi-cluster routing by enabling routing via SNI name. Gloo adds new APIs to expose the envoy tcp SNI filter.
