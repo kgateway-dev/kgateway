@@ -4,5 +4,5 @@ changelog:
     dependencyRepo: solo-io
     dependencyTag: v1.15.0-rc1
     description: >-
-      Updated envoy-gloo to one based on enovy master, which includes a security fixes in envoy. For more details,
-      see the envoy release notes [here](https://www.envoyproxy.io/docs/envoy/v1.14.3/intro/version_history#version-history)
+      Updated envoy-gloo to one based on envoy master (1.15.0), which includes security fixes in envoy. For more
+      details on the CVEs, see the envoy release notes [here](https://www.envoyproxy.io/docs/envoy/v1.14.3/intro/version_history#version-history)
