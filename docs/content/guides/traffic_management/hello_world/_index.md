@@ -290,6 +290,10 @@ glooctl add route \
   --prefix-rewrite /api/pets
 ```
 
+{{% notice note %}}
+If using Git Bash on Windows, the above will not work; Git Bash interprets the route parameters as Unix file paths and mangles them. Adding `MSYS_NO_PATHCONV=1` to the start of the above command should allow it to execute correctly.
+{{% /notice %}}
+
 We do not specify a specific Virtual Service, so the route is added to the `default` Virtual Service. If a `default` Virtual Service does not exist, `glooctl` will create one.
 
 ```console
