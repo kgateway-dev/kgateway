@@ -5,7 +5,6 @@ import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	gogo_types "github.com/gogo/protobuf/types"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	"github.com/rotisserie/eris"
@@ -112,7 +111,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 		},
 		HeaderKey: sslSecrets.CallCredentials.FileCredentialSource.Header,
 	}
-	any, _ := ptypes.MarshalAny(config)
+	any, _ := MessageToAny(config)
 
 	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
 		TargetUri:  sslSecrets.TargetUri,
