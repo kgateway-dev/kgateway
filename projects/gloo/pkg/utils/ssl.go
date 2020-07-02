@@ -1,9 +1,9 @@
 package utils
 
 import (
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	gogo_types "github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
@@ -103,7 +103,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
-	config := &v2alpha.FileBasedMetadataConfig{
+	config := &envoygrpccredential.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
 				Filename: sslSecrets.CallCredentials.FileCredentialSource.TokenFileName,
@@ -178,7 +178,7 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, verifySan []st
 		} else {
 			tlsContext.ValidationContextType = &envoyauth.CommonTlsContext_CombinedValidationContext{
 				CombinedValidationContext: &envoyauth.CommonTlsContext_CombinedCertificateValidationContext{
-					DefaultValidationContext:         &envoyauth.CertificateValidationContext{VerifySubjectAltName: verifySan},
+					DefaultValidationContext:         &envoyauth.CertificateValidationContext{HiddenEnvoyDeprecatedVerifySubjectAltName: verifySan},
 					ValidationContextSdsSecretConfig: buildSds(sslSecrets.ValidationContextName, sslSecrets),
 				},
 			}
@@ -258,7 +258,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 			},
 		}
 		if len(sanList) != 0 {
-			validationCtx.ValidationContext.VerifySubjectAltName = sanList
+			validationCtx.ValidationContext.HiddenEnvoyDeprecatedVerifySubjectAltName = sanList
 		}
 		tlsContext.ValidationContextType = validationCtx
 
