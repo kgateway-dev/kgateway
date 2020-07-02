@@ -24,7 +24,7 @@ data:
       - name: static_layer
         static_layer:
           overload:
-            global_downstream_max_connections: 250000
+            global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
       - name: admin_layer
         admin_layer: {}
     node:
