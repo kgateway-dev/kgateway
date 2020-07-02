@@ -6,18 +6,12 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
-// todo what're those???
-const (
-	ExtensionName      = "attempt-count"
-	EnvoyExtensionName = "envoy-attempt-count"
-	CustomDomain       = "custom"
-	requestType        = "both"
-
-	customStage    = 1
-)
-
 type Plugin struct {
 }
+
+// Compile-time assertion
+var _ plugins.Plugin = &Plugin{}
+var _ plugins.VirtualHostPlugin = &Plugin{}
 
 func NewPlugin() *Plugin {
 	return &Plugin{}
@@ -29,6 +23,7 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
 	// both these values default to false if unset in envoy, so no need to set anything if input is nil.
+	// (Input is a google.protobuf.BoolValue, so it can be true, false, or nil)
 	if irac := in.GetOptions().GetIncludeRequestAttemptCount(); irac != nil {
 		out.IncludeRequestAttemptCount = irac.Value
 	}

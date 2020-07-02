@@ -12,23 +12,17 @@ import (
 
 var _ = Describe("AttemptCount Plugin", func() {
 	var (
-		// acPlugin   *Plugin
+		acPlugin   *Plugin
 	)
 
 	BeforeEach(func() {
-		//acPlugin = NewPlugin()
+		acPlugin = NewPlugin()
 	})
 
-	JustBeforeEach(func() {
-		// acPlugin.Init()
-	})
-
-
-	It("Allows setting both IncludeRequestAttemptCount and IncludeAttemptCountInResponse independently", func() {
-		p := NewPlugin()
+	It("Allows setting both values independently", func() {
 		out := &envoyroute.VirtualHost{}
 
-		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+		err := acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				IncludeRequestAttemptCount: &types.BoolValue{
 					Value: true,
@@ -40,8 +34,7 @@ var _ = Describe("AttemptCount Plugin", func() {
 		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(true))
 		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(false))
 
-
-		err = p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+		err = acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				IncludeRequestAttemptCount: &types.BoolValue{
 					Value: false,
@@ -57,10 +50,9 @@ var _ = Describe("AttemptCount Plugin", func() {
 		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(true))
 	})
 
-	It("still causes both IncludeRequestAttemptCount and IncludeAttemptCountInResponse to default to false", func() {
-		p := NewPlugin()
+	It("still causes both values to default to false", func() {
 		out := &envoyroute.VirtualHost{}
-		err := p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+		err := acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 			},
 		}, out)
@@ -69,7 +61,7 @@ var _ = Describe("AttemptCount Plugin", func() {
 		Expect(out.GetIncludeRequestAttemptCount()).To(Equal(false))
 		Expect(out.GetIncludeAttemptCountInResponse()).To(Equal(false))
 
-		err = p.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
+		err = acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
 				IncludeRequestAttemptCount: &types.BoolValue{
 				},
