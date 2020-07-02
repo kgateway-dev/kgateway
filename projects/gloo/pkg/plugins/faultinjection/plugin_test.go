@@ -24,7 +24,7 @@ func assertEqualPercent(actual float32, expectedNumerator uint32, t *testing.T) 
 		Denominator: envoytype.FractionalPercent_MILLION,
 	}
 
-	actualPercentage := common.ToEnvoyPercentage(actual)
+	actualPercentage := common.ToEnvoyv2Percentage(actual)
 	if !reflect.DeepEqual(expectedPercentage, *actualPercentage) {
 		t.Errorf("Expected %v but got %v.", expectedPercentage, actualPercentage)
 	}

@@ -102,9 +102,9 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		}
 	} else {
 		out.Tracing = &envoyroute.Tracing{
-			ClientSampling:  common.ToEnvoyPercentage(oneHundredPercent),
-			RandomSampling:  common.ToEnvoyPercentage(oneHundredPercent),
-			OverallSampling: common.ToEnvoyPercentage(oneHundredPercent),
+			ClientSampling:  common.ToEnvoyv2Percentage(oneHundredPercent),
+			RandomSampling:  common.ToEnvoyv2Percentage(oneHundredPercent),
+			OverallSampling: common.ToEnvoyv2Percentage(oneHundredPercent),
 		}
 	}
 	descriptor := in.Options.Tracing.RouteDescriptor
