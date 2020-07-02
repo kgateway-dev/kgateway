@@ -22,13 +22,13 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	// both these values default to false if unset in envoy, so no need to set anything if input is nil.
+	// Both these values default to false if unset, so there's need to set anything if input is nil.
 	// (Input is a google.protobuf.BoolValue, so it can be true, false, or nil)
 	if irac := in.GetOptions().GetIncludeRequestAttemptCount(); irac != nil {
 		out.IncludeRequestAttemptCount = irac.Value
 	}
-	if irac := in.GetOptions().GetIncludeAttemptCountInResponse(); irac != nil {
-		out.IncludeAttemptCountInResponse = irac.Value
+	if iacir := in.GetOptions().GetIncludeAttemptCountInResponse(); iacir != nil {
+		out.IncludeAttemptCountInResponse = iacir.Value
 	}
 	return nil
 }
