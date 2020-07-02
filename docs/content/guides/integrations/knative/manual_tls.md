@@ -20,7 +20,7 @@ It assumes you've already followed the [installation guide for Gloo and Knative]
 
 1. First, [ensure Knative is installed with Gloo]({{% versioned_link_path fromRoot="/installation/knative" %}}). 
 
-1. Next, let's create a private key and certificate to use for serving traffic. Uf you have your own key/cert pair, you can use those instead of creating self-signed certs here.
+1. Next, let's create a private key and certificate to use for serving traffic. If you have your own key/cert pair, you can use those instead of creating self-signed certs here.
 
     ```bash
     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
@@ -85,6 +85,10 @@ spec:
      Gloo will use the `Host` header to route requests to the correct
      service. You can send a request to the `helloworld-go` service with curl
      using the `Host` and URL of the Gloo Gateway from above:
+
+     {{% notice note %}}
+   Note that if you are trying to run this guide on minikube, you will not have an external load balancer IP for the ingress, so you will instead need to use the nodePort, more details can be found in <a href="#testing-on-minikube">the minikube instructions below</a>.
+     {{% /notice %}}
   
      ```
      INGRESS_IP=$(kubectl get svc -n gloo-system knative-external-proxy  -o jsonpath='{.status.loadBalancer.ingress[*].ip}')
@@ -148,5 +152,69 @@ spec:
      Hello Go Sample v1!
      * Connection #0 to host helloworld-go.default.example.com left intact
      ```
+
+## Testing on minikube
+
+When testing on minikube you will not have an external load balancer IP for the ingress, so you will need to use the exposed nodePort and hostIP instead. The host header must also be explicitly passed to curl for routing to work correctly.
+
+```
+EXTERNAL_PROXY_POD=$(kubectl get pods -n gloo-system -l gloo=knative-external-proxy -o jsonpath='{.items[0].metadata.name}') \
+INGRESS_IP=$(kubectl get pod -n gloo-system $EXTERNAL_PROXY_POD -o jsonpath='{.status.hostIP}') \
+INGRESS_PORT=$(kubectl get svc -n gloo-system knative-external-proxy  -o jsonpath='{.spec.ports[1].nodePort}') \
+curl -v -k --resolve "helloworld-go.default.example.com:$INGRESS_PORT:$INGRESS_IP" -H "Host: helloworld-go.default.example.com:443" https://helloworld-go.default.example.com:$INGRESS_PORT
+```
+
+returns
+
+```
+* Added helloworld-go.default.example.com:31606:192.168.64.19 to DNS cache
+* Hostname helloworld-go.default.example.com was found in DNS cache
+*   Trying 192.168.64.19...
+* TCP_NODELAY set
+* Connected to helloworld-go.default.example.com (192.168.64.19) port 31606 (#0)
+* ALPN, offering h2
+* ALPN, offering http/1.1
+* successfully set certificate verify locations:
+*   CAfile: /etc/ssl/cert.pem
+  CApath: none
+* TLSv1.2 (OUT), TLS handshake, Client hello (1):
+* TLSv1.2 (IN), TLS handshake, Server hello (2):
+* TLSv1.2 (IN), TLS handshake, Certificate (11):
+* TLSv1.2 (IN), TLS handshake, Server key exchange (12):
+* TLSv1.2 (IN), TLS handshake, Server finished (14):
+* TLSv1.2 (OUT), TLS handshake, Client key exchange (16):
+* TLSv1.2 (OUT), TLS change cipher, Change cipher spec (1):
+* TLSv1.2 (OUT), TLS handshake, Finished (20):
+* TLSv1.2 (IN), TLS change cipher, Change cipher spec (1):
+* TLSv1.2 (IN), TLS handshake, Finished (20):
+* SSL connection using TLSv1.2 / ECDHE-RSA-CHACHA20-POLY1305
+* ALPN, server accepted to use h2
+* Server certificate:
+*  subject: CN=helloworld-go.default.example.com
+*  start date: Jun 30 20:00:41 2020 GMT
+*  expire date: Jun 30 20:00:41 2021 GMT
+*  issuer: CN=helloworld-go.default.example.com
+*  SSL certificate verify result: self signed certificate (18), continuing anyway.
+* Using HTTP2, server supports multi-use
+* Connection state changed (HTTP/2 confirmed)
+* Copying HTTP/2 data in stream buffer to connection buffer after upgrade: len=0
+* Using Stream ID: 1 (easy handle 0x7f8a9f80d600)
+> GET / HTTP/2
+> Host: helloworld-go.default.example.com:443
+> User-Agent: curl/7.64.1
+> Accept: */*
+>
+* Connection state changed (MAX_CONCURRENT_STREAMS == 2147483647)!
+< HTTP/2 200
+< content-length: 20
+< content-type: text/plain; charset=utf-8
+< date: Thu, 02 Jul 2020 19:05:11 GMT
+< x-envoy-upstream-service-time: 1
+< server: envoy
+<
+Hello Go Sample v1!
+* Connection #0 to host helloworld-go.default.example.com left intact
+* Closing connection 0
+```
 
 Congratulations! We've just successfully connected to our Knative service over a secure HTTPS connection! Try out some of the more advanced tutorials for Knative in [the Knative documentation](https://knative.dev/docs/).
