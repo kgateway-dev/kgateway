@@ -18,6 +18,14 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      overload:
+        global_downstream_max_connections: 250000
+  - name: admin_layer
+    admin_layer: {}
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -147,6 +155,14 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      overload:
+        global_downstream_max_connections: 250000
+  - name: admin_layer
+    admin_layer: {}
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -280,6 +296,14 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      overload:
+        global_downstream_max_connections: 250000
+  - name: admin_layer
+    admin_layer: {}
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -429,6 +453,14 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      overload:
+        global_downstream_max_connections: 250000
+  - name: admin_layer
+    admin_layer: {}
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'
@@ -600,6 +632,14 @@ dynamic_resources:
     ads: {}
   lds_config:
     ads: {}
+layered_runtime:
+  layers:
+  - name: static_layer
+    static_layer:
+      overload:
+        global_downstream_max_connections: 250000
+  - name: admin_layer
+    admin_layer: {}
 node:
   cluster: gateway
   id: '{{.PodName}}.{{.PodNamespace}}'

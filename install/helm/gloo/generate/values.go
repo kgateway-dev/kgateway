@@ -204,22 +204,23 @@ type CertGenJob struct {
 }
 
 type GatewayProxy struct {
-	Kind                        *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
-	PodTemplate                 *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
-	ConfigMap                   *GatewayProxyConfigMap       `json:"configMap,omitempty"`
-	Service                     *GatewayProxyService         `json:"service,omitempty"`
-	AntiAffinity                bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
-	Tracing                     *Tracing                     `json:"tracing,omitempty"`
-	GatewaySettings             *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
-	ExtraEnvoyArgs              []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
-	ExtraContainersHelper       string                       `json:"extraContainersHelper,omitempty"`
-	ExtraInitContainersHelper   string                       `json:"extraInitContainersHelper",omitempty`
-	ExtraVolumeHelper           string                       `json:"extraVolumeHelper",omitempty`
-	ExtraListenersHelper        string                       `json:"extraListenersHelper",omitempty`
-	Stats                       *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
-	ReadConfig                  bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
-	ExtraProxyVolumeMountHelper string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
-	LoopBackAddress             string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Kind                           *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
+	PodTemplate                    *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
+	ConfigMap                      *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	GlobalDownstreamMaxConnections uint32                       `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
+	Service                        *GatewayProxyService         `json:"service,omitempty"`
+	AntiAffinity                   bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are preferably not co-located"`
+	Tracing                        *Tracing                     `json:"tracing,omitempty"`
+	GatewaySettings                *GatewayProxyGatewaySettings `json:"gatewaySettings,omitempty" desc:"settings for the helm generated gateways, leave nil to not render"`
+	ExtraEnvoyArgs                 []string                     `json:"extraEnvoyArgs,omitempty" desc:"envoy container args, (e.g. https://www.envoyproxy.io/docs/envoy/latest/operations/cli)"`
+	ExtraContainersHelper          string                       `json:"extraContainersHelper,omitempty"`
+	ExtraInitContainersHelper      string                       `json:"extraInitContainersHelper,omitempty"`
+	ExtraVolumeHelper              string                       `json:"extraVolumeHelper,omitempty"`
+	ExtraListenersHelper           string                       `json:"extraListenersHelper,omitempty"`
+	Stats                          *Stats                       `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway-proxy pod"`
+	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
+	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
+	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 }
 
 type GatewayProxyGatewaySettings struct {
