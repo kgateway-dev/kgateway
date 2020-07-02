@@ -12,7 +12,7 @@ import (
 
 var _ = Describe("AttemptCount Plugin", func() {
 	var (
-		acPlugin   *Plugin
+		acPlugin *Plugin
 	)
 
 	BeforeEach(func() {
@@ -53,8 +53,7 @@ var _ = Describe("AttemptCount Plugin", func() {
 	It("still causes both values to default to false", func() {
 		out := &envoyroute.VirtualHost{}
 		err := acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
-			Options: &v1.VirtualHostOptions{
-			},
+			Options: &v1.VirtualHostOptions{},
 		}, out)
 
 		Expect(err).NotTo(HaveOccurred())
@@ -63,10 +62,8 @@ var _ = Describe("AttemptCount Plugin", func() {
 
 		err = acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{
 			Options: &v1.VirtualHostOptions{
-				IncludeRequestAttemptCount: &types.BoolValue{
-				},
-				IncludeAttemptCountInResponse: &types.BoolValue{
-				},
+				IncludeRequestAttemptCount:    &types.BoolValue{},
+				IncludeAttemptCountInResponse: &types.BoolValue{},
 			},
 		}, out)
 

@@ -367,9 +367,19 @@ type VirtualHostOptions struct {
 	// Note: If you have not set a global config (at the gateway level), this
 	// override will not do anything by itself.
 	BufferPerRoute *v3.BufferPerRoute `protobuf:"bytes,14,opt,name=buffer_per_route,json=bufferPerRoute,proto3" json:"buffer_per_route,omitempty"`
-	// are these the right types, or should they just be bools?
-	// is this the right place?
-	IncludeRequestAttemptCount    *types.BoolValue `protobuf:"bytes,15,opt,name=include_request_attempt_count,json=includeRequestAttemptCount,proto3" json:"include_request_attempt_count,omitempty"`
+	// IncludeRequestAttemptCount decides whether the x-envoy-attempt-count header
+	// should be included in the upstream request.
+	// Setting this option will cause it to override any existing header value,
+	// so in the case of two Envoys on the request path with this option enabled,
+	// the upstream will see the attempt count as perceived by the second Envoy.
+	// Defaults to false.
+	IncludeRequestAttemptCount *types.BoolValue `protobuf:"bytes,15,opt,name=include_request_attempt_count,json=includeRequestAttemptCount,proto3" json:"include_request_attempt_count,omitempty"`
+	// IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header
+	// should be included in the downstream response.
+	// Setting this option will cause the router to override any existing header value,
+	// so in the case of two Envoys on the request path with this option enabled,
+	// the downstream will see the attempt count as perceived by the Envoy closest upstream from itself.
+	// Defaults to false.
 	IncludeAttemptCountInResponse *types.BoolValue `protobuf:"bytes,16,opt,name=include_attempt_count_in_response,json=includeAttemptCountInResponse,proto3" json:"include_attempt_count_in_response,omitempty"`
 	XXX_NoUnkeyedLiteral          struct{}         `json:"-"`
 	XXX_unrecognized              []byte           `json:"-"`
