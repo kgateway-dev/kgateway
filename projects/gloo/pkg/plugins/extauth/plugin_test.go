@@ -6,7 +6,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
