@@ -43,7 +43,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return BuildHttpFilters(settings, params.Snapshot.Upstreams)
 }
 
-// This function generates the ext_authz PerFilterConfig for this virtual host. If the ext_authz filter was not
+// This function generates the ext_authz TypedPerFilterConfig for this virtual host. If the ext_authz filter was not
 // configured on the listener, do nothing. If the filter is configured and the virtual host does not define
 // an extauth configuration OR explicitly disables extauth, we disable the ext_authz filter.
 // This is done to disable authentication by default on a virtual host and its child resources (routes, weighted
@@ -78,7 +78,7 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 	return pluginutils.SetVhostPerFilterConfig(out, wellknown.HTTPExternalAuthorization, config)
 }
 
-// This function generates the ext_authz PerFilterConfig for this route:
+// This function generates the ext_authz TypedPerFilterConfig for this route:
 // - if the route defines custom auth configuration, set the filter correspondingly;
 // - if auth is explicitly disabled, disable the filter (will apply by default also to WeightedDestinations);
 // - else, do nothing (will inherit config from parent virtual host).
@@ -112,7 +112,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return pluginutils.SetRoutePerFilterConfig(out, wellknown.HTTPExternalAuthorization, config)
 }
 
-// This function generates the ext_authz PerFilterConfig for this weightedDestination:
+// This function generates the ext_authz TypedPerFilterConfig for this weightedDestination:
 // - if the weightedDestination defines custom auth configuration, set the filter correspondingly;
 // - if auth is explicitly disabled, disable the filter;
 // - else, do nothing (will inherit config from parent virtual host and/or route).
