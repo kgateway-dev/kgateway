@@ -1,0 +1,4 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3182
+      description: Expose IncludeRequestAttemptCount and IncludeAttemptCountInResponse as VirtualHost options. They both default to false.
