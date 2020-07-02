@@ -122,6 +122,7 @@
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
+|gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.NAME.service.httpPort|int||HTTP port for the gateway service|
 |gatewayProxies.NAME.service.httpsPort|int||HTTPS port for the gateway service|
@@ -173,6 +174,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
+|gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
 |gatewayProxies.gatewayProxy.service.httpPort|int|80|HTTP port for the gateway service|
 |gatewayProxies.gatewayProxy.service.httpsPort|int|443|HTTPS port for the gateway service|
