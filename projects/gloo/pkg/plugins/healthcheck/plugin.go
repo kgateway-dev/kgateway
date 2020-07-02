@@ -1,8 +1,8 @@
 package healthcheck
 
 import (
-	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/health_check/v2"
+	route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoyhealthcheck "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/health_check/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	errors "github.com/rotisserie/eris"

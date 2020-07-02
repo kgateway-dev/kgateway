@@ -3,11 +3,11 @@ package ratelimit
 import (
 	"time"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
-	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
+	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )

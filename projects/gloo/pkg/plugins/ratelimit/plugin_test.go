@@ -15,9 +15,9 @@ import (
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/rate_limit/v2"
-	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	rlconfig "github.com/envoyproxy/go-control-plane/envoy/config/ratelimit/v3"
+	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	ratelimitpb "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
