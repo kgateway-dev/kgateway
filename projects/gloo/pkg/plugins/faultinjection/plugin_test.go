@@ -5,7 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/internal/common"
 
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 
 	"testing"
 )
@@ -24,7 +24,7 @@ func assertEqualPercent(actual float32, expectedNumerator uint32, t *testing.T) 
 		Denominator: envoytype.FractionalPercent_MILLION,
 	}
 
-	actualPercentage := common.ToEnvoyv2Percentage(actual)
+	actualPercentage := common.ToEnvoyPercentage(actual)
 	if !reflect.DeepEqual(expectedPercentage, *actualPercentage) {
 		t.Errorf("Expected %v but got %v.", expectedPercentage, actualPercentage)
 	}
