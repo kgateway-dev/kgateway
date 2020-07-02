@@ -158,14 +158,11 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 	if proxy == nil {
 		return nil
 	}
-	timeout := time.After(time.Second * 30)
 	ticker := time.Tick(time.Second / 2)
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-timeout:
-			return eris.Errorf("timed out waiting for proxy status to be updated")
 		case <-ticker:
 			// poll the proxy for an accepted or rejected status
 			updatedProxy, err := s.proxyClient.Read(proxy.Metadata.Namespace, proxy.Metadata.Name, clients.ReadOpts{Ctx: ctx})
@@ -178,7 +175,7 @@ func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloo
 			case core.Status_Rejected:
 				contextutils.LoggerFrom(ctx).Errorf("proxy was rejected by gloo: %v",
 					updatedProxy.Status.Reason)
-				return nil
+				continue
 			case core.Status_Accepted:
 				return s.markIngressesReady(ctx, ingresses)
 			}
