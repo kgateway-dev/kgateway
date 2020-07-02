@@ -188,6 +188,7 @@ type GatewayProxy struct {
 	Kind                      *GatewayProxyKind            `json:"kind,omitempty" desc:"value to determine how the gateway proxy is deployed"`
 	PodTemplate               *GatewayProxyPodTemplate     `json:"podTemplate,omitempty"`
 	ConfigMap                 *GatewayProxyConfigMap       `json:"configMap,omitempty"`
+	GlobalDownstreamMaxConnections uint32                       `json:"globalDownstreamMaxConnections,omitempty" desc:"the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine"`
 	Service                   *GatewayProxyService         `json:"service,omitempty"`
 	AntiAffinity              bool                         `json:"antiAffinity" desc:"configure anti affinity such that pods are prefferably not co-located"`
 	Tracing                   *Tracing                     `json:"tracing,omitempty"`

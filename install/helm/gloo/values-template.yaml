@@ -97,6 +97,7 @@ gatewayProxies:
     tracing:
     configMap:
       data:
+    globalDownstreamMaxConnections: 250000
 accessLogger:
   enabled: false
   port: 8083

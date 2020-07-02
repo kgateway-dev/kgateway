@@ -14,6 +14,14 @@ metadata:
 data:
 {{ if (empty $spec.configMap.data) }}
   envoy.yaml: |
+    layered_runtime:
+      layers:
+      - name: static_layer
+        static_layer:
+          overload:
+            global_downstream_max_connections: {{ $spec.globalDownstreamMaxConnections }}
+      - name: admin_layer
+        admin_layer: {}
     node:
       cluster: gateway
       id: "{{ `{{.PodName}}.{{.PodNamespace}}` }}"
