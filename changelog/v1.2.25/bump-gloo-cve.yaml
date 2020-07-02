@@ -1,0 +1,8 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.13.3-patch1
+    description: >-
+      Updated envoy-gloo to one based on envoy 1.13.3, which includes security fixes in envoy. For more
+      details on the CVEs, see the envoy release notes [here](https://www.envoyproxy.io/docs/envoy/v1.14.3/intro/version_history#version-history)
