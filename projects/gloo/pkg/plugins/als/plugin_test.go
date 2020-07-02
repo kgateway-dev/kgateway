@@ -16,7 +16,7 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
+	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
 	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -39,7 +39,7 @@ var _ = Describe("Plugin", func() {
 
 		var checkConfig = func(al *envoyal.AccessLog) {
 			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
-			var falCfg envoyalcfg.HttpGrpcAccessLogConfig
+			var falCfg envoygrpc.HttpGrpcAccessLogConfig
 			err := translatorutil.ParseTypedConfig(al, &falCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
