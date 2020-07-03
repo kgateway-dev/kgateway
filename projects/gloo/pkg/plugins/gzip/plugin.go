@@ -39,7 +39,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 
 	envoyGzipConfig, err := convertGzip(gzipConfig) // Note: this modifies the gzipConfig
 	if err != nil {
-		return nil, eris.Wrapf(err, "converting filter")
+		return nil, eris.Wrapf(err, "converting gzip config")
 	}
 	gzipFilter, err := plugins.NewStagedFilterWithConfig(wellknown.Gzip, envoyGzipConfig, pluginStage)
 	if err != nil {
@@ -73,22 +73,22 @@ func convertGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 	if err != nil {
 		return nil, err
 	}
-	remarshalled := new(envoygzip.Gzip)
-	if err := jsonpb.UnmarshalString(gzipStr, remarshalled); err != nil {
+	envoyGzip := new(envoygzip.Gzip)
+	if err := jsonpb.UnmarshalString(gzipStr, envoyGzip); err != nil {
 		return nil, err
 	}
 
-	// Adjust `remarshalled` to include the data from deprecated fields in the new Compressor field.
+	// Adjust `envoyGzip` to include the data from deprecated fields in the new Compressor field.
 	if containsOldFields {
-		remarshalled.Compressor = &envoycompressor.Compressor{
+		envoyGzip.Compressor = &envoycompressor.Compressor{
 			ContentType:                contentType,
 			DisableOnEtagHeader:        disableOnEtagHeader,
 			RemoveAcceptEncodingHeader: removeAcceptEncodingHeader,
 		}
 		if contentLength != nil {
-			remarshalled.Compressor.ContentLength = &wrappers.UInt32Value{Value: contentLength.GetValue()}
+			envoyGzip.Compressor.ContentLength = &wrappers.UInt32Value{Value: contentLength.GetValue()}
 		}
 	}
 
-	return remarshalled, nil
+	return envoyGzip, nil
 }
