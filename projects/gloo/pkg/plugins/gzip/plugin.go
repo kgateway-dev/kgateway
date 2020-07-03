@@ -81,8 +81,8 @@ func convertGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 	// Adjust `remarshalled` to include the data from deprecated fields in the new Compressor field.
 	if containsOldFields {
 		remarshalled.Compressor = &envoycompressor.Compressor{
-			ContentType: contentType,
-			DisableOnEtagHeader: disableOnEtagHeader,
+			ContentType:                contentType,
+			DisableOnEtagHeader:        disableOnEtagHeader,
 			RemoveAcceptEncodingHeader: removeAcceptEncodingHeader,
 		}
 		if contentLength != nil {

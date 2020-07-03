@@ -65,10 +65,10 @@ var _ = Describe("Plugin", func() {
 					ContentLength: &types.UInt32Value{
 						Value: 10,
 					},
-					CompressionLevel:    10,
-					CompressionStrategy: 10,
-					ContentType: []string{"type1", "type2"},
-					DisableOnEtagHeader: true,
+					CompressionLevel:           10,
+					CompressionStrategy:        10,
+					ContentType:                []string{"type1", "type2"},
+					DisableOnEtagHeader:        true,
 					RemoveAcceptEncodingHeader: true,
 					WindowBits: &types.UInt32Value{
 						Value: 10,
@@ -88,9 +88,9 @@ var _ = Describe("Plugin", func() {
 							CompressionStrategy: 10.000000,
 							WindowBits:          &wrappers.UInt32Value{Value: 10.000000},
 							Compressor: &envoycompressor.Compressor{
-								ContentLength: &wrappers.UInt32Value{Value: 10.000000},
-								ContentType: []string{"type1", "type2"},
-								DisableOnEtagHeader: true,
+								ContentLength:              &wrappers.UInt32Value{Value: 10.000000},
+								ContentType:                []string{"type1", "type2"},
+								DisableOnEtagHeader:        true,
 								RemoveAcceptEncodingHeader: true,
 							},
 						}),
