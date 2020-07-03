@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/2815
+  resolvesIssue: false 
+  description: This is part of the upgrade to v3 of the Envoy xDS API. It primarily replaces v2 of non-top-level resources with v3 in plugins.
