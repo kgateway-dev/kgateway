@@ -76,7 +76,7 @@ var _ = Describe("Ssl", func() {
 				c, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.HiddenEnvoyDeprecatedVerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(convertSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 	})
@@ -239,12 +239,12 @@ var _ = Describe("Ssl", func() {
 				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, false)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.HiddenEnvoyDeprecatedVerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(convertSanList(upstreamCfg.VerifySubjectAltName)))
 
 				c, err = configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, true)
 				Expect(err).NotTo(HaveOccurred())
 				vctx = c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.HiddenEnvoyDeprecatedVerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(convertSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 
@@ -353,7 +353,7 @@ var _ = Describe("Ssl", func() {
 				c, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
-				Expect(vctx.DefaultValidationContext.HiddenEnvoyDeprecatedVerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.DefaultValidationContext.MatchSubjectAltNames).To(Equal(convertSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 	})
