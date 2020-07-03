@@ -1,10 +1,10 @@
 package utils
 
 import (
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	gogo_types "github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
@@ -104,7 +104,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
-	config := &envoygrpccredential.FileBasedMetadataConfig{
+	config := &v2alpha.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
 				Filename: sslSecrets.CallCredentials.FileCredentialSource.TokenFileName,
