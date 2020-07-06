@@ -184,8 +184,8 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 						hasName: routeHasName,
 					}
 
-					// Make a copy of the existing set of visited route tables and pass that into the recursive call.
-					// We do NOT want it to be modified.
+					// Make a copy of the existing set of visited route tables. We need to pass this information into
+					// the recursive call and we do NOT want the original slice to be modified.
 					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
 
 					// Recursive call

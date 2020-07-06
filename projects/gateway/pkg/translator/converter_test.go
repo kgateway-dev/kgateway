@@ -549,7 +549,7 @@ var _ = Describe("Route converter", func() {
 					buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/2", map[string]string{"foo": "bar", "team": "dev"}),
 					buildRouteTableWithSimpleAction("rt-3", "ns-2", "/foo/3", map[string]string{"foo": "bar"}),
 					buildRouteTableWithSimpleAction("rt-4", "ns-3", "/foo/4", map[string]string{"foo": "baz"}),
-					buildRouteTableWithDelegateAction("rt-5", "ns-4", "/foo", nil,
+					buildRouteTableWithSelector("rt-5", "ns-4", "/foo", nil,
 						&v1.RouteTableSelector{
 							Labels:     map[string]string{"team": "dev"},
 							Namespaces: []string{"ns-1", "ns-5"},
@@ -662,52 +662,106 @@ var _ = Describe("Route converter", func() {
 
 		When("there are circular references", func() {
 
-			BeforeEach(func() {
-				allRouteTables = v1.RouteTableList{
-					buildRouteTableWithDelegateAction("rt-0", "self", "/foo", nil,
+			Context("using a route table selector", func() {
+				BeforeEach(func() {
+					allRouteTables = v1.RouteTableList{
+						buildRouteTableWithSelector("rt-0", "self", "/foo", nil,
+							&v1.RouteTableSelector{
+								Namespaces: []string{"self"},
+							}),
+
+						buildRouteTableWithSelector("rt-1", "ns-1", "/foo", nil,
+							&v1.RouteTableSelector{
+								Namespaces: []string{"*"},
+								Labels:     map[string]string{"foo": "bar"},
+							}),
+						buildRouteTableWithSelector("rt-2", "ns-2", "/foo/1", map[string]string{"foo": "bar"},
+							&v1.RouteTableSelector{
+								Namespaces: []string{"ns-3"},
+							}),
+						// This one points back to rt-1
+						buildRouteTableWithSelector("rt-3", "ns-3", "/foo/1/2", nil,
+							&v1.RouteTableSelector{
+								Namespaces: []string{"ns-1"},
+							}),
+					}
+				})
+
+				DescribeTable("delegation cycles are detected",
+					func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
+						vs = buildVirtualService(selector)
+						_, err := visitor.ConvertVirtualService(vs)
+						Expect(err).To(HaveOccurred())
+						Expect(err).To(testutils.HaveInErrorChain(translator.DelegationCycleErr(expectedCycleInfoMessage)))
+					},
+
+					Entry("a route table selects itself",
 						&v1.RouteTableSelector{
 							Namespaces: []string{"self"},
-						}),
+						},
+						"[self.rt-0] -> [self.rt-0]",
+					),
 
-					buildRouteTableWithDelegateAction("rt-1", "ns-1", "/foo", nil,
-						&v1.RouteTableSelector{
-							Namespaces: []string{"*"},
-							Labels:     map[string]string{"foo": "bar"},
-						}),
-					buildRouteTableWithDelegateAction("rt-2", "ns-2", "/foo/1", map[string]string{"foo": "bar"},
-						&v1.RouteTableSelector{
-							Namespaces: []string{"ns-3"},
-						}),
-					// This one points back to rt-1
-					buildRouteTableWithDelegateAction("rt-3", "ns-3", "/foo/1/2", nil,
+					Entry("multi route table cycle scenario",
 						&v1.RouteTableSelector{
 							Namespaces: []string{"ns-1"},
-						}),
-				}
+						},
+						"[ns-1.rt-1] -> [ns-2.rt-2] -> [ns-3.rt-3] -> [ns-1.rt-1]",
+					),
+				)
 			})
 
-			DescribeTable("delegation cycles are detected",
-				func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
-					vs = buildVirtualService(selector)
-					_, err := visitor.ConvertVirtualService(vs)
-					Expect(err).To(HaveOccurred())
-					Expect(err).To(testutils.HaveInErrorChain(translator.DelegationCycleErr(expectedCycleInfoMessage)))
-				},
+			Context("using a hard reference", func() {
 
-				Entry("a route table selects itself",
-					&v1.RouteTableSelector{
-						Namespaces: []string{"self"},
-					},
-					"[self.rt-0] -> [self.rt-0]",
-				),
+				When("using the new config format", func() {
+					BeforeEach(func() {
+						allRouteTables = v1.RouteTableList{
+							buildRouteTableWithDelegateAction("rt-x", "x", "/foo/bar", nil,
+								&v1.DelegateAction{
+									DelegationType: &v1.DelegateAction_Ref{
+										Ref: &core.ResourceRef{
+											Name:      "rt-x",
+											Namespace: "x",
+										},
+									},
+								}),
+							buildRouteTableWithDelegateAction("rt-y", "y", "/foo/baz", nil,
+								&v1.DelegateAction{
+									DelegationType: &v1.DelegateAction_Ref{
+										Ref: &core.ResourceRef{
+											Name:      "rt-y",
+											Namespace: "y",
+										},
+									},
+								}),
+						}
+					})
 
-				Entry("multi route table cycle scenario",
-					&v1.RouteTableSelector{
-						Namespaces: []string{"ns-1"},
-					},
-					"[ns-1.rt-1] -> [ns-2.rt-2] -> [ns-3.rt-3] -> [ns-1.rt-1]",
-				),
-			)
+					DescribeTable("delegation cycles are detected",
+						func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string) {
+							vs = buildVirtualService(selector)
+							_, err := visitor.ConvertVirtualService(vs)
+							Expect(err).To(HaveOccurred())
+							Expect(err).To(testutils.HaveInErrorChain(translator.DelegationCycleErr(expectedCycleInfoMessage)))
+						},
+
+						Entry("using the new ref format",
+							&v1.RouteTableSelector{
+								Namespaces: []string{"x"},
+							},
+							"[x.rt-x] -> [x.rt-x]",
+						),
+
+						Entry("using the deprecated ref format",
+							&v1.RouteTableSelector{
+								Namespaces: []string{"y"},
+							},
+							"[y.rt-y] -> [y.rt-y]",
+						),
+					)
+				})
+
+			})
 		})
 
 		Describe("route tables with weights", func() {
@@ -722,7 +776,7 @@ var _ = Describe("Route converter", func() {
 				})
 
 				// Matches rt1a, rt1b
-				rt1 = buildRouteTableWithDelegateAction("rt-1", "ns-1", "/foo/a", nil,
+				rt1 = buildRouteTableWithSelector("rt-1", "ns-1", "/foo/a", nil,
 					&v1.RouteTableSelector{
 						Namespaces: []string{"ns-2"},
 					},
@@ -734,7 +788,7 @@ var _ = Describe("Route converter", func() {
 				rt2.Weight = &types.Int32Value{Value: 20}
 
 				// Matches rt3a, rt3b
-				rt3 = buildRouteTableWithDelegateAction("rt-3", "ns-1", "/foo/c", nil,
+				rt3 = buildRouteTableWithSelector("rt-3", "ns-1", "/foo/c", nil,
 					&v1.RouteTableSelector{
 						Namespaces: []string{"ns-3"},
 					},
@@ -812,7 +866,15 @@ func buildRouteTableWithSimpleAction(name, namespace, prefix string, labels map[
 	}
 }
 
-func buildRouteTableWithDelegateAction(name, namespace, prefix string, labels map[string]string, selector *v1.RouteTableSelector) *v1.RouteTable {
+func buildRouteTableWithSelector(name, namespace, prefix string, labels map[string]string, selector *v1.RouteTableSelector) *v1.RouteTable {
+	return buildRouteTableWithDelegateAction(name, namespace, prefix, labels, &v1.DelegateAction{
+		DelegationType: &v1.DelegateAction_Selector{
+			Selector: selector,
+		},
+	})
+}
+
+func buildRouteTableWithDelegateAction(name, namespace, prefix string, labels map[string]string, action *v1.DelegateAction) *v1.RouteTable {
 	return &v1.RouteTable{
 		Metadata: core.Metadata{
 			Name:      name,
@@ -829,11 +891,7 @@ func buildRouteTableWithDelegateAction(name, namespace, prefix string, labels ma
 					},
 				},
 				Action: &v1.Route_DelegateAction{
-					DelegateAction: &v1.DelegateAction{
-						DelegationType: &v1.DelegateAction_Selector{
-							Selector: selector,
-						},
-					},
+					DelegateAction: action,
 				},
 			},
 		},
