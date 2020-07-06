@@ -11,10 +11,9 @@ import (
 	"github.com/solo-io/gloo/jobs/pkg/run"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/go-utils/testutils/helper"
-
-	"github.com/solo-io/go-utils/log"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

@@ -4,9 +4,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/solo-io/go-utils/testutils/helper"
-
 	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/testutils/helper"
 
 	. "github.com/onsi/ginkgo"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

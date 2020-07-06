@@ -2,24 +2,21 @@ package knative_test
 
 import (
 	"fmt"
-	"github.com/solo-io/go-utils/testutils/exec"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	"github.com/solo-io/go-utils/log"
-
 	"github.com/solo-io/gloo/test/helpers"
-
-	"github.com/avast/retry-go"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/log"
+	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
-
+	"github.com/solo-io/go-utils/testutils/exec"
 	"github.com/solo-io/go-utils/testutils/helper"
 
-	"github.com/solo-io/go-utils/testutils"
+	"github.com/avast/retry-go"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
