@@ -10,8 +10,8 @@ import (
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gogo/protobuf/types"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
-	gloorl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
+	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
 )
 
 var _ = Describe("RawUtil", func() {
@@ -63,36 +63,36 @@ var _ = Describe("RawUtil", func() {
 			ExpectActionsSame(inactions)
 		})
 		It("should convert headermatch", func() {
-			m := []*gloorl.HeaderMatcher{{
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_ExactMatch{
+			m := []*gloorl.Action_HeaderValueMatch_HeaderMatcher{{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_ExactMatch{
 					ExactMatch: "e",
 				},
 				Name: "test",
 			}, {
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_RegexMatch{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch{
 					RegexMatch: "r",
 				},
 				Name:        "test",
 				InvertMatch: true,
 			}, {
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_PresentMatch{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_PresentMatch{
 					PresentMatch: true,
 				},
 				Name:        "tests",
 				InvertMatch: true,
 			}, {
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_PrefixMatch{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_PrefixMatch{
 					PrefixMatch: "r",
 				},
 				Name: "test",
 			}, {
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_SuffixMatch{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_SuffixMatch{
 					SuffixMatch: "r",
 				},
 				Name: "test",
 			}, {
-				HeaderMatchSpecifier: &gloorl.HeaderMatcher_RangeMatch{
-					RangeMatch: &gloorl.Int64Range{
+				HeaderMatchSpecifier: &gloorl.Action_HeaderValueMatch_HeaderMatcher_RangeMatch{
+					RangeMatch: &gloorl.Action_HeaderValueMatch_HeaderMatcher_Int64Range{
 						Start: 123,
 						End:   134,
 					},

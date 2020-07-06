@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoyratelimit "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ratelimit/v3"
 	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
@@ -11,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
-	gloorl "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -87,7 +88,7 @@ func convertAction(ctx context.Context, action *gloorl.Action) *envoyvhostrateli
 	return &retAction
 }
 
-func convertHeaders(ctx context.Context, headers []*gloorl.HeaderMatcher) []*envoyvhostratelimit.HeaderMatcher {
+func convertHeaders(ctx context.Context, headers []*gloorl.Action_HeaderValueMatch_HeaderMatcher) []*envoyvhostratelimit.HeaderMatcher {
 	var retHeaders []*envoyvhostratelimit.HeaderMatcher
 	for _, header := range headers {
 		retHeaders = append(retHeaders, convertHeader(ctx, header))
@@ -95,36 +96,36 @@ func convertHeaders(ctx context.Context, headers []*gloorl.HeaderMatcher) []*env
 	return retHeaders
 }
 
-func convertHeader(ctx context.Context, header *gloorl.HeaderMatcher) *envoyvhostratelimit.HeaderMatcher {
+func convertHeader(ctx context.Context, header *gloorl.Action_HeaderValueMatch_HeaderMatcher) *envoyvhostratelimit.HeaderMatcher {
 	ret := &envoyvhostratelimit.HeaderMatcher{
 		InvertMatch: header.InvertMatch,
 		Name:        header.Name,
 	}
 	switch specificHeaderSpecifier := header.HeaderMatchSpecifier.(type) {
-	case *gloorl.HeaderMatcher_ExactMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_ExactMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_ExactMatch{
 			ExactMatch: specificHeaderSpecifier.ExactMatch,
 		}
-	case *gloorl.HeaderMatcher_RegexMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_RegexMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: regexutils.NewRegex(ctx, specificHeaderSpecifier.RegexMatch),
 		}
-	case *gloorl.HeaderMatcher_RangeMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_RangeMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_RangeMatch{
 			RangeMatch: &envoytype.Int64Range{
 				Start: specificHeaderSpecifier.RangeMatch.Start,
 				End:   specificHeaderSpecifier.RangeMatch.End,
 			},
 		}
-	case *gloorl.HeaderMatcher_PresentMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_PresentMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_PresentMatch{
 			PresentMatch: specificHeaderSpecifier.PresentMatch,
 		}
-	case *gloorl.HeaderMatcher_PrefixMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_PrefixMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_PrefixMatch{
 			PrefixMatch: specificHeaderSpecifier.PrefixMatch,
 		}
-	case *gloorl.HeaderMatcher_SuffixMatch:
+	case *gloorl.Action_HeaderValueMatch_HeaderMatcher_SuffixMatch:
 		ret.HeaderMatchSpecifier = &envoyvhostratelimit.HeaderMatcher_SuffixMatch{
 			SuffixMatch: specificHeaderSpecifier.SuffixMatch,
 		}

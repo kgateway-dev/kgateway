@@ -3,12 +3,14 @@ package translator
 import (
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+
 	"github.com/gogo/protobuf/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/retries"
 )
 
@@ -29,7 +31,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				NumRetries: 3, // do not overwrite 0 value above
 			},
 			RatelimitBasic: &ratelimit.IngressRateLimit{
-				AuthorizedLimits: &ratelimit.RateLimit{
+				AuthorizedLimits: &rltypes.RateLimit{
 					Unit:            1,
 					RequestsPerUnit: 2,
 				},
@@ -43,7 +45,7 @@ var _ = Describe("MergeRoutePlugins", func() {
 				NumRetries: 0,
 			},
 			RatelimitBasic: &ratelimit.IngressRateLimit{
-				AuthorizedLimits: &ratelimit.RateLimit{
+				AuthorizedLimits: &rltypes.RateLimit{
 					Unit:            1,
 					RequestsPerUnit: 2,
 				},

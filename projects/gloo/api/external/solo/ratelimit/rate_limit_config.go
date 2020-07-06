@@ -1,4 +1,4 @@
-package knative
+package ratelimit
 
 import (
 	"reflect"
