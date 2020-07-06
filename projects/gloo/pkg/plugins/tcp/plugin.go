@@ -8,6 +8,7 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -17,7 +18,6 @@ import (
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/go-utils/contextutils"
-	"go.uber.org/zap"
 )
 
 const (
@@ -26,8 +26,10 @@ const (
 	SniFilter = "envoy.filters.network.sni_cluster"
 )
 
-func NewPlugin() *Plugin {
-	return &Plugin{}
+func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
+	return &Plugin{
+		sslConfigTranslator: sslConfigTranslator,
+	}
 }
 
 var (
@@ -41,6 +43,8 @@ var (
 	InvalidSecretsError = func(err error, name string) error {
 		return eris.Wrapf(err, "invalid secrets for listener %v", name)
 	}
+
+	NoSslConfigFoundError = eris.New("SslConfig required when using forward_sni_cluster_name")
 )
 
 type Plugin struct {
@@ -48,7 +52,6 @@ type Plugin struct {
 }
 
 func (p *Plugin) Init(params plugins.InitParams) error {
-	p.sslConfigTranslator = utils.NewSslConfigTranslator()
 	return nil
 }
 
@@ -59,6 +62,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 		return nil, nil
 	}
 	var filterChains []*envoylistener.FilterChain
+	multiErr := multierror.Error{}
 	for _, tcpHost := range tcpListener.TcpHosts {
 
 		var listenerFilters []*envoylistener.Filter
@@ -68,7 +72,7 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 		}
 		tcpFilters, err := p.tcpProxyFilters(params, tcpHost, tcpListener.GetOptions(), statPrefix)
 		if err != nil {
-			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
+			multiErr.Errors = append(multiErr.Errors, err)
 			continue
 		}
 
@@ -76,12 +80,12 @@ func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listen
 
 		filterChain, err := p.computerTcpFilterChain(params.Snapshot, in, listenerFilters, tcpHost)
 		if err != nil {
-			logger.Errorw("could not compute tcp proxy filter", zap.Error(err), zap.Any("tcpHost", tcpHost))
+			multiErr.Errors = append(multiErr.Errors, err)
 			continue
 		}
 		filterChains = append(filterChains, filterChain)
 	}
-	return filterChains, nil
+	return filterChains, multiErr.ErrorOrNil()
 }
 
 func (p *Plugin) tcpProxyFilters(
@@ -141,14 +145,27 @@ func (p *Plugin) tcpProxyFilters(
 			WeightedClusters: wc,
 		}
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
+		if host.GetSslConfig() == nil {
+			return nil, NoSslConfigFoundError
+		}
+		// If no SNI domains are specified, manually prepend the TLS inspector filter
+		if len(host.GetSslConfig().GetSniDomains()) == 0 {
+			filters = append(filters,
+				&envoylistener.Filter{
+					Name: wellknown.TlsInspector,
+				},
+			)
+		}
 		// Pass an empty cluster as it will be overwritten by SNI Cluster
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: "",
 		}
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
-		filters = append(filters, &envoylistener.Filter{
-			Name: SniFilter,
-		})
+		filters = append(filters,
+			&envoylistener.Filter{
+				Name: SniFilter,
+			},
+		)
 	default:
 		return nil, NoDestinationTypeError(host)
 	}

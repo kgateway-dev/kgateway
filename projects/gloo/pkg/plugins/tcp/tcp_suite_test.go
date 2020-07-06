@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHcm(t *testing.T) {
+func TestTcp(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "tcp Suite")
 }
