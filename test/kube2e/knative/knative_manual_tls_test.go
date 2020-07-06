@@ -24,11 +24,6 @@ import (
 
 var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 
-	BeforeEach(func() {
-		addTLSSecret()
-		deployKnativeTestService(knativeTLSTestServiceFile())
-	})
-
 	AfterEach(func() {
 		if err := deleteTLSSecret(); err != nil {
 			log.Warnf("teardown failed, knative tls secret may still be present %v", err)
@@ -39,6 +34,32 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 	})
 
 	It("works", func() {
+		addTLSSecret()
+		deployKnativeTestService(knativeTLSTestServiceFile())
+
+		clusterIP := getClusterIP()
+		ingressPort := 443
+		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+			Protocol:          "https",
+			Path:              "/",
+			Method:            "GET",
+			Host:              "helloworld-go.default.example.com",
+			Service:           clusterIP,
+			Port:              ingressPort,
+			ConnectionTimeout: 1,
+			Verbose:           true,
+			SelfSigned:        true,
+			Sni:               "helloworld-go.default.example.com",
+		}, "Hello Go Sample v1!", 1, time.Minute*2, 1*time.Second)
+	})
+
+	It("works when the secret is added after the service which points to it", func() {
+
+		deployKnativeTestService(knativeTLSTestServiceFile())
+		// Allow the service a few seconds to be created
+		time.Sleep(3 * time.Second)
+		addTLSSecret()
+
 		clusterIP := getClusterIP()
 		ingressPort := 443
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
