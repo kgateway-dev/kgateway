@@ -56,8 +56,7 @@ var _ = Describe("Plugin", func() {
 		By("with correct defaults")
 		filters, err = NewPlugin().HttpFilters(plugins.Params{}, &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
-				Gzip: &v2.Gzip{
-				},
+				Gzip: &v2.Gzip{},
 			},
 		})
 		Expect(err).NotTo(HaveOccurred())
