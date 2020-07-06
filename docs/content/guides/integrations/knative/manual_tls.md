@@ -158,10 +158,11 @@ spec:
 When testing on minikube you will not have an external load balancer IP for the ingress, so you will need to use the exposed nodePort and hostIP instead. The host header must also be explicitly passed to curl for routing to work correctly.
 
 ```
-EXTERNAL_PROXY_POD=$(kubectl get pods -n gloo-system -l gloo=knative-external-proxy -o jsonpath='{.items[0].metadata.name}') \
-INGRESS_IP=$(kubectl get pod -n gloo-system $EXTERNAL_PROXY_POD -o jsonpath='{.status.hostIP}') \
-INGRESS_PORT=$(kubectl get svc -n gloo-system knative-external-proxy  -o jsonpath='{.spec.ports[1].nodePort}') \
-curl -v -k --resolve "helloworld-go.default.example.com:$INGRESS_PORT:$INGRESS_IP" -H "Host: helloworld-go.default.example.com:443" https://helloworld-go.default.example.com:$INGRESS_PORT
+EXTERNAL_PROXY_POD=$(kubectl get pods -n gloo-system -l gloo=knative-external-proxy -o jsonpath='{.items[0].metadata.name}')
+INGRESS_IP=$(kubectl get pod -n gloo-system $EXTERNAL_PROXY_POD -o jsonpath='{.status.hostIP}')
+INGRESS_PORT=$(kubectl get svc -n gloo-system knative-external-proxy  -o jsonpath='{.spec.ports[1].nodePort}')
+
+curl -v -k --resolve "helloworld-go.default.example.com:$INGRESS_PORT:$INGRESS_IP" -H "Host: helloworld-go.default.example.com" https://helloworld-go.default.example.com:$INGRESS_PORT
 ```
 
 returns
