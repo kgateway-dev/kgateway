@@ -18,11 +18,11 @@ import (
 var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 	BeforeEach(func() {
-		deployKnativeTestService()
+		deployKnativeTestService(knativeTestServiceFile())
 	})
 
 	AfterEach(func() {
-		if err := deleteKnativeTestService(); err != nil {
+		if err := deleteKnativeTestService(knativeTestServiceFile()); err != nil {
 			log.Warnf("teardown failed %v", err)
 		}
 	})
@@ -43,8 +43,8 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 	})
 })
 
-func deployKnativeTestService() {
-	b, err := ioutil.ReadFile(knativeTestServiceFile())
+func deployKnativeTestService(filePath string) {
+	b, err := ioutil.ReadFile(filePath)
 	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 	// The webhook may take a bit of time to initially be responsive
@@ -54,8 +54,8 @@ func deployKnativeTestService() {
 	}, "30s", "5s").Should(BeNil())
 }
 
-func deleteKnativeTestService() error {
-	b, err := ioutil.ReadFile(knativeTestServiceFile())
+func deleteKnativeTestService(filePath string) error {
+	b, err := ioutil.ReadFile(filePath)
 	if err != nil {
 		return err
 	}
