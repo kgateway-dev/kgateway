@@ -37,7 +37,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 		return nil, nil
 	}
 
-	envoyGzipConfig, err := convertGzip(gzipConfig) // Note: this modifies the gzipConfig
+	envoyGzipConfig, err := glooToEnvoyGzip(gzipConfig) // Note: this modifies the gzipConfig
 	if err != nil {
 		return nil, eris.Wrapf(err, "converting gzip config")
 	}
@@ -49,7 +49,7 @@ func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plu
 	return []plugins.StagedHttpFilter{gzipFilter}, nil
 }
 
-func convertGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
+func glooToEnvoyGzip(gzip *v2.Gzip) (*envoygzip.Gzip, error) {
 
 	contentLength := gzip.GetContentLength()
 	contentType := gzip.GetContentType()

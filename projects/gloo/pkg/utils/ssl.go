@@ -207,7 +207,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 	} else if sslSecrets := cs.GetSslFiles(); sslSecrets != nil {
 		certChain, privateKey, rootCa = sslSecrets.TlsCert, sslSecrets.TlsKey, sslSecrets.RootCa
 	} else if sslSecrets := cs.GetSds(); sslSecrets != nil {
-		return s.handleSds(sslSecrets, convertSanList(cs.GetVerifySubjectAltName()))
+		return s.handleSds(sslSecrets, verifySanListToMatchSanList(cs.GetVerifySubjectAltName()))
 	} else {
 		if mustHaveCert {
 			return nil, NoCertificateFoundError
@@ -250,7 +250,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		return nil, eris.Errorf("both or none of cert chain and private key must be provided")
 	}
 
-	sanList := convertSanList(cs.GetVerifySubjectAltName())
+	sanList := verifySanListToMatchSanList(cs.GetVerifySubjectAltName())
 
 	if rootCaData != nil {
 		validationCtx := &envoyauth.CommonTlsContext_ValidationContext{
@@ -336,7 +336,7 @@ func convertVersion(v v1.SslParameters_ProtocolVersion) (envoyauth.TlsParameters
 	return envoyauth.TlsParameters_TLS_AUTO, TlsVersionNotFoundError(v)
 }
 
-func convertSanList(sanList []string) []*envoymatcher.StringMatcher {
+func verifySanListToMatchSanList(sanList []string) []*envoymatcher.StringMatcher {
 	var matchSanList []*envoymatcher.StringMatcher
 	for _, san := range sanList {
 		matchSan := &envoymatcher.StringMatcher{
