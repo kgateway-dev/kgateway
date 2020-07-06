@@ -173,6 +173,9 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 
 					// Check for delegation cycles
 					if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
+						// Report the error on the route table. `resource` will never be a VS if we got here,
+						// as `visitedRouteTables` will be empty on the first on the first call of this function.
+						rv.reports.AddError(resource.InputResource(), err)
 						return nil, err
 					}
 
