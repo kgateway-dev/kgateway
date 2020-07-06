@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  description: >
+    Report delegation cycle errors on the offending `RouteTable`, not only on `VirtualServices` that use the table.
+  issueLink: https://github.com/solo-io/gloo/issues/3144
+  resolvesIssue: false
