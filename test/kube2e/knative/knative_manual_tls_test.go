@@ -40,19 +40,22 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 	})
 
 	It("works", func() {
-		ingressProxy := "knative-external-proxy"
+		clusterIP := getClusterIP()
 		ingressPort := 443
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "https",
 			Path:              "/",
 			Method:            "GET",
 			Host:              "helloworld-go.default.example.com",
-			Service:           ingressProxy,
+			Service:           clusterIP,
 			Port:              ingressPort,
 			ConnectionTimeout: 1,
 			Verbose:           true,
+			SelfSigned:        true,
+			Sni:               "helloworld-go.default.example.com",
 		}, "Hello Go Sample v1!", 1, time.Minute*2, 1*time.Second)
 	})
+
 })
 
 func addTLSSecret() {
@@ -66,7 +69,7 @@ func addTLSSecret() {
 		ServerCertAuthorityFileName: v1.ServiceAccountRootCAKey,
 	}
 	certs, err := certgen.GenCerts(opts.SvcName, opts.SvcNamespace)
-	Expect(err).To(BeNil(), "it should generate the cert")
+	Expect(err).NotTo(HaveOccurred(), "it should generate the cert")
 	kubeClient := helpers.MustKubeClient()
 
 	caCert := append(certs.ServerCertificate, certs.CaCertificate...)
@@ -82,16 +85,23 @@ func addTLSSecret() {
 	}
 
 	err = kube.CreateTlsSecret(context.Background(), kubeClient, secretConfig)
-	Expect(err).To(BeNil(), "it should create the tls secret")
+	Expect(err).NotTo(HaveOccurred(), "it should create the tls secret")
 }
 
 func deleteTLSSecret() error {
-	kubectlArgs := strings.Split("delete secret my-knative-tls-secret", " ")
-	err := exec.RunCommandInput("kubectl", testHelper.RootDir, true, kubectlArgs...)
+	kubectlArgs := strings.Split("kubectl delete secret my-knative-tls-secret", " ")
+	err := exec.RunCommandInput("", testHelper.RootDir, true, kubectlArgs...)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func getClusterIP() string {
+	kubectlArgs := strings.Split("kubectl get services -n "+testHelper.InstallNamespace+" knative-external-proxy -o jsonpath='{.spec.clusterIP}'", " ")
+	clusterIP, err := exec.RunCommandInputOutput("", testHelper.RootDir, true, kubectlArgs...)
+	Expect(err).NotTo(HaveOccurred())
+	return strings.ReplaceAll(clusterIP, "'", "")
 }
 
 func knativeTLSTestServiceFile() string {

@@ -2,6 +2,8 @@ package knative_test
 
 import (
 	"fmt"
+	"github.com/solo-io/go-utils/testutils/exec"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -79,3 +81,26 @@ var _ = AfterSuite(func() {
 		return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
 	}, "60s", "1s").Should(HaveOccurred())
 })
+
+func deployKnativeTestService(filePath string) {
+	b, err := ioutil.ReadFile(filePath)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+
+	// The webhook may take a bit of time to initially be responsive
+	// See: https://github.com/istio/istio/pull/7743/files
+	EventuallyWithOffset(1, func() error {
+		return exec.RunCommandInput(string(b), testHelper.RootDir, true, "kubectl", "apply", "-f", "-")
+	}, "30s", "5s").Should(BeNil())
+}
+
+func deleteKnativeTestService(filePath string) error {
+	b, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+	err = exec.RunCommandInput(string(b), testHelper.RootDir, true, "kubectl", "delete", "-f", "-")
+	if err != nil {
+		return err
+	}
+	return nil
+}
