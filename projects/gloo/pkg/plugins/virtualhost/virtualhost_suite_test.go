@@ -1,4 +1,4 @@
-package attemptcount_test
+package virtualhost_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestAttemptCount(t *testing.T) {
+func TestVirtualHost(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Attempt Count Suite")
+	RunSpecs(t, "Virtual Host Suite")
 }

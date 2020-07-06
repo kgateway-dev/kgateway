@@ -1,4 +1,4 @@
-package attemptcount_test
+package virtualhost_test
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/attemptcount"
+	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
 )
 
 var _ = Describe("AttemptCount Plugin", func() {
@@ -19,7 +19,7 @@ var _ = Describe("AttemptCount Plugin", func() {
 		acPlugin = NewPlugin()
 	})
 
-	It("Allows setting both values independently", func() {
+	It("allows setting both values independently", func() {
 		out := &envoyroute.VirtualHost{}
 
 		err := acPlugin.ProcessVirtualHost(plugins.VirtualHostParams{}, &v1.VirtualHost{

@@ -1,4 +1,4 @@
-package attemptcount
+package virtualhost
 
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"

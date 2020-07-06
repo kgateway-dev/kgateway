@@ -4,7 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/attemptcount"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws/ec2"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/azure"
@@ -78,7 +78,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		gzip.NewPlugin(),
 		buffer.NewPlugin(),
 		listener.NewPlugin(),
-		attemptcount.NewPlugin(),
+		virtualhost.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
