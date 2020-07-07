@@ -110,7 +110,7 @@ type reporterHelper struct {
 func (r *reporterHelper) addError(resource resources.InputResource, err error) {
 	r.reports.AddError(resource, err)
 
-	// If the resource is a Route Table, also add the warning to the top level virtual service.
+	// If the resource is a Route Table, also add the error to the top level virtual service.
 	if rt, ok := resource.(*gatewayv1.RouteTable); ok {
 		r.reports.AddError(r.topLevelVirtualService, TopLevelVirtualResourceErr(rt.GetMetadata(), err))
 	}
@@ -119,7 +119,7 @@ func (r *reporterHelper) addError(resource resources.InputResource, err error) {
 func (r *reporterHelper) addWarning(resource resources.InputResource, err error) {
 	r.reports.AddWarning(resource, err.Error())
 
-	// If the resource is a Route Table, also add the error to the top level virtual service.
+	// If the resource is a Route Table, also add the warning to the top level virtual service.
 	if rt, ok := resource.(*gatewayv1.RouteTable); ok {
 		r.reports.AddWarning(r.topLevelVirtualService, TopLevelVirtualResourceErr(rt.GetMetadata(), err).Error())
 	}
