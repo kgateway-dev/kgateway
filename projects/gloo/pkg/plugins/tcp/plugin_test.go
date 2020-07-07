@@ -4,23 +4,21 @@ import (
 	"time"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/gogo/protobuf/types"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/tcp"
-	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/tcp"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
-
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
-	"github.com/gogo/protobuf/types"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	mock_utils "github.com/solo-io/gloo/projects/gloo/pkg/utils/mocks"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Plugin", func() {
@@ -272,7 +270,7 @@ var _ = Describe("Plugin", func() {
 
 			sslTranslator.EXPECT().
 				ResolveDownstreamSslConfig(snap.Secrets, sslConfig).
-				Return(&envoy_api_v2_auth.DownstreamTlsContext{}, nil)
+				Return(&envoyauth.DownstreamTlsContext{}, nil)
 
 			p := NewPlugin(sslTranslator)
 			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
