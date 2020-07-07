@@ -377,11 +377,18 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 	return child, nil
 }
 
-func isRouteTableValidForDelegatePrefix(delegatePrefix string, route *gatewayv1.Route) error {
-	for _, match := range route.Matchers {
+func isRouteTableValidForDelegatePrefix(parentPrefix string, childRoute *gatewayv1.Route) error {
+
+	// If the route has no matchers, we fall back to the default prefix matcher like for regular routes.
+	// In these case, we only accept it if the parent also uses the default matcher.
+	if len(childRoute.Matchers) == 0 && parentPrefix != defaults.DefaultMatcher().GetPrefix() {
+		return InvalidRouteTableForDelegateErr(parentPrefix, defaults.DefaultMatcher().GetPrefix())
+	}
+
+	for _, match := range childRoute.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
-		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, delegatePrefix) {
-			return InvalidRouteTableForDelegateErr(delegatePrefix, pathString)
+		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, parentPrefix) {
+			return InvalidRouteTableForDelegateErr(parentPrefix, pathString)
 		}
 	}
 	return nil

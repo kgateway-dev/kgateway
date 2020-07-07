@@ -400,60 +400,122 @@ var _ = Describe("Route converter", func() {
 
 	When("bad route table config", func() {
 
-		It("returns error if route table has a matcher that doesn't have the delegate prefix", func() {
-			ref := core.ResourceRef{
-				Name: "rt",
-			}
-			route := &v1.Route{
-				Matchers: []*matchers.Matcher{{
-					PathSpecifier: &matchers.Matcher_Prefix{
-						Prefix: "/foo",
-					},
-				}},
-				Action: &v1.Route_DelegateAction{
-					DelegateAction: &v1.DelegateAction{
-						DelegationType: &v1.DelegateAction_Ref{
-							Ref: &ref,
-						},
-					},
-				},
-			}
-			rt := v1.RouteTable{
-				Routes: []*v1.Route{{
-					Matchers: []*matchers.Matcher{
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/foo/bar",
-							},
-						},
-						{
-							PathSpecifier: &matchers.Matcher_Prefix{
-								Prefix: "/invalid",
-							},
-						}},
-				}},
+		var (
+			vs  *v1.VirtualService
+			rt  *v1.RouteTable
+			rv  translator.RouteConverter
+			rpt reporter.ResourceReports
+		)
+
+		BeforeEach(func() {
+			rt = &v1.RouteTable{
 				Metadata: core.Metadata{
-					Name: "rt",
+					Name:      "rt",
+					Namespace: "default",
 				},
+				Routes: []*v1.Route{{
+					Name: "route-1",
+					Action: &v1.Route_DirectResponseAction{
+						DirectResponseAction: &gloov1.DirectResponseAction{
+							Status: 200,
+							Body:   "foo",
+						},
+					},
+				}},
 			}
 
-			rpt := reporter.ResourceReports{}
-			vs := &v1.VirtualService{
+			rpt = reporter.ResourceReports{}
+			vs = &v1.VirtualService{
+				Metadata: core.Metadata{
+					Name:      "vs",
+					Namespace: "default",
+				},
 				VirtualHost: &v1.VirtualHost{
-					Routes: []*v1.Route{route},
+					Routes: []*v1.Route{
+						{
+							Matchers: []*matchers.Matcher{{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/foo",
+								},
+							}},
+							Action: &v1.Route_DelegateAction{
+								DelegateAction: &v1.DelegateAction{
+									DelegationType: &v1.DelegateAction_Ref{
+										Ref: &core.ResourceRef{
+											Name:      "rt",
+											Namespace: "default",
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			}
 
-			rv := translator.NewRouteConverter(
-				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
+			rv = translator.NewRouteConverter(
+				translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 				translator.NewRouteTableIndexer(),
 				rpt,
 			)
-			converted, err := rv.ConvertVirtualService(vs)
-			Expect(err).NotTo(HaveOccurred())
-			expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
-			Expect(rpt.Validate().Error()).To(ContainSubstring(expectedErr))
-			Expect(converted).To(BeNil())
+		})
+
+		When("route table has a matcher that doesn't match the prefix of the parent route", func() {
+			It("reports error on the route table and on the virtual service", func() {
+				rt.Routes[0].Matchers = []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/foo/bar",
+						},
+					},
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/invalid",
+						},
+					},
+				}
+
+				converted, err := rv.ConvertVirtualService(vs)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(BeNil())
+				Expect(rpt).To(HaveLen(2))
+
+				expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
+
+				_, vsReport := rpt.Find("*v1.VirtualService", core.ResourceRef{Name: "vs", Namespace: "default"})
+				Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErr))
+
+				_, rtReport := rpt.Find("*v1.RouteTable", core.ResourceRef{Name: "rt", Namespace: "default"})
+				Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErr))
+			})
+		})
+
+		When("route table has no matchers and the parent route matcher is not the default one", func() {
+			It("reports error on the route table and on the virtual service", func() {
+				converted, err := rv.ConvertVirtualService(vs)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(BeNil())
+				Expect(rpt).To(HaveLen(2))
+
+				expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/").Error()
+
+				_, vsReport := rpt.Find("*v1.VirtualService", core.ResourceRef{Name: "vs", Namespace: "default"})
+				Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErr))
+
+				_, rtReport := rpt.Find("*v1.RouteTable", core.ResourceRef{Name: "rt", Namespace: "default"})
+				Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErr))
+			})
+		})
+
+		When("route table has no matchers but the parent route matcher is the default one", func() {
+			It("reports no errors", func() {
+				vs.VirtualHost.Routes[0].Matchers = []*matchers.Matcher{defaults.DefaultMatcher()}
+
+				converted, err := rv.ConvertVirtualService(vs)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				Expect(rpt).To(HaveLen(0))
+			})
 		})
 	})
 
