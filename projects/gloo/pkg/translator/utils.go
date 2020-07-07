@@ -10,7 +10,6 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
 	"github.com/golang/protobuf/ptypes"
-	golangptypes "github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -54,7 +53,7 @@ func NewAccessLogWithConfig(name string, config proto.Message) (envoyal.AccessLo
 	}
 
 	if config != nil {
-		marshalledConf, err := golangptypes.MarshalAny(config)
+		marshalledConf, err := utils.MessageToAny(config)
 		if err != nil {
 			// this should NEVER HAPPEN!
 			return envoyal.AccessLog{}, err

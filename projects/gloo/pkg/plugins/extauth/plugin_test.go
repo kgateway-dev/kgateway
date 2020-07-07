@@ -6,9 +6,8 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-	structpb "github.com/golang/protobuf/ptypes/struct"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	"github.com/golang/protobuf/ptypes/any"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -20,6 +19,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -39,15 +39,15 @@ func (c ConfigState) String() string {
 	return [...]string{"Undefined", "Enabled", "Disabled"}[c]
 }
 
-// Maps an expected PerFilterConfig value to a function that can be used to assert it.
-var validationFuncForConfigValue = map[ConfigState]func(e envoyPerFilterConfig) bool{
+// Maps an expected TypedPerFilterConfig value to a function that can be used to assert it.
+var validationFuncForConfigValue = map[ConfigState]func(e envoyTypedPerFilterConfig) bool{
 	Undefined: IsNotSet,
 	Enabled:   IsEnabled,
 	Disabled:  IsDisabled,
 }
 
 // These tests are aimed at verifying that each resource that supports extauth configurations (virtual hosts, routes, weighted destinations)
-// results in the expected PerFilterConfiguration on the corresponding Envoy resource (virtual hosts, routes, weighted cluster).
+// results in the expected TypedPerFilterConfiguration on the corresponding Envoy resource (virtual hosts, routes, weighted cluster).
 //
 // Since the outcome on one resource is currently independent from the outcome on its parent (or children), we currently
 // only test the three different input types (enabled, disabled, undefined) on each of the three resources (9 tests).
@@ -275,35 +275,35 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 	}
 }
 
-type envoyPerFilterConfig interface {
-	GetPerFilterConfig() map[string]*structpb.Struct
+type envoyTypedPerFilterConfig interface {
+	GetTypedPerFilterConfig() map[string]*any.Any
 }
 
 // Returns true if the ext_authz filter is explicitly disabled
-func IsDisabled(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+func IsDisabled(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
+	if _, ok := e.GetTypedPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
 		return false
 	}
-	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization], &cfg)
+	msg, err := glooutils.AnyToMessage(e.GetTypedPerFilterConfig()[wellknown.HTTPExternalAuthorization])
+	cfg := msg.(*envoyauth.ExtAuthzPerRoute)
 	Expect(err).NotTo(HaveOccurred())
 
 	return cfg.GetDisabled()
 }
 
 // Returns true if the ext_authz filter is enabled and if the ContextExtensions have the expected number of entries.
-func IsEnabled(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+func IsEnabled(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return false
 	}
-	if _, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
+	if _, ok := e.GetTypedPerFilterConfig()[wellknown.HTTPExternalAuthorization]; !ok {
 		return false
 	}
-	var cfg envoyauth.ExtAuthzPerRoute
-	err := conversion.StructToMessage(e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization], &cfg)
+	msg, err := glooutils.AnyToMessage(e.GetTypedPerFilterConfig()[wellknown.HTTPExternalAuthorization])
+	cfg := msg.(*envoyauth.ExtAuthzPerRoute)
 	Expect(err).NotTo(HaveOccurred())
 
 	if cfg.GetCheckSettings() == nil {
@@ -314,11 +314,11 @@ func IsEnabled(e envoyPerFilterConfig) bool {
 	return len(ctxExtensions) == 1 && ctxExtensions["some"] == "context"
 }
 
-// Returns true if no PerFilterConfig is set for the ext_authz filter
-func IsNotSet(e envoyPerFilterConfig) bool {
-	if e.GetPerFilterConfig() == nil {
+// Returns true if no TypedPerFilterConfig is set for the ext_authz filter
+func IsNotSet(e envoyTypedPerFilterConfig) bool {
+	if e.GetTypedPerFilterConfig() == nil {
 		return true
 	}
-	_, ok := e.GetPerFilterConfig()[wellknown.HTTPExternalAuthorization]
+	_, ok := e.GetTypedPerFilterConfig()[wellknown.HTTPExternalAuthorization]
 	return !ok
 }

@@ -2,10 +2,10 @@ package tcp
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/types"
@@ -27,9 +27,7 @@ const (
 )
 
 func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
-	return &Plugin{
-		sslConfigTranslator: sslConfigTranslator,
-	}
+	return &Plugin{sslConfigTranslator: sslConfigTranslator}
 }
 
 var (

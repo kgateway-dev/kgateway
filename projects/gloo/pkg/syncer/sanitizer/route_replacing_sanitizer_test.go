@@ -9,11 +9,11 @@ import (
 	route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -141,7 +141,7 @@ var _ = Describe("RouteReplacingSanitizer", func() {
 	)
 	BeforeEach(func() {
 		var err error
-		config.TypedConfig, err = ptypes.MarshalAny(&hcm.HttpConnectionManager{
+		config.TypedConfig, err = utils.MessageToAny(&hcm.HttpConnectionManager{
 			RouteSpecifier: &hcm.HttpConnectionManager_Rds{
 				Rds: &hcm.Rds{
 					RouteConfigName: routeCfgName,

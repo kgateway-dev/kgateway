@@ -8,8 +8,8 @@ import (
 	listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyhcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
+	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/stats"
@@ -102,7 +102,7 @@ func makeFallbackListenerAndCluster(responseCode uint32, responseBody string) (*
 		}},
 	}
 
-	typedHcmConfig, err := ptypes.MarshalAny(hcmConfig)
+	typedHcmConfig, err := glooutils.MessageToAny(hcmConfig)
 	if err != nil {
 		return nil, nil, err
 	}

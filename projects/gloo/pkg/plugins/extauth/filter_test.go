@@ -5,10 +5,10 @@ import (
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/ext_authz/v2"
-	envoytype "github.com/envoyproxy/go-control-plane/envoy/type"
-	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/ext_authz/v3"
+	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	envoytype "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/duration"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
