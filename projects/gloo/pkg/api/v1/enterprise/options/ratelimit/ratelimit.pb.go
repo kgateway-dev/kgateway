@@ -141,7 +141,7 @@ func (m *Settings) GetRateLimitBeforeAuth() bool {
 }
 
 // API based on Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration)
-// Sample configuration below
+// Sample configuration below:
 //
 // descriptors:
 //- key: account_id
@@ -194,20 +194,70 @@ func (m *ServiceSettings) GetDescriptors() []*types.Descriptor {
 	return nil
 }
 
+// A reference to a `RateLimitConfig` resource.
+type RateLimitConfigRef struct {
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Namespace            string   `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RateLimitConfigRef) Reset()         { *m = RateLimitConfigRef{} }
+func (m *RateLimitConfigRef) String() string { return proto.CompactTextString(m) }
+func (*RateLimitConfigRef) ProtoMessage()    {}
+func (*RateLimitConfigRef) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e05a2dad65f2418a, []int{3}
+}
+func (m *RateLimitConfigRef) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RateLimitConfigRef.Unmarshal(m, b)
+}
+func (m *RateLimitConfigRef) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RateLimitConfigRef.Marshal(b, m, deterministic)
+}
+func (m *RateLimitConfigRef) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RateLimitConfigRef.Merge(m, src)
+}
+func (m *RateLimitConfigRef) XXX_Size() int {
+	return xxx_messageInfo_RateLimitConfigRef.Size(m)
+}
+func (m *RateLimitConfigRef) XXX_DiscardUnknown() {
+	xxx_messageInfo_RateLimitConfigRef.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RateLimitConfigRef proto.InternalMessageInfo
+
+func (m *RateLimitConfigRef) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *RateLimitConfigRef) GetNamespace() string {
+	if m != nil {
+		return m.Namespace
+	}
+	return ""
+}
+
 type RateLimitVhostExtension struct {
-	// Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
-	// would be throttled, the entire request returns a 429 (gets throttled)
-	RateLimits           []*types.RateLimitActions `protobuf:"bytes,1,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
-	XXX_unrecognized     []byte                    `json:"-"`
-	XXX_sizecache        int32                     `json:"-"`
+	// Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
+	RateLimits []*types.RateLimitActions `protobuf:"bytes,1,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"` // Deprecated: Do not use.
+	// Types that are valid to be assigned to ConfigType:
+	//	*RateLimitVhostExtension_ConfigRef
+	//	*RateLimitVhostExtension_InlineConfig_
+	ConfigType           isRateLimitVhostExtension_ConfigType `protobuf_oneof:"config_type"`
+	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
+	XXX_unrecognized     []byte                               `json:"-"`
+	XXX_sizecache        int32                                `json:"-"`
 }
 
 func (m *RateLimitVhostExtension) Reset()         { *m = RateLimitVhostExtension{} }
 func (m *RateLimitVhostExtension) String() string { return proto.CompactTextString(m) }
 func (*RateLimitVhostExtension) ProtoMessage()    {}
 func (*RateLimitVhostExtension) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e05a2dad65f2418a, []int{3}
+	return fileDescriptor_e05a2dad65f2418a, []int{4}
 }
 func (m *RateLimitVhostExtension) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RateLimitVhostExtension.Unmarshal(m, b)
@@ -227,6 +277,29 @@ func (m *RateLimitVhostExtension) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RateLimitVhostExtension proto.InternalMessageInfo
 
+type isRateLimitVhostExtension_ConfigType interface {
+	isRateLimitVhostExtension_ConfigType()
+	Equal(interface{}) bool
+}
+
+type RateLimitVhostExtension_ConfigRef struct {
+	ConfigRef *RateLimitConfigRef `protobuf:"bytes,2,opt,name=config_ref,json=configRef,proto3,oneof" json:"config_ref,omitempty"`
+}
+type RateLimitVhostExtension_InlineConfig_ struct {
+	InlineConfig *RateLimitVhostExtension_InlineConfig `protobuf:"bytes,3,opt,name=inline_config,json=inlineConfig,proto3,oneof" json:"inline_config,omitempty"`
+}
+
+func (*RateLimitVhostExtension_ConfigRef) isRateLimitVhostExtension_ConfigType()     {}
+func (*RateLimitVhostExtension_InlineConfig_) isRateLimitVhostExtension_ConfigType() {}
+
+func (m *RateLimitVhostExtension) GetConfigType() isRateLimitVhostExtension_ConfigType {
+	if m != nil {
+		return m.ConfigType
+	}
+	return nil
+}
+
+// Deprecated: Do not use.
 func (m *RateLimitVhostExtension) GetRateLimits() []*types.RateLimitActions {
 	if m != nil {
 		return m.RateLimits
@@ -234,22 +307,87 @@ func (m *RateLimitVhostExtension) GetRateLimits() []*types.RateLimitActions {
 	return nil
 }
 
-type RateLimitRouteExtension struct {
-	// Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route
-	IncludeVhRateLimits bool `protobuf:"varint,1,opt,name=include_vh_rate_limits,json=includeVhRateLimits,proto3" json:"include_vh_rate_limits,omitempty"`
+func (m *RateLimitVhostExtension) GetConfigRef() *RateLimitConfigRef {
+	if x, ok := m.GetConfigType().(*RateLimitVhostExtension_ConfigRef); ok {
+		return x.ConfigRef
+	}
+	return nil
+}
+
+func (m *RateLimitVhostExtension) GetInlineConfig() *RateLimitVhostExtension_InlineConfig {
+	if x, ok := m.GetConfigType().(*RateLimitVhostExtension_InlineConfig_); ok {
+		return x.InlineConfig
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RateLimitVhostExtension) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RateLimitVhostExtension_ConfigRef)(nil),
+		(*RateLimitVhostExtension_InlineConfig_)(nil),
+	}
+}
+
+type RateLimitVhostExtension_InlineConfig struct {
 	// Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
-	// would be throttled, the entire request returns a 429 (gets throttled)
-	RateLimits           []*types.RateLimitActions `protobuf:"bytes,2,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	// would be throttled, the entire request returns a 429 (gets throttled).
+	RateLimits           []*types.RateLimitActions `protobuf:"bytes,1,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
+}
+
+func (m *RateLimitVhostExtension_InlineConfig) Reset()         { *m = RateLimitVhostExtension_InlineConfig{} }
+func (m *RateLimitVhostExtension_InlineConfig) String() string { return proto.CompactTextString(m) }
+func (*RateLimitVhostExtension_InlineConfig) ProtoMessage()    {}
+func (*RateLimitVhostExtension_InlineConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e05a2dad65f2418a, []int{4, 0}
+}
+func (m *RateLimitVhostExtension_InlineConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RateLimitVhostExtension_InlineConfig.Unmarshal(m, b)
+}
+func (m *RateLimitVhostExtension_InlineConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RateLimitVhostExtension_InlineConfig.Marshal(b, m, deterministic)
+}
+func (m *RateLimitVhostExtension_InlineConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RateLimitVhostExtension_InlineConfig.Merge(m, src)
+}
+func (m *RateLimitVhostExtension_InlineConfig) XXX_Size() int {
+	return xxx_messageInfo_RateLimitVhostExtension_InlineConfig.Size(m)
+}
+func (m *RateLimitVhostExtension_InlineConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_RateLimitVhostExtension_InlineConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RateLimitVhostExtension_InlineConfig proto.InternalMessageInfo
+
+func (m *RateLimitVhostExtension_InlineConfig) GetRateLimits() []*types.RateLimitActions {
+	if m != nil {
+		return m.RateLimits
+	}
+	return nil
+}
+
+type RateLimitRouteExtension struct {
+	// Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
+	IncludeVhRateLimits bool `protobuf:"varint,1,opt,name=include_vh_rate_limits,json=includeVhRateLimits,proto3" json:"include_vh_rate_limits,omitempty"` // Deprecated: Do not use.
+	// Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
+	RateLimits []*types.RateLimitActions `protobuf:"bytes,2,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"` // Deprecated: Do not use.
+	// Types that are valid to be assigned to Spec:
+	//	*RateLimitRouteExtension_ConfigRef
+	//	*RateLimitRouteExtension_InlineConfig_
+	Spec                 isRateLimitRouteExtension_Spec `protobuf_oneof:"spec"`
+	XXX_NoUnkeyedLiteral struct{}                       `json:"-"`
+	XXX_unrecognized     []byte                         `json:"-"`
+	XXX_sizecache        int32                          `json:"-"`
 }
 
 func (m *RateLimitRouteExtension) Reset()         { *m = RateLimitRouteExtension{} }
 func (m *RateLimitRouteExtension) String() string { return proto.CompactTextString(m) }
 func (*RateLimitRouteExtension) ProtoMessage()    {}
 func (*RateLimitRouteExtension) Descriptor() ([]byte, []int) {
-	return fileDescriptor_e05a2dad65f2418a, []int{4}
+	return fileDescriptor_e05a2dad65f2418a, []int{5}
 }
 func (m *RateLimitRouteExtension) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RateLimitRouteExtension.Unmarshal(m, b)
@@ -269,6 +407,29 @@ func (m *RateLimitRouteExtension) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RateLimitRouteExtension proto.InternalMessageInfo
 
+type isRateLimitRouteExtension_Spec interface {
+	isRateLimitRouteExtension_Spec()
+	Equal(interface{}) bool
+}
+
+type RateLimitRouteExtension_ConfigRef struct {
+	ConfigRef *RateLimitConfigRef `protobuf:"bytes,3,opt,name=config_ref,json=configRef,proto3,oneof" json:"config_ref,omitempty"`
+}
+type RateLimitRouteExtension_InlineConfig_ struct {
+	InlineConfig *RateLimitRouteExtension_InlineConfig `protobuf:"bytes,4,opt,name=inline_config,json=inlineConfig,proto3,oneof" json:"inline_config,omitempty"`
+}
+
+func (*RateLimitRouteExtension_ConfigRef) isRateLimitRouteExtension_Spec()     {}
+func (*RateLimitRouteExtension_InlineConfig_) isRateLimitRouteExtension_Spec() {}
+
+func (m *RateLimitRouteExtension) GetSpec() isRateLimitRouteExtension_Spec {
+	if m != nil {
+		return m.Spec
+	}
+	return nil
+}
+
+// Deprecated: Do not use.
 func (m *RateLimitRouteExtension) GetIncludeVhRateLimits() bool {
 	if m != nil {
 		return m.IncludeVhRateLimits
@@ -276,7 +437,79 @@ func (m *RateLimitRouteExtension) GetIncludeVhRateLimits() bool {
 	return false
 }
 
+// Deprecated: Do not use.
 func (m *RateLimitRouteExtension) GetRateLimits() []*types.RateLimitActions {
+	if m != nil {
+		return m.RateLimits
+	}
+	return nil
+}
+
+func (m *RateLimitRouteExtension) GetConfigRef() *RateLimitConfigRef {
+	if x, ok := m.GetSpec().(*RateLimitRouteExtension_ConfigRef); ok {
+		return x.ConfigRef
+	}
+	return nil
+}
+
+func (m *RateLimitRouteExtension) GetInlineConfig() *RateLimitRouteExtension_InlineConfig {
+	if x, ok := m.GetSpec().(*RateLimitRouteExtension_InlineConfig_); ok {
+		return x.InlineConfig
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RateLimitRouteExtension) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RateLimitRouteExtension_ConfigRef)(nil),
+		(*RateLimitRouteExtension_InlineConfig_)(nil),
+	}
+}
+
+type RateLimitRouteExtension_InlineConfig struct {
+	// Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route.
+	IncludeVhRateLimits bool `protobuf:"varint,1,opt,name=include_vh_rate_limits,json=includeVhRateLimits,proto3" json:"include_vh_rate_limits,omitempty"`
+	// Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
+	// would be throttled, the entire request returns a 429 (gets throttled)
+	RateLimits           []*types.RateLimitActions `protobuf:"bytes,2,rep,name=rate_limits,json=rateLimits,proto3" json:"rate_limits,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
+	XXX_unrecognized     []byte                    `json:"-"`
+	XXX_sizecache        int32                     `json:"-"`
+}
+
+func (m *RateLimitRouteExtension_InlineConfig) Reset()         { *m = RateLimitRouteExtension_InlineConfig{} }
+func (m *RateLimitRouteExtension_InlineConfig) String() string { return proto.CompactTextString(m) }
+func (*RateLimitRouteExtension_InlineConfig) ProtoMessage()    {}
+func (*RateLimitRouteExtension_InlineConfig) Descriptor() ([]byte, []int) {
+	return fileDescriptor_e05a2dad65f2418a, []int{5, 0}
+}
+func (m *RateLimitRouteExtension_InlineConfig) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RateLimitRouteExtension_InlineConfig.Unmarshal(m, b)
+}
+func (m *RateLimitRouteExtension_InlineConfig) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RateLimitRouteExtension_InlineConfig.Marshal(b, m, deterministic)
+}
+func (m *RateLimitRouteExtension_InlineConfig) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RateLimitRouteExtension_InlineConfig.Merge(m, src)
+}
+func (m *RateLimitRouteExtension_InlineConfig) XXX_Size() int {
+	return xxx_messageInfo_RateLimitRouteExtension_InlineConfig.Size(m)
+}
+func (m *RateLimitRouteExtension_InlineConfig) XXX_DiscardUnknown() {
+	xxx_messageInfo_RateLimitRouteExtension_InlineConfig.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RateLimitRouteExtension_InlineConfig proto.InternalMessageInfo
+
+func (m *RateLimitRouteExtension_InlineConfig) GetIncludeVhRateLimits() bool {
+	if m != nil {
+		return m.IncludeVhRateLimits
+	}
+	return false
+}
+
+func (m *RateLimitRouteExtension_InlineConfig) GetRateLimits() []*types.RateLimitActions {
 	if m != nil {
 		return m.RateLimits
 	}
@@ -287,8 +520,11 @@ func init() {
 	proto.RegisterType((*IngressRateLimit)(nil), "ratelimit.options.gloo.solo.io.IngressRateLimit")
 	proto.RegisterType((*Settings)(nil), "ratelimit.options.gloo.solo.io.Settings")
 	proto.RegisterType((*ServiceSettings)(nil), "ratelimit.options.gloo.solo.io.ServiceSettings")
+	proto.RegisterType((*RateLimitConfigRef)(nil), "ratelimit.options.gloo.solo.io.RateLimitConfigRef")
 	proto.RegisterType((*RateLimitVhostExtension)(nil), "ratelimit.options.gloo.solo.io.RateLimitVhostExtension")
+	proto.RegisterType((*RateLimitVhostExtension_InlineConfig)(nil), "ratelimit.options.gloo.solo.io.RateLimitVhostExtension.InlineConfig")
 	proto.RegisterType((*RateLimitRouteExtension)(nil), "ratelimit.options.gloo.solo.io.RateLimitRouteExtension")
+	proto.RegisterType((*RateLimitRouteExtension_InlineConfig)(nil), "ratelimit.options.gloo.solo.io.RateLimitRouteExtension.InlineConfig")
 }
 
 func init() {
@@ -296,43 +532,53 @@ func init() {
 }
 
 var fileDescriptor_e05a2dad65f2418a = []byte{
-	// 568 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x54, 0x4d, 0x6e, 0xd3, 0x40,
-	0x14, 0x96, 0xdb, 0x0a, 0x95, 0x09, 0x22, 0xc1, 0x54, 0x25, 0xa9, 0x20, 0x44, 0x61, 0x93, 0x4d,
-	0x6d, 0xa5, 0x39, 0x00, 0x6a, 0x14, 0x0a, 0x15, 0x20, 0x24, 0x17, 0x15, 0xc1, 0xc6, 0x9a, 0x38,
-	0xcf, 0xf6, 0x50, 0x67, 0x9e, 0x79, 0x33, 0x0e, 0x29, 0xe7, 0x60, 0xc1, 0x09, 0x10, 0x47, 0xe0,
-	0x36, 0x48, 0xdc, 0x01, 0x89, 0x25, 0xf2, 0xd8, 0xb1, 0x4b, 0x55, 0x50, 0xd4, 0x95, 0x67, 0xde,
-	0x7b, 0xdf, 0x8f, 0xbf, 0xb1, 0x87, 0xbd, 0x8d, 0x84, 0x8e, 0xb3, 0xa9, 0x13, 0xe0, 0xdc, 0x55,
-	0x98, 0xe0, 0xbe, 0x40, 0x37, 0x4a, 0x10, 0xdd, 0x94, 0xf0, 0x3d, 0x04, 0x5a, 0x15, 0x3b, 0x9e,
-	0x0a, 0x77, 0x31, 0x74, 0x41, 0x6a, 0xa0, 0x94, 0x84, 0x02, 0x17, 0x53, 0x2d, 0x50, 0x2a, 0x97,
-	0xb8, 0x86, 0x44, 0xcc, 0x85, 0xae, 0x57, 0x4e, 0x4a, 0xa8, 0xd1, 0xee, 0xd6, 0x85, 0x72, 0xd8,
-	0xc9, 0xb9, 0x9c, 0x5c, 0xc6, 0x11, 0xb8, 0x77, 0x74, 0x85, 0xb4, 0x79, 0xf2, 0x54, 0x28, 0xa3,
-	0x98, 0x13, 0xec, 0x1b, 0x06, 0x20, 0x77, 0x31, 0xe4, 0x49, 0x1a, 0xf3, 0xe1, 0x65, 0x9d, 0xbd,
-	0x8e, 0x01, 0x9d, 0x09, 0xbd, 0x72, 0x49, 0x10, 0x96, 0xad, 0x6e, 0x84, 0x18, 0x25, 0xe0, 0x9a,
-	0xdd, 0x34, 0x0b, 0xdd, 0x8f, 0xc4, 0xd3, 0x14, 0x48, 0xfd, 0xab, 0x3f, 0xcb, 0x88, 0xe7, 0x56,
-	0xcb, 0xfe, 0x4e, 0x84, 0x11, 0x9a, 0xa5, 0x9b, 0xaf, 0xca, 0xaa, 0x0d, 0x4b, 0x5d, 0x14, 0x61,
-	0x59, 0x9a, 0xe8, 0x7f, 0xb5, 0x58, 0xeb, 0x58, 0x46, 0x04, 0x4a, 0x79, 0x5c, 0xc3, 0x8b, 0xdc,
-	0x9f, 0x7d, 0xcc, 0xee, 0xf0, 0x4c, 0xc7, 0x48, 0xe2, 0x13, 0xcc, 0x7c, 0xe3, 0x59, 0xb5, 0xad,
-	0x9e, 0x35, 0x68, 0x1c, 0xdc, 0x77, 0xea, 0xd7, 0x28, 0x03, 0x71, 0x2a, 0xa0, 0xd7, 0xaa, 0x61,
-	0xa6, 0xa0, 0xec, 0xa7, 0xac, 0xc5, 0x25, 0xca, 0xf3, 0x39, 0x66, 0x6a, 0xc5, 0xb4, 0xb1, 0x06,
-	0x53, 0xb3, 0x42, 0x15, 0x44, 0xfd, 0xdf, 0x16, 0xdb, 0x3e, 0x01, 0xad, 0x85, 0x8c, 0x94, 0xfd,
-	0x9c, 0xed, 0x54, 0x60, 0x5f, 0x01, 0x2d, 0x80, 0x7c, 0x82, 0xb0, 0xf4, 0xd8, 0x71, 0x02, 0x24,
-	0xa8, 0x49, 0x41, 0x61, 0x46, 0x01, 0x78, 0x10, 0x7a, 0x76, 0x05, 0x3b, 0x31, 0x28, 0x0f, 0x42,
-	0xfb, 0x19, 0x6b, 0x12, 0x7c, 0xc8, 0x40, 0x69, 0x5f, 0x8b, 0x39, 0x60, 0xa6, 0x4b, 0x87, 0x1d,
-	0xa7, 0x88, 0xd9, 0x59, 0xc5, 0xec, 0x4c, 0xca, 0x98, 0xc7, 0x5b, 0x5f, 0x7e, 0x3c, 0xb4, 0xbc,
-	0xdb, 0x25, 0xee, 0x75, 0x01, 0xb3, 0x7b, 0xec, 0xd6, 0x0c, 0xe4, 0xb9, 0x8f, 0xd2, 0x0f, 0xb9,
-	0x48, 0xda, 0x9b, 0x3d, 0x6b, 0xb0, 0xed, 0xb1, 0xbc, 0xf6, 0x4a, 0x1e, 0x71, 0x91, 0xd8, 0x23,
-	0xb6, 0x9b, 0x3b, 0x28, 0x92, 0xf0, 0xa7, 0x10, 0x22, 0x81, 0x9f, 0x87, 0xd6, 0xbe, 0x69, 0x66,
-	0xef, 0xd2, 0x2a, 0x81, 0xb1, 0xe9, 0x1d, 0x66, 0x3a, 0xee, 0x7b, 0xac, 0x99, 0xbb, 0x15, 0x01,
-	0x54, 0x01, 0x3c, 0x66, 0x8d, 0x19, 0xa8, 0x80, 0x44, 0xaa, 0x91, 0xf2, 0xb3, 0xd9, 0x1c, 0x34,
-	0x0e, 0x1e, 0x5c, 0x91, 0xe8, 0xa4, 0x9a, 0xf2, 0x2e, 0x22, 0xfa, 0x3e, 0xbb, 0x57, 0x85, 0x7d,
-	0x1a, 0xa3, 0xd2, 0x4f, 0x96, 0x1a, 0xa4, 0x12, 0x28, 0xed, 0x09, 0x6b, 0xd4, 0x1e, 0x57, 0xdc,
-	0x8f, 0xfe, 0x77, 0x5a, 0x87, 0x81, 0xf9, 0x4d, 0x3c, 0x56, 0xb9, 0x57, 0xfd, 0xcf, 0xd6, 0x05,
-	0x05, 0x0f, 0x33, 0x0d, 0xb5, 0xc2, 0x88, 0xed, 0x0a, 0x19, 0x24, 0xd9, 0x0c, 0xfc, 0x45, 0xec,
-	0xff, 0x2d, 0x66, 0x52, 0x28, 0xbb, 0xa7, 0x71, 0xc5, 0xa0, 0x2e, 0xdb, 0xda, 0xb8, 0x96, 0xad,
-	0xf1, 0x9b, 0xef, 0xbf, 0xb6, 0xac, 0x6f, 0x3f, 0xbb, 0xd6, 0xbb, 0x97, 0xeb, 0xdd, 0x20, 0xe9,
-	0x59, 0xb4, 0xce, 0x2d, 0x32, 0xbd, 0x61, 0x3e, 0x92, 0xd1, 0x9f, 0x00, 0x00, 0x00, 0xff, 0xff,
-	0xca, 0xd6, 0x70, 0x24, 0x99, 0x04, 0x00, 0x00,
+	// 730 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x95, 0xc1, 0x6e, 0xd3, 0x4c,
+	0x10, 0xc7, 0xeb, 0x26, 0xaa, 0x9a, 0x4d, 0xfb, 0xb5, 0x9f, 0x5b, 0x95, 0xb4, 0x2a, 0xa5, 0x0a,
+	0x97, 0x5c, 0x6a, 0xab, 0xe9, 0x81, 0x23, 0x6a, 0x08, 0x25, 0x15, 0x20, 0xa4, 0x6d, 0x55, 0x04,
+	0x17, 0xcb, 0x71, 0xc6, 0xce, 0x52, 0x67, 0xc7, 0xec, 0xae, 0x43, 0xcb, 0x1b, 0xc0, 0x13, 0xf0,
+	0x04, 0x88, 0x47, 0xe0, 0x6d, 0x90, 0x78, 0x04, 0x24, 0x24, 0x8e, 0xc8, 0x6b, 0xc7, 0x4e, 0x4a,
+	0x89, 0x42, 0x05, 0x27, 0xef, 0xce, 0xee, 0xcc, 0xfc, 0xe7, 0xf7, 0x97, 0x6d, 0xf2, 0x22, 0x60,
+	0xaa, 0x1f, 0x77, 0x2d, 0x0f, 0x07, 0xb6, 0xc4, 0x10, 0xf7, 0x18, 0xda, 0x41, 0x88, 0x68, 0x47,
+	0x02, 0x5f, 0x81, 0xa7, 0x64, 0xba, 0x73, 0x23, 0x66, 0x0f, 0xf7, 0x6d, 0xe0, 0x0a, 0x44, 0x24,
+	0x98, 0x04, 0x1b, 0x23, 0xc5, 0x90, 0x4b, 0x5b, 0xb8, 0x0a, 0x42, 0x36, 0x60, 0xaa, 0x58, 0x59,
+	0x91, 0x40, 0x85, 0xe6, 0x4e, 0x11, 0xc8, 0x2e, 0x5b, 0x49, 0x2d, 0x2b, 0x69, 0x63, 0x31, 0xdc,
+	0x3a, 0xba, 0xa6, 0xb5, 0x7e, 0xba, 0x11, 0x93, 0xba, 0x63, 0x52, 0x60, 0x4f, 0x57, 0x00, 0x61,
+	0x0f, 0xf7, 0xdd, 0x30, 0xea, 0xbb, 0xfb, 0x57, 0xfb, 0x6c, 0x6d, 0xea, 0xa4, 0x73, 0xa6, 0x46,
+	0x2a, 0x05, 0xf8, 0xd9, 0xd1, 0x4e, 0x80, 0x18, 0x84, 0x60, 0xeb, 0x5d, 0x37, 0xf6, 0xed, 0x37,
+	0xc2, 0x8d, 0x22, 0x10, 0xf2, 0x77, 0xe7, 0xbd, 0x58, 0xb8, 0x89, 0xd4, 0xec, 0x7c, 0x3d, 0xc0,
+	0x00, 0xf5, 0xd2, 0x4e, 0x56, 0x59, 0xd4, 0x84, 0x0b, 0x95, 0x06, 0xe1, 0x22, 0x13, 0x51, 0xff,
+	0x68, 0x90, 0xd5, 0x63, 0x1e, 0x08, 0x90, 0x92, 0xba, 0x0a, 0x9e, 0x24, 0xfa, 0xcc, 0x63, 0xf2,
+	0xbf, 0x1b, 0xab, 0x3e, 0x0a, 0xf6, 0x16, 0x7a, 0x8e, 0xd6, 0x2c, 0x6b, 0xc6, 0xae, 0xd1, 0xa8,
+	0x36, 0xb7, 0xad, 0x62, 0x8c, 0x0c, 0x88, 0x95, 0x27, 0xd2, 0xd5, 0x22, 0x4d, 0x07, 0xa4, 0xf9,
+	0x88, 0xac, 0xba, 0x1c, 0xf9, 0xe5, 0x00, 0x63, 0x39, 0xaa, 0x34, 0x3f, 0x43, 0xa5, 0x95, 0x3c,
+	0x2b, 0x2d, 0x54, 0xff, 0x61, 0x90, 0xc5, 0x13, 0x50, 0x8a, 0xf1, 0x40, 0x9a, 0x8f, 0xc9, 0x7a,
+	0x9e, 0xec, 0x48, 0x10, 0x43, 0x10, 0x8e, 0x00, 0x3f, 0xd3, 0xb8, 0x69, 0x79, 0x28, 0xa0, 0x28,
+	0x0a, 0x12, 0x63, 0xe1, 0x01, 0x05, 0x9f, 0x9a, 0x79, 0xda, 0x89, 0xce, 0xa2, 0xe0, 0x9b, 0x1d,
+	0xb2, 0x22, 0xe0, 0x75, 0x0c, 0x52, 0x39, 0x8a, 0x0d, 0x00, 0x63, 0x95, 0x29, 0xdc, 0xb4, 0x52,
+	0xcc, 0xd6, 0x08, 0xb3, 0xd5, 0xce, 0x30, 0xb7, 0xca, 0x1f, 0xbe, 0xdc, 0x31, 0xe8, 0x7f, 0x59,
+	0xde, 0x69, 0x9a, 0x66, 0xee, 0x92, 0xa5, 0x1e, 0xf0, 0x4b, 0x07, 0xb9, 0xe3, 0xbb, 0x2c, 0xac,
+	0x95, 0x76, 0x8d, 0xc6, 0x22, 0x25, 0x49, 0xec, 0x19, 0x3f, 0x72, 0x59, 0x68, 0x1e, 0x90, 0x8d,
+	0x44, 0x41, 0x4a, 0xc2, 0xe9, 0x82, 0x8f, 0x02, 0x9c, 0x04, 0x5a, 0xad, 0xa2, 0xef, 0xae, 0x89,
+	0x11, 0x81, 0x96, 0x3e, 0x3b, 0x8c, 0x55, 0xbf, 0x4e, 0xc9, 0x4a, 0xa2, 0x96, 0x79, 0x90, 0x03,
+	0xb8, 0x4f, 0xaa, 0x3d, 0x90, 0x9e, 0x60, 0x91, 0x42, 0x91, 0x78, 0x53, 0x6a, 0x54, 0x9b, 0xb7,
+	0xaf, 0x21, 0xda, 0xce, 0x6f, 0xd1, 0xf1, 0x8c, 0xfa, 0x11, 0x31, 0x73, 0xd8, 0x0f, 0x90, 0xfb,
+	0x2c, 0x48, 0x50, 0x98, 0xa4, 0xcc, 0xdd, 0x01, 0x68, 0x8e, 0x15, 0xaa, 0xd7, 0xe6, 0x36, 0xa9,
+	0x24, 0x4f, 0x19, 0xb9, 0x1e, 0x68, 0x30, 0x15, 0x5a, 0x04, 0xea, 0xef, 0x4b, 0xe4, 0x56, 0x5e,
+	0xe8, 0xac, 0x8f, 0x52, 0x3d, 0xbc, 0x50, 0xc0, 0x25, 0x43, 0x6e, 0x76, 0x48, 0xb5, 0x18, 0x76,
+	0x24, 0xf2, 0xee, 0x34, 0xdb, 0x0f, 0x3d, 0xfd, 0xbe, 0xb5, 0xe6, 0x6b, 0x06, 0x25, 0x39, 0x0a,
+	0x69, 0x9e, 0x10, 0xe2, 0x69, 0x91, 0xda, 0xe5, 0xd4, 0x9d, 0xa6, 0x35, 0xfd, 0x3d, 0xb5, 0x7e,
+	0x9d, 0xaf, 0x33, 0x47, 0x2b, 0x5e, 0x3e, 0xec, 0x39, 0x59, 0x66, 0x3c, 0x64, 0x1c, 0x9c, 0x34,
+	0xa6, 0xed, 0xaa, 0x36, 0xdb, 0x33, 0xd7, 0x9d, 0x1c, 0xd7, 0x3a, 0xd6, 0xc5, 0xd2, 0x66, 0x9d,
+	0x39, 0xba, 0xc4, 0xc6, 0xf6, 0x5b, 0xa7, 0x64, 0x69, 0xfc, 0xdc, 0x6c, 0xdf, 0x94, 0xcd, 0x38,
+	0x97, 0xd6, 0x32, 0xa9, 0x66, 0x5c, 0xd4, 0x65, 0x04, 0xf5, 0x6f, 0xe3, 0x66, 0x50, 0x8c, 0x15,
+	0x14, 0x66, 0xdc, 0x23, 0x1b, 0x8c, 0x7b, 0x61, 0xdc, 0x03, 0x67, 0xd8, 0x77, 0x26, 0x7b, 0x1b,
+	0x8d, 0x45, 0x8d, 0x7c, 0x2d, 0xbb, 0x71, 0xd6, 0xa7, 0x05, 0xfb, 0x2b, 0x2e, 0xce, 0xff, 0x2d,
+	0x17, 0x4b, 0xff, 0xc8, 0xc5, 0xf2, 0x1f, 0xba, 0x38, 0xc9, 0x69, 0xba, 0x8b, 0xef, 0x8c, 0x2b,
+	0x36, 0x1e, 0x4c, 0xa7, 0x7a, 0x3d, 0xd1, 0xf6, 0x4d, 0x89, 0x4e, 0x78, 0xbf, 0x40, 0xca, 0x32,
+	0x02, 0xaf, 0xf5, 0xfc, 0xf3, 0xf7, 0xb2, 0xf1, 0xe9, 0xeb, 0x8e, 0xf1, 0xf2, 0xe9, 0x6c, 0xff,
+	0xc4, 0xe8, 0x3c, 0x98, 0xe5, 0xbf, 0xd8, 0x5d, 0xd0, 0x9f, 0xbd, 0x83, 0x9f, 0x01, 0x00, 0x00,
+	0xff, 0xff, 0x12, 0xa1, 0x4c, 0x62, 0x6b, 0x07, 0x00, 0x00,
 }
 
 func (this *IngressRateLimit) Equal(that interface{}) bool {
@@ -439,6 +685,36 @@ func (this *ServiceSettings) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *RateLimitConfigRef) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitConfigRef)
+	if !ok {
+		that2, ok := that.(RateLimitConfigRef)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Name != that1.Name {
+		return false
+	}
+	if this.Namespace != that1.Namespace {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
 func (this *RateLimitVhostExtension) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -447,6 +723,95 @@ func (this *RateLimitVhostExtension) Equal(that interface{}) bool {
 	that1, ok := that.(*RateLimitVhostExtension)
 	if !ok {
 		that2, ok := that.(RateLimitVhostExtension)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.RateLimits) != len(that1.RateLimits) {
+		return false
+	}
+	for i := range this.RateLimits {
+		if !this.RateLimits[i].Equal(that1.RateLimits[i]) {
+			return false
+		}
+	}
+	if that1.ConfigType == nil {
+		if this.ConfigType != nil {
+			return false
+		}
+	} else if this.ConfigType == nil {
+		return false
+	} else if !this.ConfigType.Equal(that1.ConfigType) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitVhostExtension_ConfigRef) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitVhostExtension_ConfigRef)
+	if !ok {
+		that2, ok := that.(RateLimitVhostExtension_ConfigRef)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ConfigRef.Equal(that1.ConfigRef) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitVhostExtension_InlineConfig_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitVhostExtension_InlineConfig_)
+	if !ok {
+		that2, ok := that.(RateLimitVhostExtension_InlineConfig_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.InlineConfig.Equal(that1.InlineConfig) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitVhostExtension_InlineConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitVhostExtension_InlineConfig)
+	if !ok {
+		that2, ok := that.(RateLimitVhostExtension_InlineConfig)
 		if ok {
 			that1 = &that2
 		} else {
@@ -479,6 +844,98 @@ func (this *RateLimitRouteExtension) Equal(that interface{}) bool {
 	that1, ok := that.(*RateLimitRouteExtension)
 	if !ok {
 		that2, ok := that.(RateLimitRouteExtension)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.IncludeVhRateLimits != that1.IncludeVhRateLimits {
+		return false
+	}
+	if len(this.RateLimits) != len(that1.RateLimits) {
+		return false
+	}
+	for i := range this.RateLimits {
+		if !this.RateLimits[i].Equal(that1.RateLimits[i]) {
+			return false
+		}
+	}
+	if that1.Spec == nil {
+		if this.Spec != nil {
+			return false
+		}
+	} else if this.Spec == nil {
+		return false
+	} else if !this.Spec.Equal(that1.Spec) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitRouteExtension_ConfigRef) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitRouteExtension_ConfigRef)
+	if !ok {
+		that2, ok := that.(RateLimitRouteExtension_ConfigRef)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ConfigRef.Equal(that1.ConfigRef) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitRouteExtension_InlineConfig_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitRouteExtension_InlineConfig_)
+	if !ok {
+		that2, ok := that.(RateLimitRouteExtension_InlineConfig_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.InlineConfig.Equal(that1.InlineConfig) {
+		return false
+	}
+	return true
+}
+func (this *RateLimitRouteExtension_InlineConfig) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RateLimitRouteExtension_InlineConfig)
+	if !ok {
+		that2, ok := that.(RateLimitRouteExtension_InlineConfig)
 		if ok {
 			that1 = &that2
 		} else {

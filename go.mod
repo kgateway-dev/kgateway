@@ -90,7 +90,7 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	// To avoid dots in generated mocks and avoid clutter in the PR, for now
+	// TODO(marco): To avoid dots in generated mocks and avoid clutter in the PR, for now
 	github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1 => github.com/golang/mock v1.4.3
 	// TODO(marco): pin to real solo-kit version
 	github.com/solo-io/solo-kit v0.13.8 => /Users/marco/code/projects/solo-kit
