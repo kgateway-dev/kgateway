@@ -36,7 +36,7 @@ var _ = Describe("Route converter", func() {
 			Expect(reports).To(HaveLen(1))
 			_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 			Expect(vsReport.Errors).To(HaveOccurred())
-			Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErr.Error()))
+			Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr.Error())))
 		},
 
 		Entry("route has a regex matcher",
@@ -485,10 +485,10 @@ var _ = Describe("Route converter", func() {
 				expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/invalid").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-				Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErr))
+				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 
 				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-				Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErr))
+				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 			})
 		})
 
@@ -503,10 +503,10 @@ var _ = Describe("Route converter", func() {
 				expectedErr := translator.InvalidRouteTableForDelegateErr("/foo", "/").Error()
 
 				_, vsReport := rpt.Find("*v1.VirtualService", vs.Metadata.Ref())
-				Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErr))
+				Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 
 				_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
-				Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErr))
+				Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 			})
 		})
 
@@ -764,10 +764,10 @@ var _ = Describe("Route converter", func() {
 						Expect(reports).To(HaveLen(2))
 						_, rtReport := reports.Find("*v1.RouteTable", offendingTable.Ref())
 						Expect(rtReport.Errors).To(HaveOccurred())
-						Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+						Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErrStr)))
 						_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 						Expect(vsReport.Errors).To(HaveOccurred())
-						Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+						Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErrStr)))
 					},
 
 					Entry("a route table selects itself",
@@ -824,10 +824,10 @@ var _ = Describe("Route converter", func() {
 						// Verify that error is reported on Route Table and VS
 						_, rtReport := reports.Find("*v1.RouteTable", offendingTable.Ref())
 						Expect(rtReport.Errors).To(HaveOccurred())
-						Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+						Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErrStr)))
 						_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
 						Expect(vsReport.Errors).To(HaveOccurred())
-						Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+						Expect(vsReport.Errors).To(MatchError(ContainSubstring(expectedErrStr)))
 					},
 
 					Entry("using the new ref format",
