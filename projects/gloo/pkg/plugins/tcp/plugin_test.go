@@ -3,6 +3,7 @@ package tcp_test
 import (
 	"time"
 
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_v2_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/mock/gomock"
@@ -290,48 +291,66 @@ var _ = Describe("Plugin", func() {
 			Expect(cluster.Cluster).To(Equal(""))
 		})
 
-		It("will the forward sni cluster name filter, and tls inspector when no sni domains defined", func() {
-			sslConfig := &v1.SslConfig{
-				SslSecrets: &v1.SslConfig_SecretRef{
-					SecretRef: &core.ResourceRef{
-						Name:      "name",
-						Namespace: "namespace",
+	})
+
+	Context("ListenerPlugin", func() {
+		It("will not prepend the TlsInspector when ServerName match present", func() {
+			snap := &v1.ApiSnapshot{}
+			out := &envoyapi.Listener{}
+			tcpListener := &v1.TcpListener{
+				TcpHosts: []*v1.TcpHost{
+					{
+						Name: "one",
+						Destination: &v1.TcpHost_TcpAction{
+							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
+								ForwardSniClusterName: &types.Empty{},
+							},
+						},
+						SslConfig: &v1.SslConfig{
+							SniDomains: []string{"hello.world"},
+						},
 					},
 				},
 			}
-			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
-				Name:      "one",
-				SslConfig: sslConfig,
-				Destination: &v1.TcpHost_TcpAction{
-					Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-						ForwardSniClusterName: &types.Empty{},
-					},
+			listener := &v1.Listener{
+				ListenerType: &v1.Listener_TcpListener{
+					TcpListener: tcpListener,
 				},
-			})
-
-			sslTranslator.EXPECT().
-				ResolveDownstreamSslConfig(snap.Secrets, sslConfig).
-				Return(&envoy_api_v2_auth.DownstreamTlsContext{}, nil)
+			}
 
 			p := NewPlugin(sslTranslator)
-			filterChains, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
+			err := p.ProcessListener(plugins.Params{Snapshot: snap}, listener, out)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(filterChains).To(HaveLen(1))
-			Expect(filterChains[0].Filters).To(HaveLen(3))
-			Expect(filterChains[0].Filters[0].Name).To(Equal(wellknown.TlsInspector))
-			Expect(filterChains[0].Filters[0].GetConfig()).To(BeNil())
-			Expect(filterChains[0].Filters[0].GetTypedConfig()).To(BeNil())
-			Expect(filterChains[0].Filters[1].Name).To(Equal(SniFilter))
-			Expect(filterChains[0].Filters[1].GetConfig()).To(BeNil())
-			Expect(filterChains[0].Filters[1].GetTypedConfig()).To(BeNil())
+			Expect(out.ListenerFilters).To(HaveLen(0))
+		})
 
-			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseTypedConfig(filterChains[0].Filters[2], &cfg)
+		It("will prepend the TlsInspector when NO ServerName match present", func() {
+			snap := &v1.ApiSnapshot{}
+			out := &envoyapi.Listener{}
+			tcpListener := &v1.TcpListener{
+				TcpHosts: []*v1.TcpHost{
+					{
+						Name: "one",
+						Destination: &v1.TcpHost_TcpAction{
+							Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
+								ForwardSniClusterName: &types.Empty{},
+							},
+						},
+					},
+				},
+			}
+			listener := &v1.Listener{
+				ListenerType: &v1.Listener_TcpListener{
+					TcpListener: tcpListener,
+				},
+			}
+
+			p := NewPlugin(sslTranslator)
+			err := p.ProcessListener(plugins.Params{Snapshot: snap}, listener, out)
 			Expect(err).NotTo(HaveOccurred())
-			cluster, ok := cfg.GetClusterSpecifier().(*envoytcp.TcpProxy_Cluster)
-			Expect(ok).To(BeTrue(), "must be a single cluster type")
-			Expect(cluster.Cluster).To(Equal(""))
+			Expect(out.ListenerFilters).To(HaveLen(1))
+			Expect(out.ListenerFilters[0].GetName()).To(Equal(wellknown.TlsInspector))
+			Expect(out.ListenerFilters[0].GetTypedConfig()).To(BeNil())
 		})
 	})
-
 })

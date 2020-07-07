@@ -1,6 +1,7 @@
 package tcp
 
 import (
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -17,7 +18,6 @@ import (
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	usconversion "github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
-	"github.com/solo-io/go-utils/contextutils"
 )
 
 const (
@@ -35,6 +35,7 @@ func NewPlugin(sslConfigTranslator utils.SslConfigTranslator) *Plugin {
 var (
 	_ plugins.Plugin                    = (*Plugin)(nil)
 	_ plugins.ListenerFilterChainPlugin = (*Plugin)(nil)
+	_ plugins.ListenerPlugin            = (*Plugin)(nil)
 
 	NoDestinationTypeError = func(host *v1.TcpHost) error {
 		return eris.Errorf("no destination type was specified for tcp host %v", host)
@@ -51,12 +52,37 @@ type Plugin struct {
 	sslConfigTranslator utils.SslConfigTranslator
 }
 
-func (p *Plugin) Init(params plugins.InitParams) error {
+func (p *Plugin) Init(_ plugins.InitParams) error {
+	return nil
+}
+
+func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
+	tcpListener := in.GetTcpListener()
+	if tcpListener == nil {
+		return nil
+	}
+
+	var sniCluster, sniMatch bool
+	for _, host := range tcpListener.GetTcpHosts() {
+		if len(host.GetSslConfig().GetSniDomains()) > 0 {
+			sniMatch = true
+		}
+		if host.GetDestination().GetForwardSniClusterName() != nil {
+			sniCluster = true
+		}
+	}
+
+	// If there is a forward SNI cluster, and no SNI matches, prepend the TLS inspector manually.
+	if sniCluster && !sniMatch {
+		out.ListenerFilters = append(
+			[]*envoylistener.ListenerFilter{{Name: wellknown.TlsInspector}},
+			out.ListenerFilters...,
+		)
+	}
 	return nil
 }
 
 func (p *Plugin) ProcessListenerFilterChain(params plugins.Params, in *v1.Listener) ([]*envoylistener.FilterChain, error) {
-	logger := contextutils.LoggerFrom(params.Ctx)
 	tcpListener := in.GetTcpListener()
 	if tcpListener == nil {
 		return nil, nil
@@ -147,14 +173,6 @@ func (p *Plugin) tcpProxyFilters(
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
 		if host.GetSslConfig() == nil {
 			return nil, NoSslConfigFoundError
-		}
-		// If no SNI domains are specified, manually prepend the TLS inspector filter
-		if len(host.GetSslConfig().GetSniDomains()) == 0 {
-			filters = append(filters,
-				&envoylistener.Filter{
-					Name: wellknown.TlsInspector,
-				},
-			)
 		}
 		// Pass an empty cluster as it will be overwritten by SNI Cluster
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
