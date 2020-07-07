@@ -790,65 +790,62 @@ var _ = Describe("Route converter", func() {
 
 			Context("using a hard reference", func() {
 
-				When("using the new config format", func() {
-					BeforeEach(func() {
-						allRouteTables = v1.RouteTableList{
-							buildRouteTableWithDelegateAction("rt-x", "x", "/foo/bar", nil,
-								&v1.DelegateAction{
-									DelegationType: &v1.DelegateAction_Ref{
-										Ref: &core.ResourceRef{
-											Name:      "rt-x",
-											Namespace: "x",
-										},
+				BeforeEach(func() {
+					allRouteTables = v1.RouteTableList{
+						buildRouteTableWithDelegateAction("rt-x", "x", "/foo/bar", nil,
+							&v1.DelegateAction{
+								DelegationType: &v1.DelegateAction_Ref{
+									Ref: &core.ResourceRef{
+										Name:      "rt-x",
+										Namespace: "x",
 									},
-								}),
-							buildRouteTableWithDelegateAction("rt-y", "y", "/foo/baz", nil,
-								&v1.DelegateAction{
-									DelegationType: &v1.DelegateAction_Ref{
-										Ref: &core.ResourceRef{
-											Name:      "rt-y",
-											Namespace: "y",
-										},
+								},
+							}),
+						buildRouteTableWithDelegateAction("rt-y", "y", "/foo/baz", nil,
+							&v1.DelegateAction{
+								DelegationType: &v1.DelegateAction_Ref{
+									Ref: &core.ResourceRef{
+										Name:      "rt-y",
+										Namespace: "y",
 									},
-								}),
-						}
-					})
-
-					DescribeTable("delegation cycles are detected",
-						func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string, offendingTable core.Metadata) {
-							vs = buildVirtualService(selector)
-							_, err := visitor.ConvertVirtualService(vs, reports)
-							Expect(err).NotTo(HaveOccurred())
-
-							expectedErrStr := translator.DelegationCycleErr(expectedCycleInfoMessage).Error()
-
-							// Verify that error is reported on Route Table and VS
-							_, rtReport := reports.Find("*v1.RouteTable", offendingTable.Ref())
-							Expect(rtReport.Errors).To(HaveOccurred())
-							Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
-							_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
-							Expect(vsReport.Errors).To(HaveOccurred())
-							Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
-						},
-
-						Entry("using the new ref format",
-							&v1.RouteTableSelector{
-								Namespaces: []string{"x"},
-							},
-							"[x.rt-x] -> [x.rt-x]",
-							core.Metadata{Name: "rt-x", Namespace: "x"},
-						),
-
-						Entry("using the deprecated ref format",
-							&v1.RouteTableSelector{
-								Namespaces: []string{"y"},
-							},
-							"[y.rt-y] -> [y.rt-y]",
-							core.Metadata{Name: "rt-y", Namespace: "y"},
-						),
-					)
+								},
+							}),
+					}
 				})
 
+				DescribeTable("delegation cycles are detected",
+					func(selector *v1.RouteTableSelector, expectedCycleInfoMessage string, offendingTable core.Metadata) {
+						vs = buildVirtualService(selector)
+						_, err := visitor.ConvertVirtualService(vs, reports)
+						Expect(err).NotTo(HaveOccurred())
+
+						expectedErrStr := translator.DelegationCycleErr(expectedCycleInfoMessage).Error()
+
+						// Verify that error is reported on Route Table and VS
+						_, rtReport := reports.Find("*v1.RouteTable", offendingTable.Ref())
+						Expect(rtReport.Errors).To(HaveOccurred())
+						Expect(rtReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+						_, vsReport := reports.Find("*v1.VirtualService", vs.Metadata.Ref())
+						Expect(vsReport.Errors).To(HaveOccurred())
+						Expect(vsReport.Errors.Error()).To(ContainSubstring(expectedErrStr))
+					},
+
+					Entry("using the new ref format",
+						&v1.RouteTableSelector{
+							Namespaces: []string{"x"},
+						},
+						"[x.rt-x] -> [x.rt-x]",
+						core.Metadata{Name: "rt-x", Namespace: "x"},
+					),
+
+					Entry("using the deprecated ref format",
+						&v1.RouteTableSelector{
+							Namespaces: []string{"y"},
+						},
+						"[y.rt-y] -> [y.rt-y]",
+						core.Metadata{Name: "rt-y", Namespace: "y"},
+					),
+				)
 			})
 		})
 
