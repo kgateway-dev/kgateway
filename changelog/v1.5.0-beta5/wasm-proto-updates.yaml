@@ -1,5 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: Update wasm protos to reflect latest method signatures
-    issueLink: https://github.com/solo-io/gloo/issues/3035
-    resolvesIssue: false
