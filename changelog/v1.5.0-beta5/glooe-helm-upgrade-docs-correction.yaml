@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add note to 1.3.0+ docs to delete apiserver-ui service when upgrading to glooE 1.4.0+
+    issueLink: https://github.com/solo-io/gloo/issues/3250
