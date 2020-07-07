@@ -23,7 +23,7 @@ var glooFederationPolicyRules = []v1.PolicyRule{
 	{
 		Verbs:     []string{"get", "list", "watch"},
 		APIGroups: []string{""},
-		Resources: []string{"pods", "nodes"},
+		Resources: []string{"pods", "nodes", "services"},
 	},
 }
 
