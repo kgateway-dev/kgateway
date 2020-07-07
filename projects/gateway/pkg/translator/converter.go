@@ -83,8 +83,6 @@ func (v *visitableRouteTable) InputResource() resources.InputResource {
 
 // Implements Converter interface by recursively visiting a routing resource
 type routeVisitor struct {
-	// Used to store errors and warnings for the visited virtual services and route tables.
-	//reports reporter.ResourceReports
 	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
 	// Used to sort route tables when multiple ones are matched by a selector.
