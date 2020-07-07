@@ -57,6 +57,7 @@ func (p *Plugin) Init(_ plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessListener(_ plugins.Params, in *v1.Listener, out *envoyapi.Listener) error {
+	// Only focused on Tcp listeners, so return otherwise
 	tcpListener := in.GetTcpListener()
 	if tcpListener == nil {
 		return nil
@@ -171,6 +172,8 @@ func (p *Plugin) tcpProxyFilters(
 			WeightedClusters: wc,
 		}
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
+		// The ForwardSniClusterName filter receives the cluster name to route to via the Server Name which can only
+		// be retrieved from TLS connections. Therefore, if there is no SslConfig, this type of host is invalid.
 		if host.GetSslConfig() == nil {
 			return nil, NoSslConfigFoundError
 		}
@@ -179,11 +182,9 @@ func (p *Plugin) tcpProxyFilters(
 			Cluster: "",
 		}
 		// append empty sni-forward-filter to pass the SNI name to the cluster field above
-		filters = append(filters,
-			&envoylistener.Filter{
-				Name: SniFilter,
-			},
-		)
+		filters = append(filters, &envoylistener.Filter{
+			Name: SniFilter,
+		})
 	default:
 		return nil, NoDestinationTypeError(host)
 	}
