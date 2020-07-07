@@ -42,8 +42,6 @@ var (
 	InvalidSecretsError = func(err error, name string) error {
 		return eris.Wrapf(err, "invalid secrets for listener %v", name)
 	}
-
-	NoSslConfigFoundError = eris.New("SslConfig required when using forward_sni_cluster_name")
 )
 
 type Plugin struct {
@@ -170,11 +168,6 @@ func (p *Plugin) tcpProxyFilters(
 			WeightedClusters: wc,
 		}
 	case *v1.TcpHost_TcpAction_ForwardSniClusterName:
-		// The ForwardSniClusterName filter receives the cluster name to route to via the Server Name which can only
-		// be retrieved from TLS connections. Therefore, if there is no SslConfig, this type of host is invalid.
-		if host.GetSslConfig() == nil {
-			return nil, NoSslConfigFoundError
-		}
 		// Pass an empty cluster as it will be overwritten by SNI Cluster
 		cfg.ClusterSpecifier = &envoytcp.TcpProxy_Cluster{
 			Cluster: "",

@@ -233,21 +233,6 @@ var _ = Describe("Plugin", func() {
 			Expect(clusters.Clusters[1].Weight).To(Equal(uint32(1)))
 		})
 
-		It("will error when forward sni is specified with no SslConfig", func() {
-			tcpListener.TcpHosts = append(tcpListener.TcpHosts, &v1.TcpHost{
-				Name: "one",
-				Destination: &v1.TcpHost_TcpAction{
-					Destination: &v1.TcpHost_TcpAction_ForwardSniClusterName{
-						ForwardSniClusterName: &types.Empty{},
-					},
-				},
-			})
-			p := NewPlugin(sslTranslator)
-			_, err := p.ProcessListenerFilterChain(plugins.Params{Snapshot: snap}, in)
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring(NoSslConfigFoundError.Error()))
-		})
-
 		It("can add the forward sni cluster name filter", func() {
 			sslConfig := &v1.SslConfig{
 				SslSecrets: &v1.SslConfig_SecretRef{
