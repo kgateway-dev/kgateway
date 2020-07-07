@@ -1,0 +1,42 @@
+// copied from https://github.com/envoyproxy/envoy-wasm/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/backoff.proto
+
+syntax = "proto3";
+
+package envoy.config.core.v3;
+
+import "google/protobuf/duration.proto";
+
+import "validate/validate.proto";
+
+option java_package = "io.envoyproxy.envoy.config.core.v3";
+option java_outer_classname = "BackoffProto";
+option java_multiple_files = true;
+
+// manually updated this line:
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
+
+// manually added equal_all:
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+import "extproto/ext.proto";
+option (extproto.hash_all) = true;
+
+// [#protodoc-title: Backoff Strategy]
+
+// Configuration defining a jittered exponential back off strategy.
+message BackoffStrategy {
+  // The base interval to be used for the next back off computation. It should
+  // be greater than zero and less than or equal to :ref:`max_interval
+  // <envoy_api_field_config.core.v3.BackoffStrategy.max_interval>`.
+  google.protobuf.Duration base_interval = 1 [(validate.rules).duration = {
+    required: true
+    gte {nanos: 1000000}
+  }];
+
+  // Specifies the maximum interval between retries. This parameter is optional,
+  // but must be greater than or equal to the :ref:`base_interval
+  // <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>` if set. The default
+  // is 10 times the :ref:`base_interval
+  // <envoy_api_field_config.core.v3.BackoffStrategy.base_interval>`.
+  google.protobuf.Duration max_interval = 2 [(validate.rules).duration = {gt {}}];
+}
