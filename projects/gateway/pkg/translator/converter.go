@@ -38,18 +38,18 @@ var (
 		return errors.Wrapf(InvalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
 	}
 	TopLevelVirtualResourceErr = func(rtRef core.Metadata, err error) error {
-		return errors.Wrapf(err, "on sub route table %v.%v", rtRef.Name, rtRef.Namespace)
+		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
 	}
 )
 
 type RouteConverter interface {
 	// Converts a VirtualService to a set of Gloo API routes (i.e. routes on a Proxy resource).
-	ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error)
+	// A non-nil error indicates an unexpected internal failure, all configuration errors are added to the given report object.
+	ConvertVirtualService(virtualService *gatewayv1.VirtualService, reports reporter.ResourceReports) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, reports reporter.ResourceReports) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
 	return &routeVisitor{
-		reports:            reports,
 		routeTableSelector: selector,
 		routeTableIndexer:  indexer,
 	}
@@ -84,7 +84,7 @@ func (v *visitableRouteTable) InputResource() resources.InputResource {
 // Implements Converter interface by recursively visiting a routing resource
 type routeVisitor struct {
 	// Used to store errors and warnings for the visited virtual services and route tables.
-	reports reporter.ResourceReports
+	//reports reporter.ResourceReports
 	// Used to select route tables for delegated routes.
 	routeTableSelector RouteTableSelector
 	// Used to sort route tables when multiple ones are matched by a selector.
@@ -103,15 +103,51 @@ type routeInfo struct {
 	hasName bool
 }
 
-func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
+// Helper object for reporting errors and warnings
+type reporterHelper struct {
+	reports                reporter.ResourceReports
+	topLevelVirtualService *gatewayv1.VirtualService
+}
+
+func (r *reporterHelper) addError(resource resources.InputResource, err error) {
+	r.reports.AddError(resource, err)
+
+	// If the resource is a Route Table, also add the warning to the top level virtual service.
+	if rt, ok := resource.(*gatewayv1.RouteTable); ok {
+		r.reports.AddError(r.topLevelVirtualService, TopLevelVirtualResourceErr(rt.GetMetadata(), err))
+	}
+}
+
+func (r *reporterHelper) addWarning(resource resources.InputResource, err error) {
+	r.reports.AddWarning(resource, err.Error())
+
+	// If the resource is a Route Table, also add the error to the top level virtual service.
+	if rt, ok := resource.(*gatewayv1.RouteTable); ok {
+		r.reports.AddWarning(r.topLevelVirtualService, TopLevelVirtualResourceErr(rt.GetMetadata(), err).Error())
+	}
+}
+
+func (rv *routeVisitor) ConvertVirtualService(virtualService *gatewayv1.VirtualService, reports reporter.ResourceReports) ([]*gloov1.Route, error) {
 	wrapper := &visitableVirtualService{VirtualService: virtualService}
-	return rv.visit(wrapper, nil, nil, virtualService)
+	return rv.visit(
+		wrapper,
+		nil,
+		nil,
+		&reporterHelper{
+			reports:                reports,
+			topLevelVirtualService: virtualService,
+		},
+	)
 }
 
 // Performs a depth-first, in-order traversal of a route tree rooted at the given resource.
 // The additional arguments are used to store the state of the traversal of the current branch of the route tree.
-func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInfo, visitedRouteTables gatewayv1.RouteTableList,
-	topLevelVirtualService *gatewayv1.VirtualService) ([]*gloov1.Route, error) {
+func (rv *routeVisitor) visit(
+	resource resourceWithRoutes,
+	parentRoute *routeInfo,
+	visitedRouteTables gatewayv1.RouteTableList,
+	reporterHelper *reporterHelper,
+) ([]*gloov1.Route, error) {
 	var routes []*gloov1.Route
 
 	for _, gatewayRoute := range resource.GetRoutes() {
@@ -128,9 +164,7 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			var err error
 			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
-				rv.reports.AddError(resource.InputResource(), err)
-				rv.reports.AddError(topLevelVirtualService,
-					TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err))
+				reporterHelper.addError(resource.InputResource(), err)
 				continue
 			}
 		}
@@ -141,17 +175,14 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			// Validate the matcher of the delegate route
 			prefix, err := getDelegateRoutePrefix(routeClone)
 			if err != nil {
-				return nil, err
+				reporterHelper.addError(resource.InputResource(), err)
+				continue
 			}
 
 			// Determine the route tables to delegate to
 			routeTables, err := rv.routeTableSelector.SelectRouteTables(action.DelegateAction, resource.InputResource().GetMetadata().Namespace)
 			if err != nil {
-				rv.reports.AddWarning(resource.InputResource(), err.Error())
-				if parentRoute != nil { // surface error
-					rv.reports.AddWarning(topLevelVirtualService,
-						TopLevelVirtualResourceErr(resource.InputResource().GetMetadata(), err).Error())
-				}
+				reporterHelper.addWarning(resource.InputResource(), err)
 				continue
 			}
 
@@ -173,10 +204,10 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 
 					// Check for delegation cycles
 					if err := checkForCycles(routeTable, visitedRouteTables); err != nil {
-						// Report the error on the route table. `resource` will never be a VS if we got here,
-						// as `visitedRouteTables` will be empty on the first on the first call of this function.
-						rv.reports.AddError(resource.InputResource(), err)
-						return nil, err
+						// Note that we do not report the error on the table we are currently visiting, but on the
+						// one we are about to visit, since that is the one that started the cycle.
+						reporterHelper.addError(routeTable, err)
+						continue
 					}
 
 					// Collect information about this route that are relevant when visiting the delegated route table
@@ -192,7 +223,12 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 					visitedRtCopy := append(append([]*gatewayv1.RouteTable{}, visitedRouteTables...), routeTable)
 
 					// Recursive call
-					subRoutes, err := rv.visit(&visitableRouteTable{routeTable}, currentRouteInfo, visitedRtCopy, topLevelVirtualService)
+					subRoutes, err := rv.visit(
+						&visitableRouteTable{routeTable},
+						currentRouteInfo,
+						visitedRtCopy,
+						reporterHelper,
+					)
 					if err != nil {
 						return nil, err
 					}
@@ -232,7 +268,8 @@ func (rv *routeVisitor) visit(resource resourceWithRoutes, parentRoute *routeInf
 			}
 			glooRoute, err := convertSimpleAction(routeClone)
 			if err != nil {
-				return nil, err
+				reporterHelper.addError(resource.InputResource(), err)
+				continue
 			}
 			routes = append(routes, glooRoute)
 		}
