@@ -4,19 +4,17 @@ weight: 5
 description: Setting up Gloo to handle Kubernetes Ingress Objects.
 ---
 
-Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command, Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
+Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command. Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
 
 ## Ingress Class
 
 By default, Gloo ignores the `kubernetes.io/ingress.class` [Ingress Class annotation](https://github.com/kubernetes/ingress-gce/blob/master/docs/faq/README.md#how-do-i-run-multiple-ingress-controllers-in-the-same-cluster) on Ingresses, meaning that Gloo will enable routing for all detected Ingresses regardless of their ingress class.
 
-To have Gloo respect the Ingress Class annotation, such that Gloo will only process Ingresses with the annotation `kubernetes.io/ingress.class: gloo`:
+To have Gloo respect the Ingress Class annotation (Gloo will only process Ingresses with the annotation `kubernetes.io/ingress.class: gloo`):
 
 * Setting the `Values.ingress.requireIngressClass=true` in your Helm value overrides
 * Directly setting the environment variable `REQUIRE_INGRESS_CLASS=true` on the `ingress` deployment
 
-
-{{% notice %}}
 
 When Gloo is set to require ingress class, the value `gloo` can be customized to match any arbitrary value by doing one of the following:
 
@@ -25,7 +23,6 @@ When Gloo is set to require ingress class, the value `gloo` can be customized to
 
 This is useful when wishing to use multiple instances of the Gloo ingress controller in the same Kubernetes cluster. 
 
-{{% /notice %}}
 
 If you need more advanced routing capabilities, we encourage you to use Gloo `VirtualServices` by installing as `glooctl install gateway`. See the remaining routing documentation for more details on the extended capabilities Gloo provides **without** needing to add lots of additional custom annotations to your Ingress Objects.
 
@@ -54,32 +51,32 @@ great way to get a cluster up quickly.
 
 3. Let's create a Kubernetes Ingress object to route requests to the petstore:
 
-```
-cat <<EOF | kubectl apply --filename -
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
- name: petstore-ingress
- annotations:
-    # note: this annotation is only required if you've set 
-    # REQUIRE_INGRESS_CLASS=true in the environment for 
-    # the ingress deployment
-    kubernetes.io/ingress.class: gloo
-spec:
-  rules:
-  - host: gloo.example.com
-    http:
-      paths:
-      - path: /.*
-        backend:
-          serviceName: petstore
-          servicePort: 8080
-EOF
-```
+    ```yaml
+    cat <<EOF | kubectl apply --filename -
+    apiVersion: extensions/v1beta1
+    kind: Ingress
+    metadata:
+     name: petstore-ingress
+     annotations:
+        # note: this annotation is only required if you've set 
+        # REQUIRE_INGRESS_CLASS=true in the environment for 
+        # the ingress deployment
+        kubernetes.io/ingress.class: gloo
+    spec:
+      rules:
+      - host: gloo.example.com
+        http:
+          paths:
+          - path: /.*
+            backend:
+              serviceName: petstore
+              servicePort: 8080
+    EOF
+    ```
 
-    We're specifying the host as `gloo.example.com` in this example. You should replace this with the domain for which you want to route traffic, or you may omit the host field to indicate all domains (`*`).
-    
-    The domain will be used to match the `Host` header on incoming HTTP requests.
+We're specifying the host as `gloo.example.com` in this example. You should replace this with the domain for which you want to route traffic, or you may omit the host field to indicate all domains (`*`).
+
+The domain will be used to match the `Host` header on incoming HTTP requests.
 
 
 4. Validate Ingress routing looks to be set up and running.
@@ -114,14 +111,15 @@ EOF
     ```json
     [{"id":1,"name":"Dog","status":"available"},{"id":2,"name":"Cat","status":"pending"}]
     ```
-
-    {{% notice note %}}
-    If you configure your DNS to resolve `gloo.example.com` to the Gloo proxy URL (e.g. by modifying your `/etc/resolv.conf`), you can omit the `Host` header in the command above, and instead use the command:
+   
+{{% notice note %}}
+If you configure your DNS to resolve `gloo.example.com` to the Gloo proxy URL (e.g. by modifying your `/etc/resolv.conf`), you can omit the `Host` header in the command above, and instead use the command:
+       
+```shell script
+curl http://gloo.example.com/api/pets
+```
     
-    ```shell
-    curl http://gloo.example.com/api/pets
-    ```
-    {{% /notice %}}
+{{% /notice %}}
 
 ---
 

@@ -3,14 +3,14 @@ package translator
 import (
 	"sort"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -53,7 +53,7 @@ func (t *translatorInstance) computeHttpConnectionManagerFilter(params plugins.P
 
 	httpConnMgr := NewHttpConnectionManager(listener, httpFilters, rdsName)
 
-	hcmFilter, err := NewFilterWithConfig(util.HTTPConnectionManager, httpConnMgr)
+	hcmFilter, err := NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, httpConnMgr)
 	if err != nil {
 		panic(errors.Wrap(err, "failed to convert proto message to struct"))
 	}
@@ -83,7 +83,7 @@ func (t *translatorInstance) computeHttpFilters(params plugins.Params, listener 
 
 	// sort filters by stage
 	envoyHttpFilters := sortFilters(httpFilters)
-	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{Name: util.Router})
+	envoyHttpFilters = append(envoyHttpFilters, &envoyhttp.HttpFilter{Name: wellknown.Router})
 	return envoyHttpFilters
 }
 

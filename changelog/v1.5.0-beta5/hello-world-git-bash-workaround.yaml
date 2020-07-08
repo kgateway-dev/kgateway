@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add note to Hello World doc for addressing Git Bash route mangling
+    issueLink: https://github.com/solo-io/gloo/issues/2731

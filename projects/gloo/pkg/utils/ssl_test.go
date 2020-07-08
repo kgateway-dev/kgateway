@@ -1,9 +1,9 @@
 package utils
 
 import (
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/go-utils/testutils"
@@ -76,7 +76,7 @@ var _ = Describe("Ssl", func() {
 				c, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 	})
@@ -239,12 +239,12 @@ var _ = Describe("Ssl", func() {
 				c, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, false)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
 
 				c, err = configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, true)
 				Expect(err).NotTo(HaveOccurred())
 				vctx = c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContext).ValidationContext
-				Expect(vctx.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 
@@ -326,10 +326,10 @@ var _ = Describe("Ssl", func() {
 
 			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
 			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
-			var credConfig v2alpha.FileBasedMetadataConfig
+			var credConfig envoygrpccredential.FileBasedMetadataConfig
 			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
 
-			Expect(credConfig).To(BeEquivalentTo(v2alpha.FileBasedMetadataConfig{
+			Expect(credConfig).To(BeEquivalentTo(envoygrpccredential.FileBasedMetadataConfig{
 				SecretData: &envoycore.DataSource{
 					Specifier: &envoycore.DataSource_Filename{
 						Filename: "TokenFileName",
@@ -353,7 +353,7 @@ var _ = Describe("Ssl", func() {
 				c, err := resolveCommonSslConfig(upstreamCfg, nil)
 				Expect(err).NotTo(HaveOccurred())
 				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
-				Expect(vctx.DefaultValidationContext.VerifySubjectAltName).To(Equal(upstreamCfg.VerifySubjectAltName))
+				Expect(vctx.DefaultValidationContext.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
 			})
 		})
 	})

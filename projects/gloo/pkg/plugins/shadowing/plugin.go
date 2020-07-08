@@ -71,6 +71,6 @@ func applyShadowSpec(out *envoyroute.RouteAction, spec *shadowing.RouteShadowing
 
 func getFractionalPercent(numerator float32) *envoycore.RuntimeFractionalPercent {
 	return &envoycore.RuntimeFractionalPercent{
-		DefaultValue: common.ToEnvoyPercentage(numerator),
+		DefaultValue: common.ToEnvoyv2Percentage(numerator),
 	}
 }

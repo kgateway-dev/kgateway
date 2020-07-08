@@ -863,8 +863,10 @@ var _ = Describe("Kube2e: gateway", func() {
 				tcpGateway := defaultGateway.GetTcpGateway()
 				Expect(tcpGateway).NotTo(BeNil())
 				tcpGateway.TcpHosts = []*gloov1.TcpHost{host}
-				_, err := gatewayClient.Write(defaultGateway, clients.WriteOpts{})
-				Expect(err).NotTo(HaveOccurred())
+				Eventually(func() error {
+					_, err := gatewayClient.Write(defaultGateway, clients.WriteOpts{})
+					return err
+				}, "5s", "0.5s").ShouldNot(HaveOccurred())
 			}
 		)
 

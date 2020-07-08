@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3288
+  description: >
+    Prepend the TlsInspector filter when no SNI domains are available to match on, as without the ServerName match
+    envoy does not automatically prepend it

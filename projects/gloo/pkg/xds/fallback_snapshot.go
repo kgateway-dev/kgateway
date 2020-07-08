@@ -2,11 +2,13 @@ package xds
 
 import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoycorev2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyhttpconnectionmanager "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
 )
 
@@ -34,8 +36,8 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 							Action: &envoyroute.Route_DirectResponse{
 								DirectResponse: &envoyroute.DirectResponseAction{
 									Status: invalidConfigStatusCode,
-									Body: &envoycore.DataSource{
-										Specifier: &envoycore.DataSource_InlineString{
+									Body: &envoycorev2.DataSource{
+										Specifier: &envoycorev2.DataSource_InlineString{
 											InlineString: "Invalid Envoy Bootstrap Configuration. " +
 												"Please refer to Gloo documentation https://gloo.solo.io/",
 										},
@@ -64,23 +66,23 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		},
 		HttpFilters: []*envoyhttpconnectionmanager.HttpFilter{
 			{
-				Name: "envoy.router",
+				Name: wellknown.Router,
 			},
 		},
 	}
-	pbst, err := conversion.MessageToStruct(manager)
+	pbst, err := utils.MessageToAny(manager)
 	if err != nil {
 		panic(err)
 	}
 
 	listener := &envoyapi.Listener{
 		Name: listenerName,
-		Address: &envoycore.Address{
-			Address: &envoycore.Address_SocketAddress{
-				SocketAddress: &envoycore.SocketAddress{
-					Protocol: envoycore.SocketAddress_TCP,
+		Address: &envoycorev2.Address{
+			Address: &envoycorev2.Address_SocketAddress{
+				SocketAddress: &envoycorev2.SocketAddress{
+					Protocol: envoycorev2.SocketAddress_TCP,
 					Address:  bindAddress,
-					PortSpecifier: &envoycore.SocketAddress_PortValue{
+					PortSpecifier: &envoycorev2.SocketAddress_PortValue{
 						PortValue: port,
 					},
 					Ipv4Compat: true,
@@ -90,8 +92,8 @@ func fallbackSnapshot(bindAddress string, port, invalidConfigStatusCode uint32) 
 		FilterChains: []*envoylistener.FilterChain{{
 			Filters: []*envoylistener.Filter{
 				{
-					Name:       "envoy.http_connection_manager",
-					ConfigType: &envoylistener.Filter_Config{Config: pbst},
+					Name:       wellknown.HTTPConnectionManager,
+					ConfigType: &envoylistener.Filter_TypedConfig{TypedConfig: pbst},
 				},
 			},
 		}},

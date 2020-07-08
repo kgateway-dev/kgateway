@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix ingress docs instructions for docs setup, and other minor typos.
+    issueLink: https://github.com/solo-io/gloo/issues/3170

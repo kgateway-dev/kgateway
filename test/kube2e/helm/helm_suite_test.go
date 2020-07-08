@@ -74,7 +74,7 @@ func StartTestHelper() {
 		"--version", "v1.3.0")
 
 	// Check that everything is OK
-	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "40s")
+	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "90s")
 
 }
 

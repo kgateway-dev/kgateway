@@ -12,6 +12,10 @@ The [Open Policy Agent](https://www.openpolicyagent.org/) (OPA) is an open sourc
 
 Be sure to check the external auth [configuration overview]({{% versioned_link_path fromRoot="/guides/security/auth/extauth/#auth-configuration-overview" %}}) for detailed information about how authentication is configured on Virtual Services.
 
+{{% notice note %}}
+As of **Gloo Enterprise** release 1.5.0-beta1, you can see Gloo's version of OPA in the extauth service logs.
+{{% /notice %}}
+
 ## Table of Contents
 - [Setup](#setup)
 - [OPA policy overview](#opa-policy-overview)

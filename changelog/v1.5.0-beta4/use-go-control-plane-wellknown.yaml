@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Use wellknown from go-control-plane in place of solo-kit util and hard coded strings

@@ -60,7 +60,7 @@ spec:
 {{< /highlight  >}}
 
 {{% notice note %}}
-Setting the value `rate_limit_before_auth` to true will cause the rate limiting filter to run before the Ext Auth filter.
+Setting the value `rateLimitBeforeAuth` to true will cause the rate limiting filter to run before the Ext Auth filter.
 This necessarily means the loss of extauth-aware rate limiting features, like providing different rate limits for authenticated
 vs non-authenticated users.
 {{% /notice %}}

@@ -5,6 +5,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -13,7 +15,7 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/transcoder/v2"
+	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/gogo/googleapis/google/api"
 	"github.com/gogo/protobuf/proto"
 	"github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
@@ -54,10 +56,6 @@ type plugin struct {
 
 	ctx context.Context
 }
-
-const (
-	filterName = "envoy.grpc_json_transcoder"
-)
 
 var pluginStage = plugins.BeforeStage(plugins.OutAuthStage)
 
@@ -303,7 +301,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 			MatchIncomingRequestRoute: true,
 		}
 
-		shf, err := plugins.NewStagedFilterWithConfig(filterName, filterConfig, pluginStage)
+		shf, err := plugins.NewStagedFilterWithConfig(wellknown.GRPCJSONTranscoder, filterConfig, pluginStage)
 		if err != nil {
 			return nil, errors.Wrapf(err, "ERROR: marshaling GrpcJsonTranscoder config")
 		}

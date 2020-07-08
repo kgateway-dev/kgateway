@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"go.uber.org/zap"
 
 	core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -125,6 +125,6 @@ func (p *plugin) translateRouteSpecificCorsConfig(in *cors.CorsPolicy, out *envo
 
 func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	return []plugins.StagedHttpFilter{
-		plugins.NewStagedFilter(util.CORS, pluginStage),
+		plugins.NewStagedFilter(wellknown.CORS, pluginStage),
 	}, nil
 }

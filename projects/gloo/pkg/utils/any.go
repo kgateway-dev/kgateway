@@ -1,4 +1,4 @@
-package pluginutils
+package utils
 
 import (
 	"fmt"

@@ -134,6 +134,7 @@ message TcpHost {
 
             // Forwards the SNI name into the destination cluster
             // https://www.envoyproxy.io/docs/envoy/latest/api-v2/config/filter/network/sni_cluster/empty/sni_cluster
+            // Note: This filter will only work properly with TLS connections in which the upstream SNI domain is specified
             google.protobuf.Empty forward_sni_cluster_name = 4;
         };
     }
