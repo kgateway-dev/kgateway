@@ -236,6 +236,7 @@ func RunGateway(opts translator.Opts) error {
 	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
 
 	translatorSyncer := NewTranslatorSyncer(
+		ctx,
 		opts.WriteNamespace,
 		proxyClient,
 		proxyReconciler,
