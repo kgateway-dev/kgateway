@@ -58,7 +58,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient
 	}
 
 	go t.statusSyncer.watchProxies(ctx)
-	// TODO go
+	go t.statusSyncer.syncStatusOnAPeriod(ctx)
 	return t
 }
 
@@ -139,7 +139,7 @@ func (s *statusSyncer) currentProxies(desiredProxies reconciler.GeneratedProxies
 	s.currentGeneratedProxies = newCurrentGeneratedProxies
 }
 
-// run this in the backgound
+// run this in the background
 func (s *statusSyncer) watchProxies(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "proxy-err-propagator")
 	proxies, errs, err := s.proxyClient.Watch(s.writeNamespace, clients.WatchOpts{
