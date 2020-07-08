@@ -56,7 +56,7 @@ require (
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/skv2 v0.6.0
+	github.com/solo-io/skv2 v0.6.1
 	github.com/solo-io/solo-kit v0.13.8
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
@@ -89,8 +89,6 @@ require (
 	knative.dev/serving v0.10.0
 	sigs.k8s.io/yaml v1.2.0
 )
-
-replace github.com/solo-io/skv2 => /Users/joe/code2/skv2
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible

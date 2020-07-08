@@ -31,34 +31,6 @@ func Register(opts *options.Options) error {
 	ctx := context.TODO()
 	registerOpts := opts.Cluster.Register
 
-	//remoteConfigPath := registerOpts.RemoteKubeConfig
-	//remoteContext := registerOpts.RemoteContext
-
-	//remoteConfig, err := GetConfigWithContext("", remoteConfigPath, remoteContext)
-	//if err != nil {
-	//	return err
-	//}
-
-	//registrantOpts := register.Options{
-	//	ClusterName:     registerOpts.ClusterName,
-	//	RemoteCtx:       registerOpts.RemoteContext,
-	//	Namespace:       registerOpts.FederationNamespace,
-	//	RemoteNamespace: registerOpts.RemoteNamespace,
-	//}
-
-	//rbacOptions := register.RbacOptions{
-	//	Options: registrantOpts,
-	//	ClusterRoles: []*v1.ClusterRole{
-	//		{
-	//			ObjectMeta: metav1.ObjectMeta{
-	//				Namespace: registrantOpts.Namespace,
-	//				Name:      "gloo-federation-controller",
-	//			},
-	//			Rules: glooFederationPolicyRules,
-	//		},
-	//	},
-	//}
-
 	clusterRegisterOpts := register.RegistrationOptions{
 		RemoteKubeCfgPath:     registerOpts.RemoteKubeConfig,
 		RemoteKubeContext:     registerOpts.RemoteContext,
@@ -78,40 +50,4 @@ func Register(opts *options.Options) error {
 	}
 
 	return clusterRegisterOpts.RegisterCluster(ctx)
-
-	//registrant, err := register.DefaultRegistrant("", registerOpts.LocalClusterDomainOverride)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//return register.RegisterClusterFromConfig(ctx, remoteConfig, rbacOptions, registrant)
 }
-
-//func GetConfigWithContext(masterURL, kubeconfigPath, context string) (clientcmd.ClientConfig, error) {
-//	verifiedKubeConfigPath := clientcmd.RecommendedHomeFile
-//	if kubeconfigPath != "" {
-//		verifiedKubeConfigPath = kubeconfigPath
-//	}
-//
-//	if err := assertKubeConfigExists(verifiedKubeConfigPath); err != nil {
-//		return nil, err
-//	}
-//
-//	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-//	loadingRules.ExplicitPath = verifiedKubeConfigPath
-//	configOverrides := &clientcmd.ConfigOverrides{ClusterInfo: clientcmdapi.Cluster{Server: masterURL}}
-//
-//	if context != "" {
-//		configOverrides.CurrentContext = context
-//	}
-//	return clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides), nil
-//}
-//
-//// expects `path` to be nonempty
-//func assertKubeConfigExists(path string) error {
-//	if _, err := os.Stat(path); err != nil {
-//		return err
-//	}
-//
-//	return nil
-//}
