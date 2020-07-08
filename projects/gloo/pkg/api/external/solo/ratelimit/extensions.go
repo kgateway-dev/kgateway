@@ -40,13 +40,13 @@ type kubeReporterClient struct {
 	skv2Client rlv1alpha1.RateLimitConfigClient
 }
 
-func NewRateLimitClients(rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterClient, error) {
+func NewRateLimitClients(rcFactory factory.ResourceClientFactory) (RateLimitConfigClient, reporter.ReporterResourceClient, error) {
 	rlClient, err := NewRateLimitConfigClient(rcFactory)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	var reporterClient reporter.ReporterClient
+	var reporterClient reporter.ReporterResourceClient
 	switch typedFactory := rcFactory.(type) {
 	case *factory.KubeResourceClientFactory:
 		rlClientSet, err := rlv1alpha1.NewClientsetFromConfig(typedFactory.Cfg)
