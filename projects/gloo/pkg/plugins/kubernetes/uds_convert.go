@@ -62,7 +62,7 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 			},
 		},
 		DiscoveryMetadata: &v1.DiscoveryMetadata{},
-		ServiceMetadata: serviceMetadata,
+		ServiceMetadata:   serviceMetadata,
 	}
 
 	for _, sc := range uc.serviceConverters {
