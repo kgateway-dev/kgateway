@@ -25,9 +25,9 @@ import (
 
 var _ = Describe("Extauth Http filter builder function", func() {
 
-	When("no extauth settings are provided", func() {
+	When("no global extauth settings are provided", func() {
 		It("does not return any filter", func() {
-			filters, err := BuildHttpFilters(nil, nil)
+			filters, err := BuildHttpFilters(nil, nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(filters).To(HaveLen(0))
 		})
@@ -35,7 +35,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 
 	When("settings do not contain ext auth server ref", func() {
 		It("returns an error", func() {
-			_, err := BuildHttpFilters(&extauthv1.Settings{}, nil)
+			_, err := BuildHttpFilters(&extauthv1.Settings{}, nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(Equal(NoServerRefErr))
 		})
@@ -47,7 +47,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 				Name:      "non",
 				Namespace: "existent",
 			}
-			_, err := BuildHttpFilters(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil)
+			_, err := BuildHttpFilters(&extauthv1.Settings{ExtauthzServerRef: invalidUs}, nil, nil)
 			Expect(err).To(HaveOccurred())
 			Expect(err).To(HaveInErrorChain(ServerNotFound(invalidUs)))
 		})
@@ -174,7 +174,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("uses the expected defaults", func() {
-				filters, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
+				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
@@ -226,7 +226,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("generates the expected configuration", func() {
-				filters, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
+				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
@@ -248,7 +248,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("returns an error", func() {
-				_, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
+				_, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
 				Expect(err).To(HaveOccurred())
 				Expect(err).To(HaveInErrorChain(InvalidStatusOnErrorErr(999)))
 			})
@@ -314,7 +314,7 @@ var _ = Describe("Extauth Http filter builder function", func() {
 			})
 
 			It("uses the expected defaults", func() {
-				filters, err := BuildHttpFilters(settings, gloov1.UpstreamList{upstream})
+				filters, err := BuildHttpFilters(settings, nil, gloov1.UpstreamList{upstream})
 				Expect(err).NotTo(HaveOccurred())
 				Expect(filters).To(HaveLen(1))
 
