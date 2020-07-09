@@ -108,8 +108,8 @@ func selectUpstreamsBlacklist(upstreams v1.UpstreamList, blacklistedNamespaces s
 
 func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces sets.String) bool {
 	inBlacklistedNamespace := blacklistedNamespaces.Has(getUpstreamNamespace(us))
-	blacklisted := isBlacklisted(us.Metadata.Labels)
-	whitelisted := isWhitelisted(us.Metadata.Labels)
+	blacklisted := isBlacklisted(us.ServiceMetadata)
+	whitelisted := isWhitelisted(us.ServiceMetadata)
 
 	return (!inBlacklistedNamespace || whitelisted) && !blacklisted
 }
@@ -117,8 +117,8 @@ func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces
 func selectUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, blacklistedNamespaces sets.String) (selected v1.UpstreamList) {
 	for _, us := range upstreams {
 		inWhitelistedNamespace := whitelistedNamespaces.Has(getUpstreamNamespace(us))
-		blacklisted := isBlacklisted(us.Metadata.Labels)
-		whitelisted := isWhitelisted(us.Metadata.Labels)
+		blacklisted := isBlacklisted(us.ServiceMetadata)
+		whitelisted := isWhitelisted(us.ServiceMetadata)
 
 		// if an upstream is AWS, then include it only if it would be included in blacklist mode (https://github.com/solo-io/solo-projects/issues/1339)
 		// otherwise, include the upstream only if it is *not* AWS, and either condition holds:

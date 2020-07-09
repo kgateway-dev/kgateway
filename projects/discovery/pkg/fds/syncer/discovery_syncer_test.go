@@ -129,7 +129,7 @@ func makeKubeUpstream(name, namespace string, labels map[string]string) *gloov1.
 	us.UpstreamType = &gloov1.Upstream_Kube{
 		Kube: &kubeplugin.UpstreamSpec{ServiceNamespace: namespace},
 	}
-	us.Metadata.Labels = labels
+	us.ServiceMetadata = labels
 	return us
 }
 
@@ -140,6 +140,6 @@ func makeAwsUpstream(name, namespace string, labels map[string]string) *gloov1.U
 			Region: "test-region",
 		},
 	}
-	us.Metadata.Labels = labels
+	us.ServiceMetadata = labels
 	return us
 }
