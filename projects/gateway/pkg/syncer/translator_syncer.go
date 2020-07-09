@@ -20,6 +20,7 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -46,13 +47,7 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient
 		vsClient:        vsClient,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
-		statusSyncer: statusSyncer{
-			proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
-			currentGeneratedProxies: map[core.ResourceRef]struct{}{},
-			reporter:                reporter,
-			proxyClient:             proxyClient,
-			writeNamespace:          writeNamespace,
-		},
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyClient, reporter),
 		labels: map[string]string{
 			"created_by": "gateway",
 		},
@@ -116,8 +111,18 @@ type statusSyncer struct {
 	mapLock                 sync.RWMutex
 	reporter                reporter.Reporter
 
-	proxyClient    gloov1.ProxyClient
+	proxyClient    gloov1.ProxyWatcher
 	writeNamespace string
+}
+
+func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
+	return statusSyncer{
+		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
+		currentGeneratedProxies: map[core.ResourceRef]struct{}{},
+		reporter:                reporter,
+		proxyClient:             proxyClient,
+		writeNamespace:          writeNamespace,
+	}
 }
 
 func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
@@ -203,7 +208,7 @@ func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
 func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
-	subresourceStatuses := map[string]*core.Status{}
+	subresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
 	func() {
 		s.mapLock.RLock()
 		defer s.mapLock.RUnlock()
@@ -212,13 +217,16 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 			if !inDesiredProxies {
 				continue
 			}
-			if reportsAndStatus.Status != nil {
-				// add the proxy status as well if we have it
-				status := *reportsAndStatus.Status
-				subresourceStatuses[fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
-			}
 			// merge all the reports for the vs from all the proxies.
 			for k, v := range reportsAndStatus.Reports {
+				if reportsAndStatus.Status != nil {
+					// add the proxy status as well if we have it
+					status := *reportsAndStatus.Status
+					if _, ok := subresourceStatuses[k]; !ok {
+						subresourceStatuses[k] = map[string]*core.Status{}
+					}
+					subresourceStatuses[k][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
+				}
 				if report, ok := allReports[k]; ok {
 					if v.Errors != nil {
 						report.Errors = multierror.Append(report.Errors, v.Errors)
@@ -236,5 +244,12 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	if len(subresourceStatuses) == 0 {
 		subresourceStatuses = nil
 	}
-	return s.reporter.WriteReports(ctx, allReports, subresourceStatuses)
+	var errs error
+	for k, v := range allReports {
+		reports := reporter.ResourceReports{k: v}
+		if err := s.reporter.WriteReports(ctx, reports, subresourceStatuses[k]); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+	}
+	return errs
 }
