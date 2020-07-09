@@ -3,6 +3,8 @@ package ratelimit
 import (
 	"reflect"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
+
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
@@ -13,6 +15,8 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 )
+
+var _ resources.CustomInputResource = &RateLimitConfig{}
 
 type RateLimitConfig v1alpha1.RateLimitConfig
 
