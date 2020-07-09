@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3115
+    description: >
+      Fix a bug where a virtual service has an inconsistent state, but keeping only the last version of it
+      and reducing the number of go-routines.
