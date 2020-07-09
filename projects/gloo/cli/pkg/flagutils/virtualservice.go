@@ -2,7 +2,7 @@ package flagutils
 
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
-	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/spf13/pflag"
 )
 

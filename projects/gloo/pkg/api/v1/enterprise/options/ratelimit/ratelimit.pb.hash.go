@@ -287,7 +287,7 @@ func (m *RateLimitRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	switch m.Spec.(type) {
+	switch m.ConfigType.(type) {
 
 	case *RateLimitRouteExtension_ConfigRef:
 

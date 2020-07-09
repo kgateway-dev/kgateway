@@ -14,8 +14,8 @@ option (extproto.hash_all) = true;
 
 // Basic rate-limiting API
 message IngressRateLimit {
-  ratelimit.solo.io.RateLimit authorized_limits = 1;
-  ratelimit.solo.io.RateLimit anonymous_limits = 2;
+  ratelimit.api.solo.io.RateLimit authorized_limits = 1;
+  ratelimit.api.solo.io.RateLimit anonymous_limits = 2;
 }
 
 message Settings {
@@ -46,7 +46,7 @@ message Settings {
 //      requestsPerUnit: 20
 //      unit: MINUTE
 message ServiceSettings {
-  repeated ratelimit.solo.io.Descriptor descriptors = 1;
+  repeated ratelimit.api.solo.io.Descriptor descriptors = 1;
 }
 
 // A reference to a `RateLimitConfig` resource.
@@ -60,11 +60,11 @@ message RateLimitVhostExtension {
   message InlineConfig {
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled).
-    repeated ratelimit.solo.io.RateLimitActions rate_limits = 1;
+    repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
   }
 
   // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
-  repeated ratelimit.solo.io.RateLimitActions rate_limits = 1 [deprecated = true];
+  repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1 [deprecated = true];
 
   oneof config_type {
     // A reference to a RateLimitConfig resource.
@@ -87,17 +87,17 @@ message RateLimitRouteExtension {
 
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
-    repeated ratelimit.solo.io.RateLimitActions rate_limits = 2;
+    repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
   }
 
   // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
   bool include_vh_rate_limits = 1 [deprecated = true];
 
   // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
-  repeated ratelimit.solo.io.RateLimitActions rate_limits = 2 [deprecated = true];
+  repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2 [deprecated = true];
 
 
-  oneof spec {
+  oneof config_type {
     // A reference to a RateLimitConfig resource. This is used to configure the GlooE rate limit server.
     RateLimitConfigRef config_ref = 3;
 

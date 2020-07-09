@@ -830,6 +830,24 @@ apis:
   protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/protocol_upgrade/protocol_upgrade.proto.sk/#ProtocolUpgradeConfig
     package: protocol_upgrade.options.gloo.solo.io
+  ratelimit.api.solo.io.Action:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Action
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.Descriptor:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Descriptor
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.RateLimit:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimit
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.RateLimitActions:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitActions
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.RateLimitConfigSpec:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigSpec
+    package: ratelimit.api.solo.io
+  ratelimit.api.solo.io.RateLimitConfigStatus:
+    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigStatus
+    package: ratelimit.api.solo.io
   ratelimit.options.gloo.solo.io.IngressRateLimit:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#IngressRateLimit
     package: ratelimit.options.gloo.solo.io
@@ -848,24 +866,6 @@ apis:
   ratelimit.options.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#Settings
     package: ratelimit.options.gloo.solo.io
-  ratelimit.solo.io.Action:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Action
-    package: ratelimit.solo.io
-  ratelimit.solo.io.Descriptor:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#Descriptor
-    package: ratelimit.solo.io
-  ratelimit.solo.io.RateLimit:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimit
-    package: ratelimit.solo.io
-  ratelimit.solo.io.RateLimitActions:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitActions
-    package: ratelimit.solo.io
-  ratelimit.solo.io.RateLimitConfigSpec:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigSpec
-    package: ratelimit.solo.io
-  ratelimit.solo.io.RateLimitConfigStatus:
-    relativepath: reference/api/github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#RateLimitConfigStatus
-    package: ratelimit.solo.io
   rbac.options.gloo.solo.io.ExtensionSettings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto.sk/#ExtensionSettings
     package: rbac.options.gloo.solo.io

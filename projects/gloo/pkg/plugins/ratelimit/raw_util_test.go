@@ -11,7 +11,7 @@ import (
 	"github.com/gogo/protobuf/types"
 	regexutils "github.com/solo-io/gloo/pkg/utils/regexutils"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
-	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	gloorl "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 )
 
 var _ = Describe("RawUtil", func() {

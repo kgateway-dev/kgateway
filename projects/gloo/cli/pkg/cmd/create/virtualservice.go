@@ -4,7 +4,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"

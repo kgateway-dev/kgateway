@@ -36,15 +36,15 @@ weight: 5
 Basic rate-limiting API
 
 ```yaml
-"authorizedLimits": .ratelimit.solo.io.RateLimit
-"anonymousLimits": .ratelimit.solo.io.RateLimit
+"authorizedLimits": .ratelimit.api.solo.io.RateLimit
+"anonymousLimits": .ratelimit.api.solo.io.RateLimit
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `authorizedLimits` | [.ratelimit.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
-| `anonymousLimits` | [.ratelimit.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
+| `authorizedLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
+| `anonymousLimits` | [.ratelimit.api.solo.io.RateLimit](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimit) |  |  |
 
 
 
@@ -94,13 +94,13 @@ descriptors:
      unit: MINUTE
 
 ```yaml
-"descriptors": []ratelimit.solo.io.Descriptor
+"descriptors": []ratelimit.api.solo.io.Descriptor
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `descriptors` | [[]ratelimit.solo.io.Descriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#descriptor) |  |  |
+| `descriptors` | [[]ratelimit.api.solo.io.Descriptor](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#descriptor) |  |  |
 
 
 
@@ -131,7 +131,7 @@ A reference to a `RateLimitConfig` resource.
 
 
 ```yaml
-"rateLimits": []ratelimit.solo.io.RateLimitActions
+"rateLimits": []ratelimit.api.solo.io.RateLimitActions
 "configRef": .ratelimit.options.gloo.solo.io.RateLimitConfigRef
 "inlineConfig": .ratelimit.options.gloo.solo.io.RateLimitVhostExtension.InlineConfig
 
@@ -139,7 +139,7 @@ A reference to a `RateLimitConfig` resource.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
 | `configRef` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRef](../ratelimit.proto.sk/#ratelimitconfigref) | A reference to a RateLimitConfig resource. The resource will configure both the Envoy VirtualHost and the GlooE rate limit server. Only one of `configRef` or `inlineConfig` can be set. |  |
 | `inlineConfig` | [.ratelimit.options.gloo.solo.io.RateLimitVhostExtension.InlineConfig](../ratelimit.proto.sk/#inlineconfig) | Use this field if you want to inline the Envoy rate limits for this VirtualHost. Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are running a custom rate limit server you need to configure it yourself. Only one of `inlineConfig` or `configRef` can be set. |  |
 
@@ -152,13 +152,13 @@ A reference to a `RateLimitConfig` resource.
 
 
 ```yaml
-"rateLimits": []ratelimit.solo.io.RateLimitActions
+"rateLimits": []ratelimit.api.solo.io.RateLimitActions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 
@@ -170,7 +170,7 @@ A reference to a `RateLimitConfig` resource.
 
 ```yaml
 "includeVhRateLimits": bool
-"rateLimits": []ratelimit.solo.io.RateLimitActions
+"rateLimits": []ratelimit.api.solo.io.RateLimitActions
 "configRef": .ratelimit.options.gloo.solo.io.RateLimitConfigRef
 "inlineConfig": .ratelimit.options.gloo.solo.io.RateLimitRouteExtension.InlineConfig
 
@@ -179,7 +179,7 @@ A reference to a `RateLimitConfig` resource.
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `includeVhRateLimits` | `bool` | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
-| `rateLimits` | [[]ratelimit.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
 | `configRef` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRef](../ratelimit.proto.sk/#ratelimitconfigref) | A reference to a RateLimitConfig resource. This is used to configure the GlooE rate limit server. Only one of `configRef` or `inlineConfig` can be set. |  |
 | `inlineConfig` | [.ratelimit.options.gloo.solo.io.RateLimitRouteExtension.InlineConfig](../ratelimit.proto.sk/#inlineconfig) | Use this field if you want to inline the Envoy rate limits for this Route. Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are running a custom rate limit server you need to configure it yourself. Only one of `inlineConfig` or `configRef` can be set. |  |
 
@@ -193,14 +193,14 @@ A reference to a `RateLimitConfig` resource.
 
 ```yaml
 "includeVhRateLimits": bool
-"rateLimits": []ratelimit.solo.io.RateLimitActions
+"rateLimits": []ratelimit.api.solo.io.RateLimitActions
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `includeVhRateLimits` | `bool` | Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route. |  |
-| `rateLimits` | [[]ratelimit.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
+| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Define individual rate limits here. Each rate limit will be evaluated, if any rate limit would be throttled, the entire request returns a 429 (gets throttled). |  |
 
 
 

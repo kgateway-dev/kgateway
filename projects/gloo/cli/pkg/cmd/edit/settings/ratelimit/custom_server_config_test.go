@@ -3,7 +3,7 @@ package ratelimit_test
 import (
 	"io"
 
-	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

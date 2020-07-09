@@ -6,7 +6,7 @@ import (
 	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	types "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
@@ -82,8 +82,8 @@ func (r *RateLimitConfig) SetStatus(status core.Status) {
 	case core.Status_Rejected:
 		outputState = types.RateLimitConfigStatus_REJECTED
 	case core.Status_Warning:
-		// TODO(marco): is this mapping ok?
-		outputState = types.RateLimitConfigStatus_ACCEPTED
+		// should lever happen
+		panic("cannot set WARNING status on RateLimitConfig resources")
 	}
 
 	r.Status.State = outputState

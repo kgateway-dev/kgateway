@@ -36,7 +36,6 @@ require (
 	github.com/k0kubun/pp v2.3.0+incompatible
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
-	github.com/mattn/go-isatty v0.0.11 // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/mitchellh/reflectwalk v1.0.1
 	github.com/olekukonko/tablewriter v0.0.4
@@ -54,8 +53,8 @@ require (
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-apis v0.0.0-20200706143820-0586398fe14f
-	github.com/solo-io/solo-kit v0.13.8
+	github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b
+	github.com/solo-io/solo-kit v0.13.9
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
@@ -70,7 +69,7 @@ require (
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.27.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.17.2
 	k8s.io/apiextensions-apiserver v0.18.1
@@ -90,10 +89,6 @@ replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
-	// TODO(marco): To avoid dots in generated mocks and avoid clutter in the PR, for now
-	github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1 => github.com/golang/mock v1.4.3
-	// TODO(marco): pin to real solo-kit version
-	github.com/solo-io/solo-kit v0.13.8 => /Users/marco/code/projects/solo-kit
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1

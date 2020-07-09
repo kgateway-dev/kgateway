@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1/types"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/test/helpers"
