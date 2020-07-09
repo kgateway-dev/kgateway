@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"log"
+
 	"github.com/rotisserie/eris"
 	skratelimit "github.com/solo-io/gloo/projects/gloo/api/external/solo/ratelimit"
 	rlv1alpha1 "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
@@ -10,6 +12,12 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
+
+func init() {
+	if err := crd.AddCrd(RateLimitConfigCrd); err != nil {
+		log.Fatalf("could not add crd to global registry")
+	}
+}
 
 var (
 	RateLimitConfigCrd = crd.NewCrd(
