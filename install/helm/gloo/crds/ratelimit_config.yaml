@@ -1,0 +1,20 @@
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  name: ratelimitconfigs.ratelimit.solo.io
+spec:
+  group: ratelimit.solo.io
+  names:
+    kind: RateLimitConfig
+    listKind: RateLimitConfigList
+    plural: ratelimitconfigs
+    singular: ratelimitconfig
+    shortNames:
+    - rlc
+  scope: Namespaced
+  subresources:
+    status: {}
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
