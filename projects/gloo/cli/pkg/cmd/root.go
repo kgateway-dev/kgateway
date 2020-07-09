@@ -5,6 +5,7 @@ import (
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/dashboard"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
@@ -85,6 +86,7 @@ func GlooCli() *cobra.Command {
 			debug.RootCmd(opts),
 			versioncmd.RootCmd(opts),
 			dashboard.RootCmd(opts),
+			federation.RootCmd(opts),
 			completionCmd(),
 		)
 	}

@@ -10,6 +10,8 @@ require (
 	github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
+	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -54,6 +56,7 @@ require (
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
+	github.com/solo-io/skv2 v0.7.0
 	github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b
 	github.com/solo-io/solo-kit v0.13.9
 	github.com/solo-io/wasme v0.0.13-rc1
@@ -69,7 +72,7 @@ require (
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/tools v0.0.0-20200427205912-352a5409fae0
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
-	google.golang.org/grpc v1.27.0
+	google.golang.org/grpc v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
@@ -79,6 +82,7 @@ require (
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.2
 	k8s.io/helm v2.16.1+incompatible
+	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
 	k8s.io/kubectl v0.17.2
 	k8s.io/kubernetes v1.17.1
 	k8s.io/utils v0.17.1

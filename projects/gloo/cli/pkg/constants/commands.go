@@ -155,4 +155,16 @@ var (
 		Short:   "Open Gloo dashboard",
 		Long:    "Open the Gloo dashboard/UI in your default browser",
 	}
+
+	CLUSTER_COMMAND = cobra.Command{
+		Use:   "cluster",
+		Short: "Cluster commands",
+		Long:  "Commands related to managing multiple clusters",
+	}
+
+	REGISTER_COMMAND = cobra.Command{
+		Use:   "register",
+		Short: "Register a cluster to the Gloo Federation control plane",
+		Long:  "Register a cluster to the Gloo Federation control plane. Registered clusters can be targeted for discovery and configuration.",
+	}
 )
