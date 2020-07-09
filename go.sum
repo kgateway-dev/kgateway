@@ -489,8 +489,7 @@ github.com/golang/mock v1.2.0/go.mod h1:oTYuIxOrZwtPieC+H1uAHpcLFnEyAGVDL/k47Jfb
 github.com/golang/mock v1.3.1/go.mod h1:sBzyDLLjw3U8JLTeZvSv8jJB+tU5PVekmnlKIyFUx0Y=
 github.com/golang/mock v1.4.0 h1:Rd1kQnQu0Hq3qvJppYSG0HtP+f5LPPUiDswTLiEegLg=
 github.com/golang/mock v1.4.0/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
-github.com/golang/mock v1.4.3 h1:GV+pQPG/EUUbkh47niozDcADz6go/dUwhVzdUQHIVRw=
-github.com/golang/mock v1.4.3/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
+github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1 h1:YS+8QJ8yKSoB7Qy3WF0DMDFj2TkfASqhc0aNIIxjl6I=
 github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1/go.mod h1:UOMv5ysSaYNkG+OFQykRIcU/QvvxJf3p21QfJ2Bt3cw=
 github.com/golang/protobuf v0.0.0-20161109072736-4bd1920723d7/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
 github.com/golang/protobuf v1.0.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -1048,8 +1047,6 @@ github.com/solo-io/reporting-client v0.1.2 h1:U585Q5UlB5/UUewtgEAQz94SWuNRBxoHc4
 github.com/solo-io/reporting-client v0.1.2/go.mod h1:FmBDzwc1zEwayCCrlP+1w7NcpM0FIuvU+NSePj4wJq8=
 github.com/solo-io/skv2 v0.7.0 h1:uHTFHDu/0YY2jQiyLrs76hZECQQGBe0R7FCpCQaxL00=
 github.com/solo-io/skv2 v0.7.0/go.mod h1:IP3Wx1Cj6kiJpxNU/705AAIAhEHeWIAx4xxKjF6HiCU=
-github.com/solo-io/solo-apis v0.0.0-20200708194940-67d34ca2cb09 h1:Z4gJny/pkCPrbtwjHc/RHEib/GlhKx6f/b8SS2z6Hwo=
-github.com/solo-io/solo-apis v0.0.0-20200708194940-67d34ca2cb09/go.mod h1:wiQLPmECkI/VuwhtnaDC9UwOXUiD/f6dNMbh6kQt3fI=
 github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b h1:Gw0gVtH9yr+ka+N7HlTENUlSN72+zC3GXLQPtofb/dY=
 github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b/go.mod h1:wiQLPmECkI/VuwhtnaDC9UwOXUiD/f6dNMbh6kQt3fI=
 github.com/solo-io/solo-kit v0.6.3/go.mod h1:oBaQ6tOwuO97u7w+s3TeI08YLHcbiWemInx0XkDfKFw=
