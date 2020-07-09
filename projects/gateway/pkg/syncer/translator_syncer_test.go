@@ -2,6 +2,7 @@ package syncer
 
 import (
 	"context"
+	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,19 +17,18 @@ import (
 
 var _ = Describe("TranslatorSyncer", func() {
 	var (
-		watcher   *fakeWatcher
-		freporter *fakeReporter
-		syncer    statusSyncer
+		fakeWatcher  = &fakeWatcher{}
+		mockReporter *fakeReporter
+		syncer       statusSyncer
 	)
 
 	BeforeEach(func() {
-		watcher = &fakeWatcher{}
-		freporter = &fakeReporter{}
-		syncer = newStatusSyncer("gloo-system", watcher, freporter)
+		mockReporter = &fakeReporter{}
+		syncer = newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
 	})
 
 	It("should set status correctly", func() {
-		proxy := &gloov1.Proxy{
+		acceptedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
 			Status:   core.Status{State: core.Status_Accepted},
 		}
@@ -36,30 +36,28 @@ var _ = Describe("TranslatorSyncer", func() {
 		errs := reporter.ResourceReports{}
 		errs.Accept(vs)
 
-		// reports.AddError(gw, fmt.Errorf("invalid virtual service ref %v", vs))
-
 		desiredProxies := reconciler.GeneratedProxies{
-			proxy: errs,
+			acceptedProxy: errs,
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{proxy})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(freporter.E).To(Equal(errs))
+		Expect(mockReporter.Reports).To(Equal(errs))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(freporter.S[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
-		proxy := &gloov1.Proxy{
+		acceptedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
 			Status:   core.Status{State: core.Status_Accepted},
 		}
-		proxy2 := &gloov1.Proxy{
+		rejectedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
 			Status:   core.Status{State: core.Status_Rejected},
 		}
@@ -68,29 +66,29 @@ var _ = Describe("TranslatorSyncer", func() {
 		errs.Accept(vs)
 
 		desiredProxies := reconciler.GeneratedProxies{
-			proxy:  errs,
-			proxy2: errs,
+			acceptedProxy: errs,
+			rejectedProxy: errs,
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{proxy, proxy2})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(freporter.E).To(Equal(errs))
+		Expect(mockReporter.Reports).To(Equal(errs))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test":  {State: core.Status_Accepted},
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
-		Expect(freporter.S[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors but is irrelevant", func() {
-		proxy := &gloov1.Proxy{
+		acceptedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
 			Status:   core.Status{State: core.Status_Accepted},
 		}
-		proxy2 := &gloov1.Proxy{
+		rejectedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
 			Status:   core.Status{State: core.Status_Rejected},
 		}
@@ -99,49 +97,87 @@ var _ = Describe("TranslatorSyncer", func() {
 		errs.Accept(vs)
 
 		desiredProxies := reconciler.GeneratedProxies{
-			proxy:  errs,
-			proxy2: reporter.ResourceReports{},
+			acceptedProxy: errs,
+			rejectedProxy: reporter.ResourceReports{},
 		}
 
 		syncer.setCurrentProxies(desiredProxies)
-		syncer.setStatuses(gloov1.ProxyList{proxy, proxy2})
+		syncer.setStatuses(gloov1.ProxyList{acceptedProxy, rejectedProxy})
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(freporter.E).To(Equal(errs))
+		Expect(mockReporter.Reports).To(Equal(errs))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(freporter.S[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
+	})
+
+	It("should set status correctly when one proxy errors", func() {
+		rejectedProxy1 := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Rejected},
+		}
+		rejectedProxy2 := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test2", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Rejected},
+		}
+		vs := &gatewayv1.VirtualService{}
+		errsProxy1 := reporter.ResourceReports{}
+		errsProxy1.Accept(vs)
+		errsProxy1.AddError(vs, fmt.Errorf("invalid 1"))
+		errsProxy2 := reporter.ResourceReports{}
+		errsProxy2.Accept(vs)
+		errsProxy2.AddError(vs, fmt.Errorf("invalid 2"))
+		desiredProxies := reconciler.GeneratedProxies{
+			rejectedProxy1: errsProxy1,
+			rejectedProxy2: errsProxy2,
+		}
+
+		syncer.setCurrentProxies(desiredProxies)
+		syncer.setStatuses(gloov1.ProxyList{rejectedProxy1, rejectedProxy2})
+
+		err := syncer.syncStatus(context.Background())
+		Expect(err).NotTo(HaveOccurred())
+
+		mergedErrs := reporter.ResourceReports{}
+		mergedErrs.Accept(vs)
+		mergedErrs.AddError(vs, fmt.Errorf("invalid 1"))
+		mergedErrs.AddError(vs, fmt.Errorf("invalid 2"))
+
+		Expect(mockReporter.Reports).To(Equal(mergedErrs))
+		m := map[string]*core.Status{
+			"*v1.Proxy.gloo-system.test":  {State: core.Status_Rejected},
+			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
+		}
+		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
 	})
 
 })
 
 type fakeWatcher struct {
-	P chan gloov1.ProxyList
-	E chan error
 }
 
 func (f *fakeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan gloov1.ProxyList, <-chan error, error) {
-	return f.P, f.E, nil
+	return nil, nil, nil
 }
 
 type fakeReporter struct {
-	E reporter.ResourceReports
-	S map[resources.InputResource]map[string]*core.Status
+	Reports reporter.ResourceReports
+	Statues map[resources.InputResource]map[string]*core.Status
 }
 
 func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceReports, subresourceStatuses map[string]*core.Status) error {
-	if f.E == nil {
-		f.E = errs
+	if f.Reports == nil {
+		f.Reports = errs
 	} else {
-		f.E.Merge(errs)
+		f.Reports.Merge(errs)
 	}
-	if f.S == nil {
-		f.S = map[resources.InputResource]map[string]*core.Status{}
+	if f.Statues == nil {
+		f.Statues = map[resources.InputResource]map[string]*core.Status{}
 	}
 	for k := range errs {
-		f.S[k] = subresourceStatuses
+		f.Statues[k] = subresourceStatuses
 	}
 
 	return nil

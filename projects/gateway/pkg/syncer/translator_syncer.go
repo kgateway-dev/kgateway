@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
 
@@ -107,7 +108,7 @@ type reportsAndStatus struct {
 }
 type statusSyncer struct {
 	proxyToLastStatus       map[core.ResourceRef]reportsAndStatus
-	currentGeneratedProxies map[core.ResourceRef]struct{}
+	currentGeneratedProxies []core.ResourceRef
 	mapLock                 sync.RWMutex
 	reporter                reporter.Reporter
 
@@ -118,7 +119,7 @@ type statusSyncer struct {
 func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
-		currentGeneratedProxies: map[core.ResourceRef]struct{}{},
+		currentGeneratedProxies: nil,
 		reporter:                reporter,
 		proxyClient:             proxyClient,
 		writeNamespace:          writeNamespace,
@@ -126,7 +127,6 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, rep
 }
 
 func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
-	// add an remove things from the map
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
 	newCurrentGeneratedProxies := map[core.ResourceRef]struct{}{}
@@ -141,12 +141,23 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		s.proxyToLastStatus[ref] = current
 		newCurrentGeneratedProxies[ref] = struct{}{}
 	}
-	s.currentGeneratedProxies = newCurrentGeneratedProxies
+	s.currentGeneratedProxies = nil
+	for ref := range newCurrentGeneratedProxies {
+		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
+	}
+	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
+		refi := s.currentGeneratedProxies[i]
+		refj := s.currentGeneratedProxies[j]
+		if refi.Namespace != refj.Namespace {
+			return refi.Namespace < refj.Namespace
+		}
+		return refi.Name < refj.Name
+	})
 }
 
 // run this in the background
 func (s *statusSyncer) watchProxies(ctx context.Context) error {
-	ctx = contextutils.WithLogger(ctx, "proxy-err-propagator")
+	ctx = contextutils.WithLogger(ctx, "proxy-err-watcher")
 	proxies, errs, err := s.proxyClient.Watch(s.writeNamespace, clients.WatchOpts{
 		Ctx: ctx,
 	})
@@ -162,11 +173,11 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 				return nil
 			}
 			contextutils.LoggerFrom(ctx).Error(err)
-		case list, ok := <-proxies:
+		case proxyList, ok := <-proxies:
 			if !ok {
 				return nil
 			}
-			s.setStatuses(list)
+			s.setStatuses(proxyList)
 		}
 	}
 }
@@ -208,46 +219,45 @@ func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
 func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
-	subresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
+	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
 	func() {
 		s.mapLock.RLock()
 		defer s.mapLock.RUnlock()
-		for ref, reportsAndStatus := range s.proxyToLastStatus {
-			_, inDesiredProxies := s.currentGeneratedProxies[ref]
-			if !inDesiredProxies {
+		// iterate s.currentGeneratedProxies to guarantee order
+		for _, ref := range s.currentGeneratedProxies {
+			reportsAndStatus, ok := s.proxyToLastStatus[ref]
+			if !ok {
 				continue
 			}
-			// merge all the reports for the vs from all the proxies.
-			for k, v := range reportsAndStatus.Reports {
+			// merge all the reports for the gateway resources from all the proxies.
+			for inputResource, subresourceStatuses := range reportsAndStatus.Reports {
 				if reportsAndStatus.Status != nil {
 					// add the proxy status as well if we have it
 					status := *reportsAndStatus.Status
-					if _, ok := subresourceStatuses[k]; !ok {
-						subresourceStatuses[k] = map[string]*core.Status{}
+					if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
+						inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
 					}
-					subresourceStatuses[k][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
+					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
 				}
-				if report, ok := allReports[k]; ok {
-					if v.Errors != nil {
-						report.Errors = multierror.Append(report.Errors, v.Errors)
+				if report, ok := allReports[inputResource]; ok {
+					if subresourceStatuses.Errors != nil {
+						report.Errors = multierror.Append(report.Errors, subresourceStatuses.Errors)
 					}
-					if v.Warnings != nil {
-						report.Warnings = append(report.Warnings, v.Warnings...)
+					if subresourceStatuses.Warnings != nil {
+						report.Warnings = append(report.Warnings, subresourceStatuses.Warnings...)
 					}
 				} else {
-					allReports[k] = v
+					allReports[inputResource] = subresourceStatuses
 				}
 			}
 		}
 	}()
 
-	if len(subresourceStatuses) == 0 {
-		subresourceStatuses = nil
-	}
 	var errs error
-	for k, v := range allReports {
-		reports := reporter.ResourceReports{k: v}
-		if err := s.reporter.WriteReports(ctx, reports, subresourceStatuses[k]); err != nil {
+	for inputResource, subresourceStatuses := range allReports {
+		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
+		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		}
 	}
