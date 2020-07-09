@@ -15,7 +15,6 @@ import (
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -29,20 +28,19 @@ import (
 type translatorSyncer struct {
 	writeNamespace  string
 	reporter        reporter.Reporter
-	propagator      *propagator.Propagator
 	proxyClient     gloov1.ProxyClient
 	gwClient        v1.GatewayClient
 	vsClient        v1.VirtualServiceClient
 	proxyReconciler reconciler.ProxyReconciler
 	translator      translator.Translator
 	statusSyncer    statusSyncer
+	labels          map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
-		propagator:      propagator,
 		proxyClient:     proxyClient,
 		gwClient:        gwClient,
 		vsClient:        vsClient,
@@ -55,10 +53,13 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient
 			proxyClient:             proxyClient,
 			writeNamespace:          writeNamespace,
 		},
+		labels: map[string]string{
+			"created_by": "gateway",
+		},
 	}
 
 	go t.statusSyncer.watchProxies(ctx)
-	go t.statusSyncer.syncStatusOnAPeriod(ctx)
+	go t.statusSyncer.syncStatusOnInterval(ctx)
 	return t
 }
 
@@ -79,30 +80,29 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	labels := map[string]string{
-		"created_by": "gateway",
-	}
-
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
 
 	for proxyName, gatewayList := range gatewaysByProxy {
 		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
-
 		if proxy != nil {
 			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
-			proxy.Metadata.Labels = labels
+			proxy.Metadata.Labels = s.labels
 			desiredProxies[proxy] = reports
 		}
 	}
 
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, labels); err != nil {
+	return s.reconcile(ctx, desiredProxies)
+}
+
+func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.labels); err != nil {
 		return err
 	}
 
 	// repeat for all resources
-	s.statusSyncer.currentProxies(desiredProxies)
+	s.statusSyncer.setCurrentProxies(desiredProxies)
 	return nil
 }
 
@@ -120,7 +120,7 @@ type statusSyncer struct {
 	writeNamespace string
 }
 
-func (s *statusSyncer) currentProxies(desiredProxies reconciler.GeneratedProxies) {
+func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
 	// add an remove things from the map
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
@@ -184,7 +184,7 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 }
 
 // run this on a timer
-func (s *statusSyncer) syncStatusOnAPeriod(ctx context.Context) error {
+func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
 	timer := time.NewTicker(time.Second)
 	defer timer.Stop()
 	for {
@@ -192,7 +192,10 @@ func (s *statusSyncer) syncStatusOnAPeriod(ctx context.Context) error {
 		case <-ctx.Done():
 			return nil
 		case <-timer.C:
-			s.syncStatus(ctx)
+			err := s.syncStatus(ctx)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+			}
 		}
 	}
 }
