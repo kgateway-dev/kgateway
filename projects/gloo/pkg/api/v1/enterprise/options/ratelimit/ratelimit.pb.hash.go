@@ -158,6 +158,40 @@ func (m *ServiceSettings) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
+func (m *RateLimitConfigRefs) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("ratelimit.options.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit.RateLimitConfigRefs")); err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetRefs() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
 func (m *RateLimitConfigRef) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil
@@ -214,14 +248,14 @@ func (m *RateLimitVhostExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	switch m.ConfigType.(type) {
 
-	case *RateLimitVhostExtension_ConfigRef:
+	case *RateLimitVhostExtension_ConfigRefs:
 
-		if h, ok := interface{}(m.GetConfigRef()).(safe_hasher.SafeHasher); ok {
+		if h, ok := interface{}(m.GetConfigRefs()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetConfigRef(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetConfigRefs(), nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -289,14 +323,14 @@ func (m *RateLimitRouteExtension) Hash(hasher hash.Hash64) (uint64, error) {
 
 	switch m.ConfigType.(type) {
 
-	case *RateLimitRouteExtension_ConfigRef:
+	case *RateLimitRouteExtension_ConfigRefs:
 
-		if h, ok := interface{}(m.GetConfigRef()).(safe_hasher.SafeHasher); ok {
+		if h, ok := interface{}(m.GetConfigRefs()).(safe_hasher.SafeHasher); ok {
 			if _, err = h.Hash(hasher); err != nil {
 				return 0, err
 			}
 		} else {
-			if val, err := hashstructure.Hash(m.GetConfigRef(), nil); err != nil {
+			if val, err := hashstructure.Hash(m.GetConfigRefs(), nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {

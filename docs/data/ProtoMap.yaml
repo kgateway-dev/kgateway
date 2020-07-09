@@ -854,6 +854,9 @@ apis:
   ratelimit.options.gloo.solo.io.RateLimitConfigRef:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitConfigRef
     package: ratelimit.options.gloo.solo.io
+  ratelimit.options.gloo.solo.io.RateLimitConfigRefs:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitConfigRefs
+    package: ratelimit.options.gloo.solo.io
   ratelimit.options.gloo.solo.io.RateLimitRouteExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#RateLimitRouteExtension
     package: ratelimit.options.gloo.solo.io

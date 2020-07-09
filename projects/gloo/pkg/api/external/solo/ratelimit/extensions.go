@@ -33,7 +33,7 @@ func (list RateLimitConfigList) AsInputResources() resources.InputResourceList {
 // This object is used to report the status for skv2 resources. skv2 CRDs declare the `status` field as a
 // [sub-resource](https://kubernetes.io/docs/tasks/extend-kubernetes/custom-resources/custom-resource-definitions/#subresources).
 // This means that the status cannot be updated via the normal write operations on the main resource that the solo-kit
-// resource clients perform. To get around this, when we delegate the status update operation to the
+// resource clients perform. To get around this, we delegate the status update operation to the
 // `UpdateRateLimitConfigStatus` on the skv2 client. We only need to do this when using Kubernetes as a config storage.
 type kubeReporterClient struct {
 	skClient   clients.ResourceClient

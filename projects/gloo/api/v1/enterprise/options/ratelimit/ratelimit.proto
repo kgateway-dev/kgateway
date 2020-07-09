@@ -49,6 +49,12 @@ message ServiceSettings {
   repeated ratelimit.api.solo.io.Descriptor descriptors = 1;
 }
 
+// A list of references to `RateLimitConfig` resources.
+// Each resource represents a rate limit policy that will be independently enforced.
+message RateLimitConfigRefs {
+  repeated RateLimitConfigRef refs = 1;
+}
+
 // A reference to a `RateLimitConfig` resource.
 message RateLimitConfigRef {
   string name = 1;
@@ -67,9 +73,8 @@ message RateLimitVhostExtension {
   repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1 [deprecated = true];
 
   oneof config_type {
-    // A reference to a RateLimitConfig resource.
-    // The resource will configure both the Envoy VirtualHost and the GlooE rate limit server.
-    RateLimitConfigRef config_ref = 2;
+    // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+    RateLimitConfigRefs config_refs = 2;
 
     // Use this field if you want to inline the Envoy rate limits for this VirtualHost.
     // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
@@ -98,8 +103,8 @@ message RateLimitRouteExtension {
 
 
   oneof config_type {
-    // A reference to a RateLimitConfig resource. This is used to configure the GlooE rate limit server.
-    RateLimitConfigRef config_ref = 3;
+    // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
+    RateLimitConfigRefs config_refs = 3;
 
     // Use this field if you want to inline the Envoy rate limits for this Route.
     // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
