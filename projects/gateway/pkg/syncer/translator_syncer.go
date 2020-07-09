@@ -129,7 +129,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, rep
 func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
-	newCurrentGeneratedProxies := map[core.ResourceRef]struct{}{}
+	s.currentGeneratedProxies = nil
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
 		ref := proxy.GetMetadata().Ref()
@@ -139,10 +139,6 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 		current := s.proxyToLastStatus[ref]
 		current.Reports = reports
 		s.proxyToLastStatus[ref] = current
-		newCurrentGeneratedProxies[ref] = struct{}{}
-	}
-	s.currentGeneratedProxies = nil
-	for ref := range newCurrentGeneratedProxies {
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
 	}
 	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
