@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >-
+      Fix issue where gateway-level extauth could not be overriden by lower-level virtualhost, route, and weighted
+      destination extauth config.
+    issueLink: https://github.com/solo-io/gloo/issues/3270

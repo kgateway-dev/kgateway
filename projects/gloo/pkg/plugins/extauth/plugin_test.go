@@ -53,47 +53,57 @@ var validationFuncForConfigValue = map[ConfigState]func(e envoyPerFilterConfig) 
 // combinations of resources and input types), should the need ever arise in the future.
 var _ = Describe("Process Custom Extauth configuration", func() {
 
-	DescribeTable("virtual host extauth filter configuration",
-		func(input, expected ConfigState) {
-			pluginContext := getPluginContext(input, Undefined, Undefined)
+	allTests := func(globalSettings bool) {
+		DescribeTable("virtual host extauth filter configuration",
+			func(input, expected ConfigState) {
+				pluginContext := getPluginContext(globalSettings, input, Undefined, Undefined)
 
-			var out envoyv2.VirtualHost
-			err := pluginContext.PluginInstance.ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
-		},
-		Entry("undefined -> disable", Undefined, Disabled), // This is a special case for virtual hosts
-		Entry("disabled -> disable", Disabled, Disabled),
-		Entry("enabled -> enable", Enabled, Enabled),
-	)
+				var out envoyv2.VirtualHost
+				err := pluginContext.PluginInstance.ProcessVirtualHost(pluginContext.VirtualHostParams, pluginContext.VirtualHost, &out)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
+			},
+			Entry("undefined -> disable", Undefined, Disabled), // This is a special case for virtual hosts
+			Entry("disabled -> disable", Disabled, Disabled),
+			Entry("enabled -> enable", Enabled, Enabled),
+		)
 
-	DescribeTable("route extauth filter configuration",
-		func(input, expected ConfigState) {
-			pluginContext := getPluginContext(Undefined, input, Undefined)
+		DescribeTable("route extauth filter configuration",
+			func(input, expected ConfigState) {
+				pluginContext := getPluginContext(globalSettings, Undefined, input, Undefined)
 
-			var out envoyv2.Route
-			err := pluginContext.PluginInstance.ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
-		},
-		Entry("undefined -> don't set", Undefined, Undefined),
-		Entry("disabled -> disable", Disabled, Disabled),
-		Entry("enabled -> enable", Enabled, Enabled),
-	)
+				var out envoyv2.Route
+				err := pluginContext.PluginInstance.ProcessRoute(pluginContext.RouteParams, pluginContext.Route, &out)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
+			},
+			Entry("undefined -> don't set", Undefined, Undefined),
+			Entry("disabled -> disable", Disabled, Disabled),
+			Entry("enabled -> enable", Enabled, Enabled),
+		)
 
-	DescribeTable("weighted destination extauth filter configuration",
-		func(input, expected ConfigState) {
-			pluginContext := getPluginContext(Undefined, Undefined, input)
+		DescribeTable("weighted destination extauth filter configuration",
+			func(input, expected ConfigState) {
+				pluginContext := getPluginContext(globalSettings, Undefined, Undefined, input)
 
-			var out envoyv2.WeightedCluster_ClusterWeight
-			err := pluginContext.PluginInstance.ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
-		},
-		Entry("undefined -> don't set", Undefined, Undefined),
-		Entry("disabled -> disable", Disabled, Disabled),
-		Entry("enabled -> enable", Enabled, Enabled),
-	)
+				var out envoyv2.WeightedCluster_ClusterWeight
+				err := pluginContext.PluginInstance.ProcessWeightedDestination(pluginContext.RouteParams, pluginContext.WeightedDestination, &out)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(validationFuncForConfigValue[expected](&out)).To(BeTrue())
+			},
+			Entry("undefined -> don't set", Undefined, Undefined),
+			Entry("disabled -> disable", Disabled, Disabled),
+			Entry("enabled -> enable", Enabled, Enabled),
+		)
+	}
+
+	Context("with global extauth settings", func() {
+		allTests(true)
+	})
+
+	Context("with gateway-level extauth settings", func() {
+		allTests(false)
+	})
 })
 
 type pluginContext struct {
@@ -105,7 +115,7 @@ type pluginContext struct {
 	WeightedDestination *gloov1.WeightedDestination
 }
 
-func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigState) *pluginContext {
+func getPluginContext(globalSettings bool, authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigState) *pluginContext {
 	ctx := context.TODO()
 
 	extAuthServerUpstream := &gloov1.Upstream{
@@ -212,6 +222,10 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 		virtualHost.Options.Extauth = disableAuth
 	}
 
+	usRef := extAuthServerUpstream.Metadata.Ref()
+	settings := &extauthv1.Settings{
+		ExtauthzServerRef: &usRef,
+	}
 	// ----------------------------------------------------------------------------
 	// Proxy
 	// ----------------------------------------------------------------------------
@@ -224,10 +238,16 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 			Name: "default",
 			ListenerType: &gloov1.Listener_HttpListener{
 				HttpListener: &gloov1.HttpListener{
+					Options:      &gloov1.HttpListenerOptions{},
 					VirtualHosts: []*gloov1.VirtualHost{virtualHost},
 				},
 			},
 		}},
+	}
+
+	if !globalSettings {
+		httpListener := proxy.Listeners[0].GetHttpListener()
+		httpListener.Options.Extauth = settings
 	}
 
 	// ----------------------------------------------------------------------------
@@ -253,13 +273,12 @@ func getPluginContext(authOnVirtualHost, authOnRoute, authOnWeightedDest ConfigS
 
 	plugin := NewCustomAuthPlugin()
 	initParams := plugins.InitParams{Ctx: ctx}
+	initParams.Settings = &gloov1.Settings{}
 
-	usRef := extAuthServerUpstream.Metadata.Ref()
-	settings := &extauthv1.Settings{
-		ExtauthzServerRef: &usRef,
+	if globalSettings {
+		initParams.Settings.Extauth = settings
 	}
 
-	initParams.Settings = &gloov1.Settings{Extauth: settings}
 	err := plugin.Init(initParams)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 
