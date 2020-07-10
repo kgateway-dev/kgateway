@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"runtime/pprof"
+	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -97,7 +99,7 @@ var _ = Describe("GRPC Plugin", func() {
 		}
 	}
 
-	It("Routes to GRPC Functions", func() {
+	FIt("Routes to GRPC Functions", func() {
 
 		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
@@ -106,6 +108,10 @@ var _ = Describe("GRPC Plugin", func() {
 		body := []byte(`{"str": "foo"}`)
 
 		testRequest := basicReq(body)
+		// zbam
+		time.Sleep(time.Second * 10)
+		// zbam2:
+		pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 1)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
