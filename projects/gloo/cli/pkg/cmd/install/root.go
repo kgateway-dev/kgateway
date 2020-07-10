@@ -22,12 +22,12 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 		gatewayCmd(opts),
 		ingressCmd(opts),
 		knativeCmd(opts),
+		glooFedCmd(opts),
 	)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
 	pFlags := cmd.PersistentFlags()
 	flagutils.AddVerboseFlag(pFlags, opts)
-	flagutils.AddInstallFlags(pFlags, &opts.Install)
 	return cmd
 }
 
