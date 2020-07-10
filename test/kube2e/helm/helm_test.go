@@ -1,6 +1,7 @@
 package helm_test
 
 import (
+	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -29,6 +30,10 @@ var _ = Describe("Kube2e: helm", func() {
 
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
+
+		// TODO: remove
+		glooDeploymentYaml := runAndCleanCommand("kubectl", "-n", testHelper.InstallNamespace, "get", "deployment", "gloo", "-oyaml")
+		fmt.Println(string(glooDeploymentYaml))
 
 		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 	})
