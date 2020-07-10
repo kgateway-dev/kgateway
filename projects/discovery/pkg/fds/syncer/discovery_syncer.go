@@ -79,7 +79,7 @@ func isBlacklisted(us *v1.Upstream) bool {
 		isListed(us.Metadata.Labels, disabledLabelValue)
 }
 
-func isWhitelisted(Labels map[string]string) bool {
+func isWhitelisted(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
 	return isListed(us.DiscoveryMetadata.Labels, enabledLabelValue) ||
 		isListed(us.Metadata.Labels, enabledLabelValue)
