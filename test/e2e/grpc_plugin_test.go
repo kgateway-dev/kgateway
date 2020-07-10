@@ -99,7 +99,7 @@ var _ = Describe("GRPC Plugin", func() {
 		}
 	}
 
-	FIt("Routes to GRPC Functions", func() {
+	It("Routes to GRPC Functions", func() {
 
 		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
