@@ -1,0 +1,10 @@
+changelog:
+#- type: NEW_FEATURE
+#  description: TODO
+#  issueLink: ...
+- type: FIX
+  description: TODO
+  issueLink: https://github.com/solo-io/gloo/issues/2462
+- type: FIX
+  description: TODO
+  issueLink: https://github.com/solo-io/gloo/issues/2517
