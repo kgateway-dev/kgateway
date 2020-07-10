@@ -63,13 +63,13 @@ var _ = Describe("UdsConvert", func() {
 			Expect(up.GetUseHttp2().GetValue()).To(BeTrue())
 		})
 
-		It("should save service labels to upstream", func() {
-			testData := make(map[string]string)
-			testData["foo"] = "bar"
+		It("should save discovery metadata to upstream", func() {
+			testLabels := make(map[string]string)
+			testLabels["foo"] = "bar"
 			svc := &kubev1.Service{
 				Spec: kubev1.ServiceSpec{},
 			}
-			svc.Labels = testData
+			svc.Labels = testLabels
 			svc.Name = "test"
 			svc.Namespace = "test"
 
@@ -78,7 +78,7 @@ var _ = Describe("UdsConvert", func() {
 			}
 
 			up := createUpstream(context.TODO(), svc, port)
-			Expect(up.GetServiceMetadata()).To(Equal(testData))
+			Expect(up.GetDiscoveryMetadata().Labels).To(Equal(testLabels))
 		})
 
 		DescribeTable("should create upstream with use_http2=true when port name starts with known prefix", func(portname string) {
