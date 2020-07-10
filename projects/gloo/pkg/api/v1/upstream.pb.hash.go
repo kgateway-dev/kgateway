@@ -182,29 +182,6 @@ func (m *Upstream) Hash(hasher hash.Hash64) (uint64, error) {
 		}
 	}
 
-	{
-		var result uint64
-		innerHash := fnv.New64()
-		for k, v := range m.GetServiceMetadata() {
-			innerHash.Reset()
-
-			if _, err = innerHash.Write([]byte(v)); err != nil {
-				return 0, err
-			}
-
-			if _, err = innerHash.Write([]byte(k)); err != nil {
-				return 0, err
-			}
-
-			result = result ^ innerHash.Sum64()
-		}
-		err = binary.Write(hasher, binary.LittleEndian, result)
-		if err != nil {
-			return 0, err
-		}
-
-	}
-
 	switch m.UpstreamType.(type) {
 
 	case *Upstream_Kube:
@@ -335,6 +312,29 @@ func (m *DiscoveryMetadata) Hash(hasher hash.Hash64) (uint64, error) {
 	var err error
 	if _, err = hasher.Write([]byte("gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1.DiscoveryMetadata")); err != nil {
 		return 0, err
+	}
+
+	{
+		var result uint64
+		innerHash := fnv.New64()
+		for k, v := range m.GetLabels() {
+			innerHash.Reset()
+
+			if _, err = innerHash.Write([]byte(v)); err != nil {
+				return 0, err
+			}
+
+			if _, err = innerHash.Write([]byte(k)); err != nil {
+				return 0, err
+			}
+
+			result = result ^ innerHash.Sum64()
+		}
+		err = binary.Write(hasher, binary.LittleEndian, result)
+		if err != nil {
+			return 0, err
+		}
+
 	}
 
 	return hasher.Sum64(), nil

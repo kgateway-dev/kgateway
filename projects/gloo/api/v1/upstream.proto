@@ -81,12 +81,10 @@ message Upstream {
 
     // Failover endpoints for this upstream. If omitted (the default) no failovers will be applied.
     gloo.solo.io.Failover failover = 18;
-
-    // Metadata inherited from the original service (e.g. Kubernetes labels)
-    map<string, string> service_metadata = 19;
 }
 
 // created by discovery services
 message DiscoveryMetadata {
-    
+    // Labels inherited from the original upstream (e.g. Kubernetes labels)
+    map<string, string> labels = 1;
 }

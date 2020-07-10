@@ -51,7 +51,6 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 "consul": .consul.options.gloo.solo.io.UpstreamSpec
 "awsEc2": .aws_ec2.options.gloo.solo.io.UpstreamSpec
 "failover": .gloo.solo.io.Failover
-"serviceMetadata": map<string, string>
 
 ```
 
@@ -75,7 +74,6 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 | `consul` | [.consul.options.gloo.solo.io.UpstreamSpec](../options/consul/consul.proto.sk/#upstreamspec) |  Only one of `consul`, `kube`, `static`, `pipe`, `aws`, or `awsEc2` can be set. |  |
 | `awsEc2` | [.aws_ec2.options.gloo.solo.io.UpstreamSpec](../options/aws/ec2/aws_ec2.proto.sk/#upstreamspec) |  Only one of `awsEc2`, `kube`, `static`, `pipe`, `aws`, or `consul` can be set. |  |
 | `failover` | [.gloo.solo.io.Failover](../failover.proto.sk/#failover) | Failover endpoints for this upstream. If omitted (the default) no failovers will be applied. |  |
-| `serviceMetadata` | `map<string, string>` | Metadata inherited from the original service (e.g. Kubernetes labels). |  |
 
 
 
@@ -87,11 +85,13 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 created by discovery services
 
 ```yaml
+"labels": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `labels` | `map<string, string>` | Labels inherited from the original upstream (e.g. Kubernetes labels). |  |
 
 
 
