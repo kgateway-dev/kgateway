@@ -73,20 +73,22 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 	panic("invalid fds mode: " + fdsMode.String())
 }
 
-func isBlacklisted(us *v1.Upstream) bool {
+func isBlacklistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isListed(us.DiscoveryMetadata.Labels, disabledLabelValue) ||
-		isListed(us.Metadata.Labels, disabledLabelValue)
+	return isBlacklisted(us.DiscoveryMetadata.Labels) || isBlacklisted(us.Metadata.Labels)
 }
 
-func isWhitelisted(us *v1.Upstream) bool {
+func isWhitelistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isListed(us.DiscoveryMetadata.Labels, enabledLabelValue) ||
-		isListed(us.Metadata.Labels, enabledLabelValue)
+	return isWhitelisted(us.DiscoveryMetadata.Labels) || isWhitelisted(us.Metadata.Labels)
 }
 
-func isListed(labels map[string]string, string labelValue) bool {
-	return labels != nil && labels[FdsLabelKey] == labelValue
+func isBlacklisted(labels map[string]string) bool {
+	return labels != nil && labels[FdsLabelKey] == disabledLabelValue
+}
+
+func isWhitelisted(labels map[string]string) bool {
+	return labels != nil && labels[FdsLabelKey] == enabledLabelValue
 }
 
 // do not run fds on these namespaces unless explicitly enabled
@@ -116,8 +118,8 @@ func selectUpstreamsBlacklist(upstreams v1.UpstreamList, blacklistedNamespaces s
 
 func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces sets.String) bool {
 	inBlacklistedNamespace := blacklistedNamespaces.Has(getUpstreamNamespace(us))
-	blacklisted := isBlacklisted(us)
-	whitelisted := isWhitelisted(us)
+	blacklisted := isBlacklistedUpstream(us)
+	whitelisted := isWhitelistedUpstream(us)
 
 	return (!inBlacklistedNamespace || whitelisted) && !blacklisted
 }
@@ -125,8 +127,8 @@ func shouldIncludeUpstreamInBlacklistMode(us *v1.Upstream, blacklistedNamespaces
 func selectUpstreamsWhitelist(upstreams v1.UpstreamList, whitelistedNamespaces, blacklistedNamespaces sets.String) (selected v1.UpstreamList) {
 	for _, us := range upstreams {
 		inWhitelistedNamespace := whitelistedNamespaces.Has(getUpstreamNamespace(us))
-		blacklisted := isBlacklisted(us)
-		whitelisted := isWhitelisted(us)
+		blacklisted := isBlacklistedUpstream(us)
+		whitelisted := isWhitelistedUpstream(us)
 
 		// if an upstream is AWS, then include it only if it would be included in blacklist mode (https://github.com/solo-io/solo-projects/issues/1339)
 		// otherwise, include the upstream only if it is *not* AWS, and either condition holds:
