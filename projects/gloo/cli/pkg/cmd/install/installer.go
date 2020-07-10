@@ -45,6 +45,7 @@ type InstallerConfig struct {
 	InstallCliArgs *options.Install
 	ExtraValues    map[string]interface{}
 	Enterprise     bool
+	Federation     bool
 	Verbose        bool
 }
 
@@ -69,6 +70,9 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		if releaseExists, err := i.helmClient.ReleaseExists(namespace, releaseName); err != nil {
 			return err
 		} else if releaseExists {
+			if installerConfig.Federation {
+				return GlooFedAlreadyInstalled(namespace)
+			}
 			return GlooAlreadyInstalled(namespace)
 		}
 		if installerConfig.InstallCliArgs.CreateNamespace {
@@ -77,7 +81,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
+	preInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise, installerConfig.Federation)
 
 	helmInstall, helmEnv, err := i.helmClient.NewInstall(namespace, releaseName, installerConfig.InstallCliArgs.DryRun)
 	if err != nil {
@@ -87,7 +91,8 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 	chartUri, err := getChartUri(installerConfig.InstallCliArgs.HelmChartOverride,
 		strings.TrimPrefix(installerConfig.InstallCliArgs.Version, "v"),
 		installerConfig.InstallCliArgs.WithUi,
-		installerConfig.Enterprise)
+		installerConfig.Enterprise,
+		installerConfig.Federation)
 	if err != nil {
 		return err
 	}
@@ -100,12 +105,14 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	// determine if it's an enterprise chart by checking if has gloo as a dependency
-	installerConfig.Enterprise = false
-	for _, dependency := range chartObj.Dependencies() {
-		if dependency.Metadata.Name == constants.GlooReleaseName {
-			installerConfig.Enterprise = true
-			break
+	if !installerConfig.Federation {
+		// determine if it's an enterprise chart by checking if has gloo as a dependency
+		installerConfig.Enterprise = false
+		for _, dependency := range chartObj.Dependencies() {
+			if dependency.Metadata.Name == constants.GlooReleaseName {
+				installerConfig.Enterprise = true
+				break
+			}
 		}
 	}
 
@@ -123,9 +130,11 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	// We need this to avoid rendering the CRDs we include in the /templates directory
-	// for backwards-compatibility with Helm 2.
-	setCrdCreateToFalse(installerConfig)
+	if !installerConfig.Federation {
+		// We need this to avoid rendering the CRDs we include in the /templates directory
+		// for backwards-compatibility with Helm 2.
+		setCrdCreateToFalse(installerConfig)
+	}
 
 	// Merge the CLI flag values into the extra values, giving the latter higher precedence.
 	// (The first argument to CoalesceTables has higher priority)
@@ -158,7 +167,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		}
 	}
 
-	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise)
+	postInstallMessage(installerConfig.InstallCliArgs, installerConfig.Enterprise, installerConfig.Federation)
 
 	return nil
 }
@@ -267,14 +276,16 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 }
 
 // The resulting URI can be either a URL or a local file path.
-func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool) (string, error) {
+func getChartUri(chartOverride, versionOverride string, withUi, enterprise, federation bool) (string, error) {
 
 	if chartOverride != "" && versionOverride != "" {
 		return "", ChartAndReleaseFlagErr(chartOverride, versionOverride)
 	}
 
 	var helmChartRepoTemplate, helmChartVersion string
-	if enterprise {
+	if federation {
+		helmChartRepoTemplate = GlooFedHelmRepoTemplate
+	} else if enterprise {
 		helmChartRepoTemplate = GlooEHelmRepoTemplate
 	} else if withUi {
 		helmChartRepoTemplate = constants.GlooWithUiHelmRepoTemplate
@@ -284,6 +295,12 @@ func getChartUri(chartOverride, versionOverride string, withUi, enterprise bool)
 
 	if versionOverride != "" {
 		helmChartVersion = versionOverride
+	} else if federation {
+		glooFedVersion, err := version.GetLatestGlooFedVersion(true)
+		if err != nil {
+			return "", err
+		}
+		helmChartVersion = glooFedVersion
 	} else if enterprise || withUi {
 		enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 		if err != nil {
@@ -317,21 +334,25 @@ func getDefaultGlooInstallVersion(chartOverride string) (string, error) {
 	return version.Version, nil
 }
 
-func preInstallMessage(installOpts *options.Install, enterprise bool) {
+func preInstallMessage(installOpts *options.Install, enterprise, federation bool) {
 	if installOpts.DryRun {
 		return
 	}
-	if enterprise {
+	if federation {
+		fmt.Println("Starting Gloo Federation installation...")
+	} else if enterprise {
 		fmt.Println("Starting Gloo Enterprise installation...")
 	} else {
 		fmt.Println("Starting Gloo installation...")
 	}
 }
-func postInstallMessage(installOpts *options.Install, enterprise bool) {
+func postInstallMessage(installOpts *options.Install, enterprise, federation bool) {
 	if installOpts.DryRun {
 		return
 	}
-	if enterprise {
+	if federation {
+		fmt.Println("\nGloo Federation was successfully installed!")
+	} else if enterprise {
 		fmt.Println("\nGloo Enterprise was successfully installed!")
 	} else {
 		fmt.Println("\nGloo was successfully installed!")
