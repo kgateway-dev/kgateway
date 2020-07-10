@@ -23,6 +23,10 @@ var _ = Describe("Kube2e: helm", func() {
 		By("should start with gloo version 1.3.0")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal("1.3.0"))
 
+		before := runAndCleanCommand("kubectl", "-n", testHelper.InstallNamespace, "get", "pods", "-oyaml")
+		fmt.Println("--------------- 1.3.0 pods:")
+		fmt.Println(before)
+
 		// upgrade to the gloo version being tested
 		chartUri = filepath.Join("../../..", testHelper.TestAssetDir, testHelper.HelmChartName+"-"+testHelper.ChartVersion()+".tgz")
 		runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
@@ -31,11 +35,11 @@ var _ = Describe("Kube2e: helm", func() {
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
-		// TODO: remove
-		glooDeploymentYaml := runAndCleanCommand("kubectl", "-n", testHelper.InstallNamespace, "get", "deployment", "gloo", "-oyaml")
-		fmt.Println(string(glooDeploymentYaml))
+		after := runAndCleanCommand("kubectl", "-n", testHelper.InstallNamespace, "get", "pods", "-oyaml")
+		fmt.Println("--------------- new pods:")
+		fmt.Println(after)
 
-		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
+		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "180s")
 	})
 
 	It("uses helm to update the settings without errors", func() {
