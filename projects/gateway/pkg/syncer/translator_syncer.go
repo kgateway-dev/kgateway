@@ -137,6 +137,7 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 			s.proxyToLastStatus[ref] = reportsAndStatus{}
 		}
 		current := s.proxyToLastStatus[ref]
+		// These reports are for gateway resources: VirtualServices and Gateways
 		current.Reports = reports
 		s.proxyToLastStatus[ref] = current
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
