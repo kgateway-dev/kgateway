@@ -267,7 +267,7 @@ var _ = Describe("Access Log", func() {
 					// zbam
 					time.Sleep(time.Second * 10)
 					// zbam2:
-					pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 1)
+					pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 2)
 
 					TestUpstreamReachable()
 

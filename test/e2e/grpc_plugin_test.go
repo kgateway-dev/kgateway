@@ -111,7 +111,7 @@ var _ = Describe("GRPC Plugin", func() {
 		// zbam
 		time.Sleep(time.Second * 10)
 		// zbam2:
-		pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 1)
+		pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 2)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
