@@ -264,9 +264,9 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var errs error
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		inputResource := resources.Clone(inputResource).(resources.InputResource)
 		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
-		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		}
