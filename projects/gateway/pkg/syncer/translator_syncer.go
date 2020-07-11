@@ -157,6 +157,8 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 // run this in the background
 func (s *statusSyncer) watchProxies(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "proxy-err-watcher")
+	logger := contextutils.LoggerFrom(ctx)
+	defer logger.Debugw("done watching proxies")
 	proxies, errs, err := s.proxyClient.Watch(s.writeNamespace, clients.WatchOpts{
 		Ctx: ctx,
 	})
@@ -172,18 +174,18 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			contextutils.LoggerFrom(ctx).Error(err)
+			logger.Error(err)
 		case proxyList, ok := <-proxies:
 			if !ok {
 				return nil
 			}
 			currentHash, err := hashutils.HashAllSafe(nil, proxyList.AsInterfaces()...)
 			if err != nil {
-				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			if currentHash != previousHash {
-				currentHash = previousHash
-				contextutils.LoggerFrom(ctx).Debugw("proxy list updated", "len(proxyList)", len(proxyList))
+				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
+				previousHash = currentHash
 				s.setStatuses(proxyList)
 				s.scheduleSync()
 			}
