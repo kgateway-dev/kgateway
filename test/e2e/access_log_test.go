@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"runtime/pprof"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -262,6 +263,12 @@ var _ = Describe("Access Log", func() {
 					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
+
+					// zbam
+					time.Sleep(time.Second * 10)
+					// zbam2:
+					pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 1)
+
 					TestUpstreamReachable()
 
 					Eventually(func() error {
