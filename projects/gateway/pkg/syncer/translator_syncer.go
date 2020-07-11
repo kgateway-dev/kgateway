@@ -163,6 +163,7 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating watch for proxies in %v", s.writeNamespace)
 	}
+	var previousHash uint64
 	for {
 		select {
 		case <-ctx.Done():
@@ -176,10 +177,16 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
-			contextutils.LoggerFrom(ctx).Debugw("proxy liste updated", "len(proxyList)", len(proxyList))
-
-			s.setStatuses(proxyList)
-			s.scheduleSync()
+			currentHash, err := hashutils.HashAllSafe(nil, proxyList.AsInterfaces()...)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
+			if currentHash != previousHash {
+				currentHash = previousHash
+				contextutils.LoggerFrom(ctx).Debugw("proxy list updated", "len(proxyList)", len(proxyList))
+				s.setStatuses(proxyList)
+				s.scheduleSync()
+			}
 		}
 	}
 }
