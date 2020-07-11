@@ -107,8 +107,7 @@ steps:
     - 'BUILD_ID=$BUILD_ID'
     - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
   dir: *dir
-  # wait for all as the CPU during compiling might be flaking the tests
-  # waitFor: ['prepare-workspace']
+  waitFor: ['prepare-workspace']
   id: 'compile'
 
   # 1) Run make targets to push docker images

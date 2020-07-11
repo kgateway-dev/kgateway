@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-	"time"
 
 	"go.uber.org/zap/zapcore"
 
@@ -99,6 +98,7 @@ func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconci
 
 	// repeat for all resources
 	s.statusSyncer.setCurrentProxies(desiredProxies)
+	s.statusSyncer.scheduleSync()
 	return nil
 }
 
@@ -114,6 +114,7 @@ type statusSyncer struct {
 
 	proxyClient    gloov1.ProxyWatcher
 	writeNamespace string
+	syncNeeded     chan struct{}
 }
 
 func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
@@ -123,6 +124,7 @@ func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, rep
 		reporter:                reporter,
 		proxyClient:             proxyClient,
 		writeNamespace:          writeNamespace,
+		syncNeeded:              make(chan struct{}, 1),
 	}
 }
 
@@ -175,6 +177,7 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 				return nil
 			}
 			s.setStatuses(proxyList)
+			s.scheduleSync()
 		}
 	}
 }
@@ -197,14 +200,19 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 }
 
 // run this on a timer
+func (s *statusSyncer) scheduleSync() {
+	select {
+	case s.syncNeeded <- struct{}{}:
+	default:
+	}
+}
+
 func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
-	timer := time.NewTicker(time.Second)
-	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-timer.C:
+		case <-s.syncNeeded:
 			err := s.syncStatus(ctx)
 			if err != nil {
 				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
@@ -213,6 +221,9 @@ func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
 	}
 }
 
+// TODO: it is possible that sync status is a heavy function?
+// why does adding ginkgo write helps somewhat?
+// do i need better mechanism? to sync only when sync happens and/or new proxy list?
 func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
