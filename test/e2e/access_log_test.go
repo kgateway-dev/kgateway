@@ -262,7 +262,6 @@ var _ = Describe("Access Log", func() {
 					vs := getTrivialVirtualServiceForUpstream("gloo-system", up.Metadata.Ref())
 					_, err = testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
-
 					TestUpstreamReachable()
 
 					Eventually(func() error {
