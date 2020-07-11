@@ -2,7 +2,6 @@ package upstreams
 
 import (
 	"context"
-	"runtime/pprof"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -14,7 +13,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams/kubernetes"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/onsi/ginkgo"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/errutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
