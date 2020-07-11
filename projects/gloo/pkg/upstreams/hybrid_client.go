@@ -160,9 +160,6 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			default:
 				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
 					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
-				if ginkgo.GinkgoWriter != nil {
-					pprof.Lookup("goroutine").WriteTo(ginkgo.GinkgoWriter, 2)
-				}
 			}
 		}
 
