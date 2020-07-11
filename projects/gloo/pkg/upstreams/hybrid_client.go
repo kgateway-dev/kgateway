@@ -2,6 +2,7 @@ package upstreams
 
 import (
 	"context"
+	"runtime/pprof"
 	"time"
 
 	"github.com/solo-io/go-utils/contextutils"
@@ -158,6 +159,7 @@ func (c *hybridUpstreamClient) Watch(namespace string, opts clients.WatchOpts) (
 			default:
 				contextutils.LoggerFrom(ctx).Debugw("failed to push hybrid upstream list to "+
 					"channel (must be full), retrying in 1s", zap.Uint64("list hash", currentHash))
+				pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 2)
 			}
 		}
 

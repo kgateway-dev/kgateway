@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"runtime/pprof"
-	"time"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/utils"
@@ -108,10 +106,6 @@ var _ = Describe("GRPC Plugin", func() {
 		body := []byte(`{"str": "foo"}`)
 
 		testRequest := basicReq(body)
-		// zbam
-		time.Sleep(time.Second * 10)
-		// zbam2:
-		pprof.Lookup("goroutine").WriteTo(GinkgoWriter, 2)
 
 		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
 
