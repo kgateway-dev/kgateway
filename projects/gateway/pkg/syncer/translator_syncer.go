@@ -176,6 +176,8 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 			if !ok {
 				return nil
 			}
+			contextutils.LoggerFrom(ctx).Debugw("proxy liste updated", "len(proxyList)", len(proxyList))
+
 			s.setStatuses(proxyList)
 			s.scheduleSync()
 		}
