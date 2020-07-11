@@ -27,6 +27,13 @@ var _ = Describe("TranslatorSyncer", func() {
 		syncer = newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
 	})
 
+	key := func(r reporter.ResourceReports) resources.InputResource {
+		for k := range r {
+			return k
+		}
+		return nil
+	}
+
 	It("should set status correctly", func() {
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
@@ -45,11 +52,14 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(mockReporter.Reports).To(Equal(errs))
+		Expect(mockReporter.Reports).To(HaveLen(1))
+		reportedKey := key(mockReporter.Reports)
+		Expect(reportedKey).To(BeEquivalentTo(vs))
+		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
@@ -75,12 +85,17 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(mockReporter.Reports).To(Equal(errs))
+
+		Expect(mockReporter.Reports).To(HaveLen(1))
+		reportedKey := key(mockReporter.Reports)
+		Expect(reportedKey).To(BeEquivalentTo(vs))
+		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
+
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test":  {State: core.Status_Accepted},
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
-		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors but is irrelevant", func() {
@@ -106,11 +121,16 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(mockReporter.Reports).To(Equal(errs))
+
+		Expect(mockReporter.Reports).To(HaveLen(1))
+		reportedKey := key(mockReporter.Reports)
+		Expect(reportedKey).To(BeEquivalentTo(vs))
+		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
+
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
@@ -145,12 +165,16 @@ var _ = Describe("TranslatorSyncer", func() {
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 1"))
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 2"))
 
-		Expect(mockReporter.Reports).To(Equal(mergedErrs))
+		Expect(mockReporter.Reports).To(HaveLen(1))
+		reportedKey := key(mockReporter.Reports)
+		Expect(reportedKey).To(BeEquivalentTo(vs))
+		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
+
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test":  {State: core.Status_Rejected},
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
-		Expect(mockReporter.Statues[vs]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 })
