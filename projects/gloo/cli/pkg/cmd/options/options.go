@@ -53,9 +53,19 @@ type Install struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Version                 string
+	Federation              Federation
 	Knative                 Knative
 	LicenseKey              string
 	WithUi                  bool
+}
+
+type Federation struct {
+	Namespace               string
+	HelmChartOverride       string
+	HelmChartValueFileNames []string
+	HelmReleaseName         string
+	Version                 string
+	LicenseKey              string
 }
 
 type Knative struct {
