@@ -126,7 +126,7 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessUpstream(params, validUpstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
-			Expect(out.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
+			Expect(out.Http2ProtocolOptions.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
 			Expect(out.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		})
 	})
