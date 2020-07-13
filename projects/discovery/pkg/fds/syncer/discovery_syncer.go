@@ -75,12 +75,14 @@ func selectUpstreamsForDiscovery(fdsMode v1.Settings_DiscoveryOptions_FdsMode, u
 
 func isBlacklistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isBlacklisted(us.DiscoveryMetadata.Labels) || isBlacklisted(us.Metadata.Labels)
+	return (us.DiscoveryMetadata != nil && isBlacklisted(us.DiscoveryMetadata.Labels)) ||
+	       isBlacklisted(us.Metadata.Labels)
 }
 
 func isWhitelistedUpstream(us *v1.Upstream) bool {
 	// Fall back to Metadata labels to support legacy Upstreams if needed
-	return isWhitelisted(us.DiscoveryMetadata.Labels) || isWhitelisted(us.Metadata.Labels)
+	return (us.DiscoveryMetadata != nil && isWhitelisted(us.DiscoveryMetadata.Labels)) ||
+	       isWhitelisted(us.Metadata.Labels)
 }
 
 func isBlacklisted(labels map[string]string) bool {
