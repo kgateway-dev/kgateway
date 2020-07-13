@@ -1,6 +1,7 @@
 package grpc
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -79,6 +80,54 @@ var _ = Describe("Plugin", func() {
 			err := p.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
+		})
+
+		It("should not accept connection streams that are too small", func() {
+			tooSmall := &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      "test",
+					Namespace: "default",
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: upstreamSpec,
+				},
+				InitialConnectionWindowSize: &types.UInt32Value{Value: 65534},
+			}
+
+			err := p.ProcessUpstream(params, tooSmall, out)
+			Expect(err).To(HaveOccurred())
+		})
+		It("should not accept connection streams that are too large", func() {
+			tooBig := &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      "test",
+					Namespace: "default",
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: upstreamSpec,
+				},
+				InitialStreamWindowSize: &types.UInt32Value{Value: 2147483648},
+			}
+			err := p.ProcessUpstream(params, tooBig, out)
+			Expect(err).To(HaveOccurred())
+		})
+		It("should accept connection streams that are within the correct range", func() {
+			validUpstream := &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      "test",
+					Namespace: "default",
+				},
+				UpstreamType: &v1.Upstream_Static{
+					Static: upstreamSpec,
+				},
+				InitialStreamWindowSize:     &types.UInt32Value{Value: 268435457},
+				InitialConnectionWindowSize: &types.UInt32Value{Value: 65535},
+			}
+			err := p.ProcessUpstream(params, validUpstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
+			Expect(out.InitialStreamWindowSize).To(Equal(&wrappers.UInt32Value{Value: 268435457}))
+			Expect(out.Http2ProtocolOptions.InitialConnectionWindowSize).To(Equal(&wrappers.UInt32Value{Value: 65535}))
 		})
 	})
 

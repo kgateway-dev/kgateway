@@ -5,6 +5,8 @@ import (
 	"crypto/sha1"
 	"fmt"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -80,6 +82,22 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	grpcSpec := grpcWrapper.Grpc
 	out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+	sws := in.GetInitialStreamWindowSize()
+	if sws != nil {
+		if validateStreamSize(sws.Value) {
+			out.Http2ProtocolOptions.InitialStreamWindowSize = &wrappers.UInt32Value{Value: sws.Value}
+		} else {
+			return errors.Errorf("Invalid Initial Steam Window Size: %d", sws.Value)
+		}
+	}
+	cws := in.GetInitialConnectionWindowSize()
+	if cws != nil {
+		if validateStreamSize(cws.Value) {
+			out.Http2ProtocolOptions.InitialConnectionWindowSize = &wrappers.UInt32Value{Value: cws.Value}
+		} else {
+			return errors.Errorf("Invalid Initial Connection Window Size: %d", cws.Value)
+		}
+	}
 
 	if grpcSpec == nil || len(grpcSpec.GrpcServices) == 0 {
 		// no services, this just marks the upstream as a grpc one.
@@ -110,6 +128,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	contextutils.LoggerFrom(p.ctx).Debugf("in.Metadata.Namespace: %s, in.Metadata.Name: %s", in.Metadata.Namespace, in.Metadata.Name)
 
 	return nil
+}
+
+func validateStreamSize(size uint32) bool {
+	if size < 65535 || size > 2147483647 {
+		return false
+	}
+	return true
 }
 
 func genFullServiceName(packageName, serviceName string) string {
