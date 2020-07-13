@@ -5,8 +5,10 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/solo-io/gloo/test/services"
+	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/test/helpers"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
@@ -38,5 +40,6 @@ func TestE2e(t *testing.T) {
 
 	helpers.RegisterCommonFailHandlers()
 	helpers.SetupLog()
+	contextutils.SetLogLevel(zapcore.DebugLevel)
 	RunSpecs(t, "E2e Suite")
 }

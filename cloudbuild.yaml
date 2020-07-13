@@ -85,7 +85,7 @@ steps:
   - 'RUN_VAULT_TESTS=1'
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
-  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending',  '-noColor']
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'

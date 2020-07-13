@@ -19,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/bootstrap"
@@ -190,8 +189,6 @@ func RunGateway(opts translator.Opts) error {
 	rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 	writeErrs := make(chan error)
 
-	prop := propagator.NewPropagator("gateway", gatewayClient, virtualServiceClient, proxyClient, writeErrs)
-
 	txlator := translator.NewDefaultTranslator(opts)
 
 	var (
@@ -236,13 +233,13 @@ func RunGateway(opts translator.Opts) error {
 	proxyReconciler := reconciler.NewProxyReconciler(validationClient, proxyClient)
 
 	translatorSyncer := NewTranslatorSyncer(
+		ctx,
 		opts.WriteNamespace,
 		proxyClient,
 		proxyReconciler,
 		gatewayClient,
 		virtualServiceClient,
 		rpt,
-		prop,
 		txlator)
 
 	gatewaySyncers := v1.ApiSyncers{
