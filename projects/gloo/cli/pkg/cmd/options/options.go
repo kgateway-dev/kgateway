@@ -83,6 +83,13 @@ type Uninstall struct {
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+	FedUninstall    FedUninstall
+}
+
+type FedUninstall struct {
+	Namespace       string
+	HelmReleaseName string
+	DeleteAll       bool
 }
 
 type Proxy struct {
