@@ -27,7 +27,8 @@ var _ = Describe("TranslatorSyncer", func() {
 		syncer = newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
 	})
 
-	key := func(r reporter.ResourceReports) resources.InputResource {
+	getMapOnlyKey := func(r reporter.ResourceReports) resources.InputResource {
+		Expect(r).To(HaveLen(1))
 		for k := range r {
 			return k
 		}
@@ -52,8 +53,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		Expect(mockReporter.Reports).To(HaveLen(1))
-		reportedKey := key(mockReporter.Reports)
+		reportedKey := getMapOnlyKey(mockReporter.Reports)
 		Expect(reportedKey).To(BeEquivalentTo(vs))
 		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
@@ -86,8 +86,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(mockReporter.Reports).To(HaveLen(1))
-		reportedKey := key(mockReporter.Reports)
+		reportedKey := getMapOnlyKey(mockReporter.Reports)
 		Expect(reportedKey).To(BeEquivalentTo(vs))
 		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
@@ -122,8 +121,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(mockReporter.Reports).To(HaveLen(1))
-		reportedKey := key(mockReporter.Reports)
+		reportedKey := getMapOnlyKey(mockReporter.Reports)
 		Expect(reportedKey).To(BeEquivalentTo(vs))
 		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
@@ -165,8 +163,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 1"))
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 2"))
 
-		Expect(mockReporter.Reports).To(HaveLen(1))
-		reportedKey := key(mockReporter.Reports)
+		reportedKey := getMapOnlyKey(mockReporter.Reports)
 		Expect(reportedKey).To(BeEquivalentTo(vs))
 		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
 
