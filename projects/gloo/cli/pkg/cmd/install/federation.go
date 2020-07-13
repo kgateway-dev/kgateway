@@ -24,6 +24,13 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 				"license_key": opts.Install.LicenseKey,
 			}
 
+			opts.Install.Namespace = opts.Install.Federation.Namespace
+			opts.Install.HelmChartOverride = opts.Install.Federation.HelmChartOverride
+			opts.Install.HelmChartValueFileNames = opts.Install.Federation.HelmChartValueFileNames
+			opts.Install.HelmReleaseName = opts.Install.Federation.HelmReleaseName
+			opts.Install.Version = opts.Install.Federation.Version
+			opts.Install.LicenseKey = opts.Install.Federation.LicenseKey
+
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    extraValues,
@@ -38,7 +45,7 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 
-	pFlags := cmd.PersistentFlags()
-	flagutils.AddGlooFedInstallFlags(pFlags, &opts.Install)
+	pflags := cmd.LocalFlags()
+	flagutils.AddFederationInstallFlags(pflags, &opts.Install.Federation)
 	return cmd
 }

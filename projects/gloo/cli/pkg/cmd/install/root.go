@@ -27,6 +27,7 @@ func InstallCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	cliutils.ApplyOptions(cmd, optionsFunc)
 
 	pFlags := cmd.PersistentFlags()
+	flagutils.AddGlooInstallFlags(pFlags, &opts.Install)
 	flagutils.AddVerboseFlag(pFlags, opts)
 	return cmd
 }
