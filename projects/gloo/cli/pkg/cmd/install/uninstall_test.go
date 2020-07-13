@@ -84,9 +84,7 @@ spec:
 
 		It("can uninstall", func() {
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{Namespace: defaults.GlooSystem, HelmReleaseName: constants.GlooReleaseName},
-			})
+			err := uninstaller.UninstallGloo(&options.Uninstall{Namespace: defaults.GlooSystem, HelmReleaseName: constants.GlooReleaseName})
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -95,12 +93,10 @@ spec:
 			mockKubectl := installutil.NewMockKubectl([]string{"delete crd " + crdName}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteCrds:      true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteCrds:      true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
@@ -112,12 +108,10 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteNamespace: true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteNamespace: true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
@@ -130,12 +124,10 @@ spec:
 			}, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteAll:       true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteAll:       true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
@@ -171,11 +163,9 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(namespacedDeleteCmds, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
 			})
 
 			Expect(err).NotTo(HaveOccurred())
@@ -185,12 +175,10 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, crdDeleteCmd), []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteCrds:      true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteCrds:      true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
@@ -200,12 +188,10 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(append(namespacedDeleteCmds, "delete namespace "+defaults.GlooSystem), []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteNamespace: true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteNamespace: true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
@@ -218,12 +204,10 @@ spec:
 			mockKubectl := installutil.NewMockKubectl(commands, []string{})
 
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, mockKubectl, new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.Options{
-				Uninstall: options.Uninstall{
-					Namespace:       defaults.GlooSystem,
-					HelmReleaseName: constants.GlooReleaseName,
-					DeleteAll:       true,
-				},
+			err := uninstaller.UninstallGloo(&options.Uninstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DeleteAll:       true,
 			})
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
