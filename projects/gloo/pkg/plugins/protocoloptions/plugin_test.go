@@ -31,7 +31,7 @@ var _ = Describe("Plugin", func() {
 		It("should not use window sizes if UseHttp2 is not true", func() {
 			falseVal := &v1.Upstream{
 				InitialConnectionWindowSize: &types.UInt32Value{Value: 7777777},
-				UseHttp2: &types.BoolValue{Value: false},
+				UseHttp2:                    &types.BoolValue{Value: false},
 			}
 			nilVal := &v1.Upstream{
 				InitialConnectionWindowSize: &types.UInt32Value{Value: 7777777},
@@ -50,7 +50,7 @@ var _ = Describe("Plugin", func() {
 		It("should not accept connection streams that are too small", func() {
 			tooSmall := &v1.Upstream{
 				InitialConnectionWindowSize: &types.UInt32Value{Value: 65534},
-				UseHttp2: &types.BoolValue{Value: true},
+				UseHttp2:                    &types.BoolValue{Value: true},
 			}
 
 			err := p.ProcessUpstream(params, tooSmall, out)
@@ -60,7 +60,7 @@ var _ = Describe("Plugin", func() {
 		It("should not accept connection streams that are too large", func() {
 			tooBig := &v1.Upstream{
 				InitialStreamWindowSize: &types.UInt32Value{Value: 2147483648},
-				UseHttp2: &types.BoolValue{Value: true},
+				UseHttp2:                &types.BoolValue{Value: true},
 			}
 			err := p.ProcessUpstream(params, tooBig, out)
 			Expect(err).To(HaveOccurred())
@@ -70,7 +70,7 @@ var _ = Describe("Plugin", func() {
 			validUpstream := &v1.Upstream{
 				InitialStreamWindowSize:     &types.UInt32Value{Value: 268435457},
 				InitialConnectionWindowSize: &types.UInt32Value{Value: 65535},
-				UseHttp2: &types.BoolValue{Value: true},
+				UseHttp2:                    &types.BoolValue{Value: true},
 			}
 
 			err := p.ProcessUpstream(params, validUpstream, out)
