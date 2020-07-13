@@ -1,8 +1,9 @@
 package version
 
 import (
-	"github.com/solo-io/go-utils/versionutils"
 	"math"
+
+	"github.com/solo-io/go-utils/versionutils"
 )
 
 const GlooFedHelmRepoIndex = "https://storage.googleapis.com/gloo-fed-helm/index.yaml"

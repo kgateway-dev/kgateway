@@ -45,7 +45,7 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 		},
 	}
 
-	pflags := cmd.LocalFlags()
+	pflags := cmd.PersistentFlags()
 	flagutils.AddFederationInstallFlags(pflags, &opts.Install.Federation)
 	return cmd
 }
