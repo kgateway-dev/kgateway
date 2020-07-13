@@ -13,7 +13,6 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoytranscoder "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/gogo/googleapis/google/api"
@@ -79,8 +78,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		return nil
 	}
 	grpcSpec := grpcWrapper.Grpc
-	//todo remove?
-	out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
 
 	if grpcSpec == nil || len(grpcSpec.GrpcServices) == 0 {
 		// no services, this just marks the upstream as a grpc one.
