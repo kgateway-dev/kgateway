@@ -3,8 +3,5 @@ changelog:
 #  description: TODO
 #  issueLink: ...
 - type: FIX
-  description: TODO
+  description: Route-level rate limit descriptors are now supported via the new `RateLimitConfig` resources.
   issueLink: https://github.com/solo-io/gloo/issues/2462
-- type: FIX
-  description: TODO
-  issueLink: https://github.com/solo-io/gloo/issues/2517

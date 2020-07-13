@@ -2,7 +2,7 @@ syntax = "proto3";
 package ratelimit.options.gloo.solo.io;
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit";
 
-import "github.com/solo-io/solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
+import "solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto";
 
 import "solo-kit/api/v1/ref.proto";
 import "google/protobuf/wrappers.proto";
