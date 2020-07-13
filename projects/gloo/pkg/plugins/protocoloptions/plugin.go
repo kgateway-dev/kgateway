@@ -28,6 +28,11 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
+
+	if in.GetUseHttp2() == nil || !in.GetUseHttp2().Value {
+		return nil
+	}
+
 	if out.Http2ProtocolOptions == nil {
 		out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
 	}

@@ -83,9 +83,11 @@ type Upstream struct {
 	// This field also acts as a soft limit on the number of bytes Envoy will buffer per-stream
 	// in the HTTP/2 codec buffers. Once the buffer reaches this pointer,
 	// watermark callbacks will fire to stop the flow of data to the codec buffers.
+	// Requires UseHttp2 to be true to be acknowledged.
 	InitialStreamWindowSize *types.UInt32Value `protobuf:"bytes,19,opt,name=initial_stream_window_size,json=initialStreamWindowSize,proto3" json:"initial_stream_window_size,omitempty"`
 	// (UInt32Value) Similar to initial_stream_window_size, but for connection-level flow-control window.
 	// Currently, this has the same minimum/maximum/default as initial_stream_window_size.
+	// Requires UseHttp2 to be true to be acknowledged.
 	InitialConnectionWindowSize *types.UInt32Value `protobuf:"bytes,20,opt,name=initial_connection_window_size,json=initialConnectionWindowSize,proto3" json:"initial_connection_window_size,omitempty"`
 	XXX_NoUnkeyedLiteral        struct{}           `json:"-"`
 	XXX_unrecognized            []byte             `json:"-"`
