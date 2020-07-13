@@ -27,15 +27,15 @@ import (
 )
 
 type translatorSyncer struct {
-	writeNamespace  string
-	reporter        reporter.Reporter
-	proxyClient     gloov1.ProxyClient
-	gwClient        v1.GatewayClient
-	vsClient        v1.VirtualServiceClient
-	proxyReconciler reconciler.ProxyReconciler
-	translator      translator.Translator
-	statusSyncer    statusSyncer
-	labels          map[string]string
+	writeNamespace     string
+	reporter           reporter.Reporter
+	proxyClient        gloov1.ProxyClient
+	gwClient           v1.GatewayClient
+	vsClient           v1.VirtualServiceClient
+	proxyReconciler    reconciler.ProxyReconciler
+	translator         translator.Translator
+	statusSyncer       statusSyncer
+	managedProxyLabels map[string]string
 }
 
 func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
@@ -48,13 +48,13 @@ func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
 		statusSyncer:    newStatusSyncer(writeNamespace, proxyClient, reporter),
-		labels: map[string]string{
+		managedProxyLabels: map[string]string{
 			"created_by": "gateway",
 		},
 	}
 
 	go t.statusSyncer.watchProxies(ctx)
-	go t.statusSyncer.syncStatusOnInterval(ctx)
+	go t.statusSyncer.syncStatusOnEmit(ctx)
 	return t
 }
 
@@ -83,7 +83,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
 		if proxy != nil {
 			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
-			proxy.Metadata.Labels = s.labels
+			proxy.Metadata.Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
 		}
 	}
@@ -92,13 +92,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 }
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.labels); err != nil {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
 		return err
 	}
 
 	// repeat for all resources
 	s.statusSyncer.setCurrentProxies(desiredProxies)
-	s.statusSyncer.scheduleSync()
+	s.statusSyncer.forceSync()
 	return nil
 }
 
@@ -139,7 +139,7 @@ func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProx
 			s.proxyToLastStatus[ref] = reportsAndStatus{}
 		}
 		current := s.proxyToLastStatus[ref]
-		// These reports are for gateway resources: VirtualServices and Gateways
+		// These reports are for gateway resources: VirtualServices, RouteTables and Gateways
 		current.Reports = reports
 		s.proxyToLastStatus[ref] = current
 		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
@@ -183,11 +183,15 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 			if err != nil {
 				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
 			}
-			if currentHash != previousHash {
+			// We use hashing here to be compatible with the memory client used in
+			// the local e2e; it fires a watch update too all watch object, on any change,
+			// this means that setting by the status of a virtual service we will get another
+			// proxxyList form the channel. This results in excessive CPU usage in CI.
+			if currentHash != previousHash && true {
 				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
 				previousHash = currentHash
 				s.setStatuses(proxyList)
-				s.scheduleSync()
+				s.forceSync()
 			}
 		}
 	}
@@ -210,15 +214,14 @@ func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
 	}
 }
 
-// run this on a timer
-func (s *statusSyncer) scheduleSync() {
+func (s *statusSyncer) forceSync() {
 	select {
 	case s.syncNeeded <- struct{}{}:
 	default:
 	}
 }
 
-func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
+func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -232,9 +235,6 @@ func (s *statusSyncer) syncStatusOnInterval(ctx context.Context) error {
 	}
 }
 
-// TODO: it is possible that sync status is a heavy function?
-// why does adding ginkgo write helps somewhat?
-// do i need better mechanism? to sync only when sync happens and/or new proxy list?
 func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
