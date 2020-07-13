@@ -107,6 +107,11 @@ var (
 		Short: "uninstall gloo",
 	}
 
+	UNINSTALL_GLOO_FED_COMMAND = cobra.Command{
+		Use:   "federation",
+		Short: "uninstall gloo federation",
+	}
+
 	UPGRADE_COMMAND = cobra.Command{
 		Use:     "upgrade",
 		Aliases: []string{"ug"},

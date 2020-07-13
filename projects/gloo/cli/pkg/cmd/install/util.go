@@ -10,14 +10,20 @@ var (
 	GlooClusterScopedKinds []string
 	GlooCrdNames           []string
 	GlooECrdNames          []string
+	GlooFedCrdNames        []string
 
-	GlooComponentLabels map[string]string
+	GlooComponentLabels    map[string]string
+	GlooFedComponentLabels map[string]string
 )
 
 func init() {
 
 	GlooComponentLabels = map[string]string{
 		"app": "(gloo,glooe-prometheus,dev-portal)",
+	}
+
+	GlooFedComponentLabels = map[string]string{
+		"app": "(gloo-fed)",
 	}
 
 	GlooNamespacedKinds = []string{
@@ -55,6 +61,16 @@ func init() {
 		"users.devportal.solo.io",
 	}
 
+	GlooFedCrdNames = []string{
+		"failoverschemes.fed.solo.io",
+		"federatedauthconfigs.fed.enterprise.gloo.solo.io",
+		"federatedgateways.fed.gateway.solo.io",
+		"federatedroutetables.fed.gateway.solo.io",
+		"federatedsettings.fed.gloo.solo.io",
+		"federatedupstreamgroups.fed.gloo.solo.io",
+		"federatedupstreams.fed.gloo.solo.io",
+		"federatedvirtualservices.fed.gateway.solo.io",
+	}
 }
 
 func LabelsToFlagString(labelMap map[string]string) (labelString string) {
