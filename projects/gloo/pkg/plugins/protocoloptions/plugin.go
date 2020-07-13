@@ -28,7 +28,9 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *envoyapi.Cluster) error {
-	out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+	if out.Http2ProtocolOptions == nil {
+		out.Http2ProtocolOptions = &envoycore.Http2ProtocolOptions{}
+	}
 
 	// Both these values default to 268435456 if unset.
 	sws := in.GetInitialStreamWindowSize()
