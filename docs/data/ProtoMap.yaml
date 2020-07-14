@@ -65,6 +65,9 @@ apis:
   dlp.options.gloo.solo.io.FilterConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/dlp/dlp.proto.sk/#FilterConfig
     package: dlp.options.gloo.solo.io
+  enterprise.gloo.solo.io.AccessTokenValidation:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#AccessTokenValidation
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.ApiKeyAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ApiKeyAuth
     package: enterprise.gloo.solo.io
@@ -101,8 +104,14 @@ apis:
   enterprise.gloo.solo.io.OAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OAuth
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.OAuth2:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OAuth2
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.OauthSecret:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OauthSecret
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.OidcAuthorizationCode:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OidcAuthorizationCode
     package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.OpaAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OpaAuth

@@ -186,7 +186,6 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 
 func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) translator.Opts {
 	ctx = contextutils.WithLogger(ctx, "gateway")
-	ctx = contextutils.SilenceLogger(ctx)
 	f := &factory.MemoryResourceClientFactory{
 		Cache: runOptions.Cache,
 	}
