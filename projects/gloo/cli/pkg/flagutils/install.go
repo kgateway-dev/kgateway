@@ -19,16 +19,19 @@ func AddGlooInstallFlags(set *pflag.FlagSet, install *options.Install) {
 }
 
 func AddEnterpriseInstallFlags(set *pflag.FlagSet, install *options.Install) {
+	set.BoolVarP(&install.DryRun, "dry-run", "d", false, "Dump the raw installation yaml instead of applying it to kubernetes")
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate GlooE features")
 }
 
 func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Federation) {
-	set.StringVar(&install.HelmChartOverride, "fed-file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
-	set.StringSliceVarP(&install.HelmChartValueFileNames, "fed-values", "", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
-	set.StringVar(&install.HelmReleaseName, "fed-release-name", constants.GlooFedReleaseName, "helm release name")
-	set.StringVar(&install.Version, "fed-version", "", "version to install (e.g. 0.0.6, defaults to latest)")
-	set.StringVar(&install.Namespace, "fed-namespace", defaults.GlooFed, "namespace to install gloo fed into")
-	set.StringVar(&install.LicenseKey, "fed-license-key", "", "License key to activate Gloo Fed features")
+	set.BoolVar(&install.DryRun, "dry-run", false, "Dump the raw installation yaml instead of applying it to kubernetes")
+	set.StringVar(&install.HelmChartOverride, "file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
+	set.StringSliceVar(&install.HelmChartValueFileNames, "values", []string{}, "List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)")
+	set.StringVar(&install.HelmReleaseName, "release-name", constants.GlooFedReleaseName, "helm release name")
+	set.StringVar(&install.Version, "version", "", "version to install (e.g. 0.0.6, defaults to latest)")
+	set.BoolVar(&install.CreateNamespace, "create-namespace", true, "Create the namespace to install gloo fed into")
+	set.StringVar(&install.Namespace, "namespace", defaults.GlooFed, "namespace to install gloo fed into")
+	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate Gloo Fed features")
 }
 
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {

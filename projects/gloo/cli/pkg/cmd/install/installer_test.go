@@ -151,10 +151,12 @@ rules:
 
 	defaultInstall := func(enterprise, federation bool, expectedValues map[string]interface{}, expectedChartUri string) {
 		installConfig := &options.Install{
-			Namespace:       defaults.GlooSystem,
-			HelmReleaseName: constants.GlooReleaseName,
-			Version:         "test",
-			CreateNamespace: true,
+			HelmInstall: options.HelmInstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				Version:         "test",
+				CreateNamespace: true,
+			},
 		}
 		if federation {
 			installConfig.Namespace = defaults.GlooFed
@@ -198,10 +200,12 @@ rules:
 	It("installs as enterprise cleanly if passed enterprise helmchart override", func() {
 
 		installConfig := &options.Install{
-			Namespace:         defaults.GlooSystem,
-			HelmReleaseName:   constants.GlooReleaseName,
-			CreateNamespace:   true,
-			HelmChartOverride: glooEnterpriseChartUri,
+			HelmInstall: options.HelmInstall{
+				Namespace:         defaults.GlooSystem,
+				HelmReleaseName:   constants.GlooReleaseName,
+				CreateNamespace:   true,
+				HelmChartOverride: glooEnterpriseChartUri,
+			},
 		}
 
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
@@ -220,10 +224,12 @@ rules:
 	It("installs as open-source cleanly if passed open-source helmchart override with enterprise subcommand", func() {
 
 		installConfig := &options.Install{
-			Namespace:         defaults.GlooSystem,
-			HelmReleaseName:   constants.GlooReleaseName,
-			CreateNamespace:   true,
-			HelmChartOverride: glooOsChartUri,
+			HelmInstall: options.HelmInstall{
+				Namespace:         defaults.GlooSystem,
+				HelmReleaseName:   constants.GlooReleaseName,
+				CreateNamespace:   true,
+				HelmChartOverride: glooOsChartUri,
+			},
 		}
 
 		installWithConfig(true, false,
@@ -238,10 +244,12 @@ rules:
 
 	It("outputs the expected kinds when in a dry run", func() {
 		installConfig := &options.Install{
-			Namespace:       defaults.GlooSystem,
-			HelmReleaseName: constants.GlooReleaseName,
-			DryRun:          true,
-			Version:         glooOsVersion,
+			HelmInstall: options.HelmInstall{
+				Namespace:       defaults.GlooSystem,
+				HelmReleaseName: constants.GlooReleaseName,
+				DryRun:          true,
+				Version:         glooOsVersion,
+			},
 		}
 
 		helmEnv := &cli.EnvSettings{
