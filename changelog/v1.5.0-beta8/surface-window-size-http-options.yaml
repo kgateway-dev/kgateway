@@ -1,0 +1,4 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3305
+      description: Expose InitialStreamWindowSize and InitialConnectionWindowSize as http2 protocol options. They both default to 268435456.
