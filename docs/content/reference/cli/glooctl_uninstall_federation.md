@@ -1,50 +1,51 @@
 ---
-title: "glooctl install gateway enterprise"
+title: "glooctl uninstall federation"
 weight: 5
 ---
-## glooctl install gateway enterprise
+## glooctl uninstall federation
 
-install the Gloo Enterprise Gateway on Kubernetes
+uninstall gloo federation
 
 ### Synopsis
 
-requires kubectl to be installed
+uninstall gloo federation
 
 ```
-glooctl install gateway enterprise [flags]
+glooctl uninstall federation [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                 help for enterprise
-      --license-key string   License key to activate GlooE features
+      --fed-delete-all            Deletes all gloo fed resources, including the namespace, crds, and cluster role
+      --fed-delete-crds           Delete all gloo fed crds (all custom gloo fed objects will be deleted)
+      --fed-delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
+      --fed-namespace string      namespace in which Gloo Fed is installed (default "gloo-fed")
+      --fed-release-name string   helm release name (default "gloo-fed")
+  -h, --help                      help for federation
 ```
 
 ### Options inherited from parent commands
 
 ```
+      --all                        Deletes all gloo resources, including the namespace, crds, and cluster role
   -c, --config string              set the path to the glooctl config file (default "<home_directory>/.gloo/glooctl-config.yaml")
       --consul-address string      address of the Consul server. Use with --use-consul (default "127.0.0.1:8500")
       --consul-datacenter string   Datacenter to use. If not provided, the default agent datacenter is used. Use with --use-consul
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
-      --create-namespace           Create the namespace to install gloo into (default true)
-  -d, --dry-run                    Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string                Install Gloo from this Helm chart archive file rather than from a release
+      --delete-crds                Delete all gloo crds (all custom gloo objects will be deleted)
+      --delete-namespace           Delete the namespace (all objects written to this namespace will be deleted)
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
-  -n, --namespace string           namespace to install gloo into (default "gloo-system")
+  -n, --namespace string           namespace in which Gloo is installed (default "gloo-system")
       --release-name string        helm release name (default "gloo")
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
-      --values strings             List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
   -v, --verbose                    If true, output from kubectl commands will print to stdout/stderr
-      --version string             version to install (e.g. 1.4.0, defaults to latest)
-      --with-admin-console         install gloo and a read-only version of its admin console
 ```
 
 ### SEE ALSO
 
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on Kubernetes
+* [glooctl uninstall](../glooctl_uninstall)	 - uninstall gloo
 

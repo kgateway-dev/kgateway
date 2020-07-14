@@ -62,6 +62,7 @@ func init() {
 	}
 
 	GlooFedCrdNames = []string{
+		"glooinstances.fed.solo.io",
 		"failoverschemes.fed.solo.io",
 		"federatedauthconfigs.fed.enterprise.gloo.solo.io",
 		"federatedgateways.fed.gateway.solo.io",

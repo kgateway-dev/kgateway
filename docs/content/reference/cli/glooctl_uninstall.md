@@ -43,4 +43,5 @@ glooctl uninstall [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl uninstall federation](../glooctl_uninstall_federation)	 - uninstall gloo federation
 
