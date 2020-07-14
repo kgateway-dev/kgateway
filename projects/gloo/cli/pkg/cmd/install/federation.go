@@ -29,8 +29,7 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    extraValues,
-				Enterprise:     false,
-				Federation:     true,
+				Mode:           Federation,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
 				return eris.Wrapf(err, "installing Gloo Federation")

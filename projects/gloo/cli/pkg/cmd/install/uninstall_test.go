@@ -85,7 +85,7 @@ spec:
 		It("can uninstall", func() {
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
 			err := uninstaller.Uninstall(&options.HelmUninstall{
-				Namespace: defaults.GlooSystem,
+				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 			}, false)
 
