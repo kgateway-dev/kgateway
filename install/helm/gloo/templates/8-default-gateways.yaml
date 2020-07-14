@@ -64,5 +64,34 @@ spec:
   proxyNames:
   - {{ $name | kebabcase }}
 {{- end }}
+
+{{- if $spec.failover.enabled }} # if failover is configured, add the gateway
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: {{ $name | kebabcase }}-failover
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: gloo
+spec:
+{{- if $gatewaySettings.ipv4Only }}
+  bindAddress: "0.0.0.0"
+{{- else }}
+  bindAddress: "::"
 {{- end }}
-{{- end }}
+  bindPort: {{ $spec.failover.port }}
+  tcpGateway:
+    tcpHosts:
+    - name: failover
+      sslConfig:
+        secretRef:
+          name: {{ $spec.failover.secretName }}
+          namespace: {{ $.Release.Namespace }}
+      destination:
+        forwardSniClusterName: {}
+  proxyNames:
+  - {{ $name | kebabcase }}
+{{- end }} # if failover
+
+{{- end }} # if gateway settings
+{{- end }} # range gateways

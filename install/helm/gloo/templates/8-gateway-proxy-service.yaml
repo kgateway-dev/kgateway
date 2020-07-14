@@ -53,6 +53,13 @@ spec:
     nodePort: {{ $spec.service.httpsNodePort }}
     {{- end}}
 {{- end }}
+{{- if $spec.failover.enabled }}
+  - port: {{ $spec.failover.port }}
+    targetPort: {{ $spec.failover.port }}
+    protocol: TCP
+    name: failover
+    nodePort: {{ $spec.failover.nodePort }}
+{{- end }}
   selector:
     gateway-proxy-id: {{ $name | kebabcase }}
     gateway-proxy: live
