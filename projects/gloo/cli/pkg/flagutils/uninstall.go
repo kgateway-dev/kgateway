@@ -18,5 +18,7 @@ func AddGlooUninstallFlags(set *pflag.FlagSet, opts *options.Uninstall) {
 func AddGlooFedUninstallFlags(set *pflag.FlagSet, opts *options.FedUninstall) {
 	set.StringVar(&opts.Namespace, "fed-namespace", defaults.GlooFed, "namespace in which Gloo Fed is installed")
 	set.StringVar(&opts.HelmReleaseName, "fed-release-name", constants.GlooFedReleaseName, "helm release name")
-	set.BoolVar(&opts.DeleteAll, "all", false, "Deletes all gloo fed resources, including the namespace, crds, and cluster role")
+	set.BoolVar(&opts.DeleteCrds, "fed-delete-crds", false, "Delete all gloo fed crds (all custom gloo fed objects will be deleted)")
+	set.BoolVar(&opts.DeleteNamespace, "fed-delete-namespace", false, "Delete the namespace (all objects written to this namespace will be deleted)")
+	set.BoolVar(&opts.DeleteAll, "fed-delete-all", false, "Deletes all gloo fed resources, including the namespace, crds, and cluster role")
 }

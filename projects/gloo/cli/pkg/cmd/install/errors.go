@@ -9,6 +9,7 @@ var (
 	GlooFedAlreadyInstalled = func(namespace string) error {
 		return eris.Errorf("Gloo Federation has already been installed to namespace %s", namespace)
 	}
+	InvalidInstallerConfig  = eris.New("Cannot install both gloo enterprise and gloo federation")
 	NoReleaseForCRDs        = eris.New("Could not find a release from which to pull CRDs")
 	MultipleReleasesForCRDs = eris.New("Found multiple releases from which to pull CRDs")
 )

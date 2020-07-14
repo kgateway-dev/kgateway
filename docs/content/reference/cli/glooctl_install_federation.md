@@ -1,24 +1,29 @@
 ---
-title: "glooctl install gateway enterprise"
+title: "glooctl install federation"
 weight: 5
 ---
-## glooctl install gateway enterprise
+## glooctl install federation
 
-install the Gloo Enterprise Gateway on Kubernetes
+install Gloo Federation on Kubernetes
 
 ### Synopsis
 
 requires kubectl to be installed
 
 ```
-glooctl install gateway enterprise [flags]
+glooctl install federation [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help                 help for enterprise
-      --license-key string   License key to activate GlooE features
+      --fed-file string           Install Gloo Fed from this Helm chart archive file rather than from a release
+      --fed-license-key string    License key to activate Gloo Fed features
+      --fed-namespace string      namespace to install gloo fed into (default "gloo-fed")
+      --fed-release-name string   helm release name (default "gloo-fed")
+      --fed-values strings        List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
+      --fed-version string        version to install (e.g. 0.0.6, defaults to latest)
+  -h, --help                      help for federation
 ```
 
 ### Options inherited from parent commands
@@ -46,5 +51,5 @@ glooctl install gateway enterprise [flags]
 
 ### SEE ALSO
 
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on Kubernetes
+* [glooctl install](../glooctl_install)	 - install gloo on different platforms
 
