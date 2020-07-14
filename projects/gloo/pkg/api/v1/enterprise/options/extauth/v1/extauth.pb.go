@@ -1197,9 +1197,9 @@ type AccessTokenValidation struct {
 	// will be queried and the userinfo response (or cached response) will be put in the `AuthorizationRequest` state.
 	// this can be useful to leverage the userinfo response in, for example, an extauth server plugin.
 	UserinfoUrl string `protobuf:"bytes,4,opt,name=userinfo_url,json=userinfoUrl,proto3" json:"userinfo_url,omitempty"`
-	// how long the token introspection and/or userinfo endpoint response for a specific access token should be kept
-	// in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the
-	// introspection result, whichever comes sooner. if omitted, defaults to 10 minutes.
+	// how long the token introspection and userinfo endpoint response for a specific access token should be kept
+	// in the in-memory cache. the result will be invalidated at this timeout, or at "exp" time from the introspection
+	// result, whichever comes sooner. if omitted, defaults to 10 minutes. if zero, then no caching will be done.
 	CacheTimeout         *time.Duration `protobuf:"bytes,5,opt,name=cache_timeout,json=cacheTimeout,proto3,stdduration" json:"cache_timeout,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
