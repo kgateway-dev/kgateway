@@ -19,7 +19,7 @@ option (extproto.hash_all) = true;
 message LoadBalancerConfig {
     // Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
     // reaches this percentage, envoy disregards health information.
-    // see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/load_balancing/panic_threshold#arch-overview-load-balancing-panic-threshold).
+    // see more info [here](https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/health_check.proto#envoy-v3-api-enum-config-core-v3-healthstatus).
     google.protobuf.DoubleValue healthy_panic_threshold = 1;
 
     // This allows batch updates of endpoints health/weight/metadata that happen during a time window.
