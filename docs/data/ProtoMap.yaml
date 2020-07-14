@@ -261,7 +261,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#Address
     package: envoy.config.core.v3
   envoy.config.core.v3.AsyncDataSource:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#AsyncDataSource
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#AsyncDataSource
     package: envoy.config.core.v3
   envoy.config.core.v3.BackoffStrategy:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/backoff.proto.sk/#BackoffStrategy
@@ -270,61 +270,61 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#BindConfig
     package: envoy.config.core.v3
   envoy.config.core.v3.BuildVersion:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#BuildVersion
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#BuildVersion
     package: envoy.config.core.v3
   envoy.config.core.v3.CidrRange:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#CidrRange
     package: envoy.config.core.v3
   envoy.config.core.v3.ControlPlane:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#ControlPlane
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#ControlPlane
     package: envoy.config.core.v3
   envoy.config.core.v3.DataSource:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#DataSource
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#DataSource
     package: envoy.config.core.v3
   envoy.config.core.v3.Extension:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Extension
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#Extension
     package: envoy.config.core.v3
   envoy.config.core.v3.HeaderMap:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#HeaderMap
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#HeaderMap
     package: envoy.config.core.v3
   envoy.config.core.v3.HeaderValue:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#HeaderValue
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#HeaderValue
     package: envoy.config.core.v3
   envoy.config.core.v3.HeaderValueOption:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#HeaderValueOption
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#HeaderValueOption
     package: envoy.config.core.v3
   envoy.config.core.v3.HttpUri:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto.sk/#HttpUri
     package: envoy.config.core.v3
   envoy.config.core.v3.Locality:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Locality
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#Locality
     package: envoy.config.core.v3
   envoy.config.core.v3.Metadata:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Metadata
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#Metadata
     package: envoy.config.core.v3
   envoy.config.core.v3.Node:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#Node
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#Node
     package: envoy.config.core.v3
   envoy.config.core.v3.Pipe:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#Pipe
     package: envoy.config.core.v3
   envoy.config.core.v3.RemoteDataSource:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RemoteDataSource
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RemoteDataSource
     package: envoy.config.core.v3
   envoy.config.core.v3.RetryPolicy:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RetryPolicy
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RetryPolicy
     package: envoy.config.core.v3
   envoy.config.core.v3.RuntimeDouble:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RuntimeDouble
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RuntimeDouble
     package: envoy.config.core.v3
   envoy.config.core.v3.RuntimeFeatureFlag:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RuntimeFeatureFlag
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RuntimeFeatureFlag
     package: envoy.config.core.v3
   envoy.config.core.v3.RuntimeFractionalPercent:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RuntimeFractionalPercent
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RuntimeFractionalPercent
     package: envoy.config.core.v3
   envoy.config.core.v3.RuntimeUInt32:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#RuntimeUInt32
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#RuntimeUInt32
     package: envoy.config.core.v3
   envoy.config.core.v3.SocketAddress:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#SocketAddress
@@ -336,7 +336,7 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#TcpKeepalive
     package: envoy.config.core.v3
   envoy.config.core.v3.TransportSocket:
-    relativepath: reference/api/envoy/config/core/v3/base.proto.sk/#TransportSocket
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/base.proto.sk/#TransportSocket
     package: envoy.config.core.v3
   envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto.sk/#AWSLambdaConfig
