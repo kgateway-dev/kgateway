@@ -24,12 +24,7 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 				"license_key": opts.Install.LicenseKey,
 			}
 
-			opts.Install.Namespace = opts.Install.Federation.Namespace
-			opts.Install.HelmChartOverride = opts.Install.Federation.HelmChartOverride
-			opts.Install.HelmChartValueFileNames = opts.Install.Federation.HelmChartValueFileNames
-			opts.Install.HelmReleaseName = opts.Install.Federation.HelmReleaseName
-			opts.Install.Version = opts.Install.Federation.Version
-			opts.Install.LicenseKey = opts.Install.Federation.LicenseKey
+			opts.Install.HelmInstall = opts.Install.Federation.HelmInstall
 
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,

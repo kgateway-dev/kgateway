@@ -45,7 +45,7 @@ type Top struct {
 	Consul                 Consul // use consul as config backend
 }
 
-type Install struct {
+type HelmInstall struct {
 	DryRun                  bool
 	CreateNamespace         bool
 	Namespace               string
@@ -53,19 +53,18 @@ type Install struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Version                 string
-	Federation              Federation
-	Knative                 Knative
 	LicenseKey              string
-	WithUi                  bool
+}
+
+type Install struct {
+	HelmInstall
+	Federation Federation
+	Knative    Knative
+	WithUi     bool
 }
 
 type Federation struct {
-	Namespace               string
-	HelmChartOverride       string
-	HelmChartValueFileNames []string
-	HelmReleaseName         string
-	Version                 string
-	LicenseKey              string
+	HelmInstall
 }
 
 type Knative struct {
