@@ -101,6 +101,41 @@ var _ = Describe("TranslatorSyncer", func() {
 		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
 
+	It("should retry setting the status if it first fails", func() {
+		desiredProxy := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+		}
+		acceptedProxy := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Accepted},
+		}
+		mockReporter.Err = fmt.Errorf("error")
+		vs := &gatewayv1.VirtualService{}
+		errs := reporter.ResourceReports{}
+		errs.Accept(vs)
+
+		desiredProxies := reconciler.GeneratedProxies{
+			desiredProxy: errs,
+		}
+		proxies := make(chan gloov1.ProxyList)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
+		go syncer.syncStatusOnEmit(ctx)
+
+		syncer.setCurrentProxies(desiredProxies)
+		proxies <- gloov1.ProxyList{acceptedProxy}
+
+		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
+		m := map[string]*core.Status{
+			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+		}
+		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
+	})
+
 	It("should set status correctly when one proxy errors", func() {
 		acceptedProxy := &gloov1.Proxy{
 			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
@@ -226,6 +261,7 @@ type fakeReporter struct {
 	reports  map[core.ResourceRef]reporter.Report
 	statuses map[core.ResourceRef]map[string]*core.Status
 	lock     sync.Mutex
+	Err      error
 }
 
 func (f *fakeReporter) Reports() map[core.ResourceRef]reporter.Report {
@@ -260,5 +296,8 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 		newstatus[k.GetMetadata().Ref()] = subresourceStatuses
 	}
 	f.statuses = newstatus
-	return nil
+
+	err := f.Err
+	f.Err = nil
+	return err
 }
