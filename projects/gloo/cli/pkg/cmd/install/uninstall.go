@@ -16,7 +16,11 @@ import (
 
 func Uninstall(opts *options.Options, cli install.KubeCli, federation bool) error {
 	uninstaller := NewUninstaller(DefaultHelmClient(), cli)
-	if err := uninstaller.Uninstall(&opts.Uninstall, federation); err != nil {
+	uninstallArgs := &opts.Uninstall.GlooUninstall
+	if federation {
+		uninstallArgs = &opts.Uninstall.FedUninstall
+	}
+	if err := uninstaller.Uninstall(uninstallArgs, federation); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
@@ -24,7 +28,7 @@ func Uninstall(opts *options.Options, cli install.KubeCli, federation bool) erro
 }
 
 type Uninstaller interface {
-	Uninstall(cliArgs *options.Uninstall, federation bool) error
+	Uninstall(cliArgs *options.HelmUninstall, federation bool) error
 }
 
 type uninstaller struct {
@@ -46,7 +50,7 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 	}
 }
 
-func (u *uninstaller) Uninstall(cliArgs *options.Uninstall, federation bool) error {
+func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, federation bool) error {
 	namespace := cliArgs.Namespace
 	releaseName := cliArgs.HelmReleaseName
 
@@ -66,7 +70,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Uninstall, federation bool) err
 			return err
 		}
 
-		if cliArgs.DeleteCrds || cliArgs.DeleteAll || federation {
+		if cliArgs.DeleteCrds || cliArgs.DeleteAll {
 			// Helm never deletes CRDs, so we collect the CRD names to delete them ourselves if need be.
 			// We need to run this first, as it depends on the release still being present.
 			// But we need to uninstall the release before we delete the CRDs.
@@ -94,7 +98,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Uninstall, federation bool) err
 		}
 
 		// If the `--all` flag was provided, also delete the cluster-scoped resources.
-		if cliArgs.DeleteAll || federation {
+		if cliArgs.DeleteAll {
 			for _, kind := range GlooClusterScopedKinds {
 				if err := u.kubeCli.Kubectl(nil, "delete", kind, "-l", glooLabels); err != nil {
 					return err
