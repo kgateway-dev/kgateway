@@ -77,15 +77,11 @@ type Knative struct {
 }
 
 type Uninstall struct {
-	Namespace       string
-	HelmReleaseName string
-	DeleteCrds      bool
-	DeleteNamespace bool
-	DeleteAll       bool
-	FedUninstall    FedUninstall
+	GlooUninstall   HelmUninstall
+	FedUninstall    HelmUninstall
 }
 
-type FedUninstall struct {
+type HelmUninstall struct {
 	Namespace       string
 	HelmReleaseName string
 	DeleteCrds      bool
