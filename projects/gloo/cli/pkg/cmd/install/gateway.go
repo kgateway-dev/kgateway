@@ -18,8 +18,13 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			helmClient := DefaultHelmClient()
 			installer := NewInstaller(helmClient)
+			mode := Gloo
+			if opts.Install.WithUi {
+				mode = GlooWithUI
+			}
 			if err := installer.Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
+				Mode:           mode,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
 				return eris.Wrapf(err, "installing gloo in gateway mode")
