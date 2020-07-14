@@ -76,17 +76,17 @@ type Knative struct {
 	InstallKnativeEventingVersion string `json:"eventingVersion"`
 }
 
-type Uninstall struct {
-	GlooUninstall HelmUninstall
-	FedUninstall  HelmUninstall
-}
-
 type HelmUninstall struct {
 	Namespace       string
 	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+}
+
+type Uninstall struct {
+	GlooUninstall HelmUninstall
+	FedUninstall  HelmUninstall
 }
 
 type Proxy struct {
