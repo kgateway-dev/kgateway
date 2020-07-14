@@ -91,7 +91,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxies <- gloov1.ProxyList{pendingProxy}
 		proxies <- gloov1.ProxyList{acceptedProxy}
 
-		Eventually(mockReporter.Reports()).ShouldNot(BeEmpty())
+		Eventually(mockReporter.Reports(), "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
