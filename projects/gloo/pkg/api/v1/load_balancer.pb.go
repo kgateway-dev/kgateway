@@ -33,7 +33,7 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type LoadBalancerConfig struct {
 	// Configures envoy's panic threshold Percent between 0-100. Once the number of non health hosts
 	// reaches this percentage, envoy disregards health information.
-	// see more info [here](https://www.envoyproxy.io/docs/envoy/v1.14.3/intro/arch_overview/upstream/load_balancing/panic_threshold.html?highlight=panic%20mode).
+	// see more info [here](https://www.envoyproxy.io/docs/envoy/latest/intro/arch_overview/upstream/load_balancing/panic_threshold.html?highlight=panic%20mode).
 	HealthyPanicThreshold *types.DoubleValue `protobuf:"bytes,1,opt,name=healthy_panic_threshold,json=healthyPanicThreshold,proto3" json:"healthy_panic_threshold,omitempty"`
 	// This allows batch updates of endpoints health/weight/metadata that happen during a time window.
 	// this help lower cpu usage when endpoint change rate is high. defaults to 1 second.
