@@ -87,7 +87,7 @@ spec:
 			err := uninstaller.Uninstall(&options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-			}, false)
+			}, install.Gloo)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -100,7 +100,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds:      true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -115,7 +115,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteNamespace: true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -131,7 +131,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteAll:       true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -169,7 +169,7 @@ spec:
 			err := uninstaller.Uninstall(&options.HelmUninstall{
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
-			}, false)
+			}, install.Gloo)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -182,7 +182,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteCrds:      true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -195,7 +195,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteNamespace: true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -211,7 +211,7 @@ spec:
 				Namespace:       defaults.GlooSystem,
 				HelmReleaseName: constants.GlooReleaseName,
 				DeleteAll:       true,
-			}, false)
+			}, install.Gloo)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -238,7 +238,7 @@ spec:
 
 		It("can uninstall", func() {
 			uninstaller := install.NewUninstallerWithOutput(mockHelmClient, installutil.NewMockKubectl([]string{}, []string{}), new(bytes.Buffer))
-			err := uninstaller.Uninstall(&options.HelmUninstall{Namespace: defaults.GlooFed, HelmReleaseName: constants.GlooFedReleaseName}, true)
+			err := uninstaller.Uninstall(&options.HelmUninstall{Namespace: defaults.GlooFed, HelmReleaseName: constants.GlooFedReleaseName}, install.Federation)
 
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -251,7 +251,7 @@ spec:
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteCrds:      true,
-			}, true)
+			}, install.Federation)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -266,7 +266,7 @@ spec:
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteNamespace: true,
-			}, true)
+			}, install.Federation)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -282,7 +282,7 @@ spec:
 				Namespace:       defaults.GlooFed,
 				HelmReleaseName: constants.GlooFedReleaseName,
 				DeleteAll:       true,
-			}, true)
+			}, install.Federation)
 			Expect(mockKubectl.Next).To(Equal(len(mockKubectl.Expected)))
 			Expect(err).NotTo(HaveOccurred())
 		})
