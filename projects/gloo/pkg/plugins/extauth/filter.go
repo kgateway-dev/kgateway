@@ -30,10 +30,14 @@ var (
 	}
 )
 
-func BuildHttpFilters(settings *extauthv1.Settings, upstreams v1.UpstreamList) ([]plugins.StagedHttpFilter, error) {
+func BuildHttpFilters(globalSettings *extauthv1.Settings, listener *v1.HttpListener, upstreams v1.UpstreamList) ([]plugins.StagedHttpFilter, error) {
 	var filters []plugins.StagedHttpFilter
 
 	// If no extauth settings are provided, don't configure the ext_authz filter
+	settings := listener.GetOptions().GetExtauth()
+	if settings == nil {
+		settings = globalSettings
+	}
 	if settings == nil {
 		return filters, nil
 	}

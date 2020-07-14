@@ -3,48 +3,59 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"sort"
+	"sync"
 
 	"go.uber.org/zap/zapcore"
 
+	"github.com/hashicorp/go-multierror"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/go-utils/hashutils"
 	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gateway/pkg/propagator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 	"github.com/solo-io/solo-kit/pkg/errors"
 )
 
 type translatorSyncer struct {
-	writeNamespace  string
-	reporter        reporter.Reporter
-	propagator      *propagator.Propagator
-	proxyClient     gloov1.ProxyClient
-	gwClient        v1.GatewayClient
-	vsClient        v1.VirtualServiceClient
-	proxyReconciler reconciler.ProxyReconciler
-	translator      translator.Translator
+	writeNamespace     string
+	reporter           reporter.Reporter
+	proxyClient        gloov1.ProxyClient
+	gwClient           v1.GatewayClient
+	vsClient           v1.VirtualServiceClient
+	proxyReconciler    reconciler.ProxyReconciler
+	translator         translator.Translator
+	statusSyncer       statusSyncer
+	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, propagator *propagator.Propagator, translator translator.Translator) v1.ApiSyncer {
-	return &translatorSyncer{
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
+	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
-		propagator:      propagator,
 		proxyClient:     proxyClient,
 		gwClient:        gwClient,
 		vsClient:        vsClient,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyClient, reporter),
+		managedProxyLabels: map[string]string{
+			"created_by": "gateway",
+		},
 	}
+
+	go t.statusSyncer.watchProxies(ctx)
+	go t.statusSyncer.syncStatusOnEmit(ctx)
+	return t
 }
 
 // TODO (ilackarms): make sure that sync happens if proxies get updated as well; may need to resync
@@ -64,116 +75,212 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
-	labels := map[string]string{
-		"created_by": "gateway",
-	}
-
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
 
 	for proxyName, gatewayList := range gatewaysByProxy {
 		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
-
 		if proxy != nil {
 			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
-			proxy.Metadata.Labels = labels
+			proxy.Metadata.Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
 		}
 	}
 
-	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, labels); err != nil {
+	return s.reconcile(ctx, desiredProxies)
+}
+
+func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
+	if err := s.proxyReconciler.ReconcileProxies(ctx, desiredProxies, s.writeNamespace, s.managedProxyLabels); err != nil {
 		return err
 	}
 
 	// repeat for all resources
+	s.statusSyncer.setCurrentProxies(desiredProxies)
+	s.statusSyncer.forceSync()
+	return nil
+}
+
+type reportsAndStatus struct {
+	Status  *core.Status
+	Reports reporter.ResourceReports
+}
+type statusSyncer struct {
+	proxyToLastStatus       map[core.ResourceRef]reportsAndStatus
+	currentGeneratedProxies []core.ResourceRef
+	mapLock                 sync.RWMutex
+	reporter                reporter.Reporter
+
+	proxyClient    gloov1.ProxyWatcher
+	writeNamespace string
+	syncNeeded     chan struct{}
+}
+
+func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
+	return statusSyncer{
+		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
+		currentGeneratedProxies: nil,
+		reporter:                reporter,
+		proxyClient:             proxyClient,
+		writeNamespace:          writeNamespace,
+		syncNeeded:              make(chan struct{}, 1),
+	}
+}
+
+func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
+	s.mapLock.Lock()
+	defer s.mapLock.Unlock()
+	s.currentGeneratedProxies = nil
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
-		if err := s.propagateProxyStatus(ctx, proxy, reports); err != nil {
-			return err
+		ref := proxy.GetMetadata().Ref()
+		if _, ok := s.proxyToLastStatus[ref]; !ok {
+			s.proxyToLastStatus[ref] = reportsAndStatus{}
 		}
+		current := s.proxyToLastStatus[ref]
+		// These reports are for gateway resources: VirtualServices, RouteTables and Gateways
+		current.Reports = reports
+		s.proxyToLastStatus[ref] = current
+		s.currentGeneratedProxies = append(s.currentGeneratedProxies, ref)
 	}
-
-	return nil
+	sort.SliceStable(s.currentGeneratedProxies, func(i, j int) bool {
+		refi := s.currentGeneratedProxies[i]
+		refj := s.currentGeneratedProxies[j]
+		if refi.Namespace != refj.Namespace {
+			return refi.Namespace < refj.Namespace
+		}
+		return refi.Name < refj.Name
+	})
 }
 
-func (s *translatorSyncer) propagateProxyStatus(ctx context.Context, proxy *gloov1.Proxy, reports reporter.ResourceReports) error {
-	if proxy == nil {
-		return nil
-	}
-	statuses, err := watchProxyStatus(ctx, s.proxyClient, proxy)
-	if err != nil {
-		return err
-	}
-	var lastStatus core.Status
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case status := <-statuses:
-				logger := contextutils.LoggerFrom(ctx)
-				logger.Debugf("gateway received proxy status: %v", status)
-				if status.Equal(lastStatus) {
-					continue
-				}
-				lastStatus = status
-				subresourceStatuses := map[string]*core.Status{
-					fmt.Sprintf("%T.%s", proxy, proxy.GetMetadata().Ref().Key()): &status,
-				}
-
-				logger.Debugw("gateway reports to be written",
-					zap.Any("reports", reports),
-					zap.Any("subresourceStatuses", subresourceStatuses))
-
-				err := s.reporter.WriteReports(ctx, reports, subresourceStatuses)
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Errorf("err: updating dependent statuses: %v", err)
-				}
-			}
-		}
-	}()
-	return nil
-}
-
-func watchProxyStatus(ctx context.Context, proxyClient gloov1.ProxyClient, proxy *gloov1.Proxy) (<-chan core.Status, error) {
-	ctx = contextutils.WithLogger(ctx, "proxy-err-propagator")
-	proxies, errs, err := proxyClient.Watch(proxy.Metadata.Namespace, clients.WatchOpts{
-		Ctx:      ctx,
-		Selector: proxy.Metadata.Labels,
+// run this in the background
+func (s *statusSyncer) watchProxies(ctx context.Context) error {
+	ctx = contextutils.WithLogger(ctx, "proxy-err-watcher")
+	logger := contextutils.LoggerFrom(ctx)
+	defer logger.Debugw("done watching proxies")
+	proxies, errs, err := s.proxyClient.Watch(s.writeNamespace, clients.WatchOpts{
+		Ctx: ctx,
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "creating watch for proxy %v", proxy.Metadata.Ref())
+		return errors.Wrapf(err, "creating watch for proxies in %v", s.writeNamespace)
 	}
-	statuses := make(chan core.Status)
-	go func() {
-		defer close(statuses)
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case err, ok := <-errs:
-				if !ok {
-					return
+	var previousHash uint64
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case err, ok := <-errs:
+			if !ok {
+				return nil
+			}
+			logger.Error(err)
+		case proxyList, ok := <-proxies:
+			if !ok {
+				return nil
+			}
+			currentHash, err := hashutils.HashAllSafe(nil, proxyList.AsInterfaces()...)
+			if err != nil {
+				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
+			}
+			// We use hashing here to be compatible with the memory client used in
+			// the local e2e; it fires a watch update too all watch object, on any change,
+			// this means that setting by the status of a virtual service we will get another
+			// proxyList form the channel. This results in excessive CPU usage in CI.
+			if currentHash != previousHash && true {
+				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
+				previousHash = currentHash
+				s.setStatuses(proxyList)
+				s.forceSync()
+			}
+		}
+	}
+}
+
+func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
+	s.mapLock.Lock()
+	defer s.mapLock.Unlock()
+	for _, proxy := range list {
+		ref := proxy.Metadata.Ref()
+		status := proxy.Status
+		if current, ok := s.proxyToLastStatus[ref]; ok {
+			current.Status = &status
+			s.proxyToLastStatus[ref] = current
+		} else {
+			s.proxyToLastStatus[ref] = reportsAndStatus{
+				Status: &status,
+			}
+		}
+	}
+}
+
+func (s *statusSyncer) forceSync() {
+	select {
+	case s.syncNeeded <- struct{}{}:
+	default:
+	}
+}
+
+func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-s.syncNeeded:
+			err := s.syncStatus(ctx)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+			}
+		}
+	}
+}
+
+func (s *statusSyncer) syncStatus(ctx context.Context) error {
+	var nilProxy *gloov1.Proxy
+	allReports := reporter.ResourceReports{}
+	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
+	func() {
+		s.mapLock.RLock()
+		defer s.mapLock.RUnlock()
+		// iterate s.currentGeneratedProxies to guarantee order
+		for _, ref := range s.currentGeneratedProxies {
+			reportsAndStatus, ok := s.proxyToLastStatus[ref]
+			if !ok {
+				continue
+			}
+			// merge all the reports for the gateway resources from all the proxies.
+			for inputResource, subresourceStatuses := range reportsAndStatus.Reports {
+				if reportsAndStatus.Status != nil {
+					// add the proxy status as well if we have it
+					status := *reportsAndStatus.Status
+					if _, ok := inputResourceBySubresourceStatuses[inputResource]; !ok {
+						inputResourceBySubresourceStatuses[inputResource] = map[string]*core.Status{}
+					}
+					inputResourceBySubresourceStatuses[inputResource][fmt.Sprintf("%T.%s", nilProxy, ref.Key())] = &status
 				}
-				contextutils.LoggerFrom(ctx).Error(err)
-			case list, ok := <-proxies:
-				if !ok {
-					return
-				}
-				proxy, err := list.Find(proxy.Metadata.Namespace, proxy.Metadata.Name)
-				if err != nil {
-					contextutils.LoggerFrom(ctx).Error(err)
-					continue
-				}
-				select {
-				case <-ctx.Done():
-					return
-				case statuses <- proxy.Status:
+				if report, ok := allReports[inputResource]; ok {
+					if subresourceStatuses.Errors != nil {
+						report.Errors = multierror.Append(report.Errors, subresourceStatuses.Errors)
+					}
+					if subresourceStatuses.Warnings != nil {
+						report.Warnings = append(report.Warnings, subresourceStatuses.Warnings...)
+					}
+				} else {
+					allReports[inputResource] = subresourceStatuses
 				}
 			}
 		}
 	}()
 
-	return statuses, nil
+	var errs error
+	for inputResource, subresourceStatuses := range allReports {
+		// write reports may update the status, so clone the object
+		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
+		inputResource := resources.Clone(inputResource).(resources.InputResource)
+		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
+		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
+			errs = multierror.Append(errs, err)
+		}
+	}
+	return errs
 }
