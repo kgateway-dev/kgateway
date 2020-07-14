@@ -14,13 +14,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
 
-func Uninstall(opts *options.Options, cli install.KubeCli, federation bool) error {
+func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {
 	uninstaller := NewUninstaller(DefaultHelmClient(), cli)
 	uninstallArgs := &opts.Uninstall.GlooUninstall
-	if federation {
+	if mode == Federation {
 		uninstallArgs = &opts.Uninstall.FedUninstall
 	}
-	if err := uninstaller.Uninstall(uninstallArgs, federation); err != nil {
+	if err := uninstaller.Uninstall(uninstallArgs, mode); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
@@ -28,7 +28,7 @@ func Uninstall(opts *options.Options, cli install.KubeCli, federation bool) erro
 }
 
 type Uninstaller interface {
-	Uninstall(cliArgs *options.HelmUninstall, federation bool) error
+	Uninstall(cliArgs *options.HelmUninstall, mode Mode) error
 }
 
 type uninstaller struct {
@@ -50,7 +50,7 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 	}
 }
 
-func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, federation bool) error {
+func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, mode Mode) error {
 	namespace := cliArgs.Namespace
 	releaseName := cliArgs.HelmReleaseName
 
@@ -88,7 +88,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, federation bool)
 		// The release object does not exist, so it is not possible to exactly tell which resources are part of
 		// the originals installation. We take a best effort approach.
 		glooLabels := LabelsToFlagString(GlooComponentLabels)
-		if federation {
+		if mode == Federation {
 			glooLabels = LabelsToFlagString(GlooFedComponentLabels)
 		}
 		for _, kind := range GlooNamespacedKinds {
@@ -107,13 +107,13 @@ func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, federation bool)
 		}
 	}
 
-	if !federation {
+	if mode != Federation {
 		u.uninstallKnativeIfNecessary()
 	}
 
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
-		if federation {
+		if mode == Federation {
 			u.deleteGlooCrds(GlooFedCrdNames)
 		} else {
 			if len(crdNames) == 0 {
