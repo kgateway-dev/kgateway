@@ -89,6 +89,8 @@ type Uninstall struct {
 type FedUninstall struct {
 	Namespace       string
 	HelmReleaseName string
+	DeleteCrds      bool
+	DeleteNamespace bool
 	DeleteAll       bool
 }
 

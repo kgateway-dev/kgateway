@@ -64,6 +64,9 @@ func NewInstallerWithWriter(helmClient HelmClient, kubeNsClient v1.NamespaceInte
 }
 
 func (i *installer) Install(installerConfig *InstallerConfig) error {
+	if installerConfig.Enterprise && installerConfig.Federation {
+		return InvalidInstallerConfig
+	}
 	namespace := installerConfig.InstallCliArgs.Namespace
 	releaseName := installerConfig.InstallCliArgs.HelmReleaseName
 	if !installerConfig.InstallCliArgs.DryRun {
