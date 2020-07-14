@@ -19,12 +19,13 @@ var _ = Describe("TranslatorSyncer", func() {
 	var (
 		fakeWatcher  = &fakeWatcher{}
 		mockReporter *fakeReporter
-		syncer       statusSyncer
+		syncer       *statusSyncer
 	)
 
 	BeforeEach(func() {
 		mockReporter = &fakeReporter{}
-		syncer = newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
+		curSyncer := newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
+		syncer = &curSyncer
 	})
 
 	getMapOnlyKey := func(r map[core.ResourceRef]reporter.Report) core.ResourceRef {
