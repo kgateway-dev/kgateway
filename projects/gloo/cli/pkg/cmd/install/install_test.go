@@ -149,4 +149,9 @@ var _ = Describe("Install", func() {
 		Expect(out).NotTo(BeEmpty())
 	})
 
+	It("shouldn't get errors for federation dry run", func() {
+		_, err := testutils.GlooctlOut(fmt.Sprintf("install federation --file %s --dry-run", file))
+		Expect(err).NotTo(HaveOccurred())
+	})
+
 })
