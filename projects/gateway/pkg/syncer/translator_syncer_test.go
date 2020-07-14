@@ -91,7 +91,7 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxies <- gloov1.ProxyList{pendingProxy}
 		proxies <- gloov1.ProxyList{acceptedProxy}
 
-		Eventually(mockReporter.Reports(), "5s", "0.5s").ShouldNot(BeEmpty())
+		Eventually(mockReporter.Reports, "5s", "0.5s").ShouldNot(BeEmpty())
 		reportedKey := getMapOnlyKey(mockReporter.Reports())
 		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
 		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
@@ -242,7 +242,7 @@ func (f *fakeReporter) Statuses() map[core.ResourceRef]map[string]*core.Status {
 func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceReports, subresourceStatuses map[string]*core.Status) error {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-
+	fmt.Fprintf(GinkgoWriter, "WriteReports: %#v %#v", errs, subresourceStatuses)
 	newreports := map[core.ResourceRef]reporter.Report{}
 	for k, v := range f.reports {
 		newreports[k] = v
