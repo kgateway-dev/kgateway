@@ -22,7 +22,7 @@ copied from https://github.com/envoyproxy/envoy-wasm/blob/edc016b1fa5adca3ebd3d7
 
 
 
-##### Source File: `envoy/type/v3/percent.proto`
+##### Source File: [github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/percent.proto](https://github.com/solo-io/gloo/blob/master/projects/gloo/api/external/envoy/type/v3/percent.proto)
 
 
 

@@ -89,7 +89,7 @@ BuildVersion combines SemVer version of extension with free-form build informati
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `version` | [.envoy.type.v3.SemanticVersion](../../../../type/v3/semantic_version.proto.sk/#semanticversion) | SemVer version of extension. |  |
+| `version` | [.envoy.type.v3.SemanticVersion](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/semantic_version.proto.sk/#semanticversion) | SemVer version of extension. |  |
 | `metadata` | [.google.protobuf.Struct](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/struct) | Free-form build information. Envoy defines several well known keys in the source/common/common/version.h file. |  |
 
 
@@ -156,7 +156,7 @@ configuration for serving.
 | `userAgentBuildVersion` | [.envoy.config.core.v3.BuildVersion](../base.proto.sk/#buildversion) | Structured version of the entity requesting config. Only one of `userAgentBuildVersion` or `userAgentVersion` can be set. |  |
 | `extensions` | [[]envoy.config.core.v3.Extension](../base.proto.sk/#extension) | List of extensions and their versions supported by the node. |  |
 | `clientFeatures` | `[]string` | Client feature support list. These are well known features described in the Envoy API repository for a given major version of an API. Client features use reverse DNS naming scheme, for example `com.acme.feature`. See :ref:`the list of features <client_features>` that xDS client may support. |  |
-| `listeningAddresses` | [[]envoy.config.core.v3.Address](../address.proto.sk/#address) | Known listening ports on the node as a generic hint to the management server for filtering :ref:`listeners <config_listeners>` to be returned. For example, if there is a listener bound to port 80, the list can optionally contain the SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint. |  |
+| `listeningAddresses` | [[]envoy.config.core.v3.Address](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto.sk/#address) | Known listening ports on the node as a generic hint to the management server for filtering :ref:`listeners <config_listeners>` to be returned. For example, if there is a listener bound to port 80, the list can optionally contain the SocketAddress `(0.0.0.0,80)`. The field is optional and just a hint. |  |
 
 
 
@@ -354,7 +354,7 @@ The message specifies the retry policy of remote data source when fetching fails
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `retryBackOff` | [.envoy.config.core.v3.BackoffStrategy](../backoff.proto.sk/#backoffstrategy) | Specifies parameters that control :ref:`retry backoff strategy <envoy_api_msg_config.core.v3.BackoffStrategy>`. This parameter is optional, in which case the default base interval is 1000 milliseconds. The default maximum interval is 10 times the base interval. |  |
+| `retryBackOff` | [.envoy.config.core.v3.BackoffStrategy](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/backoff.proto.sk/#backoffstrategy) | Specifies parameters that control :ref:`retry backoff strategy <envoy_api_msg_config.core.v3.BackoffStrategy>`. This parameter is optional, in which case the default base interval is 1000 milliseconds. The default maximum interval is 10 times the base interval. |  |
 | `numRetries` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Specifies the allowed number of retries. This parameter is optional and defaults to 1. |  |
 
 
@@ -375,7 +375,7 @@ The message specifies how to fetch data from remote and how to verify it.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `httpUri` | [.envoy.config.core.v3.HttpUri](../http_uri.proto.sk/#httpuri) | The HTTP URI to fetch the remote data. |  |
+| `httpUri` | [.envoy.config.core.v3.HttpUri](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto.sk/#httpuri) | The HTTP URI to fetch the remote data. |  |
 | `sha256` | `string` | SHA256 string for verifying data. |  |
 | `retryPolicy` | [.envoy.config.core.v3.RetryPolicy](../base.proto.sk/#retrypolicy) | Retry policy for fetching remote data. |  |
 
@@ -448,7 +448,7 @@ specified via a runtime key.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `defaultValue` | [.envoy.type.v3.FractionalPercent](../../../../type/v3/percent.proto.sk/#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
+| `defaultValue` | [.envoy.type.v3.FractionalPercent](../../../../../github.com/solo-io/gloo/projects/gloo/api/external/envoy/type/v3/percent.proto.sk/#fractionalpercent) | Default value if the runtime value's for the numerator/denominator keys are not available. |  |
 | `runtimeKey` | `string` | Runtime key for a YAML representation of a FractionalPercent. |  |
 
 

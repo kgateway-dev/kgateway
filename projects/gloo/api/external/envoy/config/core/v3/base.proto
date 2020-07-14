@@ -4,11 +4,11 @@ syntax = "proto3";
 
 package envoy.config.core.v3;
 
-import "envoy/config/core/v3/address.proto";
-import "envoy/config/core/v3/backoff.proto";
-import "envoy/config/core/v3/http_uri.proto";
-import "envoy/type/v3/percent.proto";
-import "envoy/type/v3/semantic_version.proto";
+import "gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
+import "gloo/projects/gloo/api/external/envoy/config/core/v3/backoff.proto";
+import "gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
+import "gloo/projects/gloo/api/external/envoy/type/v3/percent.proto";
+import "gloo/projects/gloo/api/external/envoy/type/v3/semantic_version.proto";
 
 import "google/protobuf/any.proto";
 // import "google/protobuf/duration.proto";

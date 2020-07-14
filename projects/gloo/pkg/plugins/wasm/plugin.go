@@ -16,7 +16,8 @@ import (
 	"github.com/solo-io/wasme/pkg/defaults"
 
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
+	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
+	wasmv3ext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
@@ -83,13 +84,13 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 		runtime = WavmRuntime
 	}
 
-	filterCfg := &wasmv3.WasmService{
-		Config: &wasmv3.PluginConfig{
+	filterCfg := &wasmv3.Wasm{
+		Config: &wasmv3ext.PluginConfig{
 			Name:          wasmFilter.Name,
 			RootId:        wasmFilter.RootId,
 			Configuration: wasmFilter.Config,
-			Vm: &wasmv3.PluginConfig_VmConfig{
-				VmConfig: &wasmv3.VmConfig{
+			Vm: &wasmv3ext.PluginConfig_VmConfig{
+				VmConfig: &wasmv3ext.VmConfig{
 					VmId:    VmId,
 					Runtime: runtime,
 					Code: &configcore.AsyncDataSource{
