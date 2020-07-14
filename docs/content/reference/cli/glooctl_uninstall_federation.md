@@ -18,7 +18,7 @@ glooctl uninstall federation [flags]
 
 ```
       --all                   Deletes all gloo fed resources, including the namespace, crds, and cluster role
-      --delete-crds           Delete all gloo fed crds (all custom gloo fed objects will be deleted) (default true)
+      --delete-crds           Delete all gloo fed crds (all custom gloo fed objects will be deleted)
       --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
   -h, --help                  help for federation
       --namespace string      namespace in which Gloo Fed is installed (default "gloo-fed")
