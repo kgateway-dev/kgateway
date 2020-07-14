@@ -3,6 +3,7 @@ package syncer
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -10,7 +11,6 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -27,12 +27,12 @@ var _ = Describe("TranslatorSyncer", func() {
 		syncer = newStatusSyncer("gloo-system", fakeWatcher, mockReporter)
 	})
 
-	getMapOnlyKey := func(r reporter.ResourceReports) resources.InputResource {
+	getMapOnlyKey := func(r map[core.ResourceRef]reporter.Report) core.ResourceRef {
 		Expect(r).To(HaveLen(1))
 		for k := range r {
 			return k
 		}
-		return nil
+		panic("unreachable")
 	}
 
 	It("should set status correctly", func() {
@@ -53,13 +53,52 @@ var _ = Describe("TranslatorSyncer", func() {
 
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
-		reportedKey := getMapOnlyKey(mockReporter.Reports)
-		Expect(reportedKey).To(BeEquivalentTo(vs))
-		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
+	})
+
+	It("should set status correctly when proxy is pending first", func() {
+		desiredProxy := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+		}
+		pendingProxy := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Pending},
+		}
+		acceptedProxy := &gloov1.Proxy{
+			Metadata: core.Metadata{Name: "test", Namespace: "gloo-system"},
+			Status:   core.Status{State: core.Status_Accepted},
+		}
+		vs := &gatewayv1.VirtualService{}
+		errs := reporter.ResourceReports{}
+		errs.Accept(vs)
+
+		desiredProxies := reconciler.GeneratedProxies{
+			desiredProxy: errs,
+		}
+		proxies := make(chan gloov1.ProxyList)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		go syncer.watchProxiesFromChannel(ctx, proxies, nil)
+		go syncer.syncStatusOnEmit(ctx)
+
+		syncer.setCurrentProxies(desiredProxies)
+		proxies <- gloov1.ProxyList{pendingProxy}
+		proxies <- gloov1.ProxyList{acceptedProxy}
+
+		Eventually(mockReporter.Reports()).ShouldNot(BeEmpty())
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
+		m := map[string]*core.Status{
+			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
+		}
+		Eventually(func() map[string]*core.Status { return mockReporter.Statuses()[reportedKey] }, "5s", "0.5s").Should(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
@@ -86,15 +125,15 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
-		reportedKey := getMapOnlyKey(mockReporter.Reports)
-		Expect(reportedKey).To(BeEquivalentTo(vs))
-		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test":  {State: core.Status_Accepted},
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
-		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors but is irrelevant", func() {
@@ -121,14 +160,14 @@ var _ = Describe("TranslatorSyncer", func() {
 		err := syncer.syncStatus(context.Background())
 		Expect(err).NotTo(HaveOccurred())
 
-		reportedKey := getMapOnlyKey(mockReporter.Reports)
-		Expect(reportedKey).To(BeEquivalentTo(vs))
-		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(errs[vs]))
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(errs[vs]))
 
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test": {State: core.Status_Accepted},
 		}
-		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 	It("should set status correctly when one proxy errors", func() {
@@ -163,15 +202,15 @@ var _ = Describe("TranslatorSyncer", func() {
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 1"))
 		mergedErrs.AddError(vs, fmt.Errorf("invalid 2"))
 
-		reportedKey := getMapOnlyKey(mockReporter.Reports)
-		Expect(reportedKey).To(BeEquivalentTo(vs))
-		Expect(mockReporter.Reports[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
+		reportedKey := getMapOnlyKey(mockReporter.Reports())
+		Expect(reportedKey).To(BeEquivalentTo(vs.GetMetadata().Ref()))
+		Expect(mockReporter.Reports()[reportedKey]).To(BeEquivalentTo(mergedErrs[vs]))
 
 		m := map[string]*core.Status{
 			"*v1.Proxy.gloo-system.test":  {State: core.Status_Rejected},
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
-		Expect(mockReporter.Statues[reportedKey]).To(BeEquivalentTo(m))
+		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
 	})
 
 })
@@ -184,22 +223,42 @@ func (f *fakeWatcher) Watch(namespace string, opts clients.WatchOpts) (<-chan gl
 }
 
 type fakeReporter struct {
-	Reports reporter.ResourceReports
-	Statues map[resources.InputResource]map[string]*core.Status
+	reports  map[core.ResourceRef]reporter.Report
+	statuses map[core.ResourceRef]map[string]*core.Status
+	lock     sync.Mutex
+}
+
+func (f *fakeReporter) Reports() map[core.ResourceRef]reporter.Report {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return f.reports
+}
+func (f *fakeReporter) Statuses() map[core.ResourceRef]map[string]*core.Status {
+	f.lock.Lock()
+	defer f.lock.Unlock()
+	return f.statuses
 }
 
 func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceReports, subresourceStatuses map[string]*core.Status) error {
-	if f.Reports == nil {
-		f.Reports = errs
-	} else {
-		f.Reports.Merge(errs)
+	f.lock.Lock()
+	defer f.lock.Unlock()
+
+	newreports := map[core.ResourceRef]reporter.Report{}
+	for k, v := range f.reports {
+		newreports[k] = v
 	}
-	if f.Statues == nil {
-		f.Statues = map[resources.InputResource]map[string]*core.Status{}
+	for k, v := range errs {
+		newreports[k.GetMetadata().Ref()] = v
+	}
+	f.reports = newreports
+
+	newstatus := map[core.ResourceRef]map[string]*core.Status{}
+	for k, v := range f.statuses {
+		newstatus[k] = v
 	}
 	for k := range errs {
-		f.Statues[k] = subresourceStatuses
+		newstatus[k.GetMetadata().Ref()] = subresourceStatuses
 	}
-
+	f.statuses = newstatus
 	return nil
 }
