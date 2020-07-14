@@ -188,7 +188,6 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 			}
 
 			currentHash, err := hashStatuses(proxyList)
-
 			if err != nil {
 				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
 			}
