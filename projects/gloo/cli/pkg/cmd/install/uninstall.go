@@ -25,7 +25,6 @@ func Uninstall(opts *options.Options, cli install.KubeCli, federation bool) erro
 
 type Uninstaller interface {
 	Uninstall(cliArgs *options.Uninstall, federation bool) error
-	UninstallFederation(cliArgs *options.Uninstall) error
 }
 
 type uninstaller struct {
@@ -104,7 +103,9 @@ func (u *uninstaller) Uninstall(cliArgs *options.Uninstall, federation bool) err
 		}
 	}
 
-	u.uninstallKnativeIfNecessary()
+	if !federation {
+		u.uninstallKnativeIfNecessary()
+	}
 
 	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
 	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
@@ -117,67 +118,6 @@ func (u *uninstaller) Uninstall(cliArgs *options.Uninstall, federation bool) err
 			u.deleteGlooCrds(crdNames)
 		}
 	}
-
-	if cliArgs.DeleteNamespace || cliArgs.DeleteAll {
-		u.deleteNamespace(cliArgs.Namespace)
-	}
-
-	return nil
-}
-
-func (u *uninstaller) UninstallFederation(cliArgs *options.Uninstall) error {
-	namespace := cliArgs.Namespace
-	releaseName := cliArgs.HelmReleaseName
-
-	// Check whether Helm release object exists
-	releaseExists, err := u.helmClient.ReleaseExists(namespace, releaseName)
-	if err != nil {
-		return err
-	}
-
-	var crdNames []string
-	_, _ = fmt.Fprintf(u.output, "Removing Gloo Federation components from namespace %s...\n", namespace)
-	if releaseExists {
-
-		// If the release object exists, then we want to delegate the uninstall to the Helm libraries.
-		uninstallAction, err := u.helmClient.NewUninstall(namespace)
-		if err != nil {
-			return err
-		}
-
-		// Always delete CRDs as well
-		crdNames, err = u.findCrdNamesForRelease(namespace)
-		if err != nil {
-			return err
-		}
-
-		if _, err = uninstallAction.Run(releaseName); err != nil {
-			return err
-		}
-
-	} else {
-
-		// The release object does not exist, so it is not possible to exactly tell which resources are part of
-		// the originals installation. We take a best effort approach.
-		glooLabels := LabelsToFlagString(GlooFedComponentLabels)
-		for _, kind := range GlooNamespacedKinds {
-			if err := u.kubeCli.Kubectl(nil, "delete", kind, "-n", namespace, "-l", glooLabels); err != nil {
-				return err
-			}
-		}
-
-		for _, kind := range GlooClusterScopedKinds {
-			if err := u.kubeCli.Kubectl(nil, "delete", kind, "-l", glooLabels); err != nil {
-				return err
-			}
-		}
-	}
-
-	// delete hard-coded crd names even if releaseExists
-	if len(crdNames) == 0 {
-		crdNames = GlooFedCrdNames
-	}
-	u.deleteGlooCrds(crdNames)
 
 	if cliArgs.DeleteNamespace || cliArgs.DeleteAll {
 		u.deleteNamespace(cliArgs.Namespace)
