@@ -1,7 +1,7 @@
 ---
 title: Envoy API
 description: Fine-grained rate limit API.
-weight: 20
+weight: 10
 ---
 
 ## Table of Contents
