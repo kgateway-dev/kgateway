@@ -263,20 +263,20 @@ message OidcAuthorizationCode {
   // Scopes to request in addition to openid scope.
   repeated string scopes = 7;
 
-  // TODO(kdorosh) add optional configuration for validation of the access token received during the OIDC flow
+  // in the future we may implement this:
+  // add optional configuration for validation of the access token received during the OIDC flow
   // AccessTokenValidation access_token_validation = 8;
 }
 
 message AccessTokenValidation {
-
-  // fields 2 and 3 reserved for jwt and hmac validation
-  reserved 2, 3;
 
   oneof validation_type {
     // the url for the OAuth2.0 access token introspection endpoint.
     // if provided, the (opaque) access token provided or received from the oauth authorization endpoint
     // will be validated against this endpoint, or locally cached responses for this access token.
     string introspection_url = 1;
+
+    // in the future we may implement jwt and hmac validation
   }
 
   // the url for the OIDC userinfo endpoint.
@@ -425,10 +425,11 @@ message ExtAuthConfig {
     // needs to not be used by the application
     string callback_path = 6;
 
-    // Scopes to request in addition to openid scope.
+    // scopes to request in addition to the openid scope.
     repeated string scopes = 7;
 
-    // TODO(kdorosh) add optional configuration for validation of the access token received during the OIDC flow
+    // in the future we may implement this:
+    // add optional configuration for validation of the access token received during the OIDC flow
     // AccessTokenValidation access_token_validation = 8;
   }
 
@@ -469,7 +470,6 @@ message ExtAuthConfig {
 
   message Config {
 
-    // TODO(kdorosh) confirm these were removed?
     reserved 1, 2;
 
     oneof auth_config {
