@@ -55,7 +55,7 @@ require (
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/skv2 v0.7.0
+	github.com/solo-io/skv2 v0.7.1
 	github.com/solo-io/solo-kit v0.13.8
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
@@ -74,7 +74,7 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.17.4
-	k8s.io/apiextensions-apiserver v0.18.1
+	k8s.io/apiextensions-apiserver v0.18.2
 	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.4

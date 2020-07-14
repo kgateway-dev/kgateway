@@ -33,6 +33,5 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 			return nil
 		},
 	}
-
 	return cmd
 }
