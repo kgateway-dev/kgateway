@@ -19,7 +19,7 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.4.3
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-rc1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -85,17 +85,19 @@ fmt-changed:
 mod-download:
 	go mod download
 
+DEPSGOBIN=$(shell pwd)/_output/.bin
 
 .PHONY: update-deps
 update-deps: mod-download
+	mkdir $(DEPSGOBIN)
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
-	go get -v github.com/gogo/protobuf/gogoproto@v1.3.1
-	go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
-	go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
-	go get -v -u github.com/golang/mock/gomock@v1.4.3
-	go get -v github.com/golang/mock/mockgen@v1.4.3
+	GOBIN=$(DEPSGOBIN) go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
+	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
+	GOBIN=$(DEPSGOBIN) go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
+	GOBIN=$(DEPSGOBIN) go get -v -u github.com/golang/mock/gomock@v1.4.3
+	GOBIN=$(DEPSGOBIN) go get -v github.com/golang/mock/mockgen@v1.4.3
+	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/gogoproto@v1.3.1
 
 
 .PHONY: check-format
@@ -137,10 +139,10 @@ $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
 	find * -type f | grep .sk.md | xargs rm
 	rm -rf vendor_any
-	GO111MODULE=on go generate ./...
-	rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
-	gofmt -w $(SUBDIRS)
-	goimports -w $(SUBDIRS)
+	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go generate ./...
+	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go
+	PATH=$(DEPSGOBIN):$$PATH gofmt -w $(SUBDIRS)
+	PATH=$(DEPSGOBIN):$$PATH goimports -w $(SUBDIRS)
 	mkdir -p $(OUTPUT_DIR)
 	touch $@
 

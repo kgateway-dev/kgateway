@@ -17,7 +17,6 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/envoyproxy/go-control-plane/pkg/conversion"
 	"github.com/gogo/protobuf/types"
 )
 
@@ -135,7 +134,9 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoy_transform.RouteTransformations
-			err = conversion.StructToMessage(routeOut.GetPerFilterConfig()[transformation.FilterName], &cfg)
+			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
+			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
+			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			tt := cfg.GetRequestTransformation().GetTransformationTemplate()

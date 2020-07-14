@@ -107,6 +107,7 @@ gatewayProxies:
     configMap:
       data:
     loopBackAddress: 127.0.0.1
+    globalDownstreamMaxConnections: 250000
 accessLogger:
   enabled: false
   port: 8083

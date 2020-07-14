@@ -2,16 +2,17 @@ package static
 
 import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pluginutils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
 
@@ -144,7 +145,7 @@ var _ = Describe("Plugin", func() {
 			if out.TransportSocket == nil {
 				return nil
 			}
-			return pluginutils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			return utils.MustAnyToMessage(out.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
 		}
 		It("doesn't have ssl by default", func() {
 			p.ProcessUpstream(params, upstream, out)
@@ -166,8 +167,8 @@ var _ = Describe("Plugin", func() {
 		It("should not override existing tls config", func() {
 			existing := &envoyauth.UpstreamTlsContext{}
 			out.TransportSocket = &envoycore.TransportSocket{
-				Name:       pluginutils.TlsTransportSocket,
-				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: pluginutils.MustMessageToAny(existing)},
+				Name:       wellknown.TransportSocketTls,
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(existing)},
 			}
 			upstreamSpec.UseTls = true
 			p.ProcessUpstream(params, upstream, out)

@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3281
+    description: >
+      Removed the 30 second timeout on the knative syncer propagating the proxy status. Now we have eventual consistency
+      and the proxy will eventually report as ready even if eg a secret is added after a config which uses it.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3167
+    description: Added documentation to the knative guide for local minikube testing.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3194
+    description: Added an e2e test for manual TLS in knative.

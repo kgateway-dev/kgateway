@@ -1,14 +1,14 @@
 package als_test
 
 import (
-	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
+	envoyal "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v3"
 	envoyalfile "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/utils/protoutils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/als"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/als"
@@ -16,9 +16,9 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoyalcfg "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoytcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
+	envoygrpc "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoytcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 )
@@ -38,9 +38,9 @@ var _ = Describe("Plugin", func() {
 		)
 
 		var checkConfig = func(al *envoyal.AccessLog) {
-			Expect(al.Name).To(Equal(util.HTTPGRPCAccessLog))
-			var falCfg envoyalcfg.HttpGrpcAccessLogConfig
-			err := translatorutil.ParseConfig(al, &falCfg)
+			Expect(al.Name).To(Equal(wellknown.HTTPGRPCAccessLog))
+			var falCfg envoygrpc.HttpGrpcAccessLogConfig
+			err := translatorutil.ParseTypedConfig(al, &falCfg)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
 			Expect(falCfg.AdditionalResponseTrailersToLog).To(Equal(extraHeaders))
@@ -102,7 +102,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			filters := []*envoylistener.Filter{{
-				Name: util.HTTPConnectionManager,
+				Name: wellknown.HTTPConnectionManager,
 			}}
 
 			outl := &envoyapi.Listener{
@@ -116,7 +116,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoyhttp.HttpConnectionManager
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.AccessLog).To(HaveLen(1))
@@ -135,7 +135,7 @@ var _ = Describe("Plugin", func() {
 			}
 
 			filters := []*envoylistener.Filter{{
-				Name: util.TCPProxy,
+				Name: wellknown.TCPProxy,
 			}}
 
 			outl := &envoyapi.Listener{
@@ -149,7 +149,7 @@ var _ = Describe("Plugin", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			var cfg envoytcp.TcpProxy
-			err = translatorutil.ParseConfig(filters[0], &cfg)
+			err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(cfg.AccessLog).To(HaveLen(1))
@@ -182,9 +182,9 @@ var _ = Describe("Plugin", func() {
 		Context("string", func() {
 
 			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(util.FileAccessLog))
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
-				err := translatorutil.ParseConfig(al, &falCfg)
+				err := translatorutil.ParseTypedConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
 				str := falCfg.GetLogFormat().GetTextFormat()
@@ -218,7 +218,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.HTTPConnectionManager,
+					Name: wellknown.HTTPConnectionManager,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -232,7 +232,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -251,7 +251,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.TCPProxy,
+					Name: wellknown.TCPProxy,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -265,7 +265,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -277,9 +277,9 @@ var _ = Describe("Plugin", func() {
 
 		Context("json", func() {
 			var checkConfig = func(al *envoyal.AccessLog) {
-				Expect(al.Name).To(Equal(util.FileAccessLog))
+				Expect(al.Name).To(Equal(wellknown.FileAccessLog))
 				var falCfg envoyalfile.FileAccessLog
-				err := translatorutil.ParseConfig(al, &falCfg)
+				err := translatorutil.ParseTypedConfig(al, &falCfg)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(falCfg.Path).To(Equal(path))
 				jsn := falCfg.GetLogFormat().GetJsonFormat()
@@ -313,7 +313,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.HTTPConnectionManager,
+					Name: wellknown.HTTPConnectionManager,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -327,7 +327,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoyhttp.HttpConnectionManager
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))
@@ -346,7 +346,7 @@ var _ = Describe("Plugin", func() {
 				}
 
 				filters := []*envoylistener.Filter{{
-					Name: util.TCPProxy,
+					Name: wellknown.TCPProxy,
 				}}
 
 				outl := &envoyapi.Listener{
@@ -360,7 +360,7 @@ var _ = Describe("Plugin", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				var cfg envoytcp.TcpProxy
-				err = translatorutil.ParseConfig(filters[0], &cfg)
+				err = translatorutil.ParseTypedConfig(filters[0], &cfg)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(cfg.AccessLog).To(HaveLen(1))

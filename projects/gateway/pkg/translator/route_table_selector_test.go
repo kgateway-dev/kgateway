@@ -77,7 +77,7 @@ var _ = Describe("RouteTableSelector", func() {
 			rt2 = buildRouteTableWithSimpleAction("rt-2", "ns-1", "/foo/2", map[string]string{"foo": "bar", "team": "dev"})
 			rt3 = buildRouteTableWithSimpleAction("rt-3", "ns-2", "/foo/3", map[string]string{"foo": "bar"})
 			rt4 = buildRouteTableWithSimpleAction("rt-4", "ns-3", "/foo/4", map[string]string{"foo": "baz"})
-			rt5 = buildRouteTableWithDelegateAction("rt-5", "ns-4", "/foo", nil,
+			rt5 = buildRouteTableWithSelector("rt-5", "ns-4", "/foo", nil,
 				&v1.RouteTableSelector{
 					Labels:     map[string]string{"team": "dev"},
 					Namespaces: []string{"ns-1", "ns-5"},

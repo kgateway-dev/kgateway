@@ -1,0 +1,12 @@
+changelog:
+- type: FIX
+  description: >
+    Properly validate `RouteTable` routes without matchers. Like with regular `VirtualService` routes, these routes will
+    be assigned the default `/` prefix matcher. Consequently, the route is valid only if the parent route also has a
+    `\` prefix matcher (either explicitly defined, or by default).
+  issueLink: https://github.com/solo-io/gloo/issues/3291
+- type: FIX
+  description: >
+    Report delegation cycle errors on the offending `RouteTable`, not only on `VirtualServices` that use the table.
+  issueLink: https://github.com/solo-io/gloo/issues/3144
+  resolvesIssue: false

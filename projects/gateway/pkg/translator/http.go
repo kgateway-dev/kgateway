@@ -222,9 +222,10 @@ func desiredListenerForHttp(gateway *v1.Gateway, virtualServicesForGateway v1.Vi
 }
 
 func virtualServiceToVirtualHost(vs *v1.VirtualService, tables v1.RouteTableList, reports reporter.ResourceReports) (*gloov1.VirtualHost, error) {
-	converter := NewRouteConverter(NewRouteTableSelector(tables), NewRouteTableIndexer(), reports)
-	routes, err := converter.ConvertVirtualService(vs)
+	converter := NewRouteConverter(NewRouteTableSelector(tables), NewRouteTableIndexer())
+	routes, err := converter.ConvertVirtualService(vs, reports)
 	if err != nil {
+		// internal error, should never happen
 		return nil, err
 	}
 

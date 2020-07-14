@@ -13,7 +13,7 @@ The first step in the preparation process is to install the proper software on y
 
 You're going to need some software to make all this magic happen:
 
-* **Hugo** - Hugo is a static site generator written in Go. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website.
+* **Hugo** - Hugo is a static site generator written in Go. Unlike the other programs listed here, You need a specific version of Hugo for this to work, which is [noted in the docs makefile](https://github.com/solo-io/gloo/blob/master/docs/Makefile#L26) as `HUGO_VERSION`. You can find the [installation process](https://gohugo.io/getting-started/installing/) for Hugo on their website. Refer to the tarball installation section for instructions on downloading specific versions.
 
 * **Go** - Golang is a programming language created by Google. You can find the [installation process](https://golang.org/doc/install) for Go on their website.
 
@@ -49,9 +49,7 @@ After a few moments the fork will complete and you will be taken to the page wit
 
 Run `git clone https://github.com/your-account/gloo.git` substituting `your-account` for your actual account on GitHub. You can also get the correct `.git` link by clicking on the **Clone or download** button on your fork of the Gloo repository.
 
-Now move into the root of the Gloo repository and run `TAGGED_VERSION=nonempty make download-glooe-changelog -B` to download the latest Gloo Enterprise changelogs, which are used to generate the changelog in the site.
-
-You now have the repository cloned on your local filesystem, including the `docs` folder that contains all of the documentation for Gloo, as well as the latest Gloo Enterprise changelogs saved into `../solo-projects/changelog`.
+You now have the repository cloned on your local filesystem, including the `docs` folder that contains all of the documentation for Gloo.
 
 ---
 
@@ -62,10 +60,10 @@ In the previous sections you installed the necessary tools and downloaded the co
 Navigate to the `docs` folder from the Gloo repo root and run `make` to start up the site.
 
 ```bash
-make serve-site -B
+SKIP_CHANGELOG_GENERATION=true make serve-site -b
 ```
 
-That command will download any Go dependencies and render the site using Hugo and launch a local version of the site running on port 1313. You should see output similar to this:
+That command will download any Go dependencies and render the site using Hugo, then launch a local version of the site running on port 1313. The `SKIP_CHANGELOG_GENERATION` part tells the program to avoid pulling changelog documentation from git. Once the command completes, you should see output similar to this:
 
 ```console
 Environment: "development"

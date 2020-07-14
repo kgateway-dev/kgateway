@@ -135,6 +135,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 "extauth": .enterprise.gloo.solo.io.ExtAuthExtension
 "dlp": .dlp.options.gloo.solo.io.Config
 "bufferPerRoute": .envoy.extensions.filters.http.buffer.v3.BufferPerRoute
+"includeRequestAttemptCount": .google.protobuf.BoolValue
+"includeAttemptCountInResponse": .google.protobuf.BoolValue
 
 ```
 
@@ -154,6 +156,8 @@ to be usable by Gloo. (plugins currently need to be compiled into Gloo)
 | `extauth` | [.enterprise.gloo.solo.io.ExtAuthExtension](../enterprise/options/extauth/v1/extauth.proto.sk/#extauthextension) | Enterprise-only: Authentication configuration. |  |
 | `dlp` | [.dlp.options.gloo.solo.io.Config](../enterprise/options/dlp/dlp.proto.sk/#config) | Enterprise-only: Config for data loss prevention. |  |
 | `bufferPerRoute` | [.envoy.extensions.filters.http.buffer.v3.BufferPerRoute](../../external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#bufferperroute) | BufferPerRoute can be used to set the maximum request size that the filter will buffer before the connection manager will stop buffering and return a 413 response. Note: If you have not set a global config (at the gateway level), this override will not do anything by itself. |  |
+| `includeRequestAttemptCount` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeRequestAttemptCount decides whether the x-envoy-attempt-count header should be included in the upstream request. Setting this option will cause it to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the upstream will see the attempt count as perceived by the second Envoy. Defaults to false. |  |
+| `includeAttemptCountInResponse` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | IncludeAttemptCountInResponse decides whether the x-envoy-attempt-count header should be included in the downstream response. Setting this option will cause the router to override any existing header value, so in the case of two Envoys on the request path with this option enabled, the downstream will see the attempt count as perceived by the Envoy closest upstream from itself. Defaults to false. |  |
 
 
 

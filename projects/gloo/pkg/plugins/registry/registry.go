@@ -34,7 +34,9 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 )
 
 type registry struct {
@@ -56,7 +58,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		hcmPlugin,
 		als.NewPlugin(),
 		pipe.NewPlugin(),
-		tcp.NewPlugin(),
+		tcp.NewPlugin(utils.NewSslConfigTranslator()),
 		static.NewPlugin(),
 		transformationPlugin,
 		grpcweb.NewPlugin(),
@@ -77,6 +79,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		gzip.NewPlugin(),
 		buffer.NewPlugin(),
 		listener.NewPlugin(),
+		virtualhost.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))

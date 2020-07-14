@@ -4,8 +4,9 @@ import (
 	"context"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoyhttp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -15,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/utils/upgradeconfig"
 	translatorutil "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/v1/control-plane/util"
 )
 
 func NewPlugin() *Plugin {
@@ -55,10 +55,10 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 	hcmSettings := hl.HttpListener.GetOptions().GetHttpConnectionManagerSettings()
 	for _, fc := range out.FilterChains {
 		for i, filter := range fc.Filters {
-			if filter.Name == util.HTTPConnectionManager {
+			if filter.Name == wellknown.HTTPConnectionManager {
 				// get config
 				var cfg envoyhttp.HttpConnectionManager
-				err := translatorutil.ParseConfig(filter, &cfg)
+				err := translatorutil.ParseTypedConfig(filter, &cfg)
 				// this should never error
 				if err != nil {
 					return err
@@ -76,7 +76,7 @@ func (p *Plugin) ProcessListener(params plugins.Params, in *v1.Listener, out *en
 					}
 				}
 
-				fc.Filters[i], err = translatorutil.NewFilterWithConfig(util.HTTPConnectionManager, &cfg)
+				fc.Filters[i], err = translatorutil.NewFilterWithTypedConfig(wellknown.HTTPConnectionManager, &cfg)
 				// this should never error
 				if err != nil {
 					return err

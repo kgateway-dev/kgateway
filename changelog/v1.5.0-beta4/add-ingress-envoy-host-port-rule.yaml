@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Add Envoy host with port rule for Ingress
+    issueLink: https://github.com/solo-io/gloo/issues/3244
