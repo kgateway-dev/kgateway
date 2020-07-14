@@ -77,8 +77,8 @@ type Knative struct {
 }
 
 type Uninstall struct {
-	GlooUninstall   HelmUninstall
-	FedUninstall    HelmUninstall
+	GlooUninstall HelmUninstall
+	FedUninstall  HelmUninstall
 }
 
 type HelmUninstall struct {
