@@ -521,7 +521,7 @@ spec:
       - gloo-system
   template:
     metadata:
-      name: default-service-blue
+      name: default-service-blue-10000
     spec:
       discoveryMetadata: {}
       healthChecks:
@@ -562,7 +562,7 @@ spec:
           routeAction:
             single:
               upstream:
-                name: default-service-blue
+                name: default-service-blue-10000
                 namespace: gloo-system
     metadata:
       name: simple-route
@@ -575,7 +575,7 @@ metadata:
 spec:
   primary:
     clusterName: kind-local
-    name: default-service-blue
+    name: default-service-blue-10000
     namespace: gloo-system
   failoverGroups:
   - priorityGroup:
@@ -585,17 +585,27 @@ spec:
         namespace: gloo-system
 EOF
 
+# Instructions for failover demo
+cat << EOF
 # Curl the route and reach the blue pod
-# kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
-# curl localhost:8080/
+kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
+curl localhost:8080/
 
 # Force the health check to fail
-# k port-forward deploy/echo-blue-deployment 19000
-# curl -X POST  localhost:19000/healthcheck/fail
+k port-forward deploy/echo-blue-deployment 19000
+curl -X POST  localhost:19000/healthcheck/fail
 
-# kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
-# curl localhost:8080/
+# See that the green pod is now being reached
+kubectl port-forward -n gloo-system svc/gateway-proxy 8080:80
+curl localhost:8080/
+EOF
 
 
+# Instructions for cleanup
+cat << EOF
+To clean up the demo, run:
+kind delete cluster --name "$1"
+kind delete cluster --name "$2"
+EOF
 `
 )

@@ -1,31 +1,23 @@
 ---
-title: "glooctl install federation"
+title: "glooctl install federation demo"
 weight: 5
 ---
-## glooctl install federation
+## glooctl install federation demo
 
-install Gloo Federation on Kubernetes
+install Gloo Federation Demo on Kubernetes
 
 ### Synopsis
 
 requires kubectl to be installed
 
 ```
-glooctl install federation [flags]
+glooctl install federation demo [flags]
 ```
 
 ### Options
 
 ```
-      --create-namespace      Create the namespace to install gloo fed into (default true)
-      --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
-      --file string           Install Gloo Fed from this Helm chart archive file rather than from a release
-  -h, --help                  help for federation
-      --license-key string    License key to activate Gloo Fed features
-      --namespace string      namespace to install gloo fed into (default "gloo-fed")
-      --release-name string   helm release name (default "gloo-fed")
-      --values strings        List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
-      --version string        version to install (e.g. 0.0.6, defaults to latest)
+  -h, --help   help for demo
 ```
 
 ### Options inherited from parent commands
@@ -37,14 +29,21 @@ glooctl install federation [flags]
       --consul-root-key string     key prefix for for Consul key-value storage. (default "gloo")
       --consul-scheme string       URI scheme for the Consul server. Use with --use-consul (default "http")
       --consul-token string        Token is used to provide a per-request ACL token which overrides the agent's default token. Use with --use-consul
+      --create-namespace           Create the namespace to install gloo fed into (default true)
+      --dry-run                    Dump the raw installation yaml instead of applying it to kubernetes
+      --file string                Install Gloo Fed from this Helm chart archive file rather than from a release
   -i, --interactive                use interactive mode
       --kubeconfig string          kubeconfig to use, if not standard one
+      --license-key string         License key to activate Gloo Fed features
+      --namespace string           namespace to install gloo fed into (default "gloo-fed")
+      --release-name string        helm release name (default "gloo-fed")
       --use-consul                 use Consul Key-Value storage as the backend for reading and writing config (VirtualServices, Upstreams, and Proxies)
+      --values strings             List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
   -v, --verbose                    If true, output from kubectl commands will print to stdout/stderr
+      --version string             version to install (e.g. 0.0.6, defaults to latest)
 ```
 
 ### SEE ALSO
 
-* [glooctl install](../glooctl_install)	 - install gloo on different platforms
-* [glooctl install federation demo](../glooctl_install_federation_demo)	 - install Gloo Federation Demo on Kubernetes
+* [glooctl install federation](../glooctl_install_federation)	 - install Gloo Federation on Kubernetes
 
