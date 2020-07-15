@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"regexp"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
@@ -840,7 +841,10 @@ var _ = Describe("Helm Test", func() {
 								},
 							},
 						}
-						container := GetQuayContainerSpec("gloo-envoy-wasm-wrapper", version, GetPodNamespaceEnvVar(), podname)
+
+						versionRegex := regexp.MustCompile("([0-9]+\\.[0-9]+\\.[0-9]+)")
+						wasmVersion := versionRegex.ReplaceAllString(version, "${1}-wasm")
+						container := GetQuayContainerSpec("gloo-envoy-wrapper", wasmVersion, GetPodNamespaceEnvVar(), podname)
 						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = container.Image
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
