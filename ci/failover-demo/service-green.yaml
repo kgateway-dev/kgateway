@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  creationTimestamp: "2020-07-15T17:21:50Z"
+  generateName: service-green-
+  labels:
+    app: bluegreen
+  name: service-green-t6ncr
+  namespace: default
+  resourceVersion: "4528"
+  selfLink: /api/v1/namespaces/default/services/service-green-t6ncr
+  uid: 26496568-ab27-4da7-94dc-a8ceda54f1db
+spec:
+  clusterIP: 10.96.59.232
+  ports:
+  - name: color
+    port: 10000
+    protocol: TCP
+    targetPort: 10000
+  selector:
+    app: bluegreen
+    text: green
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}
