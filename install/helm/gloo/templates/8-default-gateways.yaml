@@ -65,7 +65,8 @@ spec:
   - {{ $name | kebabcase }}
 {{- end }}
 
-{{- if $spec.failover.enabled }} # if failover is configured, add the gateway
+{{- if $spec.failover }}
+{{- if $spec.failover.enabled }}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -91,6 +92,7 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - {{ $name | kebabcase }}
+{{- end }} # if failover.enabled
 {{- end }} # if failover
 
 {{- end }} # if gateway settings
