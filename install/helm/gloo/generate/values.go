@@ -284,9 +284,9 @@ type Tracing struct {
 }
 
 type Failover struct {
-	Enabled  bool `json:"enabled" desc:"(Enterprise Only): Configure this proxy for failover"`
-	Port     uint `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
-	NodePort uint `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
+	Enabled    bool   `json:"enabled" desc:"(Enterprise Only): Configure this proxy for failover"`
+	Port       uint   `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
+	NodePort   uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
 	SecretName string `json:"secretName" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
 }
 

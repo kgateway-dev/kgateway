@@ -580,7 +580,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
 						host := tcpGateway.GetTcpHosts()[0]
 						Expect(host.GetSslConfig()).To(Equal(&v12.SslConfig{
-							SslSecrets:           &v12.SslConfig_SecretRef{
+							SslSecrets: &v12.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "failover-downstream",
 									Namespace: namespace,
