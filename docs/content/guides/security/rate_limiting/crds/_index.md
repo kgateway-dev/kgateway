@@ -58,7 +58,7 @@ spec:
           descriptorValue: counters
 ```
 
-Once an `RateLimitConfig` is created, it can be used to enforce rate limits on your `Virtual Services` (or on the 
+Once an `RateLimitConfig` is created, it can be used to enforce rate limits on your `VirtualService`s (or on the 
 lower-level `Proxy` resources). You can do that be referencing the resource at two different levels:
 
 - on **VirtualHosts** and
@@ -76,12 +76,13 @@ options:
         namespace: gloo-system
 ```
 
-`RateLimitConfigs` defined on a `VirtualHost` is inherited by all the `Routes` that belong to that `VirtualHost`, 
-unless a route itself references its own `RateLimitConfigs`.
+`RateLimitConfig`s defined on a `VirtualHost` is inherited by all the `Route`s that belong to that `VirtualHost`, 
+unless a route itself references its own `RateLimitConfig`s.
 
 #### Configuration format
 Each `RateLimitConfig` is an instance of one specific configuration type. Currently, only the `raw` configuration type 
-is implemented, but we are planning on adding more high-level configuration formats to support specific use cases.
+is implemented, but we are planning on adding more high-level configuration formats to support specific use cases 
+(e.g. limiting requests based on the presence and value of a header, or on a per-upstream, per-client basis, etc.).
 
 The `raw` configuration allows you to specify rate limit policies using the raw configuration formats used by the 
 server and the client (Envoy). It consists of two elements:
@@ -95,26 +96,11 @@ These two objects have the exact some format as the `descriptors` and `ratelimit
 ### Example
 Let's run through an example that uses `RateLimitConfig` resources to enforce rate limit policies on your `Virtual Services`. 
 As mentioned earlier, all the examples that are listed in the [Envoy API guide]({{% versioned_link_path fromRoot="/guides/security/rate_limiting/envoy/" %}}) 
-apply to `RateLimitConfigs` as well, so please be sure to check them out.
+apply to `RateLimitConfig`s as well, so please be sure to check them out.
 
 #### Initial setup
-We'll start installing Gloo Enterprise. You can run the installation either via `helm` or via `gloooctl`:
-
-{{< tabs >}}
-{{% tab name="helm" %}}
-```shell script
-helm install glooe glooe/gloo-ee --namespace gloo-system \
-  --set-string license_key=YOUR_LICENSE_KEY \
-  --version 1.5.0-beta3
-```
-{{% /tab %}}
-{{% tab name="glooctl" %}}
-
-```shell script
-glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY --version 1.5.0-beta3
-```
-{{% /tab %}}
-{{< /tabs >}}
+First, we need to install Gloo Enterprise (minimum version `1.5.0-beta3`). Please refer to the corresponding
+[installation guide]({{< versioned_link_path fromRoot="/installation/enterprise" >}}) for details.
  
 Let's also deploy a simple application which returns "Hello World" when receiving HTTP requests:
 

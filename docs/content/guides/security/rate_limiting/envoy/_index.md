@@ -1004,7 +1004,7 @@ while also securing routes against any kind of request that we didn't target wit
 ## Deprecation notice
 Starting with **Gloo**, release `v1.5.0-beta8`, and **Gloo Enterprise**, release `v1.5.0-beta3`, the way to specify inline 
 rate limit actions on `VirtualHosts` and `Routes` has slightly changed. The old configuration format is still supported 
-and will continue to be for all Gloo and Gloo Enterprise `v1.x` releases.
+and will continue to be for all Gloo and Gloo Enterprise `v1.x` releases. It will be removed with the next major Gloo version (`v2.0.0`).
 
 #### Virtual Hosts
 Old format:

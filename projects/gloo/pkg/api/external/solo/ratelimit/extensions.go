@@ -85,6 +85,7 @@ func (c *kubeReporterClient) Write(resource resources.Resource, opts clients.Wri
 		return nil, eris.Errorf("unexpected type: expected %T, got %T", &RateLimitConfig{}, resource)
 	}
 	if !opts.OverwriteExisting {
+		// Reporters should never create resources
 		return nil, eris.New("unexpected create operation")
 	}
 
