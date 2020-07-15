@@ -1,31 +1,28 @@
 ---
-title: "glooctl install ingress"
+title: "glooctl uninstall federation"
 weight: 5
 ---
-## glooctl install ingress
+## glooctl uninstall federation
 
-install the Gloo Ingress Controller on Kubernetes
+uninstall gloo federation
 
 ### Synopsis
 
-requires kubectl to be installed
+uninstall gloo federation
 
 ```
-glooctl install ingress [flags]
+glooctl uninstall federation [flags]
 ```
 
 ### Options
 
 ```
-      --create-namespace      Create the namespace to install gloo into (default true)
-  -d, --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string           Install Gloo from this Helm chart archive file rather than from a release
-  -h, --help                  help for ingress
-  -n, --namespace string      namespace to install gloo into (default "gloo-system")
-      --release-name string   helm release name (default "gloo")
-      --values strings        List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
-      --version string        version to install (e.g. 1.4.0, defaults to latest)
-      --with-admin-console    install gloo and a read-only version of its admin console
+      --all                   Deletes all gloo fed resources, including the namespace, crds, and cluster role
+      --delete-crds           Delete all gloo fed crds (all custom gloo fed objects will be deleted)
+      --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
+  -h, --help                  help for federation
+      --namespace string      namespace in which Gloo Fed is installed (default "gloo-fed")
+      --release-name string   helm release name (default "gloo-fed")
 ```
 
 ### Options inherited from parent commands
@@ -45,5 +42,5 @@ glooctl install ingress [flags]
 
 ### SEE ALSO
 
-* [glooctl install](../glooctl_install)	 - install gloo on different platforms
+* [glooctl uninstall](../glooctl_uninstall)	 - uninstall gloo
 

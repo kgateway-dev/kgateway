@@ -3,6 +3,7 @@ package install
 import (
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/spf13/cobra"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
@@ -17,8 +18,13 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			helmClient := DefaultHelmClient()
 			installer := NewInstaller(helmClient)
+			mode := Gloo
+			if opts.Install.WithUi {
+				mode = GlooWithUI
+			}
 			if err := installer.Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
+				Mode:           mode,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
 				return eris.Wrapf(err, "installing gloo in gateway mode")
@@ -28,6 +34,7 @@ func gatewayCmd(opts *options.Options) *cobra.Command {
 	}
 
 	cmd.AddCommand(enterpriseCmd(opts))
+	flagutils.AddGlooInstallFlags(cmd.Flags(), &opts.Install)
 
 	return cmd
 }

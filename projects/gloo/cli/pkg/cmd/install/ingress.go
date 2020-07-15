@@ -2,6 +2,7 @@ package install
 
 import (
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"helm.sh/helm/v3/pkg/chartutil"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
@@ -33,5 +34,6 @@ func ingressCmd(opts *options.Options) *cobra.Command {
 			return nil
 		},
 	}
+	flagutils.AddGlooInstallFlags(cmd.Flags(), &opts.Install)
 	return cmd
 }
