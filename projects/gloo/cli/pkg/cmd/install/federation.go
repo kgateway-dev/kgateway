@@ -212,6 +212,28 @@ kubectl -n gloo-system rollout status deployment gateway-proxy --timeout=2m
 kubectl -n gloo-system rollout status deployment gateway --timeout=2m
 
 glooctl create secret tls --name failover-upstream --certchain mtls.crt --privatekey mtls.key
+rm mtls.key tls.crt tls.key
 
+case $(uname) in
+  "Darwin")
+  {
+      CLUSTER_DOMAIN_MGMT=host.docker.internal
+      CLUSTER_DOMAIN_REMOTE=host.docker.internal
+  } ;;
+  "Linux")
+  {
+      CLUSTER_DOMAIN_MGMT=$(docker exec $managementPlane-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p'):6443
+      CLUSTER_DOMAIN_REMOTE=$(docker exec $remoteCluster-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p'):6443
+  } ;;
+  *)
+  {
+      echo "Unsupported OS"
+      exit 1
+  } ;;
+esac
+
+# Register the gloo clusters
+glooctl cluster register --cluster-name kind-$1 --remote-context kind-$1 --local-cluster-domain-override $CLUSTER_DOMAIN_MGMT --federation-namespace gloo-fed
+glooctl cluster register --cluster-name kind-$2 --remote-context kind-$2 --local-cluster-domain-override $CLUSTER_DOMAIN_REMOTE --federation-namespace gloo-fed
 `
 )
