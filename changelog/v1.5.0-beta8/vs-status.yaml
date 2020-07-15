@@ -2,4 +2,5 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/3115
     description: >
-      Use the proxy status when calculating if we need to update the status of a gateway resource.
+      Use the proxy status rather than entire proxy when calculating if we need to update the status
+      of a gateway resource. This change means we resync the status of gateway resources only when we need to.
