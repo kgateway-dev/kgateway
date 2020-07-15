@@ -194,7 +194,7 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 			// We use hashing here to be compatible with the memory client used in
 			// the local e2e; it fires a watch update too all watch object, on any change,
 			// this means that setting by the status of a virtual service we will get another
-			// proxyList form the channel. This results in excessive CPU usage in CI.
+			// proxyList from the channel. This results in excessive CPU usage in CI.
 			if currentHash != previousHash {
 				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
 				previousHash = currentHash
