@@ -45,7 +45,7 @@ var _ = Describe("CORS", func() {
 	var td corsTestData
 
 	const (
-		corsFilterString       = `"name": "envoy.cors"`
+		corsFilterString       = `"name": "envoy.filters.http.cors"`
 		corsActiveConfigString = `"cors":`
 	)
 

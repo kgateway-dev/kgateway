@@ -217,13 +217,13 @@ type VirtualHost struct {
 	Cors *CorsPolicy `protobuf:"bytes,8,opt,name=cors,proto3" json:"cors,omitempty"`
 	// The per_filter_config field can be used to provide virtual host-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
 	PerFilterConfig map[string]*types.Struct `protobuf:"bytes,12,rep,name=per_filter_config,json=perFilterConfig,proto3" json:"per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// The per_filter_config field can be used to provide virtual host-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
 	TypedPerFilterConfig map[string]*types.Any `protobuf:"bytes,15,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -411,13 +411,13 @@ type Route struct {
 	Decorator *Decorator `protobuf:"bytes,5,opt,name=decorator,proto3" json:"decorator,omitempty"`
 	// The per_filter_config field can be used to provide route-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)` for
 	// if and how it is utilized.
 	PerFilterConfig map[string]*types.Struct `protobuf:"bytes,8,rep,name=per_filter_config,json=perFilterConfig,proto3" json:"per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// The per_filter_config field can be used to provide route-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)` for
 	// if and how it is utilized.
 	TypedPerFilterConfig map[string]*types.Any `protobuf:"bytes,13,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -716,13 +716,13 @@ type WeightedCluster_ClusterWeight struct {
 	ResponseHeadersToRemove []string `protobuf:"bytes,6,rep,name=response_headers_to_remove,json=responseHeadersToRemove,proto3" json:"response_headers_to_remove,omitempty"`
 	// The per_filter_config field can be used to provide weighted cluster-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
 	PerFilterConfig map[string]*types.Struct `protobuf:"bytes,8,rep,name=per_filter_config,json=perFilterConfig,proto3" json:"per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// The per_filter_config field can be used to provide weighted cluster-specific
 	// configurations for filters. The key should match the filter name, such as
-	// *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+	// *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
 	// specific; see the `HTTP filter documentation (config_http_filters)`
 	// for if and how it is utilized.
 	TypedPerFilterConfig map[string]*types.Any `protobuf:"bytes,10,rep,name=typed_per_filter_config,json=typedPerFilterConfig,proto3" json:"typed_per_filter_config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
