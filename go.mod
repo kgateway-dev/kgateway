@@ -49,7 +49,7 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.1.1
 	github.com/sergi/go-diff v1.0.0
-	github.com/solo-io/envoy-operator v0.1.1
+	github.com/solo-io/envoy-operator v0.1.2
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.7

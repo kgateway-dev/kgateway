@@ -1007,6 +1007,8 @@ github.com/solo-io/autopilot v0.1.1-0.20200211163026-f295a102fd94 h1:X+Ra7Pu/P8c
 github.com/solo-io/autopilot v0.1.1-0.20200211163026-f295a102fd94/go.mod h1:ChONxgEh+B2WxCOiX79u+gd2+5sABOwD3EG4cKtR6KA=
 github.com/solo-io/envoy-operator v0.1.1 h1:fiUN3lqvR9OwmMuktX0MjLSNwGdya+1ObvxXqQGZwsQ=
 github.com/solo-io/envoy-operator v0.1.1/go.mod h1:ZP5hB+khljAFCROj/yDjVPXCPHntdewy6mqYybcCneQ=
+github.com/solo-io/envoy-operator v0.1.2 h1:D5zNHIXXvUHYOcmhEI9Pfx1X+EG0MbyUQLfUOMLqM/E=
+github.com/solo-io/envoy-operator v0.1.2/go.mod h1:ZP5hB+khljAFCROj/yDjVPXCPHntdewy6mqYybcCneQ=
 github.com/solo-io/gloo v1.3.1/go.mod h1:08u6J9vpfFGRDsZybTQ65UX7UuJr+EBsZz++J1wtKkQ=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f h1:CHgAq6eqV0JkJJifAEQ3f80YYmsxqTmhJfg6UnGVrCA=
 github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f/go.mod h1:lojsKFoQQH0O/ElLmagtWINB9zAaq04E8z0xIVS/gLU=
