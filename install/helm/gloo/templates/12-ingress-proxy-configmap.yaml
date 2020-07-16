@@ -79,6 +79,10 @@ data:
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
+{{- if .Values.ingressProxy.tracing }}
+                    tracing:
+{{ toYaml .Values.ingressProxy.tracing | indent 22}}
+{{- end}} # if .Values.ingressProxy.tracing
 {{- end}}
 
     dynamic_resources:
@@ -97,10 +101,6 @@ data:
         socket_address:
           address: {{ .Values.ingressProxy.loopBackAddress }}
           port_value: 19000
-{{- if .Values.ingressProxy.tracing }}
-    tracing:
-{{ toYaml .Values.ingressProxy.tracing | indent 6}}
-{{- end}} # if .Values.ingressProxy.tracing
 {{- else}}{{ toYaml .Values.ingressProxy.configMap.data | indent 2}}{{- end}}
 
 {{- end }}

@@ -80,6 +80,10 @@ data:
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router
+{{- if .Values.settings.integrations.knative.proxy.tracing }}
+                    tracing:
+{{ toYaml .Values.settings.integrations.knative.proxy.tracing | indent 22}}
+{{- end}} # if .Values.settings.integrations.knative.proxy.tracing
 {{- end}}
 
 
@@ -99,9 +103,5 @@ data:
         socket_address:
           address: {{ .Values.settings.integrations.knative.proxy.loopBackAddress }}
           port_value: 19000
-{{- if .Values.settings.integrations.knative.proxy.tracing }}
-    tracing:
-{{ toYaml .Values.settings.integrations.knative.proxy.tracing | indent 6}}
-{{- end}} # if .Values.settings.integrations.knative.proxy.tracing
 {{- end }}
 {{- end }}
