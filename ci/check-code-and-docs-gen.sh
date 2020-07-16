@@ -12,7 +12,7 @@ make update-deps
 
 set +e
 
-make generated-code -B > /dev/null
+make generated-code -B
 if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
   exit 1;
