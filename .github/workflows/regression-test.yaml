@@ -47,10 +47,15 @@ jobs:
     - name: Setup test env
       run: |
         ./ci/kind.sh
-    - name: Testing - cluster lock
+#    - name: Testing - kube2e cluster lock (ingress & knative)
+#      env:
+#        RUN_KUBE2E_TESTS: '1'
+#        CLUSTER_LOCK_TESTS: '1'
+#      run: |
+#        go test ./test/kube2e/...
+    - name: Testing - kube2e regression tests
       env:
         RUN_KUBE2E_TESTS: '1'
-        CLUSTER_LOCK_TESTS: '1'
       run: |
         go test ./test/kube2e/...
     - name: Debug Info
