@@ -95,7 +95,7 @@ data:
                 - name: envoy.filters.network.http_connection_manager
                   typed_config:
                     "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                    codec_type: auto
+                    codec_type: AUTO
                     stat_prefix: read_config
                     route_config:
                       name: read_config_route

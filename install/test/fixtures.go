@@ -101,9 +101,9 @@ static_resources:
     - filters:
       - typed_config:
           "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          codec_type: auto
+          codec_type: AUTO
           http_filters:
-          - name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -135,7 +135,7 @@ stats_sinks:
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithTracingProvider = `
@@ -273,7 +273,7 @@ stats_sinks:
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 tracing:
   http:
     another: line
@@ -429,7 +429,7 @@ stats_sinks:
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 tracing:
   http:
     typed_config:
@@ -615,7 +615,7 @@ stats_sinks:
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithAccessLogger = `
