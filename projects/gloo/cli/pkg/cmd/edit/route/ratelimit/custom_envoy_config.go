@@ -48,7 +48,7 @@ func editRoute(opts *editRouteOptions.RouteEditInput) error {
 			route.Options = &gloov1.RouteOptions{}
 		}
 
-		route.Options.Ratelimit = ratelimitRouteExtension
+		route.Options.RateLimitConfigType = &gloov1.RouteOptions_Ratelimit{Ratelimit: ratelimitRouteExtension}
 		return nil
 	})
 }

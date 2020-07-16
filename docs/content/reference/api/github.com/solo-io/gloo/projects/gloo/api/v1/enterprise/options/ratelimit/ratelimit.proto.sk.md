@@ -17,9 +17,7 @@ weight: 5
 - [RateLimitConfigRefs](#ratelimitconfigrefs)
 - [RateLimitConfigRef](#ratelimitconfigref)
 - [RateLimitVhostExtension](#ratelimitvhostextension)
-- [InlineConfig](#inlineconfig)
 - [RateLimitRouteExtension](#ratelimitrouteextension)
-- [InlineConfig](#inlineconfig)
   
 
 
@@ -148,28 +146,11 @@ A reference to a `RateLimitConfig` resource.
 ---
 ### RateLimitVhostExtension
 
-
-
-```yaml
-"rateLimits": []ratelimit.api.solo.io.RateLimitActions
-"configRefs": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-"inlineConfig": .ratelimit.options.gloo.solo.io.RateLimitVhostExtension.InlineConfig
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
-| `configRefs` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../ratelimit.proto.sk/#ratelimitconfigrefs) | References to RateLimitConfig resources. This is used to configure the GlooE rate limit server. Only one of `configRefs` or `inlineConfig` can be set. |  |
-| `inlineConfig` | [.ratelimit.options.gloo.solo.io.RateLimitVhostExtension.InlineConfig](../ratelimit.proto.sk/#inlineconfig) | Use this field if you want to inline the Envoy rate limits for this VirtualHost. Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are running a custom rate limit server you need to configure it yourself. Only one of `inlineConfig` or `configRefs` can be set. |  |
-
-
-
-
----
-### InlineConfig
-
-
+ 
+Use this field if you want to inline the Envoy rate limits for this VirtualHost.
+Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+running a custom rate limit server you need to configure it yourself.
 
 ```yaml
 "rateLimits": []ratelimit.api.solo.io.RateLimitActions
@@ -186,30 +167,11 @@ A reference to a `RateLimitConfig` resource.
 ---
 ### RateLimitRouteExtension
 
-
-
-```yaml
-"includeVhRateLimits": bool
-"rateLimits": []ratelimit.api.solo.io.RateLimitActions
-"configRefs": .ratelimit.options.gloo.solo.io.RateLimitConfigRefs
-"inlineConfig": .ratelimit.options.gloo.solo.io.RateLimitRouteExtension.InlineConfig
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `includeVhRateLimits` | `bool` | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
-| `rateLimits` | [[]ratelimit.api.solo.io.RateLimitActions](../../../../../../../../../solo-apis/api/rate-limiter/v1alpha1/ratelimit.proto.sk/#ratelimitactions) | Deprecated: this is the old format for inline configuration, use `InlineConfig` instead. |  |
-| `configRefs` | [.ratelimit.options.gloo.solo.io.RateLimitConfigRefs](../ratelimit.proto.sk/#ratelimitconfigrefs) | References to RateLimitConfig resources. This is used to configure the GlooE rate limit server. Only one of `configRefs` or `inlineConfig` can be set. |  |
-| `inlineConfig` | [.ratelimit.options.gloo.solo.io.RateLimitRouteExtension.InlineConfig](../ratelimit.proto.sk/#inlineconfig) | Use this field if you want to inline the Envoy rate limits for this Route. Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are running a custom rate limit server you need to configure it yourself. Only one of `inlineConfig` or `configRefs` can be set. |  |
-
-
-
-
----
-### InlineConfig
-
-
+ 
+Use this field if you want to inline the Envoy rate limits for this Route.
+Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+running a custom rate limit server you need to configure it yourself.
 
 ```yaml
 "includeVhRateLimits": bool

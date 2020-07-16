@@ -55,33 +55,17 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if rl := in.GetOptions().GetRatelimit(); rl != nil {
-
-		// Prefer new inline config format
-		if newRateLimits := rl.GetInlineConfig().GetRateLimits(); len(newRateLimits) > 0 {
-			out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
-		} else {
-			out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rl.RateLimits)
-		}
-
+	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
+		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
 	}
 	return nil
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	if rl := in.GetOptions().GetRatelimit(); rl != nil {
-
+	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
 		if ra := out.GetRoute(); ra != nil {
-
-			// Prefer new inline config format
-			if newRateLimits := rl.GetInlineConfig().GetRateLimits(); len(newRateLimits) > 0 {
-				ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
-				ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rl.GetInlineConfig().GetIncludeVhRateLimits()}
-			} else {
-				ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rl.RateLimits)
-				ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rl.IncludeVhRateLimits}
-			}
-
+			ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimits.GetRateLimits())
+			ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimits.GetIncludeVhRateLimits()}
 		} else {
 			// TODO(yuval-k): maybe return nil here instead and just log a warning?
 			return fmt.Errorf("cannot apply rate limits without a route action")
@@ -90,7 +74,7 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var upstreamRef *core.ResourceRef
 	var timeout *time.Duration
 	var denyOnFail bool

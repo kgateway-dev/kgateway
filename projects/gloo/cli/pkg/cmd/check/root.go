@@ -440,14 +440,14 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 				return true
 			}
 			// Check virtual host options
-			for _, ref := range virtualService.GetVirtualHost().GetOptions().GetRatelimit().GetConfigRefs().GetRefs() {
+			for _, ref := range virtualService.GetVirtualHost().GetOptions().GetRateLimitConfigs().GetRefs() {
 				if !isRateLimitConfigRefValid(knownRateLimitConfigs, ref) {
 					return false, nil
 				}
 			}
 			// Check route options
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
-				for _, ref := range route.GetOptions().GetRatelimit().GetConfigRefs().GetRefs() {
+				for _, ref := range route.GetOptions().GetRateLimitConfigs().GetRefs() {
 					if !isRateLimitConfigRefValid(knownRateLimitConfigs, ref) {
 						return false, nil
 					}

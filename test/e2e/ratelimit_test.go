@@ -304,7 +304,9 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 
 		if enableRateLimits {
 			vhost.Options = &gloov1.VirtualHostOptions{
-				Ratelimit: b.customRateLimit,
+				RateLimitConfigType: &gloov1.VirtualHostOptions_Ratelimit{
+					Ratelimit: b.customRateLimit,
+				},
 			}
 		}
 		vhosts = append(vhosts, vhost)

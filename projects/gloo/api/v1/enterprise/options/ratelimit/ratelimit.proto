@@ -61,56 +61,27 @@ message RateLimitConfigRef {
   string namespace = 2;
 }
 
+// Use this field if you want to inline the Envoy rate limits for this VirtualHost.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 message RateLimitVhostExtension {
 
-  message InlineConfig {
-    // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
-    // would be throttled, the entire request returns a 429 (gets throttled).
-    repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
-  }
-
-  // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
-  repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1 [deprecated = true];
-
-  oneof config_type {
-    // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-    RateLimitConfigRefs config_refs = 2;
-
-    // Use this field if you want to inline the Envoy rate limits for this VirtualHost.
-    // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-    // specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-    // running a custom rate limit server you need to configure it yourself.
-    InlineConfig inline_config = 3;
-  }
+  // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
+  // would be throttled, the entire request returns a 429 (gets throttled)
+  repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 1;
 }
 
+// Use this field if you want to inline the Envoy rate limits for this Route.
+// Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
+// specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
+// running a custom rate limit server you need to configure it yourself.
 message RateLimitRouteExtension {
 
-  message InlineConfig {
     // Whether or not to include rate limits as defined on the VirtualHost in addition to rate limits on the Route.
     bool include_vh_rate_limits = 1;
 
     // Define individual rate limits here. Each rate limit will be evaluated, if any rate limit
     // would be throttled, the entire request returns a 429 (gets throttled)
     repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2;
-  }
-
-  // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
-  bool include_vh_rate_limits = 1 [deprecated = true];
-
-  // Deprecated: this is the old format for inline configuration, use `InlineConfig` instead.
-  repeated ratelimit.api.solo.io.RateLimitActions rate_limits = 2 [deprecated = true];
-
-
-  oneof config_type {
-    // References to RateLimitConfig resources. This is used to configure the GlooE rate limit server.
-    RateLimitConfigRefs config_refs = 3;
-
-    // Use this field if you want to inline the Envoy rate limits for this Route.
-    // Note that this does not configure the rate limit server. If you are running Gloo Enterprise, you need to
-    // specify the server configuration via the appropriate field in the Gloo `Settings` resource. If you are
-    // running a custom rate limit server you need to configure it yourself.
-    InlineConfig inline_config = 4;
-  }
-
 }
