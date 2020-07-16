@@ -18,13 +18,13 @@ var EmptyClusterNameError = eris.New("please provide a cluster name to unregiste
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   constants.UNREGISTER_COMMAND.Use,
-		Short: constants.UNREGISTER_COMMAND.Short,
-		Long:  constants.UNREGISTER_COMMAND.Long,
+		Use:   constants.CLUSTER_UNREGISTER_COMMAND.Use,
+		Short: constants.CLUSTER_UNREGISTER_COMMAND.Short,
+		Long:  constants.CLUSTER_UNREGISTER_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			secretClient := helpers.MustSecretClient()
 			for _, clusterName := range args {
-				err := helpers.MustSecretClient().
-					Delete(opts.Cluster.Register.FederationNamespace, clusterName, clients.DeleteOpts{})
+				err := secretClient.Delete(opts.Cluster.FederationNamespace, clusterName, clients.DeleteOpts{})
 				if err != nil {
 					fmt.Printf("Error unregistering cluster %s", clusterName)
 				}
@@ -33,14 +33,14 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				if opts.Cluster.Register.ClusterName == "" {
 					return EmptyClusterNameError
 				}
-				return helpers.MustSecretClient().
-					Delete(opts.Cluster.Register.FederationNamespace, opts.Cluster.Register.ClusterName, clients.DeleteOpts{})
+				return secretClient.Delete(opts.Cluster.FederationNamespace, opts.Cluster.Register.ClusterName, clients.DeleteOpts{})
 			}
 			return nil
 		},
 	}
 
 	pflags := cmd.PersistentFlags()
+	flagutils.AddClusterFlags(pflags, &opts.Cluster)
 	flagutils.AddUnregisterFlags(pflags, &opts.Cluster.Register)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd

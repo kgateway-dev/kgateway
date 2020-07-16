@@ -35,6 +35,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	cmd.AddCommand(list.RootCmd(opts))
 	cmd.AddCommand(register.RootCmd(opts))
 	cmd.AddCommand(unregister.RootCmd(opts))
+
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

@@ -11,16 +11,17 @@ import (
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     constants.REGISTER_COMMAND.Use,
-		Aliases: constants.REGISTER_COMMAND.Aliases,
-		Short:   constants.REGISTER_COMMAND.Short,
-		Long:    constants.REGISTER_COMMAND.Long,
+		Use:     constants.CLUSTER_REGISTER_COMMAND.Use,
+		Aliases: constants.CLUSTER_REGISTER_COMMAND.Aliases,
+		Short:   constants.CLUSTER_REGISTER_COMMAND.Short,
+		Long:    constants.CLUSTER_REGISTER_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Register(opts)
 		},
 	}
 
 	pflags := cmd.PersistentFlags()
+	flagutils.AddClusterFlags(pflags, &opts.Cluster)
 	flagutils.AddRegisterFlags(pflags, &opts.Cluster.Register)
 	// this flag is mainly for demo, testing, and debugging purposes
 	pflags.Lookup(flagutils.LocalClusterDomainOverride).Hidden = true

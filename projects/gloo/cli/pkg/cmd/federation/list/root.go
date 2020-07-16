@@ -1,35 +1,40 @@
 package list
 
 import (
-	"os"
-	"os/exec"
+	"fmt"
+
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
-	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+const (
+	clusterSecretType = "solo.io/kubeconfig"
+)
+
+func RootCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   constants.LIST_COMMAND.Use,
-		Short: constants.LIST_COMMAND.Short,
+		Use:   constants.CLUSTER_LIST_COMMAND.Use,
+		Short: constants.CLUSTER_LIST_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			kCmd := "kubectl get secrets -n gloo-fed -o=jsonpath='{range .items[*]}{.metadata.name} {.type}{\"\\n\"}{end}'" +
-				"| grep -i solo.io/kubeconfig | cut -d ' ' -f1"
-			listCmd := exec.Command("bash", "-c", kCmd)
-			listCmd.Stdout = os.Stderr
-			listCmd.Stderr = os.Stderr
-			if err := listCmd.Run(); err != nil {
-				return errors.Wrapf(err, "failed to start port-forward")
+			secretClient := helpers.MustKubeClient().CoreV1().Secrets(opts.Cluster.FederationNamespace)
+			secrets, err := secretClient.List(metav1.ListOptions{})
+			if err != nil {
+				return errors.Wrapf(err, "Failed to list clusters.")
+			}
+			for _, s := range secrets.Items {
+				if string(s.Type) == clusterSecretType {
+					fmt.Printf("%s\n", s.GetName())
+				}
 			}
 			return nil
 		},
 	}
-
-	pflags := cmd.PersistentFlags()
-	flagutils.AddListFlags(pflags, &opts.Cluster.Register)
+	flagutils.AddClusterFlags(cmd.PersistentFlags(), &opts.Cluster)
 	return cmd
 }

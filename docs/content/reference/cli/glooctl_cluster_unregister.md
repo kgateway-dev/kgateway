@@ -8,7 +8,7 @@ Unregister a cluster to the Gloo Federation control plane
 
 ### Synopsis
 
-Unregister a cluster to the Gloo Federation control plane. Unregistered clusters can no longer betargeted for discovery and configuration. This will not delete the cluster.
+Unregister a cluster to the Gloo Federation control plane. Unregistered clusters can no longer be targeted for discovery and configuration. This will not delete the cluster.
 
 ```
 glooctl cluster unregister [flags]
