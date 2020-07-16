@@ -1,31 +1,31 @@
 ---
-title: "glooctl install ingress"
+title: "glooctl install federation"
 weight: 5
 ---
-## glooctl install ingress
+## glooctl install federation
 
-install the Gloo Ingress Controller on Kubernetes
+install Gloo Federation on Kubernetes
 
 ### Synopsis
 
 requires kubectl to be installed
 
 ```
-glooctl install ingress [flags]
+glooctl install federation [flags]
 ```
 
 ### Options
 
 ```
-      --create-namespace      Create the namespace to install gloo into (default true)
-  -d, --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string           Install Gloo from this Helm chart archive file rather than from a release
-  -h, --help                  help for ingress
-  -n, --namespace string      namespace to install gloo into (default "gloo-system")
-      --release-name string   helm release name (default "gloo")
-      --values strings        List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
-      --version string        version to install (e.g. 1.4.0, defaults to latest)
-      --with-admin-console    install gloo and a read-only version of its admin console
+      --create-namespace      Create the namespace to install gloo fed into (default true)
+      --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
+      --file string           Install Gloo Fed from this Helm chart archive file rather than from a release
+  -h, --help                  help for federation
+      --license-key string    License key to activate Gloo Fed features
+      --namespace string      namespace to install gloo fed into (default "gloo-fed")
+      --release-name string   helm release name (default "gloo-fed")
+      --values strings        List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
+      --version string        version to install (e.g. 0.0.6, defaults to latest)
 ```
 
 ### Options inherited from parent commands

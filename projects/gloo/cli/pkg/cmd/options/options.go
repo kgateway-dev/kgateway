@@ -28,6 +28,7 @@ type Options struct {
 	Get       Get
 	Add       Add
 	Remove    Remove
+	Cluster   Cluster
 }
 
 type Top struct {
@@ -44,7 +45,7 @@ type Top struct {
 	Consul                 Consul // use consul as config backend
 }
 
-type Install struct {
+type HelmInstall struct {
 	DryRun                  bool
 	CreateNamespace         bool
 	Namespace               string
@@ -52,9 +53,18 @@ type Install struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Version                 string
-	Knative                 Knative
 	LicenseKey              string
-	WithUi                  bool
+}
+
+type Install struct {
+	HelmInstall
+	Federation Federation
+	Knative    Knative
+	WithUi     bool
+}
+
+type Federation struct {
+	HelmInstall
 }
 
 type Knative struct {
@@ -66,12 +76,17 @@ type Knative struct {
 	InstallKnativeEventingVersion string `json:"eventingVersion"`
 }
 
-type Uninstall struct {
+type HelmUninstall struct {
 	Namespace       string
 	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+}
+
+type Uninstall struct {
+	GlooUninstall HelmUninstall
+	FedUninstall  HelmUninstall
 }
 
 type Proxy struct {
@@ -395,4 +410,17 @@ type OpaAuth struct {
 
 	Query   string
 	Modules []string
+}
+
+type Cluster struct {
+	Register Register
+}
+
+type Register struct {
+	RemoteKubeConfig           string
+	RemoteContext              string
+	ClusterName                string
+	LocalClusterDomainOverride string
+	FederationNamespace        string
+	RemoteNamespace            string
 }

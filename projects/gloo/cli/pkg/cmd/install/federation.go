@@ -9,13 +9,13 @@ import (
 )
 
 const (
-	GlooEHelmRepoTemplate = "https://storage.googleapis.com/gloo-ee-helm/charts/gloo-ee-%s.tgz"
+	GlooFedHelmRepoTemplate = "https://storage.googleapis.com/gloo-fed-helm/gloo-fed-%s.tgz"
 )
 
-func enterpriseCmd(opts *options.Options) *cobra.Command {
+func glooFedCmd(opts *options.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "enterprise",
-		Short:  "install the Gloo Enterprise Gateway on Kubernetes",
+		Use:    "federation",
+		Short:  "install Gloo Federation on Kubernetes",
 		Long:   "requires kubectl to be installed",
 		PreRun: setVerboseMode(opts),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -24,25 +24,22 @@ func enterpriseCmd(opts *options.Options) *cobra.Command {
 				"license_key": opts.Install.LicenseKey,
 			}
 
-			mode := Enterprise
-			if opts.Install.WithUi {
-				mode = GlooWithUI
-			}
+			opts.Install.HelmInstall = opts.Install.Federation.HelmInstall
+
 			if err := NewInstaller(DefaultHelmClient()).Install(&InstallerConfig{
 				InstallCliArgs: &opts.Install,
 				ExtraValues:    extraValues,
-				Mode:           mode, // mode will be overwritten in Install to Gloo if the helm chart doesn't have gloo subchart
+				Mode:           Federation,
 				Verbose:        opts.Top.Verbose,
 			}); err != nil {
-				return eris.Wrapf(err, "installing Gloo Enterprise in gateway mode")
+				return eris.Wrapf(err, "installing Gloo Federation")
 			}
 
 			return nil
 		},
 	}
 
-	pFlags := cmd.PersistentFlags()
-	flagutils.AddGlooInstallFlags(cmd.Flags(), &opts.Install)
-	flagutils.AddEnterpriseInstallFlags(pFlags, &opts.Install)
+	pflags := cmd.PersistentFlags()
+	flagutils.AddFederationInstallFlags(pflags, &opts.Install.Federation)
 	return cmd
 }

@@ -1,29 +1,28 @@
 ---
-title: "glooctl uninstall"
+title: "glooctl cluster register"
 weight: 5
 ---
-## glooctl uninstall
+## glooctl cluster register
 
-uninstall gloo
+Register a cluster to the Gloo Federation control plane
 
 ### Synopsis
 
-uninstall gloo
+Register a cluster to the Gloo Federation control plane. Registered clusters can be targeted for discovery and configuration.
 
 ```
-glooctl uninstall [flags]
+glooctl cluster register [flags]
 ```
 
 ### Options
 
 ```
-      --all                   Deletes all gloo resources, including the namespace, crds, and cluster role
-      --delete-crds           Delete all gloo crds (all custom gloo objects will be deleted)
-      --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
-  -h, --help                  help for uninstall
-  -n, --namespace string      namespace in which Gloo is installed (default "gloo-system")
-      --release-name string   helm release name (default "gloo")
-  -v, --verbose               If true, output from kubectl commands will print to stdout/stderr
+      --cluster-name string           name of the cluster to register
+      --federation-namespace string   namespace of the Gloo Federation control plane which the cluster will be registered to (default "gloo-fed")
+  -h, --help                          help for register
+      --remote-context string         name of the kubeconfig context to use for registration
+      --remote-kubeconfig string      path to the kubeconfig from which the registered cluster will be accessed
+      --remote-namespace string       namespace in the target cluster where registration artifacts should be written (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
@@ -42,6 +41,5 @@ glooctl uninstall [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl uninstall federation](../glooctl_uninstall_federation)	 - uninstall gloo federation
+* [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"sort"
 	"sync"
-	"time"
 
 	"go.uber.org/zap/zapcore"
 
@@ -166,12 +165,6 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 	if err != nil {
 		return errors.Wrapf(err, "creating watch for proxies in %v", s.writeNamespace)
 	}
-	return s.watchProxiesFromChannel(ctx, proxies, errs)
-}
-
-func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-chan gloov1.ProxyList, errs <-chan error) error {
-
-	logger := contextutils.LoggerFrom(ctx)
 	var previousHash uint64
 	for {
 		select {
@@ -186,16 +179,15 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 			if !ok {
 				return nil
 			}
-
-			currentHash, err := hashStatuses(proxyList)
+			currentHash, err := hashutils.HashAllSafe(nil, proxyList.AsInterfaces()...)
 			if err != nil {
 				logger.DPanicw("error while hashing, this should never happen", zap.Error(err))
 			}
 			// We use hashing here to be compatible with the memory client used in
 			// the local e2e; it fires a watch update too all watch object, on any change,
 			// this means that setting by the status of a virtual service we will get another
-			// proxyList from the channel. This results in excessive CPU usage in CI.
-			if currentHash != previousHash {
+			// proxyList form the channel. This results in excessive CPU usage in CI.
+			if currentHash != previousHash && true {
 				logger.Debugw("proxy list updated", "len(proxyList)", len(proxyList), "currentHash", currentHash, "previousHash", previousHash)
 				previousHash = currentHash
 				s.setStatuses(proxyList)
@@ -203,14 +195,6 @@ func (s *statusSyncer) watchProxiesFromChannel(ctx context.Context, proxies <-ch
 			}
 		}
 	}
-}
-
-func hashStatuses(proxyList gloov1.ProxyList) (uint64, error) {
-	statuses := make([]interface{}, 0, len(proxyList))
-	for _, proxy := range proxyList {
-		statuses = append(statuses, proxy.GetStatus())
-	}
-	return hashutils.HashAllSafe(nil, statuses...)
 }
 
 func (s *statusSyncer) setStatuses(list gloov1.ProxyList) {
@@ -238,26 +222,15 @@ func (s *statusSyncer) forceSync() {
 }
 
 func (s *statusSyncer) syncStatusOnEmit(ctx context.Context) error {
-	var retryChan <-chan time.Time
-
-	sync := func() {
-		err := s.syncStatus(ctx)
-		if err != nil {
-			contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
-			retryChan = time.After(time.Second)
-		} else {
-			retryChan = nil
-		}
-	}
-
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
-		case <-retryChan:
-			sync()
 		case <-s.syncNeeded:
-			sync()
+			err := s.syncStatus(ctx)
+			if err != nil {
+				contextutils.LoggerFrom(ctx).Debugw("failed to sync status; will try again shortly.", "error", err)
+			}
 		}
 	}
 }

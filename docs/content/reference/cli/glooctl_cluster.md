@@ -1,29 +1,23 @@
 ---
-title: "glooctl uninstall"
+title: "glooctl cluster"
 weight: 5
 ---
-## glooctl uninstall
+## glooctl cluster
 
-uninstall gloo
+Cluster commands
 
 ### Synopsis
 
-uninstall gloo
+Commands related to managing multiple clusters
 
 ```
-glooctl uninstall [flags]
+glooctl cluster [flags]
 ```
 
 ### Options
 
 ```
-      --all                   Deletes all gloo resources, including the namespace, crds, and cluster role
-      --delete-crds           Delete all gloo crds (all custom gloo objects will be deleted)
-      --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
-  -h, --help                  help for uninstall
-  -n, --namespace string      namespace in which Gloo is installed (default "gloo-system")
-      --release-name string   helm release name (default "gloo")
-  -v, --verbose               If true, output from kubectl commands will print to stdout/stderr
+  -h, --help   help for cluster
 ```
 
 ### Options inherited from parent commands
@@ -43,5 +37,5 @@ glooctl uninstall [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl uninstall federation](../glooctl_uninstall_federation)	 - uninstall gloo federation
+* [glooctl cluster register](../glooctl_cluster_register)	 - Register a cluster to the Gloo Federation control plane
 
