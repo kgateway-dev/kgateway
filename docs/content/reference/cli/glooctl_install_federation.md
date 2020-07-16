@@ -46,5 +46,4 @@ glooctl install federation [flags]
 ### SEE ALSO
 
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
-* [glooctl install federation demo](../glooctl_install_federation_demo)	 - install Gloo Federation Demo on Kubernetes
 
