@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	v1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+
 	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
 
 	"github.com/hashicorp/consul/api"
@@ -623,4 +625,44 @@ func AuthConfigClient(namespaces []string) (extauth.AuthConfigClient, error) {
 		return nil, err
 	}
 	return authConfigClient, nil
+}
+
+func MustNamespacedRateLimitConfigClient(ns string) v1alpha1.RateLimitConfigClient {
+	return MustMultiNamespacedRateLimitConfigClient([]string{ns})
+}
+
+func MustMultiNamespacedRateLimitConfigClient(namespaces []string) v1alpha1.RateLimitConfigClient {
+	client, err := RateLimitConfigClient(namespaces)
+	if err != nil {
+		log.Fatalf("failed to create rate limit config client: %v", err)
+	}
+	return client
+}
+
+// provide "" (metav1.NamespaceAll) to get a cluster-scoped client
+func RateLimitConfigClient(namespaces []string) (v1alpha1.RateLimitConfigClient, error) {
+	customFactory := getConfigClientFactory()
+	if customFactory != nil {
+		return v1alpha1.NewRateLimitConfigClient(customFactory)
+	}
+
+	cfg, err := kubeutils.GetConfig("", "")
+	if err != nil {
+		return nil, errors.Wrapf(err, "getting kube config")
+	}
+	kubeCache := kube.NewKubeCache(context.TODO())
+	rlConfigClient, err := v1alpha1.NewRateLimitConfigClient(&factory.KubeResourceClientFactory{
+		Crd:                v1alpha1.RateLimitConfigCrd,
+		Cfg:                cfg,
+		SharedCache:        kubeCache,
+		SkipCrdCreation:    true,
+		NamespaceWhitelist: namespaces,
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "creating rate limit config client")
+	}
+	if err := rlConfigClient.Register(); err != nil {
+		return nil, err
+	}
+	return rlConfigClient, nil
 }

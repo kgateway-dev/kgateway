@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -87,12 +90,17 @@ func CheckResources(opts *options.Options) (bool, error) {
 		return ok, err
 	}
 
+	knownRateLimitConfigs, ok, err := checkRateLimitConfigs(namespaces)
+	if !ok || err != nil {
+		return ok, err
+	}
+
 	ok, err = checkSecrets(namespaces)
 	if !ok || err != nil {
 		return ok, err
 	}
 
-	ok, err = checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs)
+	ok, err = checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs)
 	if !ok || err != nil {
 		return ok, err
 	}
@@ -335,7 +343,28 @@ func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 	return knownAuthConfigs, true, nil
 }
 
-func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs []string) (bool, error) {
+func checkRateLimitConfigs(namespaces []string) ([]string, bool, error) {
+	fmt.Printf("Checking rate limit configs... ")
+	var knownConfigs []string
+	for _, ns := range namespaces {
+		configs, err := helpers.MustNamespacedRateLimitConfigClient(ns).List(ns, clients.ListOpts{})
+		if err != nil {
+			return nil, false, err
+		}
+		for _, config := range configs {
+			if config.Status.GetState() == v1alpha1.RateLimitConfigStatus_REJECTED {
+				fmt.Printf("Found rejected rate limit config: %s\n", renderMetadata(config.GetMetadata()))
+				fmt.Printf("Reason: %s\n", config.Status.Message)
+				return nil, false, nil
+			}
+			knownConfigs = append(knownConfigs, renderMetadata(config.GetMetadata()))
+		}
+	}
+	fmt.Printf("OK\n")
+	return knownConfigs, true, nil
+}
+
+func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs []string) (bool, error) {
 	fmt.Printf("Checking virtual services... ")
 	for _, ns := range namespaces {
 		virtualServices, err := helpers.MustNamespacedVirtualServiceClient(ns).List(ns, clients.ListOpts{})
@@ -368,12 +397,61 @@ func checkVirtualServices(namespaces, knownUpstreams []string, knownAuthConfigs 
 					}
 				}
 			}
-			acRef := virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()
-			if acRef != nil && !cliutils.Contains(knownAuthConfigs, renderRef(acRef)) {
-				fmt.Printf("Virtual service references unknown auth config:\n")
-				fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
-				fmt.Printf("  Auth Config: %s\n", renderRef(acRef))
+
+			// Check references to auth configs
+			isAuthConfigRefValid := func(knownConfigs []string, ref *core.ResourceRef) bool {
+				if !cliutils.Contains(knownConfigs, renderRef(ref)) {
+					fmt.Printf("Virtual service references unknown auth config:\n")
+					fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
+					fmt.Printf("  Auth Config: %s\n", renderRef(ref))
+					return false
+				}
+				return true
+			}
+			// Check virtual host options
+			if !isAuthConfigRefValid(knownAuthConfigs, virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()) {
 				return false, nil
+			}
+			// Check route options
+			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
+				if !isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()) {
+					return false, nil
+				}
+				// Check weighted destination options
+				for _, weightedDest := range route.GetRouteAction().GetMulti().GetDestinations() {
+					if !isAuthConfigRefValid(knownAuthConfigs, weightedDest.GetOptions().GetExtauth().GetConfigRef()) {
+						return false, nil
+					}
+				}
+			}
+
+			// Check references to rate limit configs
+			isRateLimitConfigRefValid := func(knownConfigs []string, ref *ratelimit.RateLimitConfigRef) bool {
+				resourceRef := &core.ResourceRef{
+					Name:      ref.Name,
+					Namespace: ref.Namespace,
+				}
+				if !cliutils.Contains(knownConfigs, renderRef(resourceRef)) {
+					fmt.Printf("Virtual service references unknown rate limit config:\n")
+					fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
+					fmt.Printf("  Rate Limit Config: %s\n", renderRef(resourceRef))
+					return false
+				}
+				return true
+			}
+			// Check virtual host options
+			for _, ref := range virtualService.GetVirtualHost().GetOptions().GetRatelimit().GetConfigRefs().GetRefs() {
+				if !isRateLimitConfigRefValid(knownRateLimitConfigs, ref) {
+					return false, nil
+				}
+			}
+			// Check route options
+			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
+				for _, ref := range route.GetOptions().GetRatelimit().GetConfigRefs().GetRefs() {
+					if !isRateLimitConfigRefValid(knownRateLimitConfigs, ref) {
+						return false, nil
+					}
+				}
 			}
 		}
 	}
