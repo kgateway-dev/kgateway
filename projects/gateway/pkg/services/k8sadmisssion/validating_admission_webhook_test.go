@@ -112,7 +112,10 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 func makeReviewRequest(url string, crd crd.Crd, operation v1beta1.Operation, resource resources.InputResource) (*http.Request, error) {
 
-	resourceCrd := crd.KubeResource(resource)
+	resourceCrd, err := crd.KubeResource(resource)
+	if err != nil {
+		return nil, err
+	}
 
 	raw, err := json.Marshal(resourceCrd)
 	if err != nil {

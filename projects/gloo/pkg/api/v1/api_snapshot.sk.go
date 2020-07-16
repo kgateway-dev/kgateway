@@ -8,6 +8,7 @@ import (
 	"hash/fnv"
 	"log"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"github.com/rotisserie/eris"
@@ -16,24 +17,26 @@ import (
 )
 
 type ApiSnapshot struct {
-	Artifacts      ArtifactList
-	Endpoints      EndpointList
-	Proxies        ProxyList
-	UpstreamGroups UpstreamGroupList
-	Secrets        SecretList
-	Upstreams      UpstreamList
-	AuthConfigs    enterprise_gloo_solo_io.AuthConfigList
+	Artifacts        ArtifactList
+	Endpoints        EndpointList
+	Proxies          ProxyList
+	UpstreamGroups   UpstreamGroupList
+	Secrets          SecretList
+	Upstreams        UpstreamList
+	AuthConfigs      enterprise_gloo_solo_io.AuthConfigList
+	Ratelimitconfigs github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
 }
 
 func (s ApiSnapshot) Clone() ApiSnapshot {
 	return ApiSnapshot{
-		Artifacts:      s.Artifacts.Clone(),
-		Endpoints:      s.Endpoints.Clone(),
-		Proxies:        s.Proxies.Clone(),
-		UpstreamGroups: s.UpstreamGroups.Clone(),
-		Secrets:        s.Secrets.Clone(),
-		Upstreams:      s.Upstreams.Clone(),
-		AuthConfigs:    s.AuthConfigs.Clone(),
+		Artifacts:        s.Artifacts.Clone(),
+		Endpoints:        s.Endpoints.Clone(),
+		Proxies:          s.Proxies.Clone(),
+		UpstreamGroups:   s.UpstreamGroups.Clone(),
+		Secrets:          s.Secrets.Clone(),
+		Upstreams:        s.Upstreams.Clone(),
+		AuthConfigs:      s.AuthConfigs.Clone(),
+		Ratelimitconfigs: s.Ratelimitconfigs.Clone(),
 	}
 }
 
@@ -60,6 +63,9 @@ func (s ApiSnapshot) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 	if _, err := s.hashAuthConfigs(hasher); err != nil {
+		return 0, err
+	}
+	if _, err := s.hashRatelimitconfigs(hasher); err != nil {
 		return 0, err
 	}
 	return hasher.Sum64(), nil
@@ -101,6 +107,10 @@ func (s ApiSnapshot) hashAuthConfigs(hasher hash.Hash64) (uint64, error) {
 	return hashutils.HashAllSafe(hasher, s.AuthConfigs.AsInterfaces()...)
 }
 
+func (s ApiSnapshot) hashRatelimitconfigs(hasher hash.Hash64) (uint64, error) {
+	return hashutils.HashAllSafe(hasher, s.Ratelimitconfigs.AsInterfaces()...)
+}
+
 func (s ApiSnapshot) HashFields() []zap.Field {
 	var fields []zap.Field
 	hasher := fnv.New64()
@@ -139,6 +149,11 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	fields = append(fields, zap.Uint64("authConfigs", AuthConfigsHash))
+	RatelimitconfigsHash, err := s.hashRatelimitconfigs(hasher)
+	if err != nil {
+		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
+	}
+	fields = append(fields, zap.Uint64("ratelimitconfigs", RatelimitconfigsHash))
 	snapshotHash, err := s.Hash(hasher)
 	if err != nil {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
@@ -147,14 +162,15 @@ func (s ApiSnapshot) HashFields() []zap.Field {
 }
 
 type ApiSnapshotStringer struct {
-	Version        uint64
-	Artifacts      []string
-	Endpoints      []string
-	Proxies        []string
-	UpstreamGroups []string
-	Secrets        []string
-	Upstreams      []string
-	AuthConfigs    []string
+	Version          uint64
+	Artifacts        []string
+	Endpoints        []string
+	Proxies          []string
+	UpstreamGroups   []string
+	Secrets          []string
+	Upstreams        []string
+	AuthConfigs      []string
+	Ratelimitconfigs []string
 }
 
 func (ss ApiSnapshotStringer) String() string {
@@ -195,6 +211,11 @@ func (ss ApiSnapshotStringer) String() string {
 		s += fmt.Sprintf("    %v\n", name)
 	}
 
+	s += fmt.Sprintf("  Ratelimitconfigs %v\n", len(ss.Ratelimitconfigs))
+	for _, name := range ss.Ratelimitconfigs {
+		s += fmt.Sprintf("    %v\n", name)
+	}
+
 	return s
 }
 
@@ -204,13 +225,14 @@ func (s ApiSnapshot) Stringer() ApiSnapshotStringer {
 		log.Println(eris.Wrapf(err, "error hashing, this should never happen"))
 	}
 	return ApiSnapshotStringer{
-		Version:        snapshotHash,
-		Artifacts:      s.Artifacts.NamespacesDotNames(),
-		Endpoints:      s.Endpoints.NamespacesDotNames(),
-		Proxies:        s.Proxies.NamespacesDotNames(),
-		UpstreamGroups: s.UpstreamGroups.NamespacesDotNames(),
-		Secrets:        s.Secrets.NamespacesDotNames(),
-		Upstreams:      s.Upstreams.NamespacesDotNames(),
-		AuthConfigs:    s.AuthConfigs.NamespacesDotNames(),
+		Version:          snapshotHash,
+		Artifacts:        s.Artifacts.NamespacesDotNames(),
+		Endpoints:        s.Endpoints.NamespacesDotNames(),
+		Proxies:          s.Proxies.NamespacesDotNames(),
+		UpstreamGroups:   s.UpstreamGroups.NamespacesDotNames(),
+		Secrets:          s.Secrets.NamespacesDotNames(),
+		Upstreams:        s.Upstreams.NamespacesDotNames(),
+		AuthConfigs:      s.AuthConfigs.NamespacesDotNames(),
+		Ratelimitconfigs: s.Ratelimitconfigs.NamespacesDotNames(),
 	}
 }

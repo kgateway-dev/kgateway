@@ -78,7 +78,7 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
-	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374

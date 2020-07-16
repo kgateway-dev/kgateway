@@ -63,7 +63,7 @@ func editVhost(opts *editOptions.EditOptions) error {
 		vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
 	}
 
-	vs.VirtualHost.Options.Ratelimit = ratelimitExtension
+	vs.VirtualHost.Options.RateLimitConfigType = &gloov1.VirtualHostOptions_Ratelimit{Ratelimit: ratelimitExtension}
 	_, err = vsClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 	return err
 }

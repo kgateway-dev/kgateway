@@ -1,7 +1,7 @@
 ---
 title: Server Config (Enterprise)
 description: Advanced configuration for Gloo Enterprise's rate-limit service.
-weight: 20
+weight: 40
 ---
 
 ##### Configuring Envoy rate limit behavior
