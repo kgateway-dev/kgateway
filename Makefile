@@ -19,7 +19,11 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+# WASM version has '-wasm' added after major.minor.patch but before label. Eg 1.2.3-wasm or 1.2.3-wasm-rc1
+WASM_VERSION ?= $(shell echo $(VERSION) | sed 's/\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)/\1-wasm/g')
+
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-rc1
+ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-wasm-rc1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -381,7 +385,8 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 .PHONY: gloo-envoy-wasm-wrapper-docker
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
-		-t $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION)
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_WASM_IMAGE) \
+		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -547,7 +552,7 @@ docker-push: $(DOCKER_IMAGES)
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
@@ -560,7 +565,7 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
