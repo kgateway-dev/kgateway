@@ -89,10 +89,10 @@ DEPSGOBIN=$(shell pwd)/_output/.bin
 
 .PHONY: update-deps
 update-deps: mod-download
-	mkdir $(DEPSGOBIN)
+	# mkdir $(DEPSGOBIN)
 	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GOBIN=$(DEPSGOBIN) go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
+	GOBIN=$(DEPSGOBIN) go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200522201501-cb1345f3a375
 	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
 	GOBIN=$(DEPSGOBIN) go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
 	GOBIN=$(DEPSGOBIN) go get -v -u github.com/golang/mock/gomock@v1.4.3
