@@ -405,7 +405,7 @@ type Route struct {
 	// about the route. It can be used for configuration, stats, and logging.
 	// The metadata should go under the filter namespace that will need it.
 	// For instance, if the metadata is intended for the Router filter,
-	// the filter name should be specified as *envoy.router*.
+	// the filter name should be specified as *envoy.filters.http.router*.
 	Metadata *core.Metadata `protobuf:"bytes,4,opt,name=metadata,proto3" json:"metadata,omitempty"`
 	// Decorator for the matched route.
 	Decorator *Decorator `protobuf:"bytes,5,opt,name=decorator,proto3" json:"decorator,omitempty"`

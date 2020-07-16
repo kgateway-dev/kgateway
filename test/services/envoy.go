@@ -59,8 +59,9 @@ node:
   role: {{.Role}}
 {{if .MetricsAddr}}
 stats_sinks:
-  - name: envoy.metrics_service
-    config:
+  - name: envoy.stat_sinks.metrics_service
+    typed_config:
+      "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
       grpc_service:
         envoy_grpc: {cluster_name: metrics_cluster}
 {{end}}
