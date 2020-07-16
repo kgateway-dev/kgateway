@@ -11,7 +11,7 @@ fi
 make update-deps
 
 set +e
-
+find -L --name validate.proto
 make generated-code -B
 if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
