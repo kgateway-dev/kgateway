@@ -1,7 +1,7 @@
 steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: ['version']
-    id: 'empty noop to pass CI'
+    id: 'empty noop to pass CI -- $REPO_NAME $COMMIT_SHA'
 #steps:
 #
 ## clones Gloo so it can be setup & tested
