@@ -41,7 +41,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 
 	pflags := cmd.PersistentFlags()
 	flagutils.AddClusterFlags(pflags, &opts.Cluster)
-	flagutils.AddUnregisterFlags(pflags, &opts.Cluster.Register)
+	flagutils.AddUnregisterFlags(pflags, &opts.Cluster.Unregister)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }
