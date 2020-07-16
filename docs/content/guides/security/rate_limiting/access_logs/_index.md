@@ -1,6 +1,6 @@
 ---
 title: Access logs
-weight: 50
+weight: 60
 description: Use access logs to determine request characteristics of rate-limit rule breaches.
 ---
 

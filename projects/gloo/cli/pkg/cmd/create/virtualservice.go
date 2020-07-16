@@ -3,6 +3,8 @@ package create
 import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
 	extauthv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
@@ -14,7 +16,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -110,13 +111,13 @@ func virtualServiceFromOpts(meta core.Metadata, input options.InputVirtualServic
 		if vs.VirtualHost.Options == nil {
 			vs.VirtualHost.Options = &gloov1.VirtualHostOptions{}
 		}
-		timeUnit, ok := ratelimit.RateLimit_Unit_value[rl.TimeUnit]
+		timeUnit, ok := rltypes.RateLimit_Unit_value[rl.TimeUnit]
 		if !ok {
 			return nil, errors.Errorf("invalid time unit specified: %v", rl.TimeUnit)
 		}
 		ingressRateLimit := &ratelimit.IngressRateLimit{
-			AnonymousLimits: &ratelimit.RateLimit{
-				Unit:            ratelimit.RateLimit_Unit(timeUnit),
+			AnonymousLimits: &rltypes.RateLimit{
+				Unit:            rltypes.RateLimit_Unit(timeUnit),
 				RequestsPerUnit: rl.RequestsPerTimeUnit,
 			},
 		}

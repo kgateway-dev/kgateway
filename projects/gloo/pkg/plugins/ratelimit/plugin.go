@@ -9,7 +9,6 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -56,34 +55,26 @@ func (p *Plugin) Init(params plugins.InitParams) error {
 }
 
 func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.VirtualHost, out *envoyroute.VirtualHost) error {
-	if rl := in.GetOptions().GetRatelimit(); rl != nil {
-		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rl.RateLimits)
+	if newRateLimits := in.GetOptions().GetRatelimit().GetRateLimits(); len(newRateLimits) > 0 {
+		out.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, newRateLimits)
 	}
 	return nil
 }
 
 func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	var rateLimit *ratelimit.RateLimitRouteExtension
-	if rl := in.GetOptions().GetRatelimit(); rl != nil {
-		rateLimit = rl
-	} else {
-		// no rate limit route config found, nothing to do here
-		return nil
+	if rateLimits := in.GetOptions().GetRatelimit(); rateLimits != nil {
+		if ra := out.GetRoute(); ra != nil {
+			ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimits.GetRateLimits())
+			ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimits.GetIncludeVhRateLimits()}
+		} else {
+			// TODO(yuval-k): maybe return nil here instead and just log a warning?
+			return fmt.Errorf("cannot apply rate limits without a route action")
+		}
 	}
-
-	ra := out.GetRoute()
-	if ra != nil {
-		ra.RateLimits = generateCustomEnvoyConfigForVhost(params.Ctx, rateLimit.RateLimits)
-		ra.IncludeVhRateLimits = &wrappers.BoolValue{Value: rateLimit.IncludeVhRateLimits}
-	} else {
-		// TODO(yuval-k): maybe return nil here instead and just log a warning?
-		return fmt.Errorf("cannot apply rate limits without a route action")
-	}
-
 	return nil
 }
 
-func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
+func (p *Plugin) HttpFilters(_ plugins.Params, listener *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
 	var upstreamRef *core.ResourceRef
 	var timeout *time.Duration
 	var denyOnFail bool

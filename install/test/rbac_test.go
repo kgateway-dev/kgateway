@@ -210,6 +210,11 @@ var _ = Describe("RBAC Test", func() {
 								Verbs:     []string{"get", "list", "watch", "update"},
 							},
 							{
+								APIGroups: []string{"ratelimit.solo.io"},
+								Resources: []string{"ratelimitconfigs", "ratelimitconfigs/status"},
+								Verbs:     []string{"get", "list", "watch", "update"},
+							},
+							{
 								APIGroups: []string{""},
 								Resources: []string{"configmaps"},
 								Verbs:     []string{"get", "update"},

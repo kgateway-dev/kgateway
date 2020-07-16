@@ -25,8 +25,8 @@ func MustKubeClient() kubernetes.Interface {
 }
 
 // Check that everything is OK by running `glooctl check`
-func GlooctlCheckEventuallyHealthy(testHelper *helper.SoloTestHelper, timeoutInterval string) {
-	Eventually(func() error {
+func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper, timeoutInterval string) {
+	EventuallyWithOffset(offset, func() error {
 		opts := &options.Options{
 			Metadata: core.Metadata{
 				Namespace: testHelper.InstallNamespace,

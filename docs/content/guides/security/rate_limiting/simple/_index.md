@@ -1,6 +1,6 @@
 ---
 title: Gloo API (Enterprise)
-weight: 1
+weight: 30
 description: Simplified rate-limit API that covers most use cases.
 ---
 
