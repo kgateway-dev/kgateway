@@ -1,23 +1,25 @@
 ---
-title: "glooctl cluster"
+title: "glooctl cluster unregister"
 weight: 5
 ---
-## glooctl cluster
+## glooctl cluster unregister
 
-Cluster commands
+Unregister a cluster to the Gloo Federation control plane
 
 ### Synopsis
 
-Commands related to managing multiple clusters
+Unregister a cluster to the Gloo Federation control plane. Unregistered clusters can no longer betargeted for discovery and configuration. This will not delete the cluster.
 
 ```
-glooctl cluster [flags]
+glooctl cluster unregister [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for cluster
+      --cluster-name string           name of the cluster to register
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
+  -h, --help                          help for unregister
 ```
 
 ### Options inherited from parent commands
@@ -36,8 +38,5 @@ glooctl cluster [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl cluster list](../glooctl_cluster_list)	 - List clusters registered to the Gloo Federation control plane
-* [glooctl cluster register](../glooctl_cluster_register)	 - Register a cluster to the Gloo Federation control plane
-* [glooctl cluster unregister](../glooctl_cluster_unregister)	 - Unregister a cluster to the Gloo Federation control plane
+* [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 
