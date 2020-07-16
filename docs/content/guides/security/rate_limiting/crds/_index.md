@@ -69,11 +69,10 @@ The configuration format is the same in both cases. It must be specified under t
 
 ```yaml
 options:
-  ratelimit:
-    configRefs:
-      refs:
-      - name: my-rate-limit-policy
-        namespace: gloo-system
+  rateLimitConfigs:
+    refs:
+    - name: my-rate-limit-policy
+      namespace: gloo-system
 ```
 
 `RateLimitConfig`s defined on a `VirtualHost` is inherited by all the `Route`s that belong to that `VirtualHost`, 
@@ -285,13 +284,12 @@ spec:
     domains:
       - '*'
     options:
-      ratelimit:
-        configRefs:
-          refs:
-          - name: global-limit
-            namespace: gloo-system
-          - name: per-upstream-counter
-            namespace: gloo-system
+      rateLimitConfigs:
+        refs:
+        - name: global-limit
+          namespace: gloo-system
+        - name: per-upstream-counter
+          namespace: gloo-system
     routes:
       - matchers:
         - prefix: /echo-1

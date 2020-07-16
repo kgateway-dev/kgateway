@@ -4,12 +4,6 @@ description: Fine-grained rate limit API.
 weight: 10
 ---
 
-{{% notice note %}}
-The rate limit configuration format described on this page has been introduced with **Gloo**, release `v1.5.0-beta8`, 
-and **Gloo Enterprise**, release `v1.5.0-beta3`. See the [Deprecation notice](#deprecation-notice) section of this guide 
-for more information.
-{{% /notice %}}
-
 ## Table of Contents
 
 - [Overview](#overview)
@@ -29,7 +23,6 @@ for more information.
     - [Traffic prioritization based on HTTP method](#traffic-prioritization-based-on-http-method)
     - [Securing rate limit actions with JWTs](#securing-rate-limit-actions-with-jwts)
     - [Improving security further with WAF and authorization](#improving-security-further-with-waf-and-authorization)
-- [Deprecation notice](#deprecation-notice)
 
 ## Overview
 
@@ -118,7 +111,7 @@ on this page for can be applied in the same way.
 This defines a limit of 2 requests per second for any request that triggers an action on the generic key called `per-second`. 
 We could define that action on a virtual service like so:
 
-{{< highlight yaml "hl_lines=18-24" >}}
+{{< highlight yaml "hl_lines=18-23" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -138,11 +131,10 @@ spec:
               namespace: gloo-system
         options:
           ratelimit:
-            inlineConfig:
-              rateLimits:
-                - actions:
-                    - genericKey:
-                        descriptorValue: "per-second"
+            rateLimits:
+              - actions:
+                  - genericKey:
+                      descriptorValue: "per-second"
 {{< /highlight >}}
 
 {{% notice note %}}
@@ -168,7 +160,7 @@ spec:
 
 Now we can create a route that triggers a rate limit action for this descriptor:
 
-{{< highlight yaml "hl_lines=18-25" >}}
+{{< highlight yaml "hl_lines=18-24" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -188,12 +180,11 @@ spec:
               namespace: gloo-system
     options:
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
+        rateLimits:
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
 {{< /highlight >}}
 
 With this config, a rate limit of 2 per minute will be enforced for requests depending on the value of the `x-type` header, 
@@ -230,7 +221,7 @@ spec:
 
 On the route, we can define an action to count against this descriptor in the following way:
 
-{{< highlight yaml "hl_lines=18-23" >}}
+{{< highlight yaml "hl_lines=18-22" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -250,10 +241,9 @@ spec:
               namespace: gloo-system
     options:
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - remoteAddress: {}
+        rateLimits:
+          - actions:
+              - remoteAddress: {}
 {{< /highlight >}}
 
 {{% notice warning %}}
@@ -286,7 +276,7 @@ spec:
 This rule enforces a limit of 1 request per minute for any unique combination of `type` and `number` values. We can define 
 multiple actions on our routes to apply this rule:
 
-{{< highlight yaml "hl_lines=18-28" >}}
+{{< highlight yaml "hl_lines=18-27" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -306,15 +296,14 @@ spec:
               namespace: gloo-system
     options:
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-                - requestHeaders:
-                    descriptorKey: number
-                    headerName: x-number
+        rateLimits:
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+              - requestHeaders:
+                  descriptorKey: number
+                  headerName: x-number
 {{< /highlight >}}
 
 If a request is routed using this virtual service, and the `x-type` and `x-number` headers are both present on the request, 
@@ -349,7 +338,7 @@ spec:
 This time, on our virtual service, we'll define actions for two separate rate limits - one that increments the counter 
 for the `type` limit specifically, and another to increment the counter for the `type` and `number` pair, when present. 
 
-{{< highlight yaml "hl_lines=18-32" >}}
+{{< highlight yaml "hl_lines=18-31" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -369,19 +358,18 @@ spec:
               namespace: gloo-system
     options:
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-                - requestHeaders:
-                    descriptorKey: number
-                    headerName: x-number
+        rateLimits:
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+              - requestHeaders:
+                  descriptorKey: number
+                  headerName: x-number
 {{< /highlight >}}
 
 Note that we now have two different rate limits defined for this virtual service. One contributes to the counter for just `type`, 
@@ -462,7 +450,7 @@ spec:
 So far, we have been configuring rate limit actions on our virtual services as an option under the `virtualHost`. 
 Alternatively, we can define this as an option on the route:
  
-{{< highlight yaml "hl_lines=18-34" >}}
+{{< highlight yaml "hl_lines=18-33" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -483,20 +471,19 @@ spec:
         # This is now indented to be defined on the route
         options:
           ratelimit:
-            inlineConfig:
-              includeVhRateLimits: false
-              rateLimits:
-                - actions:
-                    - requestHeaders:
-                        descriptorKey: type
-                        headerName: x-type
-                - actions:
-                    - requestHeaders:
-                        descriptorKey: type
-                        headerName: x-type
-                    - requestHeaders:
-                        descriptorKey: number
-                        headerName: x-number
+            includeVhRateLimits: false
+            rateLimits:
+              - actions:
+                  - requestHeaders:
+                      descriptorKey: type
+                      headerName: x-type
+              - actions:
+                  - requestHeaders:
+                      descriptorKey: type
+                      headerName: x-type
+                  - requestHeaders:
+                      descriptorKey: number
+                      headerName: x-number
 {{< /highlight >}}
 
 Note that route-level configuration for rate limiting supports an additional parameter, `includeVhRateLimits`, that can be used
@@ -578,7 +565,7 @@ spec:
 
 And we can configure a route to count towards both limits:
 
-{{< highlight yaml "hl_lines=18-29" >}}
+{{< highlight yaml "hl_lines=18-28" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -598,16 +585,15 @@ spec:
               namespace: gloo-system
         options:
           ratelimit:
-            inlineConfig:
-              rateLimits:
-                - actions:
-                    - genericKey:
-                        descriptorValue: "per-minute"
-                    - remoteAddress: {}
-                - actions:
-                    - genericKey:
-                        descriptorValue: "per-second"
-                    - remoteAddress: {}
+            rateLimits:
+              - actions:
+                  - genericKey:
+                      descriptorValue: "per-minute"
+                  - remoteAddress: {}
+              - actions:
+                  - genericKey:
+                      descriptorValue: "per-second"
+                  - remoteAddress: {}
 {{< /highlight >}}
 
 Now, we'll increment a per-minute and per-second rate limit counter based on the client remote address. 
@@ -663,15 +649,14 @@ spec:
               namespace: gloo-system
         options:
           ratelimit:
-            inlineConfig:
-              rateLimits:
-                - actions:
-                  - remoteAddress: {}
-                - actions:
-                  - requestHeaders:
-                      descriptorKey: method
-                      headerName: :method
-                  - remoteAddress: {}
+            rateLimits:
+              - actions:
+                - remoteAddress: {}
+              - actions:
+                - requestHeaders:
+                    descriptorKey: method
+                    headerName: :method
+                - remoteAddress: {}
 {{< /highlight >}}
 
 How the route will have a per-client limit for general protection while a smaller limit is in place for `GET` requests to prevent lower priority traffic from overwhelming the system.
@@ -754,19 +739,18 @@ spec:
                   jwIDAQAB
                   -----END PUBLIC KEY-----
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-                - requestHeaders:
-                    descriptorKey: number
-                    headerName: x-number
+        rateLimits:
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+              - requestHeaders:
+                  descriptorKey: number
+                  headerName: x-number
 {{< /highlight >}}
 
 The virtual service looks the same as before, but now we have an additional JWT configuration section that extracts 
@@ -794,7 +778,7 @@ apply rate limits to requests that had no `x-type` at all. We also may want to e
 
 Let's add both of these options to our route by modifying our virtual service:
 
-{{< highlight yaml "hl_lines=59-68" >}}
+{{< highlight yaml "hl_lines=58-67" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -840,19 +824,18 @@ spec:
                   jwIDAQAB
                   -----END PUBLIC KEY-----
       ratelimit:
-        inlineConfig:
-          rateLimits:
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-            - actions:
-                - requestHeaders:
-                    descriptorKey: type
-                    headerName: x-type
-                - requestHeaders:
-                    descriptorKey: number
-                    headerName: x-number
+        rateLimits:
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+          - actions:
+              - requestHeaders:
+                  descriptorKey: type
+                  headerName: x-type
+              - requestHeaders:
+                  descriptorKey: number
+                  headerName: x-number
       waf:
         ruleSets:
           - ruleStr: |
@@ -999,58 +982,4 @@ content-length: 0
 ```
 
 As we can now see, by taking advantage of other Gloo security features, we can ensure rate limits are enforced
-while also securing routes against any kind of request that we didn't target with our rate limiting actions. 
-
-## Deprecation notice
-Starting with **Gloo**, release `v1.5.0-beta8`, and **Gloo Enterprise**, release `v1.5.0-beta3`, the way to specify inline 
-rate limit actions on `VirtualHosts` and `Routes` has slightly changed. The old configuration format is still supported 
-and will continue to be for all Gloo and Gloo Enterprise `v1.x` releases. It will be removed with the next major Gloo version (`v2.0.0`).
-
-#### Virtual Hosts
-Old format:
-
-```yaml
-options:
-  ratelimit:
-    rateLimits:
-    - actions:
-      - genericKey:
-          descriptorValue: "per-second"
-```
-
-New format:
-```yaml
-options:
-  ratelimit:
-    inlineConfig:
-      rateLimits:
-      - actions:
-        - genericKey:
-            descriptorValue: "per-second"
-```
-
-#### Routes
-Old format:
-
-```yaml
-options:
-  ratelimit:
-    includeVhRateLimits: false
-    rateLimits:
-    - actions:
-      - genericKey:
-          descriptorValue: "per-second"
-```
-
-New format:
-
-```yaml
-options:
-  ratelimit:
-    inlineConfig:
-      includeVhRateLimits: false
-      rateLimits:
-      - actions:
-        - genericKey:
-            descriptorValue: "per-second"
-```
+while also securing routes against any kind of request that we didn't target with our rate limiting actions.
