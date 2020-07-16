@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
-	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
+	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
 )
@@ -113,7 +113,7 @@ var _ = Describe("wasm plugin", func() {
 		Expect(f).To(HaveLen(1))
 		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
 		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-		var pc wasmv3.WasmService
+		var pc wasmv3.Wasm
 		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
