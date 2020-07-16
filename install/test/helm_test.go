@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
-	v12 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
@@ -579,8 +579,8 @@ var _ = Describe("Helm Test", func() {
 						Expect(tcpGateway).NotTo(BeNil())
 						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
 						host := tcpGateway.GetTcpHosts()[0]
-						Expect(host.GetSslConfig()).To(Equal(&v12.SslConfig{
-							SslSecrets: &v12.SslConfig_SecretRef{
+						Expect(host.GetSslConfig()).To(Equal(&gloov1.SslConfig{
+							SslSecrets: &gloov1.SslConfig_SecretRef{
 								SecretRef: &core.ResourceRef{
 									Name:      "failover-downstream",
 									Namespace: namespace,
