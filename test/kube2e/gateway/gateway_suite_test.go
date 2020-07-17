@@ -28,25 +28,15 @@ import (
 
 	"github.com/solo-io/go-utils/testutils/helper"
 
-	"github.com/solo-io/go-utils/testutils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
 func TestGateway(t *testing.T) {
-	if testutils.AreTestsDisabled() {
-		return
-	}
-	if os.Getenv("CLUSTER_LOCK_TESTS") == "1" {
-		log.Warnf("This test does not require using a cluster lock. Cluster lock is enabled so this test is disabled. " +
-			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
-		return
-	}
-	if os.Getenv("RUN_HELME2E_TESTS") == "1" {
-		log.Warnf("This test does not require using a cluster lock. Cluster lock is enabled so this test is disabled. " +
-			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
+	if os.Getenv("KUBE2E_TESTS") != "gateway" {
+		log.Warnf("This test is disabled. " +
+			"To enable, set KUBE2E_TESTS to 'gateway' in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()

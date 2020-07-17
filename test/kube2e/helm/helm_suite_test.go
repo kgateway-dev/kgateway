@@ -18,20 +18,15 @@ import (
 
 	"github.com/solo-io/go-utils/testutils/helper"
 
-	"github.com/solo-io/go-utils/testutils"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 )
 
 func TestHelm(t *testing.T) {
-	if testutils.AreTestsDisabled() {
-		return
-	}
-	if os.Getenv("RUN_HELME2E_TESTS") != "1" {
+	if os.Getenv("KUBE2E_TESTS") != "helm" {
 		log.Warnf("This test is disabled. " +
-			"To enable, unset RUN_HELME2E_TESTS in your env.")
+			"To enable, set KUBE2E_TESTS to 'helm' in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()

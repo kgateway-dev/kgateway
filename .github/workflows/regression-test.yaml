@@ -1,9 +1,12 @@
-name: Codegen Check + Regression
+name: Codegen Check + Regression Tests
 on: pull_request
 jobs:
-  gatewayE2e:
-    name: Gateway k8s e2e
+  regression_tests:
+    name: k8s regression tests
     runs-on: ubuntu-18.04
+    strategy:
+      matrix:
+        kube-e2e-test-type: [gateway, ingress, knative]
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.3.1
@@ -53,9 +56,9 @@ jobs:
 #        CLUSTER_LOCK_TESTS: '1'
 #      run: |
 #        go test ./test/kube2e/...
-    - name: Testing - kube2e regression tests
+    - name: Testing - kube e2e regression tests
       env:
-        RUN_KUBE2E_TESTS: '1'
+        KUBE2E_TESTS: '${{ kube-e2e-test-type }}'
       run: |
         go test ./test/kube2e/...
     - uses: azure/setup-helm@v1
@@ -67,71 +70,3 @@ jobs:
         # see what's in the cluster if we failed
         kubectl get all -A
         kubectl get configmaps -A
-  helmK8sE2e:
-    name: Helm k8s e2e
-    runs-on: ubuntu-18.04
-    steps:
-      - name: Cancel Previous Actions
-        uses: styfle/cancel-workflow-action@0.3.1
-        with:
-          workflow_id: 1442930
-          access_token: ${{ github.token }}
-      # Codegen Check
-      - name: Set up Go 1.14
-        uses: actions/setup-go@v1
-        with:
-          go-version: 1.14
-        id: go
-      #    - name: Install Protoc
-      #      uses: arduino/setup-protoc@v1.1.0
-      #      with:
-      #        version: '3.6.1'
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-      #    - name: Generate Code
-      #      run: |
-      #        ./ci/check-code-and-docs-gen.sh
-      #    # E2E Regression Test
-      #    - uses: azure/setup-helm@v1
-      #      with:
-      #        version: v3.2.0
-      - uses: engineerd/setup-kind@v0.4.0
-        with:
-          name: kind
-      - uses: azure/setup-kubectl@v1
-        id: kubectl
-        with:
-          version: 'v1.18.0'
-      - name: Setup test env
-        run: |
-          ./ci/kind.sh
-      #    - name: Testing - kube2e cluster lock (ingress & knative)
-      #      env:
-      #        RUN_KUBE2E_TESTS: '1'
-      #        CLUSTER_LOCK_TESTS: '1'
-      #      run: |
-      #        go test ./test/kube2e/...
-      - name: Testing - helm kube2e regression tests
-        env:
-          RUN_KUBE2E_TESTS: '1'
-          # temporarily disabled because these tests only worked due to test pollution and are flawed, need to be rewritten/fixed (gloo itself is broken)
-          RUN_HELME2E_TESTS: '0'
-        run: |
-          go test ./test/kube2e/...
-      - uses: azure/setup-helm@v1
-        with:
-          version: v3.2.0
-      - name: Debug Info
-        if: failure()
-        run: |
-          # see what's in the cluster if we failed
-          kubectl get all -A
-          kubectl get configmaps -A
