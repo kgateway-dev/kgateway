@@ -1,23 +1,24 @@
 ---
-title: "glooctl cluster"
+title: "glooctl cluster list"
 weight: 5
 ---
-## glooctl cluster
+## glooctl cluster list
 
-Cluster commands
+List clusters registered to the Gloo Federation control plane
 
 ### Synopsis
 
-Commands related to managing multiple clusters
+List clusters registered to the Gloo Federation control plane
 
 ```
-glooctl cluster [flags]
+glooctl cluster list [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for cluster
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
+  -h, --help                          help for list
 ```
 
 ### Options inherited from parent commands
@@ -36,8 +37,5 @@ glooctl cluster [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl cluster list](../glooctl_cluster_list)	 - List clusters registered to the Gloo Federation control plane
-* [glooctl cluster register](../glooctl_cluster_register)	 - Register a cluster to the Gloo Federation control plane
-* [glooctl cluster unregister](../glooctl_cluster_unregister)	 - Unregister a cluster to the Gloo Federation control plane
+* [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 
