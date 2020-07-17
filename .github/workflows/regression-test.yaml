@@ -4,9 +4,9 @@ jobs:
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
-    strategy:
-      matrix:
-        kube-e2e-test-type: [gateway, ingress, knative]
+#    strategy:
+#      matrix:
+#        kube-e2e-test-type: [gateway, ingress, knative]
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.3.1
@@ -58,7 +58,7 @@ jobs:
 #        go test ./test/kube2e/...
     - name: Testing - kube e2e regression tests
       env:
-        KUBE2E_TESTS: ${{ kube-e2e-test-type }}
+        KUBE2E_TESTS: 'gateway'
       run: |
         go test ./test/kube2e/...
     - uses: azure/setup-helm@v1
