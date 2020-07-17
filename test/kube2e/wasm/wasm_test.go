@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	"github.com/rotisserie/eris"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -41,10 +42,6 @@ var _ = Describe("Kube2e: wasm", func() {
 
 		gatewayClient        gatewayv1.GatewayClient
 		virtualServiceClient gatewayv1.VirtualServiceClient
-		routeTableClient     gatewayv1.RouteTableClient
-		upstreamGroupClient  gloov1.UpstreamGroupClient
-		upstreamClient       gloov1.UpstreamClient
-		proxyClient          gloov1.ProxyClient
 	)
 
 	BeforeEach(func() {
@@ -65,26 +62,6 @@ var _ = Describe("Kube2e: wasm", func() {
 			Cfg:         cfg,
 			SharedCache: cache,
 		}
-		routeTableClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gatewayv1.RouteTableCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
-		}
-		upstreamGroupClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gloov1.UpstreamGroupCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
-		}
-		upstreamClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gloov1.UpstreamCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
-		}
-		proxyClientFactory := &factory.KubeResourceClientFactory{
-			Crd:         gloov1.ProxyCrd,
-			Cfg:         cfg,
-			SharedCache: cache,
-		}
 
 		gatewayClient, err = gatewayv1.NewGatewayClient(gatewayClientFactory)
 		Expect(err).NotTo(HaveOccurred())
@@ -94,26 +71,6 @@ var _ = Describe("Kube2e: wasm", func() {
 		virtualServiceClient, err = gatewayv1.NewVirtualServiceClient(virtualServiceClientFactory)
 		Expect(err).NotTo(HaveOccurred())
 		err = virtualServiceClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		routeTableClient, err = gatewayv1.NewRouteTableClient(routeTableClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = routeTableClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		upstreamGroupClient, err = gloov1.NewUpstreamGroupClient(upstreamGroupClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = upstreamGroupClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		upstreamClient, err = gloov1.NewUpstreamClient(upstreamClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = upstreamClient.Register()
-		Expect(err).NotTo(HaveOccurred())
-
-		proxyClient, err = gloov1.NewProxyClient(proxyClientFactory)
-		Expect(err).NotTo(HaveOccurred())
-		err = proxyClient.Register()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -125,7 +82,7 @@ var _ = Describe("Kube2e: wasm", func() {
 			Expect(err).NotTo(HaveOccurred())
 		})
 
-		It("correctly routes requests to an upstream", func() {
+		It("can run a wasm filter", func() {
 			dest := &gloov1.Destination{
 				DestinationType: &gloov1.Destination_Upstream{
 					Upstream: &core.ResourceRef{
@@ -140,43 +97,36 @@ var _ = Describe("Kube2e: wasm", func() {
 				return err
 			}).ShouldNot(HaveOccurred())
 
-			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			defaultGatewayName := defaults.DefaultGateway(testHelper.InstallNamespace).Metadata.Name
 			// wait for default gateway to be created
-			Eventually(func() (*gatewayv1.Gateway, error) {
-				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "15s", "0.5s").Should(Not(BeNil()))
+			Eventually(func() bool {
+				_, err := gatewayClient.Read(testHelper.InstallNamespace, defaultGatewayName, clients.ReadOpts{})
+				if err != nil {
+					return false
+				}
+				return true
+			}, "15s", "0.5s").Should(BeTrue())
 
-			gateway, err := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
+			Eventually(func() bool {
+				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "dummy content to hydrate cache")
+				if err != nil {
+					return false
+				}
+				return true
+			}, "10s", "0.5s").Should(BeTrue(), "should update gateway with wasm config")
 
-			gw, ok := gateway.GetGatewayType().(*gatewayv1.Gateway_HttpGateway)
-			Expect(ok).To(BeTrue())
+			// There's currently an envoy bug where wasm filters not in envoy's cache will never load,
+			// so we write the filter again with a new hash (changed filterName) so that envoy can
+			// pick it up from the cache the 2nd time.
+			time.Sleep(3 * time.Second)
+			Eventually(func() bool {
+				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "test")
+				if err != nil {
+					return false
+				}
+				return true
+			}, "10s", "0.5s").Should(BeTrue(), "should update gateway to use cached filter")
 
-			configVal := types.StringValue{Value: "test"}
-			configAny, err := types.MarshalAny(&configVal)
-
-			gw.HttpGateway.Options = &gloov1.HttpListenerOptions{
-				Wasm: &wasm.PluginSource{
-					Filters: []*wasm.WasmFilter{{
-						Image:  "webassemblyhub.io/sodman/example-filter:v0.2",
-						Config: configAny,
-						Name:   "add-header-wasm-test",
-						RootId: "add_header_root_id",
-					}},
-				},
-			}
-
-			writtenGW, err := gatewayClient.Write(gateway, clients.WriteOpts{
-				OverwriteExisting: true,
-			})
-			Expect(err).NotTo(HaveOccurred())
-
-			fmt.Printf("gatewayWritten without errors - %v\n", writtenGW)
-
-			// wait for default gateway to be updated
-			Eventually(func() (*gatewayv1.Gateway, error) {
-				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			}, "15s", "0.5s").Should(Not(BeNil()))
 			wasmHeader := "valuefromconfig: test"
 
 			co := helper.CurlOpts{
@@ -191,10 +141,6 @@ var _ = Describe("Kube2e: wasm", func() {
 				WithoutStats:      true,
 			}
 
-			newGateway, err := gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-
-			fmt.Printf("NEW GATEWAY YO - %v\n", newGateway)
 			// Should still have a successful response
 			testHelper.CurlEventuallyShouldRespond(co, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
 
@@ -240,4 +186,39 @@ func getRouteWithDest(dest *gloov1.Destination, path string) *gatewayv1.Route {
 			},
 		},
 	}
+}
+
+// Reads the gateway from the gatewayClient using the gatewayName, and writes a basic add-header
+// wasm filter config to it with the given filterName.
+func writeWasmFilterToGateway(gatewayClient gatewayv1.GatewayClient, gatewayName, config string) (*gatewayv1.Gateway, error) {
+	gateway, err := gatewayClient.Read(testHelper.InstallNamespace, gatewayName, clients.ReadOpts{})
+	if err != nil {
+		return nil, err
+	}
+
+	gw, ok := gateway.GetGatewayType().(*gatewayv1.Gateway_HttpGateway)
+	if !ok {
+		return nil, eris.Errorf("Listener did not have an httpGateway")
+	}
+	configVal := types.StringValue{Value: config}
+	configAny, err := types.MarshalAny(&configVal)
+
+	gw.HttpGateway.Options = &gloov1.HttpListenerOptions{
+		Wasm: &wasm.PluginSource{
+			Filters: []*wasm.WasmFilter{{
+				Image:  "webassemblyhub.io/sodman/example-filter:v0.2",
+				Config: configAny,
+				Name:   "wasm-test-filter",
+				RootId: "add_header_root_id",
+			}},
+		},
+	}
+
+	writtenGateway, err := gatewayClient.Write(gateway, clients.WriteOpts{
+		OverwriteExisting: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return writtenGateway, nil
 }
