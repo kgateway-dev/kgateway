@@ -22,6 +22,11 @@ VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 # WASM version has '-wasm' added after major.minor.patch but before label. Eg 1.2.3-wasm or 1.2.3-wasm-rc1
 WASM_VERSION ?= $(shell echo $(VERSION) | sed 's/\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)/\1-wasm/g')
 
+# For non-versioned releases like local or dev builds, just prepend 'wasm-', eg wasm-dev
+ifeq ($(VERSION), $(WASM_VERSION))
+	WASM_VERSION = wasm-$(VERSION)
+endif
+
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-rc1
 ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-wasm-rc1
 
