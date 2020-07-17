@@ -192,7 +192,6 @@ data:
                   socket_address:
                     address: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}
                     port_value: {{ $.Values.gloo.deployment.restXdsPort }}
-        http2_protocol_options: {}
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
