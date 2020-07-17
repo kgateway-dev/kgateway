@@ -30,10 +30,10 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				}
 			}
 			if len(args) == 0 {
-				if opts.Cluster.Register.ClusterName == "" {
+				if opts.Cluster.Unregister.ClusterName == "" {
 					return EmptyClusterNameError
 				}
-				return secretClient.Delete(opts.Cluster.FederationNamespace, opts.Cluster.Register.ClusterName, clients.DeleteOpts{})
+				return secretClient.Delete(opts.Cluster.FederationNamespace, opts.Cluster.Unregister.ClusterName, clients.DeleteOpts{})
 			}
 			return nil
 		},
