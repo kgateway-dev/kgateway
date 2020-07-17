@@ -121,6 +121,7 @@ jobs:
       #        go test ./test/kube2e/...
       - name: Testing - helm kube2e regression tests
         env:
+          RUN_KUBE2E_TESTS: '1'
           RUN_HELME2E_TESTS: '1'
         run: |
           go test ./test/kube2e/...
