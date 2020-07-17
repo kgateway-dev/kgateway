@@ -1,6 +1,37 @@
 name: Codegen Check + Regression Tests
 on: pull_request
 jobs:
+  codegen:
+    name: codegen
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Cancel Previous Actions
+      uses: styfle/cancel-workflow-action@0.3.1
+      with:
+        workflow_id: 1442930
+        access_token: ${{ github.token }}
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+    - name: Install Protoc
+      uses: arduino/setup-protoc@v1.1.0
+      with:
+        version: '3.6.1'
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+    - uses: actions/cache@v1
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    - name: Generate Code
+      run: |
+        ./ci/check-code-and-docs-gen.sh
   regression_tests:
     name: k8s regression tests
     runs-on: ubuntu-18.04
@@ -14,16 +45,11 @@ jobs:
       with:
         workflow_id: 1442930
         access_token: ${{ github.token }}
-    # Codegen Check
     - name: Set up Go 1.14
       uses: actions/setup-go@v1
       with:
         go-version: 1.14
       id: go
-#    - name: Install Protoc
-#      uses: arduino/setup-protoc@v1.1.0
-#      with:
-#        version: '3.6.1'
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
       with:
@@ -34,13 +60,6 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-#    - name: Generate Code
-#      run: |
-#        ./ci/check-code-and-docs-gen.sh
-#    # E2E Regression Test
-#    - uses: azure/setup-helm@v1
-#      with:
-#        version: v3.2.0
     - uses: engineerd/setup-kind@v0.4.0
       with:
         name: kind
@@ -48,23 +67,17 @@ jobs:
       id: kubectl
       with:
         version: 'v1.18.0'
+    - uses: azure/setup-helm@v1
+      with:
+        version: v3.2.0
     - name: Setup test env
       run: |
         ./ci/kind.sh
-#    - name: Testing - kube2e cluster lock (ingress & knative)
-#      env:
-#        RUN_KUBE2E_TESTS: '1'
-#        CLUSTER_LOCK_TESTS: '1'
-#      run: |
-#        go test ./test/kube2e/...
     - name: Testing - kube e2e regression tests
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
         go test ./test/kube2e/...
-    - uses: azure/setup-helm@v1
-      with:
-        version: v3.2.0
     - name: Debug Info
       if: failure()
       run: |
