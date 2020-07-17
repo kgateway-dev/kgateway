@@ -116,7 +116,7 @@ var _ = Describe("Kube2e: wasm", func() {
 			}, "10s", "0.5s").Should(BeTrue(), "should update gateway with wasm config")
 
 			// There's currently an envoy bug where wasm filters not in envoy's cache will never load,
-			// so we write the filter again with a new hash (changed filterName) so that envoy can
+			// so we write the filter again with a new hash (changed config string) so that envoy can
 			// pick it up from the cache the 2nd time.
 			time.Sleep(3 * time.Second)
 			Eventually(func() bool {
