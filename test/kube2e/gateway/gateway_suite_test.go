@@ -44,6 +44,11 @@ func TestGateway(t *testing.T) {
 			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
 		return
 	}
+	if os.Getenv("RUN_HELME2E_TESTS") == "1" {
+		log.Warnf("This test does not require using a cluster lock. Cluster lock is enabled so this test is disabled. " +
+			"To enable, unset CLUSTER_LOCK_TESTS in your env.")
+		return
+	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
