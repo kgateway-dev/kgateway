@@ -67,15 +67,6 @@ steps:
   waitFor: ['-']
   id: 'grab-ginkgo-container'
 
-- name: gcr.io/cloud-builders/gcloud
-  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-  id: 'set-gcr-zone'
-
-- name: gcr.io/cloud-builders/gcloud
-  args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
-  waitFor: ['set-gcr-zone']
-  id: 'get-test-credentials'
-
 - name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
   env:
   - 'ENVOY_BINARY=/workspace/envoy'
@@ -86,7 +77,7 @@ steps:
   - 'DOCKER_CONFIG=/workspace/.docker/'
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
-  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
+  waitFor: ['get-envoy', 'setup-aws-creds']
   secretEnv: ['AWS_ARN_ROLE_1']
   id: 'test'
 
