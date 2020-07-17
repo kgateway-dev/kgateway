@@ -122,7 +122,8 @@ jobs:
       - name: Testing - helm kube2e regression tests
         env:
           RUN_KUBE2E_TESTS: '1'
-          RUN_HELME2E_TESTS: '1'
+          # temporarily disabled because these tests only worked due to test pollution and are flawed, need to be rewritten/fixed (gloo itself is broken)
+          RUN_HELME2E_TESTS: '0'
         run: |
           go test ./test/kube2e/...
       - uses: azure/setup-helm@v1
