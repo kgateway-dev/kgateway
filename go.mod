@@ -53,7 +53,7 @@ require (
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b
+	github.com/solo-io/solo-apis v0.0.0-20200717200504-646fde3dbcae
 	github.com/solo-io/solo-kit v0.13.9
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
@@ -82,6 +82,7 @@ require (
 	k8s.io/utils v0.17.1
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef
 	knative.dev/serving v0.10.0
+	sigs.k8s.io/controller-runtime v0.5.6
 	sigs.k8s.io/yaml v1.2.0
 )
 

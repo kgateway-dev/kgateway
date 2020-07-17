@@ -6,6 +6,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
@@ -20,6 +23,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
+	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -43,6 +47,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			} else {
 				fmt.Printf("No problems detected.\n")
 			}
+			CheckMulticlusterResources(opts)
 			return nil
 		},
 	}
@@ -119,7 +124,6 @@ func CheckResources(opts *options.Options) (bool, error) {
 	if !ok || err != nil {
 		return ok, err
 	}
-
 	return true, nil
 }
 
@@ -521,6 +525,59 @@ func checkSecrets(namespaces []string) (bool, error) {
 	}
 	fmt.Printf("OK\n")
 	return true, nil
+}
+
+func CheckMulticlusterResources(opts *options.Options) (bool, error) {
+	cfg, err := config.GetConfigWithContext("")
+	if err != nil {
+		return true, err
+	}
+	instanceClient, err := glooinstancev1.NewClientsetFromConfig(cfg)
+	if err != nil {
+		return true, err
+	}
+	glooInstanceList, err := instanceClient.GlooInstances().ListGlooInstance(opts.Top.Ctx)
+	if err != nil {
+		return true, err
+	}
+	glooInstances := glooInstanceList.Items
+	if len(glooInstances) < 0 {
+		return true, nil
+	}
+	fmt.Printf("\nFound multicluster Gloo resources!\n")
+	for _, glooInstance := range glooInstanceList.Items {
+		fmt.Printf("\nCheck for Gloo Instance %s:", glooInstance.GetName())
+		printGlooInstanceCheckSummary("deployments", glooInstance.Spec.GetCheck().GetDeployments())
+		printGlooInstanceCheckSummary("pods", glooInstance.Spec.GetCheck().GetPods())
+		printGlooInstanceCheckSummary("settings", glooInstance.Spec.GetCheck().GetSettings())
+		printGlooInstanceCheckSummary("upstreams", glooInstance.Spec.GetCheck().GetUpstreams())
+		printGlooInstanceCheckSummary("upstream groups", glooInstance.Spec.GetCheck().GetUpstreamGroups())
+		printGlooInstanceCheckSummary("auth configs", glooInstance.Spec.GetCheck().GetAuthConfigs())
+		//printGlooInstanceCheckSummary(glooInstance.Spec.GetCheck().GetRateLimitConfigs())
+		printGlooInstanceCheckSummary("virtual services", glooInstance.Spec.GetCheck().GetVirtualServices())
+		printGlooInstanceCheckSummary("route tables", glooInstance.Spec.GetCheck().GetRouteTables())
+		printGlooInstanceCheckSummary("gateways", glooInstance.Spec.GetCheck().GetGateways())
+		printGlooInstanceCheckSummary("proxies", glooInstance.Spec.GetCheck().GetProxies())
+	}
+	return true, nil
+}
+
+func printGlooInstanceCheckSummary(resourceType string, resource *types.GlooInstanceSpec_Check_Summary) {
+	fmt.Printf("\nChecking %s... ", resourceType)
+	ok := true
+	for _, errReport := range resource.GetErrors() {
+		fmt.Printf("\nFound error in %s.%s\n", errReport.GetRef().GetName(), errReport.GetRef().GetNamespace())
+		fmt.Printf("%s\n", errReport.GetMessage())
+		ok = false
+	}
+	for _, warningReport := range resource.GetWarnings() {
+		fmt.Printf("\nFound warning in %s.%s\n", warningReport.GetRef().GetName(), warningReport.GetRef().GetNamespace())
+		fmt.Printf("%s\n\n", warningReport.GetMessage())
+		ok = false
+	}
+	if ok {
+		fmt.Printf("OK")
+	}
 }
 
 func renderMetadata(metadata core.Metadata) string {
