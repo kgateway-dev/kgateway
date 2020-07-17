@@ -515,10 +515,12 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	if opts.ControlPlane.StartGrpcServer {
 		// copy for the go-routines
 		controlPlane := opts.ControlPlane
+
 		lis, err := net.Listen(opts.ControlPlane.BindAddr.Network(), opts.ControlPlane.BindAddr.String())
 		if err != nil {
 			return err
 		}
+
 		go func() {
 			<-controlPlane.GrpcService.Ctx.Done()
 			controlPlane.GrpcServer.Stop()

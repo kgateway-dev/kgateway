@@ -43,7 +43,7 @@ gloo:
     image:
       repository: gloo
     xdsPort: 9977
-    restXdsPort: 9978
+    restXdsPort: 9976
     validationPort: 9988
     replicas: 1
     runAsUser: 10101
