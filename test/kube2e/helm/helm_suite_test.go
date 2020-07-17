@@ -29,7 +29,7 @@ func TestHelm(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
-	if os.Getenv("RUN_HELME2E_TESTS") == "1" {
+	if os.Getenv("RUN_HELME2E_TESTS") != "1" {
 		log.Warnf("This test is disabled. " +
 			"To enable, unset RUN_HELME2E_TESTS in your env.")
 		return
