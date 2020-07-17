@@ -58,7 +58,7 @@ jobs:
 #        go test ./test/kube2e/...
     - name: Testing - kube e2e regression tests
       env:
-        KUBE2E_TESTS: '${{ kube-e2e-test-type }}'
+        KUBE2E_TESTS: ${{ kube-e2e-test-type }}
       run: |
         go test ./test/kube2e/...
     - uses: azure/setup-helm@v1
