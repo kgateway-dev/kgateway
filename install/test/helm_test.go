@@ -21,10 +21,8 @@ import (
 	"github.com/gogo/protobuf/types"
 	gwv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
-	skres "github.com/solo-io/solo-kit/pkg/api/v1/clients/kube/crd/solo.io/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"github.com/solo-io/solo-kit/pkg/utils/kubeutils"
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -68,19 +66,9 @@ func GetTestExtraEnvVar() v1.EnvVar {
 func ConvertKubeResource(unst *unstructured.Unstructured, res resources.Resource) {
 	byt, err := unst.MarshalJSON()
 	Expect(err).NotTo(HaveOccurred())
-	var skRes *skres.Resource
-	Expect(json.Unmarshal(byt, &skRes)).NotTo(HaveOccurred())
-	res.SetMetadata(kubeutils.FromKubeMeta(skRes.ObjectMeta))
-	if withStatus, ok := res.(resources.InputResource); ok {
-		resources.UpdateStatus(withStatus, func(status *core.Status) {
-			*status = skRes.Status
-		})
-	}
-	if skRes.Spec != nil {
-		if err := skprotoutils.UnmarshalMap(*skRes.Spec, res); err != nil {
-			Expect(err).NotTo(HaveOccurred())
-		}
-	}
+
+	err = skprotoutils.UnmarshalResource(byt, res)
+	Expect(err).NotTo(HaveOccurred())
 }
 
 var _ = Describe("Helm Test", func() {

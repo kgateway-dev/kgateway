@@ -47,6 +47,9 @@ rules:
   resources: ["upstreams","upstreamgroups", "proxies", "authconfigs"]
   # update is needed for status updates
   verbs: ["get", "list", "watch", "update"]
+- apiGroups: ["ratelimit.solo.io"]
+  resources: ["ratelimitconfigs","ratelimitconfigs/status"]
+  verbs: ["get", "list", "watch", "update"]
 - apiGroups: [""] # get/update on configmaps for recording envoy metrics
   resources: ["configmaps"]
   verbs: ["get", "update"]
