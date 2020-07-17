@@ -12,13 +12,9 @@ make update-deps
 
 set +e
 
-make generated-code -B
+make generated-code -B > /dev/null
 if [[ $? -ne 0 ]]; then
   echo "Code generation failed"
-
-find -L -name validate.proto
-find vendor_any
-
   exit 1;
 fi
 if [[ $(git status --porcelain | wc -l) -ne 0 ]]; then
