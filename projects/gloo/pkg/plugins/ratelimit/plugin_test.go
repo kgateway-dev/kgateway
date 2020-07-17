@@ -55,7 +55,8 @@ var _ = Describe("RateLimit Plugin", func() {
 
 	JustBeforeEach(func() {
 		initParams.Settings = &gloov1.Settings{RatelimitServer: rlSettings}
-		rlPlugin.Init(initParams)
+		err := rlPlugin.Init(initParams)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("should get rate limit server settings first from the listener, then from the global settings", func() {
@@ -68,7 +69,8 @@ var _ = Describe("RateLimit Plugin", func() {
 			},
 		}
 		initParams.Settings = &gloov1.Settings{}
-		rlPlugin.Init(initParams)
+		err := rlPlugin.Init(initParams)
+		Expect(err).NotTo(HaveOccurred())
 		listener := &gloov1.HttpListener{
 			Options: &gloov1.HttpListenerOptions{
 				RatelimitServer: rlSettings,
@@ -148,7 +150,8 @@ var _ = Describe("RateLimit Plugin", func() {
 					RequestTimeout: &timeout,
 				},
 			}
-			rlPlugin.Init(initParams)
+			err := rlPlugin.Init(initParams)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should be ordered before ext auth", func() {

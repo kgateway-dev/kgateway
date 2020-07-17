@@ -1,6 +1,6 @@
 ---
 title: Metrics (Enterprise)
-weight: 45
+weight: 50
 description: Use prometheus metrics to determine when requests are near or over rate-limits.
 ---
 

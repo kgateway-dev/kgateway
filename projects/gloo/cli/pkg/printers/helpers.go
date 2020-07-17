@@ -18,11 +18,11 @@ func PrintKubeCrd(in resources.InputResource, resourceCrd crd.Crd) error {
 }
 
 func GenerateKubeCrdString(in resources.InputResource, resourceCrd crd.Crd) (string, error) {
-	stringCrd, err := resourceCrd.KubeResource(in)
+	res, err := resourceCrd.KubeResource(in)
 	if err != nil {
 		return "", err
 	}
-	raw, err := yaml.Marshal(stringCrd)
+	raw, err := yaml.Marshal(res)
 	if err != nil {
 		return "", err
 	}

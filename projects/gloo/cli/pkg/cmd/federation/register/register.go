@@ -36,7 +36,7 @@ func Register(opts *options.Options) error {
 		RemoteKubeContext:     registerOpts.RemoteContext,
 		ClusterDomainOverride: registerOpts.LocalClusterDomainOverride,
 		ClusterName:           registerOpts.ClusterName,
-		Namespace:             registerOpts.FederationNamespace,
+		Namespace:             opts.Cluster.FederationNamespace,
 		RemoteNamespace:       registerOpts.RemoteNamespace,
 		ClusterRoles: []*v1.ClusterRole{
 			{

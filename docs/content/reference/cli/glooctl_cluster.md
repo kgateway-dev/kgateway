@@ -37,5 +37,7 @@ glooctl cluster [flags]
 ### SEE ALSO
 
 * [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl cluster list](../glooctl_cluster_list)	 - List clusters registered to the Gloo Federation control plane
 * [glooctl cluster register](../glooctl_cluster_register)	 - Register a cluster to the Gloo Federation control plane
+* [glooctl cluster unregister](../glooctl_cluster_unregister)	 - Unregister a cluster to the Gloo Federation control plane
 

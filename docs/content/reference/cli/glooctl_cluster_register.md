@@ -18,7 +18,7 @@ glooctl cluster register [flags]
 
 ```
       --cluster-name string           name of the cluster to register
-      --federation-namespace string   namespace of the Gloo Federation control plane which the cluster will be registered to (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
   -h, --help                          help for register
       --remote-context string         name of the kubeconfig context to use for registration
       --remote-kubeconfig string      path to the kubeconfig from which the registered cluster will be accessed

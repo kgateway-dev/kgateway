@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/pkg/utils"
 	"github.com/solo-io/gloo/pkg/utils/channelutils"
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	rlv1alpha1 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -403,6 +404,14 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		return err
 	}
 
+	rlClient, rlReporterClient, err := rlv1alpha1.NewRateLimitClients(opts.RateLimitConfigs)
+	if err != nil {
+		return err
+	}
+	if err := rlClient.Register(); err != nil {
+		return err
+	}
+
 	// Register grpc endpoints to the grpc server
 	xds.SetupEnvoyXds(opts.ControlPlane.GrpcServer, opts.ControlPlane.XDSServer, opts.ControlPlane.SnapshotCache)
 	xdsHasher := xds.NewNodeHasher()
@@ -451,8 +460,23 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 
 	go errutils.AggregateErrs(watchOpts.Ctx, errs, edsErrs, "eds.gloo")
 
-	apiCache := v1.NewApiEmitter(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, hybridUsClient, authConfigClient)
-	rpt := reporter.NewReporter("gloo", hybridUsClient.BaseClient(), proxyClient.BaseClient(), upstreamGroupClient.BaseClient(), authConfigClient.BaseClient())
+	apiCache := v1.NewApiEmitter(
+		artifactClient,
+		endpointClient,
+		proxyClient,
+		upstreamGroupClient,
+		secretClient,
+		hybridUsClient,
+		authConfigClient,
+		rlClient,
+	)
+	rpt := reporter.NewReporter("gloo",
+		hybridUsClient.BaseClient(),
+		proxyClient.BaseClient(),
+		upstreamGroupClient.BaseClient(),
+		authConfigClient.BaseClient(),
+		rlReporterClient,
+	)
 
 	t := translator.NewTranslator(sslutils.NewSslConfigTranslator(), opts.Settings, getPlugins)
 
@@ -471,7 +495,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		routeReplacingSanitizer,
 	}
 
-	// Set up the syncer extensions
+	// Set up the syncer extension
 	var syncerExtensions []TranslatorSyncerExtension
 	params := TranslatorSyncerExtensionParams{
 		Reporter: rpt,
@@ -667,6 +691,11 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		return bootstrap.Opts{}, err
 	}
 
+	rateLimitConfigFactory, err := bootstrap.ConfigFactoryForSettings(params, rlv1alpha1.RateLimitConfigCrd)
+	if err != nil {
+		return bootstrap.Opts{}, err
+	}
+
 	return bootstrap.Opts{
 		Upstreams:         upstreamFactory,
 		KubeServiceClient: kubeServiceClient,
@@ -675,6 +704,7 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		Secrets:           secretFactory,
 		Artifacts:         artifactFactory,
 		AuthConfigs:       authConfigFactory,
+		RateLimitConfigs:  rateLimitConfigFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
 }

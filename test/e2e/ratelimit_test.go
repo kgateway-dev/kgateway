@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/test/helpers"
 
@@ -250,11 +252,11 @@ func get(hostname string, port uint32) (*http.Response, error) {
 
 func getProxy(envoyPort uint32, upstream core.ResourceRef, hostsToRateLimits map[string]bool) *gloov1.Proxy {
 	rlVhostExt := &ratelimit.RateLimitVhostExtension{
-		RateLimits: []*ratelimit.RateLimitActions{
+		RateLimits: []*rltypes.RateLimitActions{
 			{
-				Actions: []*ratelimit.Action{{
-					ActionSpecifier: &ratelimit.Action_GenericKey_{
-						GenericKey: &ratelimit.Action_GenericKey{DescriptorValue: "test"},
+				Actions: []*rltypes.Action{{
+					ActionSpecifier: &rltypes.Action_GenericKey_{
+						GenericKey: &rltypes.Action_GenericKey{DescriptorValue: "test"},
 					},
 				}},
 			},
@@ -302,7 +304,9 @@ func (b *RlProxyBuilder) getProxy() *gloov1.Proxy {
 
 		if enableRateLimits {
 			vhost.Options = &gloov1.VirtualHostOptions{
-				Ratelimit: b.customRateLimit,
+				RateLimitConfigType: &gloov1.VirtualHostOptions_Ratelimit{
+					Ratelimit: b.customRateLimit,
+				},
 			}
 		}
 		vhosts = append(vhosts, vhost)
