@@ -1,8 +1,8 @@
-name: Codegen Check + Regression Tests
+name: CI
 on: pull_request
 jobs:
   codegen:
-    name: codegen
+    name: codegen check
     runs-on: ubuntu-18.04
     steps:
     - name: Cancel Previous Actions
