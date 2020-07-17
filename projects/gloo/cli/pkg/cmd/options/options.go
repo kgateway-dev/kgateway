@@ -4,13 +4,13 @@ import (
 	"context"
 	"sort"
 
-	"github.com/rotisserie/eris"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/rotisserie/eris"
 	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -366,7 +366,7 @@ type ExtraOptions struct {
 
 var RateLimit_TimeUnits = func() []string {
 	var vals []string
-	for _, name := range ratelimit.RateLimit_Unit_name {
+	for _, name := range rltypes.RateLimit_Unit_name {
 		vals = append(vals, name)
 	}
 	sort.Strings(vals)

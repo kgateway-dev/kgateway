@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"go.opencensus.io/stats"
@@ -104,6 +105,8 @@ func (c *apiSimpleEmitter) Snapshots(ctx context.Context) (<-chan *ApiSnapshot, 
 						currentSnapshot.Upstreams = append(currentSnapshot.Upstreams, typed)
 					case *enterprise_gloo_solo_io.AuthConfig:
 						currentSnapshot.AuthConfigs = append(currentSnapshot.AuthConfigs, typed)
+					case *github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfig:
+						currentSnapshot.Ratelimitconfigs = append(currentSnapshot.Ratelimitconfigs, typed)
 					default:
 						select {
 						case errs <- fmt.Errorf("ApiSnapshotEmitter "+
