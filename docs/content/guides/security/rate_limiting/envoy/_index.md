@@ -1,7 +1,7 @@
 ---
 title: Envoy API
 description: Fine-grained rate limit API.
-weight: 20
+weight: 10
 ---
 
 ## Table of Contents
@@ -982,4 +982,4 @@ content-length: 0
 ```
 
 As we can now see, by taking advantage of other Gloo security features, we can ensure rate limits are enforced
-while also securing routes against any kind of request that we didn't target with our rate limiting actions. 
+while also securing routes against any kind of request that we didn't target with our rate limiting actions.
