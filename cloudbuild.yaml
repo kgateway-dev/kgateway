@@ -1,183 +1,159 @@
 steps:
-  - name: 'gcr.io/cloud-builders/docker'
-    args: ['version']
-    id: 'empty noop to pass CI -- $REPO_NAME $COMMIT_SHA'
-#steps:
-#
-## clones Gloo so it can be setup & tested
-## All steps after this must set working directory to use the cloned Gloo source
-#
-## $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
-## gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo --project solo-public
-#- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
-#  args:
-#    - "--repo-name"
-#    - "$REPO_NAME"
-#    - "--repo-sha"
-#    - "$COMMIT_SHA"
-#    - "--repo-output-dir"
-#    - "."
-#  env:
-#    - 'GIT_SSH_CONFIG=FALSE'
-#  id: 'prepare-workspace'
-#
-#- name: 'gcr.io/cloud-builders/wget'
-#  entrypoint: ./ci/spell.sh
-#  args: ['check']
-#  dir: &dir '/workspace/gloo'
-#  env:
-#  # The LSCOMMAND is the env var which tells the spell script how to search for the files it needs to fix.
-#  - 'LSCOMMAND=find * -type f | grep -v vendor | grep -v docs/themes | grep -v docs/site'
-#  id: 'check-spelling'
-#
-#- name: gcr.io/cloud-builders/gsutil
-#  entrypoint: 'bash'
-#  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"']
-#  dir: *dir
-#  id: 'untar-mod-cache'
-#
-## Run all the tests with ginkgo -r -failFast -trace -progress --noColor
-## This requires setting up envoy, AWS, helm, and docker
-## The e2e-go-mod-ginkgo container provides everything else needed for running tests
-#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-#  entrypoint: 'bash'
-#  args:
-#  - '-c'
-#  - |
-#    ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
-#    gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
-#    chmod +x /workspace/envoy
-#  dir: *dir
-#  waitFor: ['prepare-workspace']
-#  id: 'get-envoy'
-#
-#- name: gcr.io/cloud-builders/gcloud
-#  args:
-#  - kms
-#  - decrypt
-#  - --ciphertext-file=./ci/aws_credentials.enc
-#  - --plaintext-file=/workspace/aws_credentials
-#  - --location=global
-#  - --keyring=build
-#  - --key=build-key
-#  dir: *dir
-#  waitFor: ['prepare-workspace']
-#  id: 'setup-aws-creds'
-#
-## Docker related setup
-## grab this container immediately in parallel
-#- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-#  entrypoint: ls
-#  waitFor: ['-']
-#  id: 'grab-ginkgo-container'
-#
-#- name: gcr.io/cloud-builders/gcloud
-#  args: ['config', 'set', 'compute/zone', 'us-central1-a']
-#  id: 'set-gcr-zone'
-#
-#- name: gcr.io/cloud-builders/gcloud
-#  args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
-#  waitFor: ['set-gcr-zone']
-#  id: 'get-test-credentials'
-#
-#- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-#  env:
-#  - 'ENVOY_BINARY=/workspace/envoy'
-#  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
-#  - 'RUN_KUBE_TESTS=1'
-#  - 'RUN_CONSUL_TESTS=1'
-#  - 'RUN_VAULT_TESTS=1'
-#  - 'DOCKER_CONFIG=/workspace/.docker/'
-#  dir: *dir
-#  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
-#  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
-#  secretEnv: ['AWS_ARN_ROLE_1']
-#  id: 'test'
-#
-## Build and tag docker images
-#- name: 'gcr.io/cloud-builders/docker'
-#  entrypoint: 'bash'
-#  env:
-#  - 'DOCKER_CONFIG=/workspace/docker-config'
-#  args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
-#  secretEnv: ['QUAY_IO_PASSWORD']
-#  waitFor: ['prepare-workspace']
-#  id: 'docker-login'
-#
-#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-#  args: ['docker']
-#  env:
-#    - 'TAGGED_VERSION=$TAG_NAME'
-#    - 'BUILD_ID=$BUILD_ID'
-#    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-#  dir: *dir
-#  waitFor: ['prepare-workspace']
-#  id: 'compile'
-#
-#  # 1) Run make targets to push docker images
-#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-#  args: ['docker-push']
-#  env:
-#  - 'DOCKER_CONFIG=/workspace/docker-config'
-#  - 'TAGGED_VERSION=$TAG_NAME'
-#  dir: *dir
-#  secretEnv: ['GITHUB_TOKEN']
-#  waitFor: ['compile']
-#  id: 'docker-push'
-#
-## 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
-## isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
-#- name: gcr.io/cloud-builders/gcloud
-#  args: ['auth', 'configure-docker']
-#  env:
-#    - 'DOCKER_CONFIG=/workspace/docker-config'
-#  dir: *dir
-#  waitFor: ['compile']
-#  id: 'gcr-auth'
-#
-## Run regression tests
-#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-#  args: ['build-test-assets']
-#  env:
-#    - 'BUILD_ID=$BUILD_ID'
-#    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-#    - 'TAGGED_VERSION=$TAG_NAME'
-#  dir: *dir
-#  waitFor: ['compile', 'docker-login', 'docker-push', 'test']
-#  id: 'build-test-assets'
-#
-#- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
-#  env:
-#    - 'RUN_KUBE2E_TESTS=1'
-#    - 'CLOUDSDK_CONTAINER_CLUSTER=test-cluster-roles'
-#  dir: *dir
-#  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor', 'test/kube2e']
-#  waitFor: ['build-test-assets', 'docker-push']
-#  id: 'regression-tests'
-#
-#- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
-#  args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
-#  env:
-#    - 'DOCKER_CONFIG=/workspace/docker-config'
-#    - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
-#    - 'TAGGED_VERSION=$TAG_NAME'
-#    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-#  dir: *dir
-#  secretEnv: ['GITHUB_TOKEN']
-#  waitFor: ['gcr-auth', 'test']
-#  id: 'release-chart'
-#
-#secrets:
-#- kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
-#  secretEnv:
-#    GITHUB_TOKEN: CiQABlzmSYYiveU0gTxGH2139eaBUedjV3vNCxQmJU+nRPlfQ/YSUQCCPGSGzbGp49fwDYuefAx9V94b8mivdp9AqB7zQAa07VtGJmrGdg9ZuhKGFrrgqxwABE0LLVNHyngCSHYSYMH8Vn/mRtT7wQuEHBlKVGtqPw==
-#    QUAY_IO_PASSWORD: CiQABlzmSRx5TcOqbldXa/d/+bkmAfpNAWa3PTS06WvuloZL+vASaQCCPGSGCogonVZVEUNx4G3YJtWi18gSuNx4PvLe08q8xAflTMFkjsyQirAOK3Y2oCvgYwiw/ITcuydjkpMjxDygFyENXS9FKFJoAXHlPQE5qidKr8xxmxF5ezhmjGB0gjyjXIIkbSEnBg==
-#    AWS_ARN_ROLE_1: CiQABlzmSTKWrIEGaH8UvsX3Wp8pz8ClQODVSjIZAiHuE9gNhM4SXACCPGSGCDSNJtdfkA0BLLmKTJLIM06XXEOV4iIooqlLfo9p7EOzOwqZaV9DFygO8/oKQqTFstc1vKgOz7YHrMaCx3GzqiHN2u//UmHRpvIwrDDfuIP5XNa0aOrj
-#
-#timeout: 5400s
-#tags: ['gloo']
-#options:
-#  machineType: 'N1_HIGHCPU_32'
-#  volumes:
-#  - name: 'gopath'
-#    path: '/go'
+
+# clones Gloo so it can be setup & tested
+# All steps after this must set working directory to use the cloned Gloo source
+
+# $COMMIT_SHA is a default gcloud env var, to run via cloudbuild submit use:
+# gcloud builds submit --substitutions COMMIT_SHA=<commit sha>,REPO_NAME=solo-io/gloo --project solo-public
+- name: 'gcr.io/$PROJECT_ID/prepare-go-workspace:0.3.0'
+  args:
+    - "--repo-name"
+    - "$REPO_NAME"
+    - "--repo-sha"
+    - "$COMMIT_SHA"
+    - "--repo-output-dir"
+    - "."
+  env:
+    - 'GIT_SSH_CONFIG=FALSE'
+  id: 'prepare-workspace'
+
+- name: 'gcr.io/cloud-builders/wget'
+  entrypoint: ./ci/spell.sh
+  args: ['check']
+  dir: &dir '/workspace/gloo'
+  env:
+  # The LSCOMMAND is the env var which tells the spell script how to search for the files it needs to fix.
+  - 'LSCOMMAND=find * -type f | grep -v vendor | grep -v docs/themes | grep -v docs/site'
+  id: 'check-spelling'
+
+- name: gcr.io/cloud-builders/gsutil
+  entrypoint: 'bash'
+  args: ['-c', 'mkdir -p /go/pkg && cd /go/pkg && gsutil cat gs://$PROJECT_ID-cache/gloo/gloo-mod.tar.gz | tar -xzf - || echo "untar mod cache failed; continuing because we can download deps as we need them"']
+  dir: *dir
+  id: 'untar-mod-cache'
+
+# Run all the tests with ginkgo -r -failFast -trace -progress --noColor
+# This requires setting up envoy, AWS, helm, and docker
+# The e2e-go-mod-ginkgo container provides everything else needed for running tests
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+  entrypoint: 'bash'
+  args:
+  - '-c'
+  - |
+    ENVOY_VERSION=v$$(make print-ENVOY_GLOO_IMAGE | cut -d: -f2)
+    gsutil cp gs://solo-public-artifacts.solo.io/envoy/$$ENVOY_VERSION/envoy.stripped /workspace/envoy
+    chmod +x /workspace/envoy
+  dir: *dir
+  waitFor: ['prepare-workspace']
+  id: 'get-envoy'
+
+- name: gcr.io/cloud-builders/gcloud
+  args:
+  - kms
+  - decrypt
+  - --ciphertext-file=./ci/aws_credentials.enc
+  - --plaintext-file=/workspace/aws_credentials
+  - --location=global
+  - --keyring=build
+  - --key=build-key
+  dir: *dir
+  waitFor: ['prepare-workspace']
+  id: 'setup-aws-creds'
+
+# Docker related setup
+# grab this container immediately in parallel
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  entrypoint: ls
+  waitFor: ['-']
+  id: 'grab-ginkgo-container'
+
+- name: gcr.io/cloud-builders/gcloud
+  args: ['config', 'set', 'compute/zone', 'us-central1-a']
+  id: 'set-gcr-zone'
+
+- name: gcr.io/cloud-builders/gcloud
+  args: ['container', 'clusters', 'get-credentials', 'test-cluster-roles']
+  waitFor: ['set-gcr-zone']
+  id: 'get-test-credentials'
+
+- name: 'gcr.io/$PROJECT_ID/e2e-go-mod-ginkgo:0.2.1'
+  env:
+  - 'ENVOY_BINARY=/workspace/envoy'
+  - 'AWS_SHARED_CREDENTIALS_FILE=/workspace/aws_credentials'
+  - 'RUN_KUBE_TESTS=1'
+  - 'RUN_CONSUL_TESTS=1'
+  - 'RUN_VAULT_TESTS=1'
+  - 'DOCKER_CONFIG=/workspace/.docker/'
+  dir: *dir
+  args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
+  waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
+  secretEnv: ['AWS_ARN_ROLE_1']
+  id: 'test'
+
+# Build and tag docker images
+- name: 'gcr.io/cloud-builders/docker'
+  entrypoint: 'bash'
+  env:
+  - 'DOCKER_CONFIG=/workspace/docker-config'
+  args: ['-c', 'docker login quay.io --username "solo-io+solobot" --password $$QUAY_IO_PASSWORD']
+  secretEnv: ['QUAY_IO_PASSWORD']
+  waitFor: ['prepare-workspace']
+  id: 'docker-login'
+
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+  args: ['docker']
+  env:
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'BUILD_ID=$BUILD_ID'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+  dir: *dir
+  waitFor: ['prepare-workspace']
+  id: 'compile'
+
+  # 1) Run make targets to push docker images
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+  args: ['docker-push']
+  env:
+  - 'DOCKER_CONFIG=/workspace/docker-config'
+  - 'TAGGED_VERSION=$TAG_NAME'
+  dir: *dir
+  secretEnv: ['GITHUB_TOKEN']
+  waitFor: ['compile']
+  id: 'docker-push'
+
+# 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
+# isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
+- name: gcr.io/cloud-builders/gcloud
+  args: ['auth', 'configure-docker']
+  env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
+  dir: *dir
+  waitFor: ['compile']
+  id: 'gcr-auth'
+
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+  args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
+  env:
+    - 'DOCKER_CONFIG=/workspace/docker-config'
+    - 'HELM_REPOSITORY_CACHE=/builder/home/.cache/helm/registry'
+    - 'TAGGED_VERSION=$TAG_NAME'
+    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
+  dir: *dir
+  secretEnv: ['GITHUB_TOKEN']
+  waitFor: ['gcr-auth', 'test']
+  id: 'release-chart'
+
+secrets:
+- kmsKeyName: projects/solo-public/locations/global/keyRings/build/cryptoKeys/build-key
+  secretEnv:
+    GITHUB_TOKEN: CiQABlzmSYYiveU0gTxGH2139eaBUedjV3vNCxQmJU+nRPlfQ/YSUQCCPGSGzbGp49fwDYuefAx9V94b8mivdp9AqB7zQAa07VtGJmrGdg9ZuhKGFrrgqxwABE0LLVNHyngCSHYSYMH8Vn/mRtT7wQuEHBlKVGtqPw==
+    QUAY_IO_PASSWORD: CiQABlzmSRx5TcOqbldXa/d/+bkmAfpNAWa3PTS06WvuloZL+vASaQCCPGSGCogonVZVEUNx4G3YJtWi18gSuNx4PvLe08q8xAflTMFkjsyQirAOK3Y2oCvgYwiw/ITcuydjkpMjxDygFyENXS9FKFJoAXHlPQE5qidKr8xxmxF5ezhmjGB0gjyjXIIkbSEnBg==
+    AWS_ARN_ROLE_1: CiQABlzmSTKWrIEGaH8UvsX3Wp8pz8ClQODVSjIZAiHuE9gNhM4SXACCPGSGCDSNJtdfkA0BLLmKTJLIM06XXEOV4iIooqlLfo9p7EOzOwqZaV9DFygO8/oKQqTFstc1vKgOz7YHrMaCx3GzqiHN2u//UmHRpvIwrDDfuIP5XNa0aOrj
+
+timeout: 5400s
+tags: ['gloo']
+options:
+  machineType: 'N1_HIGHCPU_32'
+  volumes:
+  - name: 'gopath'
+    path: '/go'
