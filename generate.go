@@ -19,6 +19,9 @@ func main() {
 	protoImports.External["github.com/solo-io/solo-apis"] = []string{
 		"api/**/*.proto",
 	}
+	protoImports.External["github.com/solo-io/skv2"] = []string{
+		"api/**/*.proto",
+	}
 
 	generateOptions := cmd.GenerateOptions{
 		SkipGenMocks: true,
