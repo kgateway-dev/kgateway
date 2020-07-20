@@ -39,7 +39,7 @@ unzip protoc-3.6.1-osx-x86_64.zip
 sudo mv bin/protoc /usr/local/bin/
 rm -rf bin include protoc-3.6.1-osx-x86_64.zip readme.txt
 # download other codegen deps
-make update-deps
+make install-go-tools
 ```
 
 Then run:

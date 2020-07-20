@@ -79,7 +79,6 @@ init:
 fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
 
-
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
@@ -87,17 +86,18 @@ mod-download:
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
 
-.PHONY: update-deps
-update-deps: mod-download
-	mkdir $(DEPSGOBIN)
-	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
+# https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
+.PHONY: install-go-tools
+install-go-tools: mod-download
+	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GOBIN=$(DEPSGOBIN) go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
-	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
-	GOBIN=$(DEPSGOBIN) go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
-	GOBIN=$(DEPSGOBIN) go get -v -u github.com/golang/mock/gomock@v1.4.3
-	GOBIN=$(DEPSGOBIN) go get -v github.com/golang/mock/mockgen@v1.4.3
-	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/gogoproto@v1.3.1
+	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
+	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
+	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/protoc-gen-gogo
+	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
+	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/gogoproto
 
 
 .PHONY: check-format
@@ -177,7 +177,7 @@ MOCK_RESOURCE_INFO := \
 generate-client-mocks:
 	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
 		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
-		mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
+		GOBIN=$(DEPSGOBIN) mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
      		-package=mocks \
      		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
      		$(word 3,$(subst :, , $(INFO))) \

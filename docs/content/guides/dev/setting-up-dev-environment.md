@@ -113,7 +113,7 @@ Install Solo-Kit and required go packages:
 cd ${GOPATH}/src/github.com/solo-io/gloo
 
 # install required go packages
-make update-deps
+make install-go-tools
 ```
 
 You can test that code generation works with Gloo:
