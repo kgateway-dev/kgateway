@@ -82,6 +82,10 @@ gateway:
 gatewayProxies:
   gatewayProxy:
     gatewaySettings: {}
+    failover:
+      enabled: false
+      port: 15443
+      secretName: failover-downstream
     kind:
       deployment:
         replicas: 1
