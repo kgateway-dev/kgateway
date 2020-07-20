@@ -9,8 +9,6 @@ require (
 	github.com/aws/aws-sdk-go v1.30.15
 	github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533
 	github.com/docker/go-metrics v0.0.1 // indirect
-	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
-	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -56,7 +54,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.7.2
-	github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b
+	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
 	github.com/solo-io/solo-kit v0.13.9
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
