@@ -18,7 +18,7 @@ end users.
 Gloo now supports the popular Web Application Firewall framework/ruleset [ModSecurity](https://www.modsecurity.org/) 3.0.3.
 
 ## **WAF in Gloo**
-Gloo Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. The OWASP Core Rule Set is included by default and can be toggled on and off easily, as well as the ability to add or create custom rule sets. More information on the rule sets, and the rules language generally can be found [here](https://www.modsecurity.org/rules.html).
+Gloo Enterprise now includes the ability to enable the ModSecurity Web Application Firewall for any incoming and outgoing HTTP connections. There is support for configuring rule sets based on the OWASP Core Rule Set as well as custom rule sets. More information on available rule sets, and the rules language generally, can be found [here](https://www.modsecurity.org/rules.html).
 
 ## **Why Mod Security**
 API Gateways act as a control point for the outside world to access the various application services running in your environment. A Web Application Firewall offers a standard way to to inspect and handle all incoming traffic. Mod Security is one such firewall. ModSecurity uses a simple rules language to interpret and process incoming http traffic. There are many rule sets publically available, such as the [OWASP Core Rule Set](https://github.com/SpiderLabs/owasp-modsecurity-crs).
@@ -37,7 +37,7 @@ The configuration is included in the `options` object of the `httpGateway`. This
 below, but first we will go over the general flow of configuring WAF in Gloo.
 
 The WAF filter at its core supports a list of `RuleSet` objects which are then loaded into the ModSecurity library. 
-The Gloo API has a few conveniences built on top of that to allow easier access to the Core Rule Set. 
+The Gloo API has a few conveniences built on top of that to allow easier access to the OWASP Core Rule Set (via the [coreRuleSet](#core-rule-set) field). 
 The  `RuleSet` Api looks as follows:
 
 ```proto
@@ -80,7 +80,7 @@ This is a very basic example of the capabilities of the ModSecurity rules engine
 
 The following sections will explain how to enable this rule on the gateway level as well as on the virtual service level.
 
-The following tutorials assume basic knowledge of Gloo and it's routing capabilities, as well a kubernetes cluster running Gloo Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
+The following tutorials assume basic knowledge of Gloo and its routing capabilities, as well a kubernetes cluster running Gloo Enterprise edition and the [petstore example]({{% versioned_link_path fromRoot="/guides/traffic_management/hello_world/" %}}).
 
 #### Http Gateway
 
@@ -169,9 +169,9 @@ The two methods outlined above represent the two main ways to apply basic rule s
 
 #### Core Rule Set
 
-As mentioned earlier, the main free Mod Security rule set available is the owasp Core Rule Set. As with all other rule sets, the Core Rule Sets can be applied manually via the rule set configs, Gloo offers an easy way to apply the entire core rule set, and configure it.
+As mentioned earlier, the main free Mod Security rule set available is the OWASP Core Rule Set. As with all other rule sets, the Core Rule Set can be applied manually via the rule set configs, Gloo offers an easy way to apply the entire Core Rule Set, and configure it.
 
-In order to apply the core rule set add the following to the default virtual service.
+In order to apply the Core Rule Set add the following to the default virtual service. Without the coreRuleSet field, the OWASP Core Rule Set files will not be included.
 
 {{< highlight yaml "hl_lines=7-33" >}}
 spec:
@@ -230,7 +230,7 @@ should respond with
 * Connection #0 to host 192.168.99.145 left intact
 ModSecurity: intervention occurred
 ```
-There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the core rule set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
+There are a couple important things to note from the config above. The `coreRuleSet` object is the first. By setting this object to non-nil the `coreRuleSet` is automatically applied to the gateway/vhost/route is has been added to. The Core Rule Set can be applied manually as well if a specific version of it is required which we do not mount into the container. The second thing to note is the config string. This config string is an important part of configuring the Core Rule Set, an example of which can be found [here](https://github.com/SpiderLabs/owasp-modsecurity-crs/blob/v3.2/dev/crs-setup.conf.example).
 
 
 ## IP Whitelisting
