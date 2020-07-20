@@ -527,22 +527,22 @@ func checkSecrets(namespaces []string) (bool, error) {
 	return true, nil
 }
 
-func CheckMulticlusterResources(opts *options.Options) (bool, error) {
+func CheckMulticlusterResources(opts *options.Options) {
 	cfg, err := config.GetConfigWithContext("")
 	if err != nil {
-		return true, err
+		return
 	}
 	instanceClient, err := glooinstancev1.NewClientsetFromConfig(cfg)
 	if err != nil {
-		return true, err
+		return
 	}
 	glooInstanceList, err := instanceClient.GlooInstances().ListGlooInstance(opts.Top.Ctx)
 	if err != nil {
-		return true, err
+		return
 	}
 	glooInstances := glooInstanceList.Items
 	if len(glooInstances) < 0 {
-		return true, nil
+		return
 	}
 	fmt.Printf("\nFound multicluster Gloo resources!\n")
 	for _, glooInstance := range glooInstanceList.Items {
@@ -553,13 +553,11 @@ func CheckMulticlusterResources(opts *options.Options) (bool, error) {
 		printGlooInstanceCheckSummary("upstreams", glooInstance.Spec.GetCheck().GetUpstreams())
 		printGlooInstanceCheckSummary("upstream groups", glooInstance.Spec.GetCheck().GetUpstreamGroups())
 		printGlooInstanceCheckSummary("auth configs", glooInstance.Spec.GetCheck().GetAuthConfigs())
-		//printGlooInstanceCheckSummary(glooInstance.Spec.GetCheck().GetRateLimitConfigs())
 		printGlooInstanceCheckSummary("virtual services", glooInstance.Spec.GetCheck().GetVirtualServices())
 		printGlooInstanceCheckSummary("route tables", glooInstance.Spec.GetCheck().GetRouteTables())
 		printGlooInstanceCheckSummary("gateways", glooInstance.Spec.GetCheck().GetGateways())
 		printGlooInstanceCheckSummary("proxies", glooInstance.Spec.GetCheck().GetProxies())
 	}
-	return true, nil
 }
 
 func printGlooInstanceCheckSummary(resourceType string, resource *types.GlooInstanceSpec_Check_Summary) {
