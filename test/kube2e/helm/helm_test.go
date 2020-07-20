@@ -1,8 +1,9 @@
 package helm_test
 
 import (
-	"github.com/solo-io/skv2/codegen/util"
 	"path/filepath"
+
+	"github.com/solo-io/skv2/codegen/util"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
