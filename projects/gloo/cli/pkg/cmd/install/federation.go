@@ -21,7 +21,9 @@ func glooFedCmd(opts *options.Options) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 
 			extraValues := map[string]interface{}{
-				"license_key": opts.Install.LicenseKey,
+				"license": map[string]interface{}{
+					"key": opts.Install.Federation.LicenseKey,
+				},
 			}
 
 			opts.Install.HelmInstall = opts.Install.Federation.HelmInstall

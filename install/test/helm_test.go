@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html/template"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
@@ -109,6 +110,7 @@ var _ = Describe("Helm Test", func() {
 		var (
 			glooPorts = []v1.ContainerPort{
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
+				{Name: "rest-xds", ContainerPort: 9976, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
@@ -543,6 +545,47 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				Context("Failover Gateway", func() {
+
+					var (
+						proxyNames = []string{defaults.GatewayProxyName}
+					)
+
+					It("renders with http/https gateways by default", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.failover.enabled=true",
+								"gatewayProxies.gatewayProxy.failover.port=15444",
+							},
+						})
+						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-failover")
+						var gateway1 gwv1.Gateway
+						ConvertKubeResource(gatewayUns, &gateway1)
+						Expect(gateway1.BindPort).To(Equal(uint32(15444)))
+						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
+						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
+						tcpGateway := gateway1.GetTcpGateway()
+						Expect(tcpGateway).NotTo(BeNil())
+						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
+						host := tcpGateway.GetTcpHosts()[0]
+						Expect(host.GetSslConfig()).To(Equal(&gloov1.SslConfig{
+							SslSecrets: &gloov1.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      "failover-downstream",
+									Namespace: namespace,
+								},
+							},
+						}))
+						Expect(host.GetDestination().GetForwardSniClusterName()).To(Equal(&types.Empty{}))
+					})
+
+					It("by default will not render failover gateway", func() {
+						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeNil())
+					})
+
+				})
+
 				Context("gateway-proxy service", func() {
 					var gatewayProxyService *v1.Service
 
@@ -639,6 +682,27 @@ var _ = Describe("Helm Test", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.service.name=gateway-proxy-custom",
+							},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
+					It("adds failover port", func() {
+						gatewayProxyService.Spec.Ports = append(gatewayProxyService.Spec.Ports, v1.ServicePort{
+							Name:     "failover",
+							Protocol: v1.ProtocolTCP,
+							Port:     15444,
+							TargetPort: intstr.IntOrString{
+								Type:   intstr.Int,
+								IntVal: 15444,
+							},
+							NodePort: 32000,
+						})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.failover.enabled=true",
+								"gatewayProxies.gatewayProxy.failover.port=15444",
+								"gatewayProxies.gatewayProxy.failover.nodePort=32000",
 							},
 						})
 						testManifest.ExpectService(gatewayProxyService)
@@ -1088,6 +1152,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1126,6 +1191,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: true
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1164,6 +1230,7 @@ spec:
    readGatewaysFromAllNamespaces: true
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1207,6 +1274,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: true
    invalidConfigPolicy:
