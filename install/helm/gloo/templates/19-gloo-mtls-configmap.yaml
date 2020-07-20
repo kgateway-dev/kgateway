@@ -21,13 +21,14 @@ data:
         filter_chains:
         - filters:
           - name: envoy.filters.network.tcp_proxy
-            config:
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
               stat_prefix: ingress_tcp
               cluster: gloo_cluster
           transport_socket:
             name: envoy.transport_sockets.tls
             typed_config:
-              "@type": type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
               common_tls_context:
                 tls_certificate_sds_secret_configs:
                   - name: server_cert
