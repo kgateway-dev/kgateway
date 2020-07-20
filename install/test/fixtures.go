@@ -50,6 +50,22 @@ static_resources:
     type: STRICT_DNS
     upstream_connection_options:
       tcp_keepalive: {}
+  - alt_stat_name: rest_xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: rest_xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9976
+    name: rest_xds_cluster
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
   - connect_timeout: 5.000s
     load_assignment:
       cluster_name: wasm-cache
@@ -183,6 +199,22 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - alt_stat_name: rest_xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: rest_xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9976
+    name: rest_xds_cluster
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -324,6 +356,22 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - alt_stat_name: rest_xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: rest_xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9976
+    name: rest_xds_cluster
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -481,6 +529,22 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - alt_stat_name: rest_xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: rest_xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9976
+    name: rest_xds_cluster
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
@@ -660,6 +724,22 @@ static_resources:
                 address: gloo.gloo-system.svc.cluster.local
                 port_value: 9977
     name: gloo.gloo-system.svc.cluster.local:9977
+    respect_dns_ttl: true
+    type: STRICT_DNS
+    upstream_connection_options:
+      tcp_keepalive: {}
+  - alt_stat_name: rest_xds_cluster
+    connect_timeout: 5.000s
+    load_assignment:
+      cluster_name: rest_xds_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: gloo.gloo-system.svc.cluster.local
+                port_value: 9976
+    name: rest_xds_cluster
     respect_dns_ttl: true
     type: STRICT_DNS
     upstream_connection_options:
