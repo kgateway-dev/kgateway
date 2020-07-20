@@ -8,7 +8,7 @@ weight: 5
 
 
 ### Package: `envoy.config.core.v3`  
-copied from https://github.com/envoyproxy/envoy-wasm/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/socket_option.proto
+copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/socket_option.proto
 
 
  
