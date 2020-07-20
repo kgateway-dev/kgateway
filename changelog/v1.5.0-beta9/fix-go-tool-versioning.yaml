@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Follow the [recommended approach](https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module)
+    for go tool versioning.
