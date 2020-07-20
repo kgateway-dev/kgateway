@@ -137,7 +137,7 @@ func (i *installer) Install(installerConfig *InstallerConfig) error {
 		return err
 	}
 
-	if !(installerConfig.Mode == Federation) {
+	if installerConfig.Mode != Federation {
 		// We need this to avoid rendering the CRDs we include in the /templates directory
 		// for backwards-compatibility with Helm 2.
 		setCrdCreateToFalse(installerConfig)

@@ -148,7 +148,7 @@ rules:
 		Expect(err).NotTo(HaveOccurred())
 	}
 
-	defaultInstall := func(enterprise, federation bool, mode install.Mode, expectedValues map[string]interface{}, expectedChartUri string) {
+	defaultInstall := func(mode install.Mode, expectedValues map[string]interface{}, expectedChartUri string) {
 		installConfig := &options.Install{
 			HelmInstall: options.HelmInstall{
 				Namespace:       defaults.GlooSystem,
@@ -157,7 +157,7 @@ rules:
 				CreateNamespace: true,
 			},
 		}
-		if federation || mode == install.Federation {
+		if mode == install.Federation {
 			installConfig.Namespace = defaults.GlooFed
 			installConfig.HelmReleaseName = constants.GlooFedReleaseName
 		}
@@ -166,7 +166,7 @@ rules:
 	}
 
 	It("installs cleanly by default", func() {
-		defaultInstall(false, false, install.Gloo,
+		defaultInstall(install.Gloo,
 			map[string]interface{}{
 				"crds": map[string]interface{}{
 					"create": false,
@@ -178,7 +178,7 @@ rules:
 	It("installs enterprise cleanly by default", func() {
 
 		chart.AddDependency(&helmchart.Chart{Metadata: &helmchart.Metadata{Name: constants.GlooReleaseName}})
-		defaultInstall(true, false, install.Enterprise,
+		defaultInstall(install.Enterprise,
 			map[string]interface{}{
 				"gloo": map[string]interface{}{
 					"crds": map[string]interface{}{
@@ -191,7 +191,7 @@ rules:
 
 	It("installs federation cleanly by default", func() {
 
-		defaultInstall(false, true, install.Federation,
+		defaultInstall(install.Federation,
 			map[string]interface{}{},
 			glooFederationChartUri)
 	})

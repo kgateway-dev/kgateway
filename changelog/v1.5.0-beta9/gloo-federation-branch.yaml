@@ -1,31 +1,31 @@
 changelog:
   - type: NEW_FEATURE
-    description: >
+    description: |
       Add the following commands:
-      `glooctl cluster list` - List clusters registered to the Gloo Federation control plane
-      `glooctl cluster register` - Register a cluster to the Gloo Federation control plane
-      `glooctl cluster unregister` - Unregister a cluster to the Gloo Federation control plane
+      - `glooctl cluster list` - List clusters registered to the Gloo Federation control plane
+      - `glooctl cluster register` - Register a cluster to the Gloo Federation control plane
+      - `glooctl cluster unregister` - Unregister a cluster to the Gloo Federation control plane
     issueLink: https://github.com/solo-io/gloo/issues/3369
   - type: NEW_FEATURE
-    description: >
+    description: |
       Add the following commands:
-      `glooctl install federation` - install Gloo Federation on Kubernetes
-      `glooctl uninstall federation` - uninstall Gloo Federation
+      - `glooctl install federation` - install Gloo Federation on Kubernetes
+      - `glooctl uninstall federation` - uninstall Gloo Federation
     issueLink: https://github.com/solo-io/gloo/issues/3369
   - type: HELM
-    description: >
+    description: |
       Add the following Helm values, available for Gloo Enterprise only:
-      `gatewayProxies.NAME.failover.enabled`: Configure this proxy for failover.
+      - `gatewayProxies.NAME.failover.enabled`: Configure this proxy for failover.
       Set to false by default.
-      `gatewayProxies.NAME.failover.port`: Port to use for failover Gateway Bind port,
+      - `gatewayProxies.NAME.failover.port`: Port to use for failover Gateway Bind port,
       and service. Default is 15443.
-      `gatewayProxies.NAME.failover.nodePort`: Optional NodePort for failover Service.
-      `gatewayProxies.NAME.failover.secretName`: Secret containing downstream Ssl Secrets.
+      - `gatewayProxies.NAME.failover.nodePort`: Optional NodePort for failover Service.
+      - `gatewayProxies.NAME.failover.secretName`: Secret containing downstream Ssl Secrets.
       Set to `failover-downstream` by default.
     issueLink: https://github.com/solo-io/gloo/issues/3338
   - type: HELM
-    description: >
+    description: |
       Add the following Helm value:
-      `gloo.deployment.restXdsPort`: the port port where gloo serves REST xDS API to Envoy.
+      - `gloo.deployment.restXdsPort`: the port port where gloo serves REST xDS API to Envoy.
       Set to 9976 by default.
     issueLink: https://github.com/solo-io/gloo/issues/3338
