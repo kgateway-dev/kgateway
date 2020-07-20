@@ -8,7 +8,7 @@ require (
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.30.15
 	github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533
-	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
+	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9
 	github.com/envoyproxy/protoc-gen-validate v0.1.0
@@ -68,6 +68,7 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
+	golang.org/x/tools v0.0.0-20200427205912-352a5409fae0
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.27.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
