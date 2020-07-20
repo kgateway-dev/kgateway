@@ -1,28 +1,19 @@
-package gateway_test
+package wasm_test
 
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
-	"strconv"
 	"testing"
 	"time"
 
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
 	"github.com/solo-io/go-utils/log"
-	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/helper"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	skhelpers "github.com/solo-io/solo-kit/test/helpers"
 
-	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,9 +21,6 @@ import (
 )
 
 func TestWasm(t *testing.T) {
-	if testutils.AreTestsDisabled() {
-		return
-	}
 	if os.Getenv("KUBE2E_TESTS") != "wasm" {
 		log.Warnf("This test is disabled. " +
 			"To enable, set KUBE2E_TESTS to 'wasm' in your env.")
@@ -76,102 +64,11 @@ func StartTestHelper() {
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
-	UpdateAlwaysAcceptSetting(false)
+	kube2e.UpdateAlwaysAcceptSetting(false, testHelper.InstallNamespace)
 
 	// Ensure gloo reaches valid state and doesn't continually resync
 	// we can consider doing the same for leaking go-routines after resyncs
-	EventuallyReachesConsistentState()
-}
-
-func EventuallyReachesConsistentState() {
-	metricsPort := strconv.Itoa(9091)
-	portFwd := exec.Command("kubectl", "port-forward", "-n", testHelper.InstallNamespace,
-		"deployment/gloo", metricsPort)
-	portFwd.Stdout = os.Stderr
-	portFwd.Stderr = os.Stderr
-	err := portFwd.Start()
-	Expect(err).ToNot(HaveOccurred())
-
-	defer func() {
-		if portFwd.Process != nil {
-			portFwd.Process.Kill()
-		}
-	}()
-
-	// make sure we eventually reach an eventually consistent state
-	lastSnapOut := getSnapOut(metricsPort)
-
-	eventuallyConsistentPollingInterval := 7 * time.Second // >= 5s for metrics reporting, which happens every 5s
-	time.Sleep(eventuallyConsistentPollingInterval)
-
-	Eventually(func() bool {
-		currentSnapOut := getSnapOut(metricsPort)
-		consistent := lastSnapOut == currentSnapOut
-		lastSnapOut = currentSnapOut
-		return consistent
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(true))
-
-	Consistently(func() string {
-		currentSnapOut := getSnapOut(metricsPort)
-		return currentSnapOut
-	}, "30s", eventuallyConsistentPollingInterval).Should(Equal(lastSnapOut))
-}
-
-// needs a port-forward of the metrics port be
-func TearDownTestHelper() {
-	Expect(testHelper).ToNot(BeNil())
-	err := testHelper.UninstallGloo()
-	Expect(err).NotTo(HaveOccurred())
-	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
-	Expect(apierrors.IsNotFound(err)).To(BeTrue())
-}
-
-// needs a port-forward of the metrics port before a call to this will work
-func getSnapOut(metricsPort string) string {
-	var bodyResp string
-	Eventually(func() string {
-		res, err := http.Post("http://localhost:"+metricsPort+"/metrics", "", nil)
-		if err != nil || res.StatusCode != 200 {
-			return ""
-		}
-		defer res.Body.Close()
-		body, err := ioutil.ReadAll(res.Body)
-		Expect(err).ToNot(HaveOccurred())
-		bodyResp = string(body)
-		return bodyResp
-	}, "3s", "0.5s").ShouldNot(BeEmpty())
-
-	Expect(bodyResp).To(ContainSubstring("api_gloo_solo_io_emitter_snap_out"))
-	findSnapOut := regexp.MustCompile("api_gloo_solo_io_emitter_snap_out ([\\d]+)")
-	matches := findSnapOut.FindAllStringSubmatch(bodyResp, -1)
-	Expect(matches).To(HaveLen(1))
-	snapOut := matches[0][1]
-	return snapOut
-}
-
-// enable/disable strict validation
-func UpdateAlwaysAcceptSetting(alwaysAccept bool) {
-	UpdateSettings(func(settings *v1.Settings) {
-		Expect(settings.Gateway).NotTo(BeNil())
-		Expect(settings.Gateway.Validation).NotTo(BeNil())
-		settings.Gateway.Validation.AlwaysAccept = &types.BoolValue{Value: alwaysAccept}
-	})
-}
-
-func UpdateSettings(f func(settings *v1.Settings)) {
-	settingsClient := clienthelpers.MustSettingsClient()
-	settings, err := settingsClient.Read(testHelper.InstallNamespace, "default", clients.ReadOpts{})
-	Expect(err).NotTo(HaveOccurred())
-
-	f(settings)
-
-	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
-	Expect(err).NotTo(HaveOccurred())
-
-	// when validation config changes, the validation server restarts -- give time for it to come up again.
-	// without the wait, the validation webhook may temporarily fallback to it's failurePolicy, which is not
-	// what we want to test.
-	time.Sleep(3 * time.Second)
+	kube2e.EventuallyReachesConsistentState(testHelper.InstallNamespace)
 }
 
 func getHelmaWasmValuesOverrideFile() (filename string, cleanup func()) {
@@ -204,4 +101,12 @@ gloo:
 	Expect(err).NotTo(HaveOccurred())
 
 	return values.Name(), func() { _ = os.Remove(values.Name()) }
+}
+
+func TearDownTestHelper() {
+	Expect(testHelper).ToNot(BeNil())
+	err := testHelper.UninstallGloo()
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+	Expect(apierrors.IsNotFound(err)).To(BeTrue())
 }

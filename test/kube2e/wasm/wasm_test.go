@@ -1,4 +1,4 @@
-package gateway_test
+package wasm_test
 
 import (
 	"context"
