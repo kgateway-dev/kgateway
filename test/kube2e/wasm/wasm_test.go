@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/rotisserie/eris"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -20,11 +19,11 @@ import (
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/rotisserie/eris"
 	"k8s.io/client-go/rest"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var _ = Describe("Kube2e: wasm", func() {
@@ -99,33 +98,24 @@ var _ = Describe("Kube2e: wasm", func() {
 
 			defaultGatewayName := defaults.DefaultGateway(testHelper.InstallNamespace).Metadata.Name
 			// wait for default gateway to be created
-			Eventually(func() bool {
+			Eventually(func() error {
 				_, err := gatewayClient.Read(testHelper.InstallNamespace, defaultGatewayName, clients.ReadOpts{})
-				if err != nil {
-					return false
-				}
-				return true
-			}, "15s", "0.5s").Should(BeTrue())
+				return err
+			}, "15s", "0.5s").Should(Not(HaveOccurred()))
 
-			Eventually(func() bool {
+			Eventually(func() error {
 				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "dummy content to hydrate cache")
-				if err != nil {
-					return false
-				}
-				return true
-			}, "10s", "0.5s").Should(BeTrue(), "should update gateway with wasm config")
+				return err
+			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway with wasm config")
 
 			// There's currently an envoy bug where wasm filters not in envoy's cache will never load,
 			// so we write the filter again with a new hash (changed config string) so that envoy can
 			// pick it up from the cache the 2nd time.
 			time.Sleep(3 * time.Second)
-			Eventually(func() bool {
+			Eventually(func() error {
 				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "test")
-				if err != nil {
-					return false
-				}
-				return true
-			}, "10s", "0.5s").Should(BeTrue(), "should update gateway to use cached filter")
+				return err
+			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway to use cached filter")
 
 			wasmHeader := "valuefromconfig: test"
 

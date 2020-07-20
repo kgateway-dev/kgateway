@@ -33,9 +33,9 @@ func TestWasm(t *testing.T) {
 	if testutils.AreTestsDisabled() {
 		return
 	}
-	if os.Getenv("CLUSTER_LOCK_TESTS") != "1" {
-		log.Warnf("This test requires using a cluster lock and is disabled by default. " +
-			"To enable, set CLUSTER_LOCK_TESTS=1 in your env.")
+	if os.Getenv("KUBE2E_TESTS") != "wasm" {
+		log.Warnf("This test is disabled. " +
+			"To enable, set KUBE2E_TESTS to 'wasm' in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
@@ -72,7 +72,7 @@ func StartTestHelper() {
 	Expect(err).NotTo(HaveOccurred())
 
 	// Check that everything is OK
-	kube2e.GlooctlCheckEventuallyHealthy(testHelper, "90s")
+	kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 
 	// TODO(marco): explicitly enable strict validation, this can be removed once we enable validation by default
 	// See https://github.com/solo-io/gloo/issues/1374
