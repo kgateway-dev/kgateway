@@ -24,12 +24,9 @@ import (
 )
 
 func TestKnative(t *testing.T) {
-	if testutils.AreTestsDisabled() {
-		return
-	}
-	if os.Getenv("CLUSTER_LOCK_TESTS") != "1" {
-		log.Warnf("This test requires using a cluster lock and is disabled by default. " +
-			"To enable, set CLUSTER_LOCK_TESTS=1 in your env.")
+	if os.Getenv("KUBE2E_TESTS") != "knative" {
+		log.Warnf("This test is disabled. " +
+			"To enable, set KUBE2E_TESTS to 'knative' in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()
