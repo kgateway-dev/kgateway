@@ -48,6 +48,8 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 	coremeta := kubeutils.FromKubeMeta(meta)
 	coremeta.ResourceVersion = ""
 	coremeta.Name = strings.ToLower(UpstreamName(meta.Namespace, meta.Name, port.Port))
+	labels := coremeta.Labels
+	coremeta.Labels = make(map[string]string)
 
 	us := &v1.Upstream{
 		Metadata: coremeta,
@@ -59,7 +61,9 @@ func (uc *KubeUpstreamConverter) CreateUpstream(ctx context.Context, svc *kubev1
 				Selector:         svc.Spec.Selector,
 			},
 		},
-		DiscoveryMetadata: &v1.DiscoveryMetadata{},
+		DiscoveryMetadata: &v1.DiscoveryMetadata{
+			Labels: labels,
+		},
 	}
 
 	for _, sc := range uc.serviceConverters {
