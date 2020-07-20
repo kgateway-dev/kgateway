@@ -22,14 +22,9 @@ spec:
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}
   ports:
-{{- with $spec.customPorts }}
-  {{- range $spec.customPorts }}
-  - port: {{ .port }}
-    targetPort: {{ .targetPort }}
-    protocol: {{ .protocol }}
-    name: {{ .name }}
-  {{- end }}
-{{- end }}
+{{- if $spec.service.customPorts }}
+{{ toYaml $spec.service.customPorts | indent 2 }}
+{{- end -}}
 {{- if $spec.service.httpsFirst }}
   - port: {{ $spec.service.httpsPort }}
     targetPort: {{ $spec.podTemplate.httpsPort }}
