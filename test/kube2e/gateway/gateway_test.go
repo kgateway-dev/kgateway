@@ -3,11 +3,12 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	"github.com/solo-io/gloo/test/kube2e"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/test/kube2e"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"

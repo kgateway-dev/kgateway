@@ -2,7 +2,6 @@ package kube2e
 
 import (
 	"context"
-	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,17 +10,18 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/gogo/protobuf/types"
-	. "github.com/onsi/gomega"
-	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
+	clienthelpers "github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/go-utils/kubeutils"
 	"github.com/solo-io/go-utils/testutils/helper"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	"github.com/solo-io/go-utils/kubeutils"
+	"github.com/gogo/protobuf/types"
+	. "github.com/onsi/gomega"
+	errors "github.com/rotisserie/eris"
 	"k8s.io/client-go/kubernetes"
 )
 
