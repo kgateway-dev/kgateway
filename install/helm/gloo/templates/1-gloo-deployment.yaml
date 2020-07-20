@@ -63,6 +63,9 @@ spec:
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
           protocol: TCP
+        - containerPort: {{ .Values.gloo.deployment.restXdsPort }}
+          name: rest-xds
+          protocol: TCP
         readinessProbe:
           tcpSocket:
             port: {{ .Values.gloo.deployment.xdsPort }}
@@ -117,6 +120,9 @@ spec:
 {{- if not .Values.global.glooMtls.enabled }}
         - containerPort: {{ .Values.gloo.deployment.xdsPort }}
           name: grpc-xds
+          protocol: TCP
+        - containerPort: {{ .Values.gloo.deployment.restXdsPort }}
+          name: rest-xds
           protocol: TCP
 {{- end }}
         - containerPort: {{ .Values.gloo.deployment.validationPort }}

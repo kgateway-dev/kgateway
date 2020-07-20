@@ -58,6 +58,7 @@
 |gloo.deployment.image.pullPolicy|string||image pull policy for the container|
 |gloo.deployment.image.pullSecret|string||image pull policy for the container |
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
+|gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
 |gloo.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gloo.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
