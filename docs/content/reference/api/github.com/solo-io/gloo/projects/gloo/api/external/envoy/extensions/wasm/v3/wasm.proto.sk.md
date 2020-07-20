@@ -8,7 +8,7 @@ weight: 5
 
 
 ### Package: `envoy.extensions.wasm.v3`  
-Copied from https://github.com/envoyproxy/envoy-wasm/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/extensions/wasm/v3/wasm.proto
+Copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/extensions/wasm/v3/wasm.proto
 
 
  

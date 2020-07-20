@@ -1,5 +1,5 @@
 changelog:
-  - type: NON_USER_FACING
-    description: Update wasm protos to reflect latest method signatures
+  - type: FIX
+    description: Update wasm protos to reflect latest method signatures. This fixes a bug in our previous wasm implementation, and uses the configuration object google.protobuf.Any instead of a string value for config.
     issueLink: https://github.com/solo-io/gloo/issues/3035
     resolvesIssue: false
