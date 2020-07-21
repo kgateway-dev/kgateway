@@ -3,6 +3,8 @@ package ratelimit_test
 import (
 	"io"
 
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -71,19 +73,19 @@ descriptors:
       unit: second
       requests_per_unit: 500`)
 
-		expectDescriptor := []*ratelimitpb.Descriptor{
+		expectDescriptor := []*rltypes.Descriptor{
 			{
 				Key:   "database",
 				Value: "users",
-				RateLimit: &ratelimitpb.RateLimit{
-					Unit:            ratelimitpb.RateLimit_SECOND,
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_SECOND,
 					RequestsPerUnit: 500,
 				},
 			}, {
 				Key:   "database",
 				Value: "default",
-				RateLimit: &ratelimitpb.RateLimit{
-					Unit:            ratelimitpb.RateLimit_SECOND,
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_SECOND,
 					RequestsPerUnit: 500,
 				},
 			},
@@ -110,21 +112,21 @@ descriptors:
     unit: day
     requests_per_unit: 100`)
 
-		expectDescriptor := []*ratelimitpb.Descriptor{
+		expectDescriptor := []*rltypes.Descriptor{
 			{
 				Key:   "message_type",
 				Value: "marketing",
-				Descriptors: []*ratelimitpb.Descriptor{{
+				Descriptors: []*rltypes.Descriptor{{
 					Key: "to_number",
-					RateLimit: &ratelimitpb.RateLimit{
-						Unit:            ratelimitpb.RateLimit_DAY,
+					RateLimit: &rltypes.RateLimit{
+						Unit:            rltypes.RateLimit_DAY,
 						RequestsPerUnit: 5,
 					},
 				}},
 			}, {
 				Key: "to_number",
-				RateLimit: &ratelimitpb.RateLimit{
-					Unit:            ratelimitpb.RateLimit_DAY,
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_DAY,
 					RequestsPerUnit: 100,
 				},
 			},
@@ -146,18 +148,18 @@ descriptors:
     unit: second
     requests_per_unit: 0`)
 
-		expectDescriptor := []*ratelimitpb.Descriptor{
+		expectDescriptor := []*rltypes.Descriptor{
 			{
 				Key: "remote_address",
-				RateLimit: &ratelimitpb.RateLimit{
-					Unit:            ratelimitpb.RateLimit_SECOND,
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_SECOND,
 					RequestsPerUnit: 10,
 				},
 			}, {
 				Key:   "remote_address",
 				Value: "50.0.0.5",
-				RateLimit: &ratelimitpb.RateLimit{
-					Unit:            ratelimitpb.RateLimit_SECOND,
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_SECOND,
 					RequestsPerUnit: 0,
 				},
 			},
@@ -177,14 +179,14 @@ descriptors:
              unit: second
 `)
 
-		expectDescriptor := []*ratelimitpb.Descriptor{
+		expectDescriptor := []*rltypes.Descriptor{
 			{
 				Key:   "key",
 				Value: "value",
-				Descriptors: []*ratelimitpb.Descriptor{{
+				Descriptors: []*rltypes.Descriptor{{
 					Key: "subkey",
-					RateLimit: &ratelimitpb.RateLimit{
-						Unit:            ratelimitpb.RateLimit_SECOND,
+					RateLimit: &rltypes.RateLimit{
+						Unit:            rltypes.RateLimit_SECOND,
 						RequestsPerUnit: 300,
 					},
 				}},

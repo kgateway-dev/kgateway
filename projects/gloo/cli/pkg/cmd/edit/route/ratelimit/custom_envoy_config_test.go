@@ -44,7 +44,7 @@ var _ = Describe("CustomEnvoyConfig", func() {
 		vsvc, err = vsClient.Read(vsvc.Metadata.Namespace, vsvc.Metadata.Name, clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		return vsvc.VirtualHost.Routes[index].Options.Ratelimit
+		return vsvc.VirtualHost.Routes[index].Options.GetRatelimit()
 	}
 
 	It("should edit route", func() {

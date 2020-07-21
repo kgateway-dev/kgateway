@@ -146,20 +146,20 @@ func getEnvoyImageTag() string {
 	gomodfile := strings.TrimSpace(string(gomod))
 	projectbase, _ := filepath.Split(gomodfile)
 
-	envoyinit := filepath.Join(projectbase, "projects/envoyinit/cmd/Dockerfile.envoyinit")
-	inFile, err := os.Open(envoyinit)
+	makefile := filepath.Join(projectbase, "Makefile")
+	inFile, err := os.Open(makefile)
 	Expect(err).NotTo(HaveOccurred())
 
 	defer inFile.Close()
 
+	const prefix = "ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:"
+
 	scanner := bufio.NewScanner(inFile)
 	for scanner.Scan() {
 		line := scanner.Text()
-		parts := strings.Split(strings.TrimSpace(line), ":")
-		if len(parts) == 2 {
-			return parts[1]
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
 		}
-
 	}
 	return ""
 }
@@ -176,12 +176,18 @@ func NewEnvoyFactory() (*EnvoyFactory, error) {
 	}
 
 	// maybe it is in the path?!
-	envoyPath, err := exec.LookPath("envoy")
-	if err == nil {
-		log.Printf("Using envoy from PATH: %s", envoyPath)
-		return &EnvoyFactory{
-			envoypath: envoyPath,
-		}, nil
+	// only try to use local path if FETCH_ENVOY_BINARY is not set;
+	// there are two options:
+	// - you are using local envoy binary you just built and want to test (don't set the variable)
+	// - you want to use the envoy version gloo is shipped with (set the variable)
+	if os.Getenv("FETCH_ENVOY_BINARY") != "" {
+		envoyPath, err := exec.LookPath("envoy")
+		if err == nil {
+			log.Printf("Using envoy from PATH: %s", envoyPath)
+			return &EnvoyFactory{
+				envoypath: envoyPath,
+			}, nil
+		}
 	}
 
 	switch runtime.GOOS {

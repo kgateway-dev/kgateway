@@ -1,0 +1,6 @@
+changelog:
+- type: FIX
+  description: >
+    Stop copying Kubernetes labels when creating Upstreams. Treat labels instead
+    as a discovery-related metadata that can be explicitly used downstream (e.g. by FDS). 
+  issueLink: https://github.com/solo-io/gloo/issues/2634

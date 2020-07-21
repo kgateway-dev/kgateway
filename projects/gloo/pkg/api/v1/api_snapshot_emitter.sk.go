@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	enterprise_gloo_solo_io "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 
 	"go.opencensus.io/stats"
@@ -89,34 +90,37 @@ type ApiEmitter interface {
 	Secret() SecretClient
 	Upstream() UpstreamClient
 	AuthConfig() enterprise_gloo_solo_io.AuthConfigClient
+	RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 }
 
-func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient) ApiEmitter {
-	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, make(chan struct{}))
+func NewApiEmitter(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient) ApiEmitter {
+	return NewApiEmitterWithEmit(artifactClient, endpointClient, proxyClient, upstreamGroupClient, secretClient, upstreamClient, authConfigClient, rateLimitConfigClient, make(chan struct{}))
 }
 
-func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, emit <-chan struct{}) ApiEmitter {
+func NewApiEmitterWithEmit(artifactClient ArtifactClient, endpointClient EndpointClient, proxyClient ProxyClient, upstreamGroupClient UpstreamGroupClient, secretClient SecretClient, upstreamClient UpstreamClient, authConfigClient enterprise_gloo_solo_io.AuthConfigClient, rateLimitConfigClient github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient, emit <-chan struct{}) ApiEmitter {
 	return &apiEmitter{
-		artifact:      artifactClient,
-		endpoint:      endpointClient,
-		proxy:         proxyClient,
-		upstreamGroup: upstreamGroupClient,
-		secret:        secretClient,
-		upstream:      upstreamClient,
-		authConfig:    authConfigClient,
-		forceEmit:     emit,
+		artifact:        artifactClient,
+		endpoint:        endpointClient,
+		proxy:           proxyClient,
+		upstreamGroup:   upstreamGroupClient,
+		secret:          secretClient,
+		upstream:        upstreamClient,
+		authConfig:      authConfigClient,
+		rateLimitConfig: rateLimitConfigClient,
+		forceEmit:       emit,
 	}
 }
 
 type apiEmitter struct {
-	forceEmit     <-chan struct{}
-	artifact      ArtifactClient
-	endpoint      EndpointClient
-	proxy         ProxyClient
-	upstreamGroup UpstreamGroupClient
-	secret        SecretClient
-	upstream      UpstreamClient
-	authConfig    enterprise_gloo_solo_io.AuthConfigClient
+	forceEmit       <-chan struct{}
+	artifact        ArtifactClient
+	endpoint        EndpointClient
+	proxy           ProxyClient
+	upstreamGroup   UpstreamGroupClient
+	secret          SecretClient
+	upstream        UpstreamClient
+	authConfig      enterprise_gloo_solo_io.AuthConfigClient
+	rateLimitConfig github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient
 }
 
 func (c *apiEmitter) Register() error {
@@ -139,6 +143,9 @@ func (c *apiEmitter) Register() error {
 		return err
 	}
 	if err := c.authConfig.Register(); err != nil {
+		return err
+	}
+	if err := c.rateLimitConfig.Register(); err != nil {
 		return err
 	}
 	return nil
@@ -170,6 +177,10 @@ func (c *apiEmitter) Upstream() UpstreamClient {
 
 func (c *apiEmitter) AuthConfig() enterprise_gloo_solo_io.AuthConfigClient {
 	return c.authConfig
+}
+
+func (c *apiEmitter) RateLimitConfig() github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigClient {
+	return c.rateLimitConfig
 }
 
 func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts) (<-chan *ApiSnapshot, <-chan error, error) {
@@ -244,6 +255,14 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	authConfigChan := make(chan authConfigListWithNamespace)
 
 	var initialAuthConfigList enterprise_gloo_solo_io.AuthConfigList
+	/* Create channel for RateLimitConfig */
+	type rateLimitConfigListWithNamespace struct {
+		list      github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+		namespace string
+	}
+	rateLimitConfigChan := make(chan rateLimitConfigListWithNamespace)
+
+	var initialRateLimitConfigList github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
 
 	currentSnapshot := ApiSnapshot{}
 
@@ -374,6 +393,24 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 			defer done.Done()
 			errutils.AggregateErrs(ctx, errs, authConfigErrs, namespace+"-authConfigs")
 		}(namespace)
+		/* Setup namespaced watch for RateLimitConfig */
+		{
+			ratelimitconfigs, err := c.rateLimitConfig.List(namespace, clients.ListOpts{Ctx: opts.Ctx, Selector: opts.Selector})
+			if err != nil {
+				return nil, nil, errors.Wrapf(err, "initial RateLimitConfig list")
+			}
+			initialRateLimitConfigList = append(initialRateLimitConfigList, ratelimitconfigs...)
+		}
+		rateLimitConfigNamespacesChan, rateLimitConfigErrs, err := c.rateLimitConfig.Watch(namespace, opts)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "starting RateLimitConfig watch")
+		}
+
+		done.Add(1)
+		go func(namespace string) {
+			defer done.Done()
+			errutils.AggregateErrs(ctx, errs, rateLimitConfigErrs, namespace+"-ratelimitconfigs")
+		}(namespace)
 
 		/* Watch for changes and update snapshot */
 		go func(namespace string) {
@@ -423,6 +460,12 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 						return
 					case authConfigChan <- authConfigListWithNamespace{list: authConfigList, namespace: namespace}:
 					}
+				case rateLimitConfigList := <-rateLimitConfigNamespacesChan:
+					select {
+					case <-ctx.Done():
+						return
+					case rateLimitConfigChan <- rateLimitConfigListWithNamespace{list: rateLimitConfigList, namespace: namespace}:
+					}
 				}
 			}
 		}(namespace)
@@ -441,6 +484,8 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 	currentSnapshot.Upstreams = initialUpstreamList.Sort()
 	/* Initialize snapshot for AuthConfigs */
 	currentSnapshot.AuthConfigs = initialAuthConfigList.Sort()
+	/* Initialize snapshot for Ratelimitconfigs */
+	currentSnapshot.Ratelimitconfigs = initialRateLimitConfigList.Sort()
 
 	snapshots := make(chan *ApiSnapshot)
 	go func() {
@@ -479,6 +524,7 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 		secretsByNamespace := make(map[string]SecretList)
 		upstreamsByNamespace := make(map[string]UpstreamList)
 		authConfigsByNamespace := make(map[string]enterprise_gloo_solo_io.AuthConfigList)
+		ratelimitconfigsByNamespace := make(map[string]github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList)
 
 		for {
 			record := func() { stats.Record(ctx, mApiSnapshotIn.M(1)) }
@@ -627,6 +673,25 @@ func (c *apiEmitter) Snapshots(watchNamespaces []string, opts clients.WatchOpts)
 					authConfigList = append(authConfigList, authConfigs...)
 				}
 				currentSnapshot.AuthConfigs = authConfigList.Sort()
+			case rateLimitConfigNamespacedList := <-rateLimitConfigChan:
+				record()
+
+				namespace := rateLimitConfigNamespacedList.namespace
+
+				skstats.IncrementResourceCount(
+					ctx,
+					namespace,
+					"rate_limit_config",
+					mApiResourcesIn,
+				)
+
+				// merge lists by namespace
+				ratelimitconfigsByNamespace[namespace] = rateLimitConfigNamespacedList.list
+				var rateLimitConfigList github_com_solo_io_gloo_projects_gloo_pkg_api_external_solo_ratelimit.RateLimitConfigList
+				for _, ratelimitconfigs := range ratelimitconfigsByNamespace {
+					rateLimitConfigList = append(rateLimitConfigList, ratelimitconfigs...)
+				}
+				currentSnapshot.Ratelimitconfigs = rateLimitConfigList.Sort()
 			}
 		}
 	}()

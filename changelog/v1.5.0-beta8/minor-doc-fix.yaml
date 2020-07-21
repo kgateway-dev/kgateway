@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Correct link to envoy health status docs in load balancer proto
+    issueLink: https://github.com/solo-io/gloo/issues/3004

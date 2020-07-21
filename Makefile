@@ -19,7 +19,16 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
+# WASM version has '-wasm' added after major.minor.patch but before label. Eg 1.2.3-wasm or 1.2.3-wasm-rc1
+WASM_VERSION ?= $(shell echo $(VERSION) | sed 's/\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)/\1-wasm/g')
+
+# For non-versioned releases like local or dev builds, just prepend 'wasm-', eg wasm-dev
+ifeq ($(VERSION), $(WASM_VERSION))
+	WASM_VERSION = wasm-$(VERSION)
+endif
+
 ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-rc1
+ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-wasm-rc1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -79,7 +88,6 @@ init:
 fmt-changed:
 	git diff --name-only | grep '.*.go$$' | xargs -- goimports -w
 
-
 # must be a seperate target so that make waits for it to complete before moving on
 .PHONY: mod-download
 mod-download:
@@ -87,17 +95,18 @@ mod-download:
 
 DEPSGOBIN=$(shell pwd)/_output/.bin
 
-.PHONY: update-deps
-update-deps: mod-download
-	mkdir $(DEPSGOBIN)
-	$(shell cd $(shell go list -f '{{ .Dir }}' -m github.com/solo-io/protoc-gen-ext); make install)
+# https://github.com/go-modules-by-example/index/blob/master/010_tools/README.md
+.PHONY: install-go-tools
+install-go-tools: mod-download
+	mkdir -p $(DEPSGOBIN)
 	chmod +x $(shell go list -f '{{ .Dir }}' -m k8s.io/code-generator)/generate-groups.sh
-	GOBIN=$(DEPSGOBIN) go get -v golang.org/x/tools/cmd/goimports@v0.0.0-20200423205358-59e73619c742
-	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/protoc-gen-gogo@v1.3.1
-	GOBIN=$(DEPSGOBIN) go get -v github.com/cratonica/2goarray@514510793eaa1ae2cc2217a9a743104312412f35
-	GOBIN=$(DEPSGOBIN) go get -v -u github.com/golang/mock/gomock@v1.4.3
-	GOBIN=$(DEPSGOBIN) go get -v github.com/golang/mock/mockgen@v1.4.3
-	GOBIN=$(DEPSGOBIN) go get -v github.com/gogo/protobuf/gogoproto@v1.3.1
+	GOBIN=$(DEPSGOBIN) go install github.com/solo-io/protoc-gen-ext
+	GOBIN=$(DEPSGOBIN) go install golang.org/x/tools/cmd/goimports
+	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/protoc-gen-gogo
+	GOBIN=$(DEPSGOBIN) go install github.com/cratonica/2goarray
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/gomock
+	GOBIN=$(DEPSGOBIN) go install github.com/golang/mock/mockgen
+	GOBIN=$(DEPSGOBIN) go install github.com/gogo/protobuf/gogoproto
 
 
 .PHONY: check-format
@@ -177,7 +186,7 @@ MOCK_RESOURCE_INFO := \
 generate-client-mocks:
 	@$(foreach INFO, $(MOCK_RESOURCE_INFO), \
 		echo Generating mock for $(word 3,$(subst :, , $(INFO)))...; \
-		mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
+		GOBIN=$(DEPSGOBIN) mockgen -destination=projects/$(word 1,$(subst :, , $(INFO)))/pkg/mocks/mock_$(word 2,$(subst :, , $(INFO)))_client.go \
      		-package=mocks \
      		github.com/solo-io/gloo/projects/$(word 1,$(subst :, , $(INFO)))/pkg/api/v1 \
      		$(word 3,$(subst :, , $(INFO))) \
@@ -381,7 +390,8 @@ $(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 .PHONY: gloo-envoy-wasm-wrapper-docker
 gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
 	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
-		-t $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION)
+		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_WASM_IMAGE) \
+		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION)
 
 #----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
@@ -547,7 +557,7 @@ docker-push: $(DOCKER_IMAGES)
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
@@ -560,7 +570,7 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wasm-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
