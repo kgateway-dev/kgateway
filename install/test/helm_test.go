@@ -1070,7 +1070,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*v1.Service)
 						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
-						customPort := structuredDeployment.Spec.Ports[0]
+						customPort := structuredDeployment.Spec.Ports[2]
 						Expect(customPort.Name).To(Equal(testName))
 						Expect(customPort.Protocol).To(Equal(v1.ProtocolTCP))
 						Expect(customPort.Port).To(Equal(testPort))

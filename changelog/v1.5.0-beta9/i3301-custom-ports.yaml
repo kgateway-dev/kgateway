@@ -1,4 +1,4 @@
 changelog:
-    - type: NEW_FEATURE
+    - type: HELM
       issueLink: https://github.com/solo-io/gloo/issues/3301
       description: Surface customPorts field in gatewayProxy to allow abritrary port mangement.
