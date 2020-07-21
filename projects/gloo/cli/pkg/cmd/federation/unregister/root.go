@@ -2,6 +2,7 @@ package unregister
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
@@ -22,7 +23,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Short: constants.CLUSTER_UNREGISTER_COMMAND.Short,
 		Long:  constants.CLUSTER_UNREGISTER_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			secretClient := helpers.MustSecretClient()
+			secretClient := helpers.MustSecretClientWithOptions(5*time.Second, []string{opts.Cluster.FederationNamespace})
 			for _, clusterName := range args {
 				err := secretClient.Delete(opts.Cluster.FederationNamespace, clusterName, clients.DeleteOpts{})
 				if err != nil {
