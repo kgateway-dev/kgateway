@@ -10,7 +10,6 @@ import (
 	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	version2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
 	"github.com/solo-io/go-utils/versionutils"
-	"golang.org/x/xerrors"
 	"k8s.io/apimachinery/pkg/api/errors"
 
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
@@ -589,17 +588,12 @@ func isCrdNotFoundErr(err error) bool {
 				statusErr.ErrStatus.Details.Kind == ratelimit.RateLimitConfigCrd.Plural {
 				return true
 			}
-			return statusErr.ErrStatus.Code == 404
+			return false
 		}
 
 		// This works for "github.com/pkg/errors"-based errors as well
 		if wrappedErr := eris.Unwrap(err); wrappedErr != nil {
 			err = wrappedErr
-			continue
-		}
-
-		if errWrapper, ok := err.(xerrors.Wrapper); ok {
-			err = errWrapper.Unwrap()
 			continue
 		}
 		return false
