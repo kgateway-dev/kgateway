@@ -1,4 +1,5 @@
-FROM quay.io/solo-io/envoy-gloo-wasm:0.2.1
+ARG ENVOY_IMAGE
+FROM $ENVOY_IMAGE
 
 COPY envoywasm-linux-amd64 /usr/local/bin/envoyinit
 
