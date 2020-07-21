@@ -48,7 +48,7 @@ Configuration for a Wasm VM.
 | ----- | ---- | ----------- |----------- | 
 | `vmId` | `string` | An ID which will be used along with a hash of the wasm code (or the name of the registered Null VM plugin) to determine which VM will be used for the plugin. All plugins which use the same *vm_id* and code will use the same VM. May be left blank. Sharing a VM between plugins can reduce memory utilization and make sharing of data easier which may have security implications. See ref: "TODO: add ref" for details. |  |
 | `runtime` | `string` | The Wasm runtime type (either "v8" or "null" for code compiled into Envoy). |  |
-| `code` | [.envoy.config.core.v3.AsyncDataSource](../../../../config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |  |
+| `code` | [.envoy.config.core.v3.AsyncDataSource](../../../../../../../../../../../../envoy/config/core/v3/base.proto.sk/#asyncdatasource) | The Wasm code that Envoy will execute. |  |
 | `configuration` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | The Wasm configuration used in initialization of a new VM (proxy_on_start). |  |
 | `allowPrecompiled` | `bool` | Allow the wasm file to include pre-compiled code on VMs which support it. Warning: this should only be enable for trusted sources as the precompiled code is not verified. |  |
 
