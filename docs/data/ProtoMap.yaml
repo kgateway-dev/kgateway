@@ -479,21 +479,24 @@ apis:
   envoy.config.route.v3.WeightedCluster:
     relativepath: reference/api/envoy/config/route/v3/route_components.proto.sk/#WeightedCluster
     package: envoy.config.route.v3
-  envoy.config.wasm.v2.PluginConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#PluginConfig
-    package: envoy.config.wasm.v2
-  envoy.config.wasm.v2.VmConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#VmConfig
-    package: envoy.config.wasm.v2
-  envoy.config.wasm.v2.WasmService:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/api/v2/config/wasm/wasm.proto.sk/#WasmService
-    package: envoy.config.wasm.v2
   envoy.extensions.filters.http.buffer.v3.Buffer:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#Buffer
     package: envoy.extensions.filters.http.buffer.v3
   envoy.extensions.filters.http.buffer.v3.BufferPerRoute:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/buffer/v3/buffer.proto.sk/#BufferPerRoute
     package: envoy.extensions.filters.http.buffer.v3
+  envoy.extensions.filters.http.wasm.v3.Wasm:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto.sk/#Wasm
+    package: envoy.extensions.filters.http.wasm.v3
+  envoy.extensions.wasm.v3.PluginConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#PluginConfig
+    package: envoy.extensions.wasm.v3
+  envoy.extensions.wasm.v3.VmConfig:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#VmConfig
+    package: envoy.extensions.wasm.v3
+  envoy.extensions.wasm.v3.WasmService:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
+    package: envoy.extensions.wasm.v3
   envoy.type.DoubleRange:
     relativepath: reference/api/envoy/type/range.proto.sk/#DoubleRange
     package: envoy.type

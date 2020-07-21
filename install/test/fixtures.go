@@ -115,11 +115,11 @@ static_resources:
         port_value: 8081
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -143,14 +143,15 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-        name: envoy.http_connection_manager
+        name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 stats_sinks:
-- config:
+- typed_config:
+    "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithTracingProvider = `
@@ -268,11 +269,11 @@ static_resources:
         port_value: 8081
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -296,18 +297,19 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-        name: envoy.http_connection_manager
+          tracing:
+            provider:
+              another: line
+              trace: spec
+        name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 stats_sinks:
-- config:
+- typed_config:
+    "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
-tracing:
-  http:
-    another: line
-    trace: spec
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithTracingProviderCluster = `
@@ -439,11 +441,11 @@ static_resources:
         port_value: 8081
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -467,20 +469,21 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-        name: envoy.http_connection_manager
+          tracing:
+            provider:
+              typed_config:
+                '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
+                collector_cluster: zipkin
+                collector_endpoint: /api/v2/spans
+        name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 stats_sinks:
-- config:
+- typed_config:
+    "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
-tracing:
-  http:
-    typed_config:
-      '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
-      collector_cluster: zipkin
-      collector_endpoint: /api/v1/spans
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithReadConfig = `
@@ -598,11 +601,11 @@ static_resources:
         port_value: 8081
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -626,7 +629,7 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-        name: envoy.http_connection_manager
+        name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
   - address:
       socket_address:
@@ -634,11 +637,11 @@ static_resources:
         port_value: 8082
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: read_config_route
             virtual_hosts:
@@ -668,14 +671,15 @@ static_resources:
                 route:
                   cluster: admin_port_cluster
           stat_prefix: read_config
-        name: envoy.http_connection_manager
+        name: envoy.filters.network.http_connection_manager
     name: read_config_listener
 stats_sinks:
-- config:
+- typed_config:
+    "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 `
 
 var confWithAccessLogger = `
@@ -806,11 +810,11 @@ static_resources:
         port_value: 8081
     filter_chains:
     - filters:
-      - config:
-          codec_type: auto
+      - typed_config:
+          "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          codec_type: AUTO
           http_filters:
-          - config: {}
-            name: envoy.router
+          - name: envoy.filters.http.router
           route_config:
             name: prometheus_route
             virtual_hosts:
@@ -834,12 +838,13 @@ static_resources:
                   cluster: admin_port_cluster
                   prefix_rewrite: /stats/prometheus
           stat_prefix: prometheus
-        name: envoy.http_connection_manager
+        name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 stats_sinks:
-- config:
+- typed_config:
+    "@type": type.googleapis.com/envoy.config.metrics.v3.MetricsServiceConfig
     grpc_service:
       envoy_grpc:
         cluster_name: gloo.gloo-system.svc.cluster.local:9966
-  name: envoy.metrics_service
+  name: envoy.stat_sinks.metrics_service
 `

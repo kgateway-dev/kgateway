@@ -38,7 +38,7 @@ jobs:
     strategy:
       matrix:
         # No helm right now, https://github.com/solo-io/gloo/issues/3359
-        kube-e2e-test-type: ['gateway', 'ingress', 'knative']
+        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'wasm']
     steps:
     - name: Cancel Previous Actions
       uses: styfle/cancel-workflow-action@0.3.1

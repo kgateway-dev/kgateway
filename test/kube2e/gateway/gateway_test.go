@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/test/kube2e"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
@@ -480,7 +482,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				}, time.Second*10).Should(And(HaveOccurred(), MatchError(ContainSubstring("could not render proxy"))))
 
 				// disable strict validation
-				UpdateAlwaysAcceptSetting(true)
+				kube2e.UpdateAlwaysAcceptSetting(true, testHelper.InstallNamespace)
 
 				Eventually(func() error {
 					_, err := virtualServiceClient.Write(inValid, clients.WriteOpts{})
@@ -497,7 +499,7 @@ var _ = Describe("Kube2e: gateway", func() {
 				// important that we update the always accept setting after removing resources, or else we can have:
 				// "validation is disabled due to an invalid resource which has been written to storage.
 				// Please correct any Rejected resources to re-enable validation."
-				UpdateAlwaysAcceptSetting(false)
+				kube2e.UpdateAlwaysAcceptSetting(false, testHelper.InstallNamespace)
 			})
 			It("propagates the valid virtual services to envoy", func() {
 				testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
@@ -653,11 +655,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			var vs *gatewayv1.VirtualService
 			BeforeEach(func() {
 
-				UpdateSettings(func(settings *gloov1.Settings) {
+				kube2e.UpdateSettings(func(settings *gloov1.Settings) {
 					Expect(settings.Gloo).NotTo(BeNil())
 					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
 					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = true
-				})
+				}, testHelper.InstallNamespace)
 
 				vs = withRoute(&gatewayv1.Route{
 					Matchers: []*matchers.Matcher{{PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/invalid-route"}}},
@@ -688,11 +690,11 @@ var _ = Describe("Kube2e: gateway", func() {
 			AfterEach(func() {
 				_ = virtualServiceClient.Delete(vs.Metadata.Namespace, vs.Metadata.Name, clients.DeleteOpts{})
 
-				UpdateSettings(func(settings *gloov1.Settings) {
+				kube2e.UpdateSettings(func(settings *gloov1.Settings) {
 					Expect(settings.Gloo).NotTo(BeNil())
 					Expect(settings.Gloo.InvalidConfigPolicy).NotTo(BeNil())
 					settings.Gloo.InvalidConfigPolicy.ReplaceInvalidRoutes = false
-				})
+				}, testHelper.InstallNamespace)
 
 			})
 			It("serves a direct response for the invalid route response", func() {

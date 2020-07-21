@@ -7,16 +7,18 @@ import (
 	"github.com/gogo/protobuf/types"
 
 	"github.com/golang/mock/gomock"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"github.com/opencontainers/go-digest"
 	"github.com/rotisserie/eris"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	mock_cache "github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm/mocks"
-	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 )
 
 var _ = Describe("wasm plugin", func() {
@@ -88,8 +90,11 @@ var _ = Describe("wasm plugin", func() {
 		sha := "test-sha"
 		image := "image"
 		wasmFilter := &wasm.WasmFilter{
-			Image:  image,
-			Config: "test-config",
+			Image: image,
+			Config: &types.Any{
+				TypeUrl: "type.googleapis.com/google.protobuf.StringValue",
+				Value:   []byte("test-config"),
+			},
 			Name:   "test",
 			RootId: "test-root",
 			VmType: wasm.WasmFilter_V8,
@@ -108,18 +113,18 @@ var _ = Describe("wasm plugin", func() {
 		Expect(f).To(HaveLen(1))
 		goTypedConfig := f[0].HttpFilter.GetTypedConfig()
 		gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
-		var pc config.WasmService
+		var pc wasmv3.Wasm
 		Expect(types.UnmarshalAny(gogoTypedConfig, &pc)).NotTo(HaveOccurred())
 		Expect(pc.Config.RootId).To(Equal(wasmFilter.RootId))
 		Expect(pc.Config.Name).To(Equal(wasmFilter.Name))
 		Expect(pc.Config.Configuration).To(Equal(wasmFilter.Config))
-		Expect(pc.Config.VmConfig.VmId).To(Equal(wasmFilter.Name))
-		Expect(pc.Config.VmConfig.Runtime).To(Equal(V8Runtime))
-		remote := pc.Config.VmConfig.Code.GetRemote()
+		Expect(pc.Config.GetVmConfig().VmId).To(Equal(VmId))
+		Expect(pc.Config.GetVmConfig().Runtime).To(Equal(V8Runtime))
+		remote := pc.Config.GetVmConfig().Code.GetRemote()
 		Expect(remote).NotTo(BeNil())
 		Expect(remote.Sha256).To(Equal(sha))
 		Expect(remote.HttpUri.Uri).To(Equal(fmt.Sprintf("http://gloo/images/%s", sha)))
-		Expect(remote.HttpUri.HttpUpstreamType).To(BeEquivalentTo(&core.HttpUri_Cluster{
+		Expect(remote.HttpUri.HttpUpstreamType).To(BeEquivalentTo(&configcore.HttpUri_Cluster{
 			Cluster: WasmCacheCluster,
 		}))
 	})
