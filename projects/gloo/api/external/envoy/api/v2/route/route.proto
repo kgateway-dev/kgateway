@@ -117,14 +117,14 @@ message VirtualHost {
 
     // The per_filter_config field can be used to provide virtual host-specific
     // configurations for filters. The key should match the filter name, such as
-    // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+    // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
     // specific; see the `HTTP filter documentation (config_http_filters)`
     // for if and how it is utilized.
     map<string, google.protobuf.Struct> per_filter_config = 12;
 
     // The per_filter_config field can be used to provide virtual host-specific
     // configurations for filters. The key should match the filter name, such as
-    // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+    // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
     // specific; see the `HTTP filter documentation (config_http_filters)`
     // for if and how it is utilized.
     map<string, google.protobuf.Any> typed_per_filter_config = 15;
@@ -180,7 +180,7 @@ message Route {
     // about the route. It can be used for configuration, stats, and logging.
     // The metadata should go under the filter namespace that will need it.
     // For instance, if the metadata is intended for the Router filter,
-    // the filter name should be specified as *envoy.router*.
+    // the filter name should be specified as *envoy.filters.http.router*.
     core.Metadata metadata = 4;
 
     // Decorator for the matched route.
@@ -190,14 +190,14 @@ message Route {
 
     // The per_filter_config field can be used to provide route-specific
     // configurations for filters. The key should match the filter name, such as
-    // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+    // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
     // specific; see the `HTTP filter documentation (config_http_filters)` for
     // if and how it is utilized.
     map<string, google.protobuf.Struct> per_filter_config = 8;
 
     // The per_filter_config field can be used to provide route-specific
     // configurations for filters. The key should match the filter name, such as
-    // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+    // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
     // specific; see the `HTTP filter documentation (config_http_filters)` for
     // if and how it is utilized.
     map<string, google.protobuf.Any> typed_per_filter_config = 13;
@@ -290,14 +290,14 @@ message WeightedCluster {
 
         // The per_filter_config field can be used to provide weighted cluster-specific
         // configurations for filters. The key should match the filter name, such as
-        // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+        // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
         // specific; see the `HTTP filter documentation (config_http_filters)`
         // for if and how it is utilized.
         map<string, google.protobuf.Struct> per_filter_config = 8;
 
         // The per_filter_config field can be used to provide weighted cluster-specific
         // configurations for filters. The key should match the filter name, such as
-        // *envoy.buffer* for the HTTP buffer filter. Use of this field is filter
+        // *envoy.filters.http.buffer* for the HTTP buffer filter. Use of this field is filter
         // specific; see the `HTTP filter documentation (config_http_filters)`
         // for if and how it is utilized.
         map<string, google.protobuf.Any> typed_per_filter_config = 10;

@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
@@ -45,7 +47,7 @@ var _ = Describe("CORS", func() {
 	var td corsTestData
 
 	const (
-		corsFilterString       = `"name": "envoy.cors"`
+		corsFilterString       = `"name": "` + wellknown.CORS + `"`
 		corsActiveConfigString = `"cors":`
 	)
 

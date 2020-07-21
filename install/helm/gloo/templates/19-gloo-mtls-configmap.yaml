@@ -16,18 +16,49 @@ data:
       cluster: sds_client
     static_resources:
       listeners:
-      - name: envoy_mtls_listener
+      - name: envoy_xds_mtls_listener
         address: { socket_address: { address: "0.0.0.0", port_value: {{ .Values.gloo.deployment.xdsPort }} } }
         filter_chains:
         - filters:
-          - name: envoy.tcp_proxy
-            config:
+          - name: envoy.filters.network.tcp_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
               stat_prefix: ingress_tcp
-              cluster: gloo_cluster
+              cluster: gloo_xds_cluster
           transport_socket:
             name: envoy.transport_sockets.tls
             typed_config:
-              "@type": type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+              common_tls_context:
+                tls_certificate_sds_secret_configs:
+                  - name: server_cert
+                    sds_config:
+                      api_config_source:
+                        api_type: GRPC
+                        grpc_services:
+                        - envoy_grpc:
+                            cluster_name: gloo_sds
+                validation_context_sds_secret_config:
+                  name: validation_context
+                  sds_config:
+                    api_config_source:
+                      api_type: GRPC
+                      grpc_services:
+                      - envoy_grpc:
+                          cluster_name: gloo_sds
+      - name: envoy_rest_xds_mtls_listener
+        address: { socket_address: { address: "0.0.0.0", port_value: {{ .Values.gloo.deployment.restXdsPort }} } }
+        filter_chains:
+        - filters:
+          - name: envoy.filters.network.tcp_proxy
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+              stat_prefix: ingress_tcp
+              cluster: gloo_rest_xds_cluster
+          transport_socket:
+            name: envoy.transport_sockets.tls
+            typed_config:
+              "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
               common_tls_context:
                 tls_certificate_sds_secret_configs:
                   - name: server_cert
@@ -58,10 +89,10 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 8234
-      - name: gloo_cluster
+      - name: gloo_xds_cluster
         connect_timeout: 5.000s
         load_assignment:
-          cluster_name: gloo_cluster
+          cluster_name: gloo_xds_cluster
           endpoints:
           - lb_endpoints:
             - endpoint:
@@ -69,7 +100,17 @@ data:
                   socket_address:
                     address: 127.0.0.1
                     port_value: 9999
-        http2_protocol_options: {}
+      - name: gloo_rest_xds_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: gloo_rest_xds_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: 127.0.0.1
+                    port_value: 9998
         type: STRICT_DNS
     admin:
       access_log_path: "/dev/null"
