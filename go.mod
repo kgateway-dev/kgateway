@@ -93,6 +93,7 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	github.com/golang/mock => github.com/golang/mock v1.4.3
+	github.com/golang/protobuf => github.com/golang/protobuf v1.3.3
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1
