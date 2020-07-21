@@ -53,7 +53,7 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 
 ```yaml
 "image": string
-"config": string
+"config": .google.protobuf.Any
 "filterStage": .wasm.options.gloo.solo.io.FilterStage
 "name": string
 "rootId": string
@@ -64,7 +64,7 @@ This message defines a single Envoy WASM filter to be placed into the filter cha
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `image` | `string` | name of image which houses the compiled wasm filter. |  |
-| `config` | `string` | string of the config sent to the wasm filter currently has to be json or will crash TODO: update to proto.Any or proto.Struct? and then turn into json. |  |
+| `config` | [.google.protobuf.Any](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/any) | Filter/service configuration used to configure or reconfigure a plugin (proxy_on_configuration). `google.protobuf.Struct` is serialized as JSON before passing it to the plugin. `google.protobuf.BytesValue` and `google.protobuf.StringValue` are passed directly without the wrapper. |  |
 | `filterStage` | [.wasm.options.gloo.solo.io.FilterStage](../wasm.proto.sk/#filterstage) | the stage in the filter chain where this filter should be placed. |  |
 | `name` | `string` | the name of the filter, used for logging. |  |
 | `rootId` | `string` | the root_id of the filter which should be run, if this value is incorrect, or empty the filter will crash. |  |

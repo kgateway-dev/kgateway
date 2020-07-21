@@ -107,6 +107,11 @@ var (
 		Short: "uninstall gloo",
 	}
 
+	UNINSTALL_GLOO_FED_COMMAND = cobra.Command{
+		Use:   "federation",
+		Short: "uninstall gloo federation",
+	}
+
 	UPGRADE_COMMAND = cobra.Command{
 		Use:     "upgrade",
 		Aliases: []string{"ug"},
@@ -154,5 +159,31 @@ var (
 		Aliases: []string{"ui"},
 		Short:   "Open Gloo dashboard",
 		Long:    "Open the Gloo dashboard/UI in your default browser",
+	}
+
+	CLUSTER_COMMAND = cobra.Command{
+		Use:   "cluster",
+		Short: "Cluster commands",
+		Long:  "Commands related to managing multiple clusters",
+	}
+
+	CLUSTER_LIST_COMMAND = cobra.Command{
+		Use:   "list",
+		Short: "List clusters registered to the Gloo Federation control plane",
+	}
+
+	CLUSTER_REGISTER_COMMAND = cobra.Command{
+		Use:   "register",
+		Short: "Register a cluster to the Gloo Federation control plane",
+		Long:  "Register a cluster to the Gloo Federation control plane. Registered clusters can be targeted for discovery and configuration.",
+	}
+
+	CLUSTER_UNREGISTER_COMMAND = cobra.Command{
+		Use:   "unregister",
+		Short: "Unregister a cluster to the Gloo Federation control plane",
+		Long: "Unregister a cluster from the Gloo Federation control plane. Unregistered clusters can no longer be " +
+			"targeted for discovery and configuration. This will not delete the cluster. Additionally, this will not " +
+			"delete the service account, cluster role, and cluster role binding created on the remote cluster " +
+			"during the cluster registration process.",
 	}
 )

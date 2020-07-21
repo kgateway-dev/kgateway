@@ -120,7 +120,7 @@ spec:
         {{- if not $global.wasm.enabled }}
         image: {{ template "gloo.image" $image }}
         {{- else }}
-        image: "{{ $image.registry }}/gloo-envoy-wasm-wrapper:{{ $image.tag }}"
+        image: {{ template "gloo.wasmImage" $image }}
         {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: {{ $name | kebabcase }}

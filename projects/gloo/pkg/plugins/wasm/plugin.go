@@ -10,19 +10,22 @@ import (
 	"sync"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/config"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"github.com/solo-io/wasme/pkg/defaults"
+
+	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
+	wasmv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/filters/http/wasm/v3"
+	wasmv3ext "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 )
 
 const (
 	FilterName       = "envoy.filters.http.wasm"
 	V8Runtime        = "envoy.wasm.runtime.v8"
 	WavmRuntime      = "envoy.wasm.runtime.wavm"
+	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
 	WasmEnabled      = "WASM_ENABLED"
 )
@@ -81,29 +84,29 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 		runtime = WavmRuntime
 	}
 
-	filterCfg := &config.WasmService{
-		Config: &config.PluginConfig{
+	filterCfg := &wasmv3.Wasm{
+		Config: &wasmv3ext.PluginConfig{
 			Name:          wasmFilter.Name,
 			RootId:        wasmFilter.RootId,
 			Configuration: wasmFilter.Config,
-			VmConfig: &config.VmConfig{
-				// use name to ensure that every filter runs with a unique vm id
-				// this is a workaround for an Envoy bug: https://github.com/envoyproxy/envoy-wasm/issues/415
-				VmId:    wasmFilter.Name,
-				Runtime: runtime,
-				Code: &core.AsyncDataSource{
-					Specifier: &core.AsyncDataSource_Remote{
-						Remote: &core.RemoteDataSource{
-							HttpUri: &core.HttpUri{
-								Uri: "http://gloo/images/" + cachedPlugin.Sha256,
-								HttpUpstreamType: &core.HttpUri_Cluster{
-									Cluster: WasmCacheCluster,
+			Vm: &wasmv3ext.PluginConfig_VmConfig{
+				VmConfig: &wasmv3ext.VmConfig{
+					VmId:    VmId,
+					Runtime: runtime,
+					Code: &configcore.AsyncDataSource{
+						Specifier: &configcore.AsyncDataSource_Remote{
+							Remote: &configcore.RemoteDataSource{
+								HttpUri: &configcore.HttpUri{
+									Uri: "http://gloo/images/" + cachedPlugin.Sha256,
+									HttpUpstreamType: &configcore.HttpUri_Cluster{
+										Cluster: WasmCacheCluster,
+									},
+									Timeout: &types.Duration{
+										Seconds: 5, // TODO: customize
+									},
 								},
-								Timeout: &types.Duration{
-									Seconds: 5, // TODO: customize
-								},
+								Sha256: cachedPlugin.Sha256,
 							},
-							Sha256: cachedPlugin.Sha256,
 						},
 					},
 				},
@@ -131,7 +134,7 @@ func (p *Plugin) ensurePluginInCache(filter *wasm.WasmFilter) (*CachedPlugin, er
 	}, nil
 }
 
-func (p *Plugin) verifyConfiguration(schema Schema, config string) error {
+func (p *Plugin) verifyConfiguration(schema Schema, config *types.Any) error {
 	// everything goes now-a-days
 	return nil
 }

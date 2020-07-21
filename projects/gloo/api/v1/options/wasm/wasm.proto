@@ -8,6 +8,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
+import "google/protobuf/any.proto";
 
 /*
     Options config for WASM filters
@@ -24,10 +25,12 @@ message WasmFilter {
     // name of image which houses the compiled wasm filter
     string image = 2;
 
-    // string of the config sent to the wasm filter
-    // currently has to be json or will crash
-    // TODO: update to proto.Any or proto.Struct? and then turn into json
-    string config = 3;
+    // Filter/service configuration used to configure or reconfigure a plugin
+    // (proxy_on_configuration).
+    // `google.protobuf.Struct` is serialized as JSON before
+    // passing it to the plugin. `google.protobuf.BytesValue` and
+    // `google.protobuf.StringValue` are passed directly without the wrapper.
+    google.protobuf.Any config = 3;
 
     // the stage in the filter chain where this filter should be placed
     FilterStage filter_stage = 4;

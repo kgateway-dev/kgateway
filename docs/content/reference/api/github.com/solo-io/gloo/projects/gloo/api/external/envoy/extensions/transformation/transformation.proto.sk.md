@@ -13,7 +13,13 @@ weight: 5
 
 - [FilterTransformations](#filtertransformations)
 - [TransformationRule](#transformationrule)
+- [Transformations](#transformations)
 - [RouteTransformations](#routetransformations)
+- [RouteTransformation](#routetransformation)
+- [RequestMatch](#requestmatch)
+- [ResponseMatch](#responsematch)
+- [ResponseMatcher](#responsematcher)
+- [ResponseTransformationRule](#responsetransformationrule)
 - [Transformation](#transformation)
 - [Extraction](#extraction)
 - [TransformationTemplate](#transformationtemplate)
@@ -40,12 +46,14 @@ weight: 5
 
 ```yaml
 "transformations": []envoy.api.v2.filter.http.TransformationRule
+"stage": int
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `transformations` | [[]envoy.api.v2.filter.http.TransformationRule](../transformation.proto.sk/#transformationrule) | Specifies transformations based on the route matches. The first matched transformation will be applied. If there are overlapped match conditions, please put the most specific match first. |  |
+| `stage` | `int` | Only RouteTransformations.RouteTransformation with matching stage will be used with this filter. |  |
 
 
 
@@ -56,21 +64,21 @@ weight: 5
 
 
 ```yaml
-"match": .envoy.api.v2.route.RouteMatch
-"routeTransformations": .envoy.api.v2.filter.http.RouteTransformations
+"match": .envoy.config.route.v3.RouteMatch
+"routeTransformations": .envoy.api.v2.filter.http.TransformationRule.Transformations
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `match` | [.envoy.api.v2.route.RouteMatch](../../../../../../../../../../../envoy/api/v2/route/route.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |  |
-| `routeTransformations` | [.envoy.api.v2.filter.http.RouteTransformations](../transformation.proto.sk/#routetransformations) | transformation to perform. |  |
+| `match` | [.envoy.config.route.v3.RouteMatch](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#routematch) | The route matching parameter. Only when the match is satisfied, the "requires" field will apply. For example: following match will match all requests. .. code-block:: yaml match: prefix: /. |  |
+| `routeTransformations` | [.envoy.api.v2.filter.http.TransformationRule.Transformations](../transformation.proto.sk/#transformations) | transformation to perform. |  |
 
 
 
 
 ---
-### RouteTransformations
+### Transformations
 
 
 
@@ -86,6 +94,130 @@ weight: 5
 | `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to requests. |  |
 | `clearRouteCache` | `bool` | Clear the route cache if the request transformation was applied. |  |
 | `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | Apply a transformation to responses. |  |
+
+
+
+
+---
+### RouteTransformations
+
+
+
+```yaml
+"requestTransformation": .envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+"clearRouteCache": bool
+"transformations": []envoy.api.v2.filter.http.RouteTransformations.RouteTransformation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | deprecated. Use transformations[].request_match.request_transformation instead. |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | deprecated. Use transformations[].request_match.response_transformation instead. |  |
+| `clearRouteCache` | `bool` | deprecated. Use transformations[].request_match.clear_route_cache instead. |  |
+| `transformations` | [[]envoy.api.v2.filter.http.RouteTransformations.RouteTransformation](../transformation.proto.sk/#routetransformation) |  |  |
+
+
+
+
+---
+### RouteTransformation
+
+
+
+```yaml
+"stage": int
+"requestMatch": .envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.RequestMatch
+"responseMatch": .envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.ResponseMatch
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `stage` | `int` | Stage number. This transformation will only be processed by filters with the same stage number. |  |
+| `requestMatch` | [.envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.RequestMatch](../transformation.proto.sk/#requestmatch) |  Only one of `requestMatch` or `responseMatch` can be set. |  |
+| `responseMatch` | [.envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.ResponseMatch](../transformation.proto.sk/#responsematch) |  Only one of `responseMatch` or `requestMatch` can be set. |  |
+
+
+
+
+---
+### RequestMatch
+
+
+
+```yaml
+"match": .envoy.config.route.v3.RouteMatch
+"requestTransformation": .envoy.api.v2.filter.http.Transformation
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+"clearRouteCache": bool
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `match` | [.envoy.config.route.v3.RouteMatch](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#routematch) | if no match is specified, will match all. |  |
+| `requestTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | transformation to perform. |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) |  |  |
+| `clearRouteCache` | `bool` | clear the route cache if the request transformation was applied. |  |
+
+
+
+
+---
+### ResponseMatch
+
+
+
+```yaml
+"match": .envoy.api.v2.filter.http.ResponseMatcher
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `match` | [.envoy.api.v2.filter.http.ResponseMatcher](../transformation.proto.sk/#responsematcher) |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | transformation to perform. |  |
+
+
+
+
+---
+### ResponseMatcher
+
+
+
+```yaml
+"headers": []envoy.config.route.v3.HeaderMatcher
+"responseCodeDetails": .envoy.type.matcher.v3.StringMatcher
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `headers` | [[]envoy.config.route.v3.HeaderMatcher](../../../../../../../../../../../envoy/config/route/v3/route_components.proto.sk/#headermatcher) | Specifies a set of headers that the route should match on. The router will check the response headers against all the specified headers in the route config. A match will happen if all the headers in the route are present in the request with the same values (or based on presence if the value field is not in the config). |  |
+| `responseCodeDetails` | [.envoy.type.matcher.v3.StringMatcher](../../../../../../../../../../../envoy/type/matcher/v3/string.proto.sk/#stringmatcher) | Only match responses with non empty response code details (this usually implies a local reply). |  |
+
+
+
+
+---
+### ResponseTransformationRule
+
+
+
+```yaml
+"match": .envoy.api.v2.filter.http.ResponseMatcher
+"responseTransformation": .envoy.api.v2.filter.http.Transformation
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `match` | [.envoy.api.v2.filter.http.ResponseMatcher](../transformation.proto.sk/#responsematcher) |  |  |
+| `responseTransformation` | [.envoy.api.v2.filter.http.Transformation](../transformation.proto.sk/#transformation) | transformation to perform. |  |
 
 
 
@@ -162,7 +294,7 @@ Defines a transformation template.
 | `body` | [.envoy.api.v2.filter.http.InjaTemplate](../transformation.proto.sk/#injatemplate) | Apply a template to the body. Only one of `body`, or `mergeExtractorsToBody` can be set. |  |
 | `passthrough` | [.envoy.api.v2.filter.http.Passthrough](../transformation.proto.sk/#passthrough) | This will cause the transformation filter not to buffer the body. Use this setting if the response body is large and you don't need to transform nor extract information from it. Only one of `passthrough`, or `mergeExtractorsToBody` can be set. |  |
 | `mergeExtractorsToBody` | [.envoy.api.v2.filter.http.MergeExtractorsToBody](../transformation.proto.sk/#mergeextractorstobody) | Merge all defined extractors to the request/response body. If you want to nest elements inside the body, use dot separator in the extractor name. Only one of `mergeExtractorsToBody`, or `passthrough` can be set. |  |
-| `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) | Determines how the body will be parsed. |  |
+| `parseBodyBehavior` | [.envoy.api.v2.filter.http.TransformationTemplate.RequestBodyParse](../transformation.proto.sk/#requestbodyparse) |  |  |
 | `ignoreErrorOnParse` | `bool` | If set to true, Envoy will not throw an exception in case the body parsing fails. |  |
 | `dynamicMetadataValues` | [[]envoy.api.v2.filter.http.TransformationTemplate.DynamicMetadataValue](../transformation.proto.sk/#dynamicmetadatavalue) | Use this field to set Dynamic Metadata. |  |
 
@@ -173,7 +305,9 @@ Defines a transformation template.
 ### DynamicMetadataValue
 
  
-Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
+Defines an [Envoy Dynamic
+Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata)
+entry.
 
 ```yaml
 "metadataNamespace": string
@@ -194,7 +328,8 @@ Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/
 ---
 ### RequestBodyParse
 
-
+ 
+Determines how the body will be parsed.
 
 | Name | Description |
 | ----- | ----------- | 
@@ -208,13 +343,17 @@ Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/
 ### InjaTemplate
 
  
-Defines an [Inja template](https://github.com/pantor/inja) that will be rendered by Gloo.
-In addition to the core template functions, the Gloo transformation filter defines the following custom functions:
+Defines an [Inja template](https://github.com/pantor/inja) that will be
+rendered by Gloo. In addition to the core template functions, the Gloo
+transformation filter defines the following custom functions:
 - header(header_name): returns the value of the header with the given name
-- extraction(extractor_name): returns the value of the extractor with the given name
-- env(env_var_name): returns the value of the environment variable with the given name
+- extraction(extractor_name): returns the value of the extractor with the
+given name
+- env(env_var_name): returns the value of the environment variable with the
+given name
 - body(): returns the request/response body
-- context(): returns the base JSON context (allowing for example to range on a JSON body that is an array)
+- context(): returns the base JSON context (allowing for example to range on
+a JSON body that is an array)
 
 ```yaml
 "text": string

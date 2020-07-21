@@ -15,6 +15,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	transformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
@@ -34,7 +35,7 @@ var _ = Describe("Transformations", func() {
 		envoyPort     uint32
 		tu            *v1helpers.TestUpstream
 		opts          clients.WriteOpts
-		transform     *envoy_transform.RouteTransformations
+		transform     *transformation.Transformations
 	)
 
 	BeforeEach(func() {
@@ -65,7 +66,7 @@ var _ = Describe("Transformations", func() {
 		}
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, opts)
 		Expect(err).NotTo(HaveOccurred())
-		transform = &envoy_transform.RouteTransformations{
+		transform = &transformation.Transformations{
 			ResponseTransformation: &envoy_transform.Transformation{
 				TransformationType: &envoy_transform.Transformation_TransformationTemplate{
 					TransformationTemplate: &envoy_transform.TransformationTemplate{

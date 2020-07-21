@@ -19,8 +19,9 @@ func main() {
 	protoImports.External["github.com/solo-io/solo-apis"] = []string{
 		"api/**/*.proto",
 	}
+	// Import gloo instance API dependencies
 	protoImports.External["github.com/solo-io/skv2"] = []string{
-		"api/**/*.proto",
+		"api/**/**/*.proto",
 	}
 
 	generateOptions := cmd.GenerateOptions{

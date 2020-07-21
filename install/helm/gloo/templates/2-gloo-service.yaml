@@ -14,6 +14,9 @@ spec:
   - name: grpc-xds
     port: {{ .Values.gloo.deployment.xdsPort }}
     protocol: TCP
+  - name: rest-xds
+    port: {{ .Values.gloo.deployment.restXdsPort }}
+    protocol: TCP
   - name: grpc-validation
     port: {{ .Values.gloo.deployment.validationPort }}
     protocol: TCP

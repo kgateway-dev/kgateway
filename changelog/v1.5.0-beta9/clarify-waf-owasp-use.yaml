@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Clarify when WAF includes OWASP Core Rule Set.
+    issueLink: https://github.com/solo-io/gloo/issues/3228

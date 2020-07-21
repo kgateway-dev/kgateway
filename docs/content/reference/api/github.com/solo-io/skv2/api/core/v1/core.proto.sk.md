@@ -13,6 +13,8 @@ weight: 5
 
 - [ObjectRef](#objectref)
 - [ClusterObjectRef](#clusterobjectref)
+- [TypedObjectRef](#typedobjectref)
+- [TypedClusterObjectRef](#typedclusterobjectref)
 - [Status](#status)
 - [State](#state)
   
@@ -49,7 +51,7 @@ Resource reference for an object
 ### ClusterObjectRef
 
  
-Resource reference for an object
+Resource reference for a cross-cluster-scoped object
 
 ```yaml
 "name": string
@@ -60,6 +62,56 @@ Resource reference for an object
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `name` | `string` | name of the resource being referenced. |  |
+| `namespace` | `string` | namespace of the resource being referenced. |  |
+| `clusterName` | `string` | name of the cluster in which the resource exists. |  |
+
+
+
+
+---
+### TypedObjectRef
+
+ 
+Resource reference for a typed object
+
+```yaml
+"apiGroup": .google.protobuf.StringValue
+"kind": .google.protobuf.StringValue
+"name": string
+"namespace": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |  |
+| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |  |
+| `name` | `string` | name of the resource being referenced. |  |
+| `namespace` | `string` | namespace of the resource being referenced. |  |
+
+
+
+
+---
+### TypedClusterObjectRef
+
+ 
+Resource reference for a typed, cross-cluster-scoped object
+
+```yaml
+"apiGroup": .google.protobuf.StringValue
+"kind": .google.protobuf.StringValue
+"name": string
+"namespace": string
+"clusterName": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `apiGroup` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | API group of the resource being referenced. |  |
+| `kind` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Kind of the resource being referenced. |  |
 | `name` | `string` | name of the resource being referenced. |  |
 | `namespace` | `string` | namespace of the resource being referenced. |  |
 | `clusterName` | `string` | name of the cluster in which the resource exists. |  |

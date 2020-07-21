@@ -30,6 +30,7 @@ glooctl is the unified CLI for Gloo.
 
 * [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource
 * [glooctl check](../glooctl_check)	 - Checks Gloo resources for errors (requires Gloo running on Kubernetes)
+* [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 * [glooctl completion](../glooctl_completion)	 - generate auto completion for your shell
 * [glooctl create](../glooctl_create)	 - Create a Gloo resource
 * [glooctl dashboard](../glooctl_dashboard)	 - Open Gloo dashboard
