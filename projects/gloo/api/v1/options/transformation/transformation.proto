@@ -15,7 +15,8 @@ option (extproto.hash_all) = true;
 message ResponseMatch { 
     // Response headers to match on.
     repeated matchers.core.gloo.solo.io.HeaderMatcher matchers = 1;
-    // Response code detail to match on. see envoy documentation for possible values.
+    // Response code detail to match on. To see the response code details for your usecase,
+    // you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
     string response_code_details = 2;
     // Transformation to apply on the response.
     envoy.api.v2.filter.http.Transformation response_transformation = 3;
@@ -54,6 +55,6 @@ message RequestResponseTransformations {
 message TransformationStages {
     // Early transformations happen before most other options (Like Auth and Rate Limit).
     RequestResponseTransformations early = 1;
-    // Regular transformations happend after Auth and Rate limit decisions has been made.
+    // Regular transformations happen after Auth and Rate limit decisions has been made.
     RequestResponseTransformations regular = 2;
 }

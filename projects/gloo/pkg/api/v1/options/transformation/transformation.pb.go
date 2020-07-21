@@ -30,7 +30,8 @@ const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 type ResponseMatch struct {
 	// Response headers to match on.
 	Matchers []*matchers.HeaderMatcher `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
-	// Response code detail to match on. see envoy documentation for possible values.
+	// Response code detail to match on. To see the response code details for your usecase,
+	// you can use the envoy access log %RESPONSE_CODE_DETAILS% formatter to log it.
 	ResponseCodeDetails string `protobuf:"bytes,2,opt,name=response_code_details,json=responseCodeDetails,proto3" json:"response_code_details,omitempty"`
 	// Transformation to apply on the response.
 	ResponseTransformation *transformation.Transformation `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
@@ -261,7 +262,7 @@ func (m *RequestResponseTransformations) GetResponseTransforms() []*ResponseMatc
 type TransformationStages struct {
 	// Early transformations happen before most other options (Like Auth and Rate Limit).
 	Early *RequestResponseTransformations `protobuf:"bytes,1,opt,name=early,proto3" json:"early,omitempty"`
-	// Regular transformations happend after Auth and Rate limit decisions has been made.
+	// Regular transformations happen after Auth and Rate limit decisions has been made.
 	Regular              *RequestResponseTransformations `protobuf:"bytes,2,opt,name=regular,proto3" json:"regular,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                        `json:"-"`
 	XXX_unrecognized     []byte                          `json:"-"`
