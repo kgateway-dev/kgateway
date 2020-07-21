@@ -14,9 +14,9 @@ import (
 type OutputType int
 
 const (
-	TABLE OutputType = iota
+	JSON OutputType = iota
 	YAML
-	JSON
+	TABLE
 	KUBE_YAML
 	WIDE
 )
