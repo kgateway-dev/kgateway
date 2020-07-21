@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -28,6 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	consulplugin "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/registry"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer/sanitizer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/gloo/projects/gloo/pkg/upstreams"
@@ -470,6 +472,28 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		authConfigClient,
 		rlClient,
 	)
+
+	if os.Getenv(wasm.WasmEnabled) == "true" {
+		// If wasm, use constructor with emit channel,
+		// Start goroutine that triggers it every couple seconds.
+		wasmAutoNotifier := make(chan struct{}, 1)
+
+		// Start update loop every 5 seconds
+		go reTriggerSync(opts.WatchOpts.Ctx, wasmAutoNotifier, 5*time.Second)
+
+		apiCache = v1.NewApiEmitterWithEmit(
+			artifactClient,
+			endpointClient,
+			proxyClient,
+			upstreamGroupClient,
+			secretClient,
+			hybridUsClient,
+			authConfigClient,
+			rlClient,
+			wasmAutoNotifier,
+		)
+	}
+
 	rpt := reporter.NewReporter("gloo",
 		hybridUsClient.BaseClient(),
 		proxyClient.BaseClient(),
@@ -705,4 +729,17 @@ func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCac
 		RateLimitConfigs:  rateLimitConfigFactory,
 		KubeCoreCache:     kubeCoreCache,
 	}, nil
+}
+
+// Emits an event to the given channel every given duration, stops when context is done
+func reTriggerSync(ctx context.Context, c chan struct{}, duration time.Duration) {
+	for {
+		select {
+		case <-time.After(duration):
+			var event struct{} // Doesn't actually get read
+			c <- event
+		case <-ctx.Done():
+			break
+		}
+	}
 }
