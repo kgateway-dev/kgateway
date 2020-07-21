@@ -33,7 +33,7 @@ import (
 )
 
 var (
-	RateLimitCrdReleaseVersion = versionutils.NewVersion(1, 5, 0, "beta", 8)
+	rateLimitCrdReleaseVersion *versionutils.Version
 	CrdNotFoundErr             = func(crdName string) error {
 		return eris.Errorf("%s CRD has not been registered", crdName)
 	}
@@ -619,9 +619,16 @@ func allGloosArePreRateLimitConfig(namespaces []string) (bool, error) {
 		// There will be only one Gloo instance running in a given namespace
 		serverVersion := clientServerVersion.Server[0]
 
+		glooContainerName := "gloo"
+		rateLimitCrdReleaseVersion = versionutils.NewVersion(1, 5, 0, "beta", 8)
+		if serverVersion.Enterprise {
+			glooContainerName = "gloo-ee"
+			rateLimitCrdReleaseVersion = versionutils.NewVersion(1, 5, 0, "beta", 3)
+		}
+
 		var glooContainer *version2.Kubernetes_Container
 		for _, container := range serverVersion.GetKubernetes().Containers {
-			if container.Name == "gloo" {
+			if container.Name == glooContainerName {
 				glooContainer = container
 				break
 			}
@@ -639,7 +646,7 @@ func allGloosArePreRateLimitConfig(namespaces []string) (bool, error) {
 			continue
 		}
 
-		isGreaterThan, isDeterminable := RateLimitCrdReleaseVersion.IsGreaterThan(*glooVersion)
+		isGreaterThan, isDeterminable := rateLimitCrdReleaseVersion.IsGreaterThan(*glooVersion)
 		result = isDeterminable && isGreaterThan
 	}
 
