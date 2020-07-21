@@ -28,7 +28,7 @@ var glooFederationPolicyRules = []v1.PolicyRule{
 }
 
 func Register(opts *options.Options) error {
-	ctx := context.TODO()
+	ctx := context.Background()
 	registerOpts := opts.Cluster.Register
 
 	clusterRegisterOpts := register.RegistrationOptions{

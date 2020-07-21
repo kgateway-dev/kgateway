@@ -37,7 +37,7 @@ func main() {
 		log.Fatal(err)
 	}
 	defer f.Close()
-	enterpriseVersion, err := version.GetLatestHelmChartVersionWithMaxVersion(true, maxGlooEVersion)
+	enterpriseVersion, err := version.GetLatestEnterpriseVersion(true)
 	if err != nil {
 		log.Fatal(err)
 	}

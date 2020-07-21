@@ -13,7 +13,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var EmptyClusterError = eris.New("please provide a subcommand")
+var MissingSubcommandError = eris.New("please provide a subcommand")
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
@@ -28,7 +28,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return EmptyClusterError
+			return MissingSubcommandError
 		},
 	}
 

@@ -319,7 +319,7 @@ message Settings {
 
 // Settings specific to the gloo (Envoy xDS server) controller
 message GlooOptions {
-    // Where the `gloo` xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9977`
+    // Where the `gloo` xDS server should bind. Defaults to `0.0.0.0:9977`
     string xds_bind_addr = 1;
 
     // Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988`
@@ -391,7 +391,7 @@ message GlooOptions {
     // defaults to 100.
     google.protobuf.UInt32Value regex_max_program_size = 10;
 
-    // (Enterprise Only): Where the `gloo` REST xDS server should bind (should not need configuration by user).
+    // (Enterprise Only): Where the `gloo` REST xDS server should bind.
     // Defaults to `0.0.0.0:9976`
     string rest_xds_bind_addr = 11;
 }

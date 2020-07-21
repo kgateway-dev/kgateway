@@ -17,7 +17,7 @@ changelog:
       Add the following Helm values, available for Gloo Enterprise only:
       - `gatewayProxies.NAME.failover.enabled`: Configure this proxy for failover.
       Set to false by default.
-      - `gatewayProxies.NAME.failover.port`: Port to use for failover Gateway Bind port,
+      - `gatewayProxies.NAME.failover.port`: Port to use for failover Gateway bind port,
       and service. Default is 15443.
       - `gatewayProxies.NAME.failover.nodePort`: Optional NodePort for failover Service.
       - `gatewayProxies.NAME.failover.secretName`: Secret containing downstream Ssl Secrets.
