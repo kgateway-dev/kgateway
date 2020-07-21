@@ -89,11 +89,13 @@ Each upstream type is handled by a corresponding Gloo plugin. (plugins currently
 created by discovery services
 
 ```yaml
+"labels": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `labels` | `map<string, string>` | Labels inherited from the original upstream (e.g. Kubernetes labels). |  |
 
 
 

@@ -12,7 +12,8 @@ import (
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	types "github.com/gogo/protobuf/types"
-	route "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/api/v2/route"
+	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
+	v31 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -26,6 +27,7 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
+// Determines how the body will be parsed.
 type TransformationTemplate_RequestBodyParse int32
 
 const (
@@ -50,16 +52,20 @@ func (x TransformationTemplate_RequestBodyParse) String() string {
 }
 
 func (TransformationTemplate_RequestBodyParse) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{5, 0}
+	return fileDescriptor_af1c648bbaa251cf, []int{7, 0}
 }
 
 type FilterTransformations struct {
-	// Specifies transformations based on the route matches. The first matched transformation will be
-	// applied. If there are overlapped match conditions, please put the most specific match first.
-	Transformations      []*TransformationRule `protobuf:"bytes,1,rep,name=transformations,proto3" json:"transformations,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	// Specifies transformations based on the route matches. The first matched
+	// transformation will be applied. If there are overlapped match conditions,
+	// please put the most specific match first.
+	Transformations []*TransformationRule `protobuf:"bytes,1,rep,name=transformations,proto3" json:"transformations,omitempty"`
+	// Only RouteTransformations.RouteTransformation with matching stage will be
+	// used with this filter.
+	Stage                uint32   `protobuf:"varint,2,opt,name=stage,proto3" json:"stage,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *FilterTransformations) Reset()         { *m = FilterTransformations{} }
@@ -93,9 +99,16 @@ func (m *FilterTransformations) GetTransformations() []*TransformationRule {
 	return nil
 }
 
+func (m *FilterTransformations) GetStage() uint32 {
+	if m != nil {
+		return m.Stage
+	}
+	return 0
+}
+
 type TransformationRule struct {
-	// The route matching parameter. Only when the match is satisfied, the "requires" field will
-	// apply.
+	// The route matching parameter. Only when the match is satisfied, the
+	// "requires" field will apply.
 	//
 	// For example: following match will match all requests.
 	//
@@ -104,12 +117,12 @@ type TransformationRule struct {
 	//    match:
 	//      prefix: /
 	//
-	Match *route.RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
+	Match *v3.RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	// transformation to perform
-	RouteTransformations *RouteTransformations `protobuf:"bytes,2,opt,name=route_transformations,json=routeTransformations,proto3" json:"route_transformations,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}              `json:"-"`
-	XXX_unrecognized     []byte                `json:"-"`
-	XXX_sizecache        int32                 `json:"-"`
+	RouteTransformations *TransformationRule_Transformations `protobuf:"bytes,2,opt,name=route_transformations,json=routeTransformations,proto3" json:"route_transformations,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                            `json:"-"`
+	XXX_unrecognized     []byte                              `json:"-"`
+	XXX_sizecache        int32                               `json:"-"`
 }
 
 func (m *TransformationRule) Reset()         { *m = TransformationRule{} }
@@ -136,21 +149,21 @@ func (m *TransformationRule) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_TransformationRule proto.InternalMessageInfo
 
-func (m *TransformationRule) GetMatch() *route.RouteMatch {
+func (m *TransformationRule) GetMatch() *v3.RouteMatch {
 	if m != nil {
 		return m.Match
 	}
 	return nil
 }
 
-func (m *TransformationRule) GetRouteTransformations() *RouteTransformations {
+func (m *TransformationRule) GetRouteTransformations() *TransformationRule_Transformations {
 	if m != nil {
 		return m.RouteTransformations
 	}
 	return nil
 }
 
-type RouteTransformations struct {
+type TransformationRule_Transformations struct {
 	// Apply a transformation to requests.
 	RequestTransformation *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
 	// Clear the route cache if the request transformation was applied.
@@ -160,6 +173,66 @@ type RouteTransformations struct {
 	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
 	XXX_unrecognized       []byte          `json:"-"`
 	XXX_sizecache          int32           `json:"-"`
+}
+
+func (m *TransformationRule_Transformations) Reset()         { *m = TransformationRule_Transformations{} }
+func (m *TransformationRule_Transformations) String() string { return proto.CompactTextString(m) }
+func (*TransformationRule_Transformations) ProtoMessage()    {}
+func (*TransformationRule_Transformations) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{1, 0}
+}
+func (m *TransformationRule_Transformations) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_TransformationRule_Transformations.Unmarshal(m, b)
+}
+func (m *TransformationRule_Transformations) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_TransformationRule_Transformations.Marshal(b, m, deterministic)
+}
+func (m *TransformationRule_Transformations) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TransformationRule_Transformations.Merge(m, src)
+}
+func (m *TransformationRule_Transformations) XXX_Size() int {
+	return xxx_messageInfo_TransformationRule_Transformations.Size(m)
+}
+func (m *TransformationRule_Transformations) XXX_DiscardUnknown() {
+	xxx_messageInfo_TransformationRule_Transformations.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_TransformationRule_Transformations proto.InternalMessageInfo
+
+func (m *TransformationRule_Transformations) GetRequestTransformation() *Transformation {
+	if m != nil {
+		return m.RequestTransformation
+	}
+	return nil
+}
+
+func (m *TransformationRule_Transformations) GetClearRouteCache() bool {
+	if m != nil {
+		return m.ClearRouteCache
+	}
+	return false
+}
+
+func (m *TransformationRule_Transformations) GetResponseTransformation() *Transformation {
+	if m != nil {
+		return m.ResponseTransformation
+	}
+	return nil
+}
+
+type RouteTransformations struct {
+	// deprecated. Use transformations[].request_match.request_transformation
+	// instead.
+	RequestTransformation *Transformation `protobuf:"bytes,1,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"` // Deprecated: Do not use.
+	// deprecated. Use transformations[].request_match.response_transformation
+	// instead.
+	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"` // Deprecated: Do not use.
+	// deprecated. Use transformations[].request_match.clear_route_cache instead.
+	ClearRouteCache      bool                                        `protobuf:"varint,3,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"` // Deprecated: Do not use.
+	Transformations      []*RouteTransformations_RouteTransformation `protobuf:"bytes,4,rep,name=transformations,proto3" json:"transformations,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                    `json:"-"`
+	XXX_unrecognized     []byte                                      `json:"-"`
+	XXX_sizecache        int32                                       `json:"-"`
 }
 
 func (m *RouteTransformations) Reset()         { *m = RouteTransformations{} }
@@ -186,6 +259,7 @@ func (m *RouteTransformations) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_RouteTransformations proto.InternalMessageInfo
 
+// Deprecated: Do not use.
 func (m *RouteTransformations) GetRequestTransformation() *Transformation {
 	if m != nil {
 		return m.RequestTransformation
@@ -193,6 +267,15 @@ func (m *RouteTransformations) GetRequestTransformation() *Transformation {
 	return nil
 }
 
+// Deprecated: Do not use.
+func (m *RouteTransformations) GetResponseTransformation() *Transformation {
+	if m != nil {
+		return m.ResponseTransformation
+	}
+	return nil
+}
+
+// Deprecated: Do not use.
 func (m *RouteTransformations) GetClearRouteCache() bool {
 	if m != nil {
 		return m.ClearRouteCache
@@ -200,7 +283,319 @@ func (m *RouteTransformations) GetClearRouteCache() bool {
 	return false
 }
 
-func (m *RouteTransformations) GetResponseTransformation() *Transformation {
+func (m *RouteTransformations) GetTransformations() []*RouteTransformations_RouteTransformation {
+	if m != nil {
+		return m.Transformations
+	}
+	return nil
+}
+
+type RouteTransformations_RouteTransformation struct {
+	// Stage number. This transformation will only be processed by filters with
+	// the same stage number.
+	Stage uint32 `protobuf:"varint,1,opt,name=stage,proto3" json:"stage,omitempty"`
+	// Types that are valid to be assigned to Match:
+	//	*RouteTransformations_RouteTransformation_RequestMatch_
+	//	*RouteTransformations_RouteTransformation_ResponseMatch_
+	Match                isRouteTransformations_RouteTransformation_Match `protobuf_oneof:"match"`
+	XXX_NoUnkeyedLiteral struct{}                                         `json:"-"`
+	XXX_unrecognized     []byte                                           `json:"-"`
+	XXX_sizecache        int32                                            `json:"-"`
+}
+
+func (m *RouteTransformations_RouteTransformation) Reset() {
+	*m = RouteTransformations_RouteTransformation{}
+}
+func (m *RouteTransformations_RouteTransformation) String() string { return proto.CompactTextString(m) }
+func (*RouteTransformations_RouteTransformation) ProtoMessage()    {}
+func (*RouteTransformations_RouteTransformation) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{2, 0}
+}
+func (m *RouteTransformations_RouteTransformation) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation.Unmarshal(m, b)
+}
+func (m *RouteTransformations_RouteTransformation) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation.Marshal(b, m, deterministic)
+}
+func (m *RouteTransformations_RouteTransformation) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RouteTransformations_RouteTransformation.Merge(m, src)
+}
+func (m *RouteTransformations_RouteTransformation) XXX_Size() int {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation.Size(m)
+}
+func (m *RouteTransformations_RouteTransformation) XXX_DiscardUnknown() {
+	xxx_messageInfo_RouteTransformations_RouteTransformation.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RouteTransformations_RouteTransformation proto.InternalMessageInfo
+
+type isRouteTransformations_RouteTransformation_Match interface {
+	isRouteTransformations_RouteTransformation_Match()
+	Equal(interface{}) bool
+}
+
+type RouteTransformations_RouteTransformation_RequestMatch_ struct {
+	RequestMatch *RouteTransformations_RouteTransformation_RequestMatch `protobuf:"bytes,2,opt,name=request_match,json=requestMatch,proto3,oneof" json:"request_match,omitempty"`
+}
+type RouteTransformations_RouteTransformation_ResponseMatch_ struct {
+	ResponseMatch *RouteTransformations_RouteTransformation_ResponseMatch `protobuf:"bytes,3,opt,name=response_match,json=responseMatch,proto3,oneof" json:"response_match,omitempty"`
+}
+
+func (*RouteTransformations_RouteTransformation_RequestMatch_) isRouteTransformations_RouteTransformation_Match() {
+}
+func (*RouteTransformations_RouteTransformation_ResponseMatch_) isRouteTransformations_RouteTransformation_Match() {
+}
+
+func (m *RouteTransformations_RouteTransformation) GetMatch() isRouteTransformations_RouteTransformation_Match {
+	if m != nil {
+		return m.Match
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation) GetStage() uint32 {
+	if m != nil {
+		return m.Stage
+	}
+	return 0
+}
+
+func (m *RouteTransformations_RouteTransformation) GetRequestMatch() *RouteTransformations_RouteTransformation_RequestMatch {
+	if x, ok := m.GetMatch().(*RouteTransformations_RouteTransformation_RequestMatch_); ok {
+		return x.RequestMatch
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation) GetResponseMatch() *RouteTransformations_RouteTransformation_ResponseMatch {
+	if x, ok := m.GetMatch().(*RouteTransformations_RouteTransformation_ResponseMatch_); ok {
+		return x.ResponseMatch
+	}
+	return nil
+}
+
+// XXX_OneofWrappers is for the internal use of the proto package.
+func (*RouteTransformations_RouteTransformation) XXX_OneofWrappers() []interface{} {
+	return []interface{}{
+		(*RouteTransformations_RouteTransformation_RequestMatch_)(nil),
+		(*RouteTransformations_RouteTransformation_ResponseMatch_)(nil),
+	}
+}
+
+type RouteTransformations_RouteTransformation_RequestMatch struct {
+	// if no match is specified, will match all
+	Match *v3.RouteMatch `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
+	// transformation to perform
+	RequestTransformation  *Transformation `protobuf:"bytes,2,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
+	ResponseTransformation *Transformation `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
+	// clear the route cache if the request transformation was applied
+	ClearRouteCache      bool     `protobuf:"varint,4,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *RouteTransformations_RouteTransformation_RequestMatch) Reset() {
+	*m = RouteTransformations_RouteTransformation_RequestMatch{}
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) String() string {
+	return proto.CompactTextString(m)
+}
+func (*RouteTransformations_RouteTransformation_RequestMatch) ProtoMessage() {}
+func (*RouteTransformations_RouteTransformation_RequestMatch) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{2, 0, 0}
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch.Unmarshal(m, b)
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch.Marshal(b, m, deterministic)
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch.Merge(m, src)
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) XXX_Size() int {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch.Size(m)
+}
+func (m *RouteTransformations_RouteTransformation_RequestMatch) XXX_DiscardUnknown() {
+	xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RouteTransformations_RouteTransformation_RequestMatch proto.InternalMessageInfo
+
+func (m *RouteTransformations_RouteTransformation_RequestMatch) GetMatch() *v3.RouteMatch {
+	if m != nil {
+		return m.Match
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation_RequestMatch) GetRequestTransformation() *Transformation {
+	if m != nil {
+		return m.RequestTransformation
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation_RequestMatch) GetResponseTransformation() *Transformation {
+	if m != nil {
+		return m.ResponseTransformation
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation_RequestMatch) GetClearRouteCache() bool {
+	if m != nil {
+		return m.ClearRouteCache
+	}
+	return false
+}
+
+type RouteTransformations_RouteTransformation_ResponseMatch struct {
+	Match *ResponseMatcher `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
+	// transformation to perform
+	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
+	XXX_unrecognized       []byte          `json:"-"`
+	XXX_sizecache          int32           `json:"-"`
+}
+
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) Reset() {
+	*m = RouteTransformations_RouteTransformation_ResponseMatch{}
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) String() string {
+	return proto.CompactTextString(m)
+}
+func (*RouteTransformations_RouteTransformation_ResponseMatch) ProtoMessage() {}
+func (*RouteTransformations_RouteTransformation_ResponseMatch) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{2, 0, 1}
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch.Unmarshal(m, b)
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch.Marshal(b, m, deterministic)
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch.Merge(m, src)
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) XXX_Size() int {
+	return xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch.Size(m)
+}
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) XXX_DiscardUnknown() {
+	xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_RouteTransformations_RouteTransformation_ResponseMatch proto.InternalMessageInfo
+
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) GetMatch() *ResponseMatcher {
+	if m != nil {
+		return m.Match
+	}
+	return nil
+}
+
+func (m *RouteTransformations_RouteTransformation_ResponseMatch) GetResponseTransformation() *Transformation {
+	if m != nil {
+		return m.ResponseTransformation
+	}
+	return nil
+}
+
+type ResponseMatcher struct {
+	// Specifies a set of headers that the route should match on. The router will
+	// check the response headers against all the specified headers in the route
+	// config. A match will happen if all the headers in the route are present in
+	// the request with the same values (or based on presence if the value field
+	// is not in the config).
+	Headers []*v3.HeaderMatcher `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty"`
+	// Only match responses with non empty response code details (this usually
+	// implies a local reply).
+	ResponseCodeDetails  *v31.StringMatcher `protobuf:"bytes,2,opt,name=response_code_details,json=responseCodeDetails,proto3" json:"response_code_details,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
+	XXX_unrecognized     []byte             `json:"-"`
+	XXX_sizecache        int32              `json:"-"`
+}
+
+func (m *ResponseMatcher) Reset()         { *m = ResponseMatcher{} }
+func (m *ResponseMatcher) String() string { return proto.CompactTextString(m) }
+func (*ResponseMatcher) ProtoMessage()    {}
+func (*ResponseMatcher) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{3}
+}
+func (m *ResponseMatcher) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResponseMatcher.Unmarshal(m, b)
+}
+func (m *ResponseMatcher) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResponseMatcher.Marshal(b, m, deterministic)
+}
+func (m *ResponseMatcher) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResponseMatcher.Merge(m, src)
+}
+func (m *ResponseMatcher) XXX_Size() int {
+	return xxx_messageInfo_ResponseMatcher.Size(m)
+}
+func (m *ResponseMatcher) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResponseMatcher.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResponseMatcher proto.InternalMessageInfo
+
+func (m *ResponseMatcher) GetHeaders() []*v3.HeaderMatcher {
+	if m != nil {
+		return m.Headers
+	}
+	return nil
+}
+
+func (m *ResponseMatcher) GetResponseCodeDetails() *v31.StringMatcher {
+	if m != nil {
+		return m.ResponseCodeDetails
+	}
+	return nil
+}
+
+type ResponseTransformationRule struct {
+	Match *ResponseMatcher `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
+	// transformation to perform
+	ResponseTransformation *Transformation `protobuf:"bytes,2,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
+	XXX_NoUnkeyedLiteral   struct{}        `json:"-"`
+	XXX_unrecognized       []byte          `json:"-"`
+	XXX_sizecache          int32           `json:"-"`
+}
+
+func (m *ResponseTransformationRule) Reset()         { *m = ResponseTransformationRule{} }
+func (m *ResponseTransformationRule) String() string { return proto.CompactTextString(m) }
+func (*ResponseTransformationRule) ProtoMessage()    {}
+func (*ResponseTransformationRule) Descriptor() ([]byte, []int) {
+	return fileDescriptor_af1c648bbaa251cf, []int{4}
+}
+func (m *ResponseTransformationRule) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ResponseTransformationRule.Unmarshal(m, b)
+}
+func (m *ResponseTransformationRule) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ResponseTransformationRule.Marshal(b, m, deterministic)
+}
+func (m *ResponseTransformationRule) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ResponseTransformationRule.Merge(m, src)
+}
+func (m *ResponseTransformationRule) XXX_Size() int {
+	return xxx_messageInfo_ResponseTransformationRule.Size(m)
+}
+func (m *ResponseTransformationRule) XXX_DiscardUnknown() {
+	xxx_messageInfo_ResponseTransformationRule.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ResponseTransformationRule proto.InternalMessageInfo
+
+func (m *ResponseTransformationRule) GetMatch() *ResponseMatcher {
+	if m != nil {
+		return m.Match
+	}
+	return nil
+}
+
+func (m *ResponseTransformationRule) GetResponseTransformation() *Transformation {
 	if m != nil {
 		return m.ResponseTransformation
 	}
@@ -224,7 +619,7 @@ func (m *Transformation) Reset()         { *m = Transformation{} }
 func (m *Transformation) String() string { return proto.CompactTextString(m) }
 func (*Transformation) ProtoMessage()    {}
 func (*Transformation) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{3}
+	return fileDescriptor_af1c648bbaa251cf, []int{5}
 }
 func (m *Transformation) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Transformation.Unmarshal(m, b)
@@ -297,11 +692,13 @@ type Extraction struct {
 	//	*Extraction_Header
 	//	*Extraction_Body
 	Source isExtraction_Source `protobuf_oneof:"source"`
-	// Only strings matching this regular expression will be part of the extraction.
-	// The most simple value for this field is '.*', which matches the whole source.
-	// The field is required. If extraction fails the result is an empty value.
+	// Only strings matching this regular expression will be part of the
+	// extraction. The most simple value for this field is '.*', which matches the
+	// whole source. The field is required. If extraction fails the result is an
+	// empty value.
 	Regex string `protobuf:"bytes,2,opt,name=regex,proto3" json:"regex,omitempty"`
-	// If your regex contains capturing groups, use this field to determine which group should be selected.
+	// If your regex contains capturing groups, use this field to determine which
+	// group should be selected.
 	Subgroup             uint32   `protobuf:"varint,3,opt,name=subgroup,proto3" json:"subgroup,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
@@ -312,7 +709,7 @@ func (m *Extraction) Reset()         { *m = Extraction{} }
 func (m *Extraction) String() string { return proto.CompactTextString(m) }
 func (*Extraction) ProtoMessage()    {}
 func (*Extraction) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{4}
+	return fileDescriptor_af1c648bbaa251cf, []int{6}
 }
 func (m *Extraction) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Extraction.Unmarshal(m, b)
@@ -392,20 +789,26 @@ func (*Extraction) XXX_OneofWrappers() []interface{} {
 
 // Defines a transformation template.
 type TransformationTemplate struct {
-	// If set to true, use JSON pointer notation (e.g. "time/start") instead of dot notation (e.g. "time.start") to
-	// access JSON elements. Defaults to false.
+	// If set to true, use JSON pointer notation (e.g. "time/start") instead of
+	// dot notation (e.g. "time.start") to access JSON elements. Defaults to
+	// false.
 	//
-	// Please note that, if set to 'true', you will need to use the `extraction` function to access extractors in the
-	// template (e.g. '{{ extraction("my_extractor") }}'); if the default value of 'false' is used,  extractors will
-	// simply be available by their name (e.g. '{{ my_extractor }}').
+	// Please note that, if set to 'true', you will need to use the `extraction`
+	// function to access extractors in the template (e.g. '{{
+	// extraction("my_extractor") }}'); if the default value of 'false' is used,
+	// extractors will simply be available by their name (e.g. '{{ my_extractor
+	// }}').
 	AdvancedTemplates bool `protobuf:"varint,1,opt,name=advanced_templates,json=advancedTemplates,proto3" json:"advanced_templates,omitempty"`
-	// Use this attribute to extract information from the request. It consists of a map of strings to extractors.
-	// The extractor will defines which information will be extracted, while the string key will provide the extractor
-	// with a name. You can reference extractors by their name in templates, e.g. "{{ my-extractor }}" will render to the
-	// value of the "my-extractor" extractor.
+	// Use this attribute to extract information from the request. It consists of
+	// a map of strings to extractors. The extractor will defines which
+	// information will be extracted, while the string key will provide the
+	// extractor with a name. You can reference extractors by their name in
+	// templates, e.g. "{{ my-extractor }}" will render to the value of the
+	// "my-extractor" extractor.
 	Extractors map[string]*Extraction `protobuf:"bytes,2,rep,name=extractors,proto3" json:"extractors,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Use this attribute to transform request/response headers. It consists of a map of strings to templates.
-	// The string key determines the name of the resulting header, the rendered template will determine the value.
+	// Use this attribute to transform request/response headers. It consists of a
+	// map of strings to templates. The string key determines the name of the
+	// resulting header, the rendered template will determine the value.
 	Headers map[string]*InjaTemplate `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// Determines the type of transformation to apply to the request/response body
 	//
@@ -414,9 +817,9 @@ type TransformationTemplate struct {
 	//	*TransformationTemplate_Passthrough
 	//	*TransformationTemplate_MergeExtractorsToBody
 	BodyTransformation isTransformationTemplate_BodyTransformation `protobuf_oneof:"body_transformation"`
-	// Determines how the body will be parsed.
-	ParseBodyBehavior TransformationTemplate_RequestBodyParse `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
-	// If set to true, Envoy will not throw an exception in case the body parsing fails.
+	ParseBodyBehavior  TransformationTemplate_RequestBodyParse     `protobuf:"varint,7,opt,name=parse_body_behavior,json=parseBodyBehavior,proto3,enum=envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse" json:"parse_body_behavior,omitempty"`
+	// If set to true, Envoy will not throw an exception in case the body parsing
+	// fails.
 	IgnoreErrorOnParse bool `protobuf:"varint,8,opt,name=ignore_error_on_parse,json=ignoreErrorOnParse,proto3" json:"ignore_error_on_parse,omitempty"`
 	// Use this field to set Dynamic Metadata.
 	DynamicMetadataValues []*TransformationTemplate_DynamicMetadataValue `protobuf:"bytes,9,rep,name=dynamic_metadata_values,json=dynamicMetadataValues,proto3" json:"dynamic_metadata_values,omitempty"`
@@ -429,7 +832,7 @@ func (m *TransformationTemplate) Reset()         { *m = TransformationTemplate{}
 func (m *TransformationTemplate) String() string { return proto.CompactTextString(m) }
 func (*TransformationTemplate) ProtoMessage()    {}
 func (*TransformationTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{5}
+	return fileDescriptor_af1c648bbaa251cf, []int{7}
 }
 func (m *TransformationTemplate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransformationTemplate.Unmarshal(m, b)
@@ -547,7 +950,9 @@ func (*TransformationTemplate) XXX_OneofWrappers() []interface{} {
 	}
 }
 
-// Defines an [Envoy Dynamic Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata) entry.
+// Defines an [Envoy Dynamic
+// Metadata](https://www.envoyproxy.io/docs/envoy/latest/configuration/advanced/well_known_dynamic_metadata)
+// entry.
 type TransformationTemplate_DynamicMetadataValue struct {
 	// The metadata namespace. Defaults to the filter namespace.
 	MetadataNamespace string `protobuf:"bytes,1,opt,name=metadata_namespace,json=metadataNamespace,proto3" json:"metadata_namespace,omitempty"`
@@ -568,7 +973,7 @@ func (m *TransformationTemplate_DynamicMetadataValue) String() string {
 }
 func (*TransformationTemplate_DynamicMetadataValue) ProtoMessage() {}
 func (*TransformationTemplate_DynamicMetadataValue) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{5, 2}
+	return fileDescriptor_af1c648bbaa251cf, []int{7, 2}
 }
 func (m *TransformationTemplate_DynamicMetadataValue) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TransformationTemplate_DynamicMetadataValue.Unmarshal(m, b)
@@ -609,13 +1014,17 @@ func (m *TransformationTemplate_DynamicMetadataValue) GetValue() *InjaTemplate {
 	return nil
 }
 
-// Defines an [Inja template](https://github.com/pantor/inja) that will be rendered by Gloo.
-// In addition to the core template functions, the Gloo transformation filter defines the following custom functions:
+// Defines an [Inja template](https://github.com/pantor/inja) that will be
+// rendered by Gloo. In addition to the core template functions, the Gloo
+// transformation filter defines the following custom functions:
 // - header(header_name): returns the value of the header with the given name
-// - extraction(extractor_name): returns the value of the extractor with the given name
-// - env(env_var_name): returns the value of the environment variable with the given name
+// - extraction(extractor_name): returns the value of the extractor with the
+// given name
+// - env(env_var_name): returns the value of the environment variable with the
+// given name
 // - body(): returns the request/response body
-// - context(): returns the base JSON context (allowing for example to range on a JSON body that is an array)
+// - context(): returns the base JSON context (allowing for example to range on
+// a JSON body that is an array)
 type InjaTemplate struct {
 	Text                 string   `protobuf:"bytes,1,opt,name=text,proto3" json:"text,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
@@ -627,7 +1036,7 @@ func (m *InjaTemplate) Reset()         { *m = InjaTemplate{} }
 func (m *InjaTemplate) String() string { return proto.CompactTextString(m) }
 func (*InjaTemplate) ProtoMessage()    {}
 func (*InjaTemplate) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{6}
+	return fileDescriptor_af1c648bbaa251cf, []int{8}
 }
 func (m *InjaTemplate) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_InjaTemplate.Unmarshal(m, b)
@@ -664,7 +1073,7 @@ func (m *Passthrough) Reset()         { *m = Passthrough{} }
 func (m *Passthrough) String() string { return proto.CompactTextString(m) }
 func (*Passthrough) ProtoMessage()    {}
 func (*Passthrough) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{7}
+	return fileDescriptor_af1c648bbaa251cf, []int{9}
 }
 func (m *Passthrough) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Passthrough.Unmarshal(m, b)
@@ -694,7 +1103,7 @@ func (m *MergeExtractorsToBody) Reset()         { *m = MergeExtractorsToBody{} }
 func (m *MergeExtractorsToBody) String() string { return proto.CompactTextString(m) }
 func (*MergeExtractorsToBody) ProtoMessage()    {}
 func (*MergeExtractorsToBody) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{8}
+	return fileDescriptor_af1c648bbaa251cf, []int{10}
 }
 func (m *MergeExtractorsToBody) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MergeExtractorsToBody.Unmarshal(m, b)
@@ -724,7 +1133,7 @@ func (m *HeaderBodyTransform) Reset()         { *m = HeaderBodyTransform{} }
 func (m *HeaderBodyTransform) String() string { return proto.CompactTextString(m) }
 func (*HeaderBodyTransform) ProtoMessage()    {}
 func (*HeaderBodyTransform) Descriptor() ([]byte, []int) {
-	return fileDescriptor_af1c648bbaa251cf, []int{9}
+	return fileDescriptor_af1c648bbaa251cf, []int{11}
 }
 func (m *HeaderBodyTransform) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HeaderBodyTransform.Unmarshal(m, b)
@@ -748,7 +1157,13 @@ func init() {
 	proto.RegisterEnum("envoy.api.v2.filter.http.TransformationTemplate_RequestBodyParse", TransformationTemplate_RequestBodyParse_name, TransformationTemplate_RequestBodyParse_value)
 	proto.RegisterType((*FilterTransformations)(nil), "envoy.api.v2.filter.http.FilterTransformations")
 	proto.RegisterType((*TransformationRule)(nil), "envoy.api.v2.filter.http.TransformationRule")
+	proto.RegisterType((*TransformationRule_Transformations)(nil), "envoy.api.v2.filter.http.TransformationRule.Transformations")
 	proto.RegisterType((*RouteTransformations)(nil), "envoy.api.v2.filter.http.RouteTransformations")
+	proto.RegisterType((*RouteTransformations_RouteTransformation)(nil), "envoy.api.v2.filter.http.RouteTransformations.RouteTransformation")
+	proto.RegisterType((*RouteTransformations_RouteTransformation_RequestMatch)(nil), "envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.RequestMatch")
+	proto.RegisterType((*RouteTransformations_RouteTransformation_ResponseMatch)(nil), "envoy.api.v2.filter.http.RouteTransformations.RouteTransformation.ResponseMatch")
+	proto.RegisterType((*ResponseMatcher)(nil), "envoy.api.v2.filter.http.ResponseMatcher")
+	proto.RegisterType((*ResponseTransformationRule)(nil), "envoy.api.v2.filter.http.ResponseTransformationRule")
 	proto.RegisterType((*Transformation)(nil), "envoy.api.v2.filter.http.Transformation")
 	proto.RegisterType((*Extraction)(nil), "envoy.api.v2.filter.http.Extraction")
 	proto.RegisterType((*TransformationTemplate)(nil), "envoy.api.v2.filter.http.TransformationTemplate")
@@ -766,70 +1181,89 @@ func init() {
 }
 
 var fileDescriptor_af1c648bbaa251cf = []byte{
-	// 996 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x9c, 0x56, 0xcf, 0x6e, 0xdb, 0x46,
-	0x13, 0x17, 0x2d, 0xdb, 0xb1, 0xc6, 0x71, 0x6c, 0xaf, 0x2d, 0x9b, 0x70, 0x00, 0xc3, 0x20, 0xbe,
-	0xaf, 0x30, 0x8a, 0x98, 0x6c, 0xd5, 0x4b, 0x11, 0xa4, 0x40, 0xa2, 0x46, 0x85, 0x52, 0xc0, 0x6d,
-	0xb0, 0x30, 0x5c, 0xa0, 0x28, 0xc0, 0xae, 0xa8, 0x35, 0x45, 0x9b, 0xe4, 0x32, 0xbb, 0x4b, 0xc1,
-	0x3a, 0xf4, 0xda, 0x43, 0x4f, 0x7d, 0x84, 0x1e, 0xfb, 0x0c, 0xed, 0xa5, 0xef, 0xd0, 0x37, 0xe8,
-	0xad, 0x8f, 0xd0, 0x5b, 0xb1, 0xbb, 0x94, 0x2c, 0x32, 0x14, 0x20, 0xf5, 0x22, 0xec, 0xce, 0x9f,
-	0xdf, 0xfc, 0x66, 0x76, 0x66, 0x44, 0x08, 0xc3, 0x48, 0x8e, 0xf2, 0x81, 0x1b, 0xb0, 0xc4, 0x13,
-	0x2c, 0x66, 0x17, 0x11, 0xf3, 0xc2, 0x98, 0x31, 0x2f, 0xe3, 0xec, 0x96, 0x06, 0x52, 0x98, 0x1b,
-	0xc9, 0x22, 0x8f, 0xde, 0x4b, 0xca, 0x53, 0x12, 0x7b, 0x34, 0x1d, 0xb3, 0x89, 0xbe, 0xa6, 0x22,
-	0x62, 0xa9, 0xf0, 0x24, 0x27, 0xa9, 0xb8, 0x61, 0x3c, 0x21, 0x32, 0x62, 0x69, 0xe5, 0xea, 0x66,
-	0x9c, 0x49, 0x86, 0x6c, 0xed, 0xe5, 0x92, 0x2c, 0x72, 0xc7, 0x1d, 0xf7, 0x26, 0x8a, 0x25, 0xe5,
-	0xee, 0x48, 0xca, 0xec, 0xe4, 0x69, 0xc8, 0x58, 0x18, 0x53, 0x4f, 0xdb, 0x0d, 0xf2, 0x1b, 0x8f,
-	0x26, 0x99, 0x9c, 0x18, 0xb7, 0x93, 0x53, 0x13, 0x4c, 0xc5, 0x1f, 0x77, 0x3c, 0xce, 0x72, 0x49,
-	0xcd, 0x6f, 0xa1, 0x3f, 0x1e, 0x93, 0x38, 0x1a, 0x12, 0x49, 0xbd, 0xe9, 0xa1, 0x50, 0x1c, 0x86,
-	0x2c, 0x64, 0xfa, 0xe8, 0xa9, 0x93, 0x91, 0x3a, 0x0c, 0xda, 0x5f, 0xe8, 0xd0, 0x57, 0x25, 0x8e,
-	0x02, 0x5d, 0xc3, 0x6e, 0x99, 0xb6, 0xb0, 0xad, 0xb3, 0xe6, 0xf9, 0x76, 0xe7, 0x99, 0xbb, 0x88,
-	0xb8, 0x5b, 0xc6, 0xc0, 0x79, 0x4c, 0x71, 0x15, 0xc4, 0xf9, 0xdd, 0x02, 0xf4, 0xbe, 0x1d, 0x7a,
-	0x09, 0x1b, 0x09, 0x91, 0xc1, 0xc8, 0xb6, 0xce, 0xac, 0xf3, 0xed, 0xce, 0x69, 0x39, 0x88, 0x49,
-	0x10, 0xab, 0xdf, 0x4b, 0x65, 0xd5, 0x85, 0xdf, 0xfe, 0xfe, 0xa3, 0xb9, 0xf1, 0x93, 0xb5, 0xb6,
-	0x67, 0x61, 0xe3, 0x88, 0x02, 0x68, 0x6b, 0x33, 0xbf, 0x4a, 0x7b, 0x4d, 0x23, 0xba, 0x8b, 0x69,
-	0x6b, 0xdc, 0x4a, 0xfe, 0xf8, 0x90, 0xd7, 0x48, 0x9d, 0x1f, 0xd7, 0xe0, 0xb0, 0xce, 0x1c, 0xf9,
-	0x70, 0xc4, 0xe9, 0xbb, 0x9c, 0x0a, 0x59, 0x89, 0x5f, 0x24, 0x74, 0xbe, 0x74, 0xd5, 0xda, 0x05,
-	0x4e, 0x59, 0x8c, 0x3e, 0x84, 0xfd, 0x20, 0xa6, 0x84, 0xfb, 0x26, 0xc9, 0x80, 0x04, 0x23, 0x6a,
-	0x37, 0xcf, 0xac, 0xf3, 0x2d, 0xbc, 0xab, 0x15, 0x9a, 0xd6, 0xe7, 0x4a, 0x8c, 0x08, 0x1c, 0x73,
-	0x2a, 0x32, 0x96, 0x8a, 0x6a, 0x35, 0x8a, 0x62, 0x2c, 0xcf, 0xe6, 0x68, 0x0a, 0x54, 0x96, 0x3b,
-	0xff, 0x58, 0xf0, 0xa4, 0xc2, 0xf0, 0x0e, 0x8e, 0xcb, 0xc1, 0x7c, 0x49, 0x93, 0x2c, 0x26, 0x92,
-	0x16, 0x35, 0xf8, 0x68, 0xd9, 0xa8, 0x57, 0x85, 0x5f, 0xbf, 0x81, 0x8f, 0x64, 0xad, 0x46, 0xbd,
-	0xf6, 0x88, 0x92, 0x21, 0xe5, 0xfe, 0x80, 0x0d, 0x27, 0x0f, 0x59, 0x16, 0x09, 0x5e, 0x2c, 0x0e,
-	0xd5, 0xd7, 0x6e, 0x5d, 0x36, 0x9c, 0xcc, 0x82, 0xf6, 0x1b, 0xf8, 0x60, 0xf4, 0xbe, 0xb8, 0xdb,
-	0x86, 0x83, 0x6a, 0x46, 0x93, 0x8c, 0x3a, 0x3f, 0x5b, 0x00, 0xbd, 0x7b, 0xc9, 0x49, 0xa0, 0xf3,
-	0xb6, 0x61, 0xd3, 0x38, 0xeb, 0x34, 0x5b, 0xfd, 0x06, 0x2e, 0xee, 0xe8, 0x19, 0xac, 0x2b, 0x76,
-	0xf6, 0xba, 0xe6, 0x74, 0xe4, 0x9a, 0xb9, 0x76, 0xa7, 0x73, 0xed, 0xf6, 0xd4, 0x5c, 0xf7, 0x1b,
-	0x58, 0x5b, 0xa1, 0x43, 0xd8, 0xe0, 0x34, 0xa4, 0xf7, 0x3a, 0x85, 0x16, 0x36, 0x17, 0x74, 0x02,
-	0x5b, 0x22, 0x1f, 0x84, 0x9c, 0xe5, 0x99, 0x7e, 0xee, 0x1d, 0x3c, 0xbb, 0x77, 0xb7, 0x60, 0x53,
-	0xb0, 0x9c, 0x07, 0xd4, 0xf9, 0xb3, 0x05, 0x47, 0xf5, 0x35, 0x44, 0x17, 0x80, 0xc8, 0x70, 0x4c,
-	0xd2, 0x80, 0x0e, 0x67, 0x0f, 0x22, 0x34, 0xd5, 0x2d, 0xbc, 0x3f, 0xd5, 0x4c, 0xad, 0x05, 0xfa,
-	0x1e, 0x80, 0x9a, 0xdc, 0x18, 0x57, 0xb3, 0xa3, 0x46, 0xfe, 0xe5, 0xaa, 0x0f, 0xe7, 0xf6, 0x66,
-	0x10, 0xbd, 0x54, 0xf2, 0x09, 0x9e, 0xc3, 0x44, 0xdf, 0xc0, 0x23, 0x53, 0x1f, 0x61, 0x37, 0x35,
-	0xfc, 0x67, 0x2b, 0xc3, 0x9b, 0x37, 0x2c, 0xb0, 0xa7, 0x68, 0xe8, 0x45, 0xa9, 0xdc, 0x1f, 0x2c,
-	0x46, 0x7d, 0x93, 0xde, 0x92, 0xb9, 0x1e, 0x33, 0xe5, 0x7f, 0x03, 0xdb, 0x19, 0x11, 0x42, 0x8e,
-	0x38, 0xcb, 0xc3, 0x91, 0xbd, 0xa1, 0x41, 0xfe, 0xbf, 0x18, 0xe4, 0xed, 0x83, 0x71, 0xbf, 0x81,
-	0xe7, 0x7d, 0xd1, 0x2d, 0xd8, 0x09, 0xe5, 0x21, 0xf5, 0x1f, 0xb2, 0xf6, 0x25, 0xd3, 0x9d, 0x6a,
-	0x6f, 0x6a, 0x5c, 0x6f, 0x31, 0xee, 0xa5, 0xf2, 0x7c, 0xa8, 0xdf, 0x15, 0x53, 0x3d, 0xd9, 0x6f,
-	0xe0, 0x76, 0x52, 0xa7, 0x40, 0xef, 0xe0, 0x20, 0x23, 0x5c, 0x50, 0x33, 0x07, 0x03, 0x3a, 0x22,
-	0xe3, 0x88, 0x71, 0xfb, 0xd1, 0x99, 0x75, 0xfe, 0xa4, 0xf3, 0x6a, 0xe5, 0xca, 0x62, 0xb3, 0x7c,
-	0x14, 0xf4, 0x5b, 0x05, 0x8b, 0xf7, 0x35, 0xba, 0xba, 0x77, 0x0b, 0x6c, 0xf4, 0x31, 0xb4, 0xa3,
-	0x30, 0x65, 0x9c, 0xfa, 0x94, 0x73, 0xc6, 0x7d, 0x96, 0xfa, 0xda, 0xc8, 0xde, 0xd2, 0x4d, 0x85,
-	0x8c, 0xb2, 0xa7, 0x74, 0x5f, 0xa7, 0x1a, 0x05, 0xfd, 0x00, 0xc7, 0xc3, 0x49, 0x4a, 0x92, 0x28,
-	0xf0, 0x13, 0x2a, 0xc9, 0x90, 0x48, 0xe2, 0x8f, 0x49, 0x9c, 0x53, 0x61, 0xb7, 0x74, 0x0f, 0xf4,
-	0x56, 0x66, 0xfa, 0xda, 0xe0, 0x5d, 0x16, 0x70, 0xd7, 0x0a, 0x0d, 0xb7, 0x87, 0x35, 0x52, 0x71,
-	0x12, 0xc0, 0x6e, 0xa5, 0x23, 0xd1, 0x1e, 0x34, 0xef, 0xe8, 0xc4, 0x8c, 0x2c, 0x56, 0x47, 0xf4,
-	0x1c, 0x36, 0x34, 0xa5, 0x62, 0x85, 0xfc, 0x6f, 0x31, 0xa3, 0x87, 0xe1, 0xc7, 0xc6, 0xe5, 0xf9,
-	0xda, 0xa7, 0xd6, 0xc9, 0x00, 0x1e, 0xcf, 0xf7, 0x65, 0x4d, 0x84, 0x17, 0xe5, 0x08, 0x4b, 0x76,
-	0xe8, 0x7c, 0x8c, 0x5f, 0x2c, 0x38, 0xac, 0x4b, 0x5c, 0x4d, 0xf9, 0xac, 0xb0, 0x29, 0x49, 0xa8,
-	0xc8, 0x48, 0x40, 0x8b, 0xd8, 0xfb, 0x53, 0xcd, 0x57, 0x53, 0x05, 0x7a, 0x6a, 0xb8, 0xe9, 0x4d,
-	0xd3, 0x6d, 0xa9, 0x3f, 0xd3, 0x75, 0xbe, 0x76, 0x66, 0x55, 0x68, 0x36, 0xff, 0x03, 0x4d, 0xa7,
-	0x03, 0x7b, 0xd5, 0x26, 0x42, 0xbb, 0xb0, 0xad, 0x0f, 0xaf, 0xc4, 0x97, 0x82, 0xa5, 0x7b, 0x0d,
-	0xb4, 0x03, 0xad, 0xd7, 0x2c, 0x95, 0x5a, 0xb8, 0x67, 0xa9, 0x45, 0x5b, 0x5e, 0xe3, 0xe6, 0x4f,
-	0xc6, 0x81, 0xc7, 0xf3, 0x11, 0x10, 0x82, 0x75, 0x49, 0xef, 0x65, 0x91, 0x96, 0x3e, 0x3b, 0x3b,
-	0x0a, 0x7a, 0x36, 0x7a, 0xce, 0x31, 0xb4, 0x6b, 0x07, 0xc8, 0x69, 0xc3, 0x41, 0xcd, 0xe6, 0xef,
-	0x7e, 0xf7, 0xeb, 0x5f, 0xa7, 0xd6, 0xb7, 0xd7, 0xcb, 0x7d, 0xf4, 0x65, 0x77, 0xe1, 0x4a, 0x1f,
-	0x7e, 0x83, 0x4d, 0xbd, 0xea, 0x3f, 0xf9, 0x37, 0x00, 0x00, 0xff, 0xff, 0xc1, 0x25, 0x49, 0x4b,
-	0x55, 0x0a, 0x00, 0x00,
+	// 1305 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xd4, 0x58, 0xcf, 0x6f, 0xdc, 0xc4,
+	0x17, 0x5f, 0xef, 0x26, 0x69, 0xf2, 0x92, 0x6d, 0x92, 0x49, 0x36, 0xf1, 0x77, 0xbf, 0x02, 0x05,
+	0x0b, 0x50, 0xa8, 0x5a, 0x1b, 0xd2, 0x03, 0xa8, 0x2a, 0x3f, 0xea, 0x36, 0x68, 0x8b, 0x54, 0x5a,
+	0x0d, 0x55, 0x41, 0x08, 0xc9, 0xcc, 0xda, 0x13, 0xaf, 0x5b, 0xaf, 0xc7, 0x9d, 0x99, 0x5d, 0x65,
+	0x0f, 0x1c, 0xb8, 0x72, 0x40, 0xfc, 0x05, 0xdc, 0x90, 0x2a, 0x71, 0xe4, 0xc0, 0x95, 0xbf, 0x00,
+	0x89, 0x7f, 0x81, 0xbf, 0x02, 0x7a, 0x42, 0x9e, 0xb1, 0xf7, 0x87, 0xe3, 0xad, 0xb2, 0x10, 0x0e,
+	0xdc, 0xe6, 0xc7, 0x9b, 0xcf, 0x7b, 0x9f, 0xcf, 0xbc, 0xf7, 0xc6, 0x32, 0x84, 0x61, 0x24, 0x7b,
+	0x83, 0xae, 0xed, 0xb3, 0xbe, 0x23, 0x58, 0xcc, 0xae, 0x45, 0xcc, 0x09, 0x63, 0xc6, 0x9c, 0x94,
+	0xb3, 0xc7, 0xd4, 0x97, 0x42, 0xcf, 0x48, 0x1a, 0x39, 0xf4, 0x54, 0x52, 0x9e, 0x90, 0xd8, 0xa1,
+	0xc9, 0x90, 0x8d, 0xd4, 0x34, 0x11, 0x11, 0x4b, 0x84, 0x23, 0x39, 0x49, 0xc4, 0x09, 0xe3, 0x7d,
+	0x22, 0x23, 0x96, 0x94, 0xa6, 0x76, 0xca, 0x99, 0x64, 0xc8, 0x54, 0xa7, 0x6c, 0x92, 0x46, 0xf6,
+	0xf0, 0xc8, 0x3e, 0x89, 0x62, 0x49, 0xb9, 0xdd, 0x93, 0x32, 0x6d, 0xef, 0x86, 0x2c, 0x64, 0xca,
+	0xc8, 0xc9, 0x46, 0xda, 0xbe, 0xfd, 0xff, 0x90, 0xb1, 0x30, 0xa6, 0x8e, 0x9a, 0x75, 0x07, 0x27,
+	0x0e, 0xed, 0xa7, 0x72, 0x94, 0x6f, 0xee, 0x0f, 0x49, 0x1c, 0x05, 0x44, 0x52, 0xa7, 0x18, 0xe4,
+	0x1b, 0x57, 0x75, 0x6c, 0x3e, 0x4b, 0x4e, 0xa2, 0xd0, 0xe1, 0x6c, 0x90, 0x99, 0x5c, 0xd7, 0x03,
+	0xcf, 0x67, 0xfd, 0x94, 0x25, 0x34, 0x91, 0x22, 0xb7, 0xb6, 0xb4, 0xb5, 0x1c, 0xa5, 0xd4, 0xe9,
+	0x13, 0xe9, 0xf7, 0x28, 0xcf, 0xac, 0x85, 0xe4, 0x51, 0x12, 0x6a, 0x1b, 0xeb, 0x5b, 0x03, 0x5a,
+	0x1f, 0xaa, 0x68, 0x1f, 0xce, 0xd0, 0x12, 0xe8, 0x11, 0x6c, 0xce, 0x32, 0x15, 0xa6, 0x71, 0xd0,
+	0x38, 0x5c, 0x3f, 0xba, 0x6a, 0xcf, 0xe3, 0x6a, 0xcf, 0x62, 0xe0, 0x41, 0x4c, 0x71, 0x19, 0x04,
+	0xbd, 0x04, 0xcb, 0x42, 0x92, 0x90, 0x9a, 0xf5, 0x03, 0xe3, 0xb0, 0xe9, 0x5e, 0x7a, 0xee, 0x2e,
+	0x5d, 0xa9, 0x9b, 0x80, 0xf5, 0xaa, 0xf5, 0x6b, 0x03, 0xd0, 0x59, 0x18, 0x74, 0x0b, 0x96, 0x15,
+	0x05, 0xd3, 0x38, 0x30, 0x0e, 0xd7, 0x8f, 0x5e, 0xc9, 0x63, 0xd0, 0x4a, 0xd8, 0x4a, 0x00, 0x7b,
+	0x78, 0xdd, 0xc6, 0xd9, 0xe0, 0x5e, 0x66, 0xe8, 0xae, 0x3e, 0x77, 0x97, 0xbf, 0x31, 0xea, 0x5b,
+	0x06, 0xd6, 0x27, 0xd1, 0x53, 0x68, 0x69, 0xa1, 0xca, 0xb4, 0xea, 0x0a, 0xf2, 0xe6, 0x22, 0xb4,
+	0x4a, 0x4b, 0x02, 0xef, 0x2a, 0xe8, 0xd2, 0x6a, 0xfb, 0xeb, 0x3a, 0x6c, 0x96, 0x75, 0xf5, 0x60,
+	0x8f, 0xd3, 0xa7, 0x03, 0x2a, 0x64, 0x29, 0x90, 0x9c, 0xda, 0xe1, 0xb9, 0xe3, 0x68, 0xe5, 0x38,
+	0xb3, 0xcb, 0xe8, 0x0a, 0x6c, 0xfb, 0x31, 0x25, 0xdc, 0xcb, 0xd3, 0x82, 0xf8, 0x3d, 0x6a, 0x36,
+	0x0e, 0x8c, 0xc3, 0x55, 0xbc, 0xa9, 0x36, 0x94, 0x48, 0xb7, 0xb3, 0x65, 0x44, 0x60, 0x9f, 0x53,
+	0x91, 0xb2, 0x44, 0x94, 0x65, 0xc9, 0x55, 0x39, 0x7f, 0x34, 0x7b, 0x05, 0xd0, 0xec, 0xba, 0xf5,
+	0x6c, 0x0d, 0x76, 0x71, 0x85, 0x38, 0xc8, 0xbf, 0x28, 0x21, 0xdc, 0xba, 0x69, 0xcc, 0x13, 0x83,
+	0x5e, 0x18, 0x41, 0xe5, 0x65, 0x0e, 0x49, 0x64, 0xcf, 0xd5, 0x5c, 0x1d, 0x3b, 0xa3, 0x7b, 0x7c,
+	0xb6, 0xb8, 0x96, 0x54, 0x71, 0xb9, 0xf3, 0xc3, 0xa9, 0x12, 0xb1, 0x6a, 0xf1, 0x4c, 0xc9, 0xb5,
+	0x7f, 0x58, 0x81, 0x9d, 0x0a, 0xc3, 0x49, 0x29, 0x1a, 0x55, 0xa5, 0x88, 0x86, 0xd0, 0x2c, 0x2e,
+	0x48, 0xd7, 0x9e, 0x56, 0xec, 0xfe, 0x3f, 0x0f, 0xd1, 0xc6, 0x1a, 0x57, 0x55, 0x6a, 0xa7, 0x86,
+	0x37, 0xf8, 0xd4, 0x1c, 0x8d, 0xe0, 0xf2, 0xf8, 0xce, 0xb4, 0xe3, 0x86, 0x72, 0xfc, 0xe0, 0x42,
+	0x1c, 0x6b, 0xe0, 0xc2, 0x73, 0x93, 0x4f, 0x2f, 0xb4, 0x7f, 0xae, 0xc3, 0xc6, 0x74, 0x6c, 0xe8,
+	0xed, 0x45, 0xfb, 0x4e, 0xd1, 0x6d, 0xe6, 0x97, 0x79, 0xfd, 0x62, 0xca, 0xfc, 0x05, 0xa5, 0xdb,
+	0xb8, 0x98, 0xd2, 0xad, 0xee, 0x24, 0x4b, 0x95, 0x9d, 0xa4, 0xfd, 0x93, 0x01, 0xcd, 0x19, 0x71,
+	0xd1, 0xfb, 0xb3, 0xd2, 0xbd, 0xf1, 0x82, 0xdb, 0x9b, 0x3e, 0x47, 0x79, 0x21, 0xe1, 0xbf, 0xdf,
+	0x9c, 0xdc, 0x8d, 0x3c, 0x46, 0xd4, 0xf8, 0xc3, 0x35, 0xac, 0x1f, 0x0d, 0xd8, 0x2c, 0xc5, 0x82,
+	0xde, 0x83, 0x4b, 0x3d, 0x4a, 0x02, 0xca, 0x8b, 0xe7, 0xef, 0xd5, 0x39, 0x29, 0xd0, 0x51, 0x56,
+	0x05, 0x85, 0xe2, 0x10, 0xfa, 0x0c, 0x5a, 0x63, 0x12, 0x3e, 0x0b, 0xa8, 0x17, 0x50, 0x49, 0xa2,
+	0xb8, 0x78, 0x75, 0x0a, 0xb4, 0xec, 0x91, 0xb6, 0xf3, 0x47, 0x3a, 0x43, 0xfb, 0x44, 0x3d, 0xd2,
+	0x05, 0xda, 0x4e, 0x01, 0x71, 0x9b, 0x05, 0xf4, 0x8e, 0x06, 0xb0, 0x7e, 0x31, 0xa0, 0x8d, 0x2b,
+	0x69, 0xa9, 0x17, 0xf3, 0x3f, 0x20, 0xbf, 0xf5, 0xa7, 0x01, 0x97, 0x4b, 0x39, 0xf7, 0x04, 0xf6,
+	0x67, 0x9d, 0x79, 0x92, 0xf6, 0xd3, 0x98, 0x48, 0x9a, 0x13, 0x79, 0xf3, 0xbc, 0x5e, 0x1f, 0xe6,
+	0xe7, 0x3a, 0x35, 0xbc, 0x27, 0x2b, 0x77, 0x90, 0x0f, 0x2d, 0x7d, 0x4f, 0x5e, 0x97, 0x05, 0xa3,
+	0x09, 0xcb, 0x9c, 0xe0, 0xb5, 0xf9, 0xae, 0xf4, 0x6d, 0xbb, 0x2c, 0x18, 0x8d, 0x9d, 0x76, 0x6a,
+	0x78, 0xa7, 0x77, 0x76, 0xd9, 0x6d, 0xc1, 0x4e, 0x99, 0xd1, 0x28, 0xa5, 0xd6, 0x77, 0x06, 0xc0,
+	0xf1, 0xa9, 0xe4, 0xc4, 0x57, 0xbc, 0x4d, 0x58, 0xd1, 0x87, 0x15, 0xcd, 0xb5, 0x4e, 0x0d, 0xe7,
+	0x73, 0x74, 0x15, 0x96, 0xb2, 0xe8, 0x54, 0xe1, 0xad, 0x1f, 0xed, 0xd9, 0xfa, 0xcb, 0xd1, 0x2e,
+	0xbe, 0x1c, 0xed, 0xe3, 0xec, 0xcb, 0xb1, 0x53, 0xc3, 0xca, 0x0a, 0xed, 0xc2, 0x32, 0xa7, 0x21,
+	0x3d, 0x55, 0x14, 0xd6, 0xb0, 0x9e, 0xa0, 0x36, 0xac, 0x8a, 0x41, 0x37, 0xe4, 0x6c, 0x90, 0xaa,
+	0xee, 0xd0, 0xc4, 0xe3, 0xb9, 0xbb, 0x0a, 0x2b, 0x82, 0x0d, 0xb8, 0x4f, 0xad, 0xdf, 0xd6, 0x60,
+	0xaf, 0x5a, 0x43, 0x74, 0x0d, 0x10, 0x09, 0x86, 0x24, 0xf1, 0x69, 0x30, 0xbe, 0x10, 0xa1, 0x42,
+	0x5d, 0xc5, 0xdb, 0xc5, 0x4e, 0x61, 0x2d, 0xd0, 0x97, 0x00, 0x54, 0x73, 0x63, 0x3c, 0x4b, 0xf5,
+	0xac, 0x70, 0x3e, 0x58, 0xf4, 0xe2, 0xec, 0xe3, 0x31, 0xc4, 0x71, 0x22, 0xf9, 0x08, 0x4f, 0x61,
+	0xa2, 0x4f, 0x27, 0x75, 0xd9, 0x50, 0xf0, 0xef, 0x2e, 0x0c, 0xaf, 0xef, 0x30, 0xc7, 0x1e, 0x17,
+	0xec, 0xcd, 0x19, 0xb9, 0x5f, 0x9f, 0x8f, 0x7a, 0x37, 0x79, 0x4c, 0xa6, 0x72, 0x4c, 0xcb, 0x7f,
+	0x17, 0xd6, 0x53, 0x22, 0x84, 0xec, 0x71, 0x36, 0x08, 0x7b, 0xe6, 0xb2, 0x02, 0x79, 0x6d, 0x3e,
+	0xc8, 0x83, 0x89, 0x71, 0xa7, 0x86, 0xa7, 0xcf, 0xa2, 0xc7, 0x60, 0xf6, 0x29, 0x0f, 0xa9, 0x37,
+	0x61, 0xed, 0x49, 0xa6, 0x32, 0xd5, 0x5c, 0x51, 0xb8, 0xce, 0x7c, 0xdc, 0x7b, 0xd9, 0xc9, 0x89,
+	0x7e, 0x0f, 0x59, 0x96, 0x93, 0x9d, 0x1a, 0x6e, 0xf5, 0xab, 0x36, 0xd0, 0x53, 0xd8, 0x49, 0x09,
+	0x17, 0x54, 0xd7, 0x41, 0x97, 0xf6, 0xc8, 0x30, 0x62, 0xdc, 0xbc, 0x74, 0x60, 0x1c, 0x5e, 0x3e,
+	0xba, 0xb5, 0xb0, 0xb2, 0xf9, 0x13, 0x9a, 0x41, 0x3f, 0xc8, 0x60, 0xf1, 0xb6, 0x42, 0xcf, 0xe6,
+	0x6e, 0x8e, 0x8d, 0xde, 0x82, 0x56, 0x14, 0x26, 0x8c, 0x53, 0x8f, 0x72, 0xce, 0xb8, 0xc7, 0x12,
+	0x4f, 0x19, 0x99, 0xab, 0x2a, 0xa9, 0x90, 0xde, 0x3c, 0xce, 0xf6, 0xee, 0x27, 0x0a, 0x05, 0x7d,
+	0x05, 0xfb, 0xc1, 0x28, 0x21, 0xfd, 0xc8, 0xf7, 0xfa, 0x54, 0x92, 0x80, 0x48, 0xe2, 0x0d, 0x49,
+	0x3c, 0xa0, 0xc2, 0x5c, 0x53, 0x39, 0x70, 0xbc, 0x70, 0xa4, 0x77, 0x34, 0xde, 0xbd, 0x1c, 0xee,
+	0x51, 0x86, 0x86, 0x5b, 0x41, 0xc5, 0xaa, 0x68, 0xfb, 0xb0, 0x59, 0xca, 0x48, 0xb4, 0x05, 0x8d,
+	0x27, 0x74, 0xa4, 0x4b, 0x16, 0x67, 0x43, 0x74, 0x03, 0x96, 0x55, 0x48, 0xa5, 0xfe, 0x5e, 0x11,
+	0xd1, 0xa4, 0xf8, 0xb1, 0x3e, 0x72, 0xa3, 0xfe, 0x8e, 0xd1, 0xee, 0xc2, 0xc6, 0x74, 0x5e, 0x56,
+	0x78, 0xb8, 0x39, 0xeb, 0xe1, 0x9c, 0x19, 0x3a, 0xed, 0xe3, 0x7b, 0x03, 0x76, 0xab, 0x88, 0x67,
+	0x55, 0x3e, 0x16, 0x36, 0x21, 0x7d, 0x2a, 0x52, 0xe2, 0xd3, 0xdc, 0xf7, 0x76, 0xb1, 0xf3, 0x71,
+	0xb1, 0x81, 0xfe, 0xa7, 0x63, 0x53, 0x9d, 0x46, 0x7d, 0x3d, 0xf2, 0xfa, 0x81, 0x51, 0x0a, 0xb2,
+	0xf1, 0x37, 0x82, 0xb4, 0x8e, 0x60, 0xab, 0x9c, 0x42, 0x68, 0x13, 0xd6, 0xd5, 0xe0, 0x96, 0xf8,
+	0x48, 0xb0, 0x64, 0xab, 0x86, 0x9a, 0xb0, 0x76, 0x87, 0x25, 0x52, 0x2d, 0x6e, 0x19, 0x59, 0x9b,
+	0x9d, 0x6d, 0xe2, 0xfa, 0x89, 0xb1, 0x60, 0x63, 0xda, 0x03, 0x42, 0xb0, 0x24, 0xe9, 0xa9, 0xcc,
+	0x49, 0xa9, 0xb1, 0xd5, 0xcc, 0xa0, 0xc7, 0x85, 0x67, 0xed, 0x43, 0xab, 0xb2, 0x7c, 0xac, 0x16,
+	0xec, 0x54, 0xf4, 0x7d, 0xf7, 0x8b, 0x67, 0xbf, 0xbf, 0x6c, 0x7c, 0xfe, 0xe8, 0x7c, 0xbf, 0x1a,
+	0xd2, 0x27, 0xe1, 0x42, 0xbf, 0x1b, 0xba, 0x2b, 0xaa, 0xd1, 0x5f, 0xff, 0x2b, 0x00, 0x00, 0xff,
+	0xff, 0x61, 0x99, 0xe5, 0x8d, 0xcb, 0x10, 0x00, 0x00,
 }
 
 func (this *FilterTransformations) Equal(that interface{}) bool {
@@ -858,6 +1292,9 @@ func (this *FilterTransformations) Equal(that interface{}) bool {
 		if !this.Transformations[i].Equal(that1.Transformations[i]) {
 			return false
 		}
+	}
+	if this.Stage != that1.Stage {
+		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
 		return false
@@ -894,6 +1331,39 @@ func (this *TransformationRule) Equal(that interface{}) bool {
 	}
 	return true
 }
+func (this *TransformationRule_Transformations) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*TransformationRule_Transformations)
+	if !ok {
+		that2, ok := that.(TransformationRule_Transformations)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RequestTransformation.Equal(that1.RequestTransformation) {
+		return false
+	}
+	if this.ClearRouteCache != that1.ClearRouteCache {
+		return false
+	}
+	if !this.ResponseTransformation.Equal(that1.ResponseTransformation) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
 func (this *RouteTransformations) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
@@ -916,7 +1386,230 @@ func (this *RouteTransformations) Equal(that interface{}) bool {
 	if !this.RequestTransformation.Equal(that1.RequestTransformation) {
 		return false
 	}
+	if !this.ResponseTransformation.Equal(that1.ResponseTransformation) {
+		return false
+	}
 	if this.ClearRouteCache != that1.ClearRouteCache {
+		return false
+	}
+	if len(this.Transformations) != len(that1.Transformations) {
+		return false
+	}
+	for i := range this.Transformations {
+		if !this.Transformations[i].Equal(that1.Transformations[i]) {
+			return false
+		}
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *RouteTransformations_RouteTransformation) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTransformations_RouteTransformation)
+	if !ok {
+		that2, ok := that.(RouteTransformations_RouteTransformation)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if this.Stage != that1.Stage {
+		return false
+	}
+	if that1.Match == nil {
+		if this.Match != nil {
+			return false
+		}
+	} else if this.Match == nil {
+		return false
+	} else if !this.Match.Equal(that1.Match) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *RouteTransformations_RouteTransformation_RequestMatch_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTransformations_RouteTransformation_RequestMatch_)
+	if !ok {
+		that2, ok := that.(RouteTransformations_RouteTransformation_RequestMatch_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.RequestMatch.Equal(that1.RequestMatch) {
+		return false
+	}
+	return true
+}
+func (this *RouteTransformations_RouteTransformation_ResponseMatch_) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTransformations_RouteTransformation_ResponseMatch_)
+	if !ok {
+		that2, ok := that.(RouteTransformations_RouteTransformation_ResponseMatch_)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.ResponseMatch.Equal(that1.ResponseMatch) {
+		return false
+	}
+	return true
+}
+func (this *RouteTransformations_RouteTransformation_RequestMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTransformations_RouteTransformation_RequestMatch)
+	if !ok {
+		that2, ok := that.(RouteTransformations_RouteTransformation_RequestMatch)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Match.Equal(that1.Match) {
+		return false
+	}
+	if !this.RequestTransformation.Equal(that1.RequestTransformation) {
+		return false
+	}
+	if !this.ResponseTransformation.Equal(that1.ResponseTransformation) {
+		return false
+	}
+	if this.ClearRouteCache != that1.ClearRouteCache {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *RouteTransformations_RouteTransformation_ResponseMatch) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*RouteTransformations_RouteTransformation_ResponseMatch)
+	if !ok {
+		that2, ok := that.(RouteTransformations_RouteTransformation_ResponseMatch)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Match.Equal(that1.Match) {
+		return false
+	}
+	if !this.ResponseTransformation.Equal(that1.ResponseTransformation) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *ResponseMatcher) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ResponseMatcher)
+	if !ok {
+		that2, ok := that.(ResponseMatcher)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if len(this.Headers) != len(that1.Headers) {
+		return false
+	}
+	for i := range this.Headers {
+		if !this.Headers[i].Equal(that1.Headers[i]) {
+			return false
+		}
+	}
+	if !this.ResponseCodeDetails.Equal(that1.ResponseCodeDetails) {
+		return false
+	}
+	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
+		return false
+	}
+	return true
+}
+func (this *ResponseTransformationRule) Equal(that interface{}) bool {
+	if that == nil {
+		return this == nil
+	}
+
+	that1, ok := that.(*ResponseTransformationRule)
+	if !ok {
+		that2, ok := that.(ResponseTransformationRule)
+		if ok {
+			that1 = &that2
+		} else {
+			return false
+		}
+	}
+	if that1 == nil {
+		return this == nil
+	} else if this == nil {
+		return false
+	}
+	if !this.Match.Equal(that1.Match) {
 		return false
 	}
 	if !this.ResponseTransformation.Equal(that1.ResponseTransformation) {

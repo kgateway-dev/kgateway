@@ -1,23 +1,15 @@
-// copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/socket_option.proto
-
 syntax = "proto3";
 
 package envoy.config.core.v3;
 
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
 option java_package = "io.envoyproxy.envoy.config.core.v3";
 option java_outer_classname = "SocketOptionProto";
 option java_multiple_files = true;
-
-// manually updated this line:
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
-
-// manually added equal_all:
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-import "extproto/ext.proto";
-option (extproto.hash_all) = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Socket Option ]
 
@@ -25,6 +17,8 @@ option (extproto.hash_all) = true;
 // might not exist in upstream kernels or precompiled Envoy binaries.
 // [#next-free-field: 7]
 message SocketOption {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.SocketOption";
+
   enum SocketState {
     // Socket options are applied after socket creation but before binding the socket to a port
     STATE_PREBIND = 0;
@@ -60,3 +54,6 @@ message SocketOption {
   // STATE_PREBIND is currently the only valid value.
   SocketState state = 6 [(validate.rules).enum = {defined_only: true}];
 }
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;

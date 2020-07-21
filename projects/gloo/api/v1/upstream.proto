@@ -100,5 +100,6 @@ message Upstream {
 
 // created by discovery services
 message DiscoveryMetadata {
-    
+    // Labels inherited from the original upstream (e.g. Kubernetes labels)
+    map<string, string> labels = 1;
 }

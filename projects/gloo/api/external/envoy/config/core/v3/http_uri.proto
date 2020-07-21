@@ -1,30 +1,24 @@
-// copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/http_uri.proto
-
 syntax = "proto3";
 
 package envoy.config.core.v3;
 
 import "google/protobuf/duration.proto";
 
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
 option java_package = "io.envoyproxy.envoy.config.core.v3";
 option java_outer_classname = "HttpUriProto";
 option java_multiple_files = true;
-
-// manually updated this line:
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
-
-// manually added equal_all:
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-import "extproto/ext.proto";
-option (extproto.hash_all) = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: HTTP Service URI ]
 
 // Envoy external URI descriptor
 message HttpUri {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.HttpUri";
+
   // The HTTP server URI. It should be a full FQDN with protocol, host and path.
   //
   // Example:
@@ -60,3 +54,6 @@ message HttpUri {
     gte {}
   }];
 }
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;

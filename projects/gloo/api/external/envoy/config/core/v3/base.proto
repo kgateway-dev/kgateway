@@ -1,35 +1,27 @@
-// copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/config/core/v3/base.proto
-
 syntax = "proto3";
 
 package envoy.config.core.v3;
 
-import "gloo/projects/gloo/api/external/envoy/config/core/v3/address.proto";
-import "gloo/projects/gloo/api/external/envoy/config/core/v3/backoff.proto";
-import "gloo/projects/gloo/api/external/envoy/config/core/v3/http_uri.proto";
-import "gloo/projects/gloo/api/external/envoy/type/v3/percent.proto";
-import "gloo/projects/gloo/api/external/envoy/type/v3/semantic_version.proto";
+import "envoy/config/core/v3/address.proto";
+import "envoy/config/core/v3/backoff.proto";
+import "envoy/config/core/v3/http_uri.proto";
+import "envoy/type/v3/percent.proto";
+import "envoy/type/v3/semantic_version.proto";
 
 import "google/protobuf/any.proto";
-// import "google/protobuf/duration.proto";
+import "google/protobuf/duration.proto";
 import "google/protobuf/struct.proto";
 import "google/protobuf/wrappers.proto";
 
+import "udpa/annotations/migrate.proto";
+import "udpa/annotations/status.proto";
+import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
 
 option java_package = "io.envoyproxy.envoy.config.core.v3";
 option java_outer_classname = "BaseProto";
 option java_multiple_files = true;
-
-
-// manually updated this line:
-option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
-
-// manually added equal_all:
-import "gogoproto/gogo.proto";
-option (gogoproto.equal_all) = true;
-import "extproto/ext.proto";
-option (extproto.hash_all) = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: Common types]
 
@@ -73,6 +65,8 @@ enum TrafficDirection {
 
 // Identifies location of where either Envoy runs or where upstream hosts run.
 message Locality {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Locality";
+
   // Region this :ref:`zone <envoy_api_field_config.core.v3.Locality.zone>` belongs to.
   string region = 1;
 
@@ -95,6 +89,8 @@ message Locality {
 // BuildVersion combines SemVer version of extension with free-form build information
 // (i.e. 'alpha', 'private-build') as a set of strings.
 message BuildVersion {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.BuildVersion";
+
   // SemVer version of extension.
   type.v3.SemanticVersion version = 1;
 
@@ -106,6 +102,8 @@ message BuildVersion {
 // Version and identification for an Envoy extension.
 // [#next-free-field: 6]
 message Extension {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Extension";
+
   // This is the name of the Envoy filter as specified in the Envoy
   // configuration, e.g. envoy.filters.http.router, com.acme.widget.
   string name = 1;
@@ -136,6 +134,8 @@ message Extension {
 // configuration for serving.
 // [#next-free-field: 12]
 message Node {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Node";
+
   reserved 5;
 
   reserved "build_version";
@@ -222,6 +222,8 @@ message Node {
 //   (x-envoy-upstream-canary) and for stats purposes.
 // [#next-major-version: move to type/metadata/v2]
 message Metadata {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.Metadata";
+
   // Key is the reverse DNS filter name, e.g. com.acme.widget. The envoy.*
   // namespace is reserved for Envoy's built-in filters.
   map<string, google.protobuf.Struct> filter_metadata = 1;
@@ -229,6 +231,8 @@ message Metadata {
 
 // Runtime derived uint32 with a default when not specified.
 message RuntimeUInt32 {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RuntimeUInt32";
+
   // Default value if runtime value is not available.
   uint32 default_value = 2;
 
@@ -238,6 +242,8 @@ message RuntimeUInt32 {
 
 // Runtime derived double with a default when not specified.
 message RuntimeDouble {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RuntimeDouble";
+
   // Default value if runtime value is not available.
   double default_value = 1;
 
@@ -247,6 +253,9 @@ message RuntimeDouble {
 
 // Runtime derived bool with a default when not specified.
 message RuntimeFeatureFlag {
+  option (udpa.annotations.versioning).previous_message_type =
+      "envoy.api.v2.core.RuntimeFeatureFlag";
+
   // Default value if runtime value is not available.
   google.protobuf.BoolValue default_value = 1 [(validate.rules).message = {required: true}];
 
@@ -258,11 +267,12 @@ message RuntimeFeatureFlag {
 
 // Header name/value pair.
 message HeaderValue {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.HeaderValue";
+
   // Header name.
-  // Note: Manually removed well_known_regex from key and value here
   string key = 1
       [(validate.rules).string =
-           {min_bytes: 1 max_bytes: 16384}];
+           {min_bytes: 1 max_bytes: 16384 well_known_regex: HTTP_HEADER_NAME strict: false}];
 
   // Header value.
   //
@@ -270,12 +280,15 @@ message HeaderValue {
   // :ref:`HTTP access logging <config_access_log>` applies here, however
   // unknown header values are replaced with the empty string instead of `-`.
   string value = 2 [
-    (validate.rules).string = {max_bytes: 16384}
+    (validate.rules).string = {max_bytes: 16384 well_known_regex: HTTP_HEADER_VALUE strict: false}
   ];
 }
 
 // Header name/value pair plus option to control append behavior.
 message HeaderValueOption {
+  option (udpa.annotations.versioning).previous_message_type =
+      "envoy.api.v2.core.HeaderValueOption";
+
   // Header name/value pair that this option applies to.
   HeaderValue header = 1 [(validate.rules).message = {required: true}];
 
@@ -286,11 +299,15 @@ message HeaderValueOption {
 
 // Wrapper for a set of headers.
 message HeaderMap {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.HeaderMap";
+
   repeated HeaderValue headers = 1;
 }
 
 // Data source consisting of either a file or an inline value.
 message DataSource {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.DataSource";
+
   oneof specifier {
     option (validate.required) = true;
 
@@ -307,6 +324,8 @@ message DataSource {
 
 // The message specifies the retry policy of remote data source when fetching fails.
 message RetryPolicy {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RetryPolicy";
+
   // Specifies parameters that control :ref:`retry backoff strategy <envoy_api_msg_config.core.v3.BackoffStrategy>`.
   // This parameter is optional, in which case the default base interval is 1000 milliseconds. The
   // default maximum interval is 10 times the base interval.
@@ -314,11 +333,14 @@ message RetryPolicy {
 
   // Specifies the allowed number of retries. This parameter is optional and
   // defaults to 1.
-  google.protobuf.UInt32Value num_retries = 2;
+  google.protobuf.UInt32Value num_retries = 2
+      [(udpa.annotations.field_migrate).rename = "max_retries"];
 }
 
 // The message specifies how to fetch data from remote and how to verify it.
 message RemoteDataSource {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.RemoteDataSource";
+
   // The HTTP URI to fetch the remote data.
   HttpUri http_uri = 1 [(validate.rules).message = {required: true}];
 
@@ -331,6 +353,8 @@ message RemoteDataSource {
 
 // Async data source which support async data fetch.
 message AsyncDataSource {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.AsyncDataSource";
+
   oneof specifier {
     option (validate.required) = true;
 
@@ -347,6 +371,8 @@ message AsyncDataSource {
 // empty, a default transport socket implementation and configuration will be
 // chosen based on the platform and existence of tls_context.
 message TransportSocket {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.TransportSocket";
+
   reserved 2;
 
   reserved "config";
@@ -373,6 +399,9 @@ message TransportSocket {
 //   percentage out of 100. For instance, a runtime key lookup returning the value "42" would parse
 //   as a `FractionalPercent` whose numerator is 42 and denominator is HUNDRED.
 message RuntimeFractionalPercent {
+  option (udpa.annotations.versioning).previous_message_type =
+      "envoy.api.v2.core.RuntimeFractionalPercent";
+
   // Default value if the runtime value's for the numerator/denominator keys are not available.
   type.v3.FractionalPercent default_value = 1 [(validate.rules).message = {required: true}];
 
@@ -382,8 +411,13 @@ message RuntimeFractionalPercent {
 
 // Identifies a specific ControlPlane instance that Envoy is connected to.
 message ControlPlane {
+  option (udpa.annotations.versioning).previous_message_type = "envoy.api.v2.core.ControlPlane";
+
   // An opaque control plane identifier that uniquely identifies an instance
   // of control plane. This can be used to identify which control plane instance,
   // the Envoy is connected to.
   string identifier = 1;
 }
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
