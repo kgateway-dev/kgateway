@@ -12,20 +12,25 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-message ResponseMatch {
+message ResponseMatch { 
+    // Response headers to match on.
     repeated matchers.core.gloo.solo.io.HeaderMatcher matchers = 1;
+    // Response code detail to match on. see envoy documentation for possible values.
     string response_code_details = 2;
+    // Transformation to apply on the response.
     envoy.api.v2.filter.http.Transformation response_transformation = 3;
 }
 
-
 message RequestMatch {
+    // Matches on the request properties.
     matchers.core.gloo.solo.io.Matcher matcher = 1;
+    // Should we clear the route cache if a transformation was matched.
     bool clear_route_cache = 2;
+    // Transformation to apply on the request.
     envoy.api.v2.filter.http.Transformation request_transformation = 3;
+    // Transformation to apply on the response.
     envoy.api.v2.filter.http.Transformation response_transformation = 4;
 }
-
 
 message Transformations {
     // Apply a transformation to requests.
@@ -37,11 +42,18 @@ message Transformations {
 }
 
 message RequestResponseTransformations {
+    // Transformations to apply on the request. The first request that matches will apply.
     repeated RequestMatch request_transforms = 1;
+    // Transformations to apply on the response. This field is only consulted if there is no
+    // response transformation in the matched `request_transforms`. i.e. Only one response transformation
+    // will be executed. The first response transformation that matches will
+    // apply.
     repeated ResponseMatch response_transforms = 2;
 }
 
 message TransformationStages {
+    // Early transformations happen before most other options (Like Auth and Rate Limit).
     RequestResponseTransformations early = 1;
+    // Regular transformations happend after Auth and Rate limit decisions has been made.
     RequestResponseTransformations regular = 2;
 }

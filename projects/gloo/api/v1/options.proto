@@ -143,7 +143,7 @@ message VirtualHostOptions {
     cors.options.gloo.solo.io.CorsPolicy cors = 3;
     // Transformations to apply. Note: this field is superceded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
-    transformation.options.gloo.solo.io.Transformations transformations = 4;
+    transformation.options.gloo.solo.io.Transformations transformations = 4 [deprecated = true];
     // Enterprise-only: Config for GlooE rate-limiting using simplified (gloo-specific) API
     ratelimit.options.gloo.solo.io.IngressRateLimit ratelimit_basic = 6;
 
@@ -207,7 +207,7 @@ message VirtualHostOptions {
 message RouteOptions {
     // Transformations to apply. Note: this field is superceded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
-    transformation.options.gloo.solo.io.Transformations transformations = 1;
+    transformation.options.gloo.solo.io.Transformations transformations = 1 [deprecated = true];
     fault.options.gloo.solo.io.RouteFaults faults = 2;
     // For requests matched on this route, rewrite the HTTP request path to the provided value before forwarding upstream
     google.protobuf.StringValue prefix_rewrite = 3;
@@ -314,7 +314,7 @@ message WeightedDestinationOptions {
     headers.options.gloo.solo.io.HeaderManipulation header_manipulation = 1;
     // Transformations to apply. Note: this field is superceded by `staged_transformations`.
     // If `staged_transformations.regular` is set, this field will be ignored.
-    transformation.options.gloo.solo.io.Transformations transformations = 2;
+    transformation.options.gloo.solo.io.Transformations transformations = 2 [deprecated = true];
     // Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the
     // underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml.
     //

@@ -28,8 +28,11 @@ var _ = math.Inf
 const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type ResponseMatch struct {
-	Matchers               []*matchers.HeaderMatcher      `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
-	ResponseCodeDetails    string                         `protobuf:"bytes,2,opt,name=response_code_details,json=responseCodeDetails,proto3" json:"response_code_details,omitempty"`
+	// Response headers to match on.
+	Matchers []*matchers.HeaderMatcher `protobuf:"bytes,1,rep,name=matchers,proto3" json:"matchers,omitempty"`
+	// Response code detail to match on. see envoy documentation for possible values.
+	ResponseCodeDetails string `protobuf:"bytes,2,opt,name=response_code_details,json=responseCodeDetails,proto3" json:"response_code_details,omitempty"`
+	// Transformation to apply on the response.
 	ResponseTransformation *transformation.Transformation `protobuf:"bytes,3,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}                       `json:"-"`
 	XXX_unrecognized       []byte                         `json:"-"`
@@ -82,9 +85,13 @@ func (m *ResponseMatch) GetResponseTransformation() *transformation.Transformati
 }
 
 type RequestMatch struct {
-	Matcher                *matchers.Matcher              `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
-	ClearRouteCache        bool                           `protobuf:"varint,2,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
-	RequestTransformation  *transformation.Transformation `protobuf:"bytes,3,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
+	// Matches on the request properties.
+	Matcher *matchers.Matcher `protobuf:"bytes,1,opt,name=matcher,proto3" json:"matcher,omitempty"`
+	// Should we clear the route cache if a transformation was matched.
+	ClearRouteCache bool `protobuf:"varint,2,opt,name=clear_route_cache,json=clearRouteCache,proto3" json:"clear_route_cache,omitempty"`
+	// Transformation to apply on the request.
+	RequestTransformation *transformation.Transformation `protobuf:"bytes,3,opt,name=request_transformation,json=requestTransformation,proto3" json:"request_transformation,omitempty"`
+	// Transformation to apply on the response.
 	ResponseTransformation *transformation.Transformation `protobuf:"bytes,4,opt,name=response_transformation,json=responseTransformation,proto3" json:"response_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral   struct{}                       `json:"-"`
 	XXX_unrecognized       []byte                         `json:"-"`
@@ -201,7 +208,12 @@ func (m *Transformations) GetResponseTransformation() *transformation.Transforma
 }
 
 type RequestResponseTransformations struct {
-	RequestTransforms    []*RequestMatch  `protobuf:"bytes,1,rep,name=request_transforms,json=requestTransforms,proto3" json:"request_transforms,omitempty"`
+	// Transformations to apply on the request. The first request that matches will apply.
+	RequestTransforms []*RequestMatch `protobuf:"bytes,1,rep,name=request_transforms,json=requestTransforms,proto3" json:"request_transforms,omitempty"`
+	// Transformations to apply on the response. This field is only consulted if there is no
+	// response transformation in the matched `request_transforms`. i.e. Only one response transformation
+	// will be executed. The first response transformation that matches will
+	// apply.
 	ResponseTransforms   []*ResponseMatch `protobuf:"bytes,2,rep,name=response_transforms,json=responseTransforms,proto3" json:"response_transforms,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
@@ -247,7 +259,9 @@ func (m *RequestResponseTransformations) GetResponseTransforms() []*ResponseMatc
 }
 
 type TransformationStages struct {
-	Early                *RequestResponseTransformations `protobuf:"bytes,1,opt,name=early,proto3" json:"early,omitempty"`
+	// Early transformations happen before most other options (Like Auth and Rate Limit).
+	Early *RequestResponseTransformations `protobuf:"bytes,1,opt,name=early,proto3" json:"early,omitempty"`
+	// Regular transformations happend after Auth and Rate limit decisions has been made.
 	Regular              *RequestResponseTransformations `protobuf:"bytes,2,opt,name=regular,proto3" json:"regular,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                        `json:"-"`
 	XXX_unrecognized     []byte                          `json:"-"`
