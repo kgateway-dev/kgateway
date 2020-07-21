@@ -391,7 +391,7 @@ message GlooOptions {
     // defaults to 100.
     google.protobuf.UInt32Value regex_max_program_size = 10;
 
-    // (Enterprise and Gloo Federation Only): Where the `gloo` REST xDS server should bind.
+    // (Enterprise Only): Where the `gloo` REST xDS server should bind. Used by Gloo Federation.
     // Defaults to `0.0.0.0:9976`
     string rest_xds_bind_addr = 11;
 }

@@ -1173,7 +1173,7 @@ func (m *Settings_KubernetesConfiguration_RateLimits) GetBurst() uint32 {
 
 // Settings specific to the gloo (Envoy xDS server) controller
 type GlooOptions struct {
-	// Where the `gloo` xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9977`
+	// Where the `gloo` xDS server should bind. Defaults to `0.0.0.0:9977`
 	XdsBindAddr string `protobuf:"bytes,1,opt,name=xds_bind_addr,json=xdsBindAddr,proto3" json:"xds_bind_addr,omitempty"`
 	// Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988`
 	ValidationBindAddr string `protobuf:"bytes,2,opt,name=validation_bind_addr,json=validationBindAddr,proto3" json:"validation_bind_addr,omitempty"`
@@ -1206,7 +1206,7 @@ type GlooOptions struct {
 	// Set this option to specify the default max program size for regexes. If not specified,
 	// defaults to 100.
 	RegexMaxProgramSize *types.UInt32Value `protobuf:"bytes,10,opt,name=regex_max_program_size,json=regexMaxProgramSize,proto3" json:"regex_max_program_size,omitempty"`
-	// (Enterprise Only): Where the `gloo` REST xDS server should bind (should not need configuration by user).
+	// (Enterprise Only): Where the `gloo` REST xDS server should bind. Used by Gloo Federation.
 	// Defaults to `0.0.0.0:9976`
 	RestXdsBindAddr      string   `protobuf:"bytes,11,opt,name=rest_xds_bind_addr,json=restXdsBindAddr,proto3" json:"rest_xds_bind_addr,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

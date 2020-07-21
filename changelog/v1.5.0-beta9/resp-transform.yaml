@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3028
+    description: >
+      Allow specifying transformations at an earlier stage.
+      Also allow response only transformations, that match on response headers.

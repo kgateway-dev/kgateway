@@ -414,7 +414,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `xdsBindAddr` | `string` | Where the `gloo` xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9977`. |  |
+| `xdsBindAddr` | `string` | Where the `gloo` xDS server should bind. Defaults to `0.0.0.0:9977`. |  |
 | `validationBindAddr` | `string` | Where the `gloo` validation server should bind. Defaults to `0.0.0.0:9988`. |  |
 | `circuitBreakers` | [.gloo.solo.io.CircuitBreakerConfig](../circuit_breaker.proto.sk/#circuitbreakerconfig) | Default circuit breaker configuration to use for upstream requests, when not provided by specific upstream. |  |
 | `endpointsWarmingTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | Timeout to get initial snapshot of resources. If set to zero, Gloo will not wait for initial snapshot - if nonzero and gloo could not fetch it's initial snapshot before the timeout reached, gloo will panic. If unset, Gloo defaults to 5 minutes. |  |
@@ -424,7 +424,7 @@ Settings specific to the gloo (Envoy xDS server) controller
 | `disableGrpcWeb` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Default policy for grpc-web. set to true if you do not wish grpc-web to be automatically enabled. set to false if you wish grpc-web enabled unless disabled on the listener level. If not specified, defaults to `false`. |  |
 | `disableProxyGarbageCollection` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Set this option to determine the state of the envoy configuration when a virtual service is deleted, resulting in a proxy with no configured routes. set to true if you wish to keep envoy serving the routes from the latest valid configuration. set to false if you wish to reset the envoy configuration to a clean slate with no routes. If not specified, defaults to `false`. |  |
 | `regexMaxProgramSize` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Set this option to specify the default max program size for regexes. If not specified, defaults to 100. |  |
-| `restXdsBindAddr` | `string` | (Enterprise Only): Where the `gloo` REST xDS server should bind (should not need configuration by user). Defaults to `0.0.0.0:9976`. |  |
+| `restXdsBindAddr` | `string` | (Enterprise Only): Where the `gloo` REST xDS server should bind. Used by Gloo Federation. Defaults to `0.0.0.0:9976`. |  |
 
 
 
