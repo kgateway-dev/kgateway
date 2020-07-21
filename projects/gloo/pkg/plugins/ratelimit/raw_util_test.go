@@ -2,6 +2,7 @@ package ratelimit_test
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoyvhostratelimit "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
@@ -130,16 +131,29 @@ func ExpectActionsSame(actions []*gloorl.Action) {
 	out := ConvertActions(nil, actions)
 
 	ExpectWithOffset(1, len(actions)).To(Equal(len(out)))
-	for i := range actions {
+	actionsCopy := make([]*gloorl.Action, len(actions))
+	numCopied := copy(actionsCopy, actions) // don't modify actions- caller won't expect it
+	ExpectWithOffset(1, numCopied).To(Equal(len(out)))
+	for i := range actionsCopy {
+
+		// Envoy regex API has changed. Adjust `actionsCopy` so we can check for equality.
+		// gloorl.Action is based on an old Envoy API with an old version of BoolValue in the ExpectMatch field.
+		expectMatch := actionsCopy[i].GetHeaderValueMatch().GetExpectMatch()
+		if expectMatch != nil {
+			actionsCopy[i].GetHeaderValueMatch().ExpectMatch = nil
+		}
 
 		jase := jsonpb.Marshaler{}
-		ins, _ := jase.MarshalToString(actions[i])
+		ins, _ := jase.MarshalToString(actionsCopy[i])
 		outs, _ := jase.MarshalToString(out[i])
 		fmt.Fprintf(GinkgoWriter, "Compare \n%s\n\n%s", ins, outs)
 		remarshalled := new(envoyvhostratelimit.RateLimit_Action)
 		err := jsonpb.UnmarshalString(ins, remarshalled)
 
-		// regex api is different. fix that.
+		// Envoy regex API has changed. Adjust `remarshalled` so we can check for equality.
+		if expectMatch != nil {
+			remarshalled.GetHeaderValueMatch().ExpectMatch = &wrappers.BoolValue{Value:expectMatch.GetValue()}
+		}
 		if headers := remarshalled.GetHeaderValueMatch().GetHeaders(); headers != nil {
 			for _, h := range headers {
 				if regex := h.GetRegexMatch(); regex != "" {
