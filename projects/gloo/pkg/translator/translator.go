@@ -246,6 +246,8 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		// doesn't send a nack we can listen for, so we simply try again with a new version.
 		// This is temporary until envoy either sends a nack, or until there's a warming period
 		// while envoy hydrates the wasm cache with the new filter.
+		// This workaround can be removed if either https://github.com/envoyproxy/envoy-wasm/issues/552
+		// or https://github.com/envoyproxy/envoy-wasm/issues/533 are resolved.
 		lv = fmt.Sprintf("%v-%v", listenersVersion, rand.Int31n(10000))
 		listener := listenersProto[0].ResourceProto().(*envoyapi.Listener)
 		if listener.Metadata == nil {
