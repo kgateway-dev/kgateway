@@ -1,0 +1,3 @@
+changelog:
+- type: FIX
+  description: Fix default version output type and server version type.
