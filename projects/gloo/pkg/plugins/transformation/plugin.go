@@ -186,7 +186,7 @@ func validateTransformation(ctx context.Context, transformations *envoytransform
 	return nil
 }
 
-// Note: these are copied from the translator and adapter to v3 apis
+// Note: these are copied from the translator and adapted to v3 apis
 func getResponseMatcher(ctx context.Context, m *transformation.ResponseMatch) *envoytransformation.ResponseMatcher {
 	matcher := &envoytransformation.ResponseMatcher{
 		Headers: envoyHeaderMatcher(ctx, m.GetMatchers()),

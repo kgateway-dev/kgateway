@@ -51,7 +51,7 @@ var _ = Describe("Staged Transformation", func() {
 		tu = v1helpers.NewTestHttpUpstream(ctx, envoyInstance.LocalAddr())
 		envoyPort = defaults.HttpPort
 
-		// this upstream doesn't need to exist - infact, we want ext auth to fail.
+		// this upstream doesn't need to exist - in fact, we want ext auth to fail.
 		extauthn := &gloov1.Upstream{
 			Metadata: core.Metadata{
 				Name:      "extauth-server",
@@ -250,7 +250,7 @@ var _ = Describe("Staged Transformation", func() {
 				}
 			})
 			TestUpstreamReachable()
-			// send a request an expect it transformed!
+			// send a request and expect it transformed!
 			res, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d/1", envoyPort))
 			Expect(err).NotTo(HaveOccurred())
 
