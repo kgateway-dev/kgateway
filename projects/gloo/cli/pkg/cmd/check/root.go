@@ -6,7 +6,14 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/version"
+	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
+	version2 "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	"github.com/solo-io/go-utils/versionutils"
+	"golang.org/x/xerrors"
+	"k8s.io/apimachinery/pkg/api/errors"
+
+	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/rotisserie/eris"
@@ -24,6 +31,13 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	RateLimitCrdReleaseVersion = versionutils.NewVersion(1, 5, 0, "beta", 8)
+	CrdNotFoundErr             = func(crdName string) error {
+		return eris.Errorf("%s CRD has not been registered", crdName)
+	}
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -344,10 +358,28 @@ func checkAuthConfigs(namespaces []string) ([]string, bool, error) {
 }
 
 func checkRateLimitConfigs(namespaces []string) ([]string, bool, error) {
+
+	// If all Gloo versions are less than the version that introduced the `RateLimitConfig` CRD, skip this check
+	isPreCrdVersion, err := allGloosArePreRateLimitConfig(namespaces)
+	if err != nil {
+		return nil, false, err
+	} else if isPreCrdVersion {
+		return nil, true, nil
+	}
+
 	fmt.Printf("Checking rate limit configs... ")
 	var knownConfigs []string
 	for _, ns := range namespaces {
-		configs, err := helpers.MustNamespacedRateLimitConfigClient(ns).List(ns, clients.ListOpts{})
+
+		rlcClient, err := helpers.RateLimitConfigClient([]string{ns})
+		if err != nil {
+			if isCrdNotFoundErr(err) {
+				return nil, false, CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName)
+			}
+			return nil, false, err
+		}
+
+		configs, err := rlcClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, false, err
 		}
@@ -426,7 +458,7 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 			}
 
 			// Check references to rate limit configs
-			isRateLimitConfigRefValid := func(knownConfigs []string, ref *ratelimit.RateLimitConfigRef) bool {
+			isRateLimitConfigRefValid := func(knownConfigs []string, ref *rlopts.RateLimitConfigRef) bool {
 				resourceRef := &core.ResourceRef{
 					Name:      ref.Name,
 					Namespace: ref.Namespace,
@@ -547,4 +579,76 @@ func checkConnection(ns string) error {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
 	return nil
+}
+
+func isCrdNotFoundErr(err error) bool {
+	for {
+		if statusErr, ok := err.(*errors.StatusError); ok {
+			if errors.IsNotFound(err) &&
+				statusErr.ErrStatus.Details != nil &&
+				statusErr.ErrStatus.Details.Kind == ratelimit.RateLimitConfigCrd.Plural {
+				return true
+			}
+			return statusErr.ErrStatus.Code == 404
+		}
+
+		// This works for "github.com/pkg/errors"-based errors as well
+		if wrappedErr := eris.Unwrap(err); wrappedErr != nil {
+			err = wrappedErr
+			continue
+		}
+
+		if errWrapper, ok := err.(xerrors.Wrapper); ok {
+			err = errWrapper.Unwrap()
+			continue
+		}
+		return false
+	}
+}
+
+// Returns true only if all the instances of Gloo running in the given namespaces have a version
+// that is less than RateLimitCrdReleaseVersion. In cases where a comparison is not possible,
+// we err on the side of caution and return false.
+func allGloosArePreRateLimitConfig(namespaces []string) (bool, error) {
+	result := false
+	for _, namespace := range namespaces {
+		clientServerVersion, err := version.GetClientServerVersions(version.NewKube(namespace))
+		if err != nil {
+			return false, eris.Wrapf(err, "failed to check whether the [%s] namespace contains an instance of Gloo with version < %s "+
+				"(the version that introduced the RateLimitConfig CRD", namespace, RateLimitCrdReleaseVersion.String())
+		}
+
+		if len(clientServerVersion.Server) == 0 {
+			// No Gloo running in this namespace
+			continue
+		}
+
+		// There will be only one Gloo instance running in a given namespace
+		serverVersion := clientServerVersion.Server[0]
+
+		var glooContainer *version2.Kubernetes_Container
+		for _, container := range serverVersion.GetKubernetes().Containers {
+			if container.Name == "gloo" {
+				glooContainer = container
+				break
+			}
+		}
+
+		if glooContainer == nil {
+			continue
+		}
+
+		glooVersion, err := versionutils.ParseVersion(fmt.Sprintf("v%s", glooContainer.Tag))
+		if err != nil {
+			// Not a semver tag, most likely a dev version.
+			// Assume it is >= RateLimitCrdReleaseVersion to perform the check.
+			result = false
+			continue
+		}
+
+		isGreaterThan, isDeterminable := RateLimitCrdReleaseVersion.IsGreaterThan(*glooVersion)
+		result = isDeterminable && isGreaterThan
+	}
+
+	return result, nil
 }
