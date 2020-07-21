@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
