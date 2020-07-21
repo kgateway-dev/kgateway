@@ -37,7 +37,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Long:    constants.VERSION_COMMAND.Long,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			if !cmd.PersistentFlags().Changed(flagutils.OutputFlag) {
-				opts.Top.Output = printers.JSON
+				opts.Top.Output = printers.TABLE
 			}
 			if opts.Metadata.Namespace == "" {
 				return NoNamespaceAllError
