@@ -26,7 +26,7 @@ You can generate the clusters by running the following command:
 glooctl demo federation --license <license key>
 ```
 
-That command will deploy the two Kubernetes clusters, install Gloo on both, and install Gloo Federation on the local cluster. Gloo will be installed in the `gloo-system` namespace, and Gloo Federation will be installed in the `gloo-fed` namespace.
+That command will deploy the two Kubernetes clusters, install Gloo on both, and install Gloo Federation on the local cluster. Gloo will be installed in the `gloo-system` namespace, and Gloo Federation will be installed in the `gloo-fed` namespace. It also registers the remote cluster with Gloo Federation, which we will verify in the next section.
 
 You can check for the clusters by running the following command:
 
@@ -68,26 +68,16 @@ gloo-fed           1/1     1            1           4h4m
 gloo-fed-console   1/1     1            1           4h4m
 ```
 
-You now have Gloo Federation deployed with two Gloo instances in two Kubernetes clusters. The next step is to register the remote Gloo instance with Gloo Federation.
+You now have Gloo Federation deployed with two Gloo instances in two Kubernetes clusters. In the next step we will look at the registered cluster.
 
-## Register remote cluster
+## Remote cluster registration
 
-Gloo Federation will not automatically register the Kubernetes cluster it is running on. Both the local cluster and any remote cluster must be registered manually. The registration process will create a service account and cluster role on the target cluster, and store the access credentials in a Kubernetes secret resource in the admin cluster.
+Gloo Federation will not automatically register the Kubernetes cluster it is running on. Both the local cluster and any remote cluster must be registered manually. The `glooctl federation demo` command took care of the registration process for us. The registration creates a service account and cluster role on the target cluster, and stores the access credentials in a Kubernetes secret resource in the admin cluster.
 
-The registration is performed by running the following command:
-
-```
-glooctl cluster register --cluster-name remote --remote-context kind-remote
-```
+Credentials for the remote cluster are stored in a secret in the gloo-fed namespace. The secret name will be the same as the `cluster-name` specified when registering the cluster.
 
 ```
-[Registration output]
-```
-
-Credentials for the remote cluster are stored in a secret in the gloo-fed namespace as well. The secret name will be the same as the `cluster-name` specified when registering the cluster.
-
-```
- kubectl get secret -n gloo-fed remote
+kubectl get secret -n gloo-fed remote
 ```
 
 ```
@@ -111,10 +101,11 @@ kubectl get glooinstances -n gloo-fed
 
 ```
 NAME                      AGE
-kind-remote-gloo-system   95m
+remote-gloo-system   95m
 ```
 
-You have now successfully deployed Gloo Federation and added a remote cluster to the configuration.
+You have now successfully deployed Gloo Federation with a remote cluster to the configuration.
 
 ## Next Steps
-With a successful deployment of Gloo Federation, now might be a good time to read a bit more about the concepts behind Gloo Federation or you can try out the Service Failover feature.
+
+With a successful deployment of Gloo Federation, now might be a good time to read a bit more about the concepts behind Gloo Federation or you can try creating some Federated Configurations or the Service Failover feature.

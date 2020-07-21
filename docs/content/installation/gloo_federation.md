@@ -13,7 +13,7 @@ Gloo Federation is an enterprise feature of Gloo. You will need at least one ins
 
 You should also have `glooctl` and `kubectl` installed. The `glooctl` version should be the most recent release, as the federation features were added in version 1.4.
 
-You will also need a license key to install Gloo Federation. The key can be procured by visting this page on the Solo.io website.
+You will also need a license key to install Gloo Federation. The key can be procured by visiting this page on the Solo.io website.
 
 ## Installation
 
@@ -40,7 +40,7 @@ kubectl -n gloo-fed rollout status deployment gloo-fed --timeout=1m
 You should see output similar to the following:
 
 ```
-
+deployment "gloo-fed" successfully rolled out
 ```
 
 You can also view the resources in the `gloo-fed` namespace by running:
@@ -52,10 +52,23 @@ kubectl get all -n gloo-fed
 You should see output similar to the following, with all pods running successfully.
 
 ```
+NAME                                    READY   STATUS              RESTARTS   AGE
+pod/gloo-fed-956f66f75-mwk24            1/1     Running             0          11h
+pod/gloo-fed-console-78f6f4f696-hckw8   3/3     Running             0          11h
 
+NAME                       TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)                       AGE
+service/gloo-fed-console   ClusterIP   10.109.209.107   <none>        10101/TCP,8090/TCP,8081/TCP   11h
+
+NAME                               READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/gloo-fed           1/1     1            1           11h
+deployment.apps/gloo-fed-console   1/1     1            1           11h
+
+NAME                                          DESIRED   CURRENT   READY   AGE
+replicaset.apps/gloo-fed-956f66f75            1         1         1       11h
+replicaset.apps/gloo-fed-console-78f6f4f696   1         1         1       11h
 ```
 
-There are also a number fo Custom Resource Definitions that can be viewed by running:
+There are also a number of Custom Resource Definitions that can be viewed by running:
 
 ```
 kubectl get crds -l app=gloo-fed
@@ -64,7 +77,16 @@ kubectl get crds -l app=gloo-fed
 You should see the following list:
 
 ```
-
+NAME                                               CREATED AT
+failoverschemes.fed.solo.io                        2020-07-21T02:00:15Z
+federatedauthconfigs.fed.enterprise.gloo.solo.io   2020-07-21T02:00:15Z
+federatedgateways.fed.gateway.solo.io              2020-07-21T02:00:15Z
+federatedroutetables.fed.gateway.solo.io           2020-07-21T02:00:15Z
+federatedsettings.fed.gloo.solo.io                 2020-07-21T02:00:15Z
+federatedupstreamgroups.fed.gloo.solo.io           2020-07-21T02:00:15Z
+federatedupstreams.fed.gloo.solo.io                2020-07-21T02:00:15Z
+federatedvirtualservices.fed.gateway.solo.io       2020-07-21T02:00:15Z
+glooinstances.fed.solo.io                          2020-07-21T02:00:15Z
 ```
 
 Your instance of Gloo Federation has now been successfully deployed. The next step is to register clusters with Gloo Federation.

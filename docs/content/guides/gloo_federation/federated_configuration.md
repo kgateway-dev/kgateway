@@ -4,15 +4,17 @@ description: Setting up federated configuration
 weight: 20
 ---
 
-Gloo Federation enables you to create consistent configurations across multiple Gloo instances. The resources being configured could be resources such as Upstreams, UpstreamGroups and, Virtual Services. In this guide you will learn how to add a Federated Upstream and Virtual Service to a remote cluster being managed by Gloo Federation.
+Gloo Federation enables you to create consistent configurations across multiple Gloo instances. The resources being configured could be resources such as Upstreams, UpstreamGroups and, Virtual Services. In this guide you will learn how to add a Federated Upstream and Virtual Service to a registered cluster being managed by Gloo Federation.
 
 ## Prerequisites
 
-To successfully follow this guide, you will need to have Gloo Federation deployed on an administrative cluster and a remote cluster to target for configuration. We recommend that you follow the Getting Started guide to prepare for this guide if you haven’t already done so.
+To successfully follow this guide, you will need to have Gloo Federation deployed on an administrative cluster and a registered cluster to target for configuration. We recommend that you follow the Gloo Federation installation guide  and Cluster Registration guide to prepare for this guide if you haven’t already done so.
 
 ## Create the Federated Resources
 
-We are going to create a Federated Upstream and Federated Virtual Service. We can do this be using kubectl to create the necessary Custom Resources. Once the CR is created, the Gloo Federation controller will create the necessary resources in the remote cluster under the configured namespace.
+We are going to create a Federated Upstream and Federated Virtual Service. We can do this by using kubectl to create the necessary Custom Resources. Once the CR is created, the Gloo Federation controller will create the necessary resources on any designated clusters under the configured namespace.
+
+In this example, we will be using the administrative cluster where Gloo Federation is running. You can select a different cluster by changing the placement values. Our registered cluster is named `local` and Gloo Enterprise is using the default `gloo-system` namespace.
 
 ### Create the Federated Upstream
 
@@ -28,7 +30,7 @@ metadata:
 spec:
   placement:
     clusters:
-      - kind-remote
+      - local
     namespaces:
       - gloo-system
   template:
@@ -42,7 +44,7 @@ spec:
 EOF
 ```
 
-As you can see in the spec for the FederatedUpstream resource, the placement settings specify that the Upstream should be created in the kind-remote cluster in the gloo-system namespace. The template settings define the properties of the Upstream being created.
+As you can see in the spec for the FederatedUpstream resource, the placement settings specify that the Upstream should be created in the `local` cluster in the `gloo-system` namespace. The template settings define the properties of the Upstream being created.
 
 Once we run the command, we can validate that it was successful by running the following:
 
@@ -50,30 +52,30 @@ Once we run the command, we can validate that it was successful by running the f
 kubectl get federatedupstreams -n gloo-fed -oyaml
 ```
 
-In the resulting output you should see the following in the status section:
+In the resulting output you should see the state as `PLACED` in the status section:
 
 ```yaml
   status:
     placementStatus:
       clusters:
-        remote:
+        local:
           namespaces:
             gloo-system:
               state: PLACED
-      observedGeneration: "2"
+      observedGeneration: "1"
       state: PLACED
-      writtenBy: gloo-fed-956f66f75-mwfrb
+      writtenBy: gloo-fed-5dd98c7bfd-96sn2
 ```
 
-Looking at the Upstream resources in the remote cluster, we can confirm the Upstream has been created:
+Looking at the Upstream resources in the local cluster, we can confirm the Upstream has been created:
 
 ```
-kubectl get upstream -n gloo-system fed-upstream --context kind-remote
+kubectl get upstream -n gloo-system fed-upstream
 ```
 
 ```
 NAME              AGE
-fed-upstream   97m
+fed-upstream      97m
 ```
 
 Now we can created a Virtual Service for the Upstream.
@@ -92,7 +94,7 @@ metadata:
 spec:
   placement:
     clusters:
-      - kind-remote
+      - local
     namespaces:
       - gloo-system
   template:
@@ -111,6 +113,44 @@ spec:
                   name: fed-upstream
                   namespace: gloo-system
     metadata:
-      name: fed-upstream
+      name: fed-virtualservice
 EOF
 ```
+
+Once we run the command, we can validate that it was successful by running the following:
+
+```
+kubectl get federatedvirtualservice -n gloo-fed -oyaml
+```
+
+In the resulting output you should see the state as `PLACED` in the status section:
+
+```yaml
+  status:
+    placementStatus:
+      clusters:
+        local:
+          namespaces:
+            gloo-system:
+              state: PLACED
+      observedGeneration: "1"
+      state: PLACED
+      writtenBy: gloo-fed-5dd98c7bfd-96sn2
+```
+
+Looking at the Virtual Service resources in the local cluster, we can confirm the Virtual Service has been created:
+
+```
+kubectl get virtualservice -n gloo-system fed-virtualservice
+```
+
+```
+NAME                 AGE
+fed-virtualservice   4m39s
+```
+
+Any updates made to the Federated Upstream or Federated Virtual Service will be applied to all clusters associated with the Custom Resource.
+
+## Next Steps
+
+Setting up Federated Configuration also enables Service Failover. You can check out the guide for Service Failover next, or learn more about the concepts behind Gloo Federation.

@@ -4,22 +4,32 @@ description: Creating a failover service in Gloo Federation
 weight: 30
 ---
 
+[INSERT INTRO TEXT]
+
 ## Prerequisites
 
 To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
 
-Docker - Runs the containers for kind and all pods inside the clusters.
-Kubectl - Used to execute commands against the clusters.
-Kind - Deploys two Kubernetes clusters using containers running on Docker.
-Helm - Used to deploy the Gloo Federation and Gloo charts.
-Glooctl - Used to register the Kubernetes clusters with Gloo Federation.
-openssl  - Generate certificates to enable mTLS between multiple Gloo instances
+Docker - Runs the containers for kind and all pods inside the clusters
+Kubectl - Used to execute commands against the clusters
+Kind - Deploys two Kubernetes clusters using containers running on Docker
+Helm - Used to deploy the Gloo Federation and Gloo charts
+Glooctl - Used to register the Kubernetes clusters with Gloo Federation
+openssl  - Generates certificates to enable mTLS between multiple Gloo instances
 
-In addition you will also need to have completed all of the previous tutorials, as it is assumed that certain components have already been installed and configured.
+In addition you will also need to have completed the steps in the Getting Started guide or the Cluster Registration guide, as it is assumed that certain components have already been installed and configured.
 
 ## Configure Gloo for Failover
 
-The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and/or placed in the clusters to allow for mTLS between the Gloo instances running on separate clusters. The following 2 commands will generate all of the certs necessary.
+The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo instances running on separate clusters. 
+
+{{< notice note >}}
+If you deployed your Gloo Federation installation using the `glooctl federation demo` command, these certificates and secrets have already been configured and the necessary gateway and service have been created. You can skip to the [next section](#deploy-our-sample-application) where we deploy an application to demonstrate the failover.
+{{< /notice >}}
+
+### Create the certificates and secrets for mTLS
+
+The following two commands will generate all of the certs necessary.
 
 ```
 # Generate downstream cert and key
@@ -34,24 +44,32 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
 Once the certificates have been generated, we can place them in the cluster as Secrets so that Gloo can access them.
 
 ```
+# Set the name of the local and remote cluster contexts
+REMOTE_CLUSTER_CONTEXT=kind-remote
+LOCAL_CLUSTER_CONTEXT=kind-local
+
+# Set context to remote cluster
 kubectl config use-context $REMOTE_CLUSTER_CONTEXT
 
+# Create the secret
 glooctl create secret tls --name failover-downstream \
 --certchain tls.crt --privatekey tls.key --rootca mtls.crt
-```
 
-```
+# Set the context to the local cluster
 kubectl config use-context $LOCAL_CLUSTER_CONTEXT
 
+# Create the secret
 glooctl create secret tls --name failover-upstream \
 --certchain mtls.crt --privatekey mtls.key
 ```
 
+### Create the failover gateway
+
 In order to use a Gloo Instance as a failover target it first needs to be configured with an additional listener to route incoming failover requests.
 
-The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary gloo instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by gloo-fed, but the certificates are the ones created in the previous step.
+The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary gloo instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by Gloo Federation, but the certificates are the ones created in the previous step.
 
-The service creates an externally addressable way of communicating with the Gloo instance in question. This Service may look different for different setups, but in the local KinD septum it needs to be a NodePort service on the specified port. Gloo-fed will automatically discover all external addresses for any Gloo instance.
+The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, but in the local KinD setup it needs to be a NodePort service on the specified port. Gloo Federation will automatically discover all external addresses for any Gloo instance.
 
 ```yaml
 # Apply failover gateway and service
@@ -105,16 +123,18 @@ EOF
 
 In order to demonstrate Gloo multi cluster failover features we will create a relatively contrived example which can very easily show off the power of the feature.
 
-This example assumes that the `glooctl federation demo init` command has already been run, and the 2 kind clusters it produces are already configured.
+This example assumes that the `glooctl federation demo init` command has already been run, and the two kind clusters it produces are already configured.
 
-This application consists of 2 simple workloads which just return a color. The workload in the local cluster returns the color “blue”, and the workload in the remote cluster returns the color “green”. Each workload also has a healthcheck endpoint running at “/health” which can be manually made to fail for demonstration purposes.
+This application consists of two simple workloads which just return a color. The workload in the local cluster returns the color “blue”, and the workload in the remote cluster returns the color “green”. Each workload also has a healthcheck endpoint running at “/health” which can be manually made to fail for demonstration purposes.
 
-The first step is too apply the application by running the 2 following commands:
-
+The first step is too apply the application by running the two following commands:
 
 Create Local Color App (BLUE)
 
 ```shell script
+# Set the LOCAL_CLUSTER_CONTEXT value if you haven't already
+LOCAL_CLUSTER_CONTEXT=kind-local
+
 kubectl apply --context $LOCAL_CLUSTER_CONTEXT -f - <<EOF
 apiVersion: v1
 kind: Service
@@ -251,6 +271,9 @@ EOF
 
 
 ```shell script
+# Set the REMOTE_CLUSTER_CONTEXT value if you haven't already
+REMOTE_CLUSTER_CONTEXT=kind-remote
+
 kubectl apply --context $REMOTE_CLUSTER_CONTEXT -f - <<EOF
 apiVersion: v1
 kind: Service
@@ -385,11 +408,14 @@ spec:
 EOF
 ```
 
-A major part of failover is health checking. In order for Envoy to determine the state of the primary of failover endpoints, health checking must be enabled.
+Now that we have our two applications up and running, we can configure health checks and the failover resource.
 
 ## Configure Failover Through Gloo-Fed
 
-Add Health Checks to failover Upstream
+A major part of failover is health checking. In order for Envoy to determine the state of the primary of failover endpoints, health checking must be enabled. In this section we will specify a health check for the Blue instance of the application and create the failover configuration.
+
+First, let's add health checks to the blue Upstream:
+
 ```shell script
 kubectl patch --context $LOCAL_CLUSTER_CONTEXT upstream -n gloo-system default-service-blue-10000 --type=merge -p "
 spec:
@@ -403,9 +429,9 @@ spec:
 "
 ```
 
-Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the gloo-fed resource which will dynamically configure failover from one root Upstream, to a set prioritized upstreams 
+Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Federation resource which will dynamically configure failover from one root Upstream, to a set prioritized Upstreams.
 
-Create Failover Scheme
+We will create the FailoverScheme resource in the `gloo-fed` namespace:
 
 ```shell script
 kubectl apply --context $LOCAL_CLUSTER_CONTEXT -f - <<EOF
@@ -432,6 +458,9 @@ EOF
 Create simple route
 
 ```shell script
+# Make sure the context is set to the local cluster
+kubectl config use-context $LOCAL_CLUSTER_CONTEXT
+
 glooctl add route \
      --path-prefix / \
      --dest-name default-service-blue-10000
@@ -443,7 +472,7 @@ glooctl add route \
 Test that local endpoint is in use while healthy
 
 ```shell script
-$ curl -v http://localhost:8080
+curl -v http://localhost:8080
 
 *   Trying ::1...
 * TCP_NODELAY set
