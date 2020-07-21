@@ -360,7 +360,7 @@ func checkRateLimitConfigs(namespaces []string) ([]string, bool, error) {
 		rlcClient, err := helpers.RateLimitConfigClient([]string{ns})
 		if err != nil {
 			if isCrdNotFoundErr(err) {
-				// Just warn. If the CRD is required, the check would have failed on the crashing pod.
+				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName).Error())
 				return nil, true, nil
 			}
