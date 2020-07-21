@@ -608,8 +608,7 @@ func allGloosArePreRateLimitConfig(namespaces []string) (bool, error) {
 	for _, namespace := range namespaces {
 		clientServerVersion, err := version.GetClientServerVersions(version.NewKube(namespace))
 		if err != nil {
-			return false, eris.Wrapf(err, "failed to check whether the [%s] namespace contains an instance of Gloo with version < %s "+
-				"(the version that introduced the RateLimitConfig CRD", namespace, RateLimitCrdReleaseVersion.String())
+			return false, err
 		}
 
 		if len(clientServerVersion.Server) == 0 {
