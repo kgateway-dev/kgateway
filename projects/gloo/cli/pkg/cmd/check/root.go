@@ -6,28 +6,34 @@ import (
 	"os"
 	"time"
 
-	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
-
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 
 	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+var (
+	CrdNotFoundErr = func(crdName string) error {
+		return eris.Errorf("%s CRD has not been registered", crdName)
+	}
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
@@ -351,7 +357,18 @@ func checkRateLimitConfigs(namespaces []string) ([]string, bool, error) {
 	fmt.Printf("Checking rate limit configs... ")
 	var knownConfigs []string
 	for _, ns := range namespaces {
-		configs, err := helpers.MustNamespacedRateLimitConfigClient(ns).List(ns, clients.ListOpts{})
+
+		rlcClient, err := helpers.RateLimitConfigClient([]string{ns})
+		if err != nil {
+			if isCrdNotFoundErr(err) {
+				// Just warn. If the CRD is required, the check would have failed on the crashing gloo/gloo-ee pod.
+				fmt.Printf("WARN: %s\n", CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName).Error())
+				return nil, true, nil
+			}
+			return nil, false, err
+		}
+
+		configs, err := rlcClient.List(ns, clients.ListOpts{})
 		if err != nil {
 			return nil, false, err
 		}
@@ -430,7 +447,7 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 			}
 
 			// Check references to rate limit configs
-			isRateLimitConfigRefValid := func(knownConfigs []string, ref *ratelimit.RateLimitConfigRef) bool {
+			isRateLimitConfigRefValid := func(knownConfigs []string, ref *rlopts.RateLimitConfigRef) bool {
 				resourceRef := &core.ResourceRef{
 					Name:      ref.Name,
 					Namespace: ref.Namespace,
@@ -602,4 +619,24 @@ func checkConnection(ns string) error {
 		return eris.Wrapf(err, "Could not communicate with kubernetes cluster")
 	}
 	return nil
+}
+
+func isCrdNotFoundErr(err error) bool {
+	for {
+		if statusErr, ok := err.(*errors.StatusError); ok {
+			if errors.IsNotFound(err) &&
+				statusErr.ErrStatus.Details != nil &&
+				statusErr.ErrStatus.Details.Kind == ratelimit.RateLimitConfigCrd.Plural {
+				return true
+			}
+			return false
+		}
+
+		// This works for "github.com/pkg/errors"-based errors as well
+		if wrappedErr := eris.Unwrap(err); wrappedErr != nil {
+			err = wrappedErr
+			continue
+		}
+		return false
+	}
 }
