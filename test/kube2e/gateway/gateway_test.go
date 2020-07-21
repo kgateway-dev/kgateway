@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
+	glootransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	kubernetes2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/kubernetes"
 	"github.com/solo-io/gloo/projects/gloo/pkg/translator"
 
@@ -1429,7 +1430,7 @@ spec:
 
 		It("rejects invalid inja template in transformation", func() {
 			injaTransform := `{% if default(data.error.message, "") != "" %}400{% else %}{{ header(":status") }}{% endif %}`
-			t := &transformation.RouteTransformations{
+			t := &glootransformation.Transformations{
 				ClearRouteCache: true,
 				ResponseTransformation: &transformation.Transformation{
 					TransformationType: &transformation.Transformation_TransformationTemplate{
