@@ -131,6 +131,7 @@ type Gloo struct {
 type GlooDeployment struct {
 	Image                  *Image  `json:"image,omitempty"`
 	XdsPort                int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	RestXdsPort            uint32  `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
 	ValidationPort         int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
 	Stats                  *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
 	FloatingUserId         bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
@@ -221,6 +222,7 @@ type GatewayProxy struct {
 	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
 }
 
 type GatewayProxyGatewaySettings struct {
@@ -281,6 +283,13 @@ type GatewayProxyService struct {
 type Tracing struct {
 	Provider string `json:"provider,omitempty"`
 	Cluster  string `json:"cluster,omitempty"`
+}
+
+type Failover struct {
+	Enabled    bool   `json:"enabled" desc:"(Enterprise Only): Configure this proxy for failover"`
+	Port       uint   `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
+	NodePort   uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
+	SecretName string `json:"secretName" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
 }
 
 type AccessLogger struct {

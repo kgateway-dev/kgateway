@@ -14,9 +14,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 )
 
-func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
+func Uninstall(opts *options.Options, cli install.KubeCli, mode Mode) error {
 	uninstaller := NewUninstaller(DefaultHelmClient(), cli)
-	if err := uninstaller.Uninstall(opts); err != nil {
+	uninstallArgs := &opts.Uninstall.GlooUninstall
+	if mode == Federation {
+		uninstallArgs = &opts.Uninstall.FedUninstall
+	}
+	if err := uninstaller.Uninstall(uninstallArgs, mode); err != nil {
 		_, _ = fmt.Fprintf(os.Stderr, "Uninstall failed. Detailed logs available at %s.\n", cliutil.GetLogsPath())
 		return err
 	}
@@ -24,7 +28,7 @@ func UninstallGloo(opts *options.Options, cli install.KubeCli) error {
 }
 
 type Uninstaller interface {
-	Uninstall(cliArgs *options.Options) error
+	Uninstall(cliArgs *options.HelmUninstall, mode Mode) error
 }
 
 type uninstaller struct {
@@ -46,9 +50,9 @@ func NewUninstallerWithOutput(helmClient HelmClient, kubeCli install.KubeCli, ou
 	}
 }
 
-func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
-	namespace := cliArgs.Uninstall.Namespace
-	releaseName := cliArgs.Uninstall.HelmReleaseName
+func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, mode Mode) error {
+	namespace := cliArgs.Namespace
+	releaseName := cliArgs.HelmReleaseName
 
 	// Check whether Helm release object exists
 	releaseExists, err := u.helmClient.ReleaseExists(namespace, releaseName)
@@ -66,7 +70,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 			return err
 		}
 
-		if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
+		if cliArgs.DeleteCrds || cliArgs.DeleteAll {
 			// Helm never deletes CRDs, so we collect the CRD names to delete them ourselves if need be.
 			// We need to run this first, as it depends on the release still being present.
 			// But we need to uninstall the release before we delete the CRDs.
@@ -81,11 +85,12 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		}
 
 	} else {
-
 		// The release object does not exist, so it is not possible to exactly tell which resources are part of
 		// the originals installation. We take a best effort approach.
-
 		glooLabels := LabelsToFlagString(GlooComponentLabels)
+		if mode == Federation {
+			glooLabels = LabelsToFlagString(GlooFedComponentLabels)
+		}
 		for _, kind := range GlooNamespacedKinds {
 			if err := u.kubeCli.Kubectl(nil, "delete", kind, "-n", namespace, "-l", glooLabels); err != nil {
 				return err
@@ -93,7 +98,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		}
 
 		// If the `--all` flag was provided, also delete the cluster-scoped resources.
-		if cliArgs.Uninstall.DeleteAll {
+		if cliArgs.DeleteAll {
 			for _, kind := range GlooClusterScopedKinds {
 				if err := u.kubeCli.Kubectl(nil, "delete", kind, "-l", glooLabels); err != nil {
 					return err
@@ -102,18 +107,24 @@ func (u *uninstaller) Uninstall(cliArgs *options.Options) error {
 		}
 	}
 
-	u.uninstallKnativeIfNecessary()
-
-	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
-	if cliArgs.Uninstall.DeleteCrds || cliArgs.Uninstall.DeleteAll {
-		if len(crdNames) == 0 {
-			crdNames = append(GlooCrdNames, GlooECrdNames...)
-		}
-		u.deleteGlooCrds(crdNames)
+	if mode != Federation {
+		u.uninstallKnativeIfNecessary()
 	}
 
-	if cliArgs.Uninstall.DeleteNamespace || cliArgs.Uninstall.DeleteAll {
-		u.deleteNamespace(cliArgs.Uninstall.Namespace)
+	// may need to delete hard-coded crd names even if releaseExists because helm chart for glooe doesn't show gloo dependency (https://github.com/helm/helm/issues/7847)
+	if cliArgs.DeleteCrds || cliArgs.DeleteAll {
+		if mode == Federation {
+			u.deleteGlooCrds(GlooFedCrdNames)
+		} else {
+			if len(crdNames) == 0 {
+				crdNames = append(GlooCrdNames, GlooECrdNames...)
+			}
+			u.deleteGlooCrds(crdNames)
+		}
+	}
+
+	if cliArgs.DeleteNamespace || cliArgs.DeleteAll {
+		u.deleteNamespace(cliArgs.Namespace)
 	}
 
 	return nil

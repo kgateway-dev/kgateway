@@ -316,9 +316,10 @@ static_resources:
           port_value: 8081
       filter_chains:
         - filters:
-            - name: envoy.http_connection_manager
-              config:
-                codec_type: auto
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                codec_type: AUTO
                 stat_prefix: prometheus
                 route_config:
                   name: prometheus_route
@@ -343,8 +344,7 @@ static_resources:
                             prefix_rewrite: "/stats/prometheus"
                             cluster: admin_port_cluster
                 http_filters:
-                  - name: envoy.router
-                    config: {}
+                  - name: envoy.filters.http.router
 
 dynamic_resources:
   ads_config:

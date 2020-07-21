@@ -43,6 +43,7 @@ gloo:
     image:
       repository: gloo
     xdsPort: 9977
+    restXdsPort: 9976
     validationPort: 9988
     replicas: 1
     runAsUser: 10101
@@ -85,6 +86,10 @@ gatewayProxies:
     # Each element follows conventional port syntax (port, targetPort, protocol, name)
     customPorts: []
     gatewaySettings: {}
+    failover:
+      enabled: false
+      port: 15443
+      secretName: failover-downstream
     kind:
       deployment:
         replicas: 1

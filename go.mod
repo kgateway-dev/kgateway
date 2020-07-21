@@ -7,9 +7,11 @@ require (
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
 	github.com/aws/aws-sdk-go v1.30.15
-	github.com/cncf/udpa/go v0.0.0-20200313221541-5f7e5dd04533
+	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
 	github.com/docker/go-metrics v0.0.1 // indirect
+	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
+	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.6-0.20200529035633-fc42e08917e9
 	github.com/envoyproxy/protoc-gen-validate v0.4.0
 	github.com/fgrosse/zaptest v1.1.0
@@ -22,7 +24,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1
-	github.com/golang/protobuf v1.3.3
+	github.com/golang/protobuf v1.4.2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.3
@@ -49,13 +51,14 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.1.1
 	github.com/sergi/go-diff v1.0.0
-	github.com/solo-io/envoy-operator v0.1.1
+	github.com/solo-io/envoy-operator v0.1.3
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-apis v0.0.0-20200709192249-4f741634437b
-	github.com/solo-io/solo-kit v0.13.9
+	github.com/solo-io/skv2 v0.7.2
+	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
+	github.com/solo-io/solo-kit v0.13.10
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
@@ -69,16 +72,17 @@ require (
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	golang.org/x/tools v0.0.0-20200522201501-cb1345f3a375
 	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
-	google.golang.org/grpc v1.27.0
+	google.golang.org/grpc v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
-	k8s.io/api v0.17.2
-	k8s.io/apiextensions-apiserver v0.18.1
-	k8s.io/apimachinery v0.18.1
+	k8s.io/api v0.17.4
+	k8s.io/apiextensions-apiserver v0.18.2
+	k8s.io/apimachinery v0.18.3
 	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/code-generator v0.17.2
 	k8s.io/helm v2.16.1+incompatible
+	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
 	k8s.io/kubectl v0.17.2
 	k8s.io/kubernetes v1.17.1
 	k8s.io/utils v0.17.1
@@ -93,6 +97,7 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	github.com/golang/mock => github.com/golang/mock v1.4.3
+	github.com/golang/protobuf => github.com/golang/protobuf v1.3.3
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1

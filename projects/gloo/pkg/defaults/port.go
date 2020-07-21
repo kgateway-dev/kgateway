@@ -6,8 +6,10 @@ var HttpPort uint32 = 8080
 var HttpsPort uint32 = 8443
 var EnvoyAdminPort uint32 = 19000
 var GlooAdminPort uint32 = 9091
+var GlooRestXdsPort = 9976
 var GlooXdsPort = 9977
 var GlooValidationPort = 9988
+var GlooMtlsModeRestXdsPort = 9998
 var GlooMtlsModeXdsPort = 9999
 var DefaultRefreshRate = time.Minute
 
