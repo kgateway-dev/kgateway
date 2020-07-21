@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"io"
 	"net/http"
 	"strings"
@@ -45,7 +46,7 @@ var _ = Describe("CORS", func() {
 	var td corsTestData
 
 	const (
-		corsFilterString       = `"name": "envoy.filters.http.cors"`
+		corsFilterString       = `"name": "` + wellknown.CORS + `"`
 		corsActiveConfigString = `"cors":`
 	)
 

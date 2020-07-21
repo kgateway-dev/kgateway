@@ -426,7 +426,7 @@ static_resources:
               typed_config:
                 '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
                 collector_cluster: zipkin
-                collector_endpoint: /api/v1/spans
+                collector_endpoint: /api/v2/spans
         name: envoy.filters.network.http_connection_manager
     name: prometheus_listener
 stats_sinks:
