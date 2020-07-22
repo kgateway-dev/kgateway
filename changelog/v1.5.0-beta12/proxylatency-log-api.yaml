@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Add emitting proxy latency timings to access logs
+    issueLink: https://github.com/solo-io/gloo/issues/3392  
+    resolvesIssue: false
