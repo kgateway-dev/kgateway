@@ -4,28 +4,23 @@ description: Creating a failover service in Gloo Federation
 weight: 30
 ---
 
-[INSERT INTRO TEXT]
+When an Upstream fails or becomes unhealthy, Gloo Federation can automatically fail traffic over to a different Gloo instance and Upstream. In this guide we will demonstrate that functionality by registering two clusters with Gloo Federation. Then we will create a Kubernetes service on each cluster and verify it is available as an Upstream. We will create a FailoverScheme in Gloo Federation with one Upstream as the primary and the second as a backup. Finally, we will simulate a failure of the primary Upstream and verify that the service fails over to the secondary.
 
 ## Prerequisites
 
 To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
 
-Docker - Runs the containers for kind and all pods inside the clusters
 Kubectl - Used to execute commands against the clusters
-Kind - Deploys two Kubernetes clusters using containers running on Docker
-Helm - Used to deploy the Gloo Federation and Gloo charts
 Glooctl - Used to register the Kubernetes clusters with Gloo Federation
 openssl  - Generates certificates to enable mTLS between multiple Gloo instances
 
-In addition you will also need to have completed the steps in the Getting Started guide or the Cluster Registration guide, as it is assumed that certain components have already been installed and configured.
+You will also need two Kubernetes clusters running Gloo Enterprise and an installation of Gloo Federation with both clusters registered. You can use *kind* to deploy local clusters on Docker, or select one of many other deployment options for Gloo on Kubernetes. If you wish to quickly spin up the entire environment and validate the process, you can jump into our Getting Started guide. It builds two clusters using *kind* and takes care of setting up the entire Gloo Federation and Service Failover environment.
+
+For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Federation in addition to Gloo Enterprise. The context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
 ## Configure Gloo for Failover
 
 The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo instances running on separate clusters. 
-
-{{< notice note >}}
-If you deployed your Gloo Federation installation using the `glooctl federation demo` command, these certificates and secrets have already been configured and the necessary gateway and service have been created. You can skip to the [next section](#deploy-our-sample-application) where we deploy an application to demonstrate the failover.
-{{< /notice >}}
 
 ### Create the certificates and secrets for mTLS
 
@@ -45,8 +40,8 @@ Once the certificates have been generated, we can place them in the cluster as S
 
 ```
 # Set the name of the local and remote cluster contexts
-REMOTE_CLUSTER_CONTEXT=kind-remote
-LOCAL_CLUSTER_CONTEXT=kind-local
+REMOTE_CLUSTER_CONTEXT=gloo-fed-2
+LOCAL_CLUSTER_CONTEXT=gloo-fed
 
 # Set context to remote cluster
 kubectl config use-context $REMOTE_CLUSTER_CONTEXT
@@ -69,9 +64,12 @@ In order to use a Gloo Instance as a failover target it first needs to be config
 
 The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary gloo instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by Gloo Federation, but the certificates are the ones created in the previous step.
 
-The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, but in the local KinD setup it needs to be a NodePort service on the specified port. Gloo Federation will automatically discover all external addresses for any Gloo instance.
+The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. Gloo Federation will automatically discover all external addresses for any Gloo instance.
 
 ```yaml
+# Set context to remote cluster
+kubectl config use-context $REMOTE_CLUSTER_CONTEXT
+
 # Apply failover gateway and service
 kubectl apply -f - <<EOF
 apiVersion: gateway.solo.io/v1
@@ -115,26 +113,28 @@ spec:
    gateway-proxy: live
    gateway-proxy-id: gateway-proxy
  sessionAffinity: None
- type: NodePort
+ type: LoadBalancer
 EOF
+```
+
+You can validate the service and gateway have deployed successfully using the following commands:
+
+```
+kubectl get gateway -n gloo-system failover-gateway
+kubectl get svc -n gloo-system failover
 ```
 
 ## Deploy our Sample Application
 
 In order to demonstrate Gloo multi cluster failover features we will create a relatively contrived example which can very easily show off the power of the feature.
 
-This example assumes that the `glooctl federation demo init` command has already been run, and the two kind clusters it produces are already configured.
+This application consists of two simple workloads which just return a color. The workload in the local cluster returns the color "blue", and the workload in the remote cluster returns the color "green". Each workload also has a `healthcheck` endpoint running at "/health" which can be manually made to fail for demonstration purposes.
 
-This application consists of two simple workloads which just return a color. The workload in the local cluster returns the color “blue”, and the workload in the remote cluster returns the color “green”. Each workload also has a healthcheck endpoint running at “/health” which can be manually made to fail for demonstration purposes.
+The first step is to deploy the application to each cluster by running the following commands.
 
-The first step is too apply the application by running the two following commands:
-
-Create Local Color App (BLUE)
+Create Local Color App (BLUE):
 
 ```shell script
-# Set the LOCAL_CLUSTER_CONTEXT value if you haven't already
-LOCAL_CLUSTER_CONTEXT=kind-local
-
 kubectl apply --context $LOCAL_CLUSTER_CONTEXT -f - <<EOF
 apiVersion: v1
 kind: Service
@@ -271,9 +271,6 @@ EOF
 
 
 ```shell script
-# Set the REMOTE_CLUSTER_CONTEXT value if you haven't already
-REMOTE_CLUSTER_CONTEXT=kind-remote
-
 kubectl apply --context $REMOTE_CLUSTER_CONTEXT -f - <<EOF
 apiVersion: v1
 kind: Service
@@ -429,7 +426,7 @@ spec:
 "
 ```
 
-Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Federation resource which will dynamically configure failover from one root Upstream, to a set prioritized Upstreams.
+Once health checking has been enabled we can go ahead and actually create our FailoverScheme resource. This is the Gloo Federation resource which will dynamically configure failover from one root Upstream, to a set of prioritized Upstreams.
 
 We will create the FailoverScheme resource in the `gloo-fed` namespace:
 
@@ -443,19 +440,19 @@ metadata:
 spec:
  failoverGroups:
  - priorityGroup:
-   - cluster: $REMOTE_CLUSTER_CONTEXT
+   - cluster: remote
      upstreams:
      - name: default-service-green-10000
        namespace: gloo-system
  primary:
-   clusterName: $LOCAL_CLUSTER_CONTEXT
+   clusterName: local
    name: default-service-blue-10000
    namespace: gloo-system
 EOF
 ```
 
 
-Create simple route
+Now we will add a simple route to the Blue Upstream in our local cluster.
 
 ```shell script
 # Make sure the context is set to the local cluster
@@ -466,51 +463,63 @@ glooctl add route \
      --dest-name default-service-blue-10000
 ```
 
+At this point we have the Blue Upstream published through the Envoy proxy in our local cluster. The Green Upstream in the remote cluster has been configured as a failover option. In the next section we will validate the Blue Upstream is responding, simulate a health check failure, and verify the failover works properly.
 
 ## Test That Everything Works
 
-Test that local endpoint is in use while healthy
+First we will test that the Blue Upstream is responding to requests on the Envoy proxy.
 
 ```shell script
-curl -v http://localhost:8080
+# Get the proxy URL
+PROXY_URL=$(glooctl proxy url)
+curl -v $PROXY_URL
+```
 
-*   Trying ::1...
+You should receive a response similar to the output below. Note the message is "blue-pod".
+
+```
+* Rebuilt URL to: http://52.234.106.206:80/
+*   Trying 52.234.106.206...
 * TCP_NODELAY set
-* Connected to localhost (::1) port 8080 (#0)
+* Connected to 52.234.106.206 (52.234.106.206) port 80 (#0)
 > GET / HTTP/1.1
-> Host: localhost:8080
-> User-Agent: curl/7.64.1
+> Host: 52.234.106.206
+> User-Agent: curl/7.58.0
 > Accept: */*
 >
-Handling connection for 8080
 < HTTP/1.1 200 OK
 < x-app-name: http-echo
 < x-app-version: 0.2.3
-< date: Wed, 08 Jul 2020 17:35:53 GMT
+< date: Tue, 21 Jul 2020 18:24:29 GMT
 < content-length: 11
 < content-type: text/plain; charset=utf-8
-< x-envoy-upstream-service-time: 1
+< x-envoy-upstream-service-time: 2
 < x-envoy-upstream-healthchecked-cluster: ingress
 < server: envoy
 <
 "blue-pod"
-* Connection #0 to host localhost left intact
-* Closing connection 0
+* Connection #0 to host 52.234.106.206 left intact
 ```
 
-
-Fail Health Checks in the local service to begin failing over to remote service
+The Blue Upstream is responding to requests. Now we will force the Blue Upstream to fail its health check, thereby forcing a failover to the Green Upstream. We will do that by making a POST request on port 19000 to the `echo-blue` deployment.
 
 ```shell script
-# optionally run in bakground using &
-kubectl port-forward deploy/echo-blue 19000
+# optionally run in background using &
+kubectl port-forward deploy/echo-blue 19000 &
 # switch to new shell
 curl -v -X POST  http://localhost:19000/healthcheck/fail
 ```
 
-Test gloo route again to ensure it is now serving failover endpoint
+The response should be a 200 OK from the healthcheck endpoint.
+
+Now we will test the route again to make sure it is serving content from the Green Upstream instead.
+
 ```shell script
-$ curl -v http://localhost:8080
+curl -v $PROXY_URL
+```
+
+You should see the following output. Note the message is "green-pod" instead of "blue-pod" now.
+```
 *   Trying ::1...
 * TCP_NODELAY set
 * Connected to localhost (::1) port 8080 (#0)
@@ -535,5 +544,38 @@ Handling connection for 8080
 * Closing connection 0
 ```
 
+You can switch between the two services by enabling and disabling the Blue Upstream service using the following commands:
+
+```
+# Disable blue upstream
+curl -v -X POST  http://localhost:19000/healthcheck/fail
+
+# Enable blue upstream
+curl -v -X POST  http://localhost:19000/healthcheck/ok
+```
+
 ## Cleanup
-TODO
+
+You may want to clean up the resources deployed during this guide. Run the following commands to remove the resources:
+
+```
+# Remove the FailoverScheme
+kubectl delete failoverscheme -n gloo-fed failover-scheme --context $LOCAL_CLUSTER_CONTEXT
+
+# Remove the Blue Deployment
+kubectl delete deployment echo-blue --context $LOCAL_CLUSTER_CONTEXT
+kubectl delete svc service-blue --context $LOCAL_CLUSTER_CONTEXT
+
+# Remove the Green Deployment
+kubectl delete deployment echo-green --context $REMOTE_CLUSTER_CONTEXT
+kubectl delete svc service-green --context $REMOTE_CLUSTER_CONTEXT
+
+# Remove the Failover Gateway
+kubectl delete -n gloo-system service/failover --context $REMOTE_CLUSTER_CONTEXT
+kubectl delete gateway -n gloo-system failover-gateway --context $REMOTE_CLUSTER_CONTEXT
+
+# Remove the secrets
+kubectl delete secret tls --name failover-downstream --context $REMOTE_CLUSTER_CONTEXT
+kubectl delete secret tls --name failover-upstream --context $LOCAL_CLUSTER_CONTEXT
+
+```
