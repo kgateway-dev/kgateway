@@ -21,7 +21,7 @@ spec:
 {{- if $spec.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}
-# port order matters due to this issue: https://github.com/solo-io/gloo/issues/2571
+  # port order matters due to this issue: https://github.com/solo-io/gloo/issues/2571
   ports:
 {{- if $spec.service.httpsFirst }}
   - port: {{ $spec.service.httpsPort }}
