@@ -23,7 +23,7 @@ Gloo Federation is composed of some core concepts and features detailed below.
 
 ### Admin Cluster
 
-Gloo Federation is composed of Kubernetes Custom Resource Definitions (CRDs) and a controller pod that watches the custom resources and executes actions. The controller deployment and CRDs are created in an administrative cluster. This cluster could be a separate Kubernetes cluster that is not running Gloo, or Gloo Federation could be deployed on an existing cluster running one or more Gloo instances.
+Gloo Federation is composed of Kubernetes Custom Resource Definitions (CRDs) and a controller pod that watches the custom resources and executes actions. The controller deployment and CRDs are created in an administrative cluster and dedicated namespace. This cluster could be a separate Kubernetes cluster that is not running Gloo, or Gloo Federation could be deployed on an existing cluster running one or more Gloo instances.
 
 ### Cluster Registration and Gloo Discovery
 
@@ -33,7 +33,7 @@ Gloo Federation is capable of discovering Gloo instances on any clusters that ha
 
 Gloo Federation provides the ability to push configuration down to multiple Gloo instances. This is done by creating a custom resource of the proper federated resource type and specifying which clusters and namespaces should have that configuration applied. Adding a new federated resource can be done either through glooctl or kubectl.
 
-The federated configuration data is stored in the following CRDs:
+The federated configuration data is stored in the following Custom Resource types:
  - federatedauthconfigs.fed.gloo.solo.io
  - federatedgateways.fed.gateway.solo.io
  - federatedroutetables.fed.gateway.solo.io
@@ -48,4 +48,4 @@ Gloo Federation also includes a role-based access control framework to enable gr
 
 ## Next Steps
 
-Now that you have an idea of how Gloo Federation is structured and the features it enables, we recommend taking it for a test drive using our Gloo Federation getting started guide.
+Now that you have an idea of how Gloo Federation is structured and the features it enables, we recommend taking it for a test drive using our [Gloo Federation getting started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}).

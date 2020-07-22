@@ -10,13 +10,15 @@ When an Upstream fails or becomes unhealthy, Gloo Federation can automatically f
 
 To successfully follow this Service Failover guide, you will need the following software available and configured on your system.
 
-Kubectl - Used to execute commands against the clusters
-Glooctl - Used to register the Kubernetes clusters with Gloo Federation
-openssl  - Generates certificates to enable mTLS between multiple Gloo instances
+* Kubectl - Used to execute commands against the clusters
+* Glooctl - Used to register the Kubernetes clusters with Gloo Federation
+* openssl  - Generates certificates to enable mTLS between multiple Gloo instances
 
-You will also need two Kubernetes clusters running Gloo Enterprise and an installation of Gloo Federation with both clusters registered. You can use *kind* to deploy local clusters on Docker, or select one of many other deployment options for Gloo on Kubernetes. If you wish to quickly spin up the entire environment and validate the process, you can jump into our Getting Started guide. It builds two clusters using *kind* and takes care of setting up the entire Gloo Federation and Service Failover environment.
+You will also need two Kubernetes clusters running Gloo Enterprise and an installation of Gloo Federation with both clusters registered. You can use [kind](https://kind.sigs.k8s.io/) to deploy local clusters on Docker, or select one of [many other deployment options]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) for Gloo on Kubernetes. 
 
-For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Federation in addition to Gloo Enterprise. The context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
+If you wish to quickly spin up the entire environment and validate the process, you can jump into our [Getting Started guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/getting_started/" %}}). It builds two clusters using kind and takes care of setting up the entire Gloo Federation and Service Failover environment.
+
+For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Federation in addition to Gloo Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
 ## Configure Gloo for Failover
 
@@ -36,7 +38,7 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout mtls.key -out mtls.crt -subj "/CN=solo.io"
 ```
 
-Once the certificates have been generated, we can place them in the cluster as Secrets so that Gloo can access them.
+Once the certificates have been generated, we can place them in the cluster as secrets so that Gloo can access them.
 
 ```
 # Set the name of the local and remote cluster contexts
@@ -126,7 +128,7 @@ kubectl get svc -n gloo-system failover
 
 ## Deploy our Sample Application
 
-In order to demonstrate Gloo multi cluster failover features we will create a relatively contrived example which can very easily show off the power of the feature.
+To demonstrate Gloo multi-cluster failover feature, we will create a relatively contrived example which can easily show off the power of the feature.
 
 This application consists of two simple workloads which just return a color. The workload in the local cluster returns the color "blue", and the workload in the remote cluster returns the color "green". Each workload also has a `healthcheck` endpoint running at "/health" which can be manually made to fail for demonstration purposes.
 
@@ -269,6 +271,7 @@ spec:
 EOF
 ```
 
+Create Remote Color App (GREEN):
 
 ```shell script
 kubectl apply --context $REMOTE_CLUSTER_CONTEXT -f - <<EOF
@@ -409,7 +412,7 @@ Now that we have our two applications up and running, we can configure health ch
 
 ## Configure Failover Through Gloo-Fed
 
-A major part of failover is health checking. In order for Envoy to determine the state of the primary of failover endpoints, health checking must be enabled. In this section we will specify a health check for the Blue instance of the application and create the failover configuration.
+A major part of failover is health checking. In order for Envoy to determine the state of the primary and failover endpoints, health checking must be enabled. In this section we will specify a health check for the Blue instance of the application and create the failover configuration.
 
 First, let's add health checks to the blue Upstream:
 
@@ -506,7 +509,7 @@ The Blue Upstream is responding to requests. Now we will force the Blue Upstream
 ```shell script
 # run in background using &
 kubectl port-forward deploy/echo-blue 19000 &
-# switch to new shell
+
 curl -v -X POST  http://localhost:19000/healthcheck/fail
 ```
 
@@ -585,4 +588,4 @@ kubectl delete secret tls --name failover-upstream --context $LOCAL_CLUSTER_CONT
 
 ## Next Steps
 
-Gloo Federation enables configurations to be applied across multiple clusters. You can learn more by following the Federation Configuration guide. We also recommend reading up about some of the concepts used by Gloo Federation.
+Gloo Federation enables configurations to be applied across multiple clusters. You can learn more by following the [Federation Configuration guide]({{% versioned_link_path fromRoot="/guides/gloo_federation/federated_configuration/" %}}). We also recommend reading up about some of the [concepts]({{% versioned_link_path fromRoot="/introduction/gloo_federation/" %}}) used by Gloo Federation.
