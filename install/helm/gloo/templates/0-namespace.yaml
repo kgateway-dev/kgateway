@@ -5,6 +5,8 @@ metadata:
   name: {{ .Release.Namespace }}
   labels:
     app: gloo
+    # allows namespace scoping for webhooks
+    namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-install
 {{- end}}
