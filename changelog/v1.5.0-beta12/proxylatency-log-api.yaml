@@ -1,0 +1,10 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Add API for emitting proxy latency timings to access log via dynamic metadata.
+    issueLink: https://github.com/solo-io/gloo/issues/3392
+    resolvesIssue: false
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: v1.15.0-patch1
+    description: Update to latest envoy-gloo, that's based off of envoy upstream 1.15.0.
