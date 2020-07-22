@@ -16,18 +16,13 @@ import (
 	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
-	"github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1/types"
 	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/api/meta"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
-
-	glooinstancev1 "github.com/solo-io/solo-apis/pkg/api/fed.solo.io/v1"
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -543,66 +538,6 @@ func checkSecrets(namespaces []string) (bool, error) {
 	}
 	fmt.Printf("OK\n")
 	return true, nil
-}
-
-func CheckMulticlusterResources(opts *options.Options) {
-	cfg, err := config.GetConfigWithContext("")
-	if err != nil {
-		fmt.Printf("Warning: could not get kubernetes config to check multicluster resources: %v. "+
-			"Skipping Gloo Instance check.\n", err)
-		return
-	}
-	instanceClient, err := glooinstancev1.NewClientsetFromConfig(cfg)
-	if err != nil {
-		fmt.Printf("Warning: could not get Gloo Instance client: %v. Skipping Gloo Instance check.\n", err)
-		return
-	}
-	glooInstanceList, err := instanceClient.GlooInstances().ListGlooInstance(opts.Top.Ctx)
-	if err != nil {
-		if meta.IsNoMatchError(err) {
-			fmt.Print("Skipping Gloo Instance check -- Gloo Federation not detected\n")
-			return
-		}
-		fmt.Printf("Warning: could not list Gloo Instances: %v\n", err)
-		return
-	}
-	glooInstances := glooInstanceList.Items
-	if len(glooInstances) < 0 { // No Gloo Instance CRD exist, meaning that none are registered.
-		return
-	}
-	fmt.Printf("\nDetected Gloo Federation!\n")
-	for _, glooInstance := range glooInstanceList.Items {
-		fmt.Printf("\nChecking Gloo Instance %s... ", glooInstance.GetName())
-		printGlooInstanceCheckSummary("deployments", glooInstance.Spec.GetCheck().GetDeployments())
-		printGlooInstanceCheckSummary("pods", glooInstance.Spec.GetCheck().GetPods())
-		printGlooInstanceCheckSummary("settings", glooInstance.Spec.GetCheck().GetSettings())
-		printGlooInstanceCheckSummary("upstreams", glooInstance.Spec.GetCheck().GetUpstreams())
-		printGlooInstanceCheckSummary("upstream groups", glooInstance.Spec.GetCheck().GetUpstreamGroups())
-		printGlooInstanceCheckSummary("auth configs", glooInstance.Spec.GetCheck().GetAuthConfigs())
-		printGlooInstanceCheckSummary("virtual services", glooInstance.Spec.GetCheck().GetVirtualServices())
-		printGlooInstanceCheckSummary("route tables", glooInstance.Spec.GetCheck().GetRouteTables())
-		printGlooInstanceCheckSummary("gateways", glooInstance.Spec.GetCheck().GetGateways())
-		printGlooInstanceCheckSummary("proxies", glooInstance.Spec.GetCheck().GetProxies())
-	}
-}
-
-func printGlooInstanceCheckSummary(resourceType string, resource *types.GlooInstanceSpec_Check_Summary) {
-	fmt.Printf("\nChecking %s... ", resourceType)
-
-	ok := true
-	for _, errReport := range resource.GetErrors() {
-		fmt.Printf("\nFound error in %s %s\n", errReport.GetRef().GetNamespace(), errReport.GetRef().GetName())
-		fmt.Printf("Reason: %s\n", errReport.GetMessage())
-		ok = false
-	}
-	for _, warningReport := range resource.GetWarnings() {
-		fmt.Printf("Found warning in %s %s\n", warningReport.GetRef().GetNamespace(), warningReport.GetRef().GetName())
-		fmt.Printf("Reason: %s\n", warningReport.GetMessage())
-		ok = false
-	}
-	if ok {
-		fmt.Printf("OK")
-	}
 }
 
 func renderMetadata(metadata core.Metadata) string {
