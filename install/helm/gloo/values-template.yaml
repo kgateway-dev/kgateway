@@ -83,7 +83,6 @@ gatewayProxies:
   gatewayProxy:
     # List of custom port to expose in the envoy proxy.
     # Each element follows conventional port syntax (port, targetPort, protocol, name)
-    customPorts: []
     gatewaySettings: {}
     kind:
       deployment:
@@ -99,6 +98,7 @@ gatewayProxies:
       runUnprivileged: true
       disableNetBind: true
     service:
+      customPorts: []
       type: LoadBalancer
       # clusterIP: None
       httpPort: 80
