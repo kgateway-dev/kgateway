@@ -30,6 +30,7 @@ type Opts struct {
 	Secrets           factory.ResourceClientFactory
 	Artifacts         factory.ResourceClientFactory
 	AuthConfigs       factory.ResourceClientFactory
+	RateLimitConfigs  factory.ResourceClientFactory
 	KubeClient        kubernetes.Interface
 	Consul            Consul
 	WatchOpts         clients.WatchOpts

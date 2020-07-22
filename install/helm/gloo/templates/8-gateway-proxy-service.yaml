@@ -48,6 +48,15 @@ spec:
     nodePort: {{ $spec.service.httpsNodePort }}
     {{- end}}
 {{- end }}
+{{- if $spec.failover }}
+{{- if $spec.failover.enabled }}
+  - port: {{ $spec.failover.port }}
+    targetPort: {{ $spec.failover.port }}
+    protocol: TCP
+    name: failover
+    nodePort: {{ $spec.failover.nodePort }}
+{{- end }} # if failover.enabled
+{{- end }} # if failover
 {{- if $spec.service.customPorts }}
 {{ toYaml $spec.service.customPorts | indent 2 }}
 {{- end}}

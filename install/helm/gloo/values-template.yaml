@@ -43,6 +43,7 @@ gloo:
     image:
       repository: gloo
     xdsPort: 9977
+    restXdsPort: 9976
     validationPort: 9988
     replicas: 1
     runAsUser: 10101
@@ -84,6 +85,10 @@ gatewayProxies:
     # List of custom port to expose in the envoy proxy.
     # Each element follows conventional port syntax (port, targetPort, protocol, name)
     gatewaySettings: {}
+    failover:
+      enabled: false
+      port: 15443
+      secretName: failover-downstream
     kind:
       deployment:
         replicas: 1

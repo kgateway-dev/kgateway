@@ -30,7 +30,7 @@ var _ = Describe("Kube2e: helm", func() {
 		By("should have upgraded to the gloo version being tested")
 		Expect(GetGlooServerVersion(testHelper.InstallNamespace)).To(Equal(testHelper.ChartVersion()))
 
-		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "90s")
+		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "180s")
 	})
 
 	It("uses helm to update the settings without errors", func() {
@@ -58,7 +58,7 @@ var _ = Describe("Kube2e: helm", func() {
 		Expect(err).To(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(400)))
 
-		kube2e.GlooctlCheckEventuallyHealthy(testHelper, "90s")
+		kube2e.GlooctlCheckEventuallyHealthy(1, testHelper, "90s")
 	})
 
 })

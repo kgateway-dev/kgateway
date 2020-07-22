@@ -4,13 +4,13 @@ import (
 	"context"
 	"sort"
 
-	"github.com/rotisserie/eris"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
+	rltypes "github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
+	"github.com/rotisserie/eris"
 	printTypes "github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
+	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -28,6 +28,7 @@ type Options struct {
 	Get       Get
 	Add       Add
 	Remove    Remove
+	Cluster   Cluster
 }
 
 type Top struct {
@@ -44,7 +45,7 @@ type Top struct {
 	Consul                 Consul // use consul as config backend
 }
 
-type Install struct {
+type HelmInstall struct {
 	DryRun                  bool
 	CreateNamespace         bool
 	Namespace               string
@@ -52,9 +53,18 @@ type Install struct {
 	HelmChartValueFileNames []string
 	HelmReleaseName         string
 	Version                 string
-	Knative                 Knative
 	LicenseKey              string
-	WithUi                  bool
+}
+
+type Install struct {
+	HelmInstall
+	Federation Federation
+	Knative    Knative
+	WithUi     bool
+}
+
+type Federation struct {
+	HelmInstall
 }
 
 type Knative struct {
@@ -66,12 +76,17 @@ type Knative struct {
 	InstallKnativeEventingVersion string `json:"eventingVersion"`
 }
 
-type Uninstall struct {
+type HelmUninstall struct {
 	Namespace       string
 	HelmReleaseName string
 	DeleteCrds      bool
 	DeleteNamespace bool
 	DeleteAll       bool
+}
+
+type Uninstall struct {
+	GlooUninstall HelmUninstall
+	FedUninstall  HelmUninstall
 }
 
 type Proxy struct {
@@ -351,7 +366,7 @@ type ExtraOptions struct {
 
 var RateLimit_TimeUnits = func() []string {
 	var vals []string
-	for _, name := range ratelimit.RateLimit_Unit_name {
+	for _, name := range rltypes.RateLimit_Unit_name {
 		vals = append(vals, name)
 	}
 	sort.Strings(vals)
@@ -395,4 +410,22 @@ type OpaAuth struct {
 
 	Query   string
 	Modules []string
+}
+
+type Cluster struct {
+	FederationNamespace string
+	Register            Register
+	Unregister          Unregister
+}
+
+type Register struct {
+	RemoteKubeConfig           string
+	RemoteContext              string
+	ClusterName                string
+	LocalClusterDomainOverride string
+	RemoteNamespace            string
+}
+
+type Unregister struct {
+	ClusterName string
 }

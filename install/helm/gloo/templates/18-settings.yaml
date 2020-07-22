@@ -11,8 +11,10 @@ spec:
   gloo:
 {{- if .Values.global.glooMtls.enabled }}
     xdsBindAddr: "127.0.0.1:9999"
+    restXdsBindAddr: "127.0.0.1:9998"
 {{- else }}
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
+    restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
 {{- end }}
 {{- if .Values.settings.invalidConfigPolicy }}
     invalidConfigPolicy:

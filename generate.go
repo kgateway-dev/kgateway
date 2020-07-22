@@ -12,6 +12,18 @@ import (
 func main() {
 	log.Printf("starting generate")
 
+	protoImports := sk_anyvendor.CreateDefaultMatchOptions(
+		[]string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
+	)
+	// Import rate limit API
+	protoImports.External["github.com/solo-io/solo-apis"] = []string{
+		"api/**/*.proto",
+	}
+	// Import gloo instance API
+	protoImports.External["github.com/solo-io/skv2"] = []string{
+		"api/**/**/*.proto",
+	}
+
 	generateOptions := cmd.GenerateOptions{
 		SkipGenMocks: true,
 		CustomCompileProtos: []string{
@@ -33,9 +45,7 @@ func main() {
 				ApiDir:  "reference/api",
 			},
 		},
-		ExternalImports: sk_anyvendor.CreateDefaultMatchOptions(
-			[]string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
-		),
+		ExternalImports: protoImports,
 	}
 	if err := cmd.Generate(generateOptions); err != nil {
 		log.Fatalf("generate failed!: %v", err)

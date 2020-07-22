@@ -24,6 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/listener"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/loadbalancer"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/pipe"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/protocoloptions"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/rest"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/shadowing"
@@ -80,6 +81,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		buffer.NewPlugin(),
 		listener.NewPlugin(),
 		virtualhost.NewPlugin(),
+		protocoloptions.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))
