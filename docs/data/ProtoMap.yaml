@@ -489,13 +489,13 @@ apis:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/filters/http/wasm/v3/wasm.proto.sk/#Wasm
     package: envoy.extensions.filters.http.wasm.v3
   envoy.extensions.wasm.v3.PluginConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#PluginConfig
+    relativepath: reference/api/envoy/extensions/wasm/v3/wasm.proto.sk/#PluginConfig
     package: envoy.extensions.wasm.v3
   envoy.extensions.wasm.v3.VmConfig:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#VmConfig
+    relativepath: reference/api/envoy/extensions/wasm/v3/wasm.proto.sk/#VmConfig
     package: envoy.extensions.wasm.v3
   envoy.extensions.wasm.v3.WasmService:
-    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
+    relativepath: reference/api/envoy/extensions/wasm/v3/wasm.proto.sk/#WasmService
     package: envoy.extensions.wasm.v3
   envoy.type.DoubleRange:
     relativepath: reference/api/envoy/type/range.proto.sk/#DoubleRange
