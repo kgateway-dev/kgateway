@@ -547,18 +547,20 @@ func checkSecrets(namespaces []string) (bool, error) {
 func CheckMulticlusterResources(opts *options.Options) {
 	cfg, err := config.GetConfigWithContext("")
 	if err != nil {
+		fmt.Printf("Warning: could not get kubernetes config\n")
 		return
 	}
 	instanceClient, err := glooinstancev1.NewClientsetFromConfig(cfg)
-	if err != nil {
+	if err != nil { // The Gloo Instance CRDs don't exist, meaning that Gloo Federation isn't installed.
 		return
 	}
 	glooInstanceList, err := instanceClient.GlooInstances().ListGlooInstance(opts.Top.Ctx)
 	if err != nil {
+		fmt.Printf("Warning: could not list Gloo Instances\n")
 		return
 	}
 	glooInstances := glooInstanceList.Items
-	if len(glooInstances) < 0 {
+	if len(glooInstances) < 0 { // No Gloo Instance CRD exist, meaning that none are registered.
 		return
 	}
 	fmt.Printf("\nFound multicluster Gloo resources!\n")
@@ -579,15 +581,16 @@ func CheckMulticlusterResources(opts *options.Options) {
 
 func printGlooInstanceCheckSummary(resourceType string, resource *types.GlooInstanceSpec_Check_Summary) {
 	fmt.Printf("\nChecking %s... ", resourceType)
+
 	ok := true
 	for _, errReport := range resource.GetErrors() {
-		fmt.Printf("\nFound error in %s.%s\n", errReport.GetRef().GetName(), errReport.GetRef().GetNamespace())
-		fmt.Printf("%s\n", errReport.GetMessage())
+		fmt.Printf("\nFound error in %s %s\n", errReport.GetRef().GetNamespace(), errReport.GetRef().GetName())
+		fmt.Printf("Reason: %s\n", errReport.GetMessage())
 		ok = false
 	}
 	for _, warningReport := range resource.GetWarnings() {
-		fmt.Printf("\nFound warning in %s.%s\n", warningReport.GetRef().GetName(), warningReport.GetRef().GetNamespace())
-		fmt.Printf("%s\n\n", warningReport.GetMessage())
+		fmt.Printf("Found warning in %s %s\n", warningReport.GetRef().GetNamespace(), warningReport.GetRef().GetName())
+		fmt.Printf("Reason: %s\n", warningReport.GetMessage())
 		ok = false
 	}
 	if ok {
