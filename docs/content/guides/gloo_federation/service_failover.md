@@ -504,7 +504,7 @@ You should receive a response similar to the output below. Note the message is "
 The Blue Upstream is responding to requests. Now we will force the Blue Upstream to fail its health check, thereby forcing a failover to the Green Upstream. We will do that by making a POST request on port 19000 to the `echo-blue` deployment.
 
 ```shell script
-# optionally run in background using &
+# run in background using &
 kubectl port-forward deploy/echo-blue 19000 &
 # switch to new shell
 curl -v -X POST  http://localhost:19000/healthcheck/fail
@@ -520,29 +520,32 @@ curl -v $PROXY_URL
 
 You should see the following output. Note the message is "green-pod" instead of "blue-pod" now.
 ```
-*   Trying ::1...
+* Rebuilt URL to: http://52.154.156.176:80/
+*   Trying 52.154.156.176...
 * TCP_NODELAY set
-* Connected to localhost (::1) port 8080 (#0)
+* Connected to 52.154.156.176 (52.154.156.176) port 80 (#0)
 > GET / HTTP/1.1
-> Host: localhost:8080
-> User-Agent: curl/7.64.1
+> Host: 52.154.156.176
+> User-Agent: curl/7.58.0
 > Accept: */*
->
-Handling connection for 8080
+> 
 < HTTP/1.1 200 OK
 < x-app-name: http-echo
 < x-app-version: 0.2.3
-< date: Wed, 08 Jul 2020 18:19:20 GMT
+< date: Wed, 22 Jul 2020 00:54:39 GMT
 < content-length: 12
 < content-type: text/plain; charset=utf-8
-< x-envoy-upstream-service-time: 1
+< x-envoy-upstream-service-time: 4
 < x-envoy-upstream-healthchecked-cluster: ingress
 < server: envoy
 <
 "green-pod"
-* Connection #0 to host localhost left intact
-* Closing connection 0
+* Connection #0 to host 52.154.156.176 left intact
 ```
+
+{{< notice note >}}
+If you receive a 503 error, it may be caused by a known issue. Delete the echo-blue pod and wait for it to be recreated. The "blue-pod" should be active again. Repeat the steps to fail the healthcheck service on the echo-blue pod and the failover will occur. This only needs to be done once.
+{{< /notice >}}
 
 You can switch between the two services by enabling and disabling the Blue Upstream service using the following commands:
 
@@ -579,3 +582,7 @@ kubectl delete secret tls --name failover-downstream --context $REMOTE_CLUSTER_C
 kubectl delete secret tls --name failover-upstream --context $LOCAL_CLUSTER_CONTEXT
 
 ```
+
+## Next Steps
+
+Gloo Federation enables configurations to be applied across multiple clusters. You can learn more by following the Federation Configuration guide. We also recommend reading up about some of the concepts used by Gloo Federation.
