@@ -1,0 +1,12 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3385
+  resolvesIssue: false
+  description: >
+    Define the API to allow adding arbitrary API key secret data to the headers of successfully authorized requests.
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3390
+  resolvesIssue: false
+  description: >
+    Define the API to allow users to change the name of the header that the Gloo Enterprise external auth server
+    inspects for API keys.
