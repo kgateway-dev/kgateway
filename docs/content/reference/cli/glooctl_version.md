@@ -19,7 +19,7 @@ glooctl version [flags]
 ```
   -h, --help                help for version
   -n, --namespace string    namespace for reading or writing resources (default "gloo-system")
-  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default table)
+  -o, --output OutputType   output format: (yaml, json, table, kube-yaml, wide) (default json)
 ```
 
 ### Options inherited from parent commands
