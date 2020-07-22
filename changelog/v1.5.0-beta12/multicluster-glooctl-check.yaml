@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      If `glooctl check` detects multicluster resources, it will check those resources as well.
+    issueLink: https://github.com/solo-io/gloo/issues/3369
+    resolvesIssue: false
