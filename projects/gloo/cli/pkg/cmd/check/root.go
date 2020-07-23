@@ -6,26 +6,23 @@ import (
 	"os"
 	"time"
 
-	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
-	"k8s.io/apimachinery/pkg/api/errors"
-
-	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
-	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
-
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/flagutils"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/helpers"
+	ratelimit "github.com/solo-io/gloo/projects/gloo/pkg/api/external/solo/ratelimit"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	rlopts "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/ratelimit"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/go-utils/cliutils"
+	"github.com/solo-io/solo-apis/pkg/api/ratelimit.solo.io/v1alpha1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	"github.com/spf13/cobra"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -52,6 +49,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			} else {
 				fmt.Printf("No problems detected.\n")
 			}
+			CheckMulticlusterResources(opts)
 			return nil
 		},
 	}
@@ -128,7 +126,6 @@ func CheckResources(opts *options.Options) (bool, error) {
 	if !ok || err != nil {
 		return ok, err
 	}
-
 	return true, nil
 }
 

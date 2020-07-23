@@ -88,6 +88,7 @@ require (
 	k8s.io/utils v0.17.1
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef
 	knative.dev/serving v0.10.0
+	sigs.k8s.io/controller-runtime v0.5.6
 	sigs.k8s.io/yaml v1.2.0
 )
 
