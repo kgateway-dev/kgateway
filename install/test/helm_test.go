@@ -1107,6 +1107,22 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("does not disable gateway proxy", func () {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("disables gateway proxy", func () {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
+						})
+						testManifest.Expect(gatewayProxyDeployment.Kind,
+											gatewayProxyDeployment.GetNamespace(),
+											gatewayProxyDeployment.GetName()).To(BeNil())
+					})
 				})
 
 				Context("gateway validation resources", func() {
