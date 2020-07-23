@@ -3,11 +3,11 @@ package transformation_test
 import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	"github.com/envoyproxy/go-control-plane/pkg/conversion"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/route/v3"
 	matcherv3 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type/matcher/v3"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	envoytransformation "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -20,7 +20,7 @@ import (
 var _ = Describe("Plugin", func() {
 	var (
 		p               *Plugin
-		expected *structpb.Struct
+		expected        *structpb.Struct
 		outputTransform *envoytransformation.RouteTransformations
 	)
 
@@ -44,7 +44,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			configStruct, err := conversion.MessageToStruct(t)
+			configStruct, err := conversion.MessageToStruct(outputTransform)
 			Expect(err).NotTo(HaveOccurred())
 
 			expected = configStruct
@@ -92,12 +92,12 @@ var _ = Describe("Plugin", func() {
 	Context("staged transformations", func() {
 		var (
 			inputTransform         *transformation.TransformationStages
-			earlyStageFilterConfig *any.Any
+			earlyStageFilterConfig *structpb.Struct
 		)
 		BeforeEach(func() {
 			p = NewPlugin()
 			var err error
-			earlyStageFilterConfig, err = utils.MessageToAny(&envoytransformation.FilterTransformations{
+			earlyStageFilterConfig, err = conversion.MessageToStruct(&envoytransformation.FilterTransformations{
 				Stage: EarlyStageNumber,
 			})
 			Expect(err).NotTo(HaveOccurred())
@@ -251,7 +251,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-			configStruct, err := utils.MessageToAny(outputTransform)
+			configStruct, err := conversion.MessageToStruct(outputTransform)
 			Expect(err).NotTo(HaveOccurred())
 
 			expected = configStruct
@@ -296,11 +296,11 @@ var _ = Describe("Plugin", func() {
 			filters, err := p.HttpFilters(plugins.Params{}, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(len(filters)).To(Equal(2))
-			value := filters[0].HttpFil()
+			value := filters[0].HttpFilter.GetConfig()
 			Expect(value).To(Equal(earlyStageFilterConfig))
 			// second filter should have no stage, and thus empty config
 			value = filters[1].HttpFilter.GetConfig()
-			Expect(value.GetValue()).To(BeEmpty())
+			Expect(value).To(BeNil())
 		})
 	})
 
