@@ -82,8 +82,6 @@ gateway:
   proxyServiceAccount: {}
 gatewayProxies:
   gatewayProxy:
-    # List of custom port to expose in the envoy proxy.
-    # Each element follows conventional port syntax (port, targetPort, protocol, name)
     gatewaySettings: {}
     failover:
       enabled: false
