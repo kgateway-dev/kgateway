@@ -17,8 +17,11 @@ limitations under the License.
 package tools
 
 import (
+	_ "github.com/cratonica/2goarray"
 	_ "github.com/envoyproxy/protoc-gen-validate"
 	_ "github.com/gogo/protobuf/gogoproto"
+	_ "github.com/golang/mock/mockgen"
 	_ "github.com/solo-io/protoc-gen-ext"
+	_ "golang.org/x/tools/cmd/goimports"
 	_ "k8s.io/code-generator"
 )
