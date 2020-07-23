@@ -24,7 +24,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.3.5
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.3
@@ -51,7 +51,7 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.1.1
 	github.com/sergi/go-diff v1.0.0
-	github.com/solo-io/envoy-operator v0.1.3
+	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
@@ -97,7 +97,6 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	github.com/golang/mock => github.com/golang/mock v1.4.3
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.3
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1

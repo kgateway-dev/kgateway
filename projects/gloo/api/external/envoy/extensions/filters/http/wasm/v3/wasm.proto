@@ -4,7 +4,7 @@ syntax = "proto3";
 
 package envoy.extensions.filters.http.wasm.v3;
 
-import "gloo/projects/gloo/api/external/envoy/extensions/wasm/v3/wasm.proto";
+import "envoy/extensions/wasm/v3/wasm.proto";
 
 import "validate/validate.proto";
 // manually removed udpa annotations and added gogo equal/hash, go_package

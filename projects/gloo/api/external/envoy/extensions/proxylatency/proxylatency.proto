@@ -44,4 +44,7 @@ message ProxyLatency {
     google.protobuf.BoolValue charge_cluster_stat = 3;
     // Charge a stat per listener. If not specified, defaults to true.
     google.protobuf.BoolValue charge_listener_stat = 4;
+
+    // Should we emit request timing to dynamic metadata. defaults to true.
+    google.protobuf.BoolValue emit_dynamic_metadata= 6;
 }
