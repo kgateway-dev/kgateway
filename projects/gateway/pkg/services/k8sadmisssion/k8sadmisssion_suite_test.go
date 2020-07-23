@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestK8sadmisssion(t *testing.T) {
+func TestK8sAdmission(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8sadmisssion Suite")
+	RunSpecs(t, "K8sAdmission Suite")
 }
