@@ -1121,11 +1121,11 @@ var _ = Describe("Helm Test", func() {
 						})
 						// pull proxy service, cast it, then check for custom resources (which should always be the
 						// first element of the Ports array).
-						deployment := testManifest.ExpectCustomResource("Service", namespace, defaults.GatewayProxyName)
-						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
-						structuredDeployment, ok := deploymentObject.(*v1.Service)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						service := testManifest.ExpectCustomResource("Service", namespace, defaults.GatewayProxyName)
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", service))
+						structuredDeployment, ok := serviceObject.(*v1.Service)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", service))
 						customPort := structuredDeployment.Spec.Ports[2]
 						Expect(customPort.Name).To(Equal(testName))
 						Expect(customPort.Protocol).To(Equal(v1.ProtocolTCP))
