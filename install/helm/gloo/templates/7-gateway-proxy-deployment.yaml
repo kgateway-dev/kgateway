@@ -11,6 +11,7 @@
 {{- end }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
+{{- if not $spec.disabled }}
 apiVersion: apps/v1
 {{- if $spec.kind.deployment}}
 kind: Deployment
@@ -250,5 +251,6 @@ spec:
       {{- if $spec.extraVolumeHelper }}
       {{- include $spec.extraVolumeHelper $ | nindent 6 }}
       {{- end }}
+{{- end }}
 {{- end }}
 {{- end }}

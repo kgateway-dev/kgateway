@@ -221,6 +221,7 @@ type GatewayProxy struct {
 	ReadConfig                     bool                         `json:"readConfig" desc:"expose a read-only subset of the envoy admin api"`
 	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
 }
 
 type GatewayProxyGatewaySettings struct {
