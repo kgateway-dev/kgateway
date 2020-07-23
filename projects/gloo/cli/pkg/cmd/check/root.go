@@ -417,7 +417,8 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 
 			// Check references to auth configs
 			isAuthConfigRefValid := func(knownConfigs []string, ref *core.ResourceRef) bool {
-				if !cliutils.Contains(knownConfigs, renderRef(ref)) {
+				// If the virtual service points to a specific, non-existent authconfig, it is not valid.
+				if ref != nil && !cliutils.Contains(knownConfigs, renderRef(ref)) {
 					fmt.Printf("Virtual service references unknown auth config:\n")
 					fmt.Printf("  Virtual service: %s\n", renderMetadata(virtualService.GetMetadata()))
 					fmt.Printf("  Auth Config: %s\n", renderRef(ref))
