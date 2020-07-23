@@ -1107,7 +1107,7 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
-          
+
 					It("can accept custom port values", func() {
 						const testName = "TEST_CUSTOM_PORT"
 						const testPort = int32(1234)
@@ -1133,7 +1133,7 @@ var _ = Describe("Helm Test", func() {
 						Expect(customPort.Port).To(Equal(testPort))
 						Expect(customPort.TargetPort.IntVal).To(Equal(testTargetPort))
 					})
-        
+
 					It("does not disable gateway proxy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
