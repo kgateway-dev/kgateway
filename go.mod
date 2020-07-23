@@ -21,7 +21,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.3
-	github.com/golang/protobuf v1.4.1
+	github.com/golang/protobuf v1.3.3
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.3
@@ -66,9 +66,8 @@ require (
 	golang.org/x/mod v0.2.0
 	golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
+	google.golang.org/genproto v0.0.0-20191115221424-83cc0476cb11
 	google.golang.org/grpc v1.27.0
-	google.golang.org/protobuf v1.25.0
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.2.7
 	helm.sh/helm/v3 v3.1.2
