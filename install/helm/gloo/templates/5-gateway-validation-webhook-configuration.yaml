@@ -66,7 +66,7 @@ webhooks:
     matchExpressions:
       - key: namespace
         operator: In
-        values: ["{{ .Release.Namespace }}"]
+        values: {{ .Values.settings.watchNamespaces }}
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}

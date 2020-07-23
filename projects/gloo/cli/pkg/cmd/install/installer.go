@@ -170,6 +170,9 @@ func (i *installer) createNamespace(namespace string) {
 		if _, err := i.kubeNsClient.Create(&corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: namespace,
+				Labels: map[string]string{
+					"namespace": namespace,
+				},
 			},
 		}); err != nil {
 			fmt.Printf("\nUnable to create namespace %s. Continuing...\n", namespace)
