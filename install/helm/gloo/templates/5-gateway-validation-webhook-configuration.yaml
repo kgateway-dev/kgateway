@@ -22,6 +22,11 @@ webhooks:
     apiGroups: ["gateway.solo.io"]
     apiVersions: ["v1"]
     resources: ["*"]
+  namespaceSelector:
+    matchExpressions:
+      - key: namespace
+        operator: In
+        values: ["{{ .Release.Namespace }}"]
   sideEffects: None
 {{- if .Values.gateway.validation.failurePolicy }}
   failurePolicy: {{ .Values.gateway.validation.failurePolicy }}
