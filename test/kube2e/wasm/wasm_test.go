@@ -104,20 +104,9 @@ var _ = Describe("Kube2e: wasm", func() {
 			}, "15s", "0.5s").Should(Not(HaveOccurred()))
 
 			Eventually(func() error {
-				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "dummy content to hydrate cache")
-				return err
-			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway with wasm config")
-
-			// There's currently an envoy bug where wasm filters not in envoy's cache will never load,
-			// so we write the filter again with a new hash (changed config string) so that envoy can
-			// pick it up from the cache the 2nd time.
-			// This would be fixed by either https://github.com/envoyproxy/envoy-wasm/issues/552
-			// or https://github.com/envoyproxy/envoy-wasm/issues/533 being resolved.
-			time.Sleep(3 * time.Second)
-			Eventually(func() error {
 				_, err := writeWasmFilterToGateway(gatewayClient, defaultGatewayName, "test")
 				return err
-			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway to use cached filter")
+			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway to use wasm filter")
 
 			wasmHeader := "valuefromconfig: test"
 

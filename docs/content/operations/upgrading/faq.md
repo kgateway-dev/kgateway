@@ -1,6 +1,6 @@
 ---
 title: Frequently-Asked Questions
-weight: 4
+weight: 20
 description: Frequently-Asked Questions about our upgrade steps
 ---
 

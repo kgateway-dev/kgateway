@@ -6,9 +6,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.3.1
+      uses: styfle/cancel-workflow-action@0.4.1
       with:
-        workflow_id: 1442930
         access_token: ${{ github.token }}
     - name: Set up Go 1.14
       uses: actions/setup-go@v1
@@ -37,13 +36,11 @@ jobs:
     runs-on: ubuntu-18.04
     strategy:
       matrix:
-        # No helm right now, https://github.com/solo-io/gloo/issues/3359
-        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'wasm']
+        kube-e2e-test-type: ['gateway', 'ingress', 'knative', 'helm', 'wasm']
     steps:
     - name: Cancel Previous Actions
-      uses: styfle/cancel-workflow-action@0.3.1
+      uses: styfle/cancel-workflow-action@0.4.1
       with:
-        workflow_id: 1442930
         access_token: ${{ github.token }}
     - name: Set up Go 1.14
       uses: actions/setup-go@v1

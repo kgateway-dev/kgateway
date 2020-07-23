@@ -90,6 +90,20 @@ var (
 		Short:   "Delete a Gloo resource",
 	}
 
+	DEMO_COMMAND = cobra.Command{
+		Use:   "demo",
+		Short: "Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)",
+	}
+
+	DEMO_FEDERATION_COMMAND = cobra.Command{
+		Use:   "federation",
+		Short: "Bootstrap a multicluster demo with Gloo Federation.",
+		Long: "Running the Gloo Federation demo setup locally requires 4 tools to be installed and accessible via the " +
+			"PATH: glooctl, kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run " +
+			"the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo. " +
+			"Please note that cluster registration will only work on darwin and linux OS.",
+	}
+
 	GET_COMMAND = cobra.Command{
 		Use:     "get",
 		Aliases: []string{"g"},

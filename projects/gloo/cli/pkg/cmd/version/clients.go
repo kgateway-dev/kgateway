@@ -79,7 +79,7 @@ func (k *kube) Get() ([]*version.ServerVersion, error) {
 	case foundKnative:
 		deploymentType = version.GlooType_Knative
 	case foundIngress:
-		deploymentType = version.GlooType_Knative
+		deploymentType = version.GlooType_Ingress
 	default:
 		deploymentType = version.GlooType_Gateway
 	}

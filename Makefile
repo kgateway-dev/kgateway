@@ -27,7 +27,7 @@ ifeq ($(VERSION), $(WASM_VERSION))
 	WASM_VERSION = wasm-$(VERSION)
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-rc1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-patch1
 ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-wasm-rc1
 
 # The full SHA of the currently checked out commit
@@ -146,7 +146,7 @@ generated-code: $(OUTPUT_DIR)/.generated-code verify-enterprise-protos update-li
 SUBDIRS:=$(shell ls -d -- */ | grep -v vendor)
 $(OUTPUT_DIR)/.generated-code:
 	go mod tidy
-	find * -type f | grep .sk.md | xargs rm
+	find * -type f -name '*.sk.md' -exec rm {} \;
 	rm -rf vendor_any
 	PATH=$(DEPSGOBIN):$$PATH GO111MODULE=on go generate ./...
 	PATH=$(DEPSGOBIN):$$PATH rm docs/content/reference/cli/glooctl*; GO111MODULE=on go run projects/gloo/cli/cmd/docs/main.go

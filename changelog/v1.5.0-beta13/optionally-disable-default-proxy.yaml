@@ -1,0 +1,4 @@
+changelog:
+    - type: HELM
+      issueLink: https://github.com/solo-io/gloo/issues/1756
+      description: Add "Disabled" field to GatewayProxy configuration to allow overriding the existence of Gateway Proxies from previous config files. 
