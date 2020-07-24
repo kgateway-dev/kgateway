@@ -52,18 +52,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			switch resource.(type) {
 			case *v1.Gateway:
 				mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
-					return validation.ProxyReports{
-						{
-							Listeners: nil,
-							Status:    core.Status{},
-							Metadata: core.Metadata{
-								Name:      "unhealthy-proxy",
-								Namespace: "gloo-system",
-							},
-						}: {
-							ListenerReports: nil,
-						},
-					}, fmt.Errorf(errMsg)
+					return nil, fmt.Errorf(errMsg)
 				}
 			case *v1.VirtualService:
 				mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error) {
