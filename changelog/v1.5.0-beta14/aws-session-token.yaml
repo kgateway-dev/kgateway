@@ -1,0 +1,7 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/2373
+  description: >
+    Support temporary AWS credentials for aws lambda discovery and invocation. AWS secrets now support a 3rd optional
+    piece of data which is the AWS_SESSION_TOKEN. The credentials can also be supplied via the Default Credentials
+    Provider.
