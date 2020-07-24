@@ -41,6 +41,8 @@ message AWSLambdaProtocolExtension {
   string access_key = 3;
   // The secret_key for AWS this cluster
   string secret_key = 4;
+  // The session_token for AWS this cluster
+  string session_token = 5;
 }
 
 message AWSLambdaConfig {
