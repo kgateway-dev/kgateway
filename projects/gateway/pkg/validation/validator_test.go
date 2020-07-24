@@ -254,7 +254,7 @@ var _ = Describe("Validator", func() {
 				Expect(proxyReports).To(HaveLen(1))
 			})
 
-			It("accepts the rt and returns proxies each time", func() {
+			It("accepts the vs and returns proxies each time", func() {
 				vc.validateProxy = acceptProxy
 				us := samples.SimpleUpstream()
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
@@ -395,7 +395,7 @@ var _ = Describe("Validator", func() {
 				Expect(proxyReports).To(HaveLen(1))
 			})
 
-			It("accepts the rt and returns proxies each time", func() {
+			It("accepts the gateway and returns proxies each time", func() {
 				vc.validateProxy = acceptProxy
 				us := samples.SimpleUpstream()
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
