@@ -269,6 +269,23 @@ func RunGateway(opts translator.Opts) error {
 
 	validationServerErr := make(chan error, 1)
 	if opts.Validation != nil {
+		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
+		// ReadGatewaysFromAllNamespaces is false
+		controllerNamespace := os.Getenv("POD_NAMESPACE")
+		if !opts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+			foundSelf := false
+			for _, namespace := range opts.WatchNamespaces {
+				if controllerNamespace == namespace {
+					foundSelf = true
+					break
+				}
+			}
+			if !foundSelf {
+				return errors.Errorf("READ_GATEWAYS_FROM_ALL_NAMESPACES was set to false, but non-empty WATCH_NAMESPACES"+
+					" list did not contain this gloo instance's own namespace: %s", controllerNamespace)
+			}
+		}
+
 		validationWebhook, err := k8sadmisssion.NewGatewayValidatingWebhook(
 			k8sadmisssion.NewWebhookConfig(
 				ctx,
@@ -278,6 +295,8 @@ func RunGateway(opts translator.Opts) error {
 				opts.Validation.ValidatingWebhookCertPath,
 				opts.Validation.ValidatingWebhookKeyPath,
 				opts.Validation.AlwaysAcceptResources,
+				opts.ReadGatewaysFromAllNamespaces,
+				controllerNamespace,
 			),
 		)
 		if err != nil {
