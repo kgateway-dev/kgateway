@@ -587,6 +587,37 @@ var _ = Describe("Helm Test", func() {
 
 				})
 
+				Context("gateway-proxy service account", func() {
+					var gatewayProxyServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":              "gloo",
+							"gloo":             "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayProxyServiceAccount = rb.GetServiceAccount()
+
+					})
+
+					It("sets extra annotations", func() {
+						gatewayProxyServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.proxyServiceAccount.extraAnnotations.foo=bar",
+								"gateway.proxyServiceAccount.extraAnnotations.bar=baz",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayProxyServiceAccount)
+					})
+
+				})
+
 				Context("gateway-proxy service", func() {
 					var gatewayProxyService *v1.Service
 
@@ -1561,6 +1592,38 @@ metadata:
 					})
 				})
 			})
+
+			Context("gloo service account", func() {
+				var glooServiceAccount *v1.ServiceAccount
+
+				BeforeEach(func() {
+					saLabels  := map[string]string{
+						"app":              "gloo",
+						"gloo":             "gloo",
+					}
+					rb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      "gloo",
+						Args:      nil,
+						Labels:    saLabels ,
+					}
+					glooServiceAccount = rb.GetServiceAccount()
+
+				})
+
+				It("sets extra annotations", func() {
+					glooServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gloo.serviceAccount.extraAnnotations.foo=bar",
+							"gloo.serviceAccount.extraAnnotations.bar=baz",
+						},
+					})
+					testManifest.ExpectServiceAccount(glooServiceAccount)
+				})
+
+			})
+
 			Context("control plane deployments", func() {
 				updateDeployment := func(deploy *appsv1.Deployment) {
 					deploy.Spec.Selector = &metav1.LabelSelector{
@@ -1585,6 +1648,7 @@ metadata:
 					}
 					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 				}
+
 				Context("gloo deployment", func() {
 					var (
 						glooDeployment *appsv1.Deployment
@@ -1888,6 +1952,37 @@ metadata:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
+				})
+
+				Context("discovery service account", func() {
+					var discoveryServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels  := map[string]string{
+							"app":              "gloo",
+							"gloo":             "discovery",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "discovery",
+							Args:      nil,
+							Labels:    saLabels ,
+						}
+						discoveryServiceAccount = rb.GetServiceAccount()
+
+					})
+
+					It("sets extra annotations", func() {
+						discoveryServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.serviceAccount.extraAnnotations.foo=bar",
+								"discovery.serviceAccount.extraAnnotations.bar=baz",
+							},
+						})
+						testManifest.ExpectServiceAccount(discoveryServiceAccount)
+					})
+
 				})
 
 				Context("discovery deployment", func() {
