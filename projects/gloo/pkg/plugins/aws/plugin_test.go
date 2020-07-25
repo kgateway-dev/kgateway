@@ -104,9 +104,8 @@ var _ = Describe("Plugin", func() {
 				},
 				Kind: &v1.Secret_Aws{
 					Aws: &v1.AwsSecret{
-						AccessKey:    accessKeyValue,
-						SecretKey:    secretKeyValue,
-						SessionToken: sessionTokenValue,
+						AccessKey: accessKeyValue,
+						SecretKey: secretKeyValue,
 					},
 				},
 			}},
@@ -294,6 +293,21 @@ var _ = Describe("Plugin", func() {
 				Namespace: "ns",
 				Name:      "secretref",
 			}
+
+			process()
+
+			Expect(cfg.UseDefaultCredentials.GetValue()).To(BeTrue())
+			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
+			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
+		})
+
+		It("will add the token if it is present on the secret", func() {
+			upstream.GetAws().SecretRef = &core.ResourceRef{
+				Namespace: "ns",
+				Name:      "secretref",
+			}
+			awsSecret := params.Snapshot.Secrets[0].GetAws()
+			awsSecret.SessionToken = sessionTokenValue
 
 			process()
 

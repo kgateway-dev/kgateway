@@ -93,10 +93,10 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	var accessKey, sessionToken, secretKey string
 	if upstreamSpec.Aws.SecretRef == nil && !p.enableCredentialsDiscovey {
-
 		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment")
+	}
 
-	} else if upstreamSpec.Aws.SecretRef != nil {
+	if upstreamSpec.Aws.SecretRef != nil {
 
 		secret, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.SecretRef.Strings())
 		if err != nil {
