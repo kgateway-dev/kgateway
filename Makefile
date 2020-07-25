@@ -229,18 +229,19 @@ build-cli: glooctl-linux-amd64 glooctl-darwin-amd64 glooctl-windows-amd64
 
 GATEWAY_DIR=projects/gateway
 GATEWAY_SOURCES=$(call get_sources,$(GATEWAY_DIR))
+GATEWAY_OUTPUT_DIR=$(OUTPUT_DIR)/$(GATEWAY_DIR)
 
-$(OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
+$(GATEWAY_OUTPUT_DIR)/gateway-linux-amd64: $(GATEWAY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GATEWAY_DIR)/cmd/main.go
 
 .PHONY: gateway
-gateway: $(OUTPUT_DIR)/gateway-linux-amd64
+gateway: $(GATEWAY_OUTPUT_DIR)/gateway-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
+$(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 	cp $< $@
 
-gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gateway
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gateway \
+gateway-docker: $(GATEWAY_OUTPUT_DIR)/gateway-linux-amd64 $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway
+	docker build $(GATEWAY_OUTPUT_DIR) -f $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway \
 		-t $(IMAGE_REPO)/gateway:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -249,18 +250,19 @@ gateway-docker: $(OUTPUT_DIR)/gateway-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gatew
 
 INGRESS_DIR=projects/ingress
 INGRESS_SOURCES=$(call get_sources,$(INGRESS_DIR))
+INGRESS_OUTPUT_DIR=$(OUTPUT_DIR)/$(INGRESS_DIR)
 
-$(OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
+$(INGRESS_OUTPUT_DIR)/ingress-linux-amd64: $(INGRESS_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(INGRESS_DIR)/cmd/main.go
 
 .PHONY: ingress
-ingress: $(OUTPUT_DIR)/ingress-linux-amd64
+ingress: $(INGRESS_OUTPUT_DIR)/ingress-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
+$(INGRESS_OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 	cp $< $@
 
-ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingress
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.ingress \
+ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-amd64 $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress
+	docker build $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
 		-t $(IMAGE_REPO)/ingress:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -269,18 +271,19 @@ ingress-docker: $(OUTPUT_DIR)/ingress-linux-amd64 $(OUTPUT_DIR)/Dockerfile.ingre
 
 ACCESS_LOG_DIR=projects/accesslogger
 ACCESS_LOG_SOURCES=$(call get_sources,$(ACCESS_LOG_DIR))
+ACCESS_LOG_OUTPUT_DIR=$(OUTPUT_DIR)/$(ACCESS_LOG_DIR)
 
-$(OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
+$(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-amd64: $(ACCESS_LOG_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ACCESS_LOG_DIR)/cmd/main.go
 
 .PHONY: access-logger
-access-logger: $(OUTPUT_DIR)/access-logger-linux-amd64
+access-logger: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
+$(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerfile
 	cp $< $@
 
-access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dockerfile.access-logger
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.access-logger \
+access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-amd64 $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger
+	docker build $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
 		-t $(IMAGE_REPO)/access-logger:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -289,18 +292,19 @@ access-logger-docker: $(OUTPUT_DIR)/access-logger-linux-amd64 $(OUTPUT_DIR)/Dock
 
 DISCOVERY_DIR=projects/discovery
 DISCOVERY_SOURCES=$(call get_sources,$(DISCOVERY_DIR))
+DISCOVERY_OUTPUT_DIR=$(OUTPUT_DIR)/$(DISCOVERY_DIR)
 
-$(OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
+$(DISCOVERY_OUTPUT_DIR)/discovery-linux-amd64: $(DISCOVERY_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(DISCOVERY_DIR)/cmd/main.go
 
 .PHONY: discovery
-discovery: $(OUTPUT_DIR)/discovery-linux-amd64
+discovery: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
+$(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 	cp $< $@
 
-discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.discovery
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.discovery \
+discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-amd64 $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery
+	docker build $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
 		-t $(IMAGE_REPO)/discovery:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -309,19 +313,20 @@ discovery-docker: $(OUTPUT_DIR)/discovery-linux-amd64 $(OUTPUT_DIR)/Dockerfile.d
 
 GLOO_DIR=projects/gloo
 GLOO_SOURCES=$(call get_sources,$(GLOO_DIR))
+GLOO_OUTPUT_DIR=$(OUTPUT_DIR)/$(GLOO_DIR)
 
-$(OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
+$(GLOO_OUTPUT_DIR)/gloo-linux-amd64: $(GLOO_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(GLOO_DIR)/cmd/main.go
 
 .PHONY: gloo
-gloo: $(OUTPUT_DIR)/gloo-linux-amd64
+gloo: $(GLOO_OUTPUT_DIR)/gloo-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
-	cp hack/utils/oss_compliance/third_party_licenses.txt $(OUTPUT_DIR)/third_party_licenses.txt
+$(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
+	cp hack/utils/oss_compliance/third_party_licenses.txt $(GLOO_OUTPUT_DIR)/third_party_licenses.txt
 	cp $< $@
 
-gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.gloo \
+gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-amd64 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
+	docker build $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)
 
@@ -331,19 +336,20 @@ gloo-docker: $(OUTPUT_DIR)/gloo-linux-amd64 $(OUTPUT_DIR)/Dockerfile.gloo
 
 SDS_DIR=projects/sds/cmd
 SDS_SOURCES=$(call get_sources,$(SDS_DIR))
+SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 
-$(OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
+$(SDS_OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
 	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
 
 .PHONY: sds
-sds: $(OUTPUT_DIR)/sds-linux-amd64
+sds: $(SDS_OUTPUT_DIR)/sds-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
+$(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
 	cp $< $@
 
 .PHONY: sds-docker
-sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.sds \
+sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-amd64 $(SDS_OUTPUT_DIR)/Dockerfile.sds
+	docker build $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		-t $(IMAGE_REPO)/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -352,22 +358,23 @@ sds-docker: $(OUTPUT_DIR)/sds-linux-amd64 $(OUTPUT_DIR)/Dockerfile.sds
 
 ENVOYINIT_DIR=projects/envoyinit/cmd
 ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
+ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 
-$(OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
+$(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-amd64: $(ENVOYINIT_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
-envoyinit: $(OUTPUT_DIR)/envoyinit-linux-amd64
+envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
+$(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit: $(ENVOYINIT_DIR)/Dockerfile.envoyinit
 	cp $< $@
 
-$(OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
+$(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint.sh
 	cp $< $@
 
 .PHONY: gloo-envoy-wrapper-docker
-gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoyinit $(OUTPUT_DIR)/docker-entrypoint.sh
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoyinit \
+gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-amd64 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
+	docker build $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
@@ -377,19 +384,20 @@ gloo-envoy-wrapper-docker: $(OUTPUT_DIR)/envoyinit-linux-amd64 $(OUTPUT_DIR)/Doc
 
 ENVOY_WASM_DIR=projects/envoyinit/cmd
 ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
+ENVOY_WASM_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOY_WASM_DIR)
 
-$(OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
+$(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-amd64: $(ENVOY_WASM_SOURCES)
 	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
 
 .PHONY: envoywasm
-envoywasm: $(OUTPUT_DIR)/envoywasm-linux-amd64
+envoywasm: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
+$(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
 	cp $< $@
 
 .PHONY: gloo-envoy-wasm-wrapper-docker
-gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR)/Dockerfile.envoywasm
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.envoywasm \
+gloo-envoy-wasm-wrapper-docker: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-amd64 $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm
+	docker build $(ENVOY_WASM_OUTPUT_DIR) -f $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_WASM_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION)
 
@@ -399,19 +407,20 @@ gloo-envoy-wasm-wrapper-docker: $(OUTPUT_DIR)/envoywasm-linux-amd64 $(OUTPUT_DIR
 
 CERTGEN_DIR=jobs/certgen/cmd
 CERTGEN_SOURCES=$(call get_sources,$(CERTGEN_DIR))
+CERTGEN_OUTPUT_DIR=$(OUTPUT_DIR)/$(CERTGEN_DIR)
 
-$(OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
+$(CERTGEN_OUTPUT_DIR)/certgen-linux-amd64: $(CERTGEN_SOURCES)
 	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(CERTGEN_DIR)/main.go
 
 .PHONY: certgen
-certgen: $(OUTPUT_DIR)/certgen-linux-amd64
+certgen: $(CERTGEN_OUTPUT_DIR)/certgen-linux-amd64
 
-$(OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
+$(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 	cp $< $@
 
 .PHONY: certgen-docker
-certgen-docker: $(OUTPUT_DIR)/certgen-linux-amd64 $(OUTPUT_DIR)/Dockerfile.certgen
-	docker build $(OUTPUT_DIR) -f $(OUTPUT_DIR)/Dockerfile.certgen \
+certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-amd64 $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
+	docker build $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
 		-t $(IMAGE_REPO)/certgen:$(VERSION)
 
 #----------------------------------------------------------------------------------
