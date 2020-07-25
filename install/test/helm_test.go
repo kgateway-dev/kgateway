@@ -592,8 +592,8 @@ var _ = Describe("Helm Test", func() {
 
 					BeforeEach(func() {
 						saLabels := map[string]string{
-							"app":              "gloo",
-							"gloo":             "gateway-proxy",
+							"app":  "gloo",
+							"gloo": "gateway-proxy",
 						}
 						rb := ResourceBuilder{
 							Namespace: namespace,
@@ -1597,15 +1597,15 @@ metadata:
 				var glooServiceAccount *v1.ServiceAccount
 
 				BeforeEach(func() {
-					saLabels  := map[string]string{
-						"app":              "gloo",
-						"gloo":             "gloo",
+					saLabels := map[string]string{
+						"app":  "gloo",
+						"gloo": "gloo",
 					}
 					rb := ResourceBuilder{
 						Namespace: namespace,
 						Name:      "gloo",
 						Args:      nil,
-						Labels:    saLabels ,
+						Labels:    saLabels,
 					}
 					glooServiceAccount = rb.GetServiceAccount()
 
@@ -1958,15 +1958,15 @@ metadata:
 					var discoveryServiceAccount *v1.ServiceAccount
 
 					BeforeEach(func() {
-						saLabels  := map[string]string{
-							"app":              "gloo",
-							"gloo":             "discovery",
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "discovery",
 						}
 						rb := ResourceBuilder{
 							Namespace: namespace,
 							Name:      "discovery",
 							Args:      nil,
-							Labels:    saLabels ,
+							Labels:    saLabels,
 						}
 						discoveryServiceAccount = rb.GetServiceAccount()
 
