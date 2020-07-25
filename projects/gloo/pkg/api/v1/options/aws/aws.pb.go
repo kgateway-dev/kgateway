@@ -62,6 +62,7 @@ type UpstreamSpec struct {
 	//  ```
 	//  access_key: <aws access key>
 	//  secret_key: <aws secret key>
+	//  session_token: <(optional) aws session token>
 	//  ```
 	SecretRef *core.ResourceRef `protobuf:"bytes,2,opt,name=secret_ref,json=secretRef,proto3" json:"secret_ref,omitempty"`
 	// The list of Lambda Functions contained within this region.

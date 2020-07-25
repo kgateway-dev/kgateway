@@ -14,8 +14,9 @@ type Secret struct {
 }
 
 type AwsSecret struct {
-	AccessKey string
-	SecretKey string
+	AccessKey    string
+	SecretKey    string
+	SessionToken string
 }
 
 type AzureSecret struct {
