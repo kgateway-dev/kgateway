@@ -2,11 +2,12 @@ package syncer
 
 import (
 	"context"
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 
