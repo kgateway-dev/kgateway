@@ -13,10 +13,15 @@ static_resources:
 
   - name: xds_cluster
     connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: ${GLOO_IP}
-        port_value: 8080
+    load_assignment:
+      cluster_name: xds_cluster
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: ${GLOO_IP}
+                    port_value: 8080
     http2_protocol_options: {}
     type: STATIC
 

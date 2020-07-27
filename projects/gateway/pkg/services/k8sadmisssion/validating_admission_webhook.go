@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	"github.com/solo-io/gloo/pkg/utils"
@@ -149,6 +151,17 @@ type gatewayValidationWebhook struct {
 	webhookNamespace              string
 }
 
+type AdmissionReviewWithProxies struct {
+	v1beta1.AdmissionReview
+	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
+}
+
+// Validation webhook works properly even if extra fields are provided in the response
+type AdmissionResponseWithProxies struct {
+	*v1beta1.AdmissionResponse
+	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
+}
+
 func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) *gatewayValidationWebhook {
 	return &gatewayValidationWebhook{ctx: ctx,
 		validator:                     validator,
@@ -188,23 +201,24 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	}
 
 	var (
-		admissionResponse *v1beta1.AdmissionResponse
+		admissionResponse = &AdmissionResponseWithProxies{}
 		review            v1beta1.AdmissionReview
 	)
 	if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
 		admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
 	} else {
 		logger.Errorf("Can't decode body: %v", err)
-		admissionResponse = &v1beta1.AdmissionResponse{
+		admissionResponse.AdmissionResponse = &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{
 				Message: err.Error(),
 			},
 		}
 	}
 
-	admissionReview := v1beta1.AdmissionReview{}
+	admissionReview := AdmissionReviewWithProxies{}
 	if admissionResponse != nil {
-		admissionReview.Response = admissionResponse
+		admissionReview.Response = admissionResponse.AdmissionResponse
+		admissionReview.Proxies = admissionResponse.Proxies
 		if review.Request != nil {
 			admissionReview.Response.UID = review.Request.UID
 		}
@@ -225,7 +239,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	logger.Infof("responded with review: %s", resp)
 }
 
-func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *v1beta1.AdmissionReview) *v1beta1.AdmissionResponse {
+func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *v1beta1.AdmissionReview) *AdmissionResponseWithProxies {
 	logger := contextutils.LoggerFrom(ctx)
 
 	req := review.Request
@@ -263,8 +277,10 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	// if it's not our namespace, do not validate
 	if !validatingForNamespace {
-		return &v1beta1.AdmissionResponse{
-			Allowed: true,
+		return &AdmissionResponseWithProxies{
+			AdmissionResponse: &v1beta1.AdmissionResponse{
+				Allowed: true,
+			},
 		}
 	}
 
@@ -276,6 +292,10 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	isDelete := req.Operation == v1beta1.Delete
 
 	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
+	var proxies []*gloov1.Proxy
+	for proxy, _ := range proxyReports {
+		proxies = append(proxies, proxy)
+	}
 
 	isUnmarshalErr := validationErr != nil && errors.Is(validationErr, UnmarshalErr)
 
@@ -283,22 +303,25 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	if validationErr == nil || (wh.alwaysAccept && !isUnmarshalErr) {
 		logger.Debug("Succeeded, alwaysAccept: %v validationErr: %v", wh.alwaysAccept, validationErr)
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
-		return &v1beta1.AdmissionResponse{
-			Allowed: true,
+		return &AdmissionResponseWithProxies{
+			AdmissionResponse: &v1beta1.AdmissionResponse{
+				Allowed: true,
+			},
+			Proxies: proxies,
 		}
 	}
 
 	incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesRejected)
 	logger.Errorf("Validation failed: %v", validationErr)
 
-	if len(proxyReports) > 0 {
-		var proxyErrs []error
-		for _, rpt := range proxyReports {
-			err := validationutil.GetProxyError(rpt)
-			if err != nil {
-				proxyErrs = append(proxyErrs, err)
-			}
+	var proxyErrs []error
+	for _, rpt := range proxyReports {
+		err := validationutil.GetProxyError(rpt)
+		if err != nil {
+			proxyErrs = append(proxyErrs, err)
 		}
+	}
+	if len(proxyErrs) > 0 {
 		validationErr = errors.Errorf("resource incompatible with current Gloo snapshot: %v", proxyErrs)
 	}
 
@@ -309,11 +332,14 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		Causes: wh.getFailureCauses(proxyReports),
 	}
 
-	return &v1beta1.AdmissionResponse{
-		Result: &metav1.Status{
-			Message: validationErr.Error(),
-			Details: details,
+	return &AdmissionResponseWithProxies{
+		AdmissionResponse: &v1beta1.AdmissionResponse{
+			Result: &metav1.Status{
+				Message: validationErr.Error(),
+				Details: details,
+			},
 		},
+		Proxies: proxies,
 	}
 }
 
@@ -394,43 +420,55 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 }
 
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
-	var gw gwv1.Gateway
+	var (
+		gw           gwv1.Gateway
+		proxyReports validation.ProxyReports
+		err          error
+	)
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
 		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(gw.Metadata.Annotations) {
 		return nil, nil
 	}
-	if proxyReports, err := wh.validator.ValidateGateway(ctx, &gw); err != nil {
+	if proxyReports, err = wh.validator.ValidateGateway(ctx, &gw); err != nil {
 		return proxyReports, errors.Wrapf(err, "Validating %T failed", gw)
 	}
-	return nil, nil
+	return proxyReports, nil
 }
 
 func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
-	var vs gwv1.VirtualService
+	var (
+		vs           gwv1.VirtualService
+		proxyReports validation.ProxyReports
+		err          error
+	)
 	if err := protoutils.UnmarshalResource(rawJson, &vs); err != nil {
 		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(vs.Metadata.Annotations) {
 		return nil, nil
 	}
-	if proxyReports, err := wh.validator.ValidateVirtualService(ctx, &vs); err != nil {
+	if proxyReports, err = wh.validator.ValidateVirtualService(ctx, &vs); err != nil {
 		return proxyReports, errors.Wrapf(err, "Validating %T failed", vs)
 	}
-	return nil, nil
+	return proxyReports, nil
 }
 
 func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
-	var rt gwv1.RouteTable
+	var (
+		rt           gwv1.RouteTable
+		proxyReports validation.ProxyReports
+		err          error
+	)
 	if err := protoutils.UnmarshalResource(rawJson, &rt); err != nil {
 		return nil, WrappedUnmarshalErr(err)
 	}
 	if skipValidationCheck(rt.Metadata.Annotations) {
 		return nil, nil
 	}
-	if proxyReports, err := wh.validator.ValidateRouteTable(ctx, &rt); err != nil {
+	if proxyReports, err = wh.validator.ValidateRouteTable(ctx, &rt); err != nil {
 		return proxyReports, errors.Wrapf(err, "Validating %T failed", rt)
 	}
-	return nil, nil
+	return proxyReports, nil
 }
