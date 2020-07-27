@@ -315,7 +315,7 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
 
-	Context("Temporary Credentials", func() {
+	FContext("Temporary Credentials", func() {
 
 		addCredentials := func() {
 
@@ -324,7 +324,7 @@ var _ = Describe("AWS Lambda", func() {
 				Skip("no AWS creds available")
 			}
 			stsClient := sts.New(sess)
-
+			stsClient.AssumeRoleWithWebIdentityRequest()
 			result, err := stsClient.GetSessionToken(&sts.GetSessionTokenInput{})
 			Expect(err).NotTo(HaveOccurred())
 

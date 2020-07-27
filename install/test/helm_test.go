@@ -602,7 +602,7 @@ var _ = Describe("Helm Test", func() {
 							Labels:    saLabels,
 						}
 						gatewayProxyServiceAccount = rb.GetServiceAccount()
-
+						gatewayProxyServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
 					})
 
 					It("sets extra annotations", func() {
@@ -611,6 +611,7 @@ var _ = Describe("Helm Test", func() {
 							valuesArgs: []string{
 								"gateway.proxyServiceAccount.extraAnnotations.foo=bar",
 								"gateway.proxyServiceAccount.extraAnnotations.bar=baz",
+								"gateway.proxyServiceAccount.disableAutomount=true",
 							},
 						})
 						testManifest.ExpectServiceAccount(gatewayProxyServiceAccount)
@@ -1608,7 +1609,7 @@ metadata:
 						Labels:    saLabels,
 					}
 					glooServiceAccount = rb.GetServiceAccount()
-
+					glooServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
 				})
 
 				It("sets extra annotations", func() {
@@ -1617,6 +1618,7 @@ metadata:
 						valuesArgs: []string{
 							"gloo.serviceAccount.extraAnnotations.foo=bar",
 							"gloo.serviceAccount.extraAnnotations.bar=baz",
+							"gloo.serviceAccount.disableAutomount=true",
 						},
 					})
 					testManifest.ExpectServiceAccount(glooServiceAccount)
@@ -1815,6 +1817,38 @@ metadata:
 					})
 				})
 
+				Context("gateway service account", func() {
+					var gatewayServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "gateway",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayServiceAccount = rb.GetServiceAccount()
+						gatewayServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.serviceAccount.extraAnnotations.foo=bar",
+								"gateway.serviceAccount.extraAnnotations.bar=baz",
+								"gateway.serviceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayServiceAccount)
+					})
+
+				})
+
 				Context("gateway deployment", func() {
 					var (
 						gatewayDeployment *appsv1.Deployment
@@ -1969,7 +2003,7 @@ metadata:
 							Labels:    saLabels,
 						}
 						discoveryServiceAccount = rb.GetServiceAccount()
-
+						discoveryServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
 					})
 
 					It("sets extra annotations", func() {
@@ -1978,6 +2012,7 @@ metadata:
 							valuesArgs: []string{
 								"discovery.serviceAccount.extraAnnotations.foo=bar",
 								"discovery.serviceAccount.extraAnnotations.bar=baz",
+								"discovery.serviceAccount.disableAutomount=true",
 							},
 						})
 						testManifest.ExpectServiceAccount(discoveryServiceAccount)
