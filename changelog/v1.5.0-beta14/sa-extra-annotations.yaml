@@ -1,4 +1,4 @@
 changelog:
-- type: NEW_FEATURE
+- type: HELM
   description: Add Extra ServiceAccount annotations to helm chart for Gloo, Discovery, and Proxy pods.
   issueLink: https://github.com/solo-io/gloo/issues/2698
