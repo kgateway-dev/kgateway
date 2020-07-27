@@ -315,7 +315,7 @@ var _ = Describe("AWS Lambda", func() {
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
 
-	FContext("Temporary Credentials", func() {
+	Context("Temporary Credentials", func() {
 
 		addCredentials := func() {
 
