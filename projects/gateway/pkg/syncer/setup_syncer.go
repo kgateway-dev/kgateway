@@ -2,8 +2,10 @@ package syncer
 
 import (
 	"context"
+	"github.com/solo-io/gloo/pkg/utils/setuputils"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -271,7 +273,10 @@ func RunGateway(opts translator.Opts) error {
 	if opts.Validation != nil {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
 		// ReadGatewaysFromAllNamespaces is false
-		controllerNamespace := os.Getenv("POD_NAMESPACE")
+		controllerNamespace := os.Getenv(setuputils.PodNamespace)
+		if controllerNamespace == "" {
+			return errors.Errorf("Missing/unset environment variable: %s", setuputils.PodNamespace)
+		}
 		if !opts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
 			foundSelf := false
 			for _, namespace := range opts.WatchNamespaces {
@@ -282,7 +287,7 @@ func RunGateway(opts translator.Opts) error {
 			}
 			if !foundSelf {
 				return errors.Errorf("READ_GATEWAYS_FROM_ALL_NAMESPACES was set to false, but non-empty WATCH_NAMESPACES"+
-					" list did not contain this gloo instance's own namespace: %s", controllerNamespace)
+					" list [%s] did not contain this gloo instance's own namespace: %s.", strings.Join(opts.WatchNamespaces, ", "), controllerNamespace)
 			}
 		}
 
