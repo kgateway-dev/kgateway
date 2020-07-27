@@ -11,7 +11,7 @@ import (
 	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -45,22 +45,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 	errMsg := "didn't say the magic word"
 
-	table.DescribeTable("accepts valid admission requests, rejects bad ones", func(valid bool, resourceCrd crd.Crd, resource resources.InputResource) {
+	DescribeTable("accepts valid admission requests, rejects bad ones", func(valid bool, resourceCrd crd.Crd, resource resources.InputResource) {
 		req, err := makeReviewRequest(srv.URL, resourceCrd, v1beta1.Create, resource)
 
 		if !valid {
 			switch resource.(type) {
 			case *v1.Gateway:
 				mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
-					return nil, fmt.Errorf(errMsg)
+					return proxyReports(), fmt.Errorf(errMsg)
 				}
 			case *v1.VirtualService:
 				mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error) {
-					return nil, fmt.Errorf(errMsg)
+					return proxyReports(), fmt.Errorf(errMsg)
 				}
 			case *v1.RouteTable:
 				mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error) {
-					return nil, fmt.Errorf(errMsg)
+					return proxyReports(), fmt.Errorf(errMsg)
 				}
 			}
 		}
@@ -74,18 +74,22 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 
 		if valid {
 			Expect(review.Response.Allowed).To(BeTrue())
+			Expect(review.Proxies).To(HaveLen(1))
+			Expect(review.Proxies[0]).To(ContainSubstring("listener-::-8080"))
 		} else {
 			Expect(review.Response.Allowed).To(BeFalse())
 			Expect(review.Response.Result).NotTo(BeNil())
 			Expect(review.Response.Result.Message).To(ContainSubstring(errMsg))
+			Expect(review.Proxies).To(HaveLen(1))
+			Expect(review.Proxies[0]).To(ContainSubstring("listener-::-8080"))
 		}
 	},
-		table.Entry("valid gateway", true, v1.GatewayCrd, gateway),
-		table.Entry("invalid gateway", false, v1.GatewayCrd, gateway),
-		table.Entry("valid virtual service", true, v1.VirtualServiceCrd, vs),
-		table.Entry("invalid virtual service", false, v1.VirtualServiceCrd, vs),
-		table.Entry("valid route table", true, v1.RouteTableCrd, routeTable),
-		table.Entry("invalid route table", false, v1.RouteTableCrd, routeTable),
+		Entry("valid gateway", true, v1.GatewayCrd, gateway),
+		Entry("invalid gateway", false, v1.GatewayCrd, gateway),
+		Entry("valid virtual service", true, v1.VirtualServiceCrd, vs),
+		Entry("invalid virtual service", false, v1.VirtualServiceCrd, vs),
+		Entry("valid route table", true, v1.RouteTableCrd, routeTable),
+		Entry("invalid route table", false, v1.RouteTableCrd, routeTable),
 	)
 
 	Context("invalid yaml", func() {
@@ -156,8 +160,8 @@ func makeReviewRequestRaw(url string, crd crd.Crd, operation v1beta1.Operation, 
 	return req, nil
 }
 
-func parseReviewResponse(resp *http.Response) (*v1beta1.AdmissionReview, error) {
-	var review v1beta1.AdmissionReview
+func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, error) {
+	var review AdmissionReviewWithProxies
 	if err := json.NewDecoder(resp.Body).Decode(&review); err != nil {
 		return nil, err
 	}
@@ -182,14 +186,14 @@ func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 
 func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
 	if v.fValidateGateway == nil {
-		return nil, nil
+		return proxyReports(), nil
 	}
 	return v.fValidateGateway(ctx, gw)
 }
 
 func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error) {
 	if v.fValidateVirtualService == nil {
-		return nil, nil
+		return proxyReports(), nil
 	}
 	return v.fValidateVirtualService(ctx, vs)
 }
@@ -203,7 +207,7 @@ func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs cor
 
 func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error) {
 	if v.fValidateRouteTable == nil {
-		return nil, nil
+		return proxyReports(), nil
 	}
 	return v.fValidateRouteTable(ctx, rt)
 }
@@ -213,4 +217,17 @@ func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.Re
 		return nil
 	}
 	return v.fValidateDeleteRouteTable(ctx, rt)
+}
+
+func proxyReports() validation.ProxyReports {
+	return validation.ProxyReports{
+		{
+			Metadata: core.Metadata{
+				Name:      "listener-::-8080",
+				Namespace: "gloo-system",
+			},
+		}: {
+			ListenerReports: nil,
+		},
+	}
 }
