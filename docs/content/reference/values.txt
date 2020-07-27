@@ -89,6 +89,8 @@
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
+|gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|gloo.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |discovery.deployment.image.repository|string|discovery|image name (repository) for the container.|
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -123,6 +125,8 @@
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
+|discovery.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|discovery.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
@@ -174,7 +178,10 @@
 |gateway.certGenJob.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
+|gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|gateway.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||

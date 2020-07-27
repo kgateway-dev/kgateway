@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+
 	"github.com/avast/retry-go"
 	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
@@ -23,7 +25,7 @@ import (
 	"go.uber.org/zap"
 )
 
-type ProxyReports []*validation.ProxyReport
+type ProxyReports map[*gloov1.Proxy]*validation.ProxyReport
 
 var (
 	NotReadyErr = errors.Errorf("validation is not yet available. Waiting for first snapshot")
@@ -164,7 +166,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 
 	var (
 		errs         error
-		proxyReports ProxyReports
+		proxyReports ProxyReports = map[*gloov1.Proxy]*validation.ProxyReport{}
 	)
 	for _, proxyName := range proxyNames {
 		gatewayList := gatewaysByProxy[proxyName]
@@ -210,8 +212,8 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 			continue
 		}
 
+		proxyReports[proxy] = proxyReport.ProxyReport
 		if err := validationutils.GetProxyError(proxyReport.ProxyReport); err != nil {
-			proxyReports = append(proxyReports, proxyReport.ProxyReport)
 
 			if reportData, marshalErr := protoutils.MarshalBytes(proxyReport); marshalErr == nil {
 				err = errors.Wrapf(err, "%s", reportData)
@@ -233,7 +235,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 	apply(v.latestSnapshot)
 	v.lock.Unlock()
 
-	return nil, nil
+	return proxyReports, nil
 }
 
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error) {
@@ -244,11 +246,6 @@ func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualSe
 		var isUpdate bool
 		for i, existingVs := range snap.VirtualServices {
 			if vsRef == existingVs.GetMetadata().Ref() {
-				// check that the hash has changed; ignore irrelevant update such as status
-				if vs.MustHash() == existingVs.MustHash() {
-					return nil, nil, core.ResourceRef{}
-				}
-
 				// replace the existing virtual service in the snapshot
 				snap.VirtualServices[i] = vs
 				isUpdate = true
@@ -320,11 +317,6 @@ func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (
 		var isUpdate bool
 		for i, existingRt := range snap.RouteTables {
 			if rtRef == existingRt.GetMetadata().Ref() {
-				// check that the hash has changed; ignore irrelevant update such as status
-				if rt.MustHash() == existingRt.MustHash() {
-					return nil, nil, core.ResourceRef{}
-				}
-
 				// replace the existing route table in the snapshot
 				snap.RouteTables[i] = rt
 				isUpdate = true
@@ -398,11 +390,6 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyR
 		var isUpdate bool
 		for i, existingGw := range snap.Gateways {
 			if gwRef == existingGw.GetMetadata().Ref() {
-				// check that the hash has changed; ignore irrelevant update such as status
-				if gw.MustHash() == existingGw.MustHash() {
-					return nil, nil, core.ResourceRef{}
-				}
-
 				// replace the existing gateway in the snapshot
 				snap.Gateways[i] = gw
 				isUpdate = true
