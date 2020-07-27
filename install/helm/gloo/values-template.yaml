@@ -101,6 +101,7 @@ gatewayProxies:
       runUnprivileged: true
       disableNetBind: true
     service:
+      customPorts: []
       type: LoadBalancer
       # clusterIP: None
       httpPort: 80

@@ -76,6 +76,20 @@ metadata:
 `))
 		})
 
+		It("can print the kube yaml as dry run with token", func() {
+			out, err := testutils.GlooctlOut("create secret aws --dry-run --name test --access-key foo --secret-key bar --session-token waz")
+			Expect(err).NotTo(HaveOccurred())
+			Expect(out).To(Equal(`data:
+  aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiB3YXoK
+metadata:
+  annotations:
+    resource_kind: '*v1.Secret'
+  creationTimestamp: null
+  name: test
+  namespace: gloo-system
+`))
+		})
+
 		It("should work as subcommand", func() {
 			shouldWork("create secret aws test --access-key foo --secret-key bar", "gloo-system")
 		})

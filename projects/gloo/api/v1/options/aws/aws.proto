@@ -23,6 +23,7 @@ message UpstreamSpec {
     //  ```
     //  access_key: <aws access key>
     //  secret_key: <aws secret key>
+    //  session_token: <(optional) aws session token>
     //  ```
     core.solo.io.ResourceRef secret_ref = 2;
 

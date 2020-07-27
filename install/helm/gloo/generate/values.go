@@ -278,6 +278,7 @@ type GatewayProxyService struct {
 	HttpsFirst               bool              `json:"httpsFirst" desc:"List HTTPS port before HTTP"`
 	LoadBalancerIP           string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
 	LoadBalancerSourceRanges []string          `json:"loadBalancerSourceRanges,omitempty" desc:"List of IP CIDR ranges that are allowed to access the load balancer"`
+	CustomPorts              []interface{}     `json:"customPorts,omitempty" desc:"List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)"`
 }
 
 type Tracing struct {

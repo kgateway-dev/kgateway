@@ -1108,6 +1108,32 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("can accept custom port values", func() {
+						const testName = "TEST_CUSTOM_PORT"
+						const testPort = int32(1234)
+						const testTargetPort = int32(1235)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].name=%s", testName),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].port=%d", testPort),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].targetPort=%d", testTargetPort),
+								"gatewayProxies.gatewayProxy.service.customPorts[0].protocol=TCP",
+							},
+						})
+						// pull proxy service, cast it, then check for custom resources (which should always be the
+						// first element of the Ports array).
+						service := testManifest.ExpectCustomResource("Service", namespace, defaults.GatewayProxyName)
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
+						structuredService, ok := serviceObject.(*v1.Service)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured deployment", service))
+						customPort := structuredService.Spec.Ports[2]
+						Expect(customPort.Name).To(Equal(testName))
+						Expect(customPort.Protocol).To(Equal(v1.ProtocolTCP))
+						Expect(customPort.Port).To(Equal(testPort))
+						Expect(customPort.TargetPort.IntVal).To(Equal(testTargetPort))
+					})
+
 					It("does not disable gateway proxy", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
