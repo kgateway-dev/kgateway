@@ -242,7 +242,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	// If we've specified to NOT read gateway requests from all namespaces, then only
 	// check gateway requests for the same namespace as this webhook, regardless of the
 	// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
-	// contains webhook's own namespace, since this was checked during setup in setup_syncer.go
+	// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
 	watchNamespaces := wh.watchNamespaces
 	if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !utils.AllNamespaces(wh.watchNamespaces) {
 		watchNamespaces = []string{wh.webhookNamespace}
@@ -375,10 +375,6 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 			// we don't validate gateway deletion
 			break
 		}
-		// react to readGatewaysFromAllNamespaces here
-		// if true, continue
-		// if false, ignore unless inside watchNamespace whitelist
-
 		return wh.validateGateway(ctx, object.Raw)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
