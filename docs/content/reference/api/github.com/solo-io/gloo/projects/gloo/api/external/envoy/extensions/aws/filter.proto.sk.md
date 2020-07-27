@@ -59,6 +59,7 @@ http calls to AWS Lambda invocations.
 "region": string
 "accessKey": string
 "secretKey": string
+"sessionToken": string
 
 ```
 
@@ -68,6 +69,7 @@ http calls to AWS Lambda invocations.
 | `region` | `string` | The region for this cluster. |  |
 | `accessKey` | `string` | The access_key for AWS this cluster. |  |
 | `secretKey` | `string` | The secret_key for AWS this cluster. |  |
+| `sessionToken` | `string` | The session_token for AWS this cluster. |  |
 
 
 

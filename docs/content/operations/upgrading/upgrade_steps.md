@@ -1,6 +1,6 @@
 ---
 title: Upgrade Steps
-weight: 3
+weight: 10
 description: Steps for upgrading Gloo components
 ---
 
@@ -137,10 +137,6 @@ v1.0.0: https://github.com/solo-io/gloo/releases/tag/v1.0.0
 
 ### Upgrading the Server Components
 
-Note that you may encounter downtime without the proper probes and healthchecks setup before attempting the upgrade.
-For more detailed upgrade instructions for production setup, we recommend looking at the upgrade guide associated for
-your version (for example, the [1.3.0+ upgrade guide]({{< versioned_link_path fromRoot="/operations/upgrading/1.3.0" >}})).
-
 {{% notice note %}}
 We create a Kubernetes Job named `gateway-certgen` to generate a cert for the validation webhook. We attempt to put a
 `ttlSecondsAfterFinished` value on the job so that it gets cleaned up automatically, but as this setting is still in
@@ -148,6 +144,18 @@ Alpha, your cluster may ignore this value. If that is the case, you may run into
 upgrade attempts to change the `gateway-certgen` job, but the update fails because the job is immutable. If you run
 into this, simply delete the job, which should have completed long before, and re-apply the upgrade.
 {{% /notice %}}
+
+#### Recommended settings to avoid downtime
+If gloo is not running in kubernetes and using the kubernetes load-balancer, then properly configure 
+[health checks]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/health_checks" >}})
+on envoy and configure your load-balancer to leverage these health checks, so requests stop going to envoy once it
+begins draining connections.
+
+If gloo is running in kubernetes and using the kubernetes load-balancer, enable envoy readiness and liveness probes 
+during the upgrade. This will instruct kubernetes to send requests exclusively to the healthy envoy during upgrade,
+preventing potential downtime. The probes are not enabled in default installations because they can provide for a poor
+getting started experience. The following example upgrade assumes you're running in kubernetes with the kubernetes
+load-balancer.
 
 #### Using Helm
 

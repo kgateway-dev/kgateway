@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update wasm proto import paths so they resolve for gloo-ui
+    issueLink: https://github.com/solo-io/gloo/issues/3035
+    resolvesIssue: false

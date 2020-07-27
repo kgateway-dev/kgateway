@@ -20,7 +20,7 @@ gloo-system   gateway-proxy       2d
 gloo-system   gateway-proxy-ssl   2d
 ```
 
-`kubectl edit gateway -n gloo-system gateway`
+`kubectl edit gateway -n gloo-system gateway-proxy`
 
 ### Plugin summary
 
@@ -33,11 +33,12 @@ metadata: # collapsed for brevity
 spec:
   bindAddress: '::'
   bindPort: 8080
-  options:
-    grpcWeb:
-      disable: true
-    httpConnectionManagerSettings:
-      via: reference-string
+  httpGateway:
+    options:
+      grpcWeb:
+        disable: true
+      httpConnectionManagerSettings:
+        via: reference-string
   useProxyProto: false
 status: # collapsed for brevity
 {{< /highlight >}}

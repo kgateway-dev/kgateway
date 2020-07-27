@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/solo-io/gloo/test/helpers"
 
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
@@ -43,33 +46,48 @@ var _ = Describe("AWS Lambda", func() {
 		upstream      *gloov1.Upstream
 	)
 
-	addCredentials := func() {
+	setupEnvoy := func() {
+		ctx, cancel = context.WithCancel(context.Background())
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
 
-		localAwsCredentials := credentials.NewSharedCredentials("", "")
-		v, err := localAwsCredentials.Get()
-		if err != nil {
-			Skip("no AWS creds available")
-		}
-		var opts clients.WriteOpts
+		testClients = services.RunGateway(ctx, false)
 
-		accesskey := v.AccessKeyID
-		secretkey := v.SecretAccessKey
+		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
+		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
 
-		secret = &gloov1.Secret{
-			Metadata: core.Metadata{
-				Namespace: "default",
-				Name:      region,
-			},
-			Kind: &gloov1.Secret_Aws{
-				Aws: &gloov1.AwsSecret{
-					AccessKey: accesskey,
-					SecretKey: secretkey,
-				},
-			},
-		}
-
-		_, err = testClients.SecretClient.Write(secret, opts)
+		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
+	}
+
+	validateLambda := func(offset int, envoyPort uint32, substring string) {
+
+		body := []byte("\"solo.io\"")
+
+		EventuallyWithOffset(offset, func() (string, error) {
+			// send a request with a body
+			var buf bytes.Buffer
+			buf.Write(body)
+
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", &buf)
+			if err != nil {
+				return "", err
+			}
+			if res.StatusCode != http.StatusOK {
+				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
+			}
+
+			defer res.Body.Close()
+			body, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				return "", err
+			}
+
+			return string(body), nil
+		}, "5m", "1s").Should(ContainSubstring(substring))
+	}
+	validateLambdaUppercase := func(envoyPort uint32) {
+		validateLambda(2, envoyPort, "SOLO.IO")
 	}
 
 	addUpstream := func() {
@@ -100,64 +118,9 @@ var _ = Describe("AWS Lambda", func() {
 		var opts clients.WriteOpts
 		_, err := testClients.UpstreamClient.Write(upstream, opts)
 		Expect(err).NotTo(HaveOccurred())
-
 	}
 
-	validateLambda := func(envoyPort uint32, substring string) {
-
-		body := []byte("\"solo.io\"")
-
-		Eventually(func() (string, error) {
-			// send a request with a body
-			var buf bytes.Buffer
-			buf.Write(body)
-
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/1", "localhost", envoyPort), "application/octet-stream", &buf)
-			if err != nil {
-				return "", err
-			}
-			if res.StatusCode != http.StatusOK {
-				return "", errors.New(fmt.Sprintf("%v is not OK", res.StatusCode))
-			}
-
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			if err != nil {
-				return "", err
-			}
-
-			return string(body), nil
-		}, "20s", "1s").Should(ContainSubstring(substring))
-	}
-	validateLambdaUppercase := func(envoyPort uint32) {
-		validateLambda(envoyPort, "SOLO.IO")
-	}
-
-	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
-		defaults.HttpPort = services.NextBindPort()
-		defaults.HttpsPort = services.NextBindPort()
-
-		testClients = services.RunGateway(ctx, false)
-
-		err := helpers.WriteDefaultGateways(defaults.GlooSystem, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to write default gateways")
-
-		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-
-		addCredentials()
-		addUpstream()
-	})
-
-	AfterEach(func() {
-		if envoyInstance != nil {
-			_ = envoyInstance.Clean()
-		}
-		cancel()
-	})
-
-	It("be able to call lambda", func() {
+	testProxy := func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -206,9 +169,9 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambdaUppercase(defaults.HttpPort)
-	})
+	}
 
-	It("be able lambda with response transform", func() {
+	testProxyWithResponseTransform := func() {
 		err := envoyInstance.Run(testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -257,10 +220,10 @@ var _ = Describe("AWS Lambda", func() {
 		_, err = testClients.ProxyClient.Write(proxy, opts)
 		Expect(err).NotTo(HaveOccurred())
 
-		validateLambda(defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
-	})
+		validateLambda(1, defaults.HttpPort, `<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>`)
+	}
 
-	It("be able to call lambda via gateway", func() {
+	testLambdaWithVirtualService := func() {
 		err := envoyInstance.RunWithRole("gloo-system~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -299,5 +262,102 @@ var _ = Describe("AWS Lambda", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		validateLambdaUppercase(defaults.HttpPort)
+	}
+
+	AfterEach(func() {
+		if envoyInstance != nil {
+			_ = envoyInstance.Clean()
+		}
+		cancel()
 	})
+
+	Context("Basic Auth", func() {
+
+		addCredentials := func() {
+
+			localAwsCredentials := credentials.NewSharedCredentials("", "")
+			v, err := localAwsCredentials.Get()
+			if err != nil {
+				Skip("no AWS creds available")
+			}
+			var opts clients.WriteOpts
+
+			accesskey := v.AccessKeyID
+			secretkey := v.SecretAccessKey
+
+			secret = &gloov1.Secret{
+				Metadata: core.Metadata{
+					Namespace: "default",
+					Name:      region,
+				},
+				Kind: &gloov1.Secret_Aws{
+					Aws: &gloov1.AwsSecret{
+						AccessKey: accesskey,
+						SecretKey: secretkey,
+					},
+				},
+			}
+
+			_, err = testClients.SecretClient.Write(secret, opts)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		BeforeEach(func() {
+			setupEnvoy()
+			addCredentials()
+			addUpstream()
+		})
+
+		It("should be able to call lambda", testProxy)
+
+		It("should be able lambda with response transform", testProxyWithResponseTransform)
+
+		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
+	})
+
+	Context("Temporary Credentials", func() {
+
+		addCredentials := func() {
+
+			sess, err := session.NewSession(&aws.Config{Region: aws.String(region)})
+			if err != nil {
+				Skip("no AWS creds available")
+			}
+			stsClient := sts.New(sess)
+
+			result, err := stsClient.GetSessionToken(&sts.GetSessionTokenInput{})
+			Expect(err).NotTo(HaveOccurred())
+
+			var opts clients.WriteOpts
+			secret = &gloov1.Secret{
+				Metadata: core.Metadata{
+					Namespace: "default",
+					Name:      region,
+				},
+				Kind: &gloov1.Secret_Aws{
+					Aws: &gloov1.AwsSecret{
+						AccessKey:    *result.Credentials.AccessKeyId,
+						SecretKey:    *result.Credentials.SecretAccessKey,
+						SessionToken: *result.Credentials.SessionToken,
+					},
+				},
+			}
+
+			_, err = testClients.SecretClient.Write(secret, opts)
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		BeforeEach(func() {
+			setupEnvoy()
+			addCredentials()
+			addUpstream()
+		})
+
+		It("should be able to call lambda", testProxy)
+
+		It("should be able lambda with response transform", testProxyWithResponseTransform)
+
+		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
+	})
+
 })

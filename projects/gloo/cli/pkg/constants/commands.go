@@ -90,6 +90,20 @@ var (
 		Short:   "Delete a Gloo resource",
 	}
 
+	DEMO_COMMAND = cobra.Command{
+		Use:   "demo",
+		Short: "Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)",
+	}
+
+	DEMO_FEDERATION_COMMAND = cobra.Command{
+		Use:   "federation",
+		Short: "Bootstrap a multicluster demo with Gloo Federation.",
+		Long: "Running the Gloo Federation demo setup locally requires 4 tools to be installed and accessible via the " +
+			"PATH: glooctl, kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run " +
+			"the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo. " +
+			"Please note that cluster registration will only work on darwin and linux OS.",
+	}
+
 	GET_COMMAND = cobra.Command{
 		Use:     "get",
 		Aliases: []string{"g"},
@@ -105,6 +119,11 @@ var (
 	UNINSTALL_COMMAND = cobra.Command{
 		Use:   "uninstall",
 		Short: "uninstall gloo",
+	}
+
+	UNINSTALL_GLOO_FED_COMMAND = cobra.Command{
+		Use:   "federation",
+		Short: "uninstall gloo federation",
 	}
 
 	UPGRADE_COMMAND = cobra.Command{
@@ -154,5 +173,31 @@ var (
 		Aliases: []string{"ui"},
 		Short:   "Open Gloo dashboard",
 		Long:    "Open the Gloo dashboard/UI in your default browser",
+	}
+
+	CLUSTER_COMMAND = cobra.Command{
+		Use:   "cluster",
+		Short: "Cluster commands",
+		Long:  "Commands related to managing multiple clusters",
+	}
+
+	CLUSTER_LIST_COMMAND = cobra.Command{
+		Use:   "list",
+		Short: "List clusters registered to the Gloo Federation control plane",
+	}
+
+	CLUSTER_REGISTER_COMMAND = cobra.Command{
+		Use:   "register",
+		Short: "Register a cluster to the Gloo Federation control plane",
+		Long:  "Register a cluster to the Gloo Federation control plane. Registered clusters can be targeted for discovery and configuration.",
+	}
+
+	CLUSTER_UNREGISTER_COMMAND = cobra.Command{
+		Use:   "unregister",
+		Short: "Unregister a cluster to the Gloo Federation control plane",
+		Long: "Unregister a cluster from the Gloo Federation control plane. Unregistered clusters can no longer be " +
+			"targeted for discovery and configuration. This will not delete the cluster. Additionally, this will not " +
+			"delete the service account, cluster role, and cluster role binding created on the remote cluster " +
+			"during the cluster registration process.",
 	}
 )

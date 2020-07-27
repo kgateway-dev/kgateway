@@ -34,11 +34,7 @@ import (
 
 const (
 	// filter info
-	filterName = "io.solo.aws_lambda"
-
-	// cluster info
-	accessKey = "access_key"
-	secretKey = "secret_key"
+	FilterName = "io.solo.aws_lambda"
 )
 
 var pluginStage = plugins.DuringStage(plugins.OutAuthStage)
@@ -49,7 +45,8 @@ func getLambdaHostname(s *aws.UpstreamSpec) string {
 
 func NewPlugin(transformsAdded *bool) plugins.Plugin {
 	return &plugin{
-		transformsAdded: transformsAdded}
+		transformsAdded: transformsAdded,
+	}
 }
 
 type plugin struct {
@@ -94,13 +91,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(tlsContext)},
 	}
 
-	accessKey := ""
-	secretKey := ""
-
-	// TODO(ilacakrms): consider if secretRef should be namespace+name
+	var accessKey, sessionToken, secretKey string
 	if upstreamSpec.Aws.SecretRef == nil && !p.enableCredentialsDiscovey {
 		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment")
 	}
+
 	if upstreamSpec.Aws.SecretRef != nil {
 
 		secret, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.SecretRef.Strings())
@@ -115,37 +110,42 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		var secretErrs error
 
-		accessKey = awsSecrets.Aws.AccessKey
-		secretKey = awsSecrets.Aws.SecretKey
+		accessKey = awsSecrets.Aws.GetAccessKey()
+		secretKey = awsSecrets.Aws.GetSecretKey()
+		sessionToken = awsSecrets.Aws.GetSessionToken()
 		if accessKey == "" || !utf8.Valid([]byte(accessKey)) {
 			secretErrs = multierror.Append(secretErrs, errors.Errorf("access_key is not a valid string"))
 		}
 		if secretKey == "" || !utf8.Valid([]byte(secretKey)) {
 			secretErrs = multierror.Append(secretErrs, errors.Errorf("secret_key is not a valid string"))
 		}
+		// Session key is optional
+		if sessionToken != "" && !utf8.Valid([]byte(sessionToken)) {
+			secretErrs = multierror.Append(secretErrs, errors.Errorf("session_key is not a valid string"))
+		}
 
 		if secretErrs != nil {
 			return secretErrs
 		}
+
 	}
 
 	lpe := &AWSLambdaProtocolExtension{
-		Host:      lambdaHostname,
-		Region:    upstreamSpec.Aws.Region,
-		AccessKey: accessKey,
-		SecretKey: secretKey,
+		Host:         lambdaHostname,
+		Region:       upstreamSpec.Aws.Region,
+		AccessKey:    accessKey,
+		SecretKey:    secretKey,
+		SessionToken: sessionToken,
 	}
 
-	err := pluginutils.SetExtenstionProtocolOptions(out, filterName, lpe)
-	if err != nil {
+	if err := pluginutils.SetExtenstionProtocolOptions(out, FilterName, lpe); err != nil {
 		return errors.Wrapf(err, "converting aws protocol options to struct")
 	}
-
 	return nil
 }
 
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
-	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, filterName, func(spec *v1.Destination) (proto.Message, error) {
+	err := pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's aws destination
 		if spec.DestinationSpec == nil {
 			return nil, nil
@@ -233,7 +233,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 	filterconfig := &AWSLambdaConfig{UseDefaultCredentials: &types.BoolValue{Value: p.enableCredentialsDiscovey}}
-	f, err := plugins.NewStagedFilterWithConfig(filterName, filterconfig, pluginStage)
+	f, err := plugins.NewStagedFilterWithConfig(FilterName, filterconfig, pluginStage)
 	if err != nil {
 		return nil, err
 	}

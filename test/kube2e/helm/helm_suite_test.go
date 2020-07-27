@@ -25,8 +25,7 @@ import (
 
 func TestHelm(t *testing.T) {
 	if os.Getenv("KUBE2E_TESTS") != "helm" {
-		log.Warnf("This test is disabled. " +
-			"To enable, set KUBE2E_TESTS to 'helm' in your env.")
+		log.Warnf("This test is disabled. To enable, set KUBE2E_TESTS to 'helm' in your env.")
 		return
 	}
 	helpers.RegisterGlooDebugLogPrintHandlerAndClearLogs()

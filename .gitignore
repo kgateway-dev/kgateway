@@ -1,6 +1,7 @@
 vendor*
 .vendor-new
 _output
+_local
 _test
 _artifacts
 .idea

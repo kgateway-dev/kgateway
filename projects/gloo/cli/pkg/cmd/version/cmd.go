@@ -30,15 +30,17 @@ var (
 )
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+	// Default output for version command is JSON
+	versionOutput := printers.JSON
+
 	cmd := &cobra.Command{
 		Use:     constants.VERSION_COMMAND.Use,
 		Aliases: constants.VERSION_COMMAND.Aliases,
 		Short:   constants.VERSION_COMMAND.Short,
 		Long:    constants.VERSION_COMMAND.Long,
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if !cmd.PersistentFlags().Changed(flagutils.OutputFlag) {
-				opts.Top.Output = printers.JSON
-			}
+			opts.Top.Output = versionOutput
+
 			if opts.Metadata.Namespace == "" {
 				return NoNamespaceAllError
 			}
@@ -50,7 +52,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 
 	pflags := cmd.PersistentFlags()
-	flagutils.AddOutputFlag(pflags, &opts.Top.Output)
+	flagutils.AddOutputFlag(pflags, &versionOutput)
 	flagutils.AddNamespaceFlag(pflags, &opts.Metadata.Namespace)
 
 	return cmd

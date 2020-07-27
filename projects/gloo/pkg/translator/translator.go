@@ -2,21 +2,26 @@ package translator
 
 import (
 	"fmt"
+	"math/rand"
+	"os"
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
-	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
-	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/mitchellh/hashstructure"
-	errors "github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	envoycache "github.com/solo-io/solo-kit/pkg/api/v1/control-plane/cache"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+
+	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	structpb "github.com/golang/protobuf/ptypes/struct"
+	"github.com/mitchellh/hashstructure"
+	errors "github.com/rotisserie/eris"
 	"go.opencensus.io/trace"
 )
 
@@ -233,13 +238,42 @@ func generateXDSSnapshot(clusters []*envoyapi.Cluster,
 		panic(errors.Wrap(err, "constructing version hash for listeners envoy snapshot components"))
 	}
 
+	lv := fmt.Sprintf("%v", listenersVersion)
+	if os.Getenv(wasm.WasmEnabled) == "true" {
+		// Add random # to artificially change version number & proto hash so envoy tries to update
+		// This is needed because the first time a wasm filter is applied, envoy can't
+		// find it in the wasm cache, but can't send errors asynchronously. It also
+		// doesn't send a nack we can listen for, so we simply try again with a new version.
+		// This is temporary until envoy either sends a nack, or until there's a warming period
+		// while envoy hydrates the wasm cache with the new filter.
+		// This workaround can be removed if either https://github.com/envoyproxy/envoy-wasm/issues/552
+		// or https://github.com/envoyproxy/envoy-wasm/issues/533 are resolved.
+		lv = fmt.Sprintf("%v-%v", listenersVersion, rand.Int31n(10000))
+		listener := listenersProto[0].ResourceProto().(*envoyapi.Listener)
+		if listener.Metadata == nil {
+			listener.Metadata = &envoy_api_v2_core.Metadata{}
+		}
+		if listener.Metadata.FilterMetadata == nil {
+			listener.Metadata.FilterMetadata = make(map[string]*structpb.Struct)
+		}
+
+		listener.Metadata.FilterMetadata["wasm-jitter"] = &structpb.Struct{
+			Fields: map[string]*structpb.Value{
+				"random-number": &structpb.Value{Kind: &structpb.Value_StringValue{
+					StringValue: lv,
+				}},
+			},
+		}
+	}
+
 	// if clusters are updated, provider a new version of the endpoints,
 	// so the clusters are warm
 	return xds.NewSnapshotFromResources(
 		envoycache.NewResources(fmt.Sprintf("%v-%v", clustersVersion, endpointsVersion), endpointsProto),
 		envoycache.NewResources(fmt.Sprintf("%v", clustersVersion), clustersProto),
 		MakeRdsResources(routeConfigs),
-		envoycache.NewResources(fmt.Sprintf("%v", listenersVersion), listenersProto))
+		envoycache.NewResources(lv, listenersProto))
+
 }
 
 func MakeRdsResources(routeConfigs []*envoyapi.RouteConfiguration) envoycache.Resources {

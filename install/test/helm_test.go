@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"regexp"
 
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
@@ -110,6 +111,7 @@ var _ = Describe("Helm Test", func() {
 		var (
 			glooPorts = []v1.ContainerPort{
 				{Name: "grpc-xds", ContainerPort: 9977, Protocol: "TCP"},
+				{Name: "rest-xds", ContainerPort: 9976, Protocol: "TCP"},
 				{Name: "grpc-validation", ContainerPort: 9988, Protocol: "TCP"},
 				{Name: "wasm-cache", ContainerPort: 9979, Protocol: "TCP"},
 			}
@@ -544,6 +546,47 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				Context("Failover Gateway", func() {
+
+					var (
+						proxyNames = []string{defaults.GatewayProxyName}
+					)
+
+					It("renders with http/https gateways by default", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.failover.enabled=true",
+								"gatewayProxies.gatewayProxy.failover.port=15444",
+							},
+						})
+						gatewayUns := testManifest.ExpectCustomResource("Gateway", namespace, defaults.GatewayProxyName+"-failover")
+						var gateway1 gwv1.Gateway
+						ConvertKubeResource(gatewayUns, &gateway1)
+						Expect(gateway1.BindPort).To(Equal(uint32(15444)))
+						Expect(gateway1.ProxyNames).To(Equal(proxyNames))
+						Expect(gateway1.BindAddress).To(Equal(defaults.GatewayBindAddress))
+						tcpGateway := gateway1.GetTcpGateway()
+						Expect(tcpGateway).NotTo(BeNil())
+						Expect(tcpGateway.GetTcpHosts()).To(HaveLen(1))
+						host := tcpGateway.GetTcpHosts()[0]
+						Expect(host.GetSslConfig()).To(Equal(&gloov1.SslConfig{
+							SslSecrets: &gloov1.SslConfig_SecretRef{
+								SecretRef: &core.ResourceRef{
+									Name:      "failover-downstream",
+									Namespace: namespace,
+								},
+							},
+						}))
+						Expect(host.GetDestination().GetForwardSniClusterName()).To(Equal(&types.Empty{}))
+					})
+
+					It("by default will not render failover gateway", func() {
+						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeNil())
+					})
+
+				})
+
 				Context("gateway-proxy service", func() {
 					var gatewayProxyService *v1.Service
 
@@ -640,6 +683,27 @@ var _ = Describe("Helm Test", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"gatewayProxies.gatewayProxy.service.name=gateway-proxy-custom",
+							},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+					})
+
+					It("adds failover port", func() {
+						gatewayProxyService.Spec.Ports = append(gatewayProxyService.Spec.Ports, v1.ServicePort{
+							Name:     "failover",
+							Protocol: v1.ProtocolTCP,
+							Port:     15444,
+							TargetPort: intstr.IntOrString{
+								Type:   intstr.Int,
+								IntVal: 15444,
+							},
+							NodePort: 32000,
+						})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.failover.enabled=true",
+								"gatewayProxies.gatewayProxy.failover.port=15444",
+								"gatewayProxies.gatewayProxy.failover.nodePort=32000",
 							},
 						})
 						testManifest.ExpectService(gatewayProxyService)
@@ -1043,6 +1107,48 @@ var _ = Describe("Helm Test", func() {
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
+
+					It("can accept custom port values", func() {
+						const testName = "TEST_CUSTOM_PORT"
+						const testPort = int32(1234)
+						const testTargetPort = int32(1235)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].name=%s", testName),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].port=%d", testPort),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].targetPort=%d", testTargetPort),
+								"gatewayProxies.gatewayProxy.service.customPorts[0].protocol=TCP",
+							},
+						})
+						// pull proxy service, cast it, then check for custom resources (which should always be the
+						// first element of the Ports array).
+						service := testManifest.ExpectCustomResource("Service", namespace, defaults.GatewayProxyName)
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
+						structuredService, ok := serviceObject.(*v1.Service)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured deployment", service))
+						customPort := structuredService.Spec.Ports[2]
+						Expect(customPort.Name).To(Equal(testName))
+						Expect(customPort.Protocol).To(Equal(v1.ProtocolTCP))
+						Expect(customPort.Port).To(Equal(testPort))
+						Expect(customPort.TargetPort.IntVal).To(Equal(testTargetPort))
+					})
+
+					It("does not disable gateway proxy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("disables gateway proxy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
+						})
+						testManifest.Expect(gatewayProxyDeployment.Kind,
+							gatewayProxyDeployment.GetNamespace(),
+							gatewayProxyDeployment.GetName()).To(BeNil())
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -1092,6 +1198,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1130,6 +1237,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: true
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1168,6 +1276,7 @@ spec:
    readGatewaysFromAllNamespaces: true
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
    invalidConfigPolicy:
@@ -1211,6 +1320,7 @@ spec:
      proxyValidationServerAddr: gloo:9988
  gloo:
    xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: true
    invalidConfigPolicy:

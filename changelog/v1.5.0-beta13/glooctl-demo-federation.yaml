@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >-
+      Add the `glooctl demo federation` command, which bootstraps a multicluster demo with Gloo Federation
+    issueLink: https://github.com/solo-io/gloo/issues/3369
+    resolvesIssue: false
