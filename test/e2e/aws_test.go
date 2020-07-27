@@ -324,7 +324,6 @@ var _ = Describe("AWS Lambda", func() {
 				Skip("no AWS creds available")
 			}
 			stsClient := sts.New(sess)
-			stsClient.AssumeRoleWithWebIdentityRequest()
 			result, err := stsClient.GetSessionToken(&sts.GetSessionTokenInput{})
 			Expect(err).NotTo(HaveOccurred())
 
