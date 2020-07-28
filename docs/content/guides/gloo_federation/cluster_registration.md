@@ -4,7 +4,7 @@ description: Registering a cluster with Gloo Federation
 weight: 20
 ---
 
-Gloo Federation monitors clusters that have been registered with the Federation service and automatically discovers instances of Gloo deployed in the registered cluster. Once the registration process is complete, Gloo Federation can create federated configuration resources and apply them to Gloo instances running in registered clusters.
+Gloo Federation monitors clusters that have been registered using `glooctl` and automatically discovers instances of Gloo deployed on said clusters. Once the registration process is complete, Gloo Federation can create federated configuration resources and apply them to Gloo instances running in registered clusters.
 
 In this guide, we will walk through the process of registering a Kubernetes cluster with Gloo Federation.
 

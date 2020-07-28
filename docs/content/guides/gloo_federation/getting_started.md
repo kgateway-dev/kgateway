@@ -30,7 +30,7 @@ You will need a license key to deploy the demonstration environment. You can req
 
 That command performs the following actions: 
 
-1. Deploy two Kubernetes clusters called local and remote
+1. Deploy two kind clusters called local and remote
 1. Install Gloo Enterprise on both clusters in the gloo-system namespace
 1. Install Gloo Federation on the local cluster in the gloo-fed namespace
 1. Register both Gloo Enterprise instances with Gloo Federation
@@ -176,7 +176,7 @@ We will use these federated resources as part of the service failover configurat
 
 ### Service failover
 
-When an Upstream fails or becomes unhealthy, Gloo Federation can automatically fail traffic over to a different Gloo instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The echo-blue service is running in the local cluster and the echo-green service is running in the remote cluster. 
+When an Upstream fails or becomes unhealthy, Gloo Federation can automatically shift traffic over to a different Gloo instance and Upstream. The demo environment has two Kubernetes services, one running in the default namespace of each cluster. The echo-blue service is running in the local cluster and the echo-green service is running in the remote cluster. 
 
 We can create a FailoverScheme in Gloo Federation that specifies the echo-blue service as the primary and echo-green as a failover target. There can be multiple failover targets in different clusters and namespaces with different priorities.
 
