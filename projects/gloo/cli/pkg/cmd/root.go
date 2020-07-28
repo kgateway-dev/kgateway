@@ -106,7 +106,6 @@ func GlooCli() *cobra.Command {
 			versioncmd.RootCmd(opts),
 			dashboard.RootCmd(opts),
 			federation.RootCmd(opts),
-			Plugin(opts),
 			completionCmd(),
 		)
 	}
