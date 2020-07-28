@@ -5,12 +5,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"net/http"
 	"net/http/httputil"
+
+	"github.com/hashicorp/go-multierror"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
@@ -263,7 +264,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	isDelete := req.Operation == v1beta1.Delete
 
-	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
+	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete)
 	var proxies []*gloov1.Proxy
 	for proxy, _ := range proxyReports {
 		proxies = append(proxies, proxy)
@@ -373,75 +374,70 @@ var (
 	}
 )
 
-func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, object runtime.RawExtension, isDelete bool) (validation.ProxyReports, error) {
+func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete bool) (validation.ProxyReports, error) {
 
 	switch gvk {
 	case ListGVK:
 		var (
 			ul           unstructured.UnstructuredList
 			proxyReports = validation.ProxyReports{}
+			errs         = &multierror.Error{}
 		)
-		if err := json.Unmarshal(object.Raw, &ul); err != nil {
+		if err := json.Unmarshal(rawJson, &ul); err != nil {
 			return nil, WrappedUnmarshalErr(err)
 		}
 
-		var errs *multierror.Error
-
 		for _, item := range ul.Items {
 
-			//itemGvk := schema.GroupVersionKind{
-			//	Version: ul.GetAPIVersion(),
-			//	Group:   ul.GetObjectKind().GroupVersionKind().Group,
-			//	Kind:    ul.GetKind(),
-			//}
+			gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
+			if err != nil {
+				return validation.ProxyReports{}, err
+			}
 
-			//TODO(kdorosh) handle isDelete logic
-
-			//return nil, errors.Errorf("item gvk %v", itemGvk)
+			itemGvk := schema.GroupVersionKind{
+				Version: gv.Version,
+				Group:   gv.Group,
+				Kind:    item.GetKind(),
+			}
 
 			jsonBytes, err := item.MarshalJSON()
 			if err != nil {
 				return validation.ProxyReports{}, err
 			}
 
-			itemProxyReports, err := wh.validateGateway(ctx, jsonBytes)
-			if errors.Is(err, UnmarshalErr) {
-				itemProxyReports, err = wh.validateVirtualService(ctx, jsonBytes)
+			itemRef := core.ResourceRef{
+				Namespace: item.GetNamespace(),
+				Name:      item.GetName(),
 			}
-			// this approach gives crappy error messages if we can't parse into any of the expected types
-			if errors.Is(err, UnmarshalErr) {
-				itemProxyReports, err = wh.validateRouteTable(ctx, jsonBytes)
-			}
+
+			itemProxyReports, err := wh.validate(ctx, itemGvk, itemRef, jsonBytes, isDelete)
 
 			errs = multierror.Append(errs, err)
 			for proxy, report := range itemProxyReports {
+				// ok to return final proxy reports as the latest result includes latest proxy calculated
+				// for each resource, as we process incrementally, storing new state in memory as we go
 				proxyReports[proxy] = report
 			}
-
-			// create ref from item ns and name, pass through object and isDelete
-			//wh.validate(ctx, itemGvk, ref, object, isDelete)
 		}
 
-		// ok to return final proxy reports as the latest result includes latest proxy calculated
-		// for each resource, as we process incrementally, storing new state in memory as we go
-		return proxyReports, errs
+		return proxyReports, errs.ErrorOrNil()
 	case gwv1.GatewayGVK:
 		if isDelete {
 			// we don't validate gateway deletion
 			break
 		}
-		return wh.validateGateway(ctx, object.Raw)
+		return wh.validateGateway(ctx, rawJson)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
 			return validation.ProxyReports{}, wh.validator.ValidateDeleteVirtualService(ctx, ref)
 		} else {
-			return wh.validateVirtualService(ctx, object.Raw)
+			return wh.validateVirtualService(ctx, rawJson)
 		}
 	case gwv1.RouteTableGVK:
 		if isDelete {
 			return validation.ProxyReports{}, wh.validator.ValidateDeleteRouteTable(ctx, ref)
 		} else {
-			return wh.validateRouteTable(ctx, object.Raw)
+			return wh.validateRouteTable(ctx, rawJson)
 		}
 	}
 	return validation.ProxyReports{}, nil
