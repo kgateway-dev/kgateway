@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update images for Canary Release docs
+    issueLink: https://github.com/solo-io/gloo/issues/3293
