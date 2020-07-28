@@ -1,7 +1,7 @@
 ---
 title: Federated Configuration
 description: Setting up federated configuration
-weight: 20
+weight: 25
 ---
 
 Gloo Federation enables you to create consistent configurations across multiple Gloo instances. The resources being configured could be resources such as Upstreams, UpstreamGroups, and Virtual Services. In this guide you will learn how to add a Federated Upstream and Virtual Service to a registered cluster being managed by Gloo Federation.
