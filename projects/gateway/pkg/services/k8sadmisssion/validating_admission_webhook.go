@@ -5,7 +5,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -363,9 +365,66 @@ func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.Pro
 	return causes
 }
 
+var (
+	ListGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "",
+		Kind:    "List",
+	}
+)
+
 func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, object runtime.RawExtension, isDelete bool) (validation.ProxyReports, error) {
 
 	switch gvk {
+	case ListGVK:
+		var (
+			ul           unstructured.UnstructuredList
+			proxyReports = validation.ProxyReports{}
+		)
+		if err := json.Unmarshal(object.Raw, &ul); err != nil {
+			return nil, WrappedUnmarshalErr(err)
+		}
+
+		var errs *multierror.Error
+
+		for _, item := range ul.Items {
+
+			//itemGvk := schema.GroupVersionKind{
+			//	Version: ul.GetAPIVersion(),
+			//	Group:   ul.GetObjectKind().GroupVersionKind().Group,
+			//	Kind:    ul.GetKind(),
+			//}
+
+			//TODO(kdorosh) handle isDelete logic
+
+			//return nil, errors.Errorf("item gvk %v", itemGvk)
+
+			jsonBytes, err := item.MarshalJSON()
+			if err != nil {
+				return validation.ProxyReports{}, err
+			}
+
+			itemProxyReports, err := wh.validateGateway(ctx, jsonBytes)
+			if errors.Is(err, UnmarshalErr) {
+				itemProxyReports, err = wh.validateVirtualService(ctx, jsonBytes)
+			}
+			// this approach gives crappy error messages if we can't parse into any of the expected types
+			if errors.Is(err, UnmarshalErr) {
+				itemProxyReports, err = wh.validateRouteTable(ctx, jsonBytes)
+			}
+
+			errs = multierror.Append(errs, err)
+			for proxy, report := range itemProxyReports {
+				proxyReports[proxy] = report
+			}
+
+			// create ref from item ns and name, pass through object and isDelete
+			//wh.validate(ctx, itemGvk, ref, object, isDelete)
+		}
+
+		// ok to return final proxy reports as the latest result includes latest proxy calculated
+		// for each resource, as we process incrementally, storing new state in memory as we go
+		return proxyReports, errs
 	case gwv1.GatewayGVK:
 		if isDelete {
 			// we don't validate gateway deletion
