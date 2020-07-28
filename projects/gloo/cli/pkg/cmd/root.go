@@ -58,13 +58,15 @@ func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutil
 	// Complete additional passed in setup
 	cliutils.ApplyOptions(app, optionsFunc)
 
+	// Handle glooctl plugins
 	args := os.Args
 	if len(args) > 1 {
 		cmdPathPieces := args[1:]
-		piHandler := cmd.NewDefaultPluginHandler(constants.ValidExtensionPrefixes)
+		pluginHandler := cmd.NewDefaultPluginHandler(constants.ValidExtensionPrefixes)
+
 		// If the given subcommand does not exist, look for a suitable plugin executable
 		if _, _, err := app.Find(cmdPathPieces); err != nil {
-			if err := cmd.HandlePluginCommand(piHandler, cmdPathPieces); err != nil {
+			if err := cmd.HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
 				fmt.Printf("%v\n", err)
 				os.Exit(1)
 			}
