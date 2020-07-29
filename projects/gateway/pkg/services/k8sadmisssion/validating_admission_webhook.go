@@ -383,7 +383,8 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 			proxyReports = validation.ProxyReports{}
 			errs         = &multierror.Error{}
 		)
-		if err := json.Unmarshal(rawJson, &ul); err != nil {
+
+		if err := ul.UnmarshalJSON(rawJson); err != nil {
 			return nil, WrappedUnmarshalErr(err)
 		}
 
