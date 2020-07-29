@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+      Use the solo-io fork of the github action setup-protoc, as the upstream doesn't support
+      release pagination, meaning 3.6.1 wouldn't install.
