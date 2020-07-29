@@ -128,7 +128,7 @@ The `gloo-fed-console` MultiClusterRole and MultiClusterRoleBinding grant the sa
 
 ## Create Roles and Bindings
 
-In the previous section we installed Multicluster RBAC. The process created a MultiClusterRole and MultiClusterRoleBinding for both the `gloo-fed` and `gloo-fed-console` service account. It did not create any role or binding for the kubernetes-admin account, which means that we cannot make any changes to the Gloo Federation custom resources.
+In the previous section we installed Multicluster RBAC. The process created a MultiClusterRole and MultiClusterRoleBinding for both the `gloo-fed` and `gloo-fed-console` service account. It did not create any role or binding for the default kind user account, kubernetes-admin, which means that we cannot make any changes to the Gloo Federation custom resources.
 
 Let's try and create a FederatedUpstream on the local cluster:
 
