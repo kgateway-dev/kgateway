@@ -35,7 +35,7 @@ The installation will create the necessary Kubernetes components for running Glo
 
 ### Install using Helm
 
-You can also install Gloo Federation by using Helm directly. The default values of the chart can be overriden by using the `--set` argument.
+You can also install Gloo Federation by using Helm directly. The default values of the chart can be overridden by using the `--set` argument.
 
 With your kubectl context set to the admin cluster, run the following commands:
 
