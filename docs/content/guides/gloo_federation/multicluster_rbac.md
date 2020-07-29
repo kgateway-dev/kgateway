@@ -112,7 +112,7 @@ spec:
       - '*'
 ```
 
-The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the `gloo-fed` service account. Without the binding, the gloo-fed pod wouldn't be able to make changes to the Gloo Federation installation.
+The `gloo-fed` MultiClusterRoleBinding associates the MultiClusterRole with the `gloo-fed` service account. Without the binding, the gloo-fed pod wouldn't be able to update the status of Gloo Federation API objects.
 
 ```yaml
 spec:
