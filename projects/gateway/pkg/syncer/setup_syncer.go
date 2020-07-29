@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/solo-io/gloo/pkg/utils/setuputils"
-
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 
 	"go.uber.org/zap"
@@ -149,10 +147,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		Validation:                    validation,
 	}
 
-	return RunGateway(opts)
+	return RunGateway(opts, settings.Metadata.Namespace)
 }
 
-func RunGateway(opts translator.Opts) error {
+// the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
+func RunGateway(opts translator.Opts, glooNamespace string) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
@@ -274,21 +273,19 @@ func RunGateway(opts translator.Opts) error {
 	if opts.Validation != nil {
 		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
 		// ReadGatewaysFromAllNamespaces is false
-		controllerNamespace := os.Getenv(setuputils.PodNamespace)
-		if controllerNamespace == "" {
-			return errors.Errorf("Missing/unset environment variable: %s", setuputils.PodNamespace)
-		}
 		if !opts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
 			foundSelf := false
 			for _, namespace := range opts.WatchNamespaces {
-				if controllerNamespace == namespace {
+				if glooNamespace == namespace {
 					foundSelf = true
 					break
 				}
 			}
 			if !foundSelf {
-				return errors.Errorf("READ_GATEWAYS_FROM_ALL_NAMESPACES was set to false, but non-empty WATCH_NAMESPACES"+
-					" list [%s] did not contain this gloo instance's own namespace: %s.", strings.Join(opts.WatchNamespaces, ", "), controllerNamespace)
+				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
+					"to false, but the non-empty settings.watchNamespaces "+
+					"list (%s) did not contain this gloo instance's own namespace: %s.",
+					strings.Join(opts.WatchNamespaces, ", "), glooNamespace)
 			}
 		}
 
@@ -302,7 +299,7 @@ func RunGateway(opts translator.Opts) error {
 				opts.Validation.ValidatingWebhookKeyPath,
 				opts.Validation.AlwaysAcceptResources,
 				opts.ReadGatewaysFromAllNamespaces,
-				controllerNamespace,
+				glooNamespace,
 			),
 		)
 		if err != nil {
