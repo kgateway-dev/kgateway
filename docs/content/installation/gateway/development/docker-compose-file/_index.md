@@ -12,6 +12,7 @@ Kubernetes provides APIs for config storage ([CRDs](https://kubernetes.io/docs/c
 Fortunately, Gloo provides alternate mechanisms for configuration, credential storage, and service discovery that do not require Kubernetes, including the use of local `.yaml` files, [HashiCorp Consul Key-Value storage](https://www.consul.io/api/kv.html) and [HashiCorp Vault Key-Value storage](https://www.vaultproject.io/docs/secrets/kv/kv-v2.html).
 
 This tutorial provides a basic installation flow for running Gloo with Docker Compose, using the local filesystem of the containers to store configuration and credentials data.
+(A similar tutorial using Consul and Vault instead of the local filesystem can be found [here]({{< versioned_link_path fromRoot="/installation/gateway/development/docker-compose-consul/" >}}).)
 
 First we will copy the necessary files from the [Solo.io GitHub](https://github.com/solo-io/gloo) repository. 
 
@@ -63,6 +64,9 @@ The files used for installation live in the `install/docker-compose-file` direct
 ```bash
 ├── data
 │   ├── config
+│   │   ├── gateways
+│   │   │   └── gloo-system
+│   │   │       └── gateway-proxy.yaml
 │   │   ├── upstreams
 │   │   │   └── gloo-system
 │   │   │       └── petstore.yaml
@@ -97,6 +101,7 @@ The updated `data` directory structure should look like this:
 │   │   └── gloo-system
 │   ├── gateways
 │   │   └── gloo-system
+│   │       └── gateway-proxy.yaml
 │   ├── proxies
 │   │   └── gloo-system
 │   ├── routetables
@@ -121,9 +126,11 @@ The updated `data` directory structure should look like this:
 
 * `data/gloo-system/default.yaml` provides the initial configuration for the Gloo and Gateway containers, including where to store secrets, configs, and artifacts.
 
+* `data/config/gateways/gloo-system/gateway-proxy.yaml` defines additional configuration for the Gateway container.
+
 * `data/config/upstreams/gloo-system/petstore.yaml` defines an *Upstream* configuration for the Pet Store application that Gloo can use as a target to route requests.
 
-* `data/config/virtualservice/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
+* `data/config/virtualservices/gloo-system/default.yaml` defines a default *Virtual Service* with routing rules to send traffic from the proxy to the Pet Store *Upstream*.
 
 * `data/envoy-config.yaml` defines the configuration for the Envoy container.
 
@@ -150,13 +157,11 @@ The following ports will be exposed to the host machine:
 | gloo/https | 8443 | 
 | gloo/admin | 19000 | 
 
-In addition to opening ports, there should be three new files in the `data` directory. 
+In addition to opening ports, there should be a new file in the `data` directory.
 
-* `config/gateways/gloo-system/gateway-proxy-ssl.yaml`
-* `config/gateways/gloo-system/gateway-proxy.yaml`
 * `config/proxies/gloo-system/gateway-proxy.yaml`
 
-The three files represent the configuration for the `gateway` and `gateway-proxy` containers.
+This file and `config/gateways/gloo-system/gateway-proxy.yaml` represent the configuration for the `gateway` and `gateway-proxy` containers.
 
 The containers should have loaded their base configuration as well as the Pet Store *Upstream* and default *Virtual Service*. In the next section we will examine the contents of the two configuration files.
 
