@@ -4,7 +4,7 @@ description: Applying role-based access control to multiple Gloo instances
 weight: 40
 ---
 
-Gloo Federation allows you to administer multiple instances of Gloo across multiple Kubernetes clusters. Multicluster role-based access control is a feature of Gloo Federation that controls access and actions on Gloo instances across multiple Kubernetes clusters. The feature ensures that users only have access to the resources they are supposed to, no matter where they are, and which Gloo instance they belong to.
+Gloo Federation allows you to administer multiple instances of Gloo across multiple Kubernetes clusters. One Gloo Federation object might modify configuration across many instances of Gloo across many Kubernetes clusters. Multicluster role-based access control is a feature of Gloo Federation that controls access and actions on Gloo Federation APIs that might reconfigure many Gloo instances. The feature ensures that users are only allowed to modify Gloo Federation resources that configure Gloo resources in clusters and namespaces that they have explicitly been granted access to in order to facilitate multitenancy in the Gloo Federation control plane.
 
 ## Prerequisites
 
