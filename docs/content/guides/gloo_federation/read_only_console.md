@@ -24,11 +24,10 @@ For the purposes of this example, we have two clusters `local` and `remote`. The
 The Gloo Federation console is exposed by the `gloo-fed-console` service running in the `gloo-fed` namespace. The console is available on port 8090. In a production scenario, you could choose to create a new service exposing the console on an IP address available outside the cluster. For our example, we are going to port-forward the service to the local IP address of the machine running the demonstration environment.
 
 ```bash
-# Get the local IP address
-LOCAL_IP=$(ip a | awk '/inet / { print $2 }' | sed -n 2p | cut -d "/" -f1)
-
 # Launch the port-forward for port 8090
-kubectl port-forward svc/gloo-fed-console -n gloo-fed 8090:8090 --address=$LOCAL_IP
+kubectl port-forward svc/gloo-fed-console -n gloo-fed 8090:8090
+
+
 ```
 
 You should now be able to access the read-only console from the machine's local ip address.

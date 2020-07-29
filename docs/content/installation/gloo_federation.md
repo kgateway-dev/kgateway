@@ -17,12 +17,40 @@ You will also need a license key to install Gloo Federation. The key can be proc
 
 ## Installation
 
-Gloo Federation is installed in an admin cluster, which may or may not include Gloo instances. The `glooctl` tool uses Helm to perform the deployment of Gloo Federation. By default, the deployment will create the `gloo-fed` namespace and instantiate the Gloo Federation components in that namespace. Additional information and flags can be found by running `glooctl install federation -h`.
+Gloo Federation is installed in an admin cluster, which may or may not include Gloo instances. You can perform the installation using `glooctl` or helm. 
+
+### Install using glooctl
+
+The `glooctl` tool uses Helm in the background to perform the deployment of Gloo Federation. By default, the deployment will create the `gloo-fed` namespace and instantiate the Gloo Federation components in that namespace. Additional information and flags can be found by running `glooctl install federation -h`. You can override the default settings by specify the `--values` argument and providing a yaml file with the necessary values.
 
 With your kubectl context set to the admin cluster, run the following command:
 
 ```
 glooctl install federation --license-key <LICENSE_KEY>
+```
+
+Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Federation.
+
+The installation will create the necessary Kubernetes components for running Gloo Federation.
+
+### Install using Helm
+
+You can also install Gloo Federation by using Helm directly. The default values of the chart can be overriden by using the `--set` argument.
+
+With your kubectl context set to the admin cluster, run the following commands:
+
+```bash
+# Add the gloo-fed helm repo
+helm repo add gloo-fed https://storage.googleapis.com/gloo-fed-helm
+
+# Update your repos 
+helm repo update
+
+# Create the gloo-fed namespace
+kubectl create namespace gloo-fed
+
+# Install using helm
+helm install -n gloo-fed gloo-fed gloo-fed/gloo-fed --set license.key <LICENSE_KEY>
 ```
 
 Make sure to change the placeholder `<LICENSE_KEY>` to the license key you have procured for Gloo Federation.
