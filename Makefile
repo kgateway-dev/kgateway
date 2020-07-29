@@ -551,39 +551,38 @@ ifeq ($(RELEASE),"true")
 	DOCKER_IMAGES := docker
 endif
 
-.PHONY: docker
-docker: gateway-docker
-#docker: discovery-docker gateway-docker gloo-docker \
-# 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
-#		certgen-docker sds-docker ingress-docker access-logger-docker
+.PHONY: docker docker-push
+docker: discovery-docker gateway-docker gloo-docker \
+ 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
+		certgen-docker sds-docker ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
 # to be used for local testing.
 # docker-push is intended to be run by CI
 docker-push: $(DOCKER_IMAGES)
-	docker push $(IMAGE_REPO)/gateway:$(VERSION) #&& \
-#	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) && \
-#	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
-#	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
+	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
+	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
+	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) && \
+	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
+	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
+	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
 
 CLUSTER_NAME ?= kind
 
 push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/gateway:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/ingress:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
-#	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/ingress:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
+	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)
 
 
 #----------------------------------------------------------------------------------
