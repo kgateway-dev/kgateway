@@ -1,8 +1,9 @@
-package grpc
+package rest
 
 import (
 	"regexp"
 
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -10,7 +11,7 @@ import (
 	envoy_transform "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/transformation"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	pluginsv1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options"
-	v1grpc "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
+	v1rest "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/rest"
 	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	transformapi "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
@@ -19,7 +20,6 @@ import (
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"github.com/gogo/protobuf/types"
 )
 
 var _ = Describe("Plugin", func() {
@@ -30,28 +30,26 @@ var _ = Describe("Plugin", func() {
 		upstream     *v1.Upstream
 		upstreamSpec *v1static.UpstreamSpec
 		out          *envoyapi.Cluster
-		grpcSpec     *pluginsv1.ServiceSpec_Grpc
+		restSpec     *pluginsv1.ServiceSpec_Rest
 	)
 
 	BeforeEach(func() {
 		b := false
-		p = NewPlugin(&b)
+		p = NewPlugin(&b).(*plugin)
 		out = new(envoyapi.Cluster)
 
-		grpcSpec = &pluginsv1.ServiceSpec_Grpc{
-			Grpc: &v1grpc.ServiceSpec{
-				GrpcServices: []*v1grpc.ServiceSpec_GrpcService{{
-					PackageName:   "foo",
-					ServiceName:   "bar",
-					FunctionNames: []string{"func"},
-				}},
+		restSpec = &pluginsv1.ServiceSpec_Rest{
+			Rest: &v1rest.ServiceSpec{
+				Transformations: map[string]*envoy_transform.TransformationTemplate{
+					"func": &envoy_transform.TransformationTemplate{},
+				},
 			},
 		}
 
 		p.Init(plugins.InitParams{})
 		upstreamSpec = &v1static.UpstreamSpec{
 			ServiceSpec: &pluginsv1.ServiceSpec{
-				PluginType: grpcSpec,
+				PluginType: restSpec,
 			},
 			Hosts: []*v1static.Host{{
 				Addr: "localhost",
@@ -67,22 +65,19 @@ var _ = Describe("Plugin", func() {
 				Static: upstreamSpec,
 			},
 		}
+
 	})
 	Context("upstream", func() {
-		It("should not mark non-grpc upstreams as http2", func() {
-			upstreamSpec.ServiceSpec.PluginType = nil
+		It("should process the upstream", func() {
 			err := p.ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out.Http2ProtocolOptions).To(BeNil())
+			Expect(err).ToNot(HaveOccurred())
 		})
-
-		It("should mark grpc upstreams as http2", func() {
+		It("fails if the service spec is empty", func() {
+			upstream.UpstreamType.(*v1.Upstream_Static).Static.ServiceSpec.PluginType.(*pluginsv1.ServiceSpec_Rest).Rest = nil
 			err := p.ProcessUpstream(params, upstream, out)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(out.Http2ProtocolOptions).NotTo(BeNil())
+			Expect(err).To(HaveOccurred())
 		})
 	})
-
 	Context("route", func() {
 		var (
 			ps       *transformapi.Parameters
@@ -93,11 +88,6 @@ var _ = Describe("Plugin", func() {
 		BeforeEach(func() {
 			ps = &transformapi.Parameters{
 				Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
-				Headers: map[string]string{
-					"header-simple":            "{simple}",
-					"header-simple-with-space": "{ simple_with_space }",
-					"header-nested":            "{something.nested}",
-				},
 			}
 			routeIn = &v1.Route{
 				Action: &v1.Route_RouteAction{
@@ -105,12 +95,10 @@ var _ = Describe("Plugin", func() {
 						Destination: &v1.RouteAction_Single{
 							Single: &v1.Destination{
 								DestinationSpec: &v1.DestinationSpec{
-									DestinationType: &v1.DestinationSpec_Grpc{
-										Grpc: &v1grpc.DestinationSpec{
-											Package:    "foo",
-											Service:    "bar",
-											Function:   "func",
-											Parameters: ps,
+									DestinationType: &v1.DestinationSpec_Rest{
+										Rest: &v1rest.DestinationSpec{
+											FunctionName: "func",
+											Parameters:   ps,
 										},
 									},
 								},
@@ -122,6 +110,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
+
 			routeOut = &envoyroute.Route{
 				Match: &envoyroute.RouteMatch{
 					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
@@ -130,12 +119,13 @@ var _ = Describe("Plugin", func() {
 					Route: &envoyroute.RouteAction{},
 				},
 			}
+
 		})
+
 		It("should process route", func() {
+			var routeParams plugins.RouteParams
 			err := p.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
-
-			var routeParams plugins.RouteParams
 			err = p.ProcessRoute(routeParams, routeIn, routeOut)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -145,10 +135,7 @@ var _ = Describe("Plugin", func() {
 			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
-			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
-
-			extrs := tt.GetExtractors()
+			extrs := cfg.GetRequestTransformation().GetTransformationTemplate().GetExtractors()
 			Expect(extrs["what"].GetHeader()).To(Equal(":path"))
 			Expect(extrs["what"].GetSubgroup()).To(Equal(uint32(1)))
 
@@ -157,16 +144,6 @@ var _ = Describe("Plugin", func() {
 
 			Expect(extrs["nested.field"].GetHeader()).To(Equal(":path"))
 			Expect(extrs["nested.field"].GetSubgroup()).To(Equal(uint32(3)))
-
-			Expect(extrs["simple"].GetHeader()).To(Equal("header-simple"))
-			Expect(extrs["simple"].GetSubgroup()).To(Equal(uint32(1)))
-
-			Expect(extrs["simple_with_space"].GetHeader()).To(Equal("header-simple-with-space"))
-			Expect(extrs["simple_with_space"].GetSubgroup()).To(Equal(uint32(1)))
-
-			Expect(extrs["something.nested"].GetHeader()).To(Equal("header-nested"))
-			Expect(extrs["something.nested"].GetSubgroup()).To(Equal(uint32(1)))
-
 		})
 
 		It("should produce path extractors that can match URLs", func() {
@@ -183,13 +160,10 @@ var _ = Describe("Plugin", func() {
 			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
 			Expect(err).NotTo(HaveOccurred())
 
-			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
-			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
+			extrs := cfg.GetRequestTransformation().GetTransformationTemplate().GetExtractors()
 
-			extrs := tt.GetExtractors()
 			matchablePath := "/first_value/second%34value/third-value/too"
 			compiledRe, err := regexp.Compile(extrs["what"].Regex)
-
 			subMatches := compiledRe.FindStringSubmatch(matchablePath)
 			Expect(subMatches).NotTo(BeNil())
 			// We expect the entire string to match since this is what the matching code in
