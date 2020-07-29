@@ -10,7 +10,7 @@ When releasing changes to a service, you want to finely control how those change
 ## What is traffic shadowing with Gloo?
 Traffic shadowing with Gloo makes a copy of an incoming request and proxies the real request to the appropriate backend (the normal request path) and sends the copy to another upstream. The copied message is ignored for failures or responses. In this case, you can deploy `v2` of a service and shadow traffic to it *in production* without affecting user traffic. This ability to shadow is incredibly important because it allows you to begin your release or canary process with zero production impact. 
 
-![Gloo traffic shadowing diagram]({{% versioned_link_path fromRoot="/img/gloo-traffic-shadowing.png" %}})
+![Gloo traffic shadowing diagram]({{% versioned_link_path fromRoot="/img/traffic-shadowing.png" %}})
 
 When shadowing traffic, you can use tools like [Open Diffy](https://github.com/opendiffy/diffy), or [Diferencia](https://github.com/lordofthejars/diferencia) to do diff-compares on the responses of the traffic. This way you can verify the response is correct (these tools do a diff between the real response and the new service's response) in a way that can also detect API forward/backward compatibility problems. 
 

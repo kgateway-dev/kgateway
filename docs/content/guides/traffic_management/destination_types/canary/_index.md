@@ -9,7 +9,7 @@ As application architecture evolves from monolithic to microservices, the strate
 What is a Canary Release?
 Canary release is an approach for safer application delivery, specifically the delivery of new software to end users without disrupting or interrupting their experience. The term ["canary release"](https://blog.christianposta.com/deploy/blue-green-deployments-a-b-testing-and-canary-releases/) is to test whether the intended changes behave well and without issues when taking a small fraction (think, 1% ) of the traffic. If this canary deployment starts to misbehave (as judged by external metric collection like request throughput or latency) then we immediately roll back by directing traffic back to the last known-working deployment. Techniques like Canary fall within the practice of Progressive Delivery which allow organizations to better manage their risk by slowing down and controlling how many end users have access to the new software as it is deployed to production.
 
-![Canary traffic]({{% versioned_link_path fromRoot="/img/solo-canary-1.png" %}})
+![Canary traffic]({{% versioned_link_path fromRoot="/img/solo-canary.png" %}})
 
 This technique can be used to progressively deliver new changes into production. If the canary performs well and shows no signs of misbehavior, we can allow a larger chunk of traffic to the new deployment. At each point we increase the traffic load to the new service, we evaluate the service's behavior against the metrics in which we are interested. At any point we may end up rolling to release back. 
 
@@ -27,7 +27,7 @@ With these drawbacks, to achieve 1% traffic routing, you will need 100 pods: 1 w
 
 A step you could perform _before_ a percentage based canary of traffic is traffic shadowing. In this model, we don't send a percentage of live traffic to the new service, but we send a percentage of _shadowed_ traffic. With shadowed traffic, we make a copy of a request and send it to the new service, not the actual request. Responses get ignored. [Gloo supports traffic shadowing to add in Canary releases]({{< versioned_link_path fromRoot="/guides/traffic_management/request_processing/shadowing/" >}}).
 
-![Canary traffic]({{% versioned_link_path fromRoot="/img/traffic-shadowing-1.png" %}})
+![Canary traffic]({{% versioned_link_path fromRoot="/img/traffic-shadowing.png" %}})
 
 ## Canary Releases with Gloo
 
