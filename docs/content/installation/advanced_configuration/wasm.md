@@ -17,7 +17,7 @@ is meant to show off the potential of WASM filters, and how they will integrate 
 
 Getting started with WASM is simple, it requires setting one new value in the gloo helm chart.
 
-This can be done either using `glooctl` or `helm 3` as follows:
+Gloo can be installed with this value set using either `glooctl` or `helm 3` as follows:
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell script">}}
 glooctl install gateway --values <(echo '{"crds":{"create":true},"global":{"wasm":{"enabled":true}}}')
