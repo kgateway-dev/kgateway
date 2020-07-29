@@ -60,6 +60,11 @@ var (
 	WrappedUnmarshalErr = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
+	ListGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "",
+		Kind:    "List",
+	}
 )
 
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
@@ -365,14 +370,6 @@ func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.Pro
 
 	return causes
 }
-
-var (
-	ListGVK = schema.GroupVersionKind{
-		Version: "v1",
-		Group:   "",
-		Kind:    "List",
-	}
-)
 
 func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete bool) (validation.ProxyReports, error) {
 
