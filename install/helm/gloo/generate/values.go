@@ -273,7 +273,7 @@ type GatewayProxyPodTemplate struct {
 }
 
 type GracefulShutdownSpec struct {
-	Enabled          bool `json:"enabled" desc:"Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers"`
+	Enabled          bool `json:"enabled" desc:"Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter"`
 	SleepTimeSeconds int  `json:"sleepTimeSeconds" desc:"Time (in seconds) for the preStop hook to wait before allowing envoy to terminate"`
 }
 
