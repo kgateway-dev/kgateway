@@ -29,7 +29,7 @@ If you are running the registration command against a kind cluster on MacOS or L
 
 <pre><code>
 # MacOS
-glooctl cluster register --cluster-name remote --remote-context kind-remote \
+glooctl cluster register --cluster-name local --remote-context kind-local \
   --local-cluster-domain-override host.docker.internal:6443
 
 </code></pre>
@@ -37,10 +37,10 @@ glooctl cluster register --cluster-name remote --remote-context kind-remote \
 
 <pre><code>
 # Linux
-# Get the IP address of the remote cluster control plane
-REMOTE_IP=$(docker exec remote-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p')
-glooctl cluster register --cluster-name remote --remote-context kind-remote \
-  --local-cluster-domain-override $REMOTE_IP:6443
+# Get the IP address of the local cluster control plane
+LOCAL_IP=$(docker exec local-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p')
+glooctl cluster register --cluster-name local --remote-context kind-local \
+  --local-cluster-domain-override $LOCAL_IP:6443
 
 
 </code></pre>
