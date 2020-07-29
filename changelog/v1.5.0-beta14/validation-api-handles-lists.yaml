@@ -1,0 +1,5 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Gateway validation API (the API that backs the validating webhook) now handles lists of gateway resources.
+    issueLink: https://github.com/solo-io/gloo/issues/3261

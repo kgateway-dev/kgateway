@@ -105,7 +105,7 @@ func buildRegexString(rxp *regexp.Regexp, paramString string) string {
 	for _, startStop := range rxp.FindAllStringIndex(paramString, -1) {
 		start := startStop[0]
 		end := startStop[1]
-		subStr := regexp.QuoteMeta(paramString[prevEnd:start]) + `([\-._[:alnum:]]+)`
+		subStr := regexp.QuoteMeta(paramString[prevEnd:start]) + `([\-._%[:alnum:]]+)`
 		regexString += subStr
 		prevEnd = end
 	}
