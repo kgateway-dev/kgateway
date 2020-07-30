@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -168,8 +170,8 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		logger.Errorf("contentType=%s, expecting application/json", contentType)
+	if contentType != "application/json" && contentType != "application/x-yaml" {
+		logger.Errorf("contentType=%s, expecting application/json or application/x-yaml", contentType)
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -190,10 +192,20 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	var (
 		admissionResponse = &AdmissionResponseWithProxies{}
 		review            v1beta1.AdmissionReview
+		err               error
 	)
-	if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
-		admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+
+	if contentType == "application/x-yaml" {
+		if err = yaml.Unmarshal(body, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
 	} else {
+		if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
+	}
+
+	if err != nil {
 		logger.Errorf("Can't decode body: %v", err)
 		admissionResponse.AdmissionResponse = &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{

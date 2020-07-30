@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/ghodss/yaml"
+
 	"net/http"
 	"net/http/httptest"
 
@@ -127,23 +130,33 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 	)
 
 	Context("invalid yaml", func() {
-		It("rejects the resource even when alwaysAccept=true", func() {
-			wh.alwaysAccept = true
 
-			req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace, []byte(`{"metadata": [1, 2, 3]}`))
-			Expect(err).NotTo(HaveOccurred())
+		invalidYamlTests := func(useYamlEncoding bool) {
+			It("rejects the resource even when alwaysAccept=true", func() {
+				wh.alwaysAccept = true
 
-			res, err := srv.Client().Do(req)
-			Expect(err).NotTo(HaveOccurred())
+				req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace, []byte(`{"metadata": [1, 2, 3]}`), useYamlEncoding)
+				Expect(err).NotTo(HaveOccurred())
 
-			review, err := parseReviewResponse(res)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(review.Response).NotTo(BeNil())
+				res, err := srv.Client().Do(req)
+				Expect(err).NotTo(HaveOccurred())
 
-			Expect(review.Response.Allowed).To(BeFalse())
-			Expect(review.Response.Result).NotTo(BeNil())
-			Expect(review.Response.Result.Message).To(ContainSubstring("could not unmarshal raw object: unmarshalling from raw json: json: cannot unmarshal array into Go struct field Resource.metadata of type v1.ObjectMeta"))
+				review, err := parseReviewResponse(res)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(review.Response).NotTo(BeNil())
 
+				Expect(review.Response.Allowed).To(BeFalse())
+				Expect(review.Response.Result).NotTo(BeNil())
+				Expect(review.Response.Result.Message).To(ContainSubstring("could not unmarshal raw object: unmarshalling from raw json: json: cannot unmarshal array into Go struct field Resource.metadata of type v1.ObjectMeta"))
+
+			})
+		}
+
+		Context("json encoded request to validation server", func() {
+			invalidYamlTests(false)
+		})
+		Context("yaml encoded request to validation server", func() {
+			invalidYamlTests(true)
 		})
 	})
 })
@@ -154,7 +167,7 @@ func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, ope
 	case unstructured.UnstructuredList:
 		jsonBytes, err := typedResource.MarshalJSON()
 		Expect(err).To(BeNil())
-		return makeReviewRequestRaw(url, gvk, operation, "name", "namespace", jsonBytes)
+		return makeReviewRequestRawJsonEncoded(url, gvk, operation, "name", "namespace", jsonBytes)
 	case resources.InputResource:
 		resourceCrd, err := crd.KubeResource(typedResource)
 		if err != nil {
@@ -165,7 +178,7 @@ func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, ope
 		if err != nil {
 			return nil, err
 		}
-		return makeReviewRequestRaw(url, gvk, operation, typedResource.GetMetadata().Name, typedResource.GetMetadata().Namespace, raw)
+		return makeReviewRequestRawJsonEncoded(url, gvk, operation, typedResource.GetMetadata().Name, typedResource.GetMetadata().Namespace, raw)
 	default:
 		Fail("unknown type")
 	}
@@ -173,7 +186,11 @@ func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, ope
 	return nil, eris.Errorf("unknown type")
 }
 
-func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1beta1.Operation, name, namespace string, raw []byte) (*http.Request, error) {
+func makeReviewRequestRawJsonEncoded(url string, gvk schema.GroupVersionKind, operation v1beta1.Operation, name, namespace string, raw []byte) (*http.Request, error) {
+	return makeReviewRequestRaw(url, gvk, operation, name, namespace, raw, false)
+}
+
+func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1beta1.Operation, name, namespace string, raw []byte, useYamlEncoding bool) (*http.Request, error) {
 
 	review := v1beta1.AdmissionReview{
 		Request: &v1beta1.AdmissionRequest{
@@ -192,7 +209,18 @@ func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1b
 		},
 	}
 
-	body, err := json.Marshal(review)
+	var (
+		contentType string
+		body        []byte
+		err         error
+	)
+	if useYamlEncoding {
+		contentType = "application/x-yaml"
+		body, err = yaml.Marshal(review)
+	} else {
+		contentType = "application/json"
+		body, err = json.Marshal(review)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +230,7 @@ func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1b
 		return nil, err
 	}
 
-	req.Header.Set("Content-type", "application/json")
+	req.Header.Set("Content-type", contentType)
 
 	return req, nil
 }
