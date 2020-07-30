@@ -156,7 +156,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			wh.watchNamespaces = []string{routeTable.Metadata.Namespace}
 			wh.webhookNamespace = routeTable.Metadata.Namespace
 
-			req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd, v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace+"other", []byte(`{"metadata": [1, 2, 3]}`))
+			req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace+"other", []byte(`{"metadata": [1, 2, 3]}`))
 			Expect(err).NotTo(HaveOccurred())
 
 			res, err := srv.Client().Do(req)
@@ -177,7 +177,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			wh.webhookNamespace = routeTable.Metadata.Namespace
 			wh.readGatewaysFromAllNamespaces = false
 
-			req, err := makeReviewRequestRaw(srv.URL, v1.GatewayCrd, v1beta1.Create, routeTable.Metadata.Name, otherNamespace, []byte(`{"metadata": [1, 2, 3]}`))
+			req, err := makeReviewRequestRaw(srv.URL, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, otherNamespace, []byte(`{"metadata": [1, 2, 3]}`))
 			Expect(err).NotTo(HaveOccurred())
 
 			res, err := srv.Client().Do(req)
