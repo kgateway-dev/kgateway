@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix wasm docs examples to be accurate for latest version (Gloo 1.5.x)
+    issueLink: https://github.com/solo-io/gloo/issues/3348
