@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix doc for running gloo locally using the local file system to include manually creating Gateway resource, which is no longer automatically created as of Gloo 1.2.16.
+    issueLink: https://github.com/solo-io/gloo/issues/3156
