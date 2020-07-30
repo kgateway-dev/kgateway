@@ -1,0 +1,6 @@
+changelog:
+    - type: HELM
+      issueLink: https://github.com/solo-io/gloo/issues/3308
+      description: >
+        Support a Kubernetes `preStop` hook to enable a "graceful shutdown" when relying on external loadbalancers. This will
+        allow envoy to fail external facing healthchecks while still processing existing requests.
