@@ -4,7 +4,7 @@ description: Registering a cluster with Gloo Federation
 weight: 20
 ---
 
-Gloo Federation monitors clusters that have been registered with the Federation service and automatically discovers instances of Gloo deployed in the registered cluster. Once the registration process is complete, Gloo Federation can create federated configuration resources and apply them to Gloo instances running in registered clusters.
+Gloo Federation monitors clusters that have been registered using `glooctl` and automatically discovers instances of Gloo deployed on said clusters. Once the registration process is complete, Gloo Federation can create federated configuration resources and apply them to Gloo instances running in registered clusters.
 
 In this guide, we will walk through the process of registering a Kubernetes cluster with Gloo Federation.
 
@@ -29,7 +29,7 @@ If you are running the registration command against a kind cluster on MacOS or L
 
 <pre><code>
 # MacOS
-glooctl cluster register --cluster-name remote --remote-context kind-remote \
+glooctl cluster register --cluster-name local --remote-context kind-local \
   --local-cluster-domain-override host.docker.internal:6443
 
 </code></pre>
@@ -37,10 +37,10 @@ glooctl cluster register --cluster-name remote --remote-context kind-remote \
 
 <pre><code>
 # Linux
-# Get the IP address of the remote cluster control plane
-REMOTE_IP=$(docker exec remote-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p')
-glooctl cluster register --cluster-name remote --remote-context kind-remote \
-  --local-cluster-domain-override $REMOTE_IP:6443
+# Get the IP address of the local cluster control plane
+LOCAL_IP=$(docker exec local-control-plane ip addr show dev eth0 | sed -nE 's|\s*inet\s+([0-9.]+).*|\1|p')
+glooctl cluster register --cluster-name local --remote-context kind-local \
+  --local-cluster-domain-override $LOCAL_IP:6443
 
 
 </code></pre>

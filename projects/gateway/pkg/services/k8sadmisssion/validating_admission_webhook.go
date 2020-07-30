@@ -10,6 +10,9 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/hashicorp/go-multierror"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 
 	"github.com/solo-io/solo-kit/pkg/utils/protoutils"
@@ -56,6 +59,11 @@ var (
 	UnmarshalErr        = errors.New(unmarshalErrMsg)
 	WrappedUnmarshalErr = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
+	}
+	ListGVK = schema.GroupVersionKind{
+		Version: "v1",
+		Group:   "",
+		Kind:    "List",
 	}
 )
 
@@ -261,7 +269,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 
 	isDelete := req.Operation == v1beta1.Delete
 
-	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object, isDelete)
+	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete)
 	var proxies []*gloov1.Proxy
 	for proxy, _ := range proxyReports {
 		proxies = append(proxies, proxy)
@@ -363,30 +371,79 @@ func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.Pro
 	return causes
 }
 
-func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, object runtime.RawExtension, isDelete bool) (validation.ProxyReports, error) {
+func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete bool) (validation.ProxyReports, error) {
 
 	switch gvk {
+	case ListGVK:
+		return wh.validateList(ctx, rawJson, isDelete)
 	case gwv1.GatewayGVK:
 		if isDelete {
 			// we don't validate gateway deletion
 			break
 		}
-		return wh.validateGateway(ctx, object.Raw)
+		return wh.validateGateway(ctx, rawJson)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
 			return validation.ProxyReports{}, wh.validator.ValidateDeleteVirtualService(ctx, ref)
 		} else {
-			return wh.validateVirtualService(ctx, object.Raw)
+			return wh.validateVirtualService(ctx, rawJson)
 		}
 	case gwv1.RouteTableGVK:
 		if isDelete {
 			return validation.ProxyReports{}, wh.validator.ValidateDeleteRouteTable(ctx, ref)
 		} else {
-			return wh.validateRouteTable(ctx, object.Raw)
+			return wh.validateRouteTable(ctx, rawJson)
 		}
 	}
 	return validation.ProxyReports{}, nil
 
+}
+
+func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, isDelete bool) (validation.ProxyReports, error) {
+	var (
+		ul           unstructured.UnstructuredList
+		proxyReports = validation.ProxyReports{}
+		errs         = &multierror.Error{}
+	)
+
+	if err := ul.UnmarshalJSON(rawJson); err != nil {
+		return nil, WrappedUnmarshalErr(err)
+	}
+
+	for _, item := range ul.Items {
+
+		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
+		if err != nil {
+			return validation.ProxyReports{}, err
+		}
+
+		itemGvk := schema.GroupVersionKind{
+			Version: gv.Version,
+			Group:   gv.Group,
+			Kind:    item.GetKind(),
+		}
+
+		jsonBytes, err := item.MarshalJSON()
+		if err != nil {
+			return validation.ProxyReports{}, err
+		}
+
+		itemRef := core.ResourceRef{
+			Namespace: item.GetNamespace(),
+			Name:      item.GetName(),
+		}
+
+		itemProxyReports, err := wh.validate(ctx, itemGvk, itemRef, jsonBytes, isDelete)
+
+		errs = multierror.Append(errs, err)
+		for proxy, report := range itemProxyReports {
+			// ok to return final proxy reports as the latest result includes latest proxy calculated
+			// for each resource, as we process incrementally, storing new state in memory as we go
+			proxyReports[proxy] = report
+		}
+	}
+
+	return proxyReports, errs.ErrorOrNil()
 }
 
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {

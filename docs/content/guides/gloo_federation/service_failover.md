@@ -66,7 +66,7 @@ In order to use a Gloo Instance as a failover target it first needs to be config
 
 The Gateway resource below sets up a TCP proxy which is configured to terminate mTLS traffic from the primary gloo instance, and forward the traffic based on the SNI name. The SNI name and routing are automatically handled by Gloo Federation, but the certificates are the ones created in the previous step.
 
-The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. Gloo Federation will automatically discover all external addresses for any Gloo instance.
+The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. If you are using clusters built with kind, you will need to use a NodePort service. Gloo Federation will automatically discover all external addresses for any Gloo instance.
 
 ```yaml
 # Set context to remote cluster
