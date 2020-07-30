@@ -105,8 +105,8 @@ gatewayProxies:
       disableNetBind: true
       gracefulShutdown:
         enabled: false
-        sleepTimeSeconds: 60
-      terminationGracePeriodSeconds: 30
+        sleepTimeSeconds: 25
+      customReadinessProbe: {}
     service:
       customPorts: []
       type: LoadBalancer
