@@ -5,7 +5,7 @@
 # continue with the commit.
 # NOTE 1: The search definition of a JWT is fairly weak due to how
 # difficult it is to ID them quickly. For now, we trigger a warning off any two period-separated twenty-plus character
-# alphanmeric (plus '=_-+') words.
+# alphanmeric (plus '=_-') words.
 # NOTE 2: If we end up with too many false positives and want to refine the search process,
 # we can try to decode possible JWTs and see if they remotely resemble proper JSON.
 echo "Checking for possible JSON web tokens added in commit..."
