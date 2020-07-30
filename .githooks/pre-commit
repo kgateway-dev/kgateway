@@ -5,6 +5,8 @@
 # continue with this commit. Note: The search definition of a JWT is fairly weak due to how
 # difficult it is to ID them quickly. For now, we trigger a warning off any two twenty-plus character
 # alphanmeric ( plus '=_-+')# words joined by a period.
+# NOTE: If we end up with too many false positives and want to refine the search process,
+# we can try to decode possible JWTs and see if they remotely resemble proper JSON.
 echo "Checking for possible JSON web tokens added in commit..."
 if git diff HEAD~1 | grep '^+' | grep -Eq "[A-Za-z0-9_=-]{20,}\.[A-Za-z0-9_=-]{20,}" ; then
     echo "found lines addded in commit that might contain JWT's: "
