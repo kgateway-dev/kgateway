@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Correct validation webhook to respect readGatewaysFromAllNamespaces when examining gateway changes.
+    issueLink: https://github.com/solo-io/gloo/issues/3336

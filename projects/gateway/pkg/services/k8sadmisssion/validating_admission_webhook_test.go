@@ -83,6 +83,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 	errMsg := "didn't say the magic word"
 
 	DescribeTable("accepts valid admission requests, rejects bad ones", func(valid bool, crd crd.Crd, gvk schema.GroupVersionKind, resource interface{}) {
+		// not critical to these tests, but this isn't ever supposed to be null or empty.
+		wh.webhookNamespace = routeTable.Metadata.Namespace
 
 		if !valid {
 			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList) (validation.ProxyReports, error) {
@@ -134,6 +136,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		invalidYamlTests := func(useYamlEncoding bool) {
 			It("rejects the resource even when alwaysAccept=true", func() {
 				wh.alwaysAccept = true
+				wh.webhookNamespace = routeTable.Metadata.Namespace
 
 				req, err := makeReviewRequestRaw(srv.URL, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace, []byte(`{"metadata": [1, 2, 3]}`), useYamlEncoding)
 				Expect(err).NotTo(HaveOccurred())
@@ -157,6 +160,48 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		})
 		Context("yaml encoded request to validation server", func() {
 			invalidYamlTests(true)
+		})
+	})
+
+	Context("namespace scoping", func() {
+		It("Does not process the resource if it's not whitelisted by watchNamespaces", func() {
+			wh.alwaysAccept = false
+			wh.watchNamespaces = []string{routeTable.Metadata.Namespace}
+			wh.webhookNamespace = routeTable.Metadata.Namespace
+
+			req, err := makeReviewRequestRawJsonEncoded(srv.URL, v1.RouteTableCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, routeTable.Metadata.Namespace+"other", []byte(`{"metadata": [1, 2, 3]}`))
+			Expect(err).NotTo(HaveOccurred())
+
+			res, err := srv.Client().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			review, err := parseReviewResponse(res)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(review.Response).NotTo(BeNil())
+
+			Expect(review.Response.Allowed).To(BeTrue())
+			Expect(review.Response.Result).To(BeNil())
+		})
+
+		It("Does not process other-namespace gateway resources if readGatewaysFromAllNamespaces is false, even if they're from whitelisted namespaces", func() {
+			otherNamespace := routeTable.Metadata.Namespace + "other"
+			wh.alwaysAccept = false
+			wh.watchNamespaces = []string{routeTable.Metadata.Namespace, otherNamespace}
+			wh.webhookNamespace = routeTable.Metadata.Namespace
+			wh.readGatewaysFromAllNamespaces = false
+
+			req, err := makeReviewRequestRawJsonEncoded(srv.URL, v1.GatewayCrd.GroupVersionKind(), v1beta1.Create, routeTable.Metadata.Name, otherNamespace, []byte(`{"metadata": [1, 2, 3]}`))
+			Expect(err).NotTo(HaveOccurred())
+
+			res, err := srv.Client().Do(req)
+			Expect(err).NotTo(HaveOccurred())
+
+			review, err := parseReviewResponse(res)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(review.Response).NotTo(BeNil())
+
+			Expect(review.Response.Allowed).To(BeTrue())
+			Expect(review.Response.Result).To(BeNil())
 		})
 	})
 })
