@@ -75,7 +75,6 @@ require (
 	google.golang.org/grpc v1.28.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.3.0
-	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
 	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver v0.18.2
