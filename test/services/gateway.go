@@ -135,7 +135,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 	// gloo is dependency of gateway, needs to run second if we want to test validation
 	if !runOptions.WhatToRun.DisableGateway {
 		opts := defaultTestConstructOpts(ctx, runOptions)
-		go gatewaysyncer.RunGateway(opts, glooOpts.Settings.Metadata.Namespace)
+		go gatewaysyncer.RunGateway(opts)
 	}
 
 	if !runOptions.WhatToRun.DisableFds {
@@ -191,6 +191,7 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 	}
 
 	return translator.Opts{
+		GlooNamespace:   runOptions.Settings.Metadata.Namespace,
 		WriteNamespace:  runOptions.NsToWrite,
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,

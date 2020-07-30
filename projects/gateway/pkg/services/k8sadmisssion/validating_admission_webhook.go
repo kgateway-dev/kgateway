@@ -96,8 +96,9 @@ type WebhookConfig struct {
 	webhookNamespace              string
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath string, serverKeyPath string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
-	return WebhookConfig{ctx: ctx,
+func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
+	return WebhookConfig{
+		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
 		port:                          port,

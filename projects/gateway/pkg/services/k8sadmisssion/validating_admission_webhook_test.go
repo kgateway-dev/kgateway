@@ -164,7 +164,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 	})
 
 	Context("namespace scoping", func() {
-		It("Does not process the resource if it's not whitelisted by watchNamespaces", func() {
+		It("does not process the resource if it's not whitelisted by watchNamespaces", func() {
 			wh.alwaysAccept = false
 			wh.watchNamespaces = []string{routeTable.Metadata.Namespace}
 			wh.webhookNamespace = routeTable.Metadata.Namespace
@@ -183,7 +183,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 			Expect(review.Response.Result).To(BeNil())
 		})
 
-		It("Does not process other-namespace gateway resources if readGatewaysFromAllNamespaces is false, even if they're from whitelisted namespaces", func() {
+		It("does not process other-namespace gateway resources if readGatewaysFromAllNamespaces is false, even if they're from whitelisted namespaces", func() {
 			otherNamespace := routeTable.Metadata.Namespace + "other"
 			wh.alwaysAccept = false
 			wh.watchNamespaces = []string{routeTable.Metadata.Namespace, otherNamespace}
