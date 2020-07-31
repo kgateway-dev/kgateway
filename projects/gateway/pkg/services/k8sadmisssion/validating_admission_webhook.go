@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -67,6 +69,11 @@ var (
 	}
 )
 
+const (
+	ApplicationJson = "application/json"
+	ApplicationYaml = "application/x-yaml"
+)
+
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
 	utils.MeasureOne(
 		ctx,
@@ -94,8 +101,9 @@ type WebhookConfig struct {
 	webhookNamespace              string
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath string, serverKeyPath string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
-	return WebhookConfig{ctx: ctx,
+func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
+	return WebhookConfig{
+		ctx:                           ctx,
 		validator:                     validator,
 		watchNamespaces:               watchNamespaces,
 		port:                          port,
@@ -189,8 +197,8 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		logger.Errorf("contentType=%s, expecting application/json", contentType)
+	if contentType != ApplicationJson && contentType != ApplicationYaml {
+		logger.Errorf("contentType=%s, expecting application/json or application/x-yaml", contentType)
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -211,10 +219,20 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	var (
 		admissionResponse = &AdmissionResponseWithProxies{}
 		review            v1beta1.AdmissionReview
+		err               error
 	)
-	if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
-		admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+
+	if contentType == ApplicationYaml {
+		if err = yaml.Unmarshal(body, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
 	} else {
+		if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
+	}
+
+	if err != nil {
 		logger.Errorf("Can't decode body: %v", err)
 		admissionResponse.AdmissionResponse = &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{

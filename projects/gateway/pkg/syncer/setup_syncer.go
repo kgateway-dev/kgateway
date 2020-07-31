@@ -132,6 +132,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	opts := translator.Opts{
+		GlooNamespace:   settings.Metadata.Namespace,
 		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
 		Gateways:        gatewayFactory,
@@ -147,11 +148,11 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		Validation:                    validation,
 	}
 
-	return RunGateway(opts, settings.Metadata.Namespace)
+	return RunGateway(opts)
 }
 
 // the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
-func RunGateway(opts translator.Opts, glooNamespace string) error {
+func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
 	ctx := opts.WatchOpts.Ctx
@@ -276,7 +277,7 @@ func RunGateway(opts translator.Opts, glooNamespace string) error {
 		if !opts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
 			foundSelf := false
 			for _, namespace := range opts.WatchNamespaces {
-				if glooNamespace == namespace {
+				if opts.GlooNamespace == namespace {
 					foundSelf = true
 					break
 				}
@@ -285,7 +286,7 @@ func RunGateway(opts translator.Opts, glooNamespace string) error {
 				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
 					"to false, but the non-empty settings.watchNamespaces "+
 					"list (%s) did not contain this gloo instance's own namespace: %s.",
-					strings.Join(opts.WatchNamespaces, ", "), glooNamespace)
+					strings.Join(opts.WatchNamespaces, ", "), opts.GlooNamespace)
 			}
 		}
 
@@ -299,7 +300,7 @@ func RunGateway(opts translator.Opts, glooNamespace string) error {
 				opts.Validation.ValidatingWebhookKeyPath,
 				opts.Validation.AlwaysAcceptResources,
 				opts.ReadGatewaysFromAllNamespaces,
-				glooNamespace,
+				opts.GlooNamespace,
 			),
 		)
 		if err != nil {
