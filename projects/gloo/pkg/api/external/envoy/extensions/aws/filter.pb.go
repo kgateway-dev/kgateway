@@ -253,9 +253,15 @@ func (*AWSLambdaConfig) XXX_OneofWrappers() []interface{} {
 	}
 }
 
+// In order to specify the aws sts endpoint, both the cluster and uri must be set.
+// This is due to an envoy limitation which cannot infer the host or path from the cluster,
+// and therefore must be explicitly specified via the uri
 type AWSLambdaConfig_ServiceAccountCredentials struct {
-	Cluster              string          `protobuf:"bytes,1,opt,name=cluster,proto3" json:"cluster,omitempty"`
-	Uri                  string          `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
+	// The name of the envoy cluster which represents the desired aws sts endpoint
+	Cluster string `protobuf:"bytes,1,opt,name=cluster,proto3" json:"cluster,omitempty"`
+	// The full uri of the aws sts endpoint
+	Uri string `protobuf:"bytes,2,opt,name=uri,proto3" json:"uri,omitempty"`
+	// timeout for the request
 	Timeout              *types.Duration `protobuf:"bytes,3,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`

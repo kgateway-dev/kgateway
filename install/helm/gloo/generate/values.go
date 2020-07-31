@@ -227,6 +227,7 @@ type GatewayProxy struct {
 	ExtraProxyVolumeMountHelper    string                       `json:"extraProxyVolumeMountHelper,omitempty" desc:"name of custom made named template allowing for extra volume mounts on the proxy container"`
 	LoopBackAddress                string                       `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
 	Failover                       Failover                     `json:"failover" desc:"(Enterprise Only): Failover configuration"`
+	AwsSts                         AwsSts                       `json:"awsSts" desc:"Aws STS configuration"`
 	Disabled                       bool                         `json:"disabled,omitempty" desc:"Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations"`
 }
 
@@ -295,6 +296,10 @@ type Failover struct {
 	Port       uint   `json:"port,omitempty" desc:"(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443"`
 	NodePort   uint   `json:"nodePort,omitempty" desc:"(Enterprise Only): Optional NodePort for failover Service"`
 	SecretName string `json:"secretName" desc:"(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream"`
+}
+
+type AwsSts struct {
+	Region string `json:"region" desc:"regional sts endpoint, leave empty for global sts endpoint"`
 }
 
 type AccessLogger struct {

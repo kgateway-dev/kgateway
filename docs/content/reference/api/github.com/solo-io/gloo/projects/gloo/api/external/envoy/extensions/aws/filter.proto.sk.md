@@ -99,7 +99,10 @@ http calls to AWS Lambda invocations.
 ---
 ### ServiceAccountCredentials
 
-
+ 
+In order to specify the aws sts endpoint, both the cluster and uri must be set.
+This is due to an envoy limitation which cannot infer the host or path from the cluster,
+and therefore must be explicitly specified via the uri
 
 ```yaml
 "cluster": string
@@ -110,9 +113,9 @@ http calls to AWS Lambda invocations.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `cluster` | `string` |  |  |
-| `uri` | `string` |  |  |
-| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `cluster` | `string` | The name of the envoy cluster which represents the desired aws sts endpoint. |  |
+| `uri` | `string` | The full uri of the aws sts endpoint. |  |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | timeout for the request. |  |
 
 
 
