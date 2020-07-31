@@ -12,11 +12,9 @@ import (
 	"net/http/httptest"
 
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	k8syamlutil "sigs.k8s.io/yaml"
-
-	"github.com/solo-io/gloo/projects/gateway/pkg/validation"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -50,31 +48,10 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 	gateway := defaults.DefaultGateway("namespace")
 	vs := defaults.DefaultVirtualService("namespace", "vs")
 
-	kubeRes, _ := v1.VirtualServiceCrd.KubeResource(vs)
-	bytes, err := json.Marshal(kubeRes)
-	if err != nil {
-		panic(err)
-	}
-
-	mapFromVs := map[string]interface{}{}
-
-	// NOTE: This is not the default golang yaml.Unmarshal, because that implementation
-	// does not unmarshal into a map[string]interface{}; it unmarshals the file into a map[interface{}]interface{}
-	// https://github.com/go-yaml/yaml/issues/139
-	err = k8syamlutil.Unmarshal(bytes, &mapFromVs)
-	if err != nil {
-		panic(err)
-	}
-
-	vsList := unstructured.UnstructuredList{
+	unstructuredList := unstructured.UnstructuredList{
 		Object: map[string]interface{}{
 			"kind":    "List",
 			"version": "v1",
-		},
-		Items: []unstructured.Unstructured{
-			{
-				Object: mapFromVs,
-			},
 		},
 	}
 
@@ -127,8 +104,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("invalid virtual service", false, v1.VirtualServiceCrd, v1.VirtualServiceCrd.GroupVersionKind(), vs),
 		Entry("valid route table", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
 		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
-		Entry("valid single vs list", true, nil, ListGVK, vsList),
-		Entry("invalid single vs list", false, nil, ListGVK, vsList),
+		Entry("valid unstructured list", true, nil, ListGVK, unstructuredList),
+		Entry("invalid single unstructured list", false, nil, ListGVK, unstructuredList),
 	)
 
 	Context("invalid yaml", func() {

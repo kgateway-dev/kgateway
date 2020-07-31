@@ -2,7 +2,11 @@ package validation
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	k8syamlutil "sigs.k8s.io/yaml"
 
 	"github.com/solo-io/go-utils/testutils"
 
@@ -431,6 +435,119 @@ var _ = Describe("Validator", func() {
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				proxyReports, err := v.ValidateGateway(context.TODO(), gw)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
+				Expect(proxyReports).To(HaveLen(0))
+			})
+		})
+	})
+
+	Context("validating a list of virtual services", func() {
+
+		toUnstructuredList := func(vs *gatewayv1.VirtualService) *unstructured.UnstructuredList {
+			kubeRes, _ := gatewayv1.VirtualServiceCrd.KubeResource(vs)
+			bytes, err := json.Marshal(kubeRes)
+			Expect(err).ToNot(HaveOccurred())
+
+			mapFromVs := map[string]interface{}{}
+
+			// NOTE: This is not the default golang yaml.Unmarshal, because that implementation
+			// does not unmarshal into a map[string]interface{}; it unmarshals the file into a map[interface{}]interface{}
+			// https://github.com/go-yaml/yaml/issues/139
+			err = k8syamlutil.Unmarshal(bytes, &mapFromVs)
+			Expect(err).ToNot(HaveOccurred())
+
+			return &unstructured.UnstructuredList{
+				Object: map[string]interface{}{
+					"kind":    "List",
+					"version": "v1",
+				},
+				Items: []unstructured.Unstructured{
+					{
+						Object: mapFromVs,
+					},
+				},
+			}
+		}
+
+		Context("proxy validation returns error", func() {
+			It("rejects the vs list", func() {
+				vc.validateProxy = failProxy
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				// change something to change the hash
+				snap.VirtualServices[0].Metadata.Labels = map[string]string{"change": "my mind"}
+				vsList := toUnstructuredList(snap.VirtualServices[0])
+
+				proxyReports, err := v.ValidateList(context.TODO(), vsList)
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
+				Expect(proxyReports).To(HaveLen(1))
+
+			})
+		})
+
+		Context("proxy validation accepted", func() {
+			It("accepts the vs list", func() {
+				vc.validateProxy = acceptProxy
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(1))
+			})
+
+			It("accepts the vs list and returns proxies each time", func() {
+				vc.validateProxy = acceptProxy
+				us := samples.SimpleUpstream()
+				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(1))
+				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
+
+				// repeat to ensure any hashing doesn't short circuit returning the proxies
+				proxyReports, err = v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(1))
+				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
+			})
+		})
+
+		Context("virtual service list rejected", func() {
+			It("rejects the vs list", func() {
+				badRoute := &gatewayv1.Route{
+					Action: &gatewayv1.Route_DelegateAction{
+
+						DelegateAction: &gatewayv1.DelegateAction{
+							DelegationType: &gatewayv1.DelegateAction_Ref{
+								Ref: &core.ResourceRef{
+									Name:      "invalid",
+									Namespace: "name",
+								},
+							},
+						},
+					},
+				}
+
+				// validate proxy should never be called
+				vc.validateProxy = nil
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				vs := snap.VirtualServices[0].DeepCopyObject().(*gatewayv1.VirtualService)
+				vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, badRoute)
+				vsList := toUnstructuredList(vs)
+
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+				proxyReports, err := v.ValidateList(context.TODO(), vsList)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
 				Expect(proxyReports).To(HaveLen(0))

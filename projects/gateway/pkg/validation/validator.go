@@ -6,7 +6,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/hashicorp/go-multierror"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	"github.com/avast/retry-go"
 	"github.com/solo-io/go-utils/protoutils"
@@ -36,6 +41,11 @@ var (
 	VirtualServiceDeleteErr = func(parentGateways []core.ResourceRef) error {
 		return errors.Errorf("Deletion blocked because active Gateways reference this Virtual Service. Remove refs to this virtual service from the gateways: %v, then try again", parentGateways)
 	}
+	unmarshalErrMsg     = "could not unmarshal raw object"
+	UnmarshalErr        = errors.New(unmarshalErrMsg)
+	WrappedUnmarshalErr = func(err error) error {
+		return errors.Wrapf(err, unmarshalErrMsg)
+	}
 )
 
 const (
@@ -45,6 +55,8 @@ const (
 
 type Validator interface {
 	v1.ApiSyncer
+	// also add dry-run to validate..
+	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList) (ProxyReports, error)
 	ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyReports, error)
 	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef) error
@@ -236,6 +248,69 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 	v.lock.Unlock()
 
 	return proxyReports, nil
+}
+
+func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList) (ProxyReports, error) {
+	var (
+		proxyReports = ProxyReports{}
+		errs         = &multierror.Error{}
+	)
+
+	for _, item := range ul.Items {
+
+		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
+		if err != nil {
+			return ProxyReports{}, err
+		}
+
+		itemGvk := schema.GroupVersionKind{
+			Version: gv.Version,
+			Group:   gv.Group,
+			Kind:    item.GetKind(),
+		}
+
+		jsonBytes, err := item.MarshalJSON()
+		if err != nil {
+			return ProxyReports{}, err
+		}
+
+		var itemProxyReports ProxyReports
+		switch itemGvk {
+		case v1.GatewayGVK:
+			var (
+				gw v1.Gateway
+			)
+			if err := skprotoutils.UnmarshalResource(jsonBytes, &gw); err != nil {
+				return nil, WrappedUnmarshalErr(err)
+			}
+			itemProxyReports, err = v.ValidateGateway(ctx, &gw)
+		case v1.VirtualServiceGVK:
+			var (
+				vs v1.VirtualService
+			)
+			if err := skprotoutils.UnmarshalResource(jsonBytes, &vs); err != nil {
+				return nil, WrappedUnmarshalErr(err)
+			}
+			itemProxyReports, err = v.ValidateVirtualService(ctx, &vs)
+		case v1.RouteTableGVK:
+			var (
+				rt v1.RouteTable
+			)
+			if err := skprotoutils.UnmarshalResource(jsonBytes, &rt); err != nil {
+				return nil, WrappedUnmarshalErr(err)
+			}
+			itemProxyReports, err = v.ValidateRouteTable(ctx, &rt)
+		}
+
+		errs = multierror.Append(errs, err)
+		for proxy, report := range itemProxyReports {
+			// ok to return final proxy reports as the latest result includes latest proxy calculated
+			// for each resource, as we process incrementally, storing new state in memory as we go
+			proxyReports[proxy] = report
+		}
+	}
+
+	return proxyReports, errs.ErrorOrNil()
 }
 
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error) {

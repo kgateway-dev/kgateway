@@ -12,7 +12,6 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -423,7 +422,7 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 
 	switch gvk {
 	case ListGVK:
-		return wh.validateList(ctx, rawJson, isDelete)
+		return wh.validateList(ctx, rawJson)
 	case gwv1.GatewayGVK:
 		if isDelete {
 			// we don't validate gateway deletion
@@ -447,51 +446,20 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 
 }
 
-func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, isDelete bool) (validation.ProxyReports, error) {
+func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
 	var (
 		ul           unstructured.UnstructuredList
-		proxyReports = validation.ProxyReports{}
-		errs         = &multierror.Error{}
+		proxyReports validation.ProxyReports
+		err          error
 	)
 
 	if err := ul.UnmarshalJSON(rawJson); err != nil {
 		return nil, WrappedUnmarshalErr(err)
 	}
-
-	for _, item := range ul.Items {
-
-		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
-		if err != nil {
-			return validation.ProxyReports{}, err
-		}
-
-		itemGvk := schema.GroupVersionKind{
-			Version: gv.Version,
-			Group:   gv.Group,
-			Kind:    item.GetKind(),
-		}
-
-		jsonBytes, err := item.MarshalJSON()
-		if err != nil {
-			return validation.ProxyReports{}, err
-		}
-
-		itemRef := core.ResourceRef{
-			Namespace: item.GetNamespace(),
-			Name:      item.GetName(),
-		}
-
-		itemProxyReports, err := wh.validate(ctx, itemGvk, itemRef, jsonBytes, isDelete)
-
-		errs = multierror.Append(errs, err)
-		for proxy, report := range itemProxyReports {
-			// ok to return final proxy reports as the latest result includes latest proxy calculated
-			// for each resource, as we process incrementally, storing new state in memory as we go
-			proxyReports[proxy] = report
-		}
+	if proxyReports, err = wh.validator.ValidateList(ctx, &ul); err != nil {
+		return proxyReports, errors.Wrapf(err, "Validating %T failed", ul)
 	}
-
-	return proxyReports, errs.ErrorOrNil()
+	return proxyReports, nil
 }
 
 func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte) (validation.ProxyReports, error) {
