@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 
+	"github.com/ghodss/yaml"
+
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 
@@ -67,6 +69,11 @@ var (
 	}
 )
 
+const (
+	ApplicationJson = "application/json"
+	ApplicationYaml = "application/x-yaml"
+)
+
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
 	utils.MeasureOne(
 		ctx,
@@ -90,10 +97,21 @@ type WebhookConfig struct {
 	port                          int
 	serverCertPath, serverKeyPath string
 	alwaysAccept                  bool // accept all resources
+	readGatewaysFromAllNamespaces bool
+	webhookNamespace              string
 }
 
-func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath string, serverKeyPath string, alwaysAccept bool) WebhookConfig {
-	return WebhookConfig{ctx: ctx, validator: validator, watchNamespaces: watchNamespaces, port: port, serverCertPath: serverCertPath, serverKeyPath: serverKeyPath, alwaysAccept: alwaysAccept}
+func NewWebhookConfig(ctx context.Context, validator validation.Validator, watchNamespaces []string, port int, serverCertPath, serverKeyPath string, alwaysAccept, readGatewaysFromAllNamespaces bool, webhookNamespace string) WebhookConfig {
+	return WebhookConfig{
+		ctx:                           ctx,
+		validator:                     validator,
+		watchNamespaces:               watchNamespaces,
+		port:                          port,
+		serverCertPath:                serverCertPath,
+		serverKeyPath:                 serverKeyPath,
+		alwaysAccept:                  alwaysAccept,
+		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
+		webhookNamespace:              webhookNamespace}
 }
 
 func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
@@ -104,6 +122,8 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 	serverCertPath := cfg.serverCertPath
 	serverKeyPath := cfg.serverKeyPath
 	alwaysAccept := cfg.alwaysAccept
+	readGatewaysFromAllNamespaces := cfg.readGatewaysFromAllNamespaces
+	webhookNamespace := cfg.webhookNamespace
 
 	keyPair, err := tls.LoadX509KeyPair(serverCertPath, serverKeyPath)
 	if err != nil {
@@ -115,6 +135,8 @@ func NewGatewayValidatingWebhook(cfg WebhookConfig) (*http.Server, error) {
 		validator,
 		watchNamespaces,
 		alwaysAccept,
+		readGatewaysFromAllNamespaces,
+		webhookNamespace,
 	)
 
 	mux := http.NewServeMux()
@@ -137,10 +159,12 @@ func (l *debugLogger) Write(p []byte) (n int, err error) {
 }
 
 type gatewayValidationWebhook struct {
-	ctx             context.Context
-	validator       validation.Validator
-	watchNamespaces []string
-	alwaysAccept    bool
+	ctx                           context.Context
+	validator                     validation.Validator
+	watchNamespaces               []string
+	alwaysAccept                  bool
+	readGatewaysFromAllNamespaces bool
+	webhookNamespace              string
 }
 
 type AdmissionReviewWithProxies struct {
@@ -154,8 +178,13 @@ type AdmissionResponseWithProxies struct {
 	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
 }
 
-func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool) *gatewayValidationWebhook {
-	return &gatewayValidationWebhook{ctx: ctx, validator: validator, watchNamespaces: watchNamespaces, alwaysAccept: alwaysAccept}
+func NewGatewayValidationHandler(ctx context.Context, validator validation.Validator, watchNamespaces []string, alwaysAccept bool, readGatewaysFromAllNamespaces bool, webhookNamespace string) *gatewayValidationWebhook {
+	return &gatewayValidationWebhook{ctx: ctx,
+		validator:                     validator,
+		watchNamespaces:               watchNamespaces,
+		alwaysAccept:                  alwaysAccept,
+		readGatewaysFromAllNamespaces: readGatewaysFromAllNamespaces,
+		webhookNamespace:              webhookNamespace}
 }
 
 func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -168,8 +197,8 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" {
-		logger.Errorf("contentType=%s, expecting application/json", contentType)
+	if contentType != ApplicationJson && contentType != ApplicationYaml {
+		logger.Errorf("contentType=%s, expecting application/json or application/x-yaml", contentType)
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
 	}
@@ -190,10 +219,20 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	var (
 		admissionResponse = &AdmissionResponseWithProxies{}
 		review            v1beta1.AdmissionReview
+		err               error
 	)
-	if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
-		admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+
+	if contentType == ApplicationYaml {
+		if err = yaml.Unmarshal(body, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
 	} else {
+		if _, _, err := deserializer.Decode(body, nil, &review); err == nil {
+			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
+		}
+	}
+
+	if err != nil {
 		logger.Errorf("Can't decode body: %v", err)
 		admissionResponse.AdmissionResponse = &v1beta1.AdmissionResponse{
 			Result: &metav1.Status{
@@ -234,10 +273,25 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	logger.Infof("AdmissionReview for Kind=%v, Namespace=%v Name=%v UID=%v patchOperation=%v UserInfo=%v",
 		req.Kind, req.Namespace, req.Name, req.UID, req.Operation, req.UserInfo)
 
+	gvk := schema.GroupVersionKind{
+		Group:   req.Kind.Group,
+		Version: req.Kind.Version,
+		Kind:    req.Kind.Kind,
+	}
+
+	// If we've specified to NOT read gateway requests from all namespaces, then only
+	// check gateway requests for the same namespace as this webhook, regardless of the
+	// contents of watchNamespaces. It's assumed that if it's non-empty, watchNamespaces
+	// contains the webhook's own namespace, since this was checked during setup in setup_syncer.go
+	watchNamespaces := wh.watchNamespaces
+	if gvk == gwv1.GatewayGVK && !wh.readGatewaysFromAllNamespaces && !utils.AllNamespaces(wh.watchNamespaces) {
+		watchNamespaces = []string{wh.webhookNamespace}
+	}
+
 	// ensure the request applies to a watched namespace, if watchNamespaces is set
 	var validatingForNamespace bool
-	if len(wh.watchNamespaces) > 0 {
-		for _, ns := range wh.watchNamespaces {
+	if len(watchNamespaces) > 0 {
+		for _, ns := range watchNamespaces {
 			if ns == metav1.NamespaceAll || ns == req.Namespace {
 				validatingForNamespace = true
 				break
@@ -254,12 +308,6 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 				Allowed: true,
 			},
 		}
-	}
-
-	gvk := schema.GroupVersionKind{
-		Group:   req.Kind.Group,
-		Version: req.Kind.Version,
-		Kind:    req.Kind.Kind,
 	}
 
 	ref := core.ResourceRef{
