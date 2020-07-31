@@ -69,6 +69,11 @@ var (
 	}
 )
 
+const (
+	ApplicationJson = "application/json"
+	ApplicationYaml = "application/x-yaml"
+)
+
 func incrementMetric(ctx context.Context, resource string, ref core.ResourceRef, m *stats.Int64Measure) {
 	utils.MeasureOne(
 		ctx,
@@ -192,7 +197,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	// Verify the content type is accurate
 	contentType := r.Header.Get("Content-Type")
-	if contentType != "application/json" && contentType != "application/x-yaml" {
+	if contentType != ApplicationJson && contentType != ApplicationYaml {
 		logger.Errorf("contentType=%s, expecting application/json or application/x-yaml", contentType)
 		http.Error(w, "empty body", http.StatusBadRequest)
 		return
@@ -217,7 +222,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 		err               error
 	)
 
-	if contentType == "application/x-yaml" {
+	if contentType == ApplicationYaml {
 		if err = yaml.Unmarshal(body, &review); err == nil {
 			admissionResponse = wh.makeAdmissionResponse(wh.ctx, &review)
 		}

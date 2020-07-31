@@ -260,10 +260,10 @@ func makeReviewRequestRaw(url string, gvk schema.GroupVersionKind, operation v1b
 		err         error
 	)
 	if useYamlEncoding {
-		contentType = "application/x-yaml"
+		contentType = ApplicationYaml
 		body, err = yaml.Marshal(review)
 	} else {
-		contentType = "application/json"
+		contentType = ApplicationJson
 		body, err = json.Marshal(review)
 	}
 	if err != nil {
