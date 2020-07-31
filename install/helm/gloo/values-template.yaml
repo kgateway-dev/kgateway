@@ -103,6 +103,10 @@ gatewayProxies:
       fsGroup: 10101
       runUnprivileged: true
       disableNetBind: true
+      gracefulShutdown:
+        enabled: false
+        sleepTimeSeconds: 25
+      customReadinessProbe: {}
     service:
       customPorts: []
       type: LoadBalancer

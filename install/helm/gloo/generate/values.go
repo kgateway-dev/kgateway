@@ -252,21 +252,29 @@ type DaemonSetSpec struct {
 }
 
 type GatewayProxyPodTemplate struct {
-	Image            *Image                `json:"image,omitempty"`
-	HttpPort         int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
-	HttpsPort        int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
-	ExtraPorts       []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
-	ExtraAnnotations map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
-	NodeName         string                `json:"nodeName,omitempty" desc:"name of node to run on"`
-	NodeSelector     map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
-	Tolerations      []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
-	Probes           bool                  `json:"probes" desc:"enable liveness and readiness probes"`
-	Resources        *ResourceRequirements `json:"resources,omitempty"`
-	DisableNetBind   bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
-	RunUnprivileged  bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
-	FloatingUserId   bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser        float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FsGroup          float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	Image                         *Image                `json:"image,omitempty"`
+	HttpPort                      int                   `json:"httpPort,omitempty" desc:"HTTP port for the gateway service target port"`
+	HttpsPort                     int                   `json:"httpsPort,omitempty" desc:"HTTPS port for the gateway service target port"`
+	ExtraPorts                    []interface{}         `json:"extraPorts,omitempty" desc:"extra ports for the gateway pod"`
+	ExtraAnnotations              map[string]string     `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the pod"`
+	NodeName                      string                `json:"nodeName,omitempty" desc:"name of node to run on"`
+	NodeSelector                  map[string]string     `json:"nodeSelector,omitempty" desc:"label selector for nodes"`
+	Tolerations                   []*appsv1.Toleration  `json:"tolerations,omitEmpty"`
+	Probes                        bool                  `json:"probes" desc:"enable liveness and readiness probes"`
+	Resources                     *ResourceRequirements `json:"resources,omitempty"`
+	DisableNetBind                bool                  `json:"disableNetBind" desc:"don't add the NET_BIND_SERVICE capability to the pod. This means that the gateway proxy will not be able to bind to ports below 1024"`
+	RunUnprivileged               bool                  `json:"runUnprivileged" desc:"run envoy as an unprivileged user"`
+	FloatingUserId                bool                  `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser                     float64               `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup                       float64               `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
+	TerminationGracePeriodSeconds int                   `json:"terminationGracePeriodSeconds" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
+	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
+}
+
+type GracefulShutdownSpec struct {
+	Enabled          bool `json:"enabled" desc:"Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter"`
+	SleepTimeSeconds int  `json:"sleepTimeSeconds" desc:"Time (in seconds) for the preStop hook to wait before allowing envoy to terminate"`
 }
 
 type GatewayProxyService struct {

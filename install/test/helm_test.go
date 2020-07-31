@@ -1018,6 +1018,105 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("supports custom readiness probe", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/gloo/health",
+									Port:   intstr.FromInt(8080),
+									Scheme: "HTTP",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
+									},
+								},
+							},
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       10,
+							FailureThreshold:    10,
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders terminationGracePeriodSeconds when present", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds=45",
+							},
+						})
+
+						intz := int64(45)
+						gatewayProxyDeployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &intz
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 25",
+									},
+								},
+							},
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown with custom sleep time", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds=45",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 45",
+									},
+								},
+							},
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
