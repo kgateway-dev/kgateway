@@ -39,7 +39,7 @@ var _ = Describe("Validator", func() {
 		v = NewValidator(NewValidatorConfig(t, vc, ns, false, false))
 	})
 	It("returns error before sync called", func() {
-		_, err := v.ValidateVirtualService(nil, nil)
+		_, err := v.ValidateVirtualService(nil, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
 		err = v.Sync(nil, &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
@@ -53,7 +53,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 			})
@@ -64,13 +64,13 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
-				proxyReports, err = v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err = v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
@@ -88,7 +88,7 @@ var _ = Describe("Validator", func() {
 				// change something to change the hash
 				snap.RouteTables[0].Metadata.Labels = map[string]string{"change": "my mind"}
 
-				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
 				Expect(proxyReports).To(HaveLen(1))
@@ -107,7 +107,7 @@ var _ = Describe("Validator", func() {
 					// change something to change the hash
 					snap.RouteTables[0].Metadata.Labels = map[string]string{"change": "my mind"}
 
-					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 					Expect(err).To(HaveOccurred())
 					Expect(err.Error()).To(ContainSubstring("failed to communicate with Gloo Proxy validation server"))
 					Expect(proxyReports).To(BeEmpty())
@@ -121,7 +121,7 @@ var _ = Describe("Validator", func() {
 					snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 					err := v.Sync(context.TODO(), snap)
 					Expect(err).NotTo(HaveOccurred())
-					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0])
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), snap.RouteTables[0], false)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(proxyReports).To(HaveLen(0))
 				})
@@ -135,7 +135,7 @@ var _ = Describe("Validator", func() {
 					err := v.Sync(context.TODO(), &gatewayv1.ApiSnapshot{})
 					Expect(err).NotTo(HaveOccurred())
 					vs, _ := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
-					proxyReports, err := v.ValidateVirtualService(context.TODO(), vs)
+					proxyReports, err := v.ValidateVirtualService(context.TODO(), vs, false)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(proxyReports).To(HaveLen(0))
 				})
@@ -144,7 +144,7 @@ var _ = Describe("Validator", func() {
 					err := v.Sync(context.TODO(), &gatewayv1.ApiSnapshot{})
 					Expect(err).NotTo(HaveOccurred())
 					_, rts := samples.LinkedRouteTablesWithVirtualService("vs", "ns")
-					proxyReports, err := v.ValidateRouteTable(context.TODO(), rts[1])
+					proxyReports, err := v.ValidateRouteTable(context.TODO(), rts[1], false)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(proxyReports).To(HaveLen(0))
 				})
@@ -157,7 +157,7 @@ var _ = Describe("Validator", func() {
 
 					ref := snap.RouteTables[len(snap.RouteTables)-1].Metadata.Ref()
 
-					err = v.ValidateDeleteRouteTable(context.TODO(), ref)
+					err = v.ValidateDeleteRouteTable(context.TODO(), ref, false)
 					Expect(err).NotTo(HaveOccurred())
 				})
 			})
@@ -186,7 +186,7 @@ var _ = Describe("Validator", func() {
 				rt.Routes = append(rt.Routes, badRoute)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateRouteTable(context.TODO(), rt)
+				proxyReports, err := v.ValidateRouteTable(context.TODO(), rt, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
 				Expect(proxyReports).To(HaveLen(0))
@@ -202,7 +202,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegateChain(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref())
+				err = v.ValidateDeleteRouteTable(context.TODO(), snap.RouteTables[1].Metadata.Ref(), false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("Deletion blocked because active Routes delegate to this Route Table. " +
 					"Remove delegate actions to this route table from the virtual services: [] and the route tables: [{node-0 my-namespace}], then try again"))
@@ -218,7 +218,7 @@ var _ = Describe("Validator", func() {
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				ref := snap.RouteTables[2].Metadata.Ref()
-				err = v.ValidateDeleteRouteTable(context.TODO(), ref)
+				err = v.ValidateDeleteRouteTable(context.TODO(), ref, false)
 				Expect(err).NotTo(HaveOccurred())
 
 				// ensure route table was removed from validator internal snapshot
@@ -241,7 +241,7 @@ var _ = Describe("Validator", func() {
 				// change something to change the hash
 				snap.VirtualServices[0].Metadata.Labels = map[string]string{"change": "my mind"}
 
-				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
 				Expect(proxyReports).To(HaveLen(1))
@@ -255,7 +255,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 			})
@@ -266,13 +266,13 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
-				proxyReports, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err = v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
@@ -293,7 +293,7 @@ var _ = Describe("Validator", func() {
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0])
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), snap.VirtualServices[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(0))
 			})
@@ -323,7 +323,7 @@ var _ = Describe("Validator", func() {
 
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateVirtualService(context.TODO(), vs)
+				proxyReports, err := v.ValidateVirtualService(context.TODO(), vs, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
 				Expect(proxyReports).To(HaveLen(0))
@@ -347,7 +347,7 @@ var _ = Describe("Validator", func() {
 				})
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				err = v.ValidateDeleteVirtualService(context.TODO(), ref)
+				err = v.ValidateDeleteVirtualService(context.TODO(), ref, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring(fmt.Sprintf("Deletion blocked because active Gateways reference this Virtual Service. "+
 					"Remove refs to this virtual service from the gateways: [{%s my-namespace} {%s-ssl my-namespace}], "+
@@ -362,7 +362,7 @@ var _ = Describe("Validator", func() {
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
 				ref := snap.VirtualServices[0].Metadata.Ref()
-				err = v.ValidateDeleteVirtualService(context.TODO(), ref)
+				err = v.ValidateDeleteVirtualService(context.TODO(), ref, false)
 				Expect(err).NotTo(HaveOccurred())
 
 				// ensure vs was removed from validator internal snapshot
@@ -385,7 +385,7 @@ var _ = Describe("Validator", func() {
 				// change something to change the hash
 				snap.Gateways[0].Metadata.Labels = map[string]string{"change": "my mind"}
 
-				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
 				Expect(proxyReports).To(HaveLen(1))
@@ -398,7 +398,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 			})
@@ -409,13 +409,13 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err := v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
-				proxyReports, err = v.ValidateGateway(context.TODO(), snap.Gateways[0])
+				proxyReports, err = v.ValidateGateway(context.TODO(), snap.Gateways[0], false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
@@ -434,7 +434,7 @@ var _ = Describe("Validator", func() {
 				gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices = append(gw.GatewayType.(*gatewayv1.Gateway_HttpGateway).HttpGateway.VirtualServices, badRef)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateGateway(context.TODO(), gw)
+				proxyReports, err := v.ValidateGateway(context.TODO(), gw, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
 				Expect(proxyReports).To(HaveLen(0))
@@ -482,7 +482,7 @@ var _ = Describe("Validator", func() {
 				snap.VirtualServices[0].Metadata.Labels = map[string]string{"change": "my mind"}
 				vsList := toUnstructuredList(snap.VirtualServices[0])
 
-				proxyReports, err := v.ValidateList(context.TODO(), vsList)
+				proxyReports, err := v.ValidateList(context.TODO(), vsList, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("failed to validate Proxy with Gloo validation server"))
 				Expect(proxyReports).To(HaveLen(1))
@@ -497,7 +497,7 @@ var _ = Describe("Validator", func() {
 				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 			})
@@ -508,13 +508,13 @@ var _ = Describe("Validator", func() {
 				snap := samples.GatewaySnapshotWithDelegates(us.Metadata.Ref(), ns)
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				proxyReports, err := v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
 
 				// repeat to ensure any hashing doesn't short circuit returning the proxies
-				proxyReports, err = v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]))
+				proxyReports, err = v.ValidateList(context.TODO(), toUnstructuredList(snap.VirtualServices[0]), false)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
@@ -547,7 +547,7 @@ var _ = Describe("Validator", func() {
 
 				err := v.Sync(context.TODO(), snap)
 				Expect(err).NotTo(HaveOccurred())
-				proxyReports, err := v.ValidateList(context.TODO(), vsList)
+				proxyReports, err := v.ValidateList(context.TODO(), vsList, false)
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(ContainSubstring("could not render proxy"))
 				Expect(proxyReports).To(HaveLen(0))

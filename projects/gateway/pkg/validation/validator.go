@@ -42,7 +42,6 @@ var (
 		return errors.Errorf("Deletion blocked because active Gateways reference this Virtual Service. Remove refs to this virtual service from the gateways: %v, then try again", parentGateways)
 	}
 	unmarshalErrMsg     = "could not unmarshal raw object"
-	UnmarshalErr        = errors.New(unmarshalErrMsg)
 	WrappedUnmarshalErr = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
@@ -55,13 +54,12 @@ const (
 
 type Validator interface {
 	v1.ApiSyncer
-	// also add dry-run to validate..
-	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList) (ProxyReports, error)
-	ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyReports, error)
-	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error)
-	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef) error
-	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error)
-	ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef) error
+	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error)
+	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error)
+	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error)
+	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef, dryRun bool) error
+	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error)
+	ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef, dryRun bool) error
 }
 
 type validator struct {
@@ -155,7 +153,7 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	}
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (ProxyReports, error) {
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun bool) (ProxyReports, error) {
 	if !v.ready() {
 		return nil, NotReadyErr
 	}
@@ -242,19 +240,26 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource) (
 
 	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", resource, ref)
 
-	// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
-	v.lock.Lock()
-	apply(v.latestSnapshot)
-	v.lock.Unlock()
+	if !dryRun {
+		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
+		v.lock.Lock()
+		apply(v.latestSnapshot)
+		v.lock.Unlock()
+	}
 
 	return proxyReports, nil
 }
 
-func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList) (ProxyReports, error) {
+func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error) {
 	var (
 		proxyReports = ProxyReports{}
 		errs         = &multierror.Error{}
 	)
+
+	// TODO(kdorosh) we need some kind of lock
+	//v.lock.Lock()
+	//defer v.lock.Unlock()
+	origSnapshot := v.latestSnapshot
 
 	for _, item := range ul.Items {
 
@@ -283,7 +288,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 			if err := skprotoutils.UnmarshalResource(jsonBytes, &gw); err != nil {
 				return nil, WrappedUnmarshalErr(err)
 			}
-			itemProxyReports, err = v.ValidateGateway(ctx, &gw)
+			itemProxyReports, err = v.ValidateGateway(ctx, &gw, false)
 		case v1.VirtualServiceGVK:
 			var (
 				vs v1.VirtualService
@@ -291,7 +296,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 			if err := skprotoutils.UnmarshalResource(jsonBytes, &vs); err != nil {
 				return nil, WrappedUnmarshalErr(err)
 			}
-			itemProxyReports, err = v.ValidateVirtualService(ctx, &vs)
+			itemProxyReports, err = v.ValidateVirtualService(ctx, &vs, false)
 		case v1.RouteTableGVK:
 			var (
 				rt v1.RouteTable
@@ -299,7 +304,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 			if err := skprotoutils.UnmarshalResource(jsonBytes, &rt); err != nil {
 				return nil, WrappedUnmarshalErr(err)
 			}
-			itemProxyReports, err = v.ValidateRouteTable(ctx, &rt)
+			itemProxyReports, err = v.ValidateRouteTable(ctx, &rt, false)
 		}
 
 		errs = multierror.Append(errs, err)
@@ -310,10 +315,12 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		}
 	}
 
+	v.latestSnapshot = origSnapshot
+
 	return proxyReports, errs.ErrorOrNil()
 }
 
-func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (ProxyReports, error) {
+func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		vsRef := vs.GetMetadata().Ref()
 
@@ -335,10 +342,10 @@ func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualSe
 		return proxiesForVirtualService(snap.Gateways, vs), vs, vsRef
 	}
 
-	return v.validateSnapshot(ctx, apply)
+	return v.validateSnapshot(ctx, apply, dryRun)
 }
 
-func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core.ResourceRef) error {
+func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core.ResourceRef, dryRun bool) error {
 	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
@@ -379,12 +386,13 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 		contextutils.LoggerFrom(ctx).Debugw("Accepted deletion of Virtual Service %v", vsRef)
 	}
 
-	v.deleteFromLocalSnapshot(vs)
-
+	if !dryRun {
+		v.deleteFromLocalSnapshot(vs)
+	}
 	return nil
 }
 
-func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (ProxyReports, error) {
+func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		rtRef := rt.GetMetadata().Ref()
 
@@ -408,10 +416,10 @@ func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (
 		return proxiesToConsider, rt, rtRef
 	}
 
-	return v.validateSnapshot(ctx, apply)
+	return v.validateSnapshot(ctx, apply, dryRun)
 }
 
-func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.ResourceRef) error {
+func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.ResourceRef, dryRun bool) error {
 	if !v.ready() {
 		return errors.Errorf("Gateway validation is yet not available. Waiting for first snapshot")
 	}
@@ -452,12 +460,13 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.Res
 		contextutils.LoggerFrom(ctx).Debugw("Accepted Route Table deletion %v", rtRef)
 	}
 
-	v.deleteFromLocalSnapshot(rt)
-
+	if !dryRun {
+		v.deleteFromLocalSnapshot(rt)
+	}
 	return nil
 }
 
-func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyReports, error) {
+func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		gwRef := gw.GetMetadata().Ref()
 
@@ -481,7 +490,7 @@ func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (ProxyR
 		return proxiesToConsider, gw, gwRef
 	}
 
-	return v.validateSnapshot(ctx, apply)
+	return v.validateSnapshot(ctx, apply, dryRun)
 }
 
 func proxiesForVirtualService(gwList v1.GatewayList, vs *v1.VirtualService) []string {

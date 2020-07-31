@@ -64,16 +64,16 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		wh.webhookNamespace = routeTable.Metadata.Namespace
 
 		if !valid {
-			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList) (validation.ProxyReports, error) {
+			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error) {
 				return proxyReports(), fmt.Errorf(errMsg)
 			}
-			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
+			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
 				return proxyReports(), fmt.Errorf(errMsg)
 			}
-			mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error) {
+			mv.fValidateVirtualService = func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error) {
 				return proxyReports(), fmt.Errorf(errMsg)
 			}
-			mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error) {
+			mv.fValidateRouteTable = func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error) {
 				return proxyReports(), fmt.Errorf(errMsg)
 			}
 		}
@@ -105,7 +105,7 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		Entry("valid route table", true, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
 		Entry("invalid route table", false, v1.RouteTableCrd, v1.RouteTableCrd.GroupVersionKind(), routeTable),
 		Entry("valid unstructured list", true, nil, ListGVK, unstructuredList),
-		Entry("invalid single unstructured list", false, nil, ListGVK, unstructuredList),
+		Entry("invalid unstructured list", false, nil, ListGVK, unstructuredList),
 	)
 
 	Context("invalid yaml", func() {
@@ -267,12 +267,12 @@ func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, erro
 
 type mockValidator struct {
 	fSync                         func(context.Context, *v1.ApiSnapshot) error
-	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList) (validation.ProxyReports, error)
-	fValidateGateway              func(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error)
-	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error)
-	fValidateDeleteVirtualService func(ctx context.Context, vs core.ResourceRef) error
-	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error)
-	fValidateDeleteRouteTable     func(ctx context.Context, rt core.ResourceRef) error
+	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error)
+	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error)
+	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error)
+	fValidateDeleteVirtualService func(ctx context.Context, vs core.ResourceRef, dryRun bool) error
+	fValidateRouteTable           func(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error)
+	fValidateDeleteRouteTable     func(ctx context.Context, rt core.ResourceRef, dryRun bool) error
 }
 
 func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
@@ -282,46 +282,46 @@ func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	return v.fSync(ctx, snap)
 }
 
-func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error) {
 	if v.fValidateList == nil {
 		return proxyReports(), nil
 	}
-	return v.fValidateList(ctx, ul)
+	return v.fValidateList(ctx, ul, dryRun)
 }
 
-func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
 	if v.fValidateGateway == nil {
 		return proxyReports(), nil
 	}
-	return v.fValidateGateway(ctx, gw)
+	return v.fValidateGateway(ctx, gw, dryRun)
 }
 
-func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error) {
 	if v.fValidateVirtualService == nil {
 		return proxyReports(), nil
 	}
-	return v.fValidateVirtualService(ctx, vs)
+	return v.fValidateVirtualService(ctx, vs, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef) error {
+func (v *mockValidator) ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef, dryRun bool) error {
 	if v.fValidateDeleteVirtualService == nil {
 		return nil
 	}
-	return v.fValidateDeleteVirtualService(ctx, vs)
+	return v.fValidateDeleteVirtualService(ctx, vs, dryRun)
 }
 
-func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (validation.ProxyReports, error) {
 	if v.fValidateRouteTable == nil {
 		return proxyReports(), nil
 	}
-	return v.fValidateRouteTable(ctx, rt)
+	return v.fValidateRouteTable(ctx, rt, dryRun)
 }
 
-func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef) error {
+func (v *mockValidator) ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef, dryRun bool) error {
 	if v.fValidateDeleteRouteTable == nil {
 		return nil
 	}
-	return v.fValidateDeleteRouteTable(ctx, rt)
+	return v.fValidateDeleteRouteTable(ctx, rt, dryRun)
 }
 
 func proxyReports() validation.ProxyReports {
