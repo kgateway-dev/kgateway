@@ -22,6 +22,19 @@ spec:
 {{- end }}
     disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
     disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
+    awsOptions:
+      enableCredentialsDiscovey: {{ .Values.settings.aws.enableCredentialsDiscovery }}
+{{- if .Values.settings.aws.enableServiceAccountCredentials }}
+      serviceAccountCredentials:
+        cluster: aws_sts_cluster
+{{- if ne .Values.settings.aws.stsCredentialsRegion ""}}
+        uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+{{- else }}
+        uri: sts.amazonaws.com
+{{- end }}
+{{- end }}
+
+
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
