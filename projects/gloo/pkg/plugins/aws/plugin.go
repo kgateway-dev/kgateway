@@ -92,11 +92,13 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	var accessKey, sessionToken, secretKey string
-	if upstreamSpec.Aws.SecretRef == nil && !p.settings.GetEnableCredentialsDiscovey() {
-		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment")
+	if upstreamSpec.Aws.SecretRef == nil &&
+		!p.settings.GetEnableCredentialsDiscovey() &&
+		p.settings.GetServiceAccountCredentials() == nil {
+		return errors.Errorf("no aws secret provided. consider setting enableCredentialsDiscovey to true or enabling service account credentials if running in EKS")
 	}
 
-	if upstreamSpec.Aws.SecretRef != nil {
+	if upstreamSpec.Aws.GetSecretRef() != nil {
 
 		secret, err := params.Snapshot.Secrets.Find(upstreamSpec.Aws.SecretRef.Strings())
 		if err != nil {
@@ -132,10 +134,11 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	lpe := &AWSLambdaProtocolExtension{
 		Host:         lambdaHostname,
-		Region:       upstreamSpec.Aws.Region,
+		Region:       upstreamSpec.Aws.GetRegion(),
 		AccessKey:    accessKey,
 		SecretKey:    secretKey,
 		SessionToken: sessionToken,
+		RoleArn:      upstreamSpec.Aws.GetRoleArn(),
 	}
 
 	if err := pluginutils.SetExtenstionProtocolOptions(out, FilterName, lpe); err != nil {
@@ -232,11 +235,22 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		// no upstreams no filter
 		return nil, nil
 	}
-	filterconfig := &AWSLambdaConfig{
-		ServiceAccountCredentials: p.settings.GetServiceAccountCredentials(),
-		UseDefaultCredentials: &types.BoolValue{
-			Value: p.settings.GetEnableCredentialsDiscovey(),
-		},
+	filterconfig := &AWSLambdaConfig{}
+	switch typedFetcher := p.settings.GetCredentialsFetcher().(type) {
+	case *v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey:
+		filterconfig.CredentialsFetcher = &AWSLambdaConfig_UseDefaultCredentials{
+			UseDefaultCredentials: &types.BoolValue{
+				Value: typedFetcher.EnableCredentialsDiscovey,
+			},
+		}
+	case *v1.GlooOptions_AWSOptions_ServiceAccountCredentials:
+		filterconfig.CredentialsFetcher = &AWSLambdaConfig_ServiceAccountCredentials_{
+			ServiceAccountCredentials: &AWSLambdaConfig_ServiceAccountCredentials{
+				Cluster: typedFetcher.ServiceAccountCredentials.GetCluster(),
+				Uri:     typedFetcher.ServiceAccountCredentials.GetUri(),
+				Timeout: typedFetcher.ServiceAccountCredentials.GetTimeout(),
+			},
+		}
 	}
 	f, err := plugins.NewStagedFilterWithConfig(FilterName, filterconfig, pluginStage)
 	if err != nil {

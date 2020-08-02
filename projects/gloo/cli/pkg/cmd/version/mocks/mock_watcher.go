@@ -5,10 +5,9 @@
 package mock_version
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	version "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/version"
+	reflect "reflect"
 )
 
 // MockServerVersion is a mock of ServerVersion interface

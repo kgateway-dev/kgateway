@@ -5,11 +5,10 @@ package annotations
 
 import (
 	fmt "fmt"
-	math "math"
-
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
 	descriptor "github.com/gogo/protobuf/protoc-gen-gogo/descriptor"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
