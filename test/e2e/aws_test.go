@@ -34,7 +34,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = FDescribe("AWS Lambda", func() {
+var _ = Describe("AWS Lambda", func() {
 	const region = "us-east-1"
 
 	var (
