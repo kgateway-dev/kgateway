@@ -1,0 +1,28 @@
+#!/bin/sh
+
+
+# Check if this commit appears to contain any JSON web tokens. If it does, warn the user before letting them
+# continue with the commit.
+# NOTE 1: The search definition of a JWT is fairly weak due to how
+# difficult it is to ID them quickly. For now, we trigger a warning off any two period-separated twenty-plus character
+# alphanmeric (plus '=_-') words.
+# NOTE 2: If we end up with too many false positives and want to refine the search process,
+# we can try to decode possible JWTs and see if they remotely resemble proper JSON.
+echo "Checking for possible JSON web tokens added in commit..."
+if git diff HEAD~1 | grep '^+' | grep -Eq "[A-Za-z0-9_=-]{20,}\.[A-Za-z0-9_=-]{20,}" ; then
+    echo "found lines addded in commit that might contain JWT's: "
+    git diff HEAD~1 | grep '^+' | grep -E "[A-Za-z0-9_=-]{20,}\.[A-Za-z0-9_=-]{20,}"
+    exec < /dev/tty
+    while true; do
+	read -p "This commit appears to add a JSON web token, which is often accidental and can be problematic (unless it's for a test). Are you sure you want to commit these changes? (y/n): " yn
+	case $yn in
+            [Yy]* ) echo "OK, continuing with commit"; exit 0;;
+            [Nn]* ) echo "Aborting commit"; exit 1;;
+        * ) echo "Please answer yes or no.";;
+	esac
+    done
+else
+    echo "No likely JWT's found"
+    exit 0
+fi
+
