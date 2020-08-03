@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX
+    description: >
+      The gateway validation API now honors dry-run requests. Previously, any dry-run requests could still modify the
+      internal resource cache, making future gateway validation results incorrect.
+    issueLink: https://github.com/solo-io/gloo/issues/3437
