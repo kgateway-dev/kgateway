@@ -259,7 +259,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 	// TODO(kdorosh) we need some kind of lock
 	//v.lock.Lock()
 	//defer v.lock.Unlock()
-	origSnapshot := v.latestSnapshot
+	snap := v.latestSnapshot.Clone()
 
 	for _, item := range ul.Items {
 
@@ -315,7 +315,9 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		}
 	}
 
-	v.latestSnapshot = origSnapshot
+	if dryRun {
+		v.latestSnapshot = &snap
+	}
 
 	return proxyReports, errs.ErrorOrNil()
 }
