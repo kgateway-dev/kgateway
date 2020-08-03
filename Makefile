@@ -27,7 +27,7 @@ ifeq ($(VERSION), $(WASM_VERSION))
 	WASM_VERSION = wasm-$(VERSION)
 endif
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:0e7f3393afc481bd1f5c956c459b1b146fb1bb26
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-patch3
 ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-wasm-rc1
 
 # The full SHA of the currently checked out commit
