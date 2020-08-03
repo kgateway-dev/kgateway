@@ -230,6 +230,27 @@
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
+|gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
+|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.exec.command[]|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.path|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int64|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.host|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.scheme|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.httpHeaders[].name|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.httpHeaders[].value|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|int64|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.initialDelaySeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.timeoutSeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.periodSeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.successThreshold|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.failureThreshold|int32|||
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
@@ -331,6 +352,27 @@
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
+|gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
+|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int|0|Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.exec.command[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.httpHeaders[].name|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.httpHeaders[].value|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.timeoutSeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.successThreshold|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold|int32|0||
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|

@@ -124,6 +124,18 @@ spec:
         image: {{ template "gloo.wasmImage" $image }}
         {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
+        {{- if $spec.podTemplate.gracefulShutdown }}
+        {{- if $spec.podTemplate.gracefulShutdown.enabled }}
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - wget --post-data "" -O /dev/null {{ $spec.loopBackAddress }}:19000/healthcheck/fail;
+                sleep {{ $spec.podTemplate.gracefulShutdown.sleepTimeSeconds }}
+        {{- end}}
+        {{- end}}
         name: {{ $name | kebabcase }}
         securityContext:
           readOnlyRootFilesystem: true
@@ -166,6 +178,9 @@ spec:
 {{- end}}
 {{- if $spec.podTemplate.probes }}
         readinessProbe:
+{{- if $spec.podTemplate.customReadinessProbe }}
+{{ toYaml $spec.podTemplate.customReadinessProbe | indent 10}}
+{{- else }}
           exec:
             command:
             - wget
@@ -175,6 +190,7 @@ spec:
           initialDelaySeconds: 1
           periodSeconds: 10
           failureThreshold: 10
+{{- end}}
         livenessProbe:
           exec:
             command:
@@ -234,6 +250,9 @@ spec:
       {{- if $image.pullSecret }}
       imagePullSecrets:
         - name: {{ $image.pullSecret }}{{end}}
+      {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
+      {{- end }}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
