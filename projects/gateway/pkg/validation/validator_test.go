@@ -510,7 +510,7 @@ var _ = Describe("Validator", func() {
 
 			var objs []unstructured.Unstructured
 			for _, vs := range vss {
-				kubeRes, _ := gatewayv1.VirtualServiceCrd.KubeResource(vs)
+				kubeRes := gatewayv1.VirtualServiceCrd.KubeResource(vs)
 				bytes, err := json.Marshal(kubeRes)
 				Expect(err).ToNot(HaveOccurred())
 				mapFromVs := map[string]interface{}{}
