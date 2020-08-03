@@ -56,6 +56,7 @@ type TestClients struct {
 	ProxyClient          gloov1.ProxyClient
 	UpstreamClient       gloov1.UpstreamClient
 	SecretClient         gloov1.SecretClient
+	SettingsClient       gloov1.SettingsClient
 	ServiceClient        skkube.ServiceClient
 	GlooPort             int
 }
@@ -173,6 +174,8 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 	Expect(err).NotTo(HaveOccurred())
 	proxyClient, err := gloov1.NewProxyClient(memFactory)
 	Expect(err).NotTo(HaveOccurred())
+	settingsClient, err := gloov1.NewSettingsClient(memFactory)
+	Expect(err).NotTo(HaveOccurred())
 
 	return TestClients{
 		GatewayClient:        gatewayClient,
@@ -180,6 +183,7 @@ func getTestClients(cache memory.InMemoryResourceCache, serviceClient skkube.Ser
 		UpstreamClient:       upstreamClient,
 		SecretClient:         secretClient,
 		ProxyClient:          proxyClient,
+		SettingsClient:       settingsClient,
 		ServiceClient:        serviceClient,
 	}
 }

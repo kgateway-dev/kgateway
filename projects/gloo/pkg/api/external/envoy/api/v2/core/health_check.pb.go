@@ -6,6 +6,9 @@ package core
 import (
 	bytes "bytes"
 	fmt "fmt"
+	math "math"
+	time "time"
+
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	_ "github.com/gogo/protobuf/gogoproto"
 	proto "github.com/gogo/protobuf/proto"
@@ -13,8 +16,6 @@ import (
 	_type "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/type"
 	_ "github.com/solo-io/protoc-gen-ext/extproto"
 	core "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
-	math "math"
-	time "time"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.

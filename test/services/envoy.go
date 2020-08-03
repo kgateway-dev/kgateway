@@ -111,6 +111,24 @@ static_resources:
     http2_protocol_options: {}
     type: STATIC
 {{end}}
+  - name: aws_sts_cluster
+    connect_timeout: 5.000s
+    type: LOGICAL_DNS
+    lb_policy: ROUND_ROBIN
+    load_assignment:
+      cluster_name: aws_sts_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                port_value: 443
+                address: sts.amazonaws.com
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: sts.amazonaws.com
 {{if .MetricsAddr}}
   - name: metrics_cluster
     connect_timeout: 5.000s
@@ -300,6 +318,17 @@ type EnvoyInstance struct {
 	AdminPort     uint32
 	// Path to access logs for binary run
 	AccessLogs string
+
+	DockerOptions
+}
+
+// Extra options for running in docker
+type DockerOptions struct {
+	// Extra volume arguments
+	Volumes []string
+	// Extra env arguments.
+	// see https://docs.docker.com/engine/reference/run/#env-environment-variables for more info
+	Env []string
 }
 
 func (ef *EnvoyFactory) MustEnvoyInstance() *EnvoyInstance {
@@ -364,14 +393,6 @@ func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
 	return ei.runWithPort(eic.Context(), eic.Port())
 }
 
-/*
-func (ei *EnvoyInstance) DebugMode() error {
-
-	_, err := http.Get("http://localhost:19000/logging?level=debug")
-
-	return err
-}
-*/
 func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32) error {
 	go func() {
 		<-ctx.Done()
@@ -453,11 +474,22 @@ func (ei *EnvoyInstance) runContainer(ctx context.Context) error {
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpPort, defaults.HttpPort),
 		"-p", fmt.Sprintf("%d:%d", defaults.HttpsPort, defaults.HttpsPort),
 		"-p", fmt.Sprintf("%d:%d", ei.AdminPort, ei.AdminPort),
+	}
+
+	for _, volume := range ei.DockerOptions.Volumes {
+		args = append(args, "-v", volume)
+	}
+
+	for _, env := range ei.DockerOptions.Env {
+		args = append(args, "-e", env)
+	}
+
+	args = append(args,
 		"--entrypoint=envoy",
 		image,
 		"--disable-hot-restart", "--log-level", "debug",
 		"--config-yaml", ei.envoycfg,
-	}
+	)
 
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
 	cmd := exec.CommandContext(ctx, "docker", args...)
