@@ -1,6 +1,8 @@
 package grpc
 
 import (
+	"regexp"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -65,7 +67,6 @@ var _ = Describe("Plugin", func() {
 				Static: upstreamSpec,
 			},
 		}
-
 	})
 	Context("upstream", func() {
 		It("should not mark non-grpc upstreams as http2", func() {
@@ -83,20 +84,22 @@ var _ = Describe("Plugin", func() {
 	})
 
 	Context("route", func() {
+		var (
+			ps       *transformapi.Parameters
+			routeIn  *v1.Route
+			routeOut *envoyroute.Route
+		)
 
-		ps := &transformapi.Parameters{
-			Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
-			Headers: map[string]string{
-				"header-simple":            "{simple}",
-				"header-simple-with-space": "{ simple_with_space }",
-				"header-nested":            "{something.nested}",
-			},
-		}
-
-		It("should process route", func() {
-
-			var routeParams plugins.RouteParams
-			routeIn := &v1.Route{
+		BeforeEach(func() {
+			ps = &transformapi.Parameters{
+				Path: &types.StringValue{Value: "/{what}/{ ever }/{nested.field}/too"},
+				Headers: map[string]string{
+					"header-simple":            "{simple}",
+					"header-simple-with-space": "{ simple_with_space }",
+					"header-nested":            "{something.nested}",
+				},
+			}
+			routeIn = &v1.Route{
 				Action: &v1.Route_RouteAction{
 					RouteAction: &v1.RouteAction{
 						Destination: &v1.RouteAction_Single{
@@ -119,8 +122,7 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			}
-
-			routeOut := &envoyroute.Route{
+			routeOut = &envoyroute.Route{
 				Match: &envoyroute.RouteMatch{
 					PathSpecifier: &envoyroute.RouteMatch_Prefix{Prefix: "/"},
 				},
@@ -128,8 +130,12 @@ var _ = Describe("Plugin", func() {
 					Route: &envoyroute.RouteAction{},
 				},
 			}
+		})
+		It("should process route", func() {
 			err := p.ProcessUpstream(params, upstream, out)
 			Expect(err).NotTo(HaveOccurred())
+
+			var routeParams plugins.RouteParams
 			err = p.ProcessRoute(routeParams, routeIn, routeOut)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -160,6 +166,39 @@ var _ = Describe("Plugin", func() {
 
 			Expect(extrs["something.nested"].GetHeader()).To(Equal("header-nested"))
 			Expect(extrs["something.nested"].GetSubgroup()).To(Equal(uint32(1)))
+
+		})
+
+		It("should produce path extractors that can match URLs", func() {
+			err := p.ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			var routeParams plugins.RouteParams
+			err = p.ProcessRoute(routeParams, routeIn, routeOut)
+			Expect(err).NotTo(HaveOccurred())
+
+			var cfg envoy_transform.RouteTransformations
+			goTypedConfig := routeOut.GetTypedPerFilterConfig()[transformation.FilterName]
+			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
+			err = types.UnmarshalAny(gogoTypedConfig, &cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+			tt := cfg.GetRequestTransformation().GetTransformationTemplate()
+			Expect(tt.GetMergeExtractorsToBody()).NotTo(BeNil())
+
+			extrs := tt.GetExtractors()
+			matchablePath := "/first_value/second%34value/third-value/too"
+			compiledRe, err := regexp.Compile(extrs["what"].Regex)
+
+			subMatches := compiledRe.FindStringSubmatch(matchablePath)
+			Expect(subMatches).NotTo(BeNil())
+			// We expect the entire string to match since this is what the matching code in
+			// https://github.com/solo-io/envoy-transformation/blob/289d945b0a85c9df92918c478caa016020bbe981/source/extensions/filters/http/transformation/transformer.cc#L50
+			// expects as well.
+			Expect(len(subMatches[0])).To(Equal(len(matchablePath)))
+			Expect(subMatches[extrs["what"].Subgroup]).To(Equal("first_value"))
+			Expect(subMatches[extrs["ever"].Subgroup]).To(Equal("second%34value"))
+			Expect(subMatches[extrs["nested.field"].Subgroup]).To(Equal("third-value"))
 		})
 	})
 })
