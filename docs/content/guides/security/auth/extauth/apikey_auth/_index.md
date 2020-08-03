@@ -26,7 +26,10 @@ To secure your services using API keys, you first need to provide Gloo with your
 1. You can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
 1. You can **explicitly reference** a set of secrets by their identifier (namespace and name).
 
-When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the `api-key` header. If the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
+When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the request headers. 
+The name of the header that is expected to contain the API key is configurable. If the header is not present, 
+or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, 
+Gloo will deny the request and return a 401 response to the downstream client.
 
 Internally, Gloo will generate a mapping of API keys to _user identities_ for all API keys present in the system. The _user identity_ for a given API key is the name of the `Secret` which contains the API key. The _user identity_ will be added to the request as a header, `x-user-id` by default, which can be utilized in subsequent filters. You can see the [default order of the filters in the Gloo source](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/plugin_interface.go#L187-L198). In this specific case, the extauth plugin (which handles the api key flow) is part of the `AuthNStage` stage, so filters after this stage will have access to the `user identity` header. For example, this functionality is used in [Gloo's rate limiting API to provide different rate limits for anonymous vs. authorized users]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple" >}}). For security reasons, this header will be sanitized from the response before it leaves the proxy.
 
@@ -80,7 +83,10 @@ The above command should return:
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that only requests containing a valid API key in their `api-key` header are allowed.
+As we just saw, we were able to reach the upstream without having to provide any credentials. 
+This is because by default Gloo allows any request on routes that do not specify authentication configuration. 
+Let's change this behavior. We will update the Virtual Service so that only requests containing 
+a valid API key are allowed.
 
 We start by creating an API key secret using `glooctl`:
 
@@ -151,8 +157,11 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - api_key_auth:
-      label_selector:
+  - apiKeyAuth:
+      # This is the name of the header that is expected to contain the API key.
+      # This field is optional and defaults to `api-key` if not present.
+      headerName: api-key
+      labelSelector:
         team: infrastructure
 EOF
 {{< /highlight >}}
@@ -213,7 +222,8 @@ You will see that the response now contains a **401 Unauthorized** code, indicat
 {{< /highlight >}}
 
 ### Testing authenticated requests
-For a request to be allowed, it must include a header named `api-key` with the value set to the API key we previously stored in our secret. Now let's add the authorization headers:
+For a request to be allowed, it must include a header named `api-key` with the value set to the 
+API key we previously stored in our secret. Now let's add the authorization headers:
 
 ```shell
 curl -H "api-key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy" -H "Host: foo" $(glooctl proxy url)/posts/1
