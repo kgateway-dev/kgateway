@@ -120,8 +120,8 @@ type Settings struct {
 }
 
 type AwsSettings struct {
-	EnableCredentialsDiscovery      bool   `json:"enableCredentialsDiscovery" desc:"Enable AWS credentials discovery in Envoy for lambda requests."`
-	EnableServiceAccountCredentials bool   `json:"enableServiceAccountCredentials" desc:"Use ServiceAccount credentials to authenticate lambda requests."`
+	EnableCredentialsDiscovery      bool   `json:"enableCredentialsDiscovery" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo "`
+	EnableServiceAccountCredentials bool   `json:"enableServiceAccountCredentials" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo"`
 	StsCredentialsRegion            string `json:"stsCredentialsRegion" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
 }
 

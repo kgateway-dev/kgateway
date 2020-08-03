@@ -65,7 +65,7 @@ message AWSLambdaConfig {
     // defaults to false, but may change in the future to true.
     google.protobuf.BoolValue use_default_credentials = 1;
 
-    // Use projected service account token, and role arn to create reate temporary
+    // Use projected service account token, and role arn to create temporary
     // credentials with which to authenticate lambda requests.
     // This functionality is meant to work along side EKS service account to IAM
     // binding functionality as outlined here:

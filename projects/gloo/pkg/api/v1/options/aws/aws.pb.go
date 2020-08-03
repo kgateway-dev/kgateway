@@ -69,7 +69,9 @@ type UpstreamSpec struct {
 	// This list will be automatically populated by Gloo if discovery is enabled for AWS Lambda Functions
 	LambdaFunctions []*LambdaFunctionSpec `protobuf:"bytes,3,rep,name=lambda_functions,json=lambdaFunctions,proto3" json:"lambda_functions,omitempty"`
 	// (Optional): role_arn to use when assuming a role for a given request via STS.
+	// If set this role_arn will override the value found in AWS_ROLE_ARN
 	// This option will only be respected if STS credentials are enabled.
+	// To enable STS credential fetching see Settings.Gloo.AwsOptions in settings.proto.
 	RoleArn              string   `protobuf:"bytes,4,opt,name=role_arn,json=roleArn,proto3" json:"role_arn,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
