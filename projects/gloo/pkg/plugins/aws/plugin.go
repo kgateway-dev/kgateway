@@ -245,11 +245,7 @@ func (p *plugin) HttpFilters(_ plugins.Params, _ *v1.HttpListener) ([]plugins.St
 		}
 	case *v1.GlooOptions_AWSOptions_ServiceAccountCredentials:
 		filterconfig.CredentialsFetcher = &AWSLambdaConfig_ServiceAccountCredentials_{
-			ServiceAccountCredentials: &AWSLambdaConfig_ServiceAccountCredentials{
-				Cluster: typedFetcher.ServiceAccountCredentials.GetCluster(),
-				Uri:     typedFetcher.ServiceAccountCredentials.GetUri(),
-				Timeout: typedFetcher.ServiceAccountCredentials.GetTimeout(),
-			},
+			ServiceAccountCredentials: typedFetcher.ServiceAccountCredentials,
 		}
 	}
 	f, err := plugins.NewStagedFilterWithConfig(FilterName, filterconfig, pluginStage)

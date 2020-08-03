@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -328,7 +329,7 @@ var _ = Describe("Plugin", func() {
 
 			saCredentials = &AWSLambdaConfig_ServiceAccountCredentials{
 				Cluster: "aws_sts",
-				Uri:     "sts.aws.com",
+				Uri:     "sts.amazonaws.com",
 				Timeout: &types.Duration{
 					Seconds: 5,
 					Nanos:   5,
@@ -376,7 +377,7 @@ var _ = Describe("Plugin", func() {
 			process()
 			saCredentialsExpected := cfg.GetServiceAccountCredentials()
 			Expect(saCredentialsExpected).NotTo(BeNil())
-			Expect(saCredentialsExpected).To(Equal(saCredentials))
+			Expect(saCredentialsExpected).To(matchers.MatchProto(saCredentials))
 		})
 
 		It("will add the token if it is present on the secret", func() {
@@ -389,7 +390,9 @@ var _ = Describe("Plugin", func() {
 
 			process()
 
-			Expect(cfg.GetServiceAccountCredentials()).NotTo(BeNil())
+			saCredentialsExpected := cfg.GetServiceAccountCredentials()
+			Expect(saCredentialsExpected).NotTo(BeNil())
+			Expect(saCredentialsExpected).To(matchers.MatchProto(saCredentials))
 			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
