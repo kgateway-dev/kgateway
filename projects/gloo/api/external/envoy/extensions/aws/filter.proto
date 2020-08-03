@@ -75,6 +75,9 @@ message AWSLambdaConfig {
     //   1. AWS_WEB_IDENTITY_TOKEN_FILE
     //   2. AWS_ROLE_ARN
     //
+    // If they are not specified envoy will NACK the config update, which will show up in the logs when running OS Gloo.
+    // When running Gloo enterprise it will be reflected in the prometheus stat: "glooe.solo.io/xds/nack"
+    //
     // The role arn may also be specified in the `AWSLambdaProtocolExtension` on the cluster level,
     // to override the environment variable.
     ServiceAccountCredentials service_account_credentials = 2;

@@ -1,6 +1,5 @@
 package matchers
 
-
 import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/onsi/gomega/format"

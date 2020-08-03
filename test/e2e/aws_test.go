@@ -287,7 +287,7 @@ var _ = Describe("AWS Lambda", func() {
 			localAwsCredentials := credentials.NewSharedCredentials("", "")
 			v, err := localAwsCredentials.Get()
 			if err != nil {
-				Skip("no AWS creds available")
+				Fail("no AWS creds available")
 			}
 			var opts clients.WriteOpts
 
@@ -330,7 +330,7 @@ var _ = Describe("AWS Lambda", func() {
 			localAwsCredentials := credentials.NewSharedCredentials("", "")
 			sess, err := session.NewSession(&aws.Config{Region: aws.String(region), Credentials: localAwsCredentials})
 			if err != nil {
-				Skip("no AWS creds available")
+				Fail("no AWS creds available")
 			}
 			stsClient := sts.New(sess)
 			result, err := stsClient.GetSessionToken(&sts.GetSessionTokenInput{})
@@ -378,12 +378,12 @@ var _ = Describe("AWS Lambda", func() {
 
 			webToken := os.Getenv(webIdentityToken)
 			if webToken == "" {
-				Skip(fmt.Sprintf("Token location unset, set via %s", webIdentityToken))
+				Fail(fmt.Sprintf("Token location unset, set via %s", webIdentityToken))
 			}
 
 			roleArn := os.Getenv(awsRoleArnSts)
 			if roleArn == "" {
-				Skip(fmt.Sprintf("AWS role arn unset, set via %s", awsRoleArnSts))
+				Fail(fmt.Sprintf("AWS role arn unset, set via %s", awsRoleArnSts))
 			}
 
 			var err error
