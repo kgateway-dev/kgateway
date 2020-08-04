@@ -13,7 +13,9 @@ func RootCmd(opts *options.Options) *cobra.Command {
 		Use:   constants.PLUGIN_LIST_COMMAND.Use,
 		Short: constants.PLUGIN_LIST_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			o := PluginListOptions{}
+			o := PluginListOptions{
+				NameOnly: true,
+			}
 			if err := o.Complete(cmd); err != nil {
 				return err
 			}

@@ -90,8 +90,12 @@ func (o *PluginListOptions) Run() error {
 				pluginPath = filepath.Join(dir, pluginPath)
 			}
 
-			fmt.Printf("%s\n", pluginPath)
-			if errs := o.Verifier.Verify(filepath.Join(dir, f.Name())); len(errs) != 0 {
+			// extract the plugin binary name
+			segs := strings.Split(pluginPath, "/")
+			binName := segs[len(segs)-1]
+
+			fmt.Printf("%s\n", binName)
+			if errs := o.Verifier.Verify(filepath.Join(dir, f.Name()), binName); len(errs) != 0 {
 				for _, err := range errs {
 					fmt.Printf("  - %s\n", err)
 					pluginWarnings++
@@ -125,7 +129,7 @@ func (o *PluginListOptions) Run() error {
 // pathVerifier receives a path and determines if it is valid or not
 type PathVerifier interface {
 	// Verify determines if a given path is valid
-	Verify(path string) []error
+	Verify(path, binName string) []error
 }
 
 type CommandOverrideVerifier struct {
@@ -136,21 +140,17 @@ type CommandOverrideVerifier struct {
 // Verify implements PathVerifier and determines if a given path
 // is valid depending on whether or not it overwrites an existing
 // glooctl command path, or a previously seen plugin.
-func (v *CommandOverrideVerifier) Verify(path string) []error {
+func (v *CommandOverrideVerifier) Verify(path, binName string) []error {
 	if v.root == nil {
 		return []error{fmt.Errorf("unable to verify path with nil root")}
 	}
-
-	// extract the plugin binary name
-	segs := strings.Split(path, "/")
-	binName := segs[len(segs)-1]
 
 	errors := []error{}
 
 	cmdPath := strings.Split(binName, "-")
 	if len(cmdPath) > 1 {
-		// the first argument should always be "glooctl" for a plugin binary
 		if cmdPath[0] != "glooctl" {
+			errors = append(errors, fmt.Errorf("warning: the prefix should always be 'glooctl' for a plugin binary, found: %s", cmdPath[0]))
 			return errors
 		}
 		cmdPath = cmdPath[1:]
