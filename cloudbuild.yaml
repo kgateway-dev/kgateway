@@ -87,7 +87,7 @@ steps:
   dir: *dir
   args: ['-r', '-failFast', '-trace', '-progress', '-race', '-compilers=4', '-failOnPending', '-noColor']
   waitFor: ['get-envoy', 'setup-aws-creds', 'set-gcr-zone', 'get-test-credentials']
-  secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "AWS_WEB_IDENTITY_TOKEN"]
+  secretEnv: ['AWS_ARN_ROLE_1', "AWS_ROLE_ARN_STS", "JWT_PRIVATE_KEY"]
   id: 'test'
 
 # Build and tag docker images
