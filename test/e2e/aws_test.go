@@ -39,7 +39,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 
-var _ = Describe("AWS Lambda", func() {
+var _ = FDescribe("AWS Lambda", func() {
 	const (
 		region               = "us-east-1"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
@@ -403,7 +403,7 @@ var _ = Describe("AWS Lambda", func() {
 				"name":  "Solo Test User",
 				"admin": true,
 				"iat":   now.Unix(),
-				"exp":   now.Add(time.Minute * 10),
+				"exp":   now.Add(time.Minute * 10).Unix(),
 				"nbf":   now.Unix(),
 				"iss":   "https://fake-oidc.solo.io",
 				"aud":   "sts.amazonaws.com",
