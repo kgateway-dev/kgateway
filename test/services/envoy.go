@@ -70,39 +70,59 @@ static_resources:
   clusters:
   - name: xds_cluster
     connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: {{.GlooAddr}}
-        port_value: {{.Port}}
+    load_assignment:
+      cluster_name: xds_cluster
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: {{.GlooAddr}}
+                    port_value: {{.Port}}
     http2_protocol_options: {}
     type: STATIC
 {{if .RatelimitAddr}}
   - name: ratelimit_cluster
     connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: {{.RatelimitAddr}}
-        port_value: {{.RatelimitPort}}
+    load_assignment:
+      cluster_name: ratelimit_cluster
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: {{.RatelimitAddr}}
+                    port_value: {{.RatelimitPort}}
     http2_protocol_options: {}
     type: STATIC
 {{end}}
 {{if .AccessLogAddr}}
   - name: access_log_cluster
     connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: {{.AccessLogAddr}}
-        port_value: {{.AccessLogPort}}
+    load_assignment:
+      cluster_name: access_log_cluster
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: {{.AccessLogAddr}}
+                    port_value: {{.AccessLogPort}}
     http2_protocol_options: {}
     type: STATIC
 {{end}}
 {{if .MetricsAddr}}
   - name: metrics_cluster
     connect_timeout: 5.000s
-    hosts:
-    - socket_address:
-        address: {{.MetricsAddr}}
-        port_value: {{.MetricsPort}}
+    load_assignment:
+      cluster_name: metrics_cluster
+      endpoints:
+        - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: {{.MetricsAddr}}
+                    port_value: {{.MetricsPort}}
     http2_protocol_options: {}
     type: STATIC
 {{end}}

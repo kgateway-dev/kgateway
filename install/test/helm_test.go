@@ -587,6 +587,38 @@ var _ = Describe("Helm Test", func() {
 
 				})
 
+				Context("gateway-proxy service account", func() {
+					var gatewayProxyServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayProxyServiceAccount = rb.GetServiceAccount()
+						gatewayProxyServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						gatewayProxyServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.proxyServiceAccount.extraAnnotations.foo=bar",
+								"gateway.proxyServiceAccount.extraAnnotations.bar=baz",
+								"gateway.proxyServiceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayProxyServiceAccount)
+					})
+
+				})
+
 				Context("gateway-proxy service", func() {
 					var gatewayProxyService *v1.Service
 
@@ -983,6 +1015,105 @@ var _ = Describe("Helm Test", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.probes=true"},
 						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("supports custom readiness probe", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/gloo/health",
+									Port:   intstr.FromInt(8080),
+									Scheme: "HTTP",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
+									},
+								},
+							},
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       10,
+							FailureThreshold:    10,
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders terminationGracePeriodSeconds when present", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds=45",
+							},
+						})
+
+						intz := int64(45)
+						gatewayProxyDeployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &intz
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 25",
+									},
+								},
+							},
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown with custom sleep time", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds=45",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 45",
+									},
+								},
+							},
+						}
+
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
@@ -1561,6 +1692,39 @@ metadata:
 					})
 				})
 			})
+
+			Context("gloo service account", func() {
+				var glooServiceAccount *v1.ServiceAccount
+
+				BeforeEach(func() {
+					saLabels := map[string]string{
+						"app":  "gloo",
+						"gloo": "gloo",
+					}
+					rb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      "gloo",
+						Args:      nil,
+						Labels:    saLabels,
+					}
+					glooServiceAccount = rb.GetServiceAccount()
+					glooServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+				})
+
+				It("sets extra annotations", func() {
+					glooServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gloo.serviceAccount.extraAnnotations.foo=bar",
+							"gloo.serviceAccount.extraAnnotations.bar=baz",
+							"gloo.serviceAccount.disableAutomount=true",
+						},
+					})
+					testManifest.ExpectServiceAccount(glooServiceAccount)
+				})
+
+			})
+
 			Context("control plane deployments", func() {
 				updateDeployment := func(deploy *appsv1.Deployment) {
 					deploy.Spec.Selector = &metav1.LabelSelector{
@@ -1585,6 +1749,7 @@ metadata:
 					}
 					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 				}
+
 				Context("gloo deployment", func() {
 					var (
 						glooDeployment *appsv1.Deployment
@@ -1751,6 +1916,38 @@ metadata:
 					})
 				})
 
+				Context("gateway service account", func() {
+					var gatewayServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "gateway",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayServiceAccount = rb.GetServiceAccount()
+						gatewayServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.serviceAccount.extraAnnotations.foo=bar",
+								"gateway.serviceAccount.extraAnnotations.bar=baz",
+								"gateway.serviceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayServiceAccount)
+					})
+
+				})
+
 				Context("gateway deployment", func() {
 					var (
 						gatewayDeployment *appsv1.Deployment
@@ -1888,6 +2085,38 @@ metadata:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
+				})
+
+				Context("discovery service account", func() {
+					var discoveryServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "discovery",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "discovery",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						discoveryServiceAccount = rb.GetServiceAccount()
+						discoveryServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						discoveryServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.serviceAccount.extraAnnotations.foo=bar",
+								"discovery.serviceAccount.extraAnnotations.bar=baz",
+								"discovery.serviceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(discoveryServiceAccount)
+					})
+
 				})
 
 				Context("discovery deployment", func() {

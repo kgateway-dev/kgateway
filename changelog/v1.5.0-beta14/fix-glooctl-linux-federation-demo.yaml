@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo-fed/issues/239
+    description: Fix glooctl demo federation command for linux.

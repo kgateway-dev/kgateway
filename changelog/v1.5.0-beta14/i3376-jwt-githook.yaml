@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  issueLink: https://github.com/solo-io/gloo/issues/3376
+  description: Adds githook that checks commits for JSON web token-esque text, and warns the user if it finds anything. Requires make init to be active.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
@@ -131,6 +132,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	}
 
 	opts := translator.Opts{
+		GlooNamespace:   settings.Metadata.Namespace,
 		WriteNamespace:  writeNamespace,
 		WatchNamespaces: watchNamespaces,
 		Gateways:        gatewayFactory,
@@ -149,6 +151,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	return RunGateway(opts)
 }
 
+// the need for the namespace is limited to this function, whereas the opts struct's use is more widespread.
 func RunGateway(opts translator.Opts) error {
 	opts.WatchOpts = opts.WatchOpts.WithDefaults()
 	opts.WatchOpts.Ctx = contextutils.WithLogger(opts.WatchOpts.Ctx, "gateway")
@@ -269,6 +272,24 @@ func RunGateway(opts translator.Opts) error {
 
 	validationServerErr := make(chan error, 1)
 	if opts.Validation != nil {
+		// make sure non-empty WatchNamespaces contains the gloo instance's own namespace if
+		// ReadGatewaysFromAllNamespaces is false
+		if !opts.ReadGatewaysFromAllNamespaces && !utils.AllNamespaces(opts.WatchNamespaces) {
+			foundSelf := false
+			for _, namespace := range opts.WatchNamespaces {
+				if opts.GlooNamespace == namespace {
+					foundSelf = true
+					break
+				}
+			}
+			if !foundSelf {
+				return errors.Errorf("The gateway configuration value readGatewaysFromAllNamespaces was set "+
+					"to false, but the non-empty settings.watchNamespaces "+
+					"list (%s) did not contain this gloo instance's own namespace: %s.",
+					strings.Join(opts.WatchNamespaces, ", "), opts.GlooNamespace)
+			}
+		}
+
 		validationWebhook, err := k8sadmisssion.NewGatewayValidatingWebhook(
 			k8sadmisssion.NewWebhookConfig(
 				ctx,
@@ -278,6 +299,8 @@ func RunGateway(opts translator.Opts) error {
 				opts.Validation.ValidatingWebhookCertPath,
 				opts.Validation.ValidatingWebhookKeyPath,
 				opts.Validation.AlwaysAcceptResources,
+				opts.ReadGatewaysFromAllNamespaces,
+				opts.GlooNamespace,
 			),
 		)
 		if err != nil {
