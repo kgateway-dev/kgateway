@@ -14,6 +14,7 @@ weight: 5
 - [AWSLambdaPerRoute](#awslambdaperroute)
 - [AWSLambdaProtocolExtension](#awslambdaprotocolextension)
 - [AWSLambdaConfig](#awslambdaconfig)
+- [ServiceAccountCredentials](#serviceaccountcredentials)
   
 
 
@@ -60,6 +61,7 @@ http calls to AWS Lambda invocations.
 "accessKey": string
 "secretKey": string
 "sessionToken": string
+"roleArn": string
 
 ```
 
@@ -70,6 +72,7 @@ http calls to AWS Lambda invocations.
 | `accessKey` | `string` | The access_key for AWS this cluster. |  |
 | `secretKey` | `string` | The secret_key for AWS this cluster. |  |
 | `sessionToken` | `string` | The session_token for AWS this cluster. |  |
+| `roleArn` | `string` | The role_arn to use when generating credentials for the mounted projected SA token. |  |
 
 
 
@@ -81,12 +84,38 @@ http calls to AWS Lambda invocations.
 
 ```yaml
 "useDefaultCredentials": .google.protobuf.BoolValue
+"serviceAccountCredentials": .envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `useDefaultCredentials` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use AWS default credentials chain to get credentials. This will search environment variables, ECS metadata and instance metadata to get the credentials. credentials will be rotated automatically. If credentials are provided on the cluster (using the AWSLambdaProtocolExtension), it will override these credentials. This defaults to false, but may change in the future to true. |  |
+| `useDefaultCredentials` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Use AWS default credentials chain to get credentials. This will search environment variables, ECS metadata and instance metadata to get the credentials. credentials will be rotated automatically. If credentials are provided on the cluster (using the AWSLambdaProtocolExtension), it will override these credentials. This defaults to false, but may change in the future to true. Only one of `useDefaultCredentials` or `serviceAccountCredentials` can be set. |  |
+| `serviceAccountCredentials` | [.envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials](../filter.proto.sk/#serviceaccountcredentials) | Use projected service account token, and role arn to create temporary credentials with which to authenticate lambda requests. This functionality is meant to work along side EKS service account to IAM binding functionality as outlined here: https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html If the following environment values are not present, this option cannot be used. 1. AWS_WEB_IDENTITY_TOKEN_FILE 2. AWS_ROLE_ARN If they are not specified envoy will NACK the config update, which will show up in the logs when running OS Gloo. When running Gloo enterprise it will be reflected in the prometheus stat: "glooe.solo.io/xds/nack" The role arn may also be specified in the `AWSLambdaProtocolExtension` on the cluster level, to override the environment variable. Only one of `serviceAccountCredentials` or `useDefaultCredentials` can be set. |  |
+
+
+
+
+---
+### ServiceAccountCredentials
+
+ 
+In order to specify the aws sts endpoint, both the cluster and uri must be set.
+This is due to an envoy limitation which cannot infer the host or path from the cluster,
+and therefore must be explicitly specified via the uri
+
+```yaml
+"cluster": string
+"uri": string
+"timeout": .google.protobuf.Duration
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `cluster` | `string` | The name of the envoy cluster which represents the desired aws sts endpoint. |  |
+| `uri` | `string` | The full uri of the aws sts endpoint. |  |
+| `timeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | timeout for the request. |  |
 
 
 

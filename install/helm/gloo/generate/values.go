@@ -116,6 +116,13 @@ type Settings struct {
 	Linkerd                       bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
 	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
 	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
+	Aws                           AwsSettings          `json:"aws,omitempty"`
+}
+
+type AwsSettings struct {
+	EnableCredentialsDiscovery      bool   `json:"enableCredentialsDiscovery" desc:"Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo "`
+	EnableServiceAccountCredentials bool   `json:"enableServiceAccountCredentials" desc:"Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo"`
+	StsCredentialsRegion            string `json:"stsCredentialsRegion" desc:"Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint."`
 }
 
 type InvalidConfigPolicy struct {

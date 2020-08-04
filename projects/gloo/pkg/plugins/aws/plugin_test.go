@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	. "github.com/solo-io/gloo/projects/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
+	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
@@ -150,7 +151,7 @@ var _ = Describe("Plugin", func() {
 		It("should error upstream with no secret ref", func() {
 			upstream.GetAws().SecretRef = nil
 			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
-			Expect(err).To(MatchError("no aws secret provided. consider setting enableCredentialsDiscovey to true if you are running in AWS environment"))
+			Expect(err).To(MatchError("no aws secret provided. consider setting enableCredentialsDiscovey to true or enabling service account credentials if running in EKS"))
 		})
 
 		It("should error upstream with no access_key", func() {
@@ -259,7 +260,9 @@ var _ = Describe("Plugin", func() {
 				Settings: &v1.Settings{
 					Gloo: &v1.GlooOptions{
 						AwsOptions: &v1.GlooOptions_AWSOptions{
-							EnableCredentialsDiscovey: true,
+							CredentialsFetcher: &v1.GlooOptions_AWSOptions_EnableCredentialsDiscovey{
+								EnableCredentialsDiscovey: true,
+							},
 						},
 					},
 				},
@@ -285,7 +288,7 @@ var _ = Describe("Plugin", func() {
 
 		It("should enable default credentials in the filter", func() {
 			process()
-			Expect(cfg.UseDefaultCredentials.GetValue()).To(BeTrue())
+			Expect(cfg.GetUseDefaultCredentials().GetValue()).To(BeTrue())
 		})
 
 		It("should enable default but still use secret ref if it is there", func() {
@@ -296,7 +299,7 @@ var _ = Describe("Plugin", func() {
 
 			process()
 
-			Expect(cfg.UseDefaultCredentials.GetValue()).To(BeTrue())
+			Expect(cfg.GetUseDefaultCredentials().GetValue()).To(BeTrue())
 			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 		})
@@ -311,10 +314,89 @@ var _ = Describe("Plugin", func() {
 
 			process()
 
-			Expect(cfg.UseDefaultCredentials.GetValue()).To(BeTrue())
+			Expect(cfg.GetUseDefaultCredentials().GetValue()).To(BeTrue())
 			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
 			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
 			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
+		})
+
+	})
+
+	Context("service account creds", func() {
+
+		var (
+			cfg *AWSLambdaConfig
+
+			saCredentials = &AWSLambdaConfig_ServiceAccountCredentials{
+				Cluster: "aws_sts",
+				Uri:     "sts.amazonaws.com",
+				Timeout: &types.Duration{
+					Seconds: 5,
+					Nanos:   5,
+				},
+			}
+
+			roleArn = "role_arn"
+		)
+
+		BeforeEach(func() {
+			cfg = &AWSLambdaConfig{}
+
+			awsPlugin.Init(plugins.InitParams{
+				Settings: &v1.Settings{
+					Gloo: &v1.GlooOptions{
+						AwsOptions: &v1.GlooOptions_AWSOptions{
+							CredentialsFetcher: &v1.GlooOptions_AWSOptions_ServiceAccountCredentials{
+								ServiceAccountCredentials: saCredentials,
+							},
+						},
+					},
+				},
+			})
+			// remove secrets from upstream
+			upstream.GetAws().SecretRef = nil
+			upstream.GetAws().RoleArn = roleArn
+		})
+
+		process := func() {
+			err := awsPlugin.(plugins.UpstreamPlugin).ProcessUpstream(params, upstream, out)
+			Expect(err).NotTo(HaveOccurred())
+			processProtocolOptions()
+
+			filters, err := awsPlugin.(plugins.HttpFilterPlugin).HttpFilters(params, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(filters).To(HaveLen(1))
+			goTypedConfig := filters[0].HttpFilter.GetTypedConfig()
+			gogoTypedConfig := &types.Any{TypeUrl: goTypedConfig.TypeUrl, Value: goTypedConfig.Value}
+			err = types.UnmarshalAny(gogoTypedConfig, cfg)
+			Expect(err).NotTo(HaveOccurred())
+
+		}
+
+		It("should enable service account credentials in the filter", func() {
+			process()
+			saCredentialsExpected := cfg.GetServiceAccountCredentials()
+			Expect(saCredentialsExpected).NotTo(BeNil())
+			Expect(saCredentialsExpected).To(matchers.MatchProto(saCredentials))
+		})
+
+		It("will add the token if it is present on the secret", func() {
+			upstream.GetAws().SecretRef = &core.ResourceRef{
+				Namespace: "ns",
+				Name:      "secretref",
+			}
+			awsSecret := params.Snapshot.Secrets[0].GetAws()
+			awsSecret.SessionToken = sessionTokenValue
+
+			process()
+
+			saCredentialsExpected := cfg.GetServiceAccountCredentials()
+			Expect(saCredentialsExpected).NotTo(BeNil())
+			Expect(saCredentialsExpected).To(matchers.MatchProto(saCredentials))
+			Expect(lpe.AccessKey).To(Equal(accessKeyValue))
+			Expect(lpe.SecretKey).To(Equal(secretKeyValue))
+			Expect(lpe.SessionToken).To(Equal(sessionTokenValue))
+			Expect(lpe.RoleArn).To(Equal(roleArn))
 		})
 
 	})

@@ -1474,6 +1474,99 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("enable default credentials", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      alwaysAccept: true
+      allowWarnings: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+    restXdsBindAddr: 0.0.0.0:9976
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    awsOptions:
+      enableCredentialsDiscovey: true
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+      invalidRouteResponseCode: 404
+
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+  discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableCredentialsDiscovery=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("enable sts discovery", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      alwaysAccept: true
+      allowWarnings: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+    restXdsBindAddr: 0.0.0.0:9976
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    awsOptions:
+      serviceAccountCredentials:
+        cluster: aws_sts_cluster
+        uri: sts.us-east-2.amazonaws.com
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+      invalidRouteResponseCode: 404
+
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+  discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableServiceAccountCredentials=true",
+								"settings.aws.stsCredentialsRegion=us-east-2",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("creates the validating webhook configuration", func() {
 						vwc := makeUnstructured(`
 
@@ -2246,10 +2339,50 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
+				Describe("gateway proxy - AWS", func() {
+
+					It("has a global cluster", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true"},
+						})
+						proxySpec := make(map[string]string)
+						proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "", "")
+						cmRb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      gatewayProxyConfigMapName,
+							Labels:    labels,
+							Data:      proxySpec,
+						}
+						proxy := cmRb.GetConfigMap()
+						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
+
+					It("has a regional cluster", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableServiceAccountCredentials=true",
+								"settings.aws.stsCredentialsRegion=us-east-2",
+							},
+						})
+						proxySpec := make(map[string]string)
+						proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "us-east-2.", "us-east-2.")
+						cmRb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      gatewayProxyConfigMapName,
+							Labels:    labels,
+							Data:      proxySpec,
+						}
+						proxy := cmRb.GetConfigMap()
+						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
+				})
+
 				Describe("gateway proxy - tracing config", func() {
 					It("has a proxy without tracing", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{" gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
 						})
 						proxySpec := make(map[string]string)
 						proxySpec["envoy.yaml"] = confWithoutTracing
