@@ -1,7 +1,6 @@
 package plugin
 
 import (
-	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin/list"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
@@ -10,8 +9,6 @@ import (
 	"github.com/solo-io/go-utils/cliutils"
 	"github.com/spf13/cobra"
 )
-
-var MissingSubcommandError = eris.New("please provide a subcommand")
 
 func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
@@ -25,7 +22,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return MissingSubcommandError
+			return constants.SubcommandError
 		},
 	}
 

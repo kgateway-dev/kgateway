@@ -145,13 +145,16 @@ func (v *CommandOverrideVerifier) Verify(path string) []error {
 	segs := strings.Split(path, "/")
 	binName := segs[len(segs)-1]
 
+	errors := []error{}
+
 	cmdPath := strings.Split(binName, "-")
 	if len(cmdPath) > 1 {
-		// the first argument is always "glooctl" for a plugin binary
+		// the first argument should always be "glooctl" for a plugin binary
+		if cmdPath[0] != "glooctl" {
+			return errors
+		}
 		cmdPath = cmdPath[1:]
 	}
-
-	errors := []error{}
 
 	if isExec, err := isExecutable(path); err == nil && !isExec {
 		errors = append(errors, fmt.Errorf("warning: %s identified as a glooctl plugin, but it is not executable", path))
