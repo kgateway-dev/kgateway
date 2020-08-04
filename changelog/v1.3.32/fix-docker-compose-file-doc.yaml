@@ -3,3 +3,7 @@ changelog:
     description: Update doc for running gloo locally using the local file system to have user checkout corresponding version of gloo repo.
     issueLink: https://github.com/solo-io/gloo/issues/3156
     resolvesIssue: false
+- type: NON_USER_FACING
+  description: >
+      Use the solo-io fork of the github action setup-protoc, as the upstream doesn't support
+      release pagination, meaning 3.6.1 wouldn't install.
