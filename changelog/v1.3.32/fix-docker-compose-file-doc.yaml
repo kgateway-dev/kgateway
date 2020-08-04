@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Update doc for running gloo locally using the local file system to have user checkout corresponding version of gloo repo.
+    issueLink: https://github.com/solo-io/gloo/issues/3156
+    resolvesIssue: false
