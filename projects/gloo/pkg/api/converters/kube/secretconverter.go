@@ -60,7 +60,7 @@ type TLSSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &TLSSecretConverter{}
 
-func (t *TLSSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *TLSSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 	if secret.Type == kubev1.SecretTypeTLS {
 		glooSecret := &v1.Secret{
 			Kind: &v1.Secret_Tls{
@@ -120,7 +120,7 @@ const (
 	AwsSecretKeyName = "aws_secret_access_key"
 )
 
-func (t *AwsSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 	accessKey, hasAccessKey := secret.Data[AwsAccessKeyName]
 	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
 	if hasAccessKey && hasSecretKey {
@@ -144,7 +144,7 @@ func (t *AwsSecretConverter) FromKubeSecret(ctx context.Context, rc *kubesecret.
 	return nil, nil
 }
 
-func (t *AwsSecretConverter) ToKubeSecret(ctx context.Context, rc *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
+func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, resource resources.Resource) (*kubev1.Secret, error) {
 	glooSecret, ok := resource.(*v1.Secret)
 	if !ok {
 		return nil, nil

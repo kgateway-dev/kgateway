@@ -41,6 +41,10 @@ func (c *APIKeySecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			ApiKey: string(apiKey),
 		}
 
+		if len(secret.Data) > 1 {
+			apiKeySecret.Metadata = map[string]string{}
+		}
+
 		// Copy remaining secret data to gloo secret metadata
 		for key, value := range secret.Data {
 			if key == APIKeyDataKey {
@@ -75,9 +79,9 @@ func (c *APIKeySecretConverter) ToKubeSecret(_ context.Context, rc *kubesecret.R
 	kubeMeta := kubeutils.ToKubeMeta(glooSecret.Metadata)
 
 	// If the secret we have in memory is a plain solo-kit secret (i.e. it was written to storage before
-	// this converter was added), we take this chance to convert it to the new format.
+	// this converter was added), we take the chance to convert it to the new format.
+	// As part of that we need to remove the `resource_kind: '*v1.Secret'` annotation.
 	if len(kubeMeta.Annotations) > 0 && kubeMeta.Annotations[GlooKindAnnotationKey] == rc.Kind() {
-		// Remove the `resource_kind: '*v1.Secret'` annotation.
 		delete(kubeMeta.Annotations, GlooKindAnnotationKey)
 	}
 
