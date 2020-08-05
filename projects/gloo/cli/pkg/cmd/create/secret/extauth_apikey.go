@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
+
 	"github.com/hashicorp/go-uuid"
 	"github.com/solo-io/gloo/pkg/cliutil"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/argsutils"
@@ -12,7 +14,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/printers"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/surveyutils"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	extauth "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	"github.com/solo-io/solo-kit/pkg/errors"
@@ -30,22 +31,26 @@ var apiKeySourceOptions = []string{
 }
 
 var (
-	UnableToMarshalApiKeySecret = func(err error) error {
-		return errors.Wrapf(err, "Error marshalling apikey secret")
-	}
 	MissingApiKeyError = errors.Errorf("ApiKey not provided or generated")
 )
 
+type apiKeySecret struct {
+	// If true, generate an API key.
+	GenerateApiKey bool
+	// If present, use the provided apikey
+	ApiKey string
+	// A list of labels (key=value) for the apikey secret.
+	Labels []string
+}
+
 func ExtAuthApiKeyCmd(opts *options.Options) *cobra.Command {
 	meta := &opts.Metadata
-	input := extauth.ApiKeySecret{}
+	input := apiKeySecret{}
 	cmd := &cobra.Command{
 		Use:   "apikey",
 		Short: `Create an ApiKey secret with the given name (Enterprise)`,
 		Long: "Create an ApiKey secret with the given name. The ApiKey secret contains a single apikey. " +
-			"This is an enterprise-only feature. The format of the secret data is: `{\"apiKey\" : [apikey string]}`. " +
-			"Note that the annotation `resource_kind: '*v1.Secret'` is added in order for Gloo to find this secret. " +
-			"If you're creating a secret through another means, you'll need to add that annotation manually.",
+			"This is an enterprise-only feature. The API key will be stored is the secret data under the key `api-key`.",
 		RunE: func(c *cobra.Command, args []string) error {
 			err := argsutils.MetadataArgsParse(opts, args)
 			if err != nil {
@@ -75,7 +80,7 @@ func ExtAuthApiKeyCmd(opts *options.Options) *cobra.Command {
 	return cmd
 }
 
-func apiKeySecretArgsInteractive(meta *core.Metadata, input *extauth.ApiKeySecret) error {
+func apiKeySecretArgsInteractive(meta *core.Metadata, input *apiKeySecret) error {
 	if err := surveyutils.InteractiveNamespace(&meta.Namespace); err != nil {
 		return err
 	}
@@ -108,7 +113,7 @@ func apiKeySecretArgsInteractive(meta *core.Metadata, input *extauth.ApiKeySecre
 	return nil
 }
 
-func createApiKeySecret(ctx context.Context, meta core.Metadata, input extauth.ApiKeySecret, dryRun bool, outputType printers.OutputType) error {
+func createApiKeySecret(ctx context.Context, meta core.Metadata, input apiKeySecret, dryRun bool, outputType printers.OutputType) error {
 	if input.ApiKey == "" {
 		if !input.GenerateApiKey {
 			return MissingApiKeyError
@@ -128,7 +133,9 @@ func createApiKeySecret(ctx context.Context, meta core.Metadata, input extauth.A
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_ApiKey{
-			ApiKey: &input,
+			ApiKey: &v1.ApiKeySecret{
+				ApiKey: input.ApiKey,
+			},
 		},
 	}
 
@@ -139,7 +146,5 @@ func createApiKeySecret(ctx context.Context, meta core.Metadata, input extauth.A
 		}
 	}
 
-	printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
-
-	return nil
+	return printers.PrintSecrets(gloov1.SecretList{secret}, outputType)
 }
