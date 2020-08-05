@@ -10,3 +10,8 @@ const (
 	// We use it to filter out those resources wherever that it necessary.
 	HookCleanupResourceAnnotation = "solo.io/hook-cleanup"
 )
+
+var (
+	// This slice defines the valid prefixes for glooctl extension binaries within the user's PATH (e.g. "glooctl-foo").
+	ValidExtensionPrefixes = []string{"glooctl"}
+)

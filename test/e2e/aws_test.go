@@ -3,15 +3,18 @@ package e2e_test
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/dgrijalva/jwt-go"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	aws2 "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/aws"
 	"github.com/solo-io/gloo/test/helpers"
@@ -39,8 +42,8 @@ import (
 var _ = Describe("AWS Lambda", func() {
 	const (
 		region               = "us-east-1"
-		webIdentityToken     = "AWS_WEB_IDENTITY_TOKEN"
 		webIdentityTokenFile = "AWS_WEB_IDENTITY_TOKEN_FILE"
+		jwtPrivateKey        = "JWT_PRIVATE_KEY"
 		awsRoleArnSts        = "AWS_ROLE_ARN_STS"
 		awsRoleArn           = "AWS_ROLE_ARN"
 	)
@@ -376,22 +379,45 @@ var _ = Describe("AWS Lambda", func() {
 
 		addCredentialsSts := func() {
 
-			webToken := os.Getenv(webIdentityToken)
-			if webToken == "" {
-				Fail(fmt.Sprintf("Token location unset, set via %s", webIdentityToken))
-			}
-
 			roleArn := os.Getenv(awsRoleArnSts)
 			if roleArn == "" {
 				Fail(fmt.Sprintf("AWS role arn unset, set via %s", awsRoleArnSts))
 			}
 
-			var err error
+			jwtKey := os.Getenv(jwtPrivateKey)
+			if jwtKey == "" {
+				Fail(fmt.Sprintf("Token location unset, set via %s", jwtPrivateKey))
+			}
+
+			// Need to store the private key in base 64 otherwise the newlines get lost in the env var
+			data, err := base64.StdEncoding.DecodeString(jwtKey)
+			Expect(err).NotTo(HaveOccurred())
+
+			privateKey, err := jwt.ParseRSAPrivateKeyFromPEM(data)
+			Expect(err).NotTo(HaveOccurred())
+
+			now := time.Now()
+
+			tokenToSign := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+				"sub":   "1234567890",
+				"name":  "Solo Test User",
+				"admin": true,
+				"iat":   now.Unix(),
+				"exp":   now.Add(time.Minute * 10).Unix(),
+				"nbf":   now.Unix(),
+				"iss":   "https://fake-oidc.solo.io",
+				"aud":   "sts.amazonaws.com",
+				"kid":   "test1",
+			})
+
+			signedJwt, err := tokenToSign.SignedString(privateKey)
+			Expect(err).NotTo(HaveOccurred())
+
 			tmpFile, err = ioutil.TempFile("/tmp", "")
 			Expect(err).NotTo(HaveOccurred())
 			defer tmpFile.Close()
 
-			_, err = tmpFile.Write([]byte(webToken))
+			_, err = tmpFile.Write([]byte(signedJwt))
 			Expect(err).NotTo(HaveOccurred())
 
 			// Have to set these values for tests which use the envoy binary

@@ -1,0 +1,5 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Fix aws sts lambda e2e test to create a JWT, as AWS requires a JWT which was created < 24 hours from the time
+    it is being used.
