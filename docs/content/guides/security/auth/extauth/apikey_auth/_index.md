@@ -8,6 +8,12 @@ description: How to setup ApiKey authentication.
 The API keys authentication feature was introduced with **Gloo Enterprise**, release 0.18.5. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
+{{% notice note %}}
+The API key secret format shown in this guide was introduced with **Gloo Enterprise**, release v1.5.0-beta8. 
+If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo/1.3.0/security/auth/apikey_auth/) 
+of this guide.
+{{% /notice %}}
+
 Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does 
 not change frequently. For example, these users might be other services or specific persons or teams in your organization. 
 
@@ -91,14 +97,16 @@ a valid API key are allowed.
 We start by creating an API key secret using `glooctl`:
 
 ```shell
-glooctl create secret apikey infra-apikey --apikey N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy --apikey-labels team=infrastructure
+glooctl create secret apikey infra-apikey \
+    --apikey N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy \
+    --apikey-labels team=infrastructure
 ```
 
 The above command creates a secret that:
 
 - is named `infra-apikey`,
 - is placed in the `gloo-system` namespace (this  is the default if no namespace is provided via the `--namespace` flag),
-- is of kind `apikey` (this is just a Kubernetes secret with additional metadata that can be interpreted by Gloo),
+- is of kind `apikey` (this is just a Kubernetes secret which contains the API key in the `data` entry with the key expected by Gloo),
 - is marked with a label named `team` with value `infrastructure`, and 
 - contains an API key with value `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`.
 
@@ -116,39 +124,27 @@ You secret should look similar to this:
 ```yaml
 apiVersion: v1
 kind: Secret
+type: extauth.solo.io/apikey
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   labels:
     team: infrastructure
   name: infra-apikey
   namespace: gloo-system
-type: Opaque
 data:
-  apiKey: YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK
+  api-key: TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5
 ```
 
-Now let's take the value of `data.apiKey`, which is base64-encoded, and decode it:
+The value of `data.api-key` is base64-encoded. Let's decode it to verify that it is indeed our API key:
 
 ```shell
-echo YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
+echo TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5 | base64 -D
 ```
 
-You should get the following 
-{{< protobuf display="API key secret configuration" name="enterprise.gloo.solo.io.ApiKeySecret" >}}:
-
-```yaml
-config:
-  api_key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy
-  labels:
-  - team=infrastructure
-```
-
-Our API key is indeed `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`! 
+The command should return `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`, which is indeed our API key.
 
 Now that we have a valid API key secret, let's go ahead and create an `AuthConfig` Custom Resource (CR) with our API key authentication configuration:
 
-{{< highlight shell "hl_lines=9-11" >}}
+{{< highlight shell "hl_lines=9-14" >}}
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
