@@ -80,6 +80,11 @@ spec:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
 {{- end }}
 
+{{- if .Values.settings.rateLimit }}
+  rateLimit:
+{{- toYaml .Values.settings.rateLimit | nindent 4 }}
+{{- end }}
+
 {{- if .Values.settings.singleNamespace }}
   watchNamespaces:
   - {{ .Release.Namespace }}

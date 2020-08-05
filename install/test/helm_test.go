@@ -1431,6 +1431,59 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly allows setting ratelimit descriptors in the rateLimit field.", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
+
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+ rateLimit:
+   descriptors:
+     - key: generic_key
+       value: "per-second"
+       rateLimit:
+         requestsPerUnit: 2
+         unit: SECOND
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.rateLimit.descriptors[0].key=generic_key",
+								"settings.rateLimit.descriptors[0].value=per-second",
+								"settings.rateLimit.descriptors[0].rateLimit.requestsPerUnit=2",
+								"settings.rateLimit.descriptors[0].rateLimit.unit=SECOND",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
