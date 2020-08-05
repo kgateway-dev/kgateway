@@ -184,6 +184,7 @@ func SecretFactoryForSettings(ctx context.Context,
 		converterChain := kubeconverters.NewSecretConverterChain(
 			new(kubeconverters.TLSSecretConverter),
 			new(kubeconverters.AwsSecretConverter),
+			new(kubeconverters.APIKeySecretConverter),
 		)
 		return &factory.KubeSecretClientFactory{
 			Clientset:       *clientset,
