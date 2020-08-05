@@ -16,6 +16,7 @@ import "gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto";
 import "gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto";
 import "gloo/projects/gloo/api/v1/enterprise/options/rbac/rbac.proto";
 import "gloo/projects/gloo/api/v1/circuit_breaker.proto";
+import "gloo/projects/gloo/api/external/envoy/extensions/aws/filter.proto";
 
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -335,12 +336,36 @@ message GlooOptions {
     google.protobuf.Duration endpoints_warming_timeout = 4;
 
     message AWSOptions {
-        // Enable credential discovery via IAM; when this is set, there's no need provide a secret
-        // on the upstream when running on AWS environment.
-        //
-        // Note: This should **ONLY** be enabled when running in an AWS environment, as the AWS
-        // code blocks the envoy main thread. This should be negligible when running inside AWS.
-        bool enable_credentials_discovey = 1;
+
+        oneof credentials_fetcher {
+            // Enable credential discovery via IAM; when this is set, there's no need provide a secret
+            // on the upstream when running on AWS environment.
+            //
+            // Note: This should **ONLY** be enabled when running in an AWS environment, as the AWS
+            // code blocks the envoy main thread. This should be negligible when running inside AWS.
+            bool enable_credentials_discovey = 1;
+
+            // Use projected service account token, and role arn to create temporary
+            // credentials with which to authenticate lambda requests.
+            // This functionality is meant to work along side EKS service account to IAM
+            // binding functionality as outlined here:
+            // https://docs.aws.amazon.com/eks/latest/userguide/iam-roles-for-service-accounts.html
+            //
+            // If the following environment values are not present in the gateway-proxy, this option cannot be used.
+            //   1. AWS_WEB_IDENTITY_TOKEN_FILE
+            //   2. AWS_ROLE_ARN
+            //
+            // The role which will be assumed by the credentials will be the one specified by AWS_ROLE_ARN, however, this
+            // can also be overwritten in the AWS Upstream spec via the role_arn field
+            //
+            // If they are not specified envoy will NACK the config update, which will show up in the logs when running OS Gloo.
+            // When running Gloo enterprise it will be reflected in the prometheus stat: "glooe.solo.io/xds/nack"
+            //
+            // In order to specify the aws sts endpoint, both the cluster and uri must be set.
+            // This is due to an envoy limitation which cannot infer the host or path from the cluster,
+            // and therefore must be explicitly specified via the uri
+            envoy.config.filter.http.aws_lambda.v2.AWSLambdaConfig.ServiceAccountCredentials service_account_credentials = 2;
+        }
     }
 
     AWSOptions aws_options = 5;

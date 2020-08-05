@@ -18,8 +18,9 @@ import (
 )
 
 var (
-	flagDefaultAwsAccessKey = ""
-	flagDefaultAwsSecretKey = ""
+	flagDefaultAwsAccessKey    = ""
+	flagDefaultAwsSecretKey    = ""
+	flagDefaultAwsSessionToken = ""
 )
 
 func awsCmd(opts *options.Options) *cobra.Command {
@@ -28,7 +29,8 @@ func awsCmd(opts *options.Options) *cobra.Command {
 		Use:   "aws",
 		Short: `Create an AWS secret with the given name`,
 		Long: "Create an AWS secret with the given name. The format of the secret data is: " +
-			"`{\"aws_access_key_id\" : [access-key string] , \"aws_secret_access_key\" : [secret-key string]}`",
+			"`{\"aws_access_key_id\" : [access-key string] , \"aws_secret_access_key\" : [secret-key string]}`" +
+			"`{\"aws_session_token\" : [session-token string]`",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err
@@ -50,13 +52,15 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVar(&input.AccessKey, "access-key", flagDefaultAwsAccessKey, "aws access key")
 	flags.StringVar(&input.SecretKey, "secret-key", flagDefaultAwsSecretKey, "aws secret key")
+	flags.StringVar(&input.SecretKey, "session-token", flagDefaultAwsSessionToken, "aws session token")
 
 	return cmd
 }
 
 const (
-	awsPromptAccessKey = "Enter AWS Access Key ID (leave empty to read credentials from ~/.aws/credentials): "
-	awsPromptSecretKey = "Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials): "
+	awsPromptAccessKey    = "Enter AWS Access Key ID (leave empty to read credentials from ~/.aws/credentials): "
+	awsPromptSecretKey    = "Enter AWS Secret Key (leave empty to read credentials from ~/.aws/credentials): "
+	awsPromptSessionToken = "Enter AWS Session Token (optional): "
 )
 
 func AwsSecretArgsInteractive(input *options.AwsSecret) error {
@@ -64,6 +68,9 @@ func AwsSecretArgsInteractive(input *options.AwsSecret) error {
 		return err
 	}
 	if err := cliutil.GetStringInput(awsPromptSecretKey, &input.SecretKey); err != nil {
+		return err
+	}
+	if err := cliutil.GetStringInput(awsPromptSessionToken, &input.SessionToken); err != nil {
 		return err
 	}
 
@@ -80,13 +87,15 @@ func createAwsSecret(ctx context.Context, meta core.Metadata, input options.AwsS
 		}
 		input.SecretKey = val.SecretAccessKey
 		input.AccessKey = val.AccessKeyID
+		input.SessionToken = val.SessionToken
 	}
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_Aws{
 			Aws: &gloov1.AwsSecret{
-				AccessKey: input.AccessKey,
-				SecretKey: input.SecretKey,
+				AccessKey:    input.AccessKey,
+				SecretKey:    input.SecretKey,
+				SessionToken: input.SessionToken,
 			},
 		},
 	}

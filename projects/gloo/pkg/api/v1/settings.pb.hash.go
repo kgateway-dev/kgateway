@@ -984,9 +984,31 @@ func (m *GlooOptions_AWSOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetEnableCredentialsDiscovey())
-	if err != nil {
-		return 0, err
+	switch m.CredentialsFetcher.(type) {
+
+	case *GlooOptions_AWSOptions_EnableCredentialsDiscovey:
+
+		err = binary.Write(hasher, binary.LittleEndian, m.GetEnableCredentialsDiscovey())
+		if err != nil {
+			return 0, err
+		}
+
+	case *GlooOptions_AWSOptions_ServiceAccountCredentials:
+
+		if h, ok := interface{}(m.GetServiceAccountCredentials()).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(m.GetServiceAccountCredentials(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
 	}
 
 	return hasher.Sum64(), nil

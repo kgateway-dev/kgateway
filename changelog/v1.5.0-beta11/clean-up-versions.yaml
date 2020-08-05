@@ -1,0 +1,7 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-operator
+  dependencyTag: v0.1.4
+- type: NON_USER_FACING
+  description: Downgraded protobuf version to 1.3.5 to avoid upgrade to v2, upgraded styfle/cancel-workflow-action version to 0.4.1 to remove outdated workflow_id.

@@ -21,6 +21,7 @@ spec:
 {{- if $spec.service.externalTrafficPolicy }}
   externalTrafficPolicy: {{ $spec.service.externalTrafficPolicy }}
 {{- end }}
+  # port order matters due to this issue: https://github.com/solo-io/gloo/issues/2571
   ports:
 {{- if $spec.service.httpsFirst }}
   - port: {{ $spec.service.httpsPort }}
@@ -30,6 +31,7 @@ spec:
     {{- if and (eq $spec.service.type "NodePort") $spec.service.httpsNodePort }}
     nodePort: {{ $spec.service.httpsNodePort }}
     {{- end}}
+{{- end }}
   - port: {{ $spec.service.httpPort }}
     targetPort: {{ $spec.podTemplate.httpPort }}
     protocol: TCP
@@ -37,14 +39,7 @@ spec:
     {{- if and (eq $spec.service.type "NodePort") $spec.service.httpNodePort }}
     nodePort: {{ $spec.service.httpNodePort }}
     {{- end}}
-{{- else }}
-  - port: {{ $spec.service.httpPort }}
-    targetPort: {{ $spec.podTemplate.httpPort }}
-    protocol: TCP
-    name: http
-    {{- if and (eq $spec.service.type "NodePort") $spec.service.httpNodePort }}
-    nodePort: {{ $spec.service.httpNodePort }}
-    {{- end}}
+{{- if not $spec.service.httpsFirst }}
   - port: {{ $spec.service.httpsPort }}
     targetPort: {{ $spec.podTemplate.httpsPort }}
     protocol: TCP
@@ -62,6 +57,9 @@ spec:
     nodePort: {{ $spec.failover.nodePort }}
 {{- end }} # if failover.enabled
 {{- end }} # if failover
+{{- if $spec.service.customPorts }}
+{{ toYaml $spec.service.customPorts | indent 2 }}
+{{- end}}
   selector:
     gateway-proxy-id: {{ $name | kebabcase }}
     gateway-proxy: live

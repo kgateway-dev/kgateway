@@ -9,6 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.30.15
 	github.com/cncf/udpa/go v0.0.0-20200629203442-efcf912fb354
 	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/go-metrics v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20190711103511-473e67f1d7d2 // indirect
 	github.com/elazarl/goproxy/ext v0.0.0-20190711103511-473e67f1d7d2 // indirect
@@ -24,7 +25,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.4-0.20200406172829-6d816de489c1
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.3.5
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
 	github.com/gorilla/mux v1.7.3
@@ -51,7 +52,7 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.1.1
 	github.com/sergi/go-diff v1.0.0
-	github.com/solo-io/envoy-operator v0.1.3
+	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.4
 	github.com/solo-io/protoc-gen-ext v0.0.9
@@ -88,6 +89,7 @@ require (
 	k8s.io/utils v0.17.1
 	knative.dev/pkg v0.0.0-20191203174735-3444316bdeef
 	knative.dev/serving v0.10.0
+	sigs.k8s.io/controller-runtime v0.5.6
 	sigs.k8s.io/yaml v1.2.0
 )
 
@@ -97,7 +99,6 @@ replace (
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 
 	github.com/golang/mock => github.com/golang/mock v1.4.3
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.3
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1

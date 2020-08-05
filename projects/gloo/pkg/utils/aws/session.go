@@ -13,8 +13,9 @@ import (
 
 const (
 	// expected map identifiers for secrets
-	awsAccessKey = "access_key"
-	awsSecretKey = "secret_key"
+	awsAccessKey    = "access_key"
+	awsSecretKey    = "secret_key"
+	awsSessionToken = "session_token"
 )
 
 func GetAwsSession(secretRef *core.ResourceRef, secrets v1.SecretList, config *aws.Config) (*session.Session, error) {
@@ -36,17 +37,21 @@ func GetAwsSession(secretRef *core.ResourceRef, secrets v1.SecretList, config *a
 	if !ok {
 		return nil, errors.Errorf("provided secret is not an aws secret")
 	}
-	accessKey := awsSecret.Aws.AccessKey
+	accessKey := awsSecret.Aws.GetAccessKey()
 	if accessKey != "" && !utf8.Valid([]byte(accessKey)) {
 		return nil, errors.Errorf("%s not a valid string", awsAccessKey)
 	}
-	secretKey := awsSecret.Aws.SecretKey
+	secretKey := awsSecret.Aws.GetSecretKey()
 	if secretKey != "" && !utf8.Valid([]byte(secretKey)) {
 		return nil, errors.Errorf("%s not a valid string", awsSecretKey)
 	}
+	sessionKey := awsSecret.Aws.GetSessionToken()
+	if secretKey != "" && !utf8.Valid([]byte(secretKey)) {
+		return nil, errors.Errorf("%s not a valid string", awsSessionToken)
+	}
 
 	sess, err := session.NewSession(config.
-		WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, "")))
+		WithCredentials(credentials.NewStaticCredentials(accessKey, secretKey, sessionKey)))
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}
