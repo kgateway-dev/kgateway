@@ -1315,7 +1315,7 @@ func (m *OauthSecret) GetClientSecret() string {
 }
 
 type ApiKeyAuth struct {
-	// Identify all valid API key secrets using the provided label selector.
+	// Identify all valid API key secrets using the provided label selector.<br/>
 	// API key secrets must be in one of the watch namespaces for gloo to locate them.<br/>
 	// **These are labels on the API key secret's metadata, not the 'labels' field of the `ApiKeySecret`**
 	LabelSelector map[string]string `protobuf:"bytes,1,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -1448,7 +1448,7 @@ type ApiKeySecret struct {
 	// These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
 	// This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
 	Labels []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"` // Deprecated: Do not use.
-	// Secret data elements that are not the API key will be copied to this map.
+	// If the secret data contains entries in addition to the API key one, they will be copies to this field.
 	Metadata             map[string]string `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
