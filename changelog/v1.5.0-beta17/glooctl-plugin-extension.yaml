@@ -1,0 +1,8 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3460
+      description: >
+        Support a Kubernetes-style plugin system for glooctl.
+        (See https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/).
+        This allows users to invoke arbitrary binary plugins via glooctl <plugin-name>, where a plugin is
+        defined as any executable on the user's PATH that is prefixed with glooctl-.
