@@ -74,7 +74,7 @@ jobs:
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
-        go test ./test/kube2e/...
+        make run-ci-regression-tests
     - name: Debug Info
       if: failure()
       run: |
