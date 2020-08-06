@@ -15,9 +15,9 @@ func AddRegisterFlags(set *pflag.FlagSet, register *options.Register) {
 	set.StringVar(&register.LocalClusterDomainOverride, LocalClusterDomainOverride, "", "Swap out the domain of the remote cluster's k8s API server for the value of this flag; used mainly for debugging locally in docker, where you may provide a value like 'host.docker.internal'")
 }
 
-func AddUnregisterFlags(set *pflag.FlagSet, register *options.Unregister) {
-	set.StringVar(&register.ClusterName, "cluster-name", "", "name of the cluster to register")
-}
+//func AddUnregisterFlags(set *pflag.FlagSet, register *options.Register) {
+//	set.StringVar(&register.ClusterName, "cluster-name", "", "name of the cluster to register")
+//}
 
 func AddClusterFlags(set *pflag.FlagSet, register *options.Cluster) {
 	set.StringVar(&register.FederationNamespace, "federation-namespace", "gloo-fed", "namespace of the Gloo Federation control plane")
