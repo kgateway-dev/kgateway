@@ -40,6 +40,7 @@ weight: 5
 - [OidcAuthorizationCodeConfig](#oidcauthorizationcodeconfig)
 - [OAuth2Config](#oauth2config)
 - [ApiKeyAuthConfig](#apikeyauthconfig)
+- [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
   
@@ -691,13 +692,36 @@ Deprecated, prefer OAuth2Config
 **NOTE: This configuration is not user-facing and will be auto generated**
 
 ```yaml
-"validApiKeyAndUser": map<string, string>
+"validApiKeys": map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>
+"headerName": string
+"headersFromKeyMetadata": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `validApiKeyAndUser` | `map<string, string>` | A mapping of valid apikeys to their associated plaintext users. This map is automatically populated with the relevant `ApiKeySecret`s. The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |  |
+| `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKeySecret`s. |  |
+| `headerName` | `string` | When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |  |
+| `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |  |
+
+
+
+
+---
+### KeyMetadata
+
+
+
+```yaml
+"username": string
+"metadata": map<string, string>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `username` | `string` | The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |  |
+| `metadata` | `map<string, string>` | The metadata present on the `ApiKeySecret`. |  |
 
 
 
