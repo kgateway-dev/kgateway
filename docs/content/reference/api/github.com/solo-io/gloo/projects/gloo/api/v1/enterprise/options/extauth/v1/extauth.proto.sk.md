@@ -701,7 +701,7 @@ Deprecated, prefer OAuth2Config
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKeySecret`s. |  |
-| `headerName` | `string` | When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |  |
+| `headerName` | `string` | (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |  |
 | `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |  |
 
 

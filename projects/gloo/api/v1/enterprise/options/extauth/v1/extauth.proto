@@ -489,8 +489,8 @@ message ExtAuthConfig {
     // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
     map<string, KeyMetadata> valid_api_keys = 1 [(gogoproto.moretags) = "logging:\"redact\""];
 
-    // When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header
-    // with this name. This field is optional; if not provided it defaults to `api-key`.
+    // (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
+    // in a header with this name. This field is optional; if not provided it defaults to `api-key`.
     string header_name = 2;
 
     // Determines the key metadata that will be included as headers on the upstream request.

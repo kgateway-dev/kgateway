@@ -2035,8 +2035,8 @@ type ExtAuthConfig_ApiKeyAuthConfig struct {
 	// A mapping of valid API keys to their associated metadata.
 	// This map is automatically populated with the information from the relevant `ApiKeySecret`s.
 	ValidApiKeys map[string]*ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata `protobuf:"bytes,1,rep,name=valid_api_keys,json=validApiKeys,proto3" json:"valid_api_keys,omitempty" logging:"redact" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header
-	// with this name. This field is optional; if not provided it defaults to `api-key`.
+	// (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
+	// in a header with this name. This field is optional; if not provided it defaults to `api-key`.
 	HeaderName string `protobuf:"bytes,2,opt,name=header_name,json=headerName,proto3" json:"header_name,omitempty"`
 	// Determines the key metadata that will be included as headers on the upstream request.
 	// Each entry represents a header to add: the key is the name of the header, and the
