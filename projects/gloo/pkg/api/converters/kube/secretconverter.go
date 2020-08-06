@@ -126,7 +126,7 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
 	sessionToken, hasSessionToken := secret.Data[AwsSessionTokenName]
 	if hasAccessKey && hasSecretKey {
-		secret := &v1.Secret{
+		skSecret := &v1.Secret{
 			Metadata: skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
@@ -143,10 +143,10 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 		}
 
 		if hasSessionToken {
-			secret.GetAws().SessionToken = string(sessionToken)
+			skSecret.GetAws().SessionToken = string(sessionToken)
 		}
 
-		return secret, nil
+		return skSecret, nil
 	}
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
@@ -185,7 +185,7 @@ func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 	}
 
 	if sessionToken := awsGlooSecret.Aws.GetSessionToken(); sessionToken != "" {
-		kubeSecret.Data[AwsSessionTokenName] = []byte(awsGlooSecret.Aws.SessionToken)
+		kubeSecret.Data[AwsSessionTokenName] = []byte(sessionToken)
 	}
 	return kubeSecret, nil
 }
