@@ -116,15 +116,17 @@ type AwsSecretConverter struct{}
 var _ kubesecret.SecretConverter = &AwsSecretConverter{}
 
 const (
-	AwsAccessKeyName = "aws_access_key_id"
-	AwsSecretKeyName = "aws_secret_access_key"
+	AwsAccessKeyName    = "aws_access_key_id"
+	AwsSecretKeyName    = "aws_secret_access_key"
+	AwsSessionTokenName = "aws_session_token"
 )
 
 func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 	accessKey, hasAccessKey := secret.Data[AwsAccessKeyName]
 	secretKey, hasSecretKey := secret.Data[AwsSecretKeyName]
+	sessionToken, hasSessionToken := secret.Data[AwsSessionTokenName]
 	if hasAccessKey && hasSecretKey {
-		return &v1.Secret{
+		secret := &v1.Secret{
 			Metadata: skcore.Metadata{
 				Name:        secret.Name,
 				Namespace:   secret.Namespace,
@@ -138,7 +140,13 @@ func (t *AwsSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.Res
 					SecretKey: string(secretKey),
 				},
 			},
-		}, nil
+		}
+
+		if hasSessionToken {
+			secret.GetAws().SessionToken = string(sessionToken)
+		}
+
+		return secret, nil
 	}
 	// any unmatched secrets will be handled by subsequent converters
 	return nil, nil
@@ -174,6 +182,10 @@ func (t *AwsSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Resou
 			AwsAccessKeyName: []byte(awsGlooSecret.Aws.AccessKey),
 			AwsSecretKeyName: []byte(awsGlooSecret.Aws.SecretKey),
 		},
+	}
+
+	if sessionToken := awsGlooSecret.Aws.GetSessionToken(); sessionToken != "" {
+		kubeSecret.Data[AwsSessionTokenName] = []byte(awsGlooSecret.Aws.SessionToken)
 	}
 	return kubeSecret, nil
 }

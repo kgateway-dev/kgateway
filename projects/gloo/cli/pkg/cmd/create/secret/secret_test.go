@@ -80,13 +80,14 @@ type: Opaque
 			out, err := testutils.GlooctlOut("create secret aws --dry-run --name test --access-key foo --secret-key bar --session-token waz")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`data:
-  aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiB3YXoK
+  aws_access_key_id: Zm9v
+  aws_secret_access_key: YmFy
+  aws_session_token: d2F6
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
   namespace: gloo-system
+type: Opaque
 `))
 		})
 
