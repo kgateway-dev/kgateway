@@ -200,4 +200,16 @@ var (
 			"delete the service account, cluster role, and cluster role binding created on the remote cluster " +
 			"during the cluster registration process.",
 	}
+
+	PLUGIN_COMMAND = cobra.Command{
+		Use:   "plugin",
+		Short: "Commands for interacting with glooctl plugins",
+		Long: "Commands for interacting with glooctl plugins. Glooctl plugins are arbitrary binary executables " +
+			"in your path with the prefix 'glooctl-'.",
+	}
+
+	PLUGIN_LIST_COMMAND = cobra.Command{
+		Use:   "list",
+		Short: "List available glooctl plugins",
+	}
 )
