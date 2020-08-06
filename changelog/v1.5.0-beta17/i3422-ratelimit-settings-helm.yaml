@@ -1,0 +1,4 @@
+changelog:
+    - type: HELM
+      issueLink: https://github.com/solo-io/gloo/issues/3422
+      description: Add helm value for rate limit descriptors in settings.
