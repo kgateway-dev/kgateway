@@ -1,0 +1,9 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3369
+      description: >
+        Change the `glooctl cluster unregister` command to `glooctl cluster deregister`.
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3369
+      description: >
+        Change the `glooctl cluster unregister` command to `glooctl cluster deregister`.

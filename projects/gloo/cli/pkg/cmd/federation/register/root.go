@@ -47,11 +47,11 @@ func RegisterCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *co
 	return cmd
 }
 
-func UnregisterCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
+func DeregisterCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   constants.CLUSTER_UNREGISTER_COMMAND.Use,
-		Short: constants.CLUSTER_UNREGISTER_COMMAND.Short,
-		Long:  constants.CLUSTER_UNREGISTER_COMMAND.Long,
+		Use:   constants.CLUSTER_DEREGISTER_COMMAND.Use,
+		Short: constants.CLUSTER_DEREGISTER_COMMAND.Short,
+		Long:  constants.CLUSTER_DEREGISTER_COMMAND.Long,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return Deregister(opts)
 		},
@@ -59,7 +59,7 @@ func UnregisterCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *
 
 	pflags := cmd.PersistentFlags()
 	flagutils.AddClusterFlags(pflags, &opts.Cluster)
-	flagutils.AddRegisterFlags(pflags, &opts.Cluster.Unregister)
+	flagutils.AddDeregisterFlags(pflags, &opts.Cluster.Deregister)
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
 }

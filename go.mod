@@ -57,7 +57,7 @@ require (
 	github.com/solo-io/go-utils v0.16.5
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/skv2 v0.8.1-0.20200805135331-8f0219e1874a
+	github.com/solo-io/skv2 v0.8.1-0.20200807130738-b64fc7739951
 	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
 	github.com/solo-io/solo-kit v0.13.13
 	github.com/solo-io/wasme v0.0.13-rc1

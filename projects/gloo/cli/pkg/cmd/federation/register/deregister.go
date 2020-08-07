@@ -11,12 +11,12 @@ import (
 
 func Deregister(opts *options.Options) error {
 	ctx := context.Background()
-	deregisterOpts := opts.Cluster.Unregister
+	deregisterOpts := opts.Cluster.Deregister
 
 	clusterRegisterOpts := register.RegistrationOptions{
 		RemoteKubeCfgPath: deregisterOpts.RemoteKubeConfig,
 		RemoteKubeContext: deregisterOpts.RemoteContext,
-		ClusterDomain:     deregisterOpts.LocalClusterDomainOverride,
+		APIServerAddress:  deregisterOpts.LocalClusterDomainOverride,
 		ClusterName:       deregisterOpts.ClusterName,
 		Namespace:         opts.Cluster.FederationNamespace,
 		RemoteNamespace:   deregisterOpts.RemoteNamespace,
