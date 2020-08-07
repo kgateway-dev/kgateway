@@ -97,14 +97,8 @@ func toKubeSecret(ctx context.Context, resource resources.Resource) (*corev1.Sec
 		return nil, err
 	}
 
-	converter := kubeconverters.NewSecretConverterChain(
-		new(kubeconverters.TLSSecretConverter),
-		new(kubeconverters.AwsSecretConverter),
-		new(kubeconverters.APIKeySecretConverter),
-	)
-
 	// Try converters first
-	secret, err := converter.ToKubeSecret(ctx, rc, resource)
+	secret, err := kubeconverters.GlooSecretConverterChain.ToKubeSecret(ctx, rc, resource)
 	if err != nil || secret != nil {
 		return secret, err
 	}

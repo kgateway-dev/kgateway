@@ -488,7 +488,7 @@ Deprecated: Prefer OAuth2
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | `string` | The key of the secret data entry to inspect. This field is required. |  |
+| `name` | `string` | (Required) The key of the secret data entry to inspect. |  |
 | `required` | `bool` | If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key. Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added to the request. |  |
 
 
@@ -512,7 +512,7 @@ Deprecated: Prefer OAuth2
 | `generateApiKey` | `bool` | If true, generate an API key. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |  |
 | `apiKey` | `string` | The value of the API key. |  |
 | `labels` | `[]string` | A list of labels (key=value) for the apikey secret.<br/> These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |  |
-| `metadata` | `map<string, string>` | If the secret data contains entries in addition to the API key one, they will be copies to this field. |  |
+| `metadata` | `map<string, string>` | If the secret data contains entries in addition to the API key one, they will be copied to this field. |  |
 
 
 

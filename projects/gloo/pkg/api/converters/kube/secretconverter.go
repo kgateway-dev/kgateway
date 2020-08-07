@@ -18,6 +18,12 @@ const (
 	annotationValue = "kube-tls"
 )
 
+var GlooSecretConverterChain = NewSecretConverterChain(
+	new(TLSSecretConverter),
+	new(AwsSecretConverter),
+	new(APIKeySecretConverter),
+)
+
 type SecretConverterChain struct {
 	converters []kubesecret.SecretConverter
 }

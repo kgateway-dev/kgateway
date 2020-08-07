@@ -1389,7 +1389,7 @@ func (m *ApiKeyAuth) GetHeadersFromMetadata() map[string]*ApiKeyAuth_SecretKey {
 }
 
 type ApiKeyAuth_SecretKey struct {
-	// The key of the secret data entry to inspect. This field is required.
+	// (Required) The key of the secret data entry to inspect.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key.
 	// Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added
@@ -1448,7 +1448,7 @@ type ApiKeySecret struct {
 	// These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
 	// This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
 	Labels []string `protobuf:"bytes,3,rep,name=labels,proto3" json:"labels,omitempty"` // Deprecated: Do not use.
-	// If the secret data contains entries in addition to the API key one, they will be copies to this field.
+	// If the secret data contains entries in addition to the API key one, they will be copied to this field.
 	Metadata             map[string]string `protobuf:"bytes,4,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
