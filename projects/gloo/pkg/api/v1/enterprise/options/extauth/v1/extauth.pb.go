@@ -1315,9 +1315,8 @@ func (m *OauthSecret) GetClientSecret() string {
 }
 
 type ApiKeyAuth struct {
-	// Identify all valid API key secrets using the provided label selector.<br/>
-	// API key secrets must be in one of the watch namespaces for gloo to locate them.<br/>
-	// **These are labels on the API key secret's metadata, not the 'labels' field of the `ApiKeySecret`**
+	// Identify all valid API key secrets that match the provided label selector.<br/>
+	// API key secrets must be in one of the watch namespaces for gloo to locate them.
 	LabelSelector map[string]string `protobuf:"bytes,1,rep,name=label_selector,json=labelSelector,proto3" json:"label_selector,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// A way to directly reference API key secrets. This configuration can be useful for testing,
 	// but in general the more flexible label selector should be preferred.

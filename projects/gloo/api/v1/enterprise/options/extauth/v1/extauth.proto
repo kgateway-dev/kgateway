@@ -296,9 +296,8 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
-  // Identify all valid API key secrets using the provided label selector.<br/>
-  // API key secrets must be in one of the watch namespaces for gloo to locate them.<br/>
-  // **These are labels on the API key secret's metadata, not the 'labels' field of the `ApiKeySecret`**
+  // Identify all valid API key secrets that match the provided label selector.<br/>
+  // API key secrets must be in one of the watch namespaces for gloo to locate them.
   map<string, string> label_selector = 1;
 
   // A way to directly reference API key secrets. This configuration can be useful for testing,
