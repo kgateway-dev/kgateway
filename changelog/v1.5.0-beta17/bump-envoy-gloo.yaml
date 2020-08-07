@@ -1,0 +1,9 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  description: Bump envoy gloo to latest v1.16.0 pre-release
+  dependencyOwner: solo-io
+  dependencyRepo: envoy-gloo
+  dependencyTag: v1.16.0-rc1
+- type: FIX
+  description: Update envoy to pull in grpc-web fix for safari.
+  issueLink: https://github.com/solo-io/gloo/issues/3474
