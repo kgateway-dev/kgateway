@@ -197,8 +197,8 @@ var (
 		Short: "Deregister a cluster to the Gloo Federation control plane",
 		Long: "Deregister a cluster from the Gloo Federation control plane. Deregistered clusters can no longer be " +
 			"targeted for discovery and configuration. This will not delete the cluster or the managing namespace, but it " +
-			"will delete the service account, cluster role, and cluster role binding created on the remote cluster " +
-			"during the cluster registration process.",
+			"will delete the service account, cluster role, and cluster role binding created during the cluster " +
+			"registration process.",
 	}
 
 	PLUGIN_COMMAND = cobra.Command{
