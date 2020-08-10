@@ -26,7 +26,7 @@ weight: 5
 
 
 
-##### Source File: [github.com/solo-io/solo-apis/api/fed/v1/instance.proto](https://github.com/solo-io/solo-apis/blob/master/api/fed/v1/instance.proto)
+##### Source File: [github.com/solo-io/solo-apis/api/gloo-fed/fed/v1/instance.proto](https://github.com/solo-io/solo-apis/blob/master/api/gloo-fed/fed/v1/instance.proto)
 
 
 
@@ -185,7 +185,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `writeNamespace` | `string` | Namespace which gloo-fed will write all of its admin resources to. |  |
-| `proxyId` | [.core.skv2.solo.io.ObjectRef](../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | name of proxy which will be used for gloo-fed by default for this instance, unless specified via: TODO. |  |
+| `proxyId` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) | name of proxy which will be used for gloo-fed by default for this instance, unless specified via: TODO. |  |
 
 
 
@@ -262,7 +262,7 @@ A ResourceReport references an object and provides a status message.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `ref` | [.core.skv2.solo.io.ObjectRef](../../../../../skv2/api/core/v1/core.proto.sk/#objectref) |  |  |
+| `ref` | [.core.skv2.solo.io.ObjectRef](../../../../../../skv2/api/core/v1/core.proto.sk/#objectref) |  |  |
 | `message` | `string` |  |  |
 
 
