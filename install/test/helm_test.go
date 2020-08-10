@@ -215,6 +215,56 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				FIt("should be able to set custom labels for pods", func() {
+					// This test expects ALL pods to be capable of setting custom labels unless exceptions are added
+					// here, which means that this test will fail if new deployments are added to the helm chart without
+					// custom labeling, unless those deployments aren't enabled by default (like the accessLogger).
+					// Note: test panics if values-template.yaml doesn't contain at least an empty definition
+					// of each label object that's modified here.
+					// Note note: Update number in final expectation if you add new labels here.
+					prepareMakefile(namespace,  helmValues{
+							valuesArgs: []string{
+								"gateway.deployment.extraGatewayLabels.foo=bar",
+								"gloo.deployment.extraGlooLabels.foo=bar",
+								"discovery.deployment.extraDiscoveryLabels.foo=bar",
+								"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
+								"accessLogger.enabled=true", // required to test accessLogger
+								"accessLogger.extraAccessLoggerLabels.foo=bar",
+								"ingress.deployment.extraIngressLabels.foo=bar",
+								"ingress.enabled=true", // required to test Ingress Proxy, but not Ingress.
+								"ingressProxy.deployment.extraIngressProxyLabels.foo=bar",
+								"settings.integrations.knative.enabled=true", // required to test knative labels
+								"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
+								"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
+								},
+						})
+
+					var resourcesTested = 0
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						deploymentLabels := structuredDeployment.Spec.Template.Labels
+						var foundTestValue = false
+						for label, value := range deploymentLabels {
+							if label == "foo" {
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have" +
+									" value bar. Found value %s", deployment.GetName(), value))
+								foundTestValue = true
+							}
+						}
+						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						resourcesTested += 1
+					})
+					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
+					Expect(resourcesTested).To(Equal(9), "Only tested %d resources when we were expecting 9." +
+						" Was a new pod added, or is an existing pod no longer being generated?", resourcesTested)
+				})
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},

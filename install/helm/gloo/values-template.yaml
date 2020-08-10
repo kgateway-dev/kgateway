@@ -16,12 +16,8 @@ settings:
     invalidRouteResponseBody: 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
   integrations:
     knative:
-      extraKnativeExternalLabels:
-        miles: knative2exernal
-        norman: darling
-      extraKnativeInternalLabels:
-        miles: knative2internal
-        norman: darling
+      extraKnativeExternalLabels: {}
+      extraKnativeInternalLabels: {}
       enabled: false
       version: "0.10.0"
       proxy:
@@ -55,8 +51,7 @@ gloo:
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}
-    extraGlooLabels:
-      miles: gloo
+    extraGlooLabels: {}
 discovery:
   enabled: true
   fdsMode: WHITELIST
@@ -66,8 +61,7 @@ discovery:
       repository: discovery
     replicas: 1
     runAsUser: 10101
-    extraDiscoveryLabels:
-      miles: discovery
+    extraDiscoveryLabels: {}
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
@@ -84,8 +78,7 @@ gateway:
       repository: gateway
     replicas: 1
     runAsUser: 10101
-    extraGatewayLabels:
-      miles: gateway
+    extraGatewayLabels: {}
   certGenJob:
     enabled: true
     image:
@@ -120,8 +113,7 @@ gatewayProxies:
         enabled: false
         sleepTimeSeconds: 25
       customReadinessProbe: {}
-      extraGatewayProxyLabels:
-        miles: gatewayProxy
+      extraGatewayProxyLabels: {}
     service:
       customPorts: []
       type: LoadBalancer
@@ -137,7 +129,7 @@ gatewayProxies:
     loopBackAddress: 127.0.0.1
     globalDownstreamMaxConnections: 250000
 accessLogger:
-  enabled: true
+  enabled: false
   port: 8083
   serviceName: AccessLog
   image:
@@ -146,9 +138,7 @@ accessLogger:
   replicas: 1
   stats:
     enabled: true
-  extraAccessLoggerLabels:
-    miles: logger
-    norman: darling
+  extraAccessLoggerLabels: {}
 ingress:
   enabled: false
   deployment:
@@ -156,9 +146,7 @@ ingress:
       repository: ingress
     replicas: 1
     runAsUser: 10101
-    extraIngressLabels:
-      miles: ingress2
-      norman: darling
+    extraIngressLabels: {}
 ingressProxy:
   loopBackAddress: 127.0.0.1
   deployment:
@@ -167,9 +155,7 @@ ingressProxy:
     httpPort: 80
     httpsPort: 443
     replicas: 1
-    extraIngressProxyLabels:
-      miles: ingressProxy2
-      norman: darling
+    extraIngressProxyLabels: {}
   service:
     type: LoadBalancer
     extraAnnotations: {}
