@@ -52,7 +52,7 @@ func awsCmd(opts *options.Options) *cobra.Command {
 	flags := cmd.Flags()
 	flags.StringVar(&input.AccessKey, "access-key", flagDefaultAwsAccessKey, "aws access key")
 	flags.StringVar(&input.SecretKey, "secret-key", flagDefaultAwsSecretKey, "aws secret key")
-	flags.StringVar(&input.SecretKey, "session-token", flagDefaultAwsSessionToken, "aws session token")
+	flags.StringVar(&input.SessionToken, "session-token", flagDefaultAwsSessionToken, "aws session token")
 
 	return cmd
 }

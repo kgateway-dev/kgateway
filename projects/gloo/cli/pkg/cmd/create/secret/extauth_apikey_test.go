@@ -31,7 +31,6 @@ var _ = Describe("ExtauthApiKey", func() {
 
 		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKeySecret{
 			ApiKey: "secretApiKey",
-			Labels: []string{},
 		}))
 	})
 
@@ -44,8 +43,12 @@ var _ = Describe("ExtauthApiKey", func() {
 
 		Expect(secret.GetApiKey()).To(Equal(&extauthpb.ApiKeySecret{
 			ApiKey: "secretApiKey",
-			Labels: []string{"k1=v1", "k2=v2"},
 		}))
+		Expect(secret.Metadata.Labels).To(Equal(
+			map[string]string{
+				"k1": "v1",
+				"k2": "v2",
+			}))
 	})
 
 	It("should error when no apikey provided", func() {
@@ -64,17 +67,16 @@ var _ = Describe("ExtauthApiKey", func() {
 		out, err := testutils.GlooctlOut("create secret apikey --name user --namespace gloo-system --apikey secretApiKey --apikey-labels k1=v1,k2=v2 --dry-run")
 		Expect(err).NotTo(HaveOccurred())
 		fmt.Print(out)
-		Expect(out).To(Equal(`data:
-  apiKey: YXBpS2V5OiBzZWNyZXRBcGlLZXkKbGFiZWxzOgotIGsxPXYxCi0gazI9djIK
-metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
+		Expect(out).To(Equal(`metadata:
   creationTimestamp: null
   labels:
     k1: v1
     k2: v2
   name: user
   namespace: gloo-system
+stringData:
+  api-key: secretApiKey
+type: extauth.solo.io/apikey
 `))
 	})
 
