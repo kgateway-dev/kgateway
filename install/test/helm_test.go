@@ -222,22 +222,22 @@ var _ = Describe("Helm Test", func() {
 					// Note: test panics if values-template.yaml doesn't contain at least an empty definition
 					// of each label object that's modified here.
 					// Note note: Update number in final expectation if you add new labels here.
-					prepareMakefile(namespace,  helmValues{
-							valuesArgs: []string{
-								"gateway.deployment.extraGatewayLabels.foo=bar",
-								"gloo.deployment.extraGlooLabels.foo=bar",
-								"discovery.deployment.extraDiscoveryLabels.foo=bar",
-								"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
-								"accessLogger.enabled=true", // required to test accessLogger
-								"accessLogger.extraAccessLoggerLabels.foo=bar",
-								"ingress.deployment.extraIngressLabels.foo=bar",
-								"ingress.enabled=true", // required to test Ingress Proxy, but not Ingress.
-								"ingressProxy.deployment.extraIngressProxyLabels.foo=bar",
-								"settings.integrations.knative.enabled=true", // required to test cluster ingress proxy and knative labels.
-								"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
-								"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
-								},
-						})
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.extraGatewayLabels.foo=bar",
+							"gloo.deployment.extraGlooLabels.foo=bar",
+							"discovery.deployment.extraDiscoveryLabels.foo=bar",
+							"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
+							"accessLogger.enabled=true", // required to test accessLogger
+							"accessLogger.extraAccessLoggerLabels.foo=bar",
+							"ingress.deployment.extraIngressLabels.foo=bar",
+							"ingress.enabled=true", // required to test Ingress Proxy, but not Ingress.
+							"ingressProxy.deployment.extraIngressProxyLabels.foo=bar",
+							"settings.integrations.knative.enabled=true", // required to test cluster ingress proxy and knative labels.
+							"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
+							"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
+						},
+					})
 
 					var resourcesTested = 0
 					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
@@ -252,7 +252,7 @@ var _ = Describe("Helm Test", func() {
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have" +
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
@@ -261,14 +261,14 @@ var _ = Describe("Helm Test", func() {
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
-					Expect(resourcesTested).To(Equal(9), "Tested %d resources when we were expecting 9." +
+					Expect(resourcesTested).To(Equal(9), "Tested %d resources when we were expecting 9."+
 						" Was a new pod added, or is an existing pod no longer being generated?", resourcesTested)
 				})
 
 				// due to the version requirements for rendering knative-related templates, the cluster ingress proxy
 				// template is mutually exclusive to the other knative templates, and needs to be tested separately.
 				It("should be able to set custom labels for cluster ingress proxy pod", func() {
-					prepareMakefile(namespace,  helmValues{
+					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{
 							"settings.integrations.knative.enabled=true",
 							"settings.integrations.knative.version=0.7.0",
@@ -292,7 +292,7 @@ var _ = Describe("Helm Test", func() {
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have" +
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
@@ -301,7 +301,7 @@ var _ = Describe("Helm Test", func() {
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
-					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1." +
+					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1."+
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
 				})
 

@@ -89,12 +89,12 @@ type Integrations struct {
 }
 
 type Knative struct {
-	Enabled                     *bool         `json:"enabled" desc:"enabled knative components"`
-	Version                     *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
-	Proxy                       *KnativeProxy `json:"proxy,omitempty"`
-	RequireIngressClass         *bool         `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
-	ExtraKnativeInternalLabels  interface{}   `json:"extraKnativeInternalLabels" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative internal pod."`
-	ExtraKnativeExternalLabels  interface{}   `json:"extraKnativeExternalLabels" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative external pod."`
+	Enabled                    *bool         `json:"enabled" desc:"enabled knative components"`
+	Version                    *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Proxy                      *KnativeProxy `json:"proxy,omitempty"`
+	RequireIngressClass        *bool         `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
+	ExtraKnativeInternalLabels interface{}   `json:"extraKnativeInternalLabels" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative internal pod."`
+	ExtraKnativeExternalLabels interface{}   `json:"extraKnativeExternalLabels" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative external pod."`
 }
 
 type KnativeProxy struct {
@@ -135,8 +135,8 @@ type InvalidConfigPolicy struct {
 }
 
 type Gloo struct {
-	Deployment        *GlooDeployment `json:"deployment,omitempty"`
-	ServiceAccount                    `json:"serviceAccount" `
+	Deployment     *GlooDeployment `json:"deployment,omitempty"`
+	ServiceAccount `json:"serviceAccount" `
 }
 
 type GlooDeployment struct {
@@ -157,7 +157,7 @@ type Discovery struct {
 	Deployment     *DiscoveryDeployment `json:"deployment,omitempty"`
 	FdsMode        string               `json:"fdsMode" desc:"mode for function discovery (blacklist or whitelist). See more info in the settings docs"`
 	Enabled        *bool                `json:"enabled" desc:"enable Discovery features"`
-	ServiceAccount                      `json:"serviceAccount" `
+	ServiceAccount `json:"serviceAccount" `
 }
 
 type DiscoveryDeployment struct {
