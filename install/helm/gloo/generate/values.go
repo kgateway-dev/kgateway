@@ -98,11 +98,12 @@ type Knative struct {
 }
 
 type KnativeProxy struct {
-	Image           *Image  `json:"image,omitempty"`
-	HttpPort        int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort       int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing         *string `json:"tracing,omitempty" desc:"tracing configuration"`
-	LoopBackAddress string  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Image                          *Image      `json:"image,omitempty"`
+	HttpPort                       int         `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort                      int         `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing                        *string     `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress                string      `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	ExtraClusterIngressProxyLabels interface{} `json:"extraClusterIngressProxyLabels" desc:"Optional extra key-value pairs to add to the metadata.labels data of the cluster ingress proxy pod."`
 	*DeploymentSpec
 	*ServiceSpec
 }

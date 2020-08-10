@@ -21,8 +21,8 @@ spec:
     metadata:
       labels:
         gloo: clusteringress-proxy
-        {{- if .Values.discovery.extraIngressProxyLabels }}
-        {{- range $key, $value := .Values.discovery.extraIngressProxyLabels }}
+        {{- if .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}
+        {{- range $key, $value := .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}
         {{ $key }}: {{ $value | quote }}
         {{- end }}
         {{- end }}

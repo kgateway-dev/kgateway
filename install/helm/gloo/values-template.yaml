@@ -27,6 +27,7 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
+        extraClusterIngressProxyLabels: {}
         service:
           type: LoadBalancer
           extraAnnotations: {}

@@ -15,6 +15,7 @@
 |settings.integrations.knative.proxy.httpsPort|int|443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
+|settings.integrations.knative.proxy.extraClusterIngressProxyLabels|interface||Optional extra key-value pairs to add to the metadata.labels data of the cluster ingress proxy pod.|
 |settings.integrations.knative.proxy.replicas|int|1|number of instances to deploy|
 |settings.integrations.knative.proxy.customEnv[].name|string|||
 |settings.integrations.knative.proxy.customEnv[].value|string|||
