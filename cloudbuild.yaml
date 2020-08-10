@@ -131,7 +131,7 @@ steps:
   waitFor: ['compile']
   id: 'gcr-auth'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
   args: ['fetch-package-and-save-helm', 'render-manifests', 'upload-github-release-assets', 'publish-docs', 'push-chart-to-registry', '-B']
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
