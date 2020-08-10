@@ -28,7 +28,7 @@ spec:
         {{- end }}
       {{- if $statsConfig.enabled }}
       annotations:
-        prometheus.io/path: /metrics2
+        prometheus.io/path: /metrics
         prometheus.io/port: "9091"
         prometheus.io/scrape: "true"
       {{- end}}
