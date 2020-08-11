@@ -16,8 +16,6 @@ settings:
     invalidRouteResponseBody: 'Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.'
   integrations:
     knative:
-      extraKnativeExternalLabels: {}
-      extraKnativeInternalLabels: {}
       enabled: false
       version: "0.10.0"
       proxy:
@@ -27,7 +25,6 @@ settings:
         httpPort: 80
         httpsPort: 443
         replicas: 1
-        extraClusterIngressProxyLabels: {}
         service:
           type: LoadBalancer
           extraAnnotations: {}
@@ -52,7 +49,6 @@ gloo:
     replicas: 1
     runAsUser: 10101
     serviceAccount: {}
-    extraGlooLabels: {}
 discovery:
   enabled: true
   fdsMode: WHITELIST
@@ -62,7 +58,6 @@ discovery:
       repository: discovery
     replicas: 1
     runAsUser: 10101
-    extraDiscoveryLabels: {}
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
@@ -79,7 +74,6 @@ gateway:
       repository: gateway
     replicas: 1
     runAsUser: 10101
-    extraGatewayLabels: {}
   certGenJob:
     enabled: true
     image:
@@ -114,7 +108,6 @@ gatewayProxies:
         enabled: false
         sleepTimeSeconds: 25
       customReadinessProbe: {}
-      extraGatewayProxyLabels: {}
     service:
       customPorts: []
       type: LoadBalancer
@@ -139,7 +132,6 @@ accessLogger:
   replicas: 1
   stats:
     enabled: true
-  extraAccessLoggerLabels: {}
 ingress:
   enabled: false
   deployment:
@@ -147,7 +139,6 @@ ingress:
       repository: ingress
     replicas: 1
     runAsUser: 10101
-    extraIngressLabels: {}
 ingressProxy:
   loopBackAddress: 127.0.0.1
   deployment:
@@ -156,7 +147,6 @@ ingressProxy:
     httpPort: 80
     httpsPort: 443
     replicas: 1
-    extraIngressProxyLabels: {}
   service:
     type: LoadBalancer
     extraAnnotations: {}
