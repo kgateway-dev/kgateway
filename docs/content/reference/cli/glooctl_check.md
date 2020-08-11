@@ -17,6 +17,7 @@ glooctl check [flags]
 ### Options
 
 ```
+  -x, --exclude strings    check to exclude: (pods, upstreamgroup, secrets, gateways, proxies)
   -h, --help               help for check
   -n, --namespace string   namespace for reading or writing resources (default "gloo-system")
 ```

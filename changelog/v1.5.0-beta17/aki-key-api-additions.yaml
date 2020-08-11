@@ -1,0 +1,20 @@
+changelog:
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3385
+  resolvesIssue: false
+  description: >
+    Define the API to allow adding arbitrary API key secret data to the headers of successfully authorized requests.
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3390
+  resolvesIssue: false
+  description: >
+    Define the API to allow users to change the name of the header that the Gloo Enterprise external auth server
+    inspects for API keys.
+- type: NEW_FEATURE
+  issueLink: https://github.com/solo-io/gloo/issues/3472
+  resolvesIssue: false
+  description: >
+    The API keys can now be provided as simple Kubernetes secrets. Instead of being nested in a YAML document inside
+    the secret data, the key is now simply the value of the `api-key` data key. This change is backwards compatible,
+    i.e. Gloo will still support existing secrets with the old format. `glooctl create secret apikey` will now generate
+    secrets with the new format.

@@ -501,14 +501,14 @@ func MustSecretClient() v1.SecretClient {
 }
 
 func MustSecretClientWithOptions(timeout time.Duration, namespaces []string) v1.SecretClient {
-	client, err := secretClient(timeout, namespaces)
+	client, err := getSecretClient(timeout, namespaces)
 	if err != nil {
 		log.Fatalf("failed to create Secret client: %v", err)
 	}
 	return client
 }
 
-func secretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
+func getSecretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, error) {
 	customFactory := getSecretClientFactory()
 	if customFactory != nil {
 		return v1.NewSecretClient(customFactory)
@@ -523,15 +523,10 @@ func secretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, 
 		return nil, err
 	}
 
-	converterChain := kubeconverters.NewSecretConverterChain(
-		new(kubeconverters.TLSSecretConverter),
-		new(kubeconverters.AwsSecretConverter),
-	)
-
 	secretClient, err := v1.NewSecretClient(&factory.KubeSecretClientFactory{
 		Clientset:       clientset,
 		Cache:           coreCache,
-		SecretConverter: converterChain,
+		SecretConverter: kubeconverters.GlooSecretConverterChain,
 	})
 	if err != nil {
 		return nil, errors.Wrapf(err, "creating Secrets client")

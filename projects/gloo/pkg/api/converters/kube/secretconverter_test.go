@@ -88,8 +88,9 @@ var _ = Describe("SecretConverter", func() {
 
 	It("should round trip kube aws secret to gloo aws secret and back to kube aws secret", func() {
 		awsSecret := &v1.AwsSecret{
-			AccessKey: "access",
-			SecretKey: "secret",
+			AccessKey:    "access",
+			SecretKey:    "secret",
+			SessionToken: "token",
 		}
 		kubeSecret := &kubev1.Secret{
 			Type: kubev1.SecretTypeOpaque,
@@ -100,8 +101,9 @@ var _ = Describe("SecretConverter", func() {
 				OwnerReferences: []metav1.OwnerReference{},
 			},
 			Data: map[string][]byte{
-				AwsAccessKeyName: []byte(awsSecret.AccessKey),
-				AwsSecretKeyName: []byte(awsSecret.SecretKey),
+				AwsAccessKeyName:    []byte(awsSecret.AccessKey),
+				AwsSecretKeyName:    []byte(awsSecret.SecretKey),
+				AwsSessionTokenName: []byte(awsSecret.SessionToken),
 			},
 		}
 		var awsConverter AwsSecretConverter

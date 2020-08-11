@@ -296,23 +296,47 @@ message OauthSecret {
 }
 
 message ApiKeyAuth {
-  // identify all valid apikey secrets using the provided label selector.<br/>
-  // apikey secrets must be in gloo's watch namespaces for gloo to locate them.<br/>
-  // **These are labels on the apikey secret's metadata, not the 'labels' field of the `ApiKeySecret`**
+  // Identify all valid API key secrets that match the provided label selector.<br/>
+  // API key secrets must be in one of the watch namespaces for gloo to locate them.
   map<string, string> label_selector = 1;
-  // a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector
+
+  // A way to directly reference API key secrets. This configuration can be useful for testing,
+  // but in general the more flexible label selector should be preferred.
   repeated core.solo.io.ResourceRef api_key_secret_refs = 2;
+
+  // When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header
+  // with this name. This field is optional; if not provided it defaults to `api-key`.
+  string header_name = 3;
+
+  // API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to)
+  // in the form of extra keys included in the secret's `data` field.
+  // This configuration can be used to add this data to the headers of successfully authenticated requests.
+  // Each key in the map represents the name of header to be added; the corresponding value determines the key
+  // in the secret data that will be inspected to determine the value for the header.
+  map<string, SecretKey> headers_from_metadata = 4;
+
+  message SecretKey {
+    // (Required) The key of the secret data entry to inspect.
+    string name = 1;
+    // If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key.
+    // Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added
+    // to the request.
+    bool required = 2;
+  }
 }
 
 message ApiKeySecret {
-  // if true, generate an apikey
-  bool generate_api_key = 1;
-  // if present, use the provided apikey
+  // If true, generate an API key.
+  // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
+  bool generate_api_key = 1 [deprecated=true];
+  // The value of the API key.
   string api_key = 2;
-  // a list of labels (key=value) for the apikey secret.<br/>
-  // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata
-  // of the created secret.
-  repeated string labels = 3;
+  // A list of labels (key=value) for the apikey secret.<br/>
+  // These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret.
+  // This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API.
+  repeated string labels = 3 [deprecated=true];
+  // If the secret data contains entries in addition to the API key one, they will be copied to this field.
+  map<string, string> metadata = 4;
 }
 
 message OpaAuth {
@@ -452,10 +476,26 @@ message ExtAuthConfig {
 
   // **NOTE: This configuration is not user-facing and will be auto generated**
   message ApiKeyAuthConfig {
-    // A mapping of valid apikeys to their associated plaintext users.
-    // This map is automatically populated with the relevant `ApiKeySecret`s.
-    // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
-    map<string, string> valid_api_key_and_user = 1 [(gogoproto.moretags) = "logging:\"redact\""];
+
+    message KeyMetadata {
+      // The user is mapped as the name of `Secret` which contains the `ApiKeySecret`
+      string username = 1;
+      // The metadata present on the `ApiKeySecret`.
+      map<string, string> metadata = 2;
+    }
+
+    // A mapping of valid API keys to their associated metadata.
+    // This map is automatically populated with the information from the relevant `ApiKeySecret`s.
+    map<string, KeyMetadata> valid_api_keys = 1 [(gogoproto.moretags) = "logging:\"redact\""];
+
+    // (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key
+    // in a header with this name. This field is optional; if not provided it defaults to `api-key`.
+    string header_name = 2;
+
+    // Determines the key metadata that will be included as headers on the upstream request.
+    // Each entry represents a header to add: the key is the name of the header, and the
+    // value is the key that will be used to look up the data entry in the key metadata.
+    map<string, string> headers_from_key_metadata = 3;
   }
 
   message OpaAuthConfig {
