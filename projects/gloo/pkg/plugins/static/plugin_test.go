@@ -146,7 +146,7 @@ var _ = Describe("Plugin", func() {
 				Path: "/foo",
 			}
 			p.ProcessUpstream(params, upstream, out)
-			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata["io.solo.health_checkers.http_path"].Fields["path"].GetStringValue()).To(Equal("/foo"))
+			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[HttpPathCheckerName].Fields[PathFieldName].GetStringValue()).To(Equal("/foo"))
 		})
 
 	})

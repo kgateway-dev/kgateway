@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	httpPathCheckerName = "io.solo.health_checkers.http_path"
-	pathFieldName = "path"
+	HttpPathCheckerName = "io.solo.health_checkers.http_path"
+	PathFieldName       = "path"
 )
 
 type plugin struct{}
@@ -150,9 +150,9 @@ func getMetadata(in *v1static.Host) *envoycore.Metadata {
 	if in.GetHealthCheckConfig().GetPath() != "" {
 		return &envoycore.Metadata{
 			FilterMetadata: map[string]*pbgostruct.Struct{
-				httpPathCheckerName : {
+				HttpPathCheckerName: {
 					Fields: map[string]*pbgostruct.Value{
-						pathFieldName: {
+						PathFieldName: {
 							Kind: &pbgostruct.Value_StringValue{
 								StringValue: in.GetHealthCheckConfig().GetPath(),
 							},
