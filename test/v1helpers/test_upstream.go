@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 
 type ReceivedRequest struct {
 	Method      string
+	URL         *url.URL
 	Body        []byte
 	Host        string
 	GRPCRequest proto.Message
@@ -135,6 +137,7 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		}
 
 		rr.Host = r.Host
+		rr.URL = r.URL
 
 		bodyChan <- &rr
 	}

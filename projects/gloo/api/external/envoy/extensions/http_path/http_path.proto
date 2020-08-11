@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package envoy.config.health_checker.http_path.v2;
+
+import "udpa/annotations/status.proto";
+import "envoy/config/core/v3/health_check.proto";
+
+option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/http_path";
+import "gogoproto/gogo.proto";
+option (gogoproto.equal_all) = true;
+
+option java_package = "io.envoyproxy.envoy.config.health_checker.http_path.v2";
+option java_outer_classname = "HttpPath";
+option java_multiple_files = true;
+option (udpa.annotations.file_status).package_version_status = ACTIVE;
+
+// Same as HTTP health checker, but allows a custom path per endpoint
+// The http path to use can be overriden using endpoint metadata. The endpoint specific path should
+// be in the "io.solo.health_checkers.http_path" namespace, under a string value named "path".
+message HttpPath {
+  // Http health check.
+  config.core.v3.HealthCheck.HttpHealthCheck http_health_check = 1;
+}
