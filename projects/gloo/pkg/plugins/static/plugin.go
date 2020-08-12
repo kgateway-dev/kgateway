@@ -1,8 +1,8 @@
 package static
 
 import (
-	"net"
 	"fmt"
+	"net"
 	"net/url"
 
 	pbgostruct "github.com/golang/protobuf/ptypes/struct"
