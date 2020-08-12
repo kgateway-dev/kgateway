@@ -290,6 +290,21 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	var filters []plugins.StagedHttpFilter
 	for _, serviceAndDescriptor := range p.upstreamServices {
 		descriptorBytes, err := proto.Marshal(serviceAndDescriptor.Descriptors)
+
+		// TODO(kdorosh) remove me
+		//descBytesStr := string(descriptorBytes)
+		//fmt.Println(descBytesStr)
+
+		encoded := make([]byte, base64.StdEncoding.EncodedLen(len(descriptorBytes)))
+		base64.StdEncoding.Encode(encoded, descriptorBytes)
+
+		descBytesStrEncoded := string(encoded)
+		fmt.Println(descBytesStrEncoded)
+		// TODO(kdorosh) remove me
+
+		takeTwo := base64.StdEncoding.EncodeToString(descriptorBytes)
+		fmt.Println(takeTwo == descBytesStrEncoded)
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "marshaling proto descriptor")
 		}

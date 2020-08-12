@@ -1,6 +1,8 @@
 package grpcjson
 
 import (
+	"encoding/base64"
+	"fmt"
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
@@ -57,7 +59,17 @@ func translateGlooToEnvoyGrpcJson(grpcJsonConf *grpc_json.GrpcJsonTranscoder) *e
 	case *grpc_json.GrpcJsonTranscoder_ProtoDescriptor:
 		envoyGrpcJsonConf.DescriptorSet = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptor{ProtoDescriptor: typedDescriptorSet.ProtoDescriptor}
 	case *grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin:
-		envoyGrpcJsonConf.DescriptorSet = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: typedDescriptorSet.ProtoDescriptorBin}
+
+		// user-supplied yaml must be base-64 encoded, so we decode
+		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(typedDescriptorSet.ProtoDescriptorBin)))
+		_, err := base64.StdEncoding.Decode(decoded, typedDescriptorSet.ProtoDescriptorBin)
+		if err != nil {
+			fmt.Println(err)
+			return nil
+			//return nil, err
+		}
+
+		envoyGrpcJsonConf.DescriptorSet = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: decoded}
 	}
 
 	return envoyGrpcJsonConf
