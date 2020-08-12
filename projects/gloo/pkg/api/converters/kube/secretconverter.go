@@ -203,7 +203,7 @@ var _ kubesecret.SecretConverter = &HeaderSecretConverter{}
 
 const (
 	HeaderName = "header_name"
-	Value  = "header_value"
+	Value      = "header_value"
 )
 
 func (t *HeaderSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
@@ -221,7 +221,7 @@ func (t *HeaderSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.
 			Kind: &v1.Secret_Header{
 				Header: &v1.HeaderSecret{
 					HeaderName: string(headerName),
-					Value: string(value),
+					Value:      string(value),
 				},
 			},
 		}
@@ -247,7 +247,7 @@ func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Re
 						Type:       kubev1.SecretTypeOpaque,
 						Data: map[string][]byte{
 							HeaderName: []byte(headerGlooSecret.Header.HeaderName),
-							Value: []byte(headerGlooSecret.Header.Value),
+							Value:      []byte(headerGlooSecret.Header.Value),
 						},
 					}
 					return kubeSecret, nil
