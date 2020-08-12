@@ -9,6 +9,7 @@ settings:
   # if this is set to false, default settings will be created by pods upon boot
   create: true
   linkerd: false
+  aws: {}
   invalidConfigPolicy:
     replaceInvalidRoutes: false
     invalidRouteResponseCode: 404
@@ -38,6 +39,9 @@ settings:
   # If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes.
   # If true, Gloo will keep serving the routes from the last applied valid configuration.
   disableProxyGarbageCollection: false
+  # Set this value to a an array of ratelimit descriptors to have rate limits on the gloo instance's installation namespace.
+  # For more info, see https://docs.solo.io/gloo/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#servicesettings
+  rateLimit: {}
 gloo:
   deployment:
     image:
@@ -47,9 +51,11 @@ gloo:
     validationPort: 9988
     replicas: 1
     runAsUser: 10101
+    serviceAccount: {}
 discovery:
   enabled: true
   fdsMode: WHITELIST
+  serviceAccount: {}
   deployment:
     image:
       repository: discovery
@@ -80,6 +86,7 @@ gateway:
     ttlSecondsAfterFinished: 60
     runAsUser: 10101
   proxyServiceAccount: {}
+  serviceAccount: {}
 gatewayProxies:
   gatewayProxy:
     gatewaySettings: {}
@@ -100,7 +107,12 @@ gatewayProxies:
       fsGroup: 10101
       runUnprivileged: true
       disableNetBind: true
+      gracefulShutdown:
+        enabled: false
+        sleepTimeSeconds: 25
+      customReadinessProbe: {}
     service:
+      customPorts: []
       type: LoadBalancer
       # clusterIP: None
       httpPort: 80

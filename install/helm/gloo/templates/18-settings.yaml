@@ -22,6 +22,21 @@ spec:
 {{- end }}
     disableKubernetesDestinations: {{ .Values.settings.disableKubernetesDestinations | default false }}
     disableProxyGarbageCollection: {{ .Values.settings.disableProxyGarbageCollection | default false }}
+{{- if .Values.settings.aws.enableServiceAccountCredentials }}
+    awsOptions:
+      serviceAccountCredentials:
+        cluster: aws_sts_cluster
+{{- if ne .Values.settings.aws.stsCredentialsRegion ""}}
+        uri: sts.{{ .Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+{{- else }}
+        uri: sts.amazonaws.com
+{{- end }}
+{{- else if .Values.settings.aws.enableCredentialsDiscovery }}
+    awsOptions:
+      enableCredentialsDiscovey: true
+{{- end }}
+
+
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}
@@ -63,6 +78,11 @@ spec:
 {{- if .Values.settings.extensions }}
   extensions:
 {{- toYaml .Values.settings.extensions | nindent 4 }}
+{{- end }}
+
+{{- if .Values.settings.rateLimit }}
+  rateLimit:
+{{- toYaml .Values.settings.rateLimit | nindent 4 }}
 {{- end }}
 
 {{- if .Values.settings.singleNamespace }}

@@ -15,7 +15,7 @@ jobs:
         go-version: 1.14
       id: go
     - name: Install Protoc
-      uses: arduino/setup-protoc@v1.1.0
+      uses: solo-io/setup-protoc@master
       with:
         version: '3.6.1'
     - name: Check out code into the Go module directory
@@ -74,7 +74,7 @@ jobs:
       env:
         KUBE2E_TESTS: ${{ matrix.kube-e2e-test-type }}
       run: |
-        go test ./test/kube2e/...
+        make run-ci-regression-tests
     - name: Debug Info
       if: failure()
       run: |

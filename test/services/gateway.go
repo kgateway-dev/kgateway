@@ -190,7 +190,9 @@ func defaultTestConstructOpts(ctx context.Context, runOptions *RunOptions) trans
 		Cache: runOptions.Cache,
 	}
 
+	meta := runOptions.Settings.GetMetadata()
 	return translator.Opts{
+		GlooNamespace:   meta.GetNamespace(),
 		WriteNamespace:  runOptions.NsToWrite,
 		WatchNamespaces: runOptions.NsToWatch,
 		Gateways:        f,

@@ -8,7 +8,7 @@ Create an AWS secret with the given name
 
 ### Synopsis
 
-Create an AWS secret with the given name. The format of the secret data is: `{"aws_access_key_id" : [access-key string] , "aws_secret_access_key" : [secret-key string]}`
+Create an AWS secret with the given name. The format of the secret data is: `{"aws_access_key_id" : [access-key string] , "aws_secret_access_key" : [secret-key string]}``{"aws_session_token" : [session-token string]`
 
 ```
 glooctl create secret aws [flags]
@@ -17,9 +17,10 @@ glooctl create secret aws [flags]
 ### Options
 
 ```
-      --access-key string   aws access key
-  -h, --help                help for aws
-      --secret-key string   aws secret key
+      --access-key string      aws access key
+  -h, --help                   help for aws
+      --secret-key string      aws secret key
+      --session-token string   aws session token
 ```
 
 ### Options inherited from parent commands

@@ -35,6 +35,11 @@ func AddFederationInstallFlags(set *pflag.FlagSet, install *options.Federation) 
 	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate Gloo Fed features")
 }
 
+func AddFederationDemoFlags(set *pflag.FlagSet, install *options.Federation) {
+	set.StringVar(&install.LicenseKey, "license-key", "", "License key to activate Gloo Fed features")
+	set.StringVar(&install.HelmChartOverride, "file", "", "Install Gloo Fed from this Helm chart archive file rather than from a release")
+}
+
 func AddKnativeInstallFlags(set *pflag.FlagSet, install *options.Knative) {
 	set.StringVar(&install.InstallKnativeVersion, "install-knative-version", "0.10.0",
 		"Version of Knative Serving to install, when --install-knative is set to `true`. This version"+

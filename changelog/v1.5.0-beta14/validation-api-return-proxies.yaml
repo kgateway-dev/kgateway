@@ -1,0 +1,6 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Validation API now returns proxies in the webhook response. The proxy returned may be useful to perform diffs
+      between proxies before and after proposed changes to gateway resources (virtual services, route tables, gateways).
+    issueLink: https://github.com/solo-io/gloo/issues/3257

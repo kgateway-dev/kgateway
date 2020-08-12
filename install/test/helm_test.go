@@ -215,6 +215,96 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				It("should be able to set custom labels for pods", func() {
+					// This test expects ALL pods to be capable of setting custom labels unless exceptions are added
+					// here, which means that this test will fail if new deployments are added to the helm chart without
+					// custom labeling, unless those deployments aren't enabled by default (like the accessLogger).
+					// Note: test panics if values-template.yaml doesn't contain at least an empty definition
+					// of each label object that's modified here.
+					// Note note: Update number in final expectation if you add new labels here.
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.extraGatewayLabels.foo=bar",
+							"gloo.deployment.extraGlooLabels.foo=bar",
+							"discovery.deployment.extraDiscoveryLabels.foo=bar",
+							"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
+							"accessLogger.enabled=true", // required to test accessLogger
+							"accessLogger.extraAccessLoggerLabels.foo=bar",
+							"ingress.deployment.extraIngressLabels.foo=bar",
+							"ingress.enabled=true", // required to test Ingress Proxy, but not Ingress.
+							"ingressProxy.deployment.extraIngressProxyLabels.foo=bar",
+							"settings.integrations.knative.enabled=true", // required to test cluster ingress proxy and knative labels.
+							"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
+							"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
+						},
+					})
+
+					var resourcesTested = 0
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						deploymentLabels := structuredDeployment.Spec.Template.Labels
+						var foundTestValue = false
+						for label, value := range deploymentLabels {
+							if label == "foo" {
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+									" value bar. Found value %s", deployment.GetName(), value))
+								foundTestValue = true
+							}
+						}
+						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						resourcesTested += 1
+					})
+					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
+					Expect(resourcesTested).To(Equal(9), "Tested %d resources when we were expecting 9."+
+						" Was a new pod added, or is an existing pod no longer being generated?", resourcesTested)
+				})
+
+				// due to the version requirements for rendering knative-related templates, the cluster ingress proxy
+				// template is mutually exclusive to the other knative templates, and needs to be tested separately.
+				It("should be able to set custom labels for cluster ingress proxy pod", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.7.0",
+							"settings.integrations.knative.proxy.extraClusterIngressProxyLabels.foo=bar",
+						},
+					})
+
+					var resourcesTested = 0
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						deploymentLabels := structuredDeployment.Spec.Template.Labels
+						if structuredDeployment.Name != "clusteringress-proxy" {
+							return
+						}
+						var foundTestValue = false
+						for label, value := range deploymentLabels {
+							if label == "foo" {
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+									" value bar. Found value %s", deployment.GetName(), value))
+								foundTestValue = true
+							}
+						}
+						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						resourcesTested += 1
+					})
+					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
+					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1."+
+						"What happened to the clusteringress-proxy deployment?", resourcesTested)
+				})
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
@@ -583,6 +673,38 @@ var _ = Describe("Helm Test", func() {
 					It("by default will not render failover gateway", func() {
 						prepareMakefile(namespace, helmValues{})
 						testManifest.ExpectUnstructured("Gateway", namespace, defaults.GatewayProxyName+"-failover").To(BeNil())
+					})
+
+				})
+
+				Context("gateway-proxy service account", func() {
+					var gatewayProxyServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "gateway-proxy",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway-proxy",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayProxyServiceAccount = rb.GetServiceAccount()
+						gatewayProxyServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						gatewayProxyServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.proxyServiceAccount.extraAnnotations.foo=bar",
+								"gateway.proxyServiceAccount.extraAnnotations.bar=baz",
+								"gateway.proxyServiceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayProxyServiceAccount)
 					})
 
 				})
@@ -986,6 +1108,105 @@ var _ = Describe("Helm Test", func() {
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
+					It("supports custom readiness probe", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.probes=true",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds=5",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold=3",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds=10",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path=/gloo/health",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port=8080",
+								"gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme=HTTP",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].ReadinessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								HTTPGet: &v1.HTTPGetAction{
+									Path:   "/gloo/health",
+									Port:   intstr.FromInt(8080),
+									Scheme: "HTTP",
+								},
+							},
+							InitialDelaySeconds: 5,
+							PeriodSeconds:       10,
+							FailureThreshold:    3,
+						}
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].LivenessProbe = &v1.Probe{
+							Handler: v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"wget", "-O", "/dev/null", "127.0.0.1:19000/server_info",
+									},
+								},
+							},
+							InitialDelaySeconds: 1,
+							PeriodSeconds:       10,
+							FailureThreshold:    10,
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders terminationGracePeriodSeconds when present", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds=45",
+							},
+						})
+
+						intz := int64(45)
+						gatewayProxyDeployment.Spec.Template.Spec.TerminationGracePeriodSeconds = &intz
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 25",
+									},
+								},
+							},
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("renders preStop hook for gracefulShutdown with custom sleep time", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled=true",
+								"gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds=45",
+							},
+						})
+
+						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Lifecycle = &v1.Lifecycle{
+							PreStop: &v1.Handler{
+								Exec: &v1.ExecAction{
+									Command: []string{
+										"/bin/sh",
+										"-c",
+										"wget --post-data \"\" -O /dev/null 127.0.0.1:19000/healthcheck/fail; sleep 45",
+									},
+								},
+							},
+						}
+
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
 					It("has limits", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
@@ -1106,6 +1327,48 @@ var _ = Describe("Helm Test", func() {
 							},
 						})
 						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("can accept custom port values", func() {
+						const testName = "TEST_CUSTOM_PORT"
+						const testPort = int32(1234)
+						const testTargetPort = int32(1235)
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].name=%s", testName),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].port=%d", testPort),
+								fmt.Sprintf("gatewayProxies.gatewayProxy.service.customPorts[0].targetPort=%d", testTargetPort),
+								"gatewayProxies.gatewayProxy.service.customPorts[0].protocol=TCP",
+							},
+						})
+						// pull proxy service, cast it, then check for custom resources (which should always be the
+						// first element of the Ports array).
+						service := testManifest.ExpectCustomResource("Service", namespace, defaults.GatewayProxyName)
+						serviceObject, err := kuberesource.ConvertUnstructured(service)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Service %+v should be able to convert from unstructured", service))
+						structuredService, ok := serviceObject.(*v1.Service)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Service %+v should be able to cast to a structured deployment", service))
+						customPort := structuredService.Spec.Ports[2]
+						Expect(customPort.Name).To(Equal(testName))
+						Expect(customPort.Protocol).To(Equal(v1.ProtocolTCP))
+						Expect(customPort.Port).To(Equal(testPort))
+						Expect(customPort.TargetPort.IntVal).To(Equal(testTargetPort))
+					})
+
+					It("does not disable gateway proxy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
+						})
+						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+					})
+
+					It("disables gateway proxy", func() {
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
+						})
+						testManifest.Expect(gatewayProxyDeployment.Kind,
+							gatewayProxyDeployment.GetNamespace(),
+							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
 				})
 
@@ -1258,6 +1521,59 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly allows setting ratelimit descriptors in the rateLimit field.", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
+
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+ rateLimit:
+   descriptors:
+     - key: generic_key
+       value: "per-second"
+       rateLimit:
+         requestsPerUnit: 2
+         unit: SECOND
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.rateLimit.descriptors[0].key=generic_key",
+								"settings.rateLimit.descriptors[0].value=per-second",
+								"settings.rateLimit.descriptors[0].rateLimit.requestsPerUnit=2",
+								"settings.rateLimit.descriptors[0].rateLimit.unit=SECOND",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
@@ -1296,6 +1612,99 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"settings.disableProxyGarbageCollection=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("enable default credentials", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      alwaysAccept: true
+      allowWarnings: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+    restXdsBindAddr: 0.0.0.0:9976
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    awsOptions:
+      enableCredentialsDiscovey: true
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+      invalidRouteResponseCode: 404
+
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+  discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableCredentialsDiscovery=true",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
+					It("enable sts discovery", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+  discovery:
+    fdsMode: WHITELIST
+  gateway:
+    readGatewaysFromAllNamespaces: false
+    validation:
+      alwaysAccept: true
+      allowWarnings: true
+      proxyValidationServerAddr: gloo:9988
+  gloo:
+    xdsBindAddr: 0.0.0.0:9977
+    restXdsBindAddr: 0.0.0.0:9976
+    disableKubernetesDestinations: false
+    disableProxyGarbageCollection: false
+    awsOptions:
+      serviceAccountCredentials:
+        cluster: aws_sts_cluster
+        uri: sts.us-east-2.amazonaws.com
+    invalidConfigPolicy:
+      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+      invalidRouteResponseCode: 404
+
+  kubernetesArtifactSource: {}
+  kubernetesConfigSource: {}
+  kubernetesSecretSource: {}
+  refreshRate: 60s
+  discoveryNamespace: ` + namespace + `
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableServiceAccountCredentials=true",
+								"settings.aws.stsCredentialsRegion=us-east-2",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
@@ -1519,6 +1928,39 @@ metadata:
 					})
 				})
 			})
+
+			Context("gloo service account", func() {
+				var glooServiceAccount *v1.ServiceAccount
+
+				BeforeEach(func() {
+					saLabels := map[string]string{
+						"app":  "gloo",
+						"gloo": "gloo",
+					}
+					rb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      "gloo",
+						Args:      nil,
+						Labels:    saLabels,
+					}
+					glooServiceAccount = rb.GetServiceAccount()
+					glooServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+				})
+
+				It("sets extra annotations", func() {
+					glooServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gloo.serviceAccount.extraAnnotations.foo=bar",
+							"gloo.serviceAccount.extraAnnotations.bar=baz",
+							"gloo.serviceAccount.disableAutomount=true",
+						},
+					})
+					testManifest.ExpectServiceAccount(glooServiceAccount)
+				})
+
+			})
+
 			Context("control plane deployments", func() {
 				updateDeployment := func(deploy *appsv1.Deployment) {
 					deploy.Spec.Selector = &metav1.LabelSelector{
@@ -1543,6 +1985,7 @@ metadata:
 					}
 					deploy.Spec.Template.Spec.Containers[0].ImagePullPolicy = pullPolicy
 				}
+
 				Context("gloo deployment", func() {
 					var (
 						glooDeployment *appsv1.Deployment
@@ -1709,6 +2152,38 @@ metadata:
 					})
 				})
 
+				Context("gateway service account", func() {
+					var gatewayServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "gateway",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "gateway",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						gatewayServiceAccount = rb.GetServiceAccount()
+						gatewayServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						gatewayServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"gateway.serviceAccount.extraAnnotations.foo=bar",
+								"gateway.serviceAccount.extraAnnotations.bar=baz",
+								"gateway.serviceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(gatewayServiceAccount)
+					})
+
+				})
+
 				Context("gateway deployment", func() {
 					var (
 						gatewayDeployment *appsv1.Deployment
@@ -1848,6 +2323,38 @@ metadata:
 					})
 				})
 
+				Context("discovery service account", func() {
+					var discoveryServiceAccount *v1.ServiceAccount
+
+					BeforeEach(func() {
+						saLabels := map[string]string{
+							"app":  "gloo",
+							"gloo": "discovery",
+						}
+						rb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      "discovery",
+							Args:      nil,
+							Labels:    saLabels,
+						}
+						discoveryServiceAccount = rb.GetServiceAccount()
+						discoveryServiceAccount.AutomountServiceAccountToken = proto.Bool(false)
+					})
+
+					It("sets extra annotations", func() {
+						discoveryServiceAccount.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"discovery.serviceAccount.extraAnnotations.foo=bar",
+								"discovery.serviceAccount.extraAnnotations.bar=baz",
+								"discovery.serviceAccount.disableAutomount=true",
+							},
+						})
+						testManifest.ExpectServiceAccount(discoveryServiceAccount)
+					})
+
+				})
+
 				Context("discovery deployment", func() {
 					var (
 						discoveryDeployment *appsv1.Deployment
@@ -1975,10 +2482,50 @@ metadata:
 					"gateway-proxy-id": "gateway-proxy",
 				}
 
+				Describe("gateway proxy - AWS", func() {
+
+					It("has a global cluster", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true"},
+						})
+						proxySpec := make(map[string]string)
+						proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "", "")
+						cmRb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      gatewayProxyConfigMapName,
+							Labels:    labels,
+							Data:      proxySpec,
+						}
+						proxy := cmRb.GetConfigMap()
+						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
+
+					It("has a regional cluster", func() {
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.aws.enableServiceAccountCredentials=true",
+								"settings.aws.stsCredentialsRegion=us-east-2",
+							},
+						})
+						proxySpec := make(map[string]string)
+						proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "us-east-2.", "us-east-2.")
+						cmRb := ResourceBuilder{
+							Namespace: namespace,
+							Name:      gatewayProxyConfigMapName,
+							Labels:    labels,
+							Data:      proxySpec,
+						}
+						proxy := cmRb.GetConfigMap()
+						testManifest.ExpectConfigMapWithYamlData(proxy)
+					})
+				})
+
 				Describe("gateway proxy - tracing config", func() {
 					It("has a proxy without tracing", func() {
 						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{" gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.service.extraAnnotations.test=test"},
 						})
 						proxySpec := make(map[string]string)
 						proxySpec["envoy.yaml"] = confWithoutTracing

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix for panic when inspecting no-auth virtual services in glooctl check.
+    issueLink: https://github.com/solo-io/gloo/issues/3391

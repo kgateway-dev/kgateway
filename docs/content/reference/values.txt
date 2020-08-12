@@ -15,6 +15,7 @@
 |settings.integrations.knative.proxy.httpsPort|int|443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
+|settings.integrations.knative.proxy.extraClusterIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the cluster ingress proxy pod.|
 |settings.integrations.knative.proxy.replicas|int|1|number of instances to deploy|
 |settings.integrations.knative.proxy.customEnv[].name|string|||
 |settings.integrations.knative.proxy.customEnv[].value|string|||
@@ -43,6 +44,8 @@
 |settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
+|settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the knative internal pod.|
+|settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the knative external pod.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool|false|Enable to use install namespace as WatchNamespace and WriteNamespace|
@@ -52,6 +55,10 @@
 |settings.linkerd|bool|false|Enable automatic Linkerd integration in Gloo.|
 |settings.disableProxyGarbageCollection|bool|false|Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration.|
 |settings.disableKubernetesDestinations|bool|false|Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off.|
+|settings.aws.enableCredentialsDiscovery|bool|false|Enable AWS credentials discovery in Envoy for lambda requests. If enableServiceAccountCredentials is also set, it will take precedence as only one may be enabled in Gloo |
+|settings.aws.enableServiceAccountCredentials|bool|false|Use ServiceAccount credentials to authenticate lambda requests. If enableCredentialsDiscovery is also set, this will take precedence as only one may be enabled in Gloo|
+|settings.aws.stsCredentialsRegion|string||Regional endpoint to use for AWS STS requests. If empty will default to global sts endpoint.|
+|settings.rateLimit|interface||Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes.|
 |gloo.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |gloo.deployment.image.repository|string|gloo|image name (repository) for the container.|
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -65,6 +72,7 @@
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
 |gloo.deployment.disableUsageStatistics|bool|false|Disable the collection of gloo usage statistics|
+|gloo.deployment.extraGlooLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the primary gloo pod.|
 |gloo.deployment.replicas|int|1|number of instances to deploy|
 |gloo.deployment.customEnv[].name|string|||
 |gloo.deployment.customEnv[].value|string|||
@@ -89,6 +97,8 @@
 |gloo.deployment.resources.limits.cpu|string||amount of CPUs|
 |gloo.deployment.resources.requests.memory|string||amount of memory|
 |gloo.deployment.resources.requests.cpu|string||amount of CPUs|
+|gloo.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|gloo.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |discovery.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |discovery.deployment.image.repository|string|discovery|image name (repository) for the container.|
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
@@ -97,6 +107,7 @@
 |discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|discovery.deployment.extraDiscoveryLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo discovery pod.|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
 |discovery.deployment.customEnv[].name|string|||
 |discovery.deployment.customEnv[].value|string|||
@@ -123,6 +134,8 @@
 |discovery.deployment.resources.requests.cpu|string||amount of CPUs|
 |discovery.fdsMode|string|WHITELIST|mode for function discovery (blacklist or whitelist). See more info in the settings docs|
 |discovery.enabled|bool|true|enable Discovery features|
+|discovery.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|discovery.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.enabled|bool|true|enable Gloo API Gateway features|
 |gateway.validation.enabled|bool|true|enable Gloo API Gateway validation hook (default true)|
 |gateway.validation.alwaysAcceptResources|bool|true|unless this is set this to false in order to ensure validation webhook rejects invalid resources. by default, validation webhook will only log and report metrics for invalid resource admission without rejecting them outright.|
@@ -138,6 +151,7 @@
 |gateway.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gateway.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|gateway.deployment.extraGatewayLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway pod.|
 |gateway.deployment.replicas|int|1|number of instances to deploy|
 |gateway.deployment.customEnv[].name|string|||
 |gateway.deployment.customEnv[].value|string|||
@@ -174,7 +188,10 @@
 |gateway.certGenJob.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.certGenJob.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.updateValues|bool|false|if true, will use a provided helm helper 'gloo.updatevalues' to update values during template render - useful for plugins/extensions|
+|gateway.proxyServiceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
 |gateway.proxyServiceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
+|gateway.serviceAccount.extraAnnotations.NAME|string||extra annotations to add to the service account|
+|gateway.serviceAccount.disableAutomount|bool|false|disable automunting the service account to the gateway proxy. not mounting the token hardens the proxy container, but may interfere with service mesh integrations|
 |gateway.readGatewaysFromAllNamespaces|bool|false|if true, read Gateway custom resources from all watched namespaces rather than just the namespace of the Gateway controller|
 |gatewayProxies.NAME.kind.deployment.replicas|int||number of instances to deploy|
 |gatewayProxies.NAME.kind.deployment.customEnv[].name|string|||
@@ -223,6 +240,28 @@
 |gatewayProxies.NAME.podTemplate.floatingUserId|bool||set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.NAME.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.NAME.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.NAME.podTemplate.gracefulShutdown.enabled|bool||Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
+|gatewayProxies.NAME.podTemplate.gracefulShutdown.sleepTimeSeconds|int||Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
+|gatewayProxies.NAME.podTemplate.terminationGracePeriodSeconds|int||Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.exec.command[]|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.path|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int64|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.port|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.host|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.scheme|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.httpHeaders[].name|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.httpGet.httpHeaders[].value|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|int64|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.port|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.initialDelaySeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.timeoutSeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.periodSeconds|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.successThreshold|int32|||
+|gatewayProxies.NAME.podTemplate.customReadinessProbe.failureThreshold|int32|||
+|gatewayProxies.NAME.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway proxy pod.|
 |gatewayProxies.NAME.configMap.data.NAME|string|||
 |gatewayProxies.NAME.globalDownstreamMaxConnections|uint32||the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.NAME.service.type|string||gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
@@ -237,6 +276,7 @@
 |gatewayProxies.NAME.service.httpsFirst|bool||List HTTPS port before HTTP|
 |gatewayProxies.NAME.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.NAME.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
+|gatewayProxies.NAME.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.NAME.antiAffinity|bool||configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.NAME.tracing.provider|string|||
 |gatewayProxies.NAME.tracing.cluster|string|||
@@ -275,6 +315,7 @@
 |gatewayProxies.NAME.failover.port|uint||(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.NAME.failover.nodePort|uint||(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.NAME.failover.secretName|string||(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.NAME.disabled|bool||Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |gatewayProxies.gatewayProxy.kind.deployment.replicas|int|1|number of instances to deploy|
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].name|string|||
 |gatewayProxies.gatewayProxy.kind.deployment.customEnv[].value|string|||
@@ -322,6 +363,28 @@
 |gatewayProxies.gatewayProxy.podTemplate.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gatewayProxies.gatewayProxy.podTemplate.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gatewayProxies.gatewayProxy.podTemplate.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.enabled|bool|false|Enable grace period before shutdown to finish current requests while envoy health checks fail to e.g. notify external load balancers. *NOTE:* This will not have any effect if you have not defined health checks via the health check filter|
+|gatewayProxies.gatewayProxy.podTemplate.gracefulShutdown.sleepTimeSeconds|int|25|Time (in seconds) for the preStop hook to wait before allowing envoy to terminate|
+|gatewayProxies.gatewayProxy.podTemplate.terminationGracePeriodSeconds|int|0|Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info|
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.exec.command[]|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.path|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.port|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.scheme|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.httpHeaders[].name|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.httpGet.httpHeaders[].value|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|int64|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|int32|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.port|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.tcpSocket.host|string|||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.initialDelaySeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.timeoutSeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.periodSeconds|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.successThreshold|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.customReadinessProbe.failureThreshold|int32|0||
+|gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway proxy pod.|
 |gatewayProxies.gatewayProxy.configMap.data.NAME|string|||
 |gatewayProxies.gatewayProxy.globalDownstreamMaxConnections|uint32|250000|the number of concurrent connections needed. limit used to protect against exhausting file descriptors on host machine|
 |gatewayProxies.gatewayProxy.service.type|string|LoadBalancer|gateway [service type](https://kubernetes.io/docs/concepts/services-networking/service/#publishing-services-service-types). default is `LoadBalancer`|
@@ -336,6 +399,7 @@
 |gatewayProxies.gatewayProxy.service.httpsFirst|bool|false|List HTTPS port before HTTP|
 |gatewayProxies.gatewayProxy.service.loadBalancerIP|string||IP address of the load balancer|
 |gatewayProxies.gatewayProxy.service.loadBalancerSourceRanges[]|string||List of IP CIDR ranges that are allowed to access the load balancer|
+|gatewayProxies.gatewayProxy.service.customPorts[]|interface||List of custom port to expose in the envoy proxy. Each element follows conventional port syntax (port, targetPort, protocol, name)|
 |gatewayProxies.gatewayProxy.antiAffinity|bool|false|configure anti affinity such that pods are preferably not co-located|
 |gatewayProxies.gatewayProxy.tracing.provider|string|||
 |gatewayProxies.gatewayProxy.tracing.cluster|string|||
@@ -374,6 +438,7 @@
 |gatewayProxies.gatewayProxy.failover.port|uint|15443|(Enterprise Only): Port to use for failover Gateway Bind port, and service. Default is 15443|
 |gatewayProxies.gatewayProxy.failover.nodePort|uint|0|(Enterprise Only): Optional NodePort for failover Service|
 |gatewayProxies.gatewayProxy.failover.secretName|string|failover-downstream|(Enterprise Only): Secret containing downstream Ssl Secrets Default is failover-downstream|
+|gatewayProxies.gatewayProxy.disabled|bool|false|Skips creation of this gateway proxy. Used to turn off gateway proxies created by preceding configurations|
 |ingress.enabled|bool|false||
 |ingress.deployment.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |ingress.deployment.image.repository|string|ingress|image name (repository) for the container.|
@@ -382,6 +447,7 @@
 |ingress.deployment.image.pullSecret|string||image pull policy for the container |
 |ingress.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |ingress.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
+|ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the ingress pod.|
 |ingress.deployment.replicas|int|1|number of instances to deploy|
 |ingress.deployment.customEnv[].name|string|||
 |ingress.deployment.customEnv[].value|string|||
@@ -419,6 +485,7 @@
 |ingressProxy.deployment.extraAnnotations.NAME|string|||
 |ingressProxy.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |ingressProxy.deployment.runAsUser|float64||Explicitly set the user ID for the pod to run as. Default is 10101|
+|ingressProxy.deployment.extraIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the ingress proxy pod.|
 |ingressProxy.deployment.replicas|int|1|number of instances to deploy|
 |ingressProxy.deployment.customEnv[].name|string|||
 |ingressProxy.deployment.customEnv[].value|string|||
@@ -461,6 +528,7 @@
 |accessLogger.stats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
+|accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo access logger pod.|
 |accessLogger.replicas|int|1|number of instances to deploy|
 |accessLogger.customEnv[].name|string|||
 |accessLogger.customEnv[].value|string|||

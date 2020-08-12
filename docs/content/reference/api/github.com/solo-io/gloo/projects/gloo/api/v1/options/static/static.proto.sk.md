@@ -13,6 +13,7 @@ weight: 5
 
 - [UpstreamSpec](#upstreamspec)
 - [Host](#host)
+- [HealthCheckConfig](#healthcheckconfig)
   
 
 
@@ -57,6 +58,7 @@ Represents a single instance of an upstream
 ```yaml
 "addr": string
 "port": int
+"healthCheckConfig": .static.options.gloo.solo.io.Host.HealthCheckConfig
 
 ```
 
@@ -64,6 +66,24 @@ Represents a single instance of an upstream
 | ----- | ---- | ----------- |----------- | 
 | `addr` | `string` | Address (hostname or IP). |  |
 | `port` | `int` | Port the instance is listening on. |  |
+| `healthCheckConfig` | [.static.options.gloo.solo.io.Host.HealthCheckConfig](../static.proto.sk/#healthcheckconfig) | (Enterprise Only): Host specific health checking configuration. |  |
+
+
+
+
+---
+### HealthCheckConfig
+
+
+
+```yaml
+"path": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `path` | `string` | (Enterprise Only): Path to use when health checking this specific host. |  |
 
 
 

@@ -284,6 +284,35 @@ data:
 {{- end}} # if $spec.tracing.cluster
 {{- end}} # if $spec.tracing
 
+{{- if $.Values.settings.aws.enableServiceAccountCredentials }}
+      - name: aws_sts_cluster
+        connect_timeout: 5.000s
+        type: LOGICAL_DNS
+        lb_policy: ROUND_ROBIN
+        transport_socket:
+          name: envoy.transport_sockets.tls
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+{{- if ne $.Values.settings.aws.stsCredentialsRegion ""}}
+            sni: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+{{- else }}
+            sni: sts.amazonaws.com
+{{- end }}
+        load_assignment:
+          cluster_name: aws_sts_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    port_value: 443
+{{- if ne $.Values.settings.aws.stsCredentialsRegion ""}}
+                    address: sts.{{ $.Values.settings.aws.stsCredentialsRegion }}.amazonaws.com
+{{- else }}
+                    address: sts.amazonaws.com
+{{- end }}
+{{- end}} # if $.Values.settings.aws.enableServiceAccountCredentials
+
 {{- if or $statsConfig.enabled ($spec.readConfig) }}
       - name: admin_port_cluster
         connect_timeout: 5.000s

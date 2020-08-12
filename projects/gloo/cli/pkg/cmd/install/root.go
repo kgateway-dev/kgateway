@@ -72,7 +72,6 @@ func UninstallGlooFedCmd(opts *options.Options, optionsFunc ...cliutils.OptionsF
 		},
 	}
 
-	cmd.ResetFlags()
 	flagutils.AddGlooFedUninstallFlags(cmd.PersistentFlags(), &opts.Uninstall.FedUninstall)
 	return cmd
 }

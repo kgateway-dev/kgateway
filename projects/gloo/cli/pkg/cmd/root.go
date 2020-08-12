@@ -2,10 +2,16 @@ package cmd
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/dashboard"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/demo"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
+	"k8s.io/kubernetes/pkg/kubectl/cmd"
 
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/add"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/check"
@@ -53,6 +59,21 @@ func App(opts *options.Options, preRunFuncs []PreRunFunc, optionsFunc ...cliutil
 	// Complete additional passed in setup
 	cliutils.ApplyOptions(app, optionsFunc)
 
+	// Handle glooctl plugins
+	args := os.Args
+	if len(args) > 1 {
+		cmdPathPieces := args[1:]
+		pluginHandler := cmd.NewDefaultPluginHandler(constants.ValidExtensionPrefixes)
+
+		// If the given subcommand does not exist, look for a suitable plugin executable
+		if _, _, err := app.Find(cmdPathPieces); err != nil {
+			if err := cmd.HandlePluginCommand(pluginHandler, cmdPathPieces); err != nil {
+				fmt.Printf("%v\n", err)
+				os.Exit(1)
+			}
+		}
+	}
+
 	return app
 }
 
@@ -74,6 +95,7 @@ func GlooCli() *cobra.Command {
 			get.RootCmd(opts),
 			del.RootCmd(opts),
 			install.InstallCmd(opts),
+			demo.RootCmd(opts),
 			install.UninstallCmd(opts),
 			add.RootCmd(opts),
 			remove.RootCmd(opts),
@@ -87,6 +109,7 @@ func GlooCli() *cobra.Command {
 			versioncmd.RootCmd(opts),
 			dashboard.RootCmd(opts),
 			federation.RootCmd(opts),
+			plugin.RootCmd(opts),
 			completionCmd(),
 		)
 	}

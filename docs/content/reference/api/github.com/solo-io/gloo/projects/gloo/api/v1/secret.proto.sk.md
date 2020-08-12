@@ -119,6 +119,7 @@ metadata:
 ```yaml
 "accessKey": string
 "secretKey": string
+"sessionToken": string
 
 ```
 
@@ -126,6 +127,7 @@ metadata:
 | ----- | ---- | ----------- |----------- | 
 | `accessKey` | `string` | provided by `glooctl create secret aws`. |  |
 | `secretKey` | `string` | provided by `glooctl create secret aws`. |  |
+| `sessionToken` | `string` | provided by `glooctl create secret aws`. |  |
 
 
 

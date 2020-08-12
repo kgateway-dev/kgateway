@@ -36,8 +36,9 @@ var _ = Describe("Secret Interactive Mode", func() {
 	Context("AWS", func() {
 		It("should work", func() {
 			var (
-				accessKey = "foo"
-				secretKey = "foo"
+				accessKey    = "foo"
+				secretKey    = "bar"
+				sessionToken = "baz"
 			)
 			testutil.ExpectInteractive(func(c *testutil.Console) {
 				c.ExpectString(surveyutils.PromptInteractiveNamespace)
@@ -48,6 +49,8 @@ var _ = Describe("Secret Interactive Mode", func() {
 				c.SendLine(accessKey)
 				c.ExpectString(awsPromptSecretKey)
 				c.SendLine(secretKey)
+				c.ExpectString(awsPromptSessionToken)
+				c.SendLine(sessionToken)
 				c.ExpectEOF()
 			}, func() {
 				awsSecretOpts := options.Secret{

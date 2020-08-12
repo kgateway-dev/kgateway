@@ -36,6 +36,7 @@ incurred by the filter chain in a histogram.
 "response": .envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement
 "chargeClusterStat": .google.protobuf.BoolValue
 "chargeListenerStat": .google.protobuf.BoolValue
+"emitDynamicMetadata": .google.protobuf.BoolValue
 
 ```
 
@@ -46,6 +47,7 @@ incurred by the filter chain in a histogram.
 | `response` | [.envoy.config.filter.http.proxylatency.v2.ProxyLatency.Measurement](../proxylatency.proto.sk/#measurement) | How measure the response. |  |
 | `chargeClusterStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per upstream cluster. If not specified, defaults to true. |  |
 | `chargeListenerStat` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Charge a stat per listener. If not specified, defaults to true. |  |
+| `emitDynamicMetadata` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | Should we emit request timing to dynamic metadata. defaults to true. |  |
 
 
 
