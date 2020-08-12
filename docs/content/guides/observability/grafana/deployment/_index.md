@@ -17,7 +17,8 @@ No special configuration is needed to use the instance of Grafana that ships by 
 ~ > kubectl -n gloo-system get deployment glooe-grafana
 NAME            READY   UP-TO-DATE   AVAILABLE   AGE
 glooe-grafana   1/1     1            1           34h
-~ > kubectl port-forward deployment/glooe-grafana 3000
+
+~ > kubectl -n gloo-system port-forward deployment/glooe-grafana 3000
 Forwarding from 127.0.0.1:3000 -> 3000
 Forwarding from [::1]:3000 -> 3000
 
@@ -28,10 +29,10 @@ Grafana can now be viewed at `localhost:3000`.
 #### Credentials
 The admin user/password combo that the default installation of Grafana starts up with is controlled by the helm values `grafana.adminUser` and `grafana.adminPassword`, which are set to `admin/admin` by default.
 
-These are read into the `observability` pod's env from the secret `glooe-observability-secrets`.
+These are read into the `observability` pod's env from the secret `gloo-observability-secrets`.
 
 ```bash
-~ > kubectl -n gloo-system get secret glooe-observability-secrets -o yaml
+~ > kubectl -n gloo-system get secret gloo-observability-secrets -o yaml
 apiVersion: v1
 data:
   # by default, these are both the base64 encoded string "admin"
