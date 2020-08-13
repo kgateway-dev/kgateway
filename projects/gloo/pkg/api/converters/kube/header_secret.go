@@ -2,7 +2,11 @@ package kubeconverters
 
 import (
 	"context"
+
 	skcore "github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
+	"github.com/solo-io/go-utils/contextutils"
+	"go.uber.org/zap"
 
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
@@ -16,14 +20,26 @@ type HeaderSecretConverter struct{}
 var _ kubesecret.SecretConverter = &HeaderSecretConverter{}
 
 const (
-	HeaderName = "header-name"
-	Value      = "value"
+	HeaderSecretType = "gloo.solo.io/header"
+	HeaderName       = "header-name"
+	Value            = "value"
 )
 
-func (t *HeaderSecretConverter) FromKubeSecret(_ context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
-	headerName, hasHeaderName := secret.Data[HeaderName]
-	value, hasValue := secret.Data[Value]
-	if hasHeaderName && hasValue {
+func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
+	if secret == nil {
+		contextutils.LoggerFrom(ctx).Warn("unexpected nil secret")
+		return nil, nil
+	}
+
+	if secret.Type == HeaderSecretType {
+		headerName, hasHeaderName := secret.Data[HeaderName]
+		value, hasValue := secret.Data[Value]
+		if !hasHeaderName || !hasValue {
+			contextutils.LoggerFrom(ctx).Warnw("skipping header secret with missing header-name or value field",
+				zap.String("name", secret.Name), zap.String("namespace", secret.Namespace))
+			return nil, nil
+		}
+
 		skSecret := &v1.Secret{
 			Metadata: skcore.Metadata{
 				Name:        secret.Name,
@@ -60,7 +76,7 @@ func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Re
 
 	kubeSecret := &kubev1.Secret{
 		ObjectMeta: kubeMeta,
-		Type:       kubev1.SecretTypeOpaque,
+		Type:       HeaderSecretType,
 		Data: map[string][]byte{
 			HeaderName: []byte(headerGlooSecret.Header.HeaderName),
 			Value:      []byte(headerGlooSecret.Header.Value),

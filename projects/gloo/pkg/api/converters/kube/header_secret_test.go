@@ -11,7 +11,6 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/kubesecret"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 	corev1 "k8s.io/api/core/v1"
-	kubev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 )
@@ -31,13 +30,13 @@ var _ = Describe("Header Secret Converter", func() {
 
 		glooSecret = &v1.Secret{
 			Metadata: core.Metadata{
-				Name:            "foo",
-				Namespace:       "bar",
+				Name:      "foo",
+				Namespace: "bar",
 			},
 			Kind: &v1.Secret_Header{
 				Header: &v1.HeaderSecret{
 					HeaderName: "bat",
-					Value: "baz",
+					Value:      "baz",
 				},
 			},
 		}
@@ -75,9 +74,9 @@ var _ = Describe("Header Secret Converter", func() {
 				},
 				Data: map[string][]byte{
 					kubeconverters.HeaderName: []byte("bat"),
-					kubeconverters.Value: []byte("baz"),
+					kubeconverters.Value:      []byte("baz"),
 				},
-				Type: kubev1.SecretTypeOpaque,
+				Type: kubeconverters.HeaderSecretType,
 			}
 			actual, err := converter.FromKubeSecret(ctx, resourceClient, secret)
 			Expect(err).NotTo(HaveOccurred())
@@ -111,9 +110,9 @@ var _ = Describe("Header Secret Converter", func() {
 				},
 				Data: map[string][]byte{
 					kubeconverters.HeaderName: []byte("bat"),
-					kubeconverters.Value: []byte("baz"),
+					kubeconverters.Value:      []byte("baz"),
 				},
-				Type: kubev1.SecretTypeOpaque,
+				Type: kubeconverters.HeaderSecretType,
 			}
 
 			actual, err := converter.ToKubeSecret(ctx, resourceClient, glooSecret)
