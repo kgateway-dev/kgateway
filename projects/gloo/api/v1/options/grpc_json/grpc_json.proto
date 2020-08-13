@@ -64,6 +64,7 @@ message GrpcJsonTranscoder {
         // Supplies the binary content of
         // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
         // services.
+        // Note: this must be a base64 standard encoded string; yaml can't handle binary bytes
         string proto_descriptor_bin = 4;
     }
 
