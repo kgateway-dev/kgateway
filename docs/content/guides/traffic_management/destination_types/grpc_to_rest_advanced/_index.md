@@ -1,8 +1,14 @@
 ---
-title: gRPC to REST Raw
+title: gRPC to REST Advanced
 weight: 135
-description: Routing gRPC services to a REST API using raw Envoy config
+description: Routing gRPC services to a REST API using provided descriptors
 ---
+
+If you want more control with the granularity of the mapping from gRPC to REST, then you may want to use the underlying
+envoy configuration exposed in Gloo on the `Gateway` and `VirtualService`, rather than the simplified model as described
+[here]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}})
+
+## Deploy the demo gRPC bookstore
 
 ```yaml
 apiVersion: apps/v1
@@ -43,6 +49,8 @@ spec:
     app: bookstore
 ```
 
+## Configure the gateway with a gRPC to JSON Transcoder
+
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: Gateway
@@ -67,7 +75,8 @@ spec:
   useProxyProto: false
 ```
 
-bookstore
+## Create a route to the gRPC upstream
+
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
@@ -90,6 +99,8 @@ spec:
            name: default-bookstore-8080
            namespace: gloo-system
 ```
+
+## Test
 
 Let's get the current shelves (there should be none):
 ```shell script

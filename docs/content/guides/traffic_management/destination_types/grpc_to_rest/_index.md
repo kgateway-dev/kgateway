@@ -12,7 +12,7 @@ A growing trend is to use gRPC internally as the communication protocol between 
 1. HTTP based which plays well with existing firewalls and load balancers
 1. Well supported with tooling around observability
 
-While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON\REST style API. This can happen for many reasons. among which are:
+While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON/REST style API. This can happen for many reasons. among which are:
 
 1. Keeping the API backwards compatible
 1. Making the API more Web friendly
@@ -20,8 +20,10 @@ While gRPC works great for internal micro-services, it may be desirable to have 
 
 Gloo allows you to define JSON/REST to your gRPC API so you can have the best of both worlds - outwards facing REST API and an internal gRPC API with no extra code.
 
-With Gloo, there is no need to annotate your proto definitions with the `google.api.http` options. A simple gRPC proto will work.
+With Gloo, there are two ways to leverage gRPC to JSON functionality. In this guide, we show you how there is no need to annotate your proto definitions with the `google.api.http` options (as described [here](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule)). A simple gRPC proto will work.
 
+For more advanced use cases where you will want more control over the mapping of your service from gRPC to REST, take a look at the [advanced gRPC to REST guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest_advanced" %}})
+ 
 ---
 
 ## Overview
@@ -94,7 +96,6 @@ spec:
 status:
   reported_by: gloo
   state: 1
-
 ```
 
 {{% notice note %}}
