@@ -34,7 +34,7 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			return nil, nil
 		}
 
-		headers := make(map[string]string, 0)
+		headers := make(map[string]string)
 		for name, byteValue := range secret.Data {
 			headers[name] = string(byteValue)
 		}
