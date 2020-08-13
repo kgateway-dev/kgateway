@@ -78,9 +78,6 @@ var _ = Describe("SDS Server E2E Test", func() {
 			}
 		}()
 
-		// Give it a second to spin up + read the files
-		time.Sleep(1 * time.Second)
-
 		// Connect with the server
 		var conn *grpc.ClientConn
 		conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
@@ -88,8 +85,11 @@ var _ = Describe("SDS Server E2E Test", func() {
 		defer conn.Close()
 		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
-		_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
-		Expect(err).To(BeNil())
+		// Check that we get a good response
+		Eventually(func() bool {
+			_, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			return err != nil
+		}, "5s", "1s").Should(BeTrue())
 
 		// Cancel the context in order to stop the gRPC server
 		cancel()
@@ -122,13 +122,18 @@ var _ = Describe("SDS Server E2E Test", func() {
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("6730780456972595554"))
-		resp, err := client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
-		Expect(err).To(BeNil())
+
+		var resp *envoy_api_v2.DiscoveryResponse
+
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
-			Expect(err).To(BeNil())
-			return resp.VersionInfo == snapshotVersion
+			return err == nil
 		}, "5s", "1s").Should(BeTrue())
+
+		Eventually(func() bool {
+			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
+			return resp.VersionInfo == snapshotVersion
+		}, "10s", "1s").Should(BeTrue())
 
 		// Cert rotation #1
 		err = os.Remove(keyName)
@@ -147,7 +152,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "5s", "1s").Should(BeTrue())
+		}, "10s", "1s").Should(BeTrue())
 
 		// Cert rotation #2
 		err = os.Remove(keyName)
@@ -167,7 +172,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "5s", "1s").Should(BeTrue())
+		}, "10s", "1s").Should(BeTrue())
 	})
 })
 

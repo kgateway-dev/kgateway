@@ -133,6 +133,12 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 	return fmt.Sprintf("%d", hash), err
 }
 
+// GetSnapshotCache is a utility method to expose
+// the snapshot cache for test assertions
+func GetSnapshotCache(srv Server) cache.SnapshotCache {
+	return srv.snapshotCache
+}
+
 // readAndVerifyCert will read the file from the given
 // path, then check for validity every 100ms for 2 seconds.
 // This is needed because the filesystem watcher
