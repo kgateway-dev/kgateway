@@ -1,0 +1,5 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3492
+      description: >
+        Support a flag "-x" for excluding certain checks with glooctl.

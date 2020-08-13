@@ -43,6 +43,11 @@ spec:
         {{- if not $isUpgrade }}
         gateway-proxy: live
         {{- end }}
+        {{- if $spec.podTemplate.extraGatewayProxyLabels }}
+        {{- range $key, $value := $spec.podTemplate.extraGatewayProxyLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
 {{ $annotationExist := false}}
 {{- if $spec.podTemplate.extraAnnotations }}
 {{ $annotationExist = true}}

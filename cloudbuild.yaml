@@ -35,7 +35,7 @@ steps:
 # Run all the tests with ginkgo -r -failFast -trace -progress --noColor
 # This requires setting up envoy, AWS, helm, and docker
 # The e2e-go-mod-ginkgo container provides everything else needed for running tests
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   entrypoint: 'bash'
   args:
   - '-c'
@@ -100,7 +100,7 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'docker-login'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   args: ['docker']
   env:
     - 'TAGGED_VERSION=$TAG_NAME'
@@ -111,7 +111,7 @@ steps:
   id: 'compile'
 
   # 1) Run make targets to push docker images
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'
+- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
   args: ['docker-push']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'

@@ -3,6 +3,7 @@ package static
 import (
 	"net"
 
+	pbgostruct "github.com/golang/protobuf/ptypes/struct"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -15,8 +16,14 @@ import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	v1static "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/static"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/solo-kit/pkg/errors"
+)
+
+const (
+	HttpPathCheckerName = "io.solo.health_checkers.http_path"
+	PathFieldName       = "path"
 )
 
 type plugin struct{}
@@ -83,6 +90,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
 			&envoyendpoint.LbEndpoint{
+				Metadata: getMetadata(host),
 				HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 					Endpoint: &envoyendpoint.Endpoint{
 						Hostname: host.Addr,
@@ -132,5 +140,27 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 		out.DnsLookupFamily = envoyapi.Cluster_V4_ONLY
 	}
 
+	return nil
+}
+
+func getMetadata(in *v1static.Host) *envoycore.Metadata {
+	if in == nil {
+		return nil
+	}
+	if in.GetHealthCheckConfig().GetPath() != "" {
+		return &envoycore.Metadata{
+			FilterMetadata: map[string]*pbgostruct.Struct{
+				HttpPathCheckerName: {
+					Fields: map[string]*pbgostruct.Value{
+						PathFieldName: {
+							Kind: &pbgostruct.Value_StringValue{
+								StringValue: in.GetHealthCheckConfig().GetPath(),
+							},
+						},
+					},
+				},
+			},
+		}
+	}
 	return nil
 }

@@ -8,9 +8,10 @@ import (
 )
 
 type Secret struct {
-	TlsSecret   TlsSecret
-	AwsSecret   AwsSecret
-	AzureSecret AzureSecret
+	TlsSecret    TlsSecret
+	AwsSecret    AwsSecret
+	AzureSecret  AzureSecret
+	HeaderSecret HeaderSecret
 }
 
 type AwsSecret struct {
@@ -21,6 +22,10 @@ type AwsSecret struct {
 
 type AzureSecret struct {
 	ApiKeys InputMapStringString
+}
+
+type HeaderSecret struct {
+	Headers InputMapStringString
 }
 
 type TlsSecret struct {

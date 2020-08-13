@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: API for customizing the path of a static host in health checks
+    issueLink: https://github.com/solo-io/gloo/issues/2821
+    resolvesIssue: false

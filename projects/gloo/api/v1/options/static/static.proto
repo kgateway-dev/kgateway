@@ -34,4 +34,12 @@ message Host {
     string addr = 1;
     // Port the instance is listening on
     uint32 port = 2;
+
+    message HealthCheckConfig {
+        // (Enterprise Only): Path to use when health checking this specific host.
+        string path = 1;
+    }
+
+    // (Enterprise Only): Host specific health checking configuration.
+    HealthCheckConfig health_check_config = 3;
 }

@@ -34,6 +34,7 @@ type Options struct {
 type Top struct {
 	Interactive            bool
 	File                   string
+	CheckName              []string
 	Output                 printTypes.OutputType
 	Ctx                    context.Context
 	Verbose                bool   // currently only used by install and uninstall, sends kubectl command output to terminal
