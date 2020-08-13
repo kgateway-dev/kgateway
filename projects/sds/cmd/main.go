@@ -38,7 +38,18 @@ type Config struct {
 }
 
 func main() {
+	ctx := contextutils.WithLogger(context.Background(), "sds_server")
+	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
+
+	contextutils.LoggerFrom(ctx).Info("initializing config")
+
 	var c = setup()
+
+	contextutils.LoggerFrom(ctx).Infow(
+		"config loaded",
+		zap.Bool("glooCertRotationEnabled", c.GlooRotationEnabled),
+		zap.Bool("istioCertRotationEnabled", c.IstioRotationEnabled),
+	)
 
 	secrets := []server.Secret{}
 	if c.IstioRotationEnabled {
@@ -63,8 +74,7 @@ func main() {
 		secrets = append(secrets, glooMtlsSecret)
 	}
 
-	ctx := contextutils.WithLogger(context.Background(), "sds_server")
-	ctx = contextutils.WithLoggerValues(ctx, "version", version.Version)
+	contextutils.LoggerFrom(ctx).Info("checking for existence of secrets")
 
 	for _, s := range secrets {
 		// Check to see if files exist first to avoid crashloops
@@ -72,11 +82,8 @@ func main() {
 			contextutils.LoggerFrom(ctx).Fatal(err)
 		}
 	}
-	contextutils.LoggerFrom(ctx).Infow(
-		"starting up",
-		zap.Bool("glooCertRotationEnabled", c.GlooRotationEnabled),
-		zap.Bool("istioCertRotationEnabled", c.IstioRotationEnabled),
-	)
+
+	contextutils.LoggerFrom(ctx).Info("secrets confirmed present, proceeding to start SDS server")
 
 	if err := run.Run(ctx, secrets, c.SdsClient, c.SdsServerAddress); err != nil {
 		contextutils.LoggerFrom(ctx).Fatal(err)
