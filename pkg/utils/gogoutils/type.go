@@ -47,23 +47,31 @@ func ToEnvoyInt64Range(int64Range *envoytype_gloo.Int64Range) *envoytype.Int64Ra
 }
 
 func ToEnvoyHeaderValueOptionList(option []*envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoycore.HeaderValueOption, error) {
-	result := make([]*envoycore.HeaderValueOption, len(option))
+	result := make([]*envoycore.HeaderValueOption, 0)
 	var err error
-	for i, v := range option {
-		result[i], err = ToEnvoyHeaderValueOption(v, secrets)
+	var opts []*envoycore.HeaderValueOption
+	for _, v := range option {
+		opts, err = ToEnvoyHeaderValueOptions(v, secrets)
 		if err != nil {
 			return nil, err
 		}
+		result = append(result, opts...)
 	}
 	return result, nil
 }
 
-func ToEnvoyHeaderValueOption(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) (*envoycore.HeaderValueOption, error) {
-	var key, value string
+func ToEnvoyHeaderValueOptions(option *envoycore_sk.HeaderValueOption, secrets *v1.SecretList) ([]*envoycore.HeaderValueOption, error) {
 	switch typedOption := option.HeaderOption.(type) {
 	case *envoycore_sk.HeaderValueOption_Header:
-		key = typedOption.Header.GetKey()
-		value = typedOption.Header.GetValue()
+		return []*envoycore.HeaderValueOption{
+			{
+				Header: &envoycore.HeaderValue{
+					Key:   typedOption.Header.GetKey(),
+					Value: typedOption.Header.GetValue(),
+				},
+				Append: BoolGogoToProto(option.GetAppend()),
+			},
+		}, nil
 	case *envoycore_sk.HeaderValueOption_HeaderSecretRef:
 		secret, err := secrets.Find(typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
 		if err != nil {
@@ -75,17 +83,20 @@ func ToEnvoyHeaderValueOption(option *envoycore_sk.HeaderValueOption, secrets *v
 			return nil, errors.Errorf("Secret %v.%v was not a Header secret", typedOption.HeaderSecretRef.GetNamespace(), typedOption.HeaderSecretRef.GetName())
 		}
 
-		key = headerSecrets.Header.GetHeaderName()
-		value = headerSecrets.Header.GetValue()
+		result := make([]*envoycore.HeaderValueOption, 0)
+		for key, value := range headerSecrets.Header.GetHeaders() {
+			result = append(result, &envoycore.HeaderValueOption{
+				Header: &envoycore.HeaderValue{
+					Key:   key,
+					Value: value,
+				},
+				Append: BoolGogoToProto(option.GetAppend()),
+			})
+		}
+		return result, nil
+	default:
+		return nil, errors.Errorf("Unexpected header option type %v", typedOption)
 	}
-
-	return &envoycore.HeaderValueOption{
-		Header: &envoycore.HeaderValue{
-			Key:   key,
-			Value: value,
-		},
-		Append: BoolGogoToProto(option.GetAppend()),
-	}, nil
 }
 
 func ToGlooHeaderValueOptionList(option []*envoycore.HeaderValueOption) []*envoycore_sk.HeaderValueOption {

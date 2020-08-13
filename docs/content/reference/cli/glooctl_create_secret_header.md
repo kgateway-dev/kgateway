@@ -8,7 +8,7 @@ Create a header secret with the given name
 
 ### Synopsis
 
-Create a header secret with the given name. The format of the secret data is: `{"header-name" : [header-name string] , "value" : [header-value string]}`
+Create a header secret with the given name. The format of the secret data is: `{"headers" : [name=value,...]}`
 
 ```
 glooctl create secret header [flags]
@@ -17,9 +17,8 @@ glooctl create secret header [flags]
 ### Options
 
 ```
-      --header-name string   header name
-  -h, --help                 help for header
-      --value string         header value
+      --headers strings   comma-separated list of header name=value entries
+  -h, --help              help for header
 ```
 
 ### Options inherited from parent commands

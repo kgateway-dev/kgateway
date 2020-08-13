@@ -19,11 +19,7 @@ type HeaderSecretConverter struct{}
 
 var _ kubesecret.SecretConverter = &HeaderSecretConverter{}
 
-const (
-	HeaderSecretType = "gloo.solo.io/header"
-	HeaderName       = "header-name"
-	Value            = "value"
-)
+const HeaderSecretType = "gloo.solo.io/header"
 
 func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecret.ResourceClient, secret *kubev1.Secret) (resources.Resource, error) {
 	if secret == nil {
@@ -32,12 +28,15 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 	}
 
 	if secret.Type == HeaderSecretType {
-		headerName, hasHeaderName := secret.Data[HeaderName]
-		value, hasValue := secret.Data[Value]
-		if !hasHeaderName || !hasValue {
-			contextutils.LoggerFrom(ctx).Warnw("skipping header secret with missing header-name or value field",
+		if len(secret.Data) == 0 {
+			contextutils.LoggerFrom(ctx).Warnw("skipping header secret with no headers",
 				zap.String("name", secret.Name), zap.String("namespace", secret.Namespace))
 			return nil, nil
+		}
+
+		headers := make(map[string]string, 0)
+		for name, byteValue := range secret.Data {
+			headers[name] = string(byteValue)
 		}
 
 		skSecret := &v1.Secret{
@@ -50,8 +49,7 @@ func (t *HeaderSecretConverter) FromKubeSecret(ctx context.Context, _ *kubesecre
 			},
 			Kind: &v1.Secret_Header{
 				Header: &v1.HeaderSecret{
-					HeaderName: string(headerName),
-					Value:      string(value),
+					Headers: headers,
 				},
 			},
 		}
@@ -77,10 +75,7 @@ func (t *HeaderSecretConverter) ToKubeSecret(_ context.Context, _ *kubesecret.Re
 	kubeSecret := &kubev1.Secret{
 		ObjectMeta: kubeMeta,
 		Type:       HeaderSecretType,
-		Data: map[string][]byte{
-			HeaderName: []byte(headerGlooSecret.Header.HeaderName),
-			Value:      []byte(headerGlooSecret.Header.Value),
-		},
+		StringData: headerGlooSecret.Header.GetHeaders(),
 	}
 
 	return kubeSecret, nil

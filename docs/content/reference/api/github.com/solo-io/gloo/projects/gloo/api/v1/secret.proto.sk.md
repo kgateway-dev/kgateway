@@ -181,15 +181,13 @@ Glooctl adds it by default when the tls secret is created via `glooctl create se
 
 
 ```yaml
-"headerName": string
-"value": string
+"headers": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headerName` | `string` | provided by `glooctl create secret header`. |  |
-| `value` | `string` | provided by `glooctl create secret header`. |  |
+| `headers` | `map<string, string>` | provided by `glooctl create secret header`. |  |
 
 
 

@@ -23,7 +23,7 @@ func headerCmd(opts *options.Options) *cobra.Command {
 		Use:   "header",
 		Short: `Create a header secret with the given name`,
 		Long: "Create a header secret with the given name. The format of the secret data is: " +
-			"`{\"header-name\" : [header-name string] , \"value\" : [header-value string]}`",
+			"`{\"headers\" : [name=value,...]}`",
 		RunE: func(c *cobra.Command, args []string) error {
 			if err := argsutils.MetadataArgsParse(opts, args); err != nil {
 				return err
@@ -43,22 +43,15 @@ func headerCmd(opts *options.Options) *cobra.Command {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&input.HeaderName, "header-name", "", "header name")
-	flags.StringVar(&input.Value, "value", "", "header value")
+	flags.StringSliceVar(&input.Headers.Entries, "headers", []string{}, "comma-separated list of header name=value entries")
 
 	return cmd
 }
 
-const (
-	headerPromptName  = "Enter header name: "
-	headerPromptValue = "Enter header value: "
-)
+const headersPrompt = "Enter header entry (name=value): "
 
 func HeaderSecretArgsInteractive(input *options.HeaderSecret) error {
-	if err := cliutil.GetStringInput(headerPromptName, &input.HeaderName); err != nil {
-		return err
-	}
-	if err := cliutil.GetStringInput(headerPromptValue, &input.Value); err != nil {
+	if err := cliutil.GetStringSliceInput(headersPrompt, &input.Headers.Entries); err != nil {
 		return err
 	}
 
@@ -66,15 +59,14 @@ func HeaderSecretArgsInteractive(input *options.HeaderSecret) error {
 }
 
 func createHeaderSecret(ctx context.Context, meta core.Metadata, input options.HeaderSecret, dryRun bool, outputType printers.OutputType) error {
-	if input.HeaderName == "" {
-		return errors.Errorf("must provide header name")
+	if input.Headers.Entries == nil {
+		return errors.Errorf("must provide headers")
 	}
 	secret := &gloov1.Secret{
 		Metadata: meta,
 		Kind: &gloov1.Secret_Header{
 			Header: &gloov1.HeaderSecret{
-				HeaderName: input.HeaderName,
-				Value:      input.Value,
+				Headers: input.Headers.MustMap(),
 			},
 		},
 	}

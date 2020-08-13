@@ -35,8 +35,9 @@ var _ = Describe("Header Secret Converter", func() {
 			},
 			Kind: &v1.Secret_Header{
 				Header: &v1.HeaderSecret{
-					HeaderName: "bat",
-					Value:      "baz",
+					Headers: map[string]string{
+						"bat": "baz",
+					},
 				},
 			},
 		}
@@ -73,8 +74,7 @@ var _ = Describe("Header Secret Converter", func() {
 					Namespace: "bar",
 				},
 				Data: map[string][]byte{
-					kubeconverters.HeaderName: []byte("bat"),
-					kubeconverters.Value:      []byte("baz"),
+					"bat": []byte("baz"),
 				},
 				Type: kubeconverters.HeaderSecretType,
 			}
@@ -108,9 +108,8 @@ var _ = Describe("Header Secret Converter", func() {
 					Namespace:       "bar",
 					OwnerReferences: []metav1.OwnerReference{},
 				},
-				Data: map[string][]byte{
-					kubeconverters.HeaderName: []byte("bat"),
-					kubeconverters.Value:      []byte("baz"),
+				StringData: map[string]string{
+					"bat": "baz",
 				},
 				Type: kubeconverters.HeaderSecretType,
 			}
