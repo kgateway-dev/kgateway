@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
@@ -120,17 +119,14 @@ func checkFilesExist(filePaths []string) error {
 	return nil
 }
 
-// fileExists checks to see if a file exists,
-// retrying for up to 10 seconds.
+// fileExists checks to see if a file exists
 func fileExists(filePath string) bool {
 	err := retry.Do(
 		func() error {
 			_, err := os.Stat(filePath)
 			return err
 		},
-		// Retry for up to 10s
-		retry.Delay(400*time.Millisecond),
-		retry.Attempts(25),
+		retry.Attempts(8), // Exponential backoff over ~13s
 	)
 	if err != nil {
 		return false

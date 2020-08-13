@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/pem"
 	"fmt"
 	"hash/fnv"
 	"io/ioutil"
@@ -133,28 +134,48 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 }
 
 // readAndVerifyCert will read the file from the given
-// path, then check every 100ms until the file length stops
-// changing. This is needed because the filesystem watcher
+// path, then check for validity every 100ms for 2 seconds.
+// This is needed because the filesystem watcher
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
 func readAndVerifyCert(certFilePath string) ([]byte, error) {
 	var err error
-	firstRead, err := ioutil.ReadFile(certFilePath)
-	if err != nil {
-		return nil, err
-	}
-	time.Sleep(time.Millisecond * 100)
-	secondRead, err := ioutil.ReadFile(certFilePath)
-	if err != nil {
-		return nil, err
+	var fileBytes []byte
+
+	var validCerts bool
+	// Check for up to 2 seconds, as a write may be in progress
+	for i := 0; !validCerts && i < 20; i++ {
+		fileBytes, err = ioutil.ReadFile(certFilePath)
+		if err != nil {
+			return nil, err
+		}
+		validCerts = checkCert(fileBytes)
+		if !validCerts {
+			time.Sleep(time.Millisecond * 100)
+		}
 	}
 
-	if len(firstRead) != len(secondRead) {
-		// The file is still being written to,
-		// try again.
-		return readAndVerifyCert(certFilePath)
+	if !validCerts {
+		return nil, fmt.Errorf("failed to validate file %v", certFilePath)
 	}
-	return secondRead, nil
+
+	return fileBytes, nil
+}
+
+// checkCert verifies that the given bytes are not malformed,
+// as could be caused by a write-in-progress.
+func checkCert(certs []byte) bool {
+	block, rest := pem.Decode(certs)
+	if block == nil {
+		// Remainder does not contain any certs/keys
+		return false
+	}
+	// Found a cert, check the rest
+	if len(rest) > 0 {
+		// Something after the cert, validate that too
+		return checkCert(rest)
+	}
+	return true
 }
 
 func serverCertSecret(privateKey, certChain []byte, serverCert string) cache_types.Resource {
