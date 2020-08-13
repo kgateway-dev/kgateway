@@ -31,7 +31,7 @@ weight: 5
 
 ```yaml
 "protoDescriptor": string
-"protoDescriptorBin": bytes
+"protoDescriptorBin": string
 "services": []string
 "printOptions": .grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.PrintOptions
 "matchIncomingRequestRoute": bool
@@ -45,7 +45,7 @@ weight: 5
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `protoDescriptor` | `string` | Supplies the filename of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptor` or `protoDescriptorBin` can be set. |  |
-| `protoDescriptorBin` | `bytes` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |  |
+| `protoDescriptorBin` | `string` | Supplies the binary content of :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC services. Only one of `protoDescriptorBin` or `protoDescriptor` can be set. |  |
 | `services` | `[]string` | A list of strings that supplies the fully qualified service names (i.e. "package_name.service_name") that the transcoder will translate. If the service name doesn't exist in ``proto_descriptor``, Envoy will fail at startup. The ``proto_descriptor`` may contain more services than the service names specified here, but they won't be translated. |  |
 | `printOptions` | [.grpc_json.options.gloo.solo.io.GrpcJsonTranscoder.PrintOptions](../grpc_json.proto.sk/#printoptions) | Control options for response JSON. These options are passed directly to `JsonPrintOptions <https://developers.google.com/protocol-buffers/docs/reference/cpp/ google.protobuf.util.json_util#JsonPrintOptions>`_. |  |
 | `matchIncomingRequestRoute` | `bool` | Whether to keep the incoming request route after the outgoing headers have been transformed to the match the upstream gRPC service. Note: This means that routes for gRPC services that are not transcoded cannot be used in combination with *match_incoming_request_route*. |  |

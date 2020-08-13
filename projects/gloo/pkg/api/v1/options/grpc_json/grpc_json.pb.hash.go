@@ -98,7 +98,7 @@ func (m *GrpcJsonTranscoder) Hash(hasher hash.Hash64) (uint64, error) {
 
 	case *GrpcJsonTranscoder_ProtoDescriptorBin:
 
-		if _, err = hasher.Write(m.GetProtoDescriptorBin()); err != nil {
+		if _, err = hasher.Write([]byte(m.GetProtoDescriptorBin())); err != nil {
 			return 0, err
 		}
 

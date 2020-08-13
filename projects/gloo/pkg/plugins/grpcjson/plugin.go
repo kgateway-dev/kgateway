@@ -3,6 +3,7 @@ package grpcjson
 import (
 	"encoding/base64"
 	"fmt"
+
 	envoy_extensions_filters_http_grpc_json_transcoder_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/grpc_json_transcoder/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/rotisserie/eris"
@@ -34,7 +35,12 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 		return nil, nil
 	}
 
-	grpcJsonFilter, err := plugins.NewStagedFilterWithConfig(wellknown.GRPCJSONTranscoder, translateGlooToEnvoyGrpcJson(grpcJsonConf), pluginStage)
+	envoyGrpcJsonConf, err := translateGlooToEnvoyGrpcJson(grpcJsonConf)
+	if err != nil {
+		return nil, err
+	}
+
+	grpcJsonFilter, err := plugins.NewStagedFilterWithConfig(wellknown.GRPCJSONTranscoder, envoyGrpcJsonConf, pluginStage)
 	if err != nil {
 		return nil, eris.Wrapf(err, "generating filter config")
 	}
@@ -42,7 +48,7 @@ func (p *Plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	return []plugins.StagedHttpFilter{grpcJsonFilter}, nil
 }
 
-func translateGlooToEnvoyGrpcJson(grpcJsonConf *grpc_json.GrpcJsonTranscoder) *envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder {
+func translateGlooToEnvoyGrpcJson(grpcJsonConf *grpc_json.GrpcJsonTranscoder) (*envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder, error) {
 
 	envoyGrpcJsonConf := &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder{
 		DescriptorSet:                nil, // to be filled in later
@@ -61,18 +67,15 @@ func translateGlooToEnvoyGrpcJson(grpcJsonConf *grpc_json.GrpcJsonTranscoder) *e
 	case *grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin:
 
 		// user-supplied yaml must be base-64 encoded, so we decode
-		decoded := make([]byte, base64.StdEncoding.DecodedLen(len(typedDescriptorSet.ProtoDescriptorBin)))
-		_, err := base64.StdEncoding.Decode(decoded, typedDescriptorSet.ProtoDescriptorBin)
+		bytes, err := base64.StdEncoding.DecodeString(typedDescriptorSet.ProtoDescriptorBin)
 		if err != nil {
-			fmt.Println(err)
-			return nil
-			//return nil, err
+			return nil, err
 		}
 
-		envoyGrpcJsonConf.DescriptorSet = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: decoded}
+		envoyGrpcJsonConf.DescriptorSet = &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes}
 	}
 
-	return envoyGrpcJsonConf
+	return envoyGrpcJsonConf, nil
 }
 
 func translateGlooToEnvoyPrintOptions(options *grpc_json.GrpcJsonTranscoder_PrintOptions) *envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_PrintOptions {
