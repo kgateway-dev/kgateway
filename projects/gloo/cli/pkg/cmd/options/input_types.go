@@ -15,8 +15,10 @@ func (m *InputMapStringString) MustMap() map[string]string {
 		return nil
 	}
 	goMap := make(map[string]string)
+
 	for _, val := range m.Entries {
-		parts := strings.Split(val, "=")
+		parts := strings.SplitN(val, "=", 2)
+
 		if len(parts) != 2 {
 			log.Fatalf("'%v': invalid key-value format. must be KEY=VALUE", val)
 		}
