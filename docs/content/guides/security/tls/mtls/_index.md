@@ -203,7 +203,7 @@ An SDS sidecar is also added to the gateway-proxy deployment:
 
 ```yaml
       - name: sds
-        image: "quay.io/solo-io/sds:1.5.0-beta18"
+        image: "quay.io/solo-io/sds:1.5.0-beta19"
         imagePullPolicy: IfNotPresent
         env:
         - name: CR_GLOO_ROTATION_ENABLED

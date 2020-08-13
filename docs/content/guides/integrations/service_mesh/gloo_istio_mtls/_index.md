@@ -13,11 +13,11 @@ This guide was tested with Istio 1.6.6.
 
 ### Gloo versions
 
-This guide was tested with Gloo v1.5.0-beta18.
+This guide was tested with Gloo v1.5.0-beta19.
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.6.x requires Gloo version 1.4.10, or 1.5.0-beta18 or higher.
+The Gloo integration with Istio 1.6.x requires Gloo version 1.4.10, or 1.5.0-beta19 or higher.
 
 {{% /notice %}}
 
@@ -28,6 +28,8 @@ This guide was tested with GKE v1.15.
 
 {{% notice note %}}
 Please note that if you are running Kubernetes > 1.12 in Minikube, you may run into several issues later on when installing Istio in SDS mode. This mode requires the projection of the istio-token service account tokens into volumes. We recommend installing Istio in a cluster which has this feature turned on by default (for example, GKE).
+
+For local development and testing, if you remove the istio-token mount then Istio will default to using the service account token instead of the projected token. You will also need to set the Environment variable JWT_POLICY to "first-party-jwt" in the istio sidecar container attached to gateway-proxy.
 {{% /notice %}}
 
 ---
@@ -70,7 +72,7 @@ glooctl install gateway
 ```
 or with helm:
 ```
-kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0-beta18 gloo gloo/gloo
+kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0-beta19 gloo gloo/gloo
 ```
 See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
@@ -308,7 +310,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta18
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta19
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -330,7 +332,7 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
       - name: cert-rotator
-        image: quay.io/solo-io/sds:1.5.0-beta18
+        image: quay.io/solo-io/sds:1.5.0-beta19
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8234
