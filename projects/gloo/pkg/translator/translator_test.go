@@ -1841,10 +1841,10 @@ var _ = Describe("Translator", func() {
 				listener := &v1.Listener{
 					SslConfigurations: []*v1.SslConfig{
 						{
-							SniDomains: []string {"a.com"},
+							SniDomains: []string{"a.com"},
 						},
 						{
-							SniDomains: []string {"a.com"},
+							SniDomains: []string{"a.com"},
 						},
 					},
 				}

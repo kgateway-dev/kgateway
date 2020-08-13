@@ -113,10 +113,9 @@ func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.Virtu
 	}
 }
 
-
 // Similar to previous function, but for SNI domains.
 // Errors will be added to the report object.
-func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports, ) {
+func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
 
 	// Index the virtual services for this gateway by the domain
 	vsBySniDomain := map[string]v1.VirtualServiceList{}

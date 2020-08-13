@@ -2,9 +2,10 @@ package translator
 
 import (
 	"fmt"
-	errors "github.com/rotisserie/eris"
 	"sort"
 	"strings"
+
+	errors "github.com/rotisserie/eris"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -27,7 +28,7 @@ import (
 
 var (
 	ConflictingSniDomainsInListenerErr = func(listenerName string, conflictingDomains []string) error {
-		return errors.Errorf("SNI domain conflict: the [%s] listener has conflicting SNI domains that appear in" +
+		return errors.Errorf("SNI domain conflict: the [%s] listener has conflicting SNI domains that appear in"+
 			" multiple SSL configurations: [%v]", listenerName, conflictingDomains)
 	}
 )
