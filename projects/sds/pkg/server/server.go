@@ -7,8 +7,8 @@ import (
 	"hash/fnv"
 	"io/ioutil"
 	"net"
-	"time"
 
+	"github.com/avast/retry-go"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/go-utils/hashutils"
 
@@ -143,21 +143,21 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 	var fileBytes []byte
 
 	var validCerts bool
-	// Check for up to 2 seconds, as a write may be in progress
-	for i := 0; !validCerts && i < 20; i++ {
-		fileBytes, err = ioutil.ReadFile(certFilePath)
-		if err != nil {
-			return nil, err
-		}
-		validCerts = checkCert(fileBytes)
-		if !validCerts {
-			time.Sleep(time.Millisecond * 100)
-		}
-	}
-
-	if !validCerts {
-		return nil, fmt.Errorf("failed to validate file %v", certFilePath)
-	}
+	// Retry for a few seconds as a write may still be in progress
+	err = retry.Do(
+		func() error {
+			fileBytes, err = ioutil.ReadFile(certFilePath)
+			if err != nil {
+				return err
+			}
+			validCerts = checkCert(fileBytes)
+			if !validCerts {
+				return fmt.Errorf("failed to validate file %v", certFilePath)
+			}
+			return nil
+		},
+		retry.Attempts(5), // Exponential backoff over ~3s
+	)
 
 	return fileBytes, nil
 }
