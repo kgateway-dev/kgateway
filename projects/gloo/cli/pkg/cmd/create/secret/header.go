@@ -66,7 +66,7 @@ func createHeaderSecret(ctx context.Context, meta core.Metadata, input options.H
 		Metadata: meta,
 		Kind: &gloov1.Secret_Header{
 			Header: &gloov1.HeaderSecret{
-				Headers: input.Headers.MustMap(),
+				Headers: input.Headers.MustMapLax(true),
 			},
 		},
 	}

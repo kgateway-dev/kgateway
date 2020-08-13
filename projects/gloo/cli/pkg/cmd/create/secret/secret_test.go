@@ -161,14 +161,14 @@ metadata:
 			header := v1.HeaderSecret{
 				Headers: map[string]string{
 					"foo": "bar",
-					"bat": "baz",
+					"bat": "=b=a=z=",
 				},
 			}
 			Expect(*secret.GetHeader()).To(Equal(header))
 		}
 
 		It("should work", func() {
-			shouldWork("create secret header --name test --headers foo=bar,bat=baz", "gloo-system")
+			shouldWork("create secret header --name test --headers foo=bar,bat==b=a=z=", "gloo-system")
 		})
 	})
 
