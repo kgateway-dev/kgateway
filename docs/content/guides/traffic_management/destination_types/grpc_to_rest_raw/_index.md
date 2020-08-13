@@ -93,15 +93,15 @@ spec:
 
 Let's get the current shelves (there should be none):
 ```shell script
-curl -v -H "Host: foo.example.com" $(glooctl proxy url)/shelves
+curl -H "Host: foo.example.com" $(glooctl proxy url)/shelves
 ```
 
 Let's add a new current shelf:
 ```shell script
-curl -v -H "Host: foo.example.com" $(glooctl proxy url)/shelf -d '{"theme": "music"}'
+curl -H "Host: foo.example.com" $(glooctl proxy url)/shelf -d '{"theme": "music"}'
 ```
 
 And then get the shelves again to confirm it was created:
 ```shell script
-curl -v -H "Host: foo.example.com" $(glooctl proxy url)/shelves
+curl -H "Host: foo.example.com" $(glooctl proxy url)/shelves
 ```
