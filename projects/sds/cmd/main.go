@@ -42,7 +42,7 @@ func main() {
 
 	contextutils.LoggerFrom(ctx).Info("initializing config")
 
-	var c = setup()
+	var c = setup(ctx)
 
 	contextutils.LoggerFrom(ctx).Infow(
 		"config loaded",
@@ -89,11 +89,11 @@ func main() {
 	}
 }
 
-func setup() Config {
+func setup(ctx context.Context) Config {
 	var c Config
 	err := envconfig.Process("cr", &c)
 	if err != nil {
-		panic("error, could not process sds config")
+		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 
 	// Use podname.podnamepsace if sdsClient not explicitly set
@@ -103,7 +103,8 @@ func setup() Config {
 
 	// At least one must be enabled, otherwise we have nothing to do.
 	if !c.GlooRotationEnabled && !c.IstioRotationEnabled {
-		panic("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars CR_GLOO_ROTATION_ENABLED or CR_ISTIO_ROTATION_ENABLED")
+		err := fmt.Errorf("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars CR_GLOO_ROTATION_ENABLED or CR_ISTIO_ROTATION_ENABLED")
+		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 	return c
 }
