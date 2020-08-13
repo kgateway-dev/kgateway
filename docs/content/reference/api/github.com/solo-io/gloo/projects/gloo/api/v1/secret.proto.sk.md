@@ -187,7 +187,7 @@ Glooctl adds it by default when the tls secret is created via `glooctl create se
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `headers` | `map<string, string>` | provided by `glooctl create secret header`. |  |
+| `headers` | `map<string, string>` | A collection of header name to header value mappings, each representing an additional header that could be added to a request. Provided by `glooctl create secret header`. |  |
 
 
 

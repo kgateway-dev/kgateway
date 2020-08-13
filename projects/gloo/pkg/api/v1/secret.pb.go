@@ -396,7 +396,8 @@ func (m *TlsSecret) GetRootCa() string {
 }
 
 type HeaderSecret struct {
-	// provided by `glooctl create secret header`
+	// A collection of header name to header value mappings, each representing an additional header that could be added to a request.
+	// Provided by `glooctl create secret header`
 	Headers              map[string]string `protobuf:"bytes,1,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
