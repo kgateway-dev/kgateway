@@ -50,10 +50,12 @@ spec:
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
-  name: default
+  name: default2
   namespace: gloo-system
 spec:
   virtualHost:
+    domains:
+    - foo.example.com
     routes:
     - matchers:
        - methods:
@@ -67,8 +69,9 @@ spec:
            namespace: gloo-system
 ```
 
+confirmed that they can coexist (both on the filter chain at same time):
 ```shell script
-curl -v -XPOST $(glooctl proxy url)/8ca136d9/default-grpcstore-demo-80/solo.examples.v1.StoreService/ListItems
+curl -v -XPOST -H "Host: foo.example.com" $(glooctl proxy url)/8ca136d9/default-grpcstore-demo-80/solo.examples.v1.StoreService/ListItems
 ```
 
 A growing trend is to use gRPC internally as the communication protocol between micro-services. This has quite a few advantages. Some of those are:
