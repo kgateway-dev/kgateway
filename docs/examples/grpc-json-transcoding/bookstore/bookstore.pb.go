@@ -3,15 +3,16 @@
 
 package main
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import empty "github.com/golang/protobuf/ptypes/empty"
-import _ "google.golang.org/genproto/googleapis/api/annotations"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	empty "github.com/golang/protobuf/ptypes/empty"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status "google.golang.org/grpc/status"
+	math "math"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -23,7 +24,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Author_Gender int32
 
@@ -38,6 +39,7 @@ var Author_Gender_name = map[int32]string{
 	1: "MALE",
 	2: "FEMALE",
 }
+
 var Author_Gender_value = map[string]int32{
 	"UNKNOWN": 0,
 	"MALE":    1,
@@ -47,16 +49,17 @@ var Author_Gender_value = map[string]int32{
 func (x Author_Gender) String() string {
 	return proto.EnumName(Author_Gender_name, int32(x))
 }
+
 func (Author_Gender) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{2, 0}
+	return fileDescriptor_6f82f486e563a88c, []int{2, 0}
 }
 
 // A shelf resource.
 type Shelf struct {
 	// A unique shelf id.
-	Id int64 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// A theme of the shelf (fiction, poetry, etc).
-	Theme                string   `protobuf:"bytes,2,opt,name=theme" json:"theme,omitempty"`
+	Theme                string   `protobuf:"bytes,2,opt,name=theme,proto3" json:"theme,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -66,16 +69,17 @@ func (m *Shelf) Reset()         { *m = Shelf{} }
 func (m *Shelf) String() string { return proto.CompactTextString(m) }
 func (*Shelf) ProtoMessage()    {}
 func (*Shelf) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{0}
+	return fileDescriptor_6f82f486e563a88c, []int{0}
 }
+
 func (m *Shelf) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Shelf.Unmarshal(m, b)
 }
 func (m *Shelf) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Shelf.Marshal(b, m, deterministic)
 }
-func (dst *Shelf) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Shelf.Merge(dst, src)
+func (m *Shelf) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Shelf.Merge(m, src)
 }
 func (m *Shelf) XXX_Size() int {
 	return xxx_messageInfo_Shelf.Size(m)
@@ -103,13 +107,13 @@ func (m *Shelf) GetTheme() string {
 // A book resource.
 type Book struct {
 	// A unique book id.
-	Id int64 `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
+	Id int64 `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
 	// An author of the book.
-	Author string `protobuf:"bytes,2,opt,name=author" json:"author,omitempty"`
+	Author string `protobuf:"bytes,2,opt,name=author,proto3" json:"author,omitempty"`
 	// A book title.
-	Title string `protobuf:"bytes,3,opt,name=title" json:"title,omitempty"`
+	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// Quotes from the book.
-	Quotes               []string `protobuf:"bytes,4,rep,name=quotes" json:"quotes,omitempty"`
+	Quotes               []string `protobuf:"bytes,4,rep,name=quotes,proto3" json:"quotes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -119,16 +123,17 @@ func (m *Book) Reset()         { *m = Book{} }
 func (m *Book) String() string { return proto.CompactTextString(m) }
 func (*Book) ProtoMessage()    {}
 func (*Book) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{1}
+	return fileDescriptor_6f82f486e563a88c, []int{1}
 }
+
 func (m *Book) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Book.Unmarshal(m, b)
 }
 func (m *Book) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Book.Marshal(b, m, deterministic)
 }
-func (dst *Book) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Book.Merge(dst, src)
+func (m *Book) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Book.Merge(m, src)
 }
 func (m *Book) XXX_Size() int {
 	return xxx_messageInfo_Book.Size(m)
@@ -170,10 +175,10 @@ func (m *Book) GetQuotes() []string {
 // An author resource.
 type Author struct {
 	// A unique author id.
-	Id                   int64         `protobuf:"varint,1,opt,name=id" json:"id,omitempty"`
-	Gender               Author_Gender `protobuf:"varint,2,opt,name=gender,enum=main.Author_Gender" json:"gender,omitempty"`
-	FirstName            string        `protobuf:"bytes,3,opt,name=first_name,json=firstName" json:"first_name,omitempty"`
-	LastName             string        `protobuf:"bytes,4,opt,name=last_name,json=lname" json:"last_name,omitempty"`
+	Id                   int64         `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`
+	Gender               Author_Gender `protobuf:"varint,2,opt,name=gender,proto3,enum=main.Author_Gender" json:"gender,omitempty"`
+	FirstName            string        `protobuf:"bytes,3,opt,name=first_name,json=firstName,proto3" json:"first_name,omitempty"`
+	LastName             string        `protobuf:"bytes,4,opt,name=last_name,json=lname,proto3" json:"last_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -183,16 +188,17 @@ func (m *Author) Reset()         { *m = Author{} }
 func (m *Author) String() string { return proto.CompactTextString(m) }
 func (*Author) ProtoMessage()    {}
 func (*Author) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{2}
+	return fileDescriptor_6f82f486e563a88c, []int{2}
 }
+
 func (m *Author) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Author.Unmarshal(m, b)
 }
 func (m *Author) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Author.Marshal(b, m, deterministic)
 }
-func (dst *Author) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Author.Merge(dst, src)
+func (m *Author) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Author.Merge(m, src)
 }
 func (m *Author) XXX_Size() int {
 	return xxx_messageInfo_Author.Size(m)
@@ -234,7 +240,7 @@ func (m *Author) GetLastName() string {
 // Response to ListShelves call.
 type ListShelvesResponse struct {
 	// Shelves in the bookstore.
-	Shelves              []*Shelf `protobuf:"bytes,1,rep,name=shelves" json:"shelves,omitempty"`
+	Shelves              []*Shelf `protobuf:"bytes,1,rep,name=shelves,proto3" json:"shelves,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -244,16 +250,17 @@ func (m *ListShelvesResponse) Reset()         { *m = ListShelvesResponse{} }
 func (m *ListShelvesResponse) String() string { return proto.CompactTextString(m) }
 func (*ListShelvesResponse) ProtoMessage()    {}
 func (*ListShelvesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{3}
+	return fileDescriptor_6f82f486e563a88c, []int{3}
 }
+
 func (m *ListShelvesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListShelvesResponse.Unmarshal(m, b)
 }
 func (m *ListShelvesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListShelvesResponse.Marshal(b, m, deterministic)
 }
-func (dst *ListShelvesResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListShelvesResponse.Merge(dst, src)
+func (m *ListShelvesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListShelvesResponse.Merge(m, src)
 }
 func (m *ListShelvesResponse) XXX_Size() int {
 	return xxx_messageInfo_ListShelvesResponse.Size(m)
@@ -274,7 +281,7 @@ func (m *ListShelvesResponse) GetShelves() []*Shelf {
 // Request message for CreateShelf method.
 type CreateShelfRequest struct {
 	// The shelf resource to create.
-	Shelf                *Shelf   `protobuf:"bytes,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf                *Shelf   `protobuf:"bytes,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -284,16 +291,17 @@ func (m *CreateShelfRequest) Reset()         { *m = CreateShelfRequest{} }
 func (m *CreateShelfRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateShelfRequest) ProtoMessage()    {}
 func (*CreateShelfRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{4}
+	return fileDescriptor_6f82f486e563a88c, []int{4}
 }
+
 func (m *CreateShelfRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateShelfRequest.Unmarshal(m, b)
 }
 func (m *CreateShelfRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateShelfRequest.Marshal(b, m, deterministic)
 }
-func (dst *CreateShelfRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateShelfRequest.Merge(dst, src)
+func (m *CreateShelfRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateShelfRequest.Merge(m, src)
 }
 func (m *CreateShelfRequest) XXX_Size() int {
 	return xxx_messageInfo_CreateShelfRequest.Size(m)
@@ -314,7 +322,7 @@ func (m *CreateShelfRequest) GetShelf() *Shelf {
 // Request message for GetShelf method.
 type GetShelfRequest struct {
 	// The ID of the shelf resource to retrieve.
-	Shelf                int64    `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf                int64    `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -324,16 +332,17 @@ func (m *GetShelfRequest) Reset()         { *m = GetShelfRequest{} }
 func (m *GetShelfRequest) String() string { return proto.CompactTextString(m) }
 func (*GetShelfRequest) ProtoMessage()    {}
 func (*GetShelfRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{5}
+	return fileDescriptor_6f82f486e563a88c, []int{5}
 }
+
 func (m *GetShelfRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetShelfRequest.Unmarshal(m, b)
 }
 func (m *GetShelfRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetShelfRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetShelfRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetShelfRequest.Merge(dst, src)
+func (m *GetShelfRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetShelfRequest.Merge(m, src)
 }
 func (m *GetShelfRequest) XXX_Size() int {
 	return xxx_messageInfo_GetShelfRequest.Size(m)
@@ -354,7 +363,7 @@ func (m *GetShelfRequest) GetShelf() int64 {
 // Request message for DeleteShelf method.
 type DeleteShelfRequest struct {
 	// The ID of the shelf to delete.
-	Shelf                int64    `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf                int64    `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -364,16 +373,17 @@ func (m *DeleteShelfRequest) Reset()         { *m = DeleteShelfRequest{} }
 func (m *DeleteShelfRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteShelfRequest) ProtoMessage()    {}
 func (*DeleteShelfRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{6}
+	return fileDescriptor_6f82f486e563a88c, []int{6}
 }
+
 func (m *DeleteShelfRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteShelfRequest.Unmarshal(m, b)
 }
 func (m *DeleteShelfRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeleteShelfRequest.Marshal(b, m, deterministic)
 }
-func (dst *DeleteShelfRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteShelfRequest.Merge(dst, src)
+func (m *DeleteShelfRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteShelfRequest.Merge(m, src)
 }
 func (m *DeleteShelfRequest) XXX_Size() int {
 	return xxx_messageInfo_DeleteShelfRequest.Size(m)
@@ -394,7 +404,7 @@ func (m *DeleteShelfRequest) GetShelf() int64 {
 // Request message for ListBooks method.
 type ListBooksRequest struct {
 	// ID of the shelf which books to list.
-	Shelf                int64    `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf                int64    `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -404,16 +414,17 @@ func (m *ListBooksRequest) Reset()         { *m = ListBooksRequest{} }
 func (m *ListBooksRequest) String() string { return proto.CompactTextString(m) }
 func (*ListBooksRequest) ProtoMessage()    {}
 func (*ListBooksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{7}
+	return fileDescriptor_6f82f486e563a88c, []int{7}
 }
+
 func (m *ListBooksRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ListBooksRequest.Unmarshal(m, b)
 }
 func (m *ListBooksRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ListBooksRequest.Marshal(b, m, deterministic)
 }
-func (dst *ListBooksRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ListBooksRequest.Merge(dst, src)
+func (m *ListBooksRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListBooksRequest.Merge(m, src)
 }
 func (m *ListBooksRequest) XXX_Size() int {
 	return xxx_messageInfo_ListBooksRequest.Size(m)
@@ -434,9 +445,9 @@ func (m *ListBooksRequest) GetShelf() int64 {
 // Request message for CreateBook method.
 type CreateBookRequest struct {
 	// The ID of the shelf on which to create a book.
-	Shelf int64 `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf int64 `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	// A book resource to create on the shelf.
-	Book                 *Book    `protobuf:"bytes,2,opt,name=book" json:"book,omitempty"`
+	Book                 *Book    `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -446,16 +457,17 @@ func (m *CreateBookRequest) Reset()         { *m = CreateBookRequest{} }
 func (m *CreateBookRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateBookRequest) ProtoMessage()    {}
 func (*CreateBookRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{8}
+	return fileDescriptor_6f82f486e563a88c, []int{8}
 }
+
 func (m *CreateBookRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateBookRequest.Unmarshal(m, b)
 }
 func (m *CreateBookRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_CreateBookRequest.Marshal(b, m, deterministic)
 }
-func (dst *CreateBookRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CreateBookRequest.Merge(dst, src)
+func (m *CreateBookRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateBookRequest.Merge(m, src)
 }
 func (m *CreateBookRequest) XXX_Size() int {
 	return xxx_messageInfo_CreateBookRequest.Size(m)
@@ -483,9 +495,9 @@ func (m *CreateBookRequest) GetBook() *Book {
 // Request message for GetBook method.
 type GetBookRequest struct {
 	// The ID of the shelf from which to retrieve a book.
-	Shelf int64 `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf int64 `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	// The ID of the book to retrieve.
-	Book                 int64    `protobuf:"varint,2,opt,name=book" json:"book,omitempty"`
+	Book                 int64    `protobuf:"varint,2,opt,name=book,proto3" json:"book,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -495,16 +507,17 @@ func (m *GetBookRequest) Reset()         { *m = GetBookRequest{} }
 func (m *GetBookRequest) String() string { return proto.CompactTextString(m) }
 func (*GetBookRequest) ProtoMessage()    {}
 func (*GetBookRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{9}
+	return fileDescriptor_6f82f486e563a88c, []int{9}
 }
+
 func (m *GetBookRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetBookRequest.Unmarshal(m, b)
 }
 func (m *GetBookRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetBookRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetBookRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetBookRequest.Merge(dst, src)
+func (m *GetBookRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetBookRequest.Merge(m, src)
 }
 func (m *GetBookRequest) XXX_Size() int {
 	return xxx_messageInfo_GetBookRequest.Size(m)
@@ -532,9 +545,9 @@ func (m *GetBookRequest) GetBook() int64 {
 // Request message for UpdateBook method
 type UpdateBookRequest struct {
 	// The ID of the shelf from which to retrieve a book.
-	Shelf int64 `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf int64 `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	// A book resource to update on the shelf.
-	Book                 *Book    `protobuf:"bytes,2,opt,name=book" json:"book,omitempty"`
+	Book                 *Book    `protobuf:"bytes,2,opt,name=book,proto3" json:"book,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -544,16 +557,17 @@ func (m *UpdateBookRequest) Reset()         { *m = UpdateBookRequest{} }
 func (m *UpdateBookRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateBookRequest) ProtoMessage()    {}
 func (*UpdateBookRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{10}
+	return fileDescriptor_6f82f486e563a88c, []int{10}
 }
+
 func (m *UpdateBookRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateBookRequest.Unmarshal(m, b)
 }
 func (m *UpdateBookRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_UpdateBookRequest.Marshal(b, m, deterministic)
 }
-func (dst *UpdateBookRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_UpdateBookRequest.Merge(dst, src)
+func (m *UpdateBookRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_UpdateBookRequest.Merge(m, src)
 }
 func (m *UpdateBookRequest) XXX_Size() int {
 	return xxx_messageInfo_UpdateBookRequest.Size(m)
@@ -581,9 +595,9 @@ func (m *UpdateBookRequest) GetBook() *Book {
 // Request message for DeleteBook method.
 type DeleteBookRequest struct {
 	// The ID of the shelf from which to delete a book.
-	Shelf int64 `protobuf:"varint,1,opt,name=shelf" json:"shelf,omitempty"`
+	Shelf int64 `protobuf:"varint,1,opt,name=shelf,proto3" json:"shelf,omitempty"`
 	// The ID of the book to delete.
-	Book                 int64    `protobuf:"varint,2,opt,name=book" json:"book,omitempty"`
+	Book                 int64    `protobuf:"varint,2,opt,name=book,proto3" json:"book,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -593,16 +607,17 @@ func (m *DeleteBookRequest) Reset()         { *m = DeleteBookRequest{} }
 func (m *DeleteBookRequest) String() string { return proto.CompactTextString(m) }
 func (*DeleteBookRequest) ProtoMessage()    {}
 func (*DeleteBookRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{11}
+	return fileDescriptor_6f82f486e563a88c, []int{11}
 }
+
 func (m *DeleteBookRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeleteBookRequest.Unmarshal(m, b)
 }
 func (m *DeleteBookRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_DeleteBookRequest.Marshal(b, m, deterministic)
 }
-func (dst *DeleteBookRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_DeleteBookRequest.Merge(dst, src)
+func (m *DeleteBookRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteBookRequest.Merge(m, src)
 }
 func (m *DeleteBookRequest) XXX_Size() int {
 	return xxx_messageInfo_DeleteBookRequest.Size(m)
@@ -630,7 +645,7 @@ func (m *DeleteBookRequest) GetBook() int64 {
 // Request message for GetAuthor method.
 type GetAuthorRequest struct {
 	// The ID of the author resource to retrieve.
-	Author               int64    `protobuf:"varint,1,opt,name=author" json:"author,omitempty"`
+	Author               int64    `protobuf:"varint,1,opt,name=author,proto3" json:"author,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -640,16 +655,17 @@ func (m *GetAuthorRequest) Reset()         { *m = GetAuthorRequest{} }
 func (m *GetAuthorRequest) String() string { return proto.CompactTextString(m) }
 func (*GetAuthorRequest) ProtoMessage()    {}
 func (*GetAuthorRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_bookstore_7fec32a8ba8c7764, []int{12}
+	return fileDescriptor_6f82f486e563a88c, []int{12}
 }
+
 func (m *GetAuthorRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetAuthorRequest.Unmarshal(m, b)
 }
 func (m *GetAuthorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_GetAuthorRequest.Marshal(b, m, deterministic)
 }
-func (dst *GetAuthorRequest) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_GetAuthorRequest.Merge(dst, src)
+func (m *GetAuthorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetAuthorRequest.Merge(m, src)
 }
 func (m *GetAuthorRequest) XXX_Size() int {
 	return xxx_messageInfo_GetAuthorRequest.Size(m)
@@ -668,6 +684,7 @@ func (m *GetAuthorRequest) GetAuthor() int64 {
 }
 
 func init() {
+	proto.RegisterEnum("main.Author_Gender", Author_Gender_name, Author_Gender_value)
 	proto.RegisterType((*Shelf)(nil), "main.Shelf")
 	proto.RegisterType((*Book)(nil), "main.Book")
 	proto.RegisterType((*Author)(nil), "main.Author")
@@ -681,19 +698,76 @@ func init() {
 	proto.RegisterType((*UpdateBookRequest)(nil), "main.UpdateBookRequest")
 	proto.RegisterType((*DeleteBookRequest)(nil), "main.DeleteBookRequest")
 	proto.RegisterType((*GetAuthorRequest)(nil), "main.GetAuthorRequest")
-	proto.RegisterEnum("main.Author_Gender", Author_Gender_name, Author_Gender_value)
+}
+
+func init() {
+	proto.RegisterFile("bookstore.proto", fileDescriptor_6f82f486e563a88c)
+}
+
+var fileDescriptor_6f82f486e563a88c = []byte{
+	// 773 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdb, 0x6e, 0xda, 0x4a,
+	0x14, 0x8d, 0x81, 0x40, 0xd8, 0x9c, 0x13, 0x60, 0x27, 0xe1, 0x38, 0xce, 0xe5, 0xd0, 0x69, 0xa3,
+	0xa2, 0x44, 0xb1, 0x23, 0xfa, 0x50, 0x29, 0x6a, 0x1f, 0x42, 0x9b, 0xd2, 0x28, 0x29, 0xb4, 0xa4,
+	0x51, 0xa4, 0xaa, 0x52, 0x65, 0xc4, 0x90, 0x58, 0x18, 0x86, 0xe0, 0xa1, 0x52, 0x15, 0xf1, 0xd2,
+	0x5f, 0xe8, 0x67, 0xf4, 0x73, 0xfa, 0x0b, 0x7d, 0xef, 0x2f, 0x54, 0x9e, 0xf1, 0x80, 0xb9, 0xa5,
+	0x52, 0xd4, 0x27, 0x3c, 0x33, 0x6b, 0xaf, 0x59, 0x7b, 0x7b, 0x2d, 0x0c, 0xe9, 0x3a, 0x63, 0x2d,
+	0x8f, 0xb3, 0x1e, 0x35, 0xbb, 0x3d, 0xc6, 0x19, 0xc6, 0xda, 0xb6, 0xd3, 0x31, 0x36, 0xaf, 0x18,
+	0xbb, 0x72, 0xa9, 0x65, 0x77, 0x1d, 0xcb, 0xee, 0x74, 0x18, 0xb7, 0xb9, 0xc3, 0x3a, 0x9e, 0xc4,
+	0x18, 0x1b, 0xc1, 0xa9, 0x58, 0xd5, 0xfb, 0x4d, 0x8b, 0xb6, 0xbb, 0xfc, 0x8b, 0x3c, 0x24, 0xfb,
+	0xb0, 0x78, 0x7e, 0x4d, 0xdd, 0x26, 0x2e, 0x43, 0xc4, 0x69, 0xe8, 0x5a, 0x5e, 0x2b, 0x44, 0x6b,
+	0x11, 0xa7, 0x81, 0xab, 0xb0, 0xc8, 0xaf, 0x69, 0x9b, 0xea, 0x91, 0xbc, 0x56, 0x48, 0xd6, 0xe4,
+	0x82, 0x7c, 0x84, 0x58, 0x89, 0xb1, 0xd6, 0x14, 0x3a, 0x07, 0x71, 0xbb, 0xcf, 0xaf, 0x59, 0x2f,
+	0x80, 0x07, 0x2b, 0xc1, 0xe2, 0x70, 0x97, 0xea, 0xd1, 0x80, 0xc5, 0x5f, 0xf8, 0xe8, 0x9b, 0x3e,
+	0xe3, 0xd4, 0xd3, 0x63, 0xf9, 0xa8, 0x8f, 0x96, 0x2b, 0xf2, 0x5d, 0x83, 0xf8, 0x91, 0x2c, 0x9c,
+	0xbc, 0x60, 0x0f, 0xe2, 0x57, 0xb4, 0xd3, 0xa0, 0xf2, 0x82, 0xe5, 0xe2, 0x8a, 0xe9, 0x77, 0x6e,
+	0x4a, 0xb4, 0x59, 0x16, 0x47, 0xb5, 0x00, 0x82, 0x5b, 0x00, 0x4d, 0xa7, 0xe7, 0xf1, 0x4f, 0x1d,
+	0xbb, 0xad, 0xae, 0x4e, 0x8a, 0x9d, 0x8a, 0xdd, 0xa6, 0xa8, 0x43, 0xd2, 0xb5, 0xd5, 0x69, 0x4c,
+	0x0a, 0x73, 0xfd, 0x05, 0xd9, 0x83, 0xb8, 0xa4, 0xc2, 0x14, 0x24, 0x2e, 0x2a, 0xa7, 0x95, 0xea,
+	0x65, 0x25, 0xb3, 0x80, 0x4b, 0x10, 0x7b, 0x73, 0x74, 0x76, 0x9c, 0xd1, 0x10, 0x20, 0xfe, 0xea,
+	0x58, 0x3c, 0x47, 0xc8, 0x33, 0x58, 0x39, 0x73, 0x3c, 0xee, 0x8f, 0xef, 0x33, 0xf5, 0x6a, 0xd4,
+	0xeb, 0xb2, 0x8e, 0x47, 0x71, 0x07, 0x12, 0x9e, 0xdc, 0xd2, 0xb5, 0x7c, 0xb4, 0x90, 0x2a, 0xa6,
+	0xa4, 0x54, 0x31, 0xe6, 0x9a, 0x3a, 0x23, 0x4f, 0x01, 0x5f, 0xf4, 0xa8, 0xcd, 0xa9, 0xdc, 0xa7,
+	0x37, 0x7d, 0xea, 0x71, 0x7c, 0x00, 0x8b, 0x3e, 0xa0, 0x29, 0x3a, 0x9f, 0x28, 0x95, 0x27, 0xe4,
+	0x31, 0xa4, 0xcb, 0x94, 0x8f, 0x55, 0xad, 0x86, 0xab, 0xa2, 0x0a, 0xb8, 0x0b, 0xf8, 0x92, 0xba,
+	0x74, 0xe2, 0x86, 0xd9, 0xd8, 0x02, 0x64, 0xfc, 0x5e, 0xfc, 0x77, 0xeb, 0xdd, 0x8d, 0x3c, 0x81,
+	0xac, 0xd4, 0xed, 0x63, 0xef, 0x84, 0xe2, 0x36, 0xc4, 0x7c, 0xbf, 0x8a, 0x37, 0x96, 0x2a, 0x82,
+	0xec, 0x45, 0x94, 0x89, 0x7d, 0x72, 0x08, 0xcb, 0x65, 0xca, 0xff, 0xcc, 0x83, 0x21, 0x9e, 0x68,
+	0x50, 0x7b, 0x02, 0xd9, 0x8b, 0x6e, 0xe3, 0xaf, 0xc8, 0x78, 0x0e, 0x59, 0x39, 0xa7, 0xfb, 0x29,
+	0xd9, 0x85, 0x4c, 0x99, 0x72, 0x69, 0x44, 0x55, 0x3d, 0x8a, 0x83, 0x2c, 0x0f, 0x56, 0xc5, 0x5f,
+	0x09, 0x48, 0x96, 0x54, 0x84, 0xb1, 0x06, 0xa9, 0x90, 0x81, 0x30, 0x67, 0xca, 0xa0, 0x9a, 0x2a,
+	0xa8, 0xe6, 0xb1, 0x1f, 0x54, 0x63, 0x5d, 0x2a, 0x9e, 0xe1, 0x35, 0x92, 0xf9, 0xfa, 0xe3, 0xe7,
+	0xb7, 0x08, 0xe0, 0x92, 0x15, 0xd8, 0x0a, 0x4f, 0x21, 0x15, 0xb2, 0x15, 0xea, 0xb2, 0x76, 0xda,
+	0x69, 0x46, 0xd8, 0x5a, 0x64, 0x4d, 0xf0, 0xa4, 0x49, 0x5c, 0xf0, 0x34, 0x0f, 0x83, 0x76, 0x3f,
+	0x40, 0xba, 0xd4, 0x77, 0x5b, 0xf7, 0x20, 0xdc, 0x14, 0x84, 0x39, 0xf2, 0xaf, 0x55, 0xef, 0xbb,
+	0x2d, 0xa5, 0x2e, 0xe0, 0x2d, 0x68, 0x07, 0x1a, 0xbe, 0x86, 0x25, 0x65, 0x63, 0x5c, 0x93, 0xa5,
+	0x13, 0xb6, 0x1e, 0x67, 0xd4, 0x05, 0x23, 0x62, 0x46, 0x91, 0x59, 0xb7, 0x82, 0x6c, 0x80, 0x47,
+	0x90, 0x0a, 0xf9, 0x5c, 0x29, 0x9c, 0xb6, 0xbe, 0x31, 0x67, 0xc0, 0x64, 0x01, 0xdf, 0x41, 0x72,
+	0x68, 0x7f, 0xcc, 0x8d, 0xe6, 0x1d, 0xce, 0x83, 0x11, 0x72, 0x0e, 0xd9, 0x16, 0x6a, 0x74, 0xcc,
+	0x4d, 0xaa, 0xb1, 0xc4, 0x3f, 0xf4, 0x81, 0x86, 0x97, 0x00, 0xa3, 0x9c, 0xe0, 0x7f, 0xe1, 0xb1,
+	0x85, 0x7c, 0x36, 0x46, 0xfa, 0x48, 0x90, 0x6e, 0x1b, 0x73, 0x48, 0x0f, 0x85, 0xdf, 0x70, 0x1f,
+	0x12, 0x41, 0x6a, 0x70, 0x75, 0x38, 0xb7, 0x79, 0x94, 0x0b, 0xd8, 0x00, 0x18, 0xb9, 0x5b, 0xe9,
+	0x98, 0xf2, 0xfb, 0xdc, 0xd9, 0xec, 0x08, 0x4d, 0xff, 0xef, 0x6e, 0xcd, 0xd6, 0x64, 0xdd, 0xfa,
+	0x3f, 0x03, 0xb4, 0x01, 0x46, 0x71, 0x54, 0xb7, 0x4c, 0x05, 0x74, 0x4c, 0x9a, 0x29, 0x98, 0x0b,
+	0xc5, 0xfc, 0x5d, 0xcc, 0xa6, 0xd3, 0x18, 0x04, 0x7d, 0x37, 0x21, 0x33, 0x8c, 0x4e, 0xb5, 0x2b,
+	0x3e, 0x70, 0xf3, 0x8c, 0x33, 0xaf, 0x99, 0x87, 0xe2, 0xca, 0xad, 0xd2, 0x06, 0x24, 0xaa, 0x6f,
+	0xdf, 0x9f, 0x54, 0x2b, 0xe7, 0x33, 0xec, 0x74, 0x06, 0xc9, 0x61, 0x9e, 0x95, 0x17, 0x26, 0x03,
+	0x6e, 0xfc, 0x13, 0xfe, 0xfc, 0x90, 0x75, 0xc1, 0xbb, 0x82, 0x59, 0x4b, 0xe6, 0xdc, 0xb3, 0x6e,
+	0xe5, 0xc3, 0xa0, 0x1e, 0x17, 0x12, 0x9e, 0xfc, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xa4, 0xd0, 0x3d,
+	0xcb, 0xba, 0x07, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConn
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
-// Client API for Bookstore service
-
+// BookstoreClient is the client API for Bookstore service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type BookstoreClient interface {
 	// Returns a list of all shelves in the bookstore.
 	ListShelves(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ListShelvesResponse, error)
@@ -720,16 +794,16 @@ type BookstoreClient interface {
 }
 
 type bookstoreClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewBookstoreClient(cc *grpc.ClientConn) BookstoreClient {
+func NewBookstoreClient(cc grpc.ClientConnInterface) BookstoreClient {
 	return &bookstoreClient{cc}
 }
 
 func (c *bookstoreClient) ListShelves(ctx context.Context, in *empty.Empty, opts ...grpc.CallOption) (*ListShelvesResponse, error) {
 	out := new(ListShelvesResponse)
-	err := grpc.Invoke(ctx, "/main.Bookstore/ListShelves", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/ListShelves", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -738,7 +812,7 @@ func (c *bookstoreClient) ListShelves(ctx context.Context, in *empty.Empty, opts
 
 func (c *bookstoreClient) CreateShelf(ctx context.Context, in *CreateShelfRequest, opts ...grpc.CallOption) (*Shelf, error) {
 	out := new(Shelf)
-	err := grpc.Invoke(ctx, "/main.Bookstore/CreateShelf", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/CreateShelf", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -746,7 +820,7 @@ func (c *bookstoreClient) CreateShelf(ctx context.Context, in *CreateShelfReques
 }
 
 func (c *bookstoreClient) BulkCreateShelf(ctx context.Context, opts ...grpc.CallOption) (Bookstore_BulkCreateShelfClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_Bookstore_serviceDesc.Streams[0], c.cc, "/main.Bookstore/BulkCreateShelf", opts...)
+	stream, err := c.cc.NewStream(ctx, &_Bookstore_serviceDesc.Streams[0], "/main.Bookstore/BulkCreateShelf", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -778,7 +852,7 @@ func (x *bookstoreBulkCreateShelfClient) Recv() (*Shelf, error) {
 
 func (c *bookstoreClient) GetShelf(ctx context.Context, in *GetShelfRequest, opts ...grpc.CallOption) (*Shelf, error) {
 	out := new(Shelf)
-	err := grpc.Invoke(ctx, "/main.Bookstore/GetShelf", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/GetShelf", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -787,7 +861,7 @@ func (c *bookstoreClient) GetShelf(ctx context.Context, in *GetShelfRequest, opt
 
 func (c *bookstoreClient) DeleteShelf(ctx context.Context, in *DeleteShelfRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := grpc.Invoke(ctx, "/main.Bookstore/DeleteShelf", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/DeleteShelf", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -795,7 +869,7 @@ func (c *bookstoreClient) DeleteShelf(ctx context.Context, in *DeleteShelfReques
 }
 
 func (c *bookstoreClient) ListBooks(ctx context.Context, in *ListBooksRequest, opts ...grpc.CallOption) (Bookstore_ListBooksClient, error) {
-	stream, err := grpc.NewClientStream(ctx, &_Bookstore_serviceDesc.Streams[1], c.cc, "/main.Bookstore/ListBooks", opts...)
+	stream, err := c.cc.NewStream(ctx, &_Bookstore_serviceDesc.Streams[1], "/main.Bookstore/ListBooks", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -828,7 +902,7 @@ func (x *bookstoreListBooksClient) Recv() (*Book, error) {
 
 func (c *bookstoreClient) CreateBook(ctx context.Context, in *CreateBookRequest, opts ...grpc.CallOption) (*Book, error) {
 	out := new(Book)
-	err := grpc.Invoke(ctx, "/main.Bookstore/CreateBook", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/CreateBook", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -837,7 +911,7 @@ func (c *bookstoreClient) CreateBook(ctx context.Context, in *CreateBookRequest,
 
 func (c *bookstoreClient) GetBook(ctx context.Context, in *GetBookRequest, opts ...grpc.CallOption) (*Book, error) {
 	out := new(Book)
-	err := grpc.Invoke(ctx, "/main.Bookstore/GetBook", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/GetBook", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -846,7 +920,7 @@ func (c *bookstoreClient) GetBook(ctx context.Context, in *GetBookRequest, opts 
 
 func (c *bookstoreClient) DeleteBook(ctx context.Context, in *DeleteBookRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := grpc.Invoke(ctx, "/main.Bookstore/DeleteBook", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/DeleteBook", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -855,7 +929,7 @@ func (c *bookstoreClient) DeleteBook(ctx context.Context, in *DeleteBookRequest,
 
 func (c *bookstoreClient) UpdateBook(ctx context.Context, in *UpdateBookRequest, opts ...grpc.CallOption) (*Book, error) {
 	out := new(Book)
-	err := grpc.Invoke(ctx, "/main.Bookstore/UpdateBook", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/UpdateBook", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -864,7 +938,7 @@ func (c *bookstoreClient) UpdateBook(ctx context.Context, in *UpdateBookRequest,
 
 func (c *bookstoreClient) BookstoreOptions(ctx context.Context, in *GetShelfRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := grpc.Invoke(ctx, "/main.Bookstore/BookstoreOptions", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/BookstoreOptions", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -873,15 +947,14 @@ func (c *bookstoreClient) BookstoreOptions(ctx context.Context, in *GetShelfRequ
 
 func (c *bookstoreClient) GetAuthor(ctx context.Context, in *GetAuthorRequest, opts ...grpc.CallOption) (*Author, error) {
 	out := new(Author)
-	err := grpc.Invoke(ctx, "/main.Bookstore/GetAuthor", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/main.Bookstore/GetAuthor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for Bookstore service
-
+// BookstoreServer is the server API for Bookstore service.
 type BookstoreServer interface {
 	// Returns a list of all shelves in the bookstore.
 	ListShelves(context.Context, *empty.Empty) (*ListShelvesResponse, error)
@@ -905,6 +978,47 @@ type BookstoreServer interface {
 	BookstoreOptions(context.Context, *GetShelfRequest) (*empty.Empty, error)
 	// Returns a specific author.
 	GetAuthor(context.Context, *GetAuthorRequest) (*Author, error)
+}
+
+// UnimplementedBookstoreServer can be embedded to have forward compatible implementations.
+type UnimplementedBookstoreServer struct {
+}
+
+func (*UnimplementedBookstoreServer) ListShelves(ctx context.Context, req *empty.Empty) (*ListShelvesResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListShelves not implemented")
+}
+func (*UnimplementedBookstoreServer) CreateShelf(ctx context.Context, req *CreateShelfRequest) (*Shelf, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateShelf not implemented")
+}
+func (*UnimplementedBookstoreServer) BulkCreateShelf(srv Bookstore_BulkCreateShelfServer) error {
+	return status.Errorf(codes.Unimplemented, "method BulkCreateShelf not implemented")
+}
+func (*UnimplementedBookstoreServer) GetShelf(ctx context.Context, req *GetShelfRequest) (*Shelf, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetShelf not implemented")
+}
+func (*UnimplementedBookstoreServer) DeleteShelf(ctx context.Context, req *DeleteShelfRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteShelf not implemented")
+}
+func (*UnimplementedBookstoreServer) ListBooks(req *ListBooksRequest, srv Bookstore_ListBooksServer) error {
+	return status.Errorf(codes.Unimplemented, "method ListBooks not implemented")
+}
+func (*UnimplementedBookstoreServer) CreateBook(ctx context.Context, req *CreateBookRequest) (*Book, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateBook not implemented")
+}
+func (*UnimplementedBookstoreServer) GetBook(ctx context.Context, req *GetBookRequest) (*Book, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBook not implemented")
+}
+func (*UnimplementedBookstoreServer) DeleteBook(ctx context.Context, req *DeleteBookRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteBook not implemented")
+}
+func (*UnimplementedBookstoreServer) UpdateBook(ctx context.Context, req *UpdateBookRequest) (*Book, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBook not implemented")
+}
+func (*UnimplementedBookstoreServer) BookstoreOptions(ctx context.Context, req *GetShelfRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BookstoreOptions not implemented")
+}
+func (*UnimplementedBookstoreServer) GetAuthor(ctx context.Context, req *GetAuthorRequest) (*Author, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAuthor not implemented")
 }
 
 func RegisterBookstoreServer(s *grpc.Server, srv BookstoreServer) {
@@ -1197,59 +1311,4 @@ var _Bookstore_serviceDesc = grpc.ServiceDesc{
 		},
 	},
 	Metadata: "bookstore.proto",
-}
-
-func init() { proto.RegisterFile("bookstore.proto", fileDescriptor_bookstore_7fec32a8ba8c7764) }
-
-var fileDescriptor_bookstore_7fec32a8ba8c7764 = []byte{
-	// 773 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0xdb, 0x6e, 0xda, 0x4a,
-	0x14, 0x8d, 0x81, 0x40, 0xd8, 0x9c, 0x13, 0x60, 0x27, 0xe1, 0x38, 0xce, 0xe5, 0xd0, 0x69, 0xa3,
-	0xa2, 0x44, 0xb1, 0x23, 0xfa, 0x50, 0x29, 0x6a, 0x1f, 0x42, 0x9b, 0xd2, 0x28, 0x29, 0xb4, 0xa4,
-	0x51, 0xa4, 0xaa, 0x52, 0x65, 0xc4, 0x90, 0x58, 0x18, 0x86, 0xe0, 0xa1, 0x52, 0x15, 0xf1, 0xd2,
-	0x5f, 0xe8, 0x67, 0xf4, 0x73, 0xfa, 0x0b, 0x7d, 0xef, 0x2f, 0x54, 0x9e, 0xf1, 0x80, 0xb9, 0xa5,
-	0x52, 0xd4, 0x27, 0x3c, 0x33, 0x6b, 0xaf, 0x59, 0x7b, 0x7b, 0x2d, 0x0c, 0xe9, 0x3a, 0x63, 0x2d,
-	0x8f, 0xb3, 0x1e, 0x35, 0xbb, 0x3d, 0xc6, 0x19, 0xc6, 0xda, 0xb6, 0xd3, 0x31, 0x36, 0xaf, 0x18,
-	0xbb, 0x72, 0xa9, 0x65, 0x77, 0x1d, 0xcb, 0xee, 0x74, 0x18, 0xb7, 0xb9, 0xc3, 0x3a, 0x9e, 0xc4,
-	0x18, 0x1b, 0xc1, 0xa9, 0x58, 0xd5, 0xfb, 0x4d, 0x8b, 0xb6, 0xbb, 0xfc, 0x8b, 0x3c, 0x24, 0xfb,
-	0xb0, 0x78, 0x7e, 0x4d, 0xdd, 0x26, 0x2e, 0x43, 0xc4, 0x69, 0xe8, 0x5a, 0x5e, 0x2b, 0x44, 0x6b,
-	0x11, 0xa7, 0x81, 0xab, 0xb0, 0xc8, 0xaf, 0x69, 0x9b, 0xea, 0x91, 0xbc, 0x56, 0x48, 0xd6, 0xe4,
-	0x82, 0x7c, 0x84, 0x58, 0x89, 0xb1, 0xd6, 0x14, 0x3a, 0x07, 0x71, 0xbb, 0xcf, 0xaf, 0x59, 0x2f,
-	0x80, 0x07, 0x2b, 0xc1, 0xe2, 0x70, 0x97, 0xea, 0xd1, 0x80, 0xc5, 0x5f, 0xf8, 0xe8, 0x9b, 0x3e,
-	0xe3, 0xd4, 0xd3, 0x63, 0xf9, 0xa8, 0x8f, 0x96, 0x2b, 0xf2, 0x5d, 0x83, 0xf8, 0x91, 0x2c, 0x9c,
-	0xbc, 0x60, 0x0f, 0xe2, 0x57, 0xb4, 0xd3, 0xa0, 0xf2, 0x82, 0xe5, 0xe2, 0x8a, 0xe9, 0x77, 0x6e,
-	0x4a, 0xb4, 0x59, 0x16, 0x47, 0xb5, 0x00, 0x82, 0x5b, 0x00, 0x4d, 0xa7, 0xe7, 0xf1, 0x4f, 0x1d,
-	0xbb, 0xad, 0xae, 0x4e, 0x8a, 0x9d, 0x8a, 0xdd, 0xa6, 0xa8, 0x43, 0xd2, 0xb5, 0xd5, 0x69, 0x4c,
-	0x0a, 0x73, 0xfd, 0x05, 0xd9, 0x83, 0xb8, 0xa4, 0xc2, 0x14, 0x24, 0x2e, 0x2a, 0xa7, 0x95, 0xea,
-	0x65, 0x25, 0xb3, 0x80, 0x4b, 0x10, 0x7b, 0x73, 0x74, 0x76, 0x9c, 0xd1, 0x10, 0x20, 0xfe, 0xea,
-	0x58, 0x3c, 0x47, 0xc8, 0x33, 0x58, 0x39, 0x73, 0x3c, 0xee, 0x8f, 0xef, 0x33, 0xf5, 0x6a, 0xd4,
-	0xeb, 0xb2, 0x8e, 0x47, 0x71, 0x07, 0x12, 0x9e, 0xdc, 0xd2, 0xb5, 0x7c, 0xb4, 0x90, 0x2a, 0xa6,
-	0xa4, 0x54, 0x31, 0xe6, 0x9a, 0x3a, 0x23, 0x4f, 0x01, 0x5f, 0xf4, 0xa8, 0xcd, 0xa9, 0xdc, 0xa7,
-	0x37, 0x7d, 0xea, 0x71, 0x7c, 0x00, 0x8b, 0x3e, 0xa0, 0x29, 0x3a, 0x9f, 0x28, 0x95, 0x27, 0xe4,
-	0x31, 0xa4, 0xcb, 0x94, 0x8f, 0x55, 0xad, 0x86, 0xab, 0xa2, 0x0a, 0xb8, 0x0b, 0xf8, 0x92, 0xba,
-	0x74, 0xe2, 0x86, 0xd9, 0xd8, 0x02, 0x64, 0xfc, 0x5e, 0xfc, 0x77, 0xeb, 0xdd, 0x8d, 0x3c, 0x81,
-	0xac, 0xd4, 0xed, 0x63, 0xef, 0x84, 0xe2, 0x36, 0xc4, 0x7c, 0xbf, 0x8a, 0x37, 0x96, 0x2a, 0x82,
-	0xec, 0x45, 0x94, 0x89, 0x7d, 0x72, 0x08, 0xcb, 0x65, 0xca, 0xff, 0xcc, 0x83, 0x21, 0x9e, 0x68,
-	0x50, 0x7b, 0x02, 0xd9, 0x8b, 0x6e, 0xe3, 0xaf, 0xc8, 0x78, 0x0e, 0x59, 0x39, 0xa7, 0xfb, 0x29,
-	0xd9, 0x85, 0x4c, 0x99, 0x72, 0x69, 0x44, 0x55, 0x3d, 0x8a, 0x83, 0x2c, 0x0f, 0x56, 0xc5, 0x5f,
-	0x09, 0x48, 0x96, 0x54, 0x84, 0xb1, 0x06, 0xa9, 0x90, 0x81, 0x30, 0x67, 0xca, 0xa0, 0x9a, 0x2a,
-	0xa8, 0xe6, 0xb1, 0x1f, 0x54, 0x63, 0x5d, 0x2a, 0x9e, 0xe1, 0x35, 0x92, 0xf9, 0xfa, 0xe3, 0xe7,
-	0xb7, 0x08, 0xe0, 0x92, 0x15, 0xd8, 0x0a, 0x4f, 0x21, 0x15, 0xb2, 0x15, 0xea, 0xb2, 0x76, 0xda,
-	0x69, 0x46, 0xd8, 0x5a, 0x64, 0x4d, 0xf0, 0xa4, 0x49, 0x5c, 0xf0, 0x34, 0x0f, 0x83, 0x76, 0x3f,
-	0x40, 0xba, 0xd4, 0x77, 0x5b, 0xf7, 0x20, 0xdc, 0x14, 0x84, 0x39, 0xf2, 0xaf, 0x55, 0xef, 0xbb,
-	0x2d, 0xa5, 0x2e, 0xe0, 0x2d, 0x68, 0x07, 0x1a, 0xbe, 0x86, 0x25, 0x65, 0x63, 0x5c, 0x93, 0xa5,
-	0x13, 0xb6, 0x1e, 0x67, 0xd4, 0x05, 0x23, 0x62, 0x46, 0x91, 0x59, 0xb7, 0x82, 0x6c, 0x80, 0x47,
-	0x90, 0x0a, 0xf9, 0x5c, 0x29, 0x9c, 0xb6, 0xbe, 0x31, 0x67, 0xc0, 0x64, 0x01, 0xdf, 0x41, 0x72,
-	0x68, 0x7f, 0xcc, 0x8d, 0xe6, 0x1d, 0xce, 0x83, 0x11, 0x72, 0x0e, 0xd9, 0x16, 0x6a, 0x74, 0xcc,
-	0x4d, 0xaa, 0xb1, 0xc4, 0x3f, 0xf4, 0x81, 0x86, 0x97, 0x00, 0xa3, 0x9c, 0xe0, 0x7f, 0xe1, 0xb1,
-	0x85, 0x7c, 0x36, 0x46, 0xfa, 0x48, 0x90, 0x6e, 0x1b, 0x73, 0x48, 0x0f, 0x85, 0xdf, 0x70, 0x1f,
-	0x12, 0x41, 0x6a, 0x70, 0x75, 0x38, 0xb7, 0x79, 0x94, 0x0b, 0xd8, 0x00, 0x18, 0xb9, 0x5b, 0xe9,
-	0x98, 0xf2, 0xfb, 0xdc, 0xd9, 0xec, 0x08, 0x4d, 0xff, 0xef, 0x6e, 0xcd, 0xd6, 0x64, 0xdd, 0xfa,
-	0x3f, 0x03, 0xb4, 0x01, 0x46, 0x71, 0x54, 0xb7, 0x4c, 0x05, 0x74, 0x4c, 0x9a, 0x29, 0x98, 0x0b,
-	0xc5, 0xfc, 0x5d, 0xcc, 0xa6, 0xd3, 0x18, 0x04, 0x7d, 0x37, 0x21, 0x33, 0x8c, 0x4e, 0xb5, 0x2b,
-	0x3e, 0x70, 0xf3, 0x8c, 0x33, 0xaf, 0x99, 0x87, 0xe2, 0xca, 0xad, 0xd2, 0x06, 0x24, 0xaa, 0x6f,
-	0xdf, 0x9f, 0x54, 0x2b, 0xe7, 0x33, 0xec, 0x74, 0x06, 0xc9, 0x61, 0x9e, 0x95, 0x17, 0x26, 0x03,
-	0x6e, 0xfc, 0x13, 0xfe, 0xfc, 0x90, 0x75, 0xc1, 0xbb, 0x82, 0x59, 0x4b, 0xe6, 0xdc, 0xb3, 0x6e,
-	0xe5, 0xc3, 0xa0, 0x1e, 0x17, 0x12, 0x9e, 0xfc, 0x0e, 0x00, 0x00, 0xff, 0xff, 0xa4, 0xd0, 0x3d,
-	0xcb, 0xba, 0x07, 0x00, 0x00,
 }
