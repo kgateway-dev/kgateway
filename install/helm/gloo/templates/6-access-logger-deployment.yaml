@@ -24,6 +24,11 @@ spec:
       labels:
         app: gloo
         gloo: gateway-proxy-access-logger
+        {{- if .Values.accessLogger.extraAccessLoggerLabels }}
+        {{- range $key, $value := .Values.accessLogger.extraAccessLoggerLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics

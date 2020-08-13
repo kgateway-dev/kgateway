@@ -21,6 +21,11 @@ spec:
     metadata:
       labels:
         gloo: gateway
+        {{- if .Values.gateway.deployment.extraGatewayLabels }}
+        {{- range $key, $value := .Values.gateway.deployment.extraGatewayLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics

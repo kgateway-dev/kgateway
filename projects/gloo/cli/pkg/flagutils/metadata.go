@@ -21,3 +21,7 @@ var DefaultNamespace = defaults.GlooSystem
 func AddNamespaceFlag(set *pflag.FlagSet, strptr *string) {
 	set.StringVarP(strptr, "namespace", "n", DefaultNamespace, "namespace for reading or writing resources")
 }
+
+func AddExcludecheckFlag(set *pflag.FlagSet, strarrptr *[]string) {
+	set.StringSliceVarP(strarrptr, "exclude", "x", []string{}, "check to exclude: (pods, upstreamgroup, secrets, gateways, proxies)")
+}

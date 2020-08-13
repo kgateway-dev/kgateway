@@ -20,6 +20,11 @@ spec:
     metadata:
       labels:
         gloo: ingress-proxy
+        {{- if .Values.ingressProxy.deployment.extraIngressProxyLabels }}
+        {{- range $key, $value := .Values.ingressProxy.deployment.extraIngressProxyLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
 {{- if .Values.ingressProxy.deployment.extraAnnotations }}
       annotations:
       {{- range $key, $value := .Values.ingressProxy.deployment.extraAnnotations }}

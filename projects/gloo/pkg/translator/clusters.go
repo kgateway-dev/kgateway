@@ -39,7 +39,7 @@ func (t *translatorInstance) computeClusters(params plugins.Params, reports repo
 
 func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.Upstream, reports reporter.ResourceReports) *envoyapi.Cluster {
 	params.Ctx = contextutils.WithLogger(params.Ctx, upstream.Metadata.Name)
-	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports)
+	out := t.initializeCluster(upstream, params.Snapshot.Endpoints, reports, &params.Snapshot.Secrets)
 
 	for _, plug := range t.plugins {
 		upstreamPlugin, ok := plug.(plugins.UpstreamPlugin)
@@ -58,8 +58,8 @@ func (t *translatorInstance) computeCluster(params plugins.Params, upstream *v1.
 	return out
 }
 
-func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports) *envoyapi.Cluster {
-	hcConfig, err := createHealthCheckConfig(upstream)
+func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints []*v1.Endpoint, reports reporter.ResourceReports, secrets *v1.SecretList) *envoyapi.Cluster {
+	hcConfig, err := createHealthCheckConfig(upstream, secrets)
 	if err != nil {
 		reports.AddError(upstream, err)
 	}
@@ -99,7 +99,7 @@ var (
 	}
 )
 
-func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, error) {
+func createHealthCheckConfig(upstream *v1.Upstream, secrets *v1.SecretList) ([]*envoycore.HealthCheck, error) {
 	if upstream == nil {
 		return nil, nil
 	}
@@ -115,7 +115,7 @@ func createHealthCheckConfig(upstream *v1.Upstream) ([]*envoycore.HealthCheck, e
 		if hc.GetHealthChecker() == nil {
 			return nil, NilFieldError(fmt.Sprintf(fmt.Sprintf("HealthCheck[%d].HealthChecker", i)))
 		}
-		converted, err := gogoutils.ToEnvoyHealthCheck(hc)
+		converted, err := gogoutils.ToEnvoyHealthCheck(hc, secrets)
 		if err != nil {
 			return nil, err
 		}

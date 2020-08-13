@@ -89,18 +89,21 @@ type Integrations struct {
 }
 
 type Knative struct {
-	Enabled             *bool         `json:"enabled" desc:"enabled knative components"`
-	Version             *string       `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
-	Proxy               *KnativeProxy `json:"proxy,omitempty"`
-	RequireIngressClass *bool         `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
+	Enabled                    *bool             `json:"enabled" desc:"enabled knative components"`
+	Version                    *string           `json:"version,omitEmpty" desc:"the version of knative installed to the cluster. if using version < 0.8.0, gloo will use Knative's ClusterIngress API for configuration rather than the namespace-scoped Ingress"`
+	Proxy                      *KnativeProxy     `json:"proxy,omitempty"`
+	RequireIngressClass        *bool             `json:"requireIngressClass" desc:"only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'."`
+	ExtraKnativeInternalLabels map[string]string `json:"extraKnativeInternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative internal pod."`
+	ExtraKnativeExternalLabels map[string]string `json:"extraKnativeExternalLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the knative external pod."`
 }
 
 type KnativeProxy struct {
-	Image           *Image  `json:"image,omitempty"`
-	HttpPort        int     `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
-	HttpsPort       int     `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
-	Tracing         *string `json:"tracing,omitempty" desc:"tracing configuration"`
-	LoopBackAddress string  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Image                          *Image            `json:"image,omitempty"`
+	HttpPort                       int               `json:"httpPort,omitempty" desc:"HTTP port for the proxy"`
+	HttpsPort                      int               `json:"httpsPort,omitempty" desc:"HTTPS port for the proxy"`
+	Tracing                        *string           `json:"tracing,omitempty" desc:"tracing configuration"`
+	LoopBackAddress                string            `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	ExtraClusterIngressProxyLabels map[string]string `json:"extraClusterIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the cluster ingress proxy pod."`
 	*DeploymentSpec
 	*ServiceSpec
 }
@@ -138,15 +141,16 @@ type Gloo struct {
 }
 
 type GlooDeployment struct {
-	Image                  *Image  `json:"image,omitempty"`
-	XdsPort                int     `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
-	RestXdsPort            uint32  `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
-	ValidationPort         int     `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
-	Stats                  *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
-	FloatingUserId         bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser              float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	ExternalTrafficPolicy  string  `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
-	DisableUsageStatistics bool    `json:"disableUsageStatistics" desc:"Disable the collection of gloo usage statistics"`
+	Image                  *Image            `json:"image,omitempty"`
+	XdsPort                int               `json:"xdsPort,omitempty" desc:"port where gloo serves xDS API to Envoy"`
+	RestXdsPort            uint32            `json:"restXdsPort,omitempty" desc:"port where gloo serves REST xDS API to Envoy"`
+	ValidationPort         int               `json:"validationPort,omitempty" desc:"port where gloo serves gRPC Proxy Validation to Gateway"`
+	Stats                  *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	FloatingUserId         bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser              float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExternalTrafficPolicy  string            `json:"externalTrafficPolicy,omitempty" desc:"Set the external traffic policy on the gloo service"`
+	DisableUsageStatistics bool              `json:"disableUsageStatistics" desc:"Disable the collection of gloo usage statistics"`
+	ExtraGlooLabels        map[string]string `json:"extraGlooLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the primary gloo pod."`
 	*DeploymentSpec
 }
 
@@ -158,10 +162,11 @@ type Discovery struct {
 }
 
 type DiscoveryDeployment struct {
-	Image          *Image  `json:"image,omitempty"`
-	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
-	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Image                *Image            `json:"image,omitempty"`
+	Stats                *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
+	FloatingUserId       bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser            float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo discovery pod."`
 	*DeploymentSpec
 }
 
@@ -195,10 +200,11 @@ type Webhook struct {
 }
 
 type GatewayDeployment struct {
-	Image          *Image  `json:"image,omitempty"`
-	Stats          *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
-	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	Image              *Image            `json:"image,omitempty"`
+	Stats              *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gateway pod"`
+	FloatingUserId     bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser          float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	ExtraGatewayLabels map[string]string `json:"extraGatewayLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway pod."`
 	*DeploymentSpec
 }
 
@@ -278,6 +284,7 @@ type GatewayProxyPodTemplate struct {
 	GracefulShutdown              *GracefulShutdownSpec `json:"gracefulShutdown,omitempty"`
 	TerminationGracePeriodSeconds int                   `json:"terminationGracePeriodSeconds" desc:"Time in seconds to wait for the pod to terminate gracefully. See [kubernetes docs](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#podspec-v1-core) for more info"`
 	CustomReadinessProbe          *appsv1.Probe         `json:"customReadinessProbe,omitEmpty"`
+	ExtraGatewayProxyLabels       map[string]string     `json:"extraGatewayProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo gateway proxy pod."`
 }
 
 type GracefulShutdownSpec struct {
@@ -314,13 +321,14 @@ type Failover struct {
 }
 
 type AccessLogger struct {
-	Image       *Image  `json:"image,omitempty"`
-	Port        uint    `json:"port,omitempty"`
-	ServiceName string  `json:"serviceName,omitempty"`
-	Enabled     bool    `json:"enabled"`
-	Stats       *Stats  `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
-	RunAsUser   float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FsGroup     float64 `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	Image                   *Image            `json:"image,omitempty"`
+	Port                    uint              `json:"port,omitempty"`
+	ServiceName             string            `json:"serviceName,omitempty"`
+	Enabled                 bool              `json:"enabled"`
+	Stats                   *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the gloo pod"`
+	RunAsUser               float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup                 float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
+	ExtraAccessLoggerLabels map[string]string `json:"extraAccessLoggerLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo access logger pod."`
 	*DeploymentSpec
 }
 
@@ -336,9 +344,10 @@ type Ingress struct {
 }
 
 type IngressDeployment struct {
-	Image          *Image  `json:"image,omitempty"`
-	RunAsUser      float64 `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
-	FloatingUserId bool    `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	Image              *Image            `json:"image,omitempty"`
+	RunAsUser          float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FloatingUserId     bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	ExtraIngressLabels map[string]string `json:"extraIngressLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the ingress pod."`
 	*DeploymentSpec
 }
 
@@ -351,13 +360,14 @@ type IngressProxy struct {
 }
 
 type IngressProxyDeployment struct {
-	Image            *Image            `json:"image,omitempty"`
-	HttpPort         int               `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
-	HttpsPort        int               `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
-	ExtraPorts       []interface{}     `json:"extraPorts,omitempty"`
-	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty"`
-	FloatingUserId   bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
-	RunAsUser        float64           `json:"runAsUser" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
+	Image                   *Image            `json:"image,omitempty"`
+	HttpPort                int               `json:"httpPort,omitempty" desc:"HTTP port for the ingress container"`
+	HttpsPort               int               `json:"httpsPort,omitempty" desc:"HTTPS port for the ingress container"`
+	ExtraPorts              []interface{}     `json:"extraPorts,omitempty"`
+	ExtraAnnotations        map[string]string `json:"extraAnnotations,omitempty"`
+	FloatingUserId          bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
+	RunAsUser               float64           `json:"runAsUser" desc:"Explicitly set the user ID for the pod to run as. Default is 10101"`
+	ExtraIngressProxyLabels map[string]string `json:"extraIngressProxyLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the ingress proxy pod."`
 	*DeploymentSpec
 }
 

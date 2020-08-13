@@ -21,6 +21,11 @@ spec:
     metadata:
       labels:
         gloo: discovery
+        {{- if .Values.discovery.deployment.extraDiscoveryLabels }}
+        {{- range $key, $value := .Values.discovery.deployment.extraDiscoveryLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics

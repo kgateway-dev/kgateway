@@ -20,6 +20,11 @@ spec:
     metadata:
       labels:
         gloo: gloo
+        {{- if .Values.gloo.deployment.extraGlooLabels }}
+        {{- range $key, $value := .Values.gloo.deployment.extraGlooLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       {{- if $statsConfig.enabled }}
       annotations:
         prometheus.io/path: /metrics

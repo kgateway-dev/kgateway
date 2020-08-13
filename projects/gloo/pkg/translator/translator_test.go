@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -638,6 +640,85 @@ var _ = Describe("Translator", func() {
 			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
 		})
 
+		It("can translate health check with secret header", func() {
+			params.Snapshot.Secrets = v1.SecretList{
+				{
+					Kind: &v1.Secret_Header{
+						Header: &v1.HeaderSecret{
+							Headers: map[string]string{
+								"Authorization": "basic dXNlcjpwYXNzd29yZA==",
+							},
+						},
+					},
+					Metadata: core.Metadata{
+						Name:      "foo",
+						Namespace: "bar",
+					},
+				},
+			}
+
+			expectedResult := []*envoycore.HealthCheck{
+				{
+					Timeout:            gogoutils.DurationStdToProto(&DefaultHealthCheckTimeout),
+					Interval:           gogoutils.DurationStdToProto(&DefaultHealthCheckInterval),
+					HealthyThreshold:   gogoutils.UInt32GogoToProto(DefaultThreshold),
+					UnhealthyThreshold: gogoutils.UInt32GogoToProto(DefaultThreshold),
+					HealthChecker: &envoycore.HealthCheck_HttpHealthCheck_{
+						HttpHealthCheck: &envoycore.HealthCheck_HttpHealthCheck{
+							Host:                   "host",
+							Path:                   "path",
+							ServiceName:            "svc",
+							RequestHeadersToAdd:    []*envoycore.HeaderValueOption{},
+							RequestHeadersToRemove: []string{},
+							UseHttp2:               true,
+							ExpectedStatuses:       []*envoy_type.Int64Range{},
+						},
+					},
+				},
+			}
+
+			var err error
+			upstream.HealthChecks, err = gogoutils.ToGlooHealthCheckList(expectedResult)
+			Expect(err).NotTo(HaveOccurred())
+
+			expectedResult[0].GetHttpHealthCheck().RequestHeadersToAdd = []*envoycore.HeaderValueOption{
+				{
+					Header: &envoycore.HeaderValue{
+						Key:   "Authorization",
+						Value: "basic dXNlcjpwYXNzd29yZA==",
+					},
+					Append: &wrappers.BoolValue{
+						Value: true,
+					},
+				},
+			}
+
+			upstream.GetHealthChecks()[0].GetHttpHealthCheck().RequestHeadersToAdd = []*envoycore_sk.HeaderValueOption{
+				{
+					HeaderOption: &envoycore_sk.HeaderValueOption_HeaderSecretRef{
+						HeaderSecretRef: &core.ResourceRef{
+							Name:      "foo",
+							Namespace: "bar",
+						},
+					},
+					Append: &types.BoolValue{
+						Value: true,
+					},
+				},
+			}
+
+			snap, errs, report, err := translator.Translate(params, proxy)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(errs.Validate()).NotTo(HaveOccurred())
+			Expect(snap).NotTo(BeNil())
+			Expect(report).To(Equal(validationutils.MakeReport(proxy)))
+
+			clusters := snap.GetResources(xds.ClusterType)
+			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+			cluster = clusterResource.ResourceProto().(*envoyapi.Cluster)
+			Expect(cluster).NotTo(BeNil())
+			Expect(cluster.HealthChecks).To(BeEquivalentTo(expectedResult))
+		})
 	})
 
 	Context("circuit breakers", func() {
