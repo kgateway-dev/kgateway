@@ -28,6 +28,10 @@ var (
 		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
 			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
 	}
+	SniDomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+		return errors.Errorf("SNI domain conflict: the [%s] sni domain is present in other virtual services "+
+			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
+	}
 	GatewayHasConflictingVirtualServicesErr = func(conflictingDomains []string) error {
 		var loggedDomains []string
 		for _, domain := range conflictingDomains {
@@ -57,6 +61,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
+		validateVirtualServiceSniDomains(gateway, virtualServices, reports)
 		listener := desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
@@ -105,6 +110,54 @@ func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.Virtu
 	}
 	if len(conflictingDomains) > 0 {
 		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingDomains))
+	}
+}
+
+
+// Similar to previous function, but for SNI domains.
+// Errors will be added to the report object.
+func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports, ) {
+
+	// Index the virtual services for this gateway by the domain
+	vsBySniDomain := map[string]v1.VirtualServiceList{}
+	for _, vs := range virtualServices {
+
+		// Add warning and skip if no virtual host
+		if vs.VirtualHost == nil {
+			reports.AddWarning(vs, NoVirtualHostErr(vs).Error())
+			continue
+		}
+
+		// todo question: is this still a concern for sni domains?
+		// Not specifying any sniDomains is not an error per se, but we need to check whether multiple virtual services
+		// don't specify any, so we use the empty string as a placeholder in this function.
+		sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
+		if len(sniDomains) == 0 {
+			sniDomains = []string{""}
+		}
+
+		for _, sniDomain := range sniDomains {
+			vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
+		}
+	}
+
+	var conflictingSniDomains []string
+	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
+		if len(vsWithThisSniDomain) > 1 {
+			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
+			for i, vs := range vsWithThisSniDomain {
+				var conflictingVsNames []string
+				for j, otherVs := range vsWithThisSniDomain {
+					if i != j {
+						conflictingVsNames = append(conflictingVsNames, otherVs.Metadata.Ref().Key())
+					}
+				}
+				reports.AddError(vs, SniDomainInOtherVirtualServicesErr(sniDomain, conflictingVsNames))
+			}
+		}
+	}
+	if len(conflictingSniDomains) > 0 {
+		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingSniDomains))
 	}
 }
 
