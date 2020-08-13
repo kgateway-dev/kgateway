@@ -1755,6 +1755,24 @@ var _ = Describe("Translator", func() {
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
+
+			FIt("should reject configs if they have overlapping sni domains", func() {
+				listener := &v1.Listener{
+					SslConfigurations: []*v1.SslConfig{
+						{
+							SniDomains: []string {"a.com"},
+						},
+						{
+							SniDomains: []string {"a.com"},
+						},
+					},
+				}
+				report := &validation.ListenerReport{}
+				ValidateListenerSniDomains(listener, report)
+				Expect(report.Errors).NotTo(BeNil())
+				Expect(len(report.Errors)).To(Equal(1))
+				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))
+			})
 			It("should combine sni matches", func() {
 				prep([]*v1.SslConfig{
 					{

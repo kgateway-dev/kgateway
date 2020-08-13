@@ -20,13 +20,13 @@ var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
 	}
-	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsRefs []string) error {
 		if domain == "" {
 			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
-				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
+				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsRefs)
 		}
 		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
-			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
+			"that belong to the same Gateway as this one: %v", domain, conflictingVsRefs)
 	}
 	SniDomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
 		return errors.Errorf("SNI domain conflict: the [%s] sni domain is present in other virtual services "+
@@ -128,16 +128,11 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 			continue
 		}
 
-		// todo question: is this still a concern for sni domains?
-		// Not specifying any sniDomains is not an error per se, but we need to check whether multiple virtual services
-		// don't specify any, so we use the empty string as a placeholder in this function.
-		sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
-		if len(sniDomains) == 0 {
-			sniDomains = []string{""}
-		}
-
-		for _, sniDomain := range sniDomains {
-			vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
+		if vs.SslConfig != nil && vs.SslConfig.SniDomains != nil {
+			sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
+			for _, sniDomain := range sniDomains {
+				vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
+			}
 		}
 	}
 
@@ -145,10 +140,10 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
 		if len(vsWithThisSniDomain) > 1 {
 			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
-			for i, vs := range vsWithThisSniDomain {
+			for idx1, vs := range vsWithThisSniDomain {
 				var conflictingVsNames []string
-				for j, otherVs := range vsWithThisSniDomain {
-					if i != j {
+				for idx2, otherVs := range vsWithThisSniDomain {
+					if idx1 != idx2 {
 						conflictingVsNames = append(conflictingVsNames, otherVs.Metadata.Ref().Key())
 					}
 				}

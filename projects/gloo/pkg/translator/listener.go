@@ -161,13 +161,32 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		}}
 	}
 
+	ValidateListenerSniDomains(listener, listenerReport)
+
+	var secureFilterChains []*envoylistener.FilterChain
+
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
+		// get secrets
+		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
+		if err != nil {
+			validation.AppendListenerError(listenerReport,
+				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
+			continue
+		}
+		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
+		secureFilterChains = append(secureFilterChains, filterChain)
+	}
+	return secureFilterChains
+}
+
+// This is the same test that's done in the validateVirtualServiceSniDomains function in http.go, but for envoy listeners.
+// Visible for testing
+func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validationapi.ListenerReport) {
 	sslConfigsBySniDomain := map[string][]*v1.SslConfig{}
 	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 
 		sniDomains := append([]string{}, sslConfig.SniDomains...)
-		if len(sniDomains) == 0 {
-			sniDomains = []string{""}
-		}
+
 		for _, sniDomain := range sniDomains {
 			sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
 		}
@@ -185,20 +204,6 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		validation.AppendListenerError(listenerReport,
 			validationapi.ListenerReport_Error_SSLConfigError, ConflictingSniDomainsInListenerErr(listener.Name, conflictingSniDomains).Error())
 	}
-	var secureFilterChains []*envoylistener.FilterChain
-
-	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
-		// get secrets
-		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
-		if err != nil {
-			validation.AppendListenerError(listenerReport,
-				validationapi.ListenerReport_Error_SSLConfigError, err.Error())
-			continue
-		}
-		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
-		secureFilterChains = append(secureFilterChains, filterChain)
-	}
-	return secureFilterChains
 }
 
 func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
