@@ -87,9 +87,9 @@ spec:
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
         env:
-        - name: CR_GLOO_ROTATION_ENABLED
+        - name: GLOO_ROTATION_ENABLED
           value: "true"
-        - name: CR_SDS_CLIENT
+        - name: SDS_CLIENT
           value: "sds_client"
         securityContext:
           runAsNonRoot: true
