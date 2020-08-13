@@ -1837,7 +1837,7 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
-			FIt("should reject configs if they have overlapping sni domains", func() {
+			It("should reject configs if they have overlapping sni domains", func() {
 				listener := &v1.Listener{
 					SslConfigurations: []*v1.SslConfig{
 						{

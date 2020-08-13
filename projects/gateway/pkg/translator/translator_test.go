@@ -539,7 +539,7 @@ var _ = Describe("Translator", func() {
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
 			})
 
-			FIt("should error when 2 virtual services linked to the same gateway have overlapping sni domains", func() {
+			It("should error when 2 virtual services linked to the same gateway have overlapping sni domains", func() {
 				snap.Gateways[0].Ssl = true
 
 				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
