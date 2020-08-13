@@ -16,6 +16,7 @@ import (
 
 const (
 	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
+	sdsClusterName     = "gateway-proxy-sds"
 )
 
 var (
@@ -113,7 +114,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 						{
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-									ClusterName: "gateway-proxy-sds",
+									ClusterName: sdsClusterName,
 								},
 							},
 						},

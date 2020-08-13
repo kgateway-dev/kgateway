@@ -2,9 +2,7 @@ package utils
 
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -313,30 +311,8 @@ var _ = Describe("Ssl", func() {
 			// this may lead to envoy updates being too frequent
 			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
 
-			getGrpcConfig := func(s *envoyauth.SdsSecretConfig) *envoycore.GrpcService_GoogleGrpc {
-				return s.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
-			}
-
-			Expect(getGrpcConfig(vctx).ChannelCredentials).To(BeEquivalentTo(&envoycore.GrpcService_GoogleGrpc_ChannelCredentials{
-				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
-					LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
-				},
-			}))
-			Expect(getGrpcConfig(vctx).CredentialsFactoryName).To(Equal(MetadataPluginName))
-
-			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
-			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
-			var credConfig envoygrpccredential.FileBasedMetadataConfig
-			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
-
-			Expect(credConfig).To(BeEquivalentTo(envoygrpccredential.FileBasedMetadataConfig{
-				SecretData: &envoycore.DataSource{
-					Specifier: &envoycore.DataSource_Filename{
-						Filename: "TokenFileName",
-					},
-				},
-				HeaderKey: "Header",
-			}))
+			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
+			Expect(envoyGrpc.ClusterName).To(Equal("gateway-proxy-sds"))
 
 		})
 
