@@ -2,7 +2,9 @@ package utils
 
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	"github.com/golang/protobuf/ptypes"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	. "github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -279,12 +281,6 @@ var _ = Describe("Ssl", func() {
 				TargetUri:              "TargetUri",
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
-				CallCredentials: &v1.CallCredentials{
-					FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
-						TokenFileName: "TokenFileName",
-						Header:        "Header",
-					},
-				},
 			}
 			upstreamCfg = &v1.UpstreamSslConfig{
 				Sni: "test.com",
@@ -295,7 +291,7 @@ var _ = Describe("Ssl", func() {
 			configTranslator = NewSslConfigTranslator()
 		})
 
-		It("should have a sds setup", func() {
+		It("should have a sds setup with a cluster name", func() {
 			c, err := resolveCommonSslConfig(upstreamCfg, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
@@ -313,6 +309,92 @@ var _ = Describe("Ssl", func() {
 
 			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
 			Expect(envoyGrpc.ClusterName).To(Equal("gateway-proxy-sds"))
+
+		})
+
+		Context("san", func() {
+			It("should error with san and not rootca", func() {
+				sdsConfig.ValidationContextName = ""
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				_, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).To(HaveOccurred())
+			})
+
+			It("should add SAN verification when provided", func() {
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				c, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).NotTo(HaveOccurred())
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
+				Expect(vctx.DefaultValidationContext.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
+			})
+		})
+	})
+
+	Context("sds with tokenFile", func() {
+		var (
+			sdsConfig *v1.SDSConfig
+		)
+		BeforeEach(func() {
+			sdsConfig = &v1.SDSConfig{
+				TargetUri:              "TargetUri",
+				CertificatesSecretName: "CertificatesSecretName",
+				ValidationContextName:  "ValidationContextName",
+				CallCredentials: &v1.CallCredentials{
+					FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
+						TokenFileName: "TokenFileName",
+						Header:        "Header",
+					},
+				},
+			}
+			upstreamCfg = &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_Sds{
+					Sds: sdsConfig,
+				},
+			}
+			configTranslator = NewSslConfigTranslator()
+		})
+
+		It("should have a sds setup with a file-based metadata", func() {
+			c, err := resolveCommonSslConfig(upstreamCfg, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+			Expect(c.ValidationContextType).ToNot(BeNil())
+
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+			cert := c.TlsCertificateSdsSecretConfigs[0]
+			Expect(vctx.Name).To(Equal("ValidationContextName"))
+			Expect(cert.Name).To(Equal("CertificatesSecretName"))
+			// If they are no equivalent, it means that any serialization is different.
+			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+			// and here: https://github.com/envoyproxy/envoy/pull/6241
+			// this may lead to envoy updates being too frequent
+			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+			getGrpcConfig := func(s *envoyauth.SdsSecretConfig) *envoycore.GrpcService_GoogleGrpc {
+				return s.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_GoogleGrpc_).GoogleGrpc
+			}
+
+			Expect(getGrpcConfig(vctx).ChannelCredentials).To(BeEquivalentTo(&envoycore.GrpcService_GoogleGrpc_ChannelCredentials{
+				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
+					LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+				},
+			}))
+			Expect(getGrpcConfig(vctx).CredentialsFactoryName).To(Equal(MetadataPluginName))
+
+			credPlugin := getGrpcConfig(vctx).CallCredentials[0].CredentialSpecifier.(*envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin).FromPlugin
+			Expect(credPlugin.Name).To(Equal(MetadataPluginName))
+			var credConfig envoygrpccredential.FileBasedMetadataConfig
+			ptypes.UnmarshalAny(credPlugin.GetTypedConfig(), &credConfig)
+
+			Expect(credConfig).To(BeEquivalentTo(envoygrpccredential.FileBasedMetadataConfig{
+				SecretData: &envoycore.DataSource{
+					Specifier: &envoycore.DataSource_Filename{
+						Filename: "TokenFileName",
+					},
+				},
+				HeaderKey: "Header",
+			}))
 
 		})
 
