@@ -320,7 +320,9 @@ var _ = Describe("Ssl", func() {
 						TargetUri:              "TargetUri",
 						CertificatesSecretName: "CertificatesSecretName",
 						ValidationContextName:  "ValidationContextName",
-						ClusterName:            "custom-cluster",
+						SdsBuilder: &v1.SDSConfig_ClusterName{
+							ClusterName: "custom-cluster",
+						},
 					},
 				},
 			}
@@ -371,10 +373,12 @@ var _ = Describe("Ssl", func() {
 				TargetUri:              "TargetUri",
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
-				CallCredentials: &v1.CallCredentials{
-					FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
-						TokenFileName: "TokenFileName",
-						Header:        "Header",
+				SdsBuilder: &v1.SDSConfig_CallCredentials{
+					CallCredentials: &v1.CallCredentials{
+						FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
+							TokenFileName: "TokenFileName",
+							Header:        "Header",
+						},
 					},
 				},
 			}

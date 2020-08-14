@@ -144,6 +144,7 @@ func GetSnapshotCache(srv Server) cache.SnapshotCache {
 // This is needed because the filesystem watcher
 // that gets triggered by a WRITE doesn't have a guarantee
 // that the write has finished yet.
+// See https://github.com/fsnotify/fsnotify/pull/252 for more context
 func readAndVerifyCert(certFilePath string) ([]byte, error) {
 	var err error
 	var fileBytes []byte

@@ -105,7 +105,7 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
-	if sslSecrets.CallCredentials != nil {
+	if sslSecrets.GetCallCredentials() != nil {
 		// Deprecated way of building SDS. No longer used
 		// by anything in gloo but still enabled for now
 		// as it's a public API.
@@ -113,8 +113,8 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 	}
 
 	clusterName := defaultSdsClusterName
-	if sslSecrets.ClusterName != "" {
-		clusterName = sslSecrets.ClusterName
+	if sslSecrets.GetClusterName() != "" {
+		clusterName = sslSecrets.GetClusterName()
 	}
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
@@ -141,10 +141,10 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	config := &envoygrpccredential.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
-				Filename: sslSecrets.CallCredentials.FileCredentialSource.TokenFileName,
+				Filename: sslSecrets.GetCallCredentials().FileCredentialSource.TokenFileName,
 			},
 		},
-		HeaderKey: sslSecrets.CallCredentials.FileCredentialSource.Header,
+		HeaderKey: sslSecrets.GetCallCredentials().FileCredentialSource.Header,
 	}
 	any, _ := MessageToAny(config)
 
