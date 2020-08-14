@@ -141,9 +141,6 @@ var _ = Describe("SDS Server E2E Test", func() {
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
 		Expect(err).To(BeNil())
 
-		// Give it a second to pick up the new files
-		time.Sleep(1 * time.Second)
-
 		// Re-read certs
 		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
@@ -161,9 +158,6 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
 		Expect(err).To(BeNil())
-
-		// Give it a second to pick up the new files
-		time.Sleep(1 * time.Second)
 
 		// Re-read certs again
 		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
