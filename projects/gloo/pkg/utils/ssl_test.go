@@ -68,7 +68,7 @@ var _ = Describe("Ssl", func() {
 				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 			})
 
 			It("should add SAN verification when provided", func() {
@@ -229,9 +229,9 @@ var _ = Describe("Ssl", func() {
 				tlsSecret.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, true)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 				_, err = configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, false)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 			})
 
 			It("should add SAN verification when provided", func() {
@@ -347,11 +347,11 @@ var _ = Describe("Ssl", func() {
 		})
 
 		Context("san", func() {
-			It("should error with san and not rootca", func() {
+			It("should error with san and not validationContext", func() {
 				sdsConfig.ValidationContextName = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(MissingValidationContextError))
 			})
 
 			It("should add SAN verification when provided", func() {
@@ -435,11 +435,11 @@ var _ = Describe("Ssl", func() {
 		})
 
 		Context("san", func() {
-			It("should error with san and not rootca", func() {
+			It("should error with san and not validationContext", func() {
 				sdsConfig.ValidationContextName = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(MissingValidationContextError))
 			})
 
 			It("should add SAN verification when provided", func() {

@@ -34,6 +34,10 @@ var (
 	}
 
 	NoCertificateFoundError = eris.New("no certificate information found")
+
+	MissingValidationContextError = eris.Errorf("must provide validation context name if verifying SAN")
+
+	RootCaMustBeProvidedError = eris.Errorf("a root_ca must be provided if verify_subject_alt_name is not empty")
 )
 
 type SslConfigTranslator interface {
@@ -193,7 +197,7 @@ func (s *sslConfigTranslator) handleSds(sslSecrets *v1.SDSConfig, matchSan []*en
 		return nil, eris.Errorf("at least one of certificates_secret_name or validation_context_name must be provided")
 	}
 	if len(matchSan) != 0 && sslSecrets.ValidationContextName == "" {
-		return nil, eris.Errorf("must provide validation context name if verifying SAN")
+		return nil, MissingValidationContextError
 	}
 	tlsContext := &envoyauth.CommonTlsContext{
 		// default params
@@ -297,7 +301,7 @@ func (s *sslConfigTranslator) ResolveCommonSslConfig(cs CertSource, secrets v1.S
 		tlsContext.ValidationContextType = validationCtx
 
 	} else if len(sanList) != 0 {
-		return nil, eris.Errorf("a root_ca must be provided if verify_subject_alt_name is not empty")
+		return nil, RootCaMustBeProvidedError
 
 	}
 
