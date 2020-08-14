@@ -16,8 +16,8 @@ import (
 //go:generate mockgen -destination mocks/mock_ssl.go github.com/solo-io/gloo/projects/gloo/pkg/utils SslConfigTranslator
 
 const (
-	MetadataPluginName = "envoy.grpc_credentials.file_based_metadata"
-	sdsClusterName     = "gateway-proxy-sds"
+	MetadataPluginName    = "envoy.grpc_credentials.file_based_metadata"
+	defaultSdsClusterName = "gateway-proxy-sds"
 )
 
 var (
@@ -112,6 +112,10 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 		return buildDeprecatedSDS(name, sslSecrets)
 	}
 
+	clusterName := defaultSdsClusterName
+	if sslSecrets.ClusterName != "" {
+		clusterName = sslSecrets.ClusterName
+	}
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoycore.ConfigSource{
@@ -122,7 +126,7 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 						{
 							TargetSpecifier: &envoycore.GrpcService_EnvoyGrpc_{
 								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
-									ClusterName: sdsClusterName,
+									ClusterName: clusterName,
 								},
 							},
 						},

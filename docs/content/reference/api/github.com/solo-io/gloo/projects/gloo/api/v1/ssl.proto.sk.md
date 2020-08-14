@@ -121,6 +121,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 "callCredentials": .gloo.solo.io.CallCredentials
 "certificatesSecretName": string
 "validationContextName": string
+"clusterName": string
 
 ```
 
@@ -130,6 +131,7 @@ SslConfig contains the options necessary to configure a virtual host or listener
 | `callCredentials` | [.gloo.solo.io.CallCredentials](../ssl.proto.sk/#callcredentials) | Call credentials. |  |
 | `certificatesSecretName` | `string` | The name of the secret containing the certificate. |  |
 | `validationContextName` | `string` | The name of secret containing the validation context (i.e. root ca). |  |
+| `clusterName` | `string` | The name of the sds cluster in envoy. |  |
 
 
 

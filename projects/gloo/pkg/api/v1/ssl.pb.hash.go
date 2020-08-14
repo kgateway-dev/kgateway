@@ -300,6 +300,10 @@ func (m *SDSConfig) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetClusterName())); err != nil {
+		return 0, err
+	}
+
 	return hasher.Sum64(), nil
 }
 

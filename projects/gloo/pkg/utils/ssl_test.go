@@ -291,7 +291,7 @@ var _ = Describe("Ssl", func() {
 			configTranslator = NewSslConfigTranslator()
 		})
 
-		It("should have a sds setup with a cluster name", func() {
+		It("should have a sds setup with a default cluster name", func() {
 			c, err := resolveCommonSslConfig(upstreamCfg, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
@@ -309,6 +309,38 @@ var _ = Describe("Ssl", func() {
 
 			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
 			Expect(envoyGrpc.ClusterName).To(Equal("gateway-proxy-sds"))
+
+		})
+
+		It("should have a sds setup with a custom cluster name", func() {
+			cfgCustomCluster := &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_Sds{
+					Sds: &v1.SDSConfig{
+						TargetUri:              "TargetUri",
+						CertificatesSecretName: "CertificatesSecretName",
+						ValidationContextName:  "ValidationContextName",
+						ClusterName:            "custom-cluster",
+					},
+				},
+			}
+			c, err := resolveCommonSslConfig(cfgCustomCluster, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+			Expect(c.ValidationContextType).ToNot(BeNil())
+
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+			cert := c.TlsCertificateSdsSecretConfigs[0]
+			Expect(vctx.Name).To(Equal("ValidationContextName"))
+			Expect(cert.Name).To(Equal("CertificatesSecretName"))
+			// If they are no equivalent, it means that any serialization is different.
+			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+			// and here: https://github.com/envoyproxy/envoy/pull/6241
+			// this may lead to envoy updates being too frequent
+			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
+			Expect(envoyGrpc.ClusterName).To(Equal("custom-cluster"))
 
 		})
 
