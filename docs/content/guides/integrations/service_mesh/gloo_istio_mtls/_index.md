@@ -270,7 +270,7 @@ kubectl edit deploy/gateway-proxy -n gloo-system
 
 We will update our gateway-proxy deployment as follows:
 
-{{< highlight yaml "hl_lines=61-156 162-179" >}}
+{{< highlight yaml "hl_lines=61-177 183-200" >}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -513,6 +513,19 @@ spec:
       certificatesSecretName: istio_server_cert
       validationContextName: istio_validation_context
 {{</highlight>}}
+
+Next we're going to lock down the mesh so that only mTLS traffic is allowed:
+```bash
+kubectl apply -n istio-system -f - <<EOF
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "default"
+spec:
+  mtls:
+    mode: STRICT
+EOF
+```
 
 To test this out, we need a route in Gloo:
 ```bash
