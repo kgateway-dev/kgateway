@@ -78,6 +78,9 @@ func translateGlooToEnvoyGrpcJson(grpcJsonConf *grpc_json.GrpcJsonTranscoder) (*
 }
 
 func translateGlooToEnvoyPrintOptions(options *grpc_json.GrpcJsonTranscoder_PrintOptions) *envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_PrintOptions {
+	if options == nil {
+		return nil
+	}
 	return &envoy_extensions_filters_http_grpc_json_transcoder_v3.GrpcJsonTranscoder_PrintOptions{
 		AddWhitespace:              options.GetAddWhitespace(),
 		AlwaysPrintPrimitiveFields: options.GetAlwaysPrintPrimitiveFields(),
