@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	// The Node ID.
+	// The Node ID of the envoy which receives config from this SDS server.
+	// The default node ID is podname.namespace
 	sdsClientDefault = os.Getenv("GATEWAY_PROXY_POD_NAME") + "." + os.Getenv("GATEWAY_PROXY_POD_NAMESPACE")
 )
 
@@ -96,7 +97,7 @@ func setup(ctx context.Context) Config {
 		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 
-	// Use podname.podnamepsace if sdsClient not explicitly set
+	// Use default node ID from env vars if SDS_CLIENT not explicitly set.
 	if c.SdsClient == "" {
 		c.SdsClient = sdsClientDefault
 	}
