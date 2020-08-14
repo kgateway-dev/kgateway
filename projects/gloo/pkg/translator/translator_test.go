@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 
-<<<<<<< HEAD
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
-=======
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
->>>>>>> 616a4fadf... Healthcheck basicauth (#3503)
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_api_v2_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"

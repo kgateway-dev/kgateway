@@ -35,24 +35,6 @@ apis:
   consul.options.gloo.solo.io.UpstreamSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/consul/consul.proto.sk/#UpstreamSpec
     package: consul.options.gloo.solo.io
-<<<<<<< HEAD
-=======
-  core.skv2.solo.io.ClusterObjectRef:
-    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ClusterObjectRef
-    package: core.skv2.solo.io
-  core.skv2.solo.io.ObjectRef:
-    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#ObjectRef
-    package: core.skv2.solo.io
-  core.skv2.solo.io.Status:
-    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#Status
-    package: core.skv2.solo.io
-  core.skv2.solo.io.TypedClusterObjectRef:
-    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#TypedClusterObjectRef
-    package: core.skv2.solo.io
-  core.skv2.solo.io.TypedObjectRef:
-    relativepath: reference/api/github.com/solo-io/skv2/api/core/v1/core.proto.sk/#TypedObjectRef
-    package: core.skv2.solo.io
->>>>>>> 616a4fadf... Healthcheck basicauth (#3503)
   core.solo.io.Metadata:
     relativepath: reference/api/github.com/solo-io/solo-kit/api/v1/metadata.proto.sk/#Metadata
     package: core.solo.io

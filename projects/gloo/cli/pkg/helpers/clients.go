@@ -524,6 +524,7 @@ func secretClient(timeout time.Duration, namespaces []string) (v1.SecretClient, 
 	converterChain := kubeconverters.NewSecretConverterChain(
 		new(kubeconverters.TLSSecretConverter),
 		new(kubeconverters.AwsSecretConverter),
+		new(kubeconverters.HeaderSecretConverter),
 	)
 
 	secretClient, err := v1.NewSecretClient(&factory.KubeSecretClientFactory{
