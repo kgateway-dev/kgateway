@@ -133,7 +133,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			return resp.VersionInfo == snapshotVersion
-		}, "10s", "1s").Should(BeTrue())
+		}, "15s", "1s").Should(BeTrue())
 
 		// Cert rotation #1
 		err = os.Remove(keyName)
@@ -152,7 +152,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "10s", "1s").Should(BeTrue())
+		}, "15s", "1s").Should(BeTrue())
 
 		// Cert rotation #2
 		err = os.Remove(keyName)
@@ -172,7 +172,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			return resp.VersionInfo == snapshotVersion
-		}, "10s", "1s").Should(BeTrue())
+		}, "15s", "1s").Should(BeTrue())
 	})
 })
 
