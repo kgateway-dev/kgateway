@@ -141,13 +141,15 @@ var _ = Describe("SDS Server E2E Test", func() {
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-1"), 0644)
 		Expect(err).To(BeNil())
 
+		// Give it a second to pick up the new files
+		time.Sleep(1 * time.Second)
+
 		// Re-read certs
 		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("16241649556325798095"))
-		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
@@ -160,14 +162,15 @@ var _ = Describe("SDS Server E2E Test", func() {
 		err = afero.WriteFile(fs, keyName, []byte("tls.key-2"), 0644)
 		Expect(err).To(BeNil())
 
+		// Give it a second to pick up the new files
+		time.Sleep(1 * time.Second)
+
 		// Re-read certs again
 		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("7644406922477208950"))
-		resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
-		Expect(err).To(BeNil())
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(context.TODO(), &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
