@@ -2,6 +2,7 @@ package utils
 
 import (
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoygrpccredential "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	envoyauth "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoymatcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	gogo_types "github.com/gogo/protobuf/types"
@@ -104,6 +105,13 @@ func dataSourceGenerator(inlineDataSource bool) func(s string) *envoycore.DataSo
 }
 
 func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+	if sslSecrets.CallCredentials != nil {
+		// Deprecated way of building SDS. No longer used
+		// by anything in gloo but still enabled for now
+		// as it's a public API.
+		return buildDeprecatedSDS(name, sslSecrets)
+	}
+
 	return &envoyauth.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoycore.ConfigSource{
@@ -116,6 +124,57 @@ func buildSds(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig 
 								EnvoyGrpc: &envoycore.GrpcService_EnvoyGrpc{
 									ClusterName: sdsClusterName,
 								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSecretConfig {
+	config := &envoygrpccredential.FileBasedMetadataConfig{
+		SecretData: &envoycore.DataSource{
+			Specifier: &envoycore.DataSource_Filename{
+				Filename: sslSecrets.CallCredentials.FileCredentialSource.TokenFileName,
+			},
+		},
+		HeaderKey: sslSecrets.CallCredentials.FileCredentialSource.Header,
+	}
+	any, _ := MessageToAny(config)
+
+	gRPCConfig := &envoycore.GrpcService_GoogleGrpc{
+		TargetUri:  sslSecrets.TargetUri,
+		StatPrefix: "sds",
+		ChannelCredentials: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials{
+			CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_ChannelCredentials_LocalCredentials{
+				LocalCredentials: &envoycore.GrpcService_GoogleGrpc_GoogleLocalCredentials{},
+			},
+		},
+		CredentialsFactoryName: MetadataPluginName,
+		CallCredentials: []*envoycore.GrpcService_GoogleGrpc_CallCredentials{
+			&envoycore.GrpcService_GoogleGrpc_CallCredentials{
+				CredentialSpecifier: &envoycore.GrpcService_GoogleGrpc_CallCredentials_FromPlugin{
+					FromPlugin: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin{
+						Name: MetadataPluginName,
+						ConfigType: &envoycore.GrpcService_GoogleGrpc_CallCredentials_MetadataCredentialsFromPlugin_TypedConfig{
+							TypedConfig: any},
+					},
+				},
+			},
+		},
+	}
+	return &envoyauth.SdsSecretConfig{
+		Name: name,
+		SdsConfig: &envoycore.ConfigSource{
+			ConfigSourceSpecifier: &envoycore.ConfigSource_ApiConfigSource{
+				ApiConfigSource: &envoycore.ApiConfigSource{
+					ApiType: envoycore.ApiConfigSource_GRPC,
+					GrpcServices: []*envoycore.GrpcService{
+						{
+							TargetSpecifier: &envoycore.GrpcService_GoogleGrpc_{
+								GoogleGrpc: gRPCConfig,
 							},
 						},
 					},
