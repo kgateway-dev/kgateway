@@ -12,7 +12,7 @@ A growing trend is to use gRPC internally as the communication protocol between 
 1. HTTP based which plays well with existing firewalls and load balancers
 1. Well supported with tooling around observability
 
-While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON/REST style API. This can happen for many reasons. among which are:
+While gRPC works great for internal micro-services, it may be desirable to have the internet facing API be a JSON/REST style API. This can happen for many reasons, among which are:
 
 1. Keeping the API backwards compatible
 1. Making the API more Web friendly
@@ -210,4 +210,4 @@ In this guide we have deployed a gRPC micro-service and created an external REST
 
 ### Next Steps
 
-Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). Gloo can also use a [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}}) as an Upstream. Our [function discovery guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" %}}) covers how to set up the Function Discovery Service (FDS) for a Swagger document or gRPC service.
+Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}). Gloo can also use a [REST endpoint]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/rest_endpoint/" %}}) as an Upstream. Our [function discovery guide]({{% versioned_link_path fromRoot="/installation/advanced_configuration/fds_mode/" %}}) covers how to set up the Function Discovery Service (FDS) for a Swagger document or gRPC service. For advanced gRPC to JSON use cases, check out our [advanced gRPC to REST guide]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest_advanced" %}}).

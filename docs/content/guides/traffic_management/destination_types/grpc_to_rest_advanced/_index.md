@@ -4,12 +4,32 @@ weight: 135
 description: Routing gRPC services to a REST API using provided descriptors
 ---
 
-If you want more control with the granularity of the mapping from gRPC to REST, then you may want to use the underlying
-envoy configuration exposed in Gloo on the `Gateway` and `VirtualService`, rather than the simplified model as described
-[here]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}})
+In our gRPC to REST [introduction]({{% versioned_link_path fromRoot="/guides/traffic_management/destination_types/grpc_to_rest" %}}), we explored why users might want to use gRPC to JSON transcoding to expose their gRPC services as REST APIs. As shown in that guide, Gloo has its own API for gRPC to JSON transcoding that automatically annotates your proto methods with HTTP mappings as a convenience. For some use cases, it may make more sense to control [these HTTP mappings](https://cloud.google.com/service-infrastructure/docs/service-management/reference/rpc/google.api#google.api.HttpRule) with more granularity by using the [underlying envoy filter](https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/grpc_json_transcoder_filter) directly. In this guide, we will explore how to do that with Gloo.
+
+## Overview
+
+In this guide we will deploy a gRPC micro-service and transform its gRPC API to a REST API via Gloo.
+
+To understand the details of the binary protobuf, a protobuf descriptor is needed. Since we are manually controlling the HTTP mappings for our gRPC service, we will have to generate this descriptor and provide it to Gloo.
+
+In this guide we are going to:
+
+1. Deploy a gRPC demo service
+1. Generate the gRPC descriptors for this service
+1. Configure our gateway to handle transcoding for this service
+1. Add a Virtual Service creating a REST API that maps to the gRPC API
+1. Verify that everything is working as expected
+
+Let's get started!
+
+## Prereqs
+
+- Gloo installed with version 1.5.0-beta19 or later.
+- Protoc installed (guide tested with version 3.6.1)
 
 ## Deploy the demo gRPC bookstore
 
+Using `kubectl`, apply the following deployment and service:
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -49,7 +69,35 @@ spec:
     app: bookstore
 ```
 
+## Generate descriptors for the service
+
+Checkout the Gloo repo and `cd` into the `docs/examples/grpc-json-transcoding/bookstore` directory. Now run:
+```shell script
+cd /tmp/
+git clone https://github.com/protocolbuffers/protobuf
+git clone http://github.com/googleapis/googleapis
+export PROTOBUF_HOME=$PWD/protobuf/src
+export GOOGLE_PROTOS_HOME=$PWD/googleapis
+cd -
+go generate 
+```
+
+Go generate will run the following:
+```shell script
+protoc -I${GOOGLE_PROTOS_HOME} -I${PROTOBUF_HOME} -I. --include_source_info --go_out=plugins=grpc:. --include_imports --descriptor_set_out=descriptors/proto.pb bookstore.proto
+```
+
+which is responsible for generating our binary descriptors and writing them out into `docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb` in the Gloo repo.
+
 ## Configure the gateway with a gRPC to JSON Transcoder
+
+Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode our binary descriptors in base64 (standard encoding):
+
+```shell script
+cat docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb | base64
+```
+
+Taking the output from that, we can now configure our gateway (`kubectl apply` this gateway):
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -77,6 +125,7 @@ spec:
 
 ## Create a route to the gRPC upstream
 
+Now let's create a route to our gRPC service (`kubectl apply` the following):
 ```yaml
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
@@ -116,3 +165,11 @@ And then get the shelves again to confirm it was created:
 ```shell script
 curl -H "Host: foo.example.com" $(glooctl proxy url)/shelves
 ```
+
+## Conclusion
+
+In this guide we have deployed a gRPC micro-service and created an external REST API that translates to the gRPC API via Gloo. This allows you to enjoy the benefits of using gRPC for your microservices while still having a traditional REST API without the need to maintain two sets of code. 
+
+### Next Steps
+
+Learn more about how Gloo handles [gRPC for web clients]({{% versioned_link_path fromRoot="/guides/traffic_management/listener_configuration/grpc_web/" %}}).
