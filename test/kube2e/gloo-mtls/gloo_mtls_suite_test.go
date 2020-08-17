@@ -35,6 +35,11 @@ var (
 )
 
 func TestGlooMtls(t *testing.T) {
+	if os.Getenv("KUBE2E_TESTS") != "gloomtls" {
+		log.Warnf("This test is disabled. " +
+			"To enable, set KUBE2E_TESTS to 'gloomtls' in your env.")
+		return
+
 	if testutils.AreTestsDisabled() {
 		return
 	}
