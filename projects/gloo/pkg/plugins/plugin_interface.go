@@ -165,11 +165,9 @@ func (s StagedHttpFilterList) Len() int {
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
 func (s StagedHttpFilterList) Less(i, j int) bool {
-	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
-	case -1:
-		return true
-	case 1:
-		return false
+	filterStageCompare := FilterStageComparison(s[i].Stage, s[j].Stage)
+	if filterStageCompare != 0 {
+		return filterStageCompare < 0
 	}
 
 	nameCompare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name)
