@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3459
+    description: Virtual Services with overlapping SNI domains in the same gateway are invalid. This adds some checks to make sure such changes are rejected before they reach envoy.
+    
