@@ -1,8 +1,10 @@
 package plugins
 
 import (
+	"bytes"
 	"context"
 	"sort"
+	"strings"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -169,18 +171,17 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 	case 1:
 		return false
 	}
-	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
-		return true
+
+	nameCompare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name)
+	if nameCompare != 0 {
+		return nameCompare < 0
 	}
-	if s[i].HttpFilter.Name > s[j].HttpFilter.Name {
-		return false
+
+	configCompare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue())
+	if configCompare != 0 {
+		return configCompare < 0
 	}
-	if s[i].HttpFilter.String() < s[j].HttpFilter.String() {
-		return true
-	}
-	if s[i].HttpFilter.String() > s[j].HttpFilter.String() {
-		return false
-	}
+
 	// ensure stability
 	return i < j
 }
