@@ -1,8 +1,10 @@
 package plugins
 
 import (
+	"bytes"
 	"context"
 	"sort"
+	"strings"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoylistener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
@@ -161,26 +163,26 @@ func (s StagedHttpFilterList) Len() int {
 	return len(s)
 }
 
-// filters by Relative Stage, Weighting, Name, and (to ensure stability) index
+// filters by Relative Stage, Weighting, Name, Config Type-Url, Config Value, and (to ensure stability) index.
+// The assumption is that if two filters are in the same stage, their order doesn't matter, and we
+// just need to make sure it is stable.
 func (s StagedHttpFilterList) Less(i, j int) bool {
-	switch FilterStageComparison(s[i].Stage, s[j].Stage) {
-	case -1:
-		return true
-	case 1:
-		return false
+	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
+		return compare < 0
 	}
-	if s[i].HttpFilter.Name < s[j].HttpFilter.Name {
-		return true
+
+	if compare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name); compare != 0 {
+		return compare < 0
 	}
-	if s[i].HttpFilter.Name > s[j].HttpFilter.Name {
-		return false
+
+	if compare := strings.Compare(s[i].HttpFilter.GetTypedConfig().GetTypeUrl(), s[j].HttpFilter.GetTypedConfig().GetTypeUrl()); compare != 0 {
+		return compare < 0
 	}
-	if s[i].HttpFilter.String() < s[j].HttpFilter.String() {
-		return true
+
+	if compare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue()); compare != 0 {
+		return compare < 0
 	}
-	if s[i].HttpFilter.String() > s[j].HttpFilter.String() {
-		return false
-	}
+
 	// ensure stability
 	return i < j
 }
