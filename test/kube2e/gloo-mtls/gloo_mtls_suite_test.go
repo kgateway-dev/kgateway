@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/test/helpers"
 	"github.com/solo-io/gloo/test/kube2e"
+	"github.com/solo-io/go-utils/log"
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/clusterlock"
 	"github.com/solo-io/go-utils/testutils/exec"
@@ -39,6 +40,7 @@ func TestGlooMtls(t *testing.T) {
 		log.Warnf("This test is disabled. " +
 			"To enable, set KUBE2E_TESTS to 'gloomtls' in your env.")
 		return
+	}
 
 	if testutils.AreTestsDisabled() {
 		return
