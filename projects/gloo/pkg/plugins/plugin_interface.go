@@ -163,7 +163,9 @@ func (s StagedHttpFilterList) Len() int {
 	return len(s)
 }
 
-// filters by Relative Stage, Weighting, Name, and (to ensure stability) index
+// filters by Relative Stage, Weighting, Name, Config Type-Url, Config Value, and (to ensure stability) index.
+// The assumption is that if two filters are in the same stage, their order doesn't matter, and we
+// just need to make sure it is stable.
 func (s StagedHttpFilterList) Less(i, j int) bool {
 	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
 		return compare < 0
