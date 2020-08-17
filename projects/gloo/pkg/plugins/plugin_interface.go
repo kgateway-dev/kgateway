@@ -177,6 +177,11 @@ func (s StagedHttpFilterList) Less(i, j int) bool {
 		return nameCompare < 0
 	}
 
+	typeURLCompare := strings.Compare(s[i].HttpFilter.GetTypedConfig().GetTypeUrl(), s[j].HttpFilter.GetTypedConfig().GetTypeUrl())
+	if typeURLCompare != 0 {
+		return typeURLCompare < 0
+	}
+
 	configCompare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue())
 	if configCompare != 0 {
 		return configCompare < 0
