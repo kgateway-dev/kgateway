@@ -165,24 +165,20 @@ func (s StagedHttpFilterList) Len() int {
 
 // filters by Relative Stage, Weighting, Name, and (to ensure stability) index
 func (s StagedHttpFilterList) Less(i, j int) bool {
-	filterStageCompare := FilterStageComparison(s[i].Stage, s[j].Stage)
-	if filterStageCompare != 0 {
-		return filterStageCompare < 0
+	if compare := FilterStageComparison(s[i].Stage, s[j].Stage); compare != 0 {
+		return compare < 0
 	}
 
-	nameCompare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name)
-	if nameCompare != 0 {
-		return nameCompare < 0
+	if compare := strings.Compare(s[i].HttpFilter.Name, s[j].HttpFilter.Name); compare != 0 {
+		return compare < 0
 	}
 
-	typeURLCompare := strings.Compare(s[i].HttpFilter.GetTypedConfig().GetTypeUrl(), s[j].HttpFilter.GetTypedConfig().GetTypeUrl())
-	if typeURLCompare != 0 {
-		return typeURLCompare < 0
+	if compare := strings.Compare(s[i].HttpFilter.GetTypedConfig().GetTypeUrl(), s[j].HttpFilter.GetTypedConfig().GetTypeUrl()); compare != 0 {
+		return compare < 0
 	}
 
-	configCompare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue())
-	if configCompare != 0 {
-		return configCompare < 0
+	if compare := bytes.Compare(s[i].HttpFilter.GetTypedConfig().GetValue(), s[j].HttpFilter.GetTypedConfig().GetValue()); compare != 0 {
+		return compare < 0
 	}
 
 	// ensure stability
