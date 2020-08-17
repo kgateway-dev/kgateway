@@ -36,6 +36,7 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	hc := healthchecker.NewGrpc("TestService", health.NewServer())
 	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
+	//glootest.RegisterTestService3Server(grpcServer, srv)
 	glootest.RegisterTestService2Server(grpcServer, srv)
 	go grpcServer.Serve(lis)
 	time.Sleep(time.Millisecond)

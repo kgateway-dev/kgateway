@@ -1,8 +1,7 @@
-package main
+package init
 
 import (
 	"context"
-
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/empty"
