@@ -231,8 +231,6 @@ spec:
         env:
         - name: GLOO_ROTATION_ENABLED
           value: "true"
-        - name: SDS_CLIENT
-          value: "sds_client"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs

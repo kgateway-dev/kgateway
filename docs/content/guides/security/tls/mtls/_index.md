@@ -99,8 +99,6 @@ In the gloo deployment, this sidecar is added as:
         env:
         - name: GLOO_ROTATION_ENABLED
           value: "true"
-        - name: SDS_CLIENT
-          value: "sds_client"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -208,8 +206,6 @@ An SDS sidecar is also added to the gateway-proxy deployment:
         env:
         - name: GLOO_ROTATION_ENABLED
           value: "true"
-        - name: SDS_CLIENT
-          value: "sds_client"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs

@@ -89,8 +89,6 @@ spec:
         env:
         - name: GLOO_ROTATION_ENABLED
           value: "true"
-        - name: SDS_CLIENT
-          value: "sds_client"
         securityContext:
           runAsNonRoot: true
           {{- if not .Values.gloo.deployment.floatingUserId }}

@@ -17,14 +17,16 @@ import (
 )
 
 var (
-	// The Node ID of the envoy which receives config from this SDS server.
-	// The default node ID is podname.namespace
-	sdsClientDefault = os.Getenv("GATEWAY_PROXY_POD_NAME") + "." + os.Getenv("GATEWAY_PROXY_POD_NAMESPACE")
+	// The NodeID of the envoy server reading from this SDS
+	sdsClientDefault = "sds_client"
 )
 
 type Config struct {
 	SdsServerAddress string `split_words:"true" default:"127.0.0.1:8234"` //sds_config target_uri in the envoy instance that it provides secrets to
 	SdsClient        string `split_words:"true"`
+
+	GatewayProxyPodName      string `split_words:"true"`
+	GatewayProxyPodNamespace string `split_words:"true"`
 
 	GlooRotationEnabled   bool   `split_words:"true"`
 	GlooMtlsSecretDir     string `split_words:"true" default:"/etc/envoy/ssl/"`
@@ -99,7 +101,7 @@ func setup(ctx context.Context) Config {
 
 	// Use default node ID from env vars if SDS_CLIENT not explicitly set.
 	if c.SdsClient == "" {
-		c.SdsClient = sdsClientDefault
+		c.SdsClient = determineSdsClient(c)
 	}
 
 	// At least one must be enabled, otherwise we have nothing to do.
@@ -108,6 +110,15 @@ func setup(ctx context.Context) Config {
 		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 	return c
+}
+
+// determineSdsClient checks GATEWAY_PROXY_POD_NAME or GATEWAY_PROXY_POD_NAMESPACE
+// environment vars to try and figure out the NodeID, otherwise returns the default "sds_client"
+func determineSdsClient(c Config) string {
+	if c.GatewayProxyPodName != "" && c.GatewayProxyPodNamespace != "" {
+		return c.GatewayProxyPodName + "." + c.GatewayProxyPodNamespace
+	}
+	return sdsClientDefault
 }
 
 // checkFilesExist returns an err if any of the
