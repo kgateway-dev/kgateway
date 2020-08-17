@@ -127,7 +127,7 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 			continue
 		}
 
-		if vs.SslConfig != nil && vs.SslConfig.SniDomains != nil {
+		if len(vs.GetSslConfig().GetSniDomains()) > 0 {
 			sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
 			for _, sniDomain := range sniDomains {
 				vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)

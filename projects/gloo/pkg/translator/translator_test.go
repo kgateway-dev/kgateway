@@ -1851,7 +1851,7 @@ var _ = Describe("Translator", func() {
 				report := &validation.ListenerReport{}
 				ValidateListenerSniDomains(listener, report)
 				Expect(report.Errors).NotTo(BeNil())
-				Expect(len(report.Errors)).To(Equal(1))
+				Expect(report.Errors).To(HaveLen(1))
 				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))
 			})
 			It("should combine sni matches", func() {
