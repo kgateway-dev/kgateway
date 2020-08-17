@@ -20,12 +20,16 @@ var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
 	}
-	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsRefs []string) error {
 		if domain == "" {
 			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
-				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
+				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsRefs)
 		}
 		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
+			"that belong to the same Gateway as this one: %v", domain, conflictingVsRefs)
+	}
+	SniDomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+		return errors.Errorf("SNI domain conflict: the [%s] sni domain is present in other virtual services "+
 			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
 	}
 	GatewayHasConflictingVirtualServicesErr = func(conflictingDomains []string) error {
@@ -57,6 +61,7 @@ func (t *HttpTranslator) GenerateListeners(ctx context.Context, snap *v1.ApiSnap
 
 		virtualServices := getVirtualServicesForGateway(gateway, snap.VirtualServices)
 		validateVirtualServiceDomains(gateway, virtualServices, reports)
+		validateVirtualServiceSniDomains(gateway, virtualServices, reports)
 		listener := desiredListenerForHttp(gateway, virtualServices, snap.RouteTables, reports)
 		result = append(result, listener)
 	}
@@ -105,6 +110,48 @@ func validateVirtualServiceDomains(gateway *v1.Gateway, virtualServices v1.Virtu
 	}
 	if len(conflictingDomains) > 0 {
 		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingDomains))
+	}
+}
+
+// Similar to previous function, but for SNI domains.
+// Errors will be added to the report object.
+func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
+
+	// Index the virtual services for this gateway by the domain
+	vsBySniDomain := map[string]v1.VirtualServiceList{}
+	for _, vs := range virtualServices {
+
+		// Add warning and skip if no virtual host
+		if vs.VirtualHost == nil {
+			reports.AddWarning(vs, NoVirtualHostErr(vs).Error())
+			continue
+		}
+
+		if len(vs.GetSslConfig().GetSniDomains()) > 0 {
+			sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
+			for _, sniDomain := range sniDomains {
+				vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
+			}
+		}
+	}
+
+	var conflictingSniDomains []string
+	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
+		if len(vsWithThisSniDomain) > 1 {
+			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
+			for idx1, vs := range vsWithThisSniDomain {
+				var conflictingVsNames []string
+				for idx2, otherVs := range vsWithThisSniDomain {
+					if idx1 != idx2 {
+						conflictingVsNames = append(conflictingVsNames, otherVs.Metadata.Ref().Key())
+					}
+				}
+				reports.AddError(vs, SniDomainInOtherVirtualServicesErr(sniDomain, conflictingVsNames))
+			}
+		}
+	}
+	if len(conflictingSniDomains) > 0 {
+		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingSniDomains))
 	}
 }
 
