@@ -117,7 +117,8 @@ var _ = Describe("SDS Server E2E Test", func() {
 		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
 		// Read certs
-		certs := testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs, err := testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		Expect(err).NotTo(HaveOccurred())
 
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
@@ -142,7 +143,8 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 
 		// Re-read certs
-		certs = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		Expect(err).NotTo(HaveOccurred())
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
@@ -160,7 +162,8 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 
 		// Re-read certs again
-		certs = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs, err = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		Expect(err).NotTo(HaveOccurred())
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
