@@ -145,7 +145,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 	config := &envoygrpccredential.FileBasedMetadataConfig{
 		SecretData: &envoycore.DataSource{
 			Specifier: &envoycore.DataSource_Filename{
-				Filename: sslSecrets.GetCallCredentials().FileCredentialSource.TokenFileName,
+				Filename: sslSecrets.GetCallCredentials().GetFileCredentialSource().GetTokenFileName(),
 			},
 		},
 		HeaderKey: sslSecrets.GetCallCredentials().FileCredentialSource.Header,
