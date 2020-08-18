@@ -2,7 +2,6 @@ package run_test
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"path"
 	"time"
@@ -11,6 +10,7 @@ import (
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/solo-io/gloo/projects/sds/pkg/run"
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
+	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 
@@ -117,7 +117,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		client := envoy_service_discovery_v2.NewSecretDiscoveryServiceClient(conn)
 
 		// Read certs
-		certs := filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs := testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
@@ -142,7 +142,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 
 		// Re-read certs
-		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
@@ -160,7 +160,7 @@ var _ = Describe("SDS Server E2E Test", func() {
 		Expect(err).To(BeNil())
 
 		// Re-read certs again
-		certs = filesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
+		certs = testutils.FilesToBytes(keyNameSymlink, certNameSymlink, caNameSymlink)
 
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
@@ -172,17 +172,3 @@ var _ = Describe("SDS Server E2E Test", func() {
 		}, "15s", "1s").Should(BeTrue())
 	})
 })
-
-func filesToBytes(keyName, certName, caName string) [][]byte {
-	certs := [][]byte{}
-	keyBytes, err := ioutil.ReadFile(keyName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, keyBytes)
-	certBytes, err := ioutil.ReadFile(certName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, certBytes)
-	caBytes, err := ioutil.ReadFile(caName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, caBytes)
-	return certs
-}

@@ -25,8 +25,8 @@ type Config struct {
 	SdsServerAddress string `split_words:"true" default:"127.0.0.1:8234"` //sds_config target_uri in the envoy instance that it provides secrets to
 	SdsClient        string `split_words:"true"`
 
-	GatewayProxyPodName      string `split_words:"true"`
-	GatewayProxyPodNamespace string `split_words:"true"`
+	PodName      string `split_words:"true"`
+	PodNamespace string `split_words:"true"`
 
 	GlooRotationEnabled   bool   `split_words:"true"`
 	GlooMtlsSecretDir     string `split_words:"true" default:"/etc/envoy/ssl/"`
@@ -112,11 +112,12 @@ func setup(ctx context.Context) Config {
 	return c
 }
 
-// determineSdsClient checks GATEWAY_PROXY_POD_NAME or GATEWAY_PROXY_POD_NAMESPACE
-// environment vars to try and figure out the NodeID, otherwise returns the default "sds_client"
+// determineSdsClient checks POD_NAME or POD_NAMESPACE
+// environment vars to try and figure out the NodeID,
+// otherwise returns the default "sds_client"
 func determineSdsClient(c Config) string {
-	if c.GatewayProxyPodName != "" && c.GatewayProxyPodNamespace != "" {
-		return c.GatewayProxyPodName + "." + c.GatewayProxyPodNamespace
+	if c.PodName != "" && c.PodNamespace != "" {
+		return c.PodName + "." + c.PodNamespace
 	}
 	return sdsClientDefault
 }

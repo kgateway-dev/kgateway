@@ -344,11 +344,11 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
         env:
-          - name: GATEWAY_PROXY_POD_NAME
+          - name: POD_NAME
             valueFrom:
               fieldRef:
                 fieldPath: metadata.name
-          - name: GATEWAY_PROXY_POD_NAMESPACE
+          - name: POD_NAMESPACE
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace

@@ -133,12 +133,6 @@ func GetSnapshotVersion(certs ...interface{}) (string, error) {
 	return fmt.Sprintf("%d", hash), err
 }
 
-// GetSnapshotCache is a utility method to expose
-// the snapshot cache for test assertions
-func GetSnapshotCache(srv Server) cache.SnapshotCache {
-	return srv.snapshotCache
-}
-
 // readAndVerifyCert will read the file from the given
 // path, then check for validity every 100ms for 2 seconds.
 // This is needed because the filesystem watcher
@@ -169,8 +163,10 @@ func readAndVerifyCert(certFilePath string) ([]byte, error) {
 	return fileBytes, nil
 }
 
-// checkCert verifies that the given bytes are not malformed,
-// as could be caused by a write-in-progress.
+// checkCert uses pem.Decode to verify that the given
+// bytes are not malformed, as could be caused by a
+// write-in-progress. Uses pem.Decode to check the blocks.
+// See https://golang.org/src/encoding/pem/pem.go?s=2505:2553#L76
 func checkCert(certs []byte) bool {
 	block, rest := pem.Decode(certs)
 	if block == nil {

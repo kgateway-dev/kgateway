@@ -2,10 +2,10 @@ package server_test
 
 import (
 	"context"
-	"io/ioutil"
 	"time"
 
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
+	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
@@ -62,7 +62,7 @@ var _ = Describe("SDS Server", func() {
 	})
 
 	It("correctly reads tls secrets from files to generate snapshot version", func() {
-		certs := filesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
+		certs := testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
 		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("6730780456972595554"))
@@ -70,19 +70,10 @@ var _ = Describe("SDS Server", func() {
 		// Test that the snapshot version changes if the contents of the file changes
 		_, err = keyFile.WriteString(`newFileString`)
 		Expect(err).To(BeNil())
-		certs = filesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
+		certs = testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
 		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
 		Expect(snapshotVersion).To(Equal("4234248347190811569"))
-	})
-
-	It("correctly updates SDSConfig", func() {
-		ctx, _ := context.WithCancel(context.Background())
-		snapshotCache := server.GetSnapshotCache(*srv)
-		err := srv.UpdateSDSConfig(ctx)
-		Expect(err).NotTo(HaveOccurred())
-		_, err = snapshotCache.GetSnapshot(srv.ID(nil))
-		Expect(err).To(BeNil())
 	})
 
 	Context("Test gRPC Server", func() {
@@ -103,7 +94,7 @@ var _ = Describe("SDS Server", func() {
 			cancel()
 		})
 
-		It("accepts client connections", func() {
+		It("accepts client connections & updates secrets", func() {
 			// Check that it's answering
 			var conn *grpc.ClientConn
 
@@ -127,17 +118,3 @@ var _ = Describe("SDS Server", func() {
 		})
 	})
 })
-
-func filesToBytes(keyName, certName, caName string) [][]byte {
-	certs := [][]byte{}
-	keyBytes, err := ioutil.ReadFile(keyName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, keyBytes)
-	certBytes, err := ioutil.ReadFile(certName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, certBytes)
-	caBytes, err := ioutil.ReadFile(caName)
-	Expect(err).NotTo(HaveOccurred())
-	certs = append(certs, caBytes)
-	return certs
-}
