@@ -38,7 +38,7 @@ var _ = Describe("GrpcJson", func() {
 						TypedConfig: any,
 					},
 				},
-				Stage: plugins.AfterStage(plugins.AuthZStage),
+				Stage: plugins.BeforeStage(plugins.OutAuthStage),
 			},
 		}
 	})
