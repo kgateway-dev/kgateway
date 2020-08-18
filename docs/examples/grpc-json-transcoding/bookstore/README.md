@@ -9,5 +9,5 @@ git clone http://github.com/googleapis/googleapis
 export PROTOBUF_HOME=$PWD/protobuf/src
 export GOOGLE_PROTOS_HOME=$PWD/googleapis
 cd -
-go generate 
+go generate
  ```

@@ -22,7 +22,13 @@ import (
 // and run the following commands:
 //    mkdir -p glootest
 //    mkdir -p descriptors
-//    protoc -I. --go_out=plugins=grpc:glootest --descriptor_set_out=descriptors/proto.pb protos/glootest.proto
+//    cd /tmp/
+//    git clone https://github.com/protocolbuffers/protobuf
+//    git clone http://github.com/googleapis/googleapis
+//    export PROTOBUF_HOME=$PWD/protobuf/src
+//    export GOOGLE_PROTOS_HOME=$PWD/googleapis
+//    cd -
+//    protoc -I. -I${GOOGLE_PROTOS_HOME} -I${PROTOBUF_HOME} --include_source_info --include_imports --go_out=plugins=grpc:glootest --descriptor_set_out=descriptors/proto.pb protos/glootest.proto
 //    protoc -I. --go_out=plugins=grpc:glootest --descriptor_set_out=descriptors/proto-nopkg.pb protos/glootest-nopackage.proto; sed -i 's/package glootest_nopackage/package glootest/' glootest/protos/glootest-nopackage.pb.go
 
 func RunServer(ctx context.Context) *TestGRPCServer {
@@ -36,7 +42,6 @@ func RunServer(ctx context.Context) *TestGRPCServer {
 	hc := healthchecker.NewGrpc("TestService", health.NewServer())
 	healthpb.RegisterHealthServer(grpcServer, hc.GetServer())
 	glootest.RegisterTestServiceServer(grpcServer, srv)
-	//glootest.RegisterTestService3Server(grpcServer, srv)
 	glootest.RegisterTestService2Server(grpcServer, srv)
 	go grpcServer.Serve(lis)
 	time.Sleep(time.Millisecond)
