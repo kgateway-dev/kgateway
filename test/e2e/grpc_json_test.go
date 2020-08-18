@@ -24,7 +24,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = FDescribe("GRPC to JSON Plugin", func() {
+var _ = Describe("GRPC to JSON Plugin", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
@@ -36,8 +36,8 @@ var _ = FDescribe("GRPC to JSON Plugin", func() {
 
 	BeforeEach(func() {
 		ctx, cancel = context.WithCancel(context.Background())
-		//defaults.HttpPort = services.NextBindPort()
-		//defaults.HttpsPort = services.NextBindPort()
+		defaults.HttpPort = services.NextBindPort()
+		defaults.HttpsPort = services.NextBindPort()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
@@ -52,22 +52,12 @@ var _ = FDescribe("GRPC to JSON Plugin", func() {
 				DisableUds:     true,
 				DisableFds:     true,
 			},
-			//Settings: &gloov1.Settings{
-			//	Discovery: &gloov1.Settings_DiscoveryOptions{
-			//		FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
-			//	},
-			//},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
 
-		//server.InitServer()
-
-		gw := getGrpcJsonGateway()
-		_, err = testClients.GatewayClient.Write(gw, clients.WriteOpts{Ctx: ctx})
+		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(), clients.WriteOpts{Ctx: ctx})
 		Expect(err).ToNot(HaveOccurred())
 
-		//err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		//Expect(err).NotTo(HaveOccurred(), "Should be able to create the default gateways")
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -88,7 +78,7 @@ var _ = FDescribe("GRPC to JSON Plugin", func() {
 			// send a request with a body
 			var buf bytes.Buffer
 			buf.Write(b)
-			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", 8081), "application/json", &buf)
+			res, err := http.Post(fmt.Sprintf("http://%s:%d/test", "localhost", defaults.HttpPort), "application/json", &buf)
 			if err != nil {
 				return "", err
 			}
@@ -104,16 +94,14 @@ var _ = FDescribe("GRPC to JSON Plugin", func() {
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		body := []byte(`"TODO"`) // this is valid JSON because of the quotes
-
-		//time.Sleep(5*time.Hour)
+		body := []byte(`"foo"`) // this is valid JSON because of the quotes
 
 		testRequest := basicReq(body)
 
-		Eventually(testRequest, 5, 1).Should(Equal(`{"str":"TODO"}`))
+		Eventually(testRequest, 5, 1).Should(Equal(`{"str":"foo"}`))
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "TODO"})),
+			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
 		}))))
 	})
 })
@@ -121,7 +109,7 @@ var _ = FDescribe("GRPC to JSON Plugin", func() {
 func getGrpcJsonGateway() *gatewayv1.Gateway {
 	return &gatewayv1.Gateway{
 		BindAddress: "::",
-		BindPort:    8081,
+		BindPort:    defaults.HttpPort,
 		Status:      core.Status{},
 		Metadata: core.Metadata{
 			Name:      "gateway-proxy",
@@ -152,8 +140,8 @@ func getGrpcJsonRawVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.
 				{
 					Matchers: []*matchers.Matcher{{
 						PathSpecifier: &matchers.Matcher_Prefix{
-							//Prefix: "/test",
-							Prefix: "/", // the filter clears the cache so it no longer would match on /test (this can be configured)
+							// the grpc_json transcoding filter clears the cache so it no longer would match on /test (this can be configured)
+							Prefix: "/",
 						},
 					}},
 					Action: &gatewayv1.Route_RouteAction{
@@ -163,15 +151,6 @@ func getGrpcJsonRawVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.
 									DestinationType: &gloov1.Destination_Upstream{
 										Upstream: utils.ResourceRefPtr(usRef),
 									},
-									//DestinationSpec: &gloov1.DestinationSpec{
-									//	DestinationType: &gloov1.DestinationSpec_Grpc{
-									//		Grpc: &grpc.DestinationSpec{
-									//			Package:  "glootest",
-									//			Function: "TestMethod",
-									//			Service:  "TestService",
-									//		},
-									//	},
-									//},
 								},
 							},
 						},
