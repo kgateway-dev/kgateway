@@ -3,7 +3,7 @@ title: Gloo and Istio mTLS with older versions of Istio
 weight: 1
 ---
 
-This reference guide contains instructions for older versions of Istio (1.0 to 1.5). If you are running Istio 1.6, you can use the latest documentation [here](https://docs.solo.io/gloo/latest/guides/service_mesh/gloo_istio_mtls/).
+This reference guide contains instructions for older versions of Istio (1.0 to 1.5). If you are running Istio 1.6, you can use the latest documentation [here](/guides/integrations/service_mesh/gloo_istio_mtls/).
 
 Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
@@ -529,7 +529,7 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
-          - name: ISTIO_ROTATION_ENABLED
+          - name: ISTIO_MTLS_SDS_ENABLED
             value: "true"
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.5.1

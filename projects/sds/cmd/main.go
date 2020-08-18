@@ -28,12 +28,12 @@ type Config struct {
 	PodName      string `split_words:"true"`
 	PodNamespace string `split_words:"true"`
 
-	GlooRotationEnabled   bool   `split_words:"true"`
+	GlooMtlsSdsEnabled    bool   `split_words:"true"`
 	GlooMtlsSecretDir     string `split_words:"true" default:"/etc/envoy/ssl/"`
 	GlooServerCert        string `split_words:"true" default:"server_cert"`
 	GlooValidationContext string `split_words:"true" default:"validation_context"`
 
-	IstioRotationEnabled   bool   `split_words:"true"`
+	IstioMtlsSdsEnabled    bool   `split_words:"true"`
 	IstioCertDir           string `split_words:"true" default:"/etc/istio-certs/"`
 	IstioServerCert        string `split_words:"true" default:"istio_server_cert"`
 	IstioValidationContext string `split_words:"true" default:"istio_validation_context"`
@@ -49,12 +49,12 @@ func main() {
 
 	contextutils.LoggerFrom(ctx).Infow(
 		"config loaded",
-		zap.Bool("glooCertRotationEnabled", c.GlooRotationEnabled),
-		zap.Bool("istioCertRotationEnabled", c.IstioRotationEnabled),
+		zap.Bool("glooMtlsSdsEnabled", c.GlooMtlsSdsEnabled),
+		zap.Bool("istioMtlsSdsEnabled", c.IstioMtlsSdsEnabled),
 	)
 
 	secrets := []server.Secret{}
-	if c.IstioRotationEnabled {
+	if c.IstioMtlsSdsEnabled {
 		istioCertsSecret := server.Secret{
 			ServerCert:        c.IstioServerCert,
 			ValidationContext: c.IstioValidationContext,
@@ -65,7 +65,7 @@ func main() {
 		secrets = append(secrets, istioCertsSecret)
 	}
 
-	if c.GlooRotationEnabled {
+	if c.GlooMtlsSdsEnabled {
 		glooMtlsSecret := server.Secret{
 			ServerCert:        c.GlooServerCert,
 			ValidationContext: c.GlooValidationContext,
@@ -105,8 +105,8 @@ func setup(ctx context.Context) Config {
 	}
 
 	// At least one must be enabled, otherwise we have nothing to do.
-	if !c.GlooRotationEnabled && !c.IstioRotationEnabled {
-		err := fmt.Errorf("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars GLOO_ROTATION_ENABLED or ISTIO_ROTATION_ENABLED")
+	if !c.GlooMtlsSdsEnabled && !c.IstioMtlsSdsEnabled {
+		err := fmt.Errorf("at least one of Istio Cert rotation or Gloo Cert rotation must be enabled, using env vars GLOO_MTLS_SDS_ENABLED or ISTIO_MTLS_SDS_ENABLED")
 		contextutils.LoggerFrom(ctx).Fatal(err)
 	}
 	return c

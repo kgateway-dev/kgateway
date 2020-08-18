@@ -97,7 +97,7 @@ In the gloo deployment, this sidecar is added as:
         image: "quay.io/solo-io/sds:1.3.4"
         imagePullPolicy: IfNotPresent
         env:
-        - name: GLOO_ROTATION_ENABLED
+        - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
@@ -204,7 +204,7 @@ An SDS sidecar is also added to the gateway-proxy deployment:
         image: "quay.io/solo-io/sds:1.5.0-beta19"
         imagePullPolicy: IfNotPresent
         env:
-        - name: GLOO_ROTATION_ENABLED
+        - name: GLOO_MTLS_SDS_ENABLED
           value: "true"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
