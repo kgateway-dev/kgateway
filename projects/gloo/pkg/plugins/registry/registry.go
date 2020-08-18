@@ -13,6 +13,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/cors"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcjson"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
@@ -63,7 +64,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		static.NewPlugin(),
 		transformationPlugin,
 		grpcweb.NewPlugin(),
-		//grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),
+		grpc.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		faultinjection.NewPlugin(),
 		basicroute.NewPlugin(),
 		cors.NewPlugin(),
