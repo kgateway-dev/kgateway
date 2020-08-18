@@ -527,6 +527,25 @@ spec:
 EOF
 ```
 
+Alternatively, if you're not ready to lock down your entire mesh, you can change settings on a namespace or workload level. To enable stict mTLS for just the productpage app we've configured, we can run:
+```bash
+cat <<EOF | kubectl apply -f -
+apiVersion: "security.istio.io/v1beta1"
+kind: "PeerAuthentication"
+metadata:
+  name: "productpage"
+  namespace: "default"
+spec:
+  selector:
+    matchLabels:
+      app: productpage
+  mtls:
+    mode: STRICT
+EOF
+```
+
+More details on configuring PeerAuthentication policies can be found [here](https://istio.io/latest/docs/tasks/security/authentication/authn-policy/).
+
 To test this out, we need a route in Gloo:
 ```bash
 glooctl add route --name prodpage --namespace gloo-system --path-prefix / --dest-name default-productpage-9080 --dest-namespace gloo-system
