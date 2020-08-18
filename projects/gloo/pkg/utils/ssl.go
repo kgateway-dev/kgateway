@@ -148,7 +148,7 @@ func buildDeprecatedSDS(name string, sslSecrets *v1.SDSConfig) *envoyauth.SdsSec
 				Filename: sslSecrets.GetCallCredentials().GetFileCredentialSource().GetTokenFileName(),
 			},
 		},
-		HeaderKey: sslSecrets.GetCallCredentials().FileCredentialSource.Header,
+		HeaderKey: sslSecrets.GetCallCredentials().GetFileCredentialSource().GetHeader(),
 	}
 	any, _ := MessageToAny(config)
 
