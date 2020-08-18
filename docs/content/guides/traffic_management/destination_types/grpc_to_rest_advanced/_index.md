@@ -69,6 +69,8 @@ spec:
     app: bookstore
 ```
 
+The source code for this service lives in the Gloo repo at `docs/examples/grpc-json-transcoding/bookstore`. In the following step, we demonstrate how we can get the proto descriptor set from the source and use that to configure Envoy for gRPC to JSON transcoding.
+
 ## Generate descriptors for the service
 
 Clone the Gloo repo and `cd` into the `docs/examples/grpc-json-transcoding/bookstore` directory. Now run:
@@ -79,7 +81,7 @@ git clone http://github.com/googleapis/googleapis
 export PROTOBUF_HOME=$PWD/protobuf/src
 export GOOGLE_PROTOS_HOME=$PWD/googleapis
 cd -
-go generate 
+go generate
 ```
 
 Go generate will run the following:
@@ -91,7 +93,7 @@ which is responsible for generating our binary descriptors and writing them out 
 
 ## Configure the gateway with a gRPC to JSON Transcoder
 
-Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode our binary descriptors in base64 (standard encoding). From the root of the Gloo repo:
+Next we need to configure our `Gateway` to handle gRPC to JSON transcoding using our generated descriptors. Since yaml can't handle binary data, we need to encode the binary descriptor set for our gRPC service in base64 (standard encoding). From the root of the Gloo repo:
 
 ```shell script
 cat docs/examples/grpc-json-transcoding/bookstore/descriptors/proto.pb | base64
