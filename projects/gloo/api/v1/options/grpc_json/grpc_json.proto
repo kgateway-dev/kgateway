@@ -10,14 +10,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
-import "udpa/annotations/status.proto";
-import "udpa/annotations/versioning.proto";
 import "validate/validate.proto";
-
-option java_package = "io.envoyproxy.envoy.extensions.filters.http.grpc_json_transcoder.v3";
-option java_outer_classname = "TranscoderProto";
-option java_multiple_files = true;
-option (udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#protodoc-title: gRPC-JSON transcoder]
 // gRPC-JSON transcoder :ref:`configuration overview <config_http_filters_grpc_json_transcoder>`.
@@ -25,12 +18,8 @@ option (udpa.annotations.file_status).package_version_status = ACTIVE;
 
 // [#next-free-field: 10]
 message GrpcJsonTranscoder {
-    option (udpa.annotations.versioning).previous_message_type =
-           "envoy.config.filter.http.transcoder.v2.GrpcJsonTranscoder";
 
     message PrintOptions {
-        option (udpa.annotations.versioning).previous_message_type =
-               "envoy.config.filter.http.transcoder.v2.GrpcJsonTranscoder.PrintOptions";
 
         // Whether to add spaces, line breaks and indentation to make the JSON
         // output easy to read. Defaults to false.
@@ -64,8 +53,8 @@ message GrpcJsonTranscoder {
         // Supplies the binary content of
         // :ref:`the proto descriptor set <config_grpc_json_generate_proto_descriptor_set>` for the gRPC
         // services.
-        // Note: this must be a base64 standard encoded string; yaml can't handle binary bytes
-        string proto_descriptor_bin = 4;
+        // Note: in yaml, this must be provided as a base64 standard encoded string; yaml can't handle binary bytes
+        bytes proto_descriptor_bin = 4;
     }
 
     // A list of strings that

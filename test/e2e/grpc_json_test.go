@@ -3,7 +3,6 @@ package e2e_test
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -113,10 +112,8 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
 	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
 	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
-
 	bytes, err := ioutil.ReadFile(pathToDescriptors)
 	Expect(err).ToNot(HaveOccurred())
-	bin := base64.StdEncoding.EncodeToString(bytes)
 
 	return &gatewayv1.Gateway{
 		BindAddress: "::",
@@ -130,7 +127,7 @@ func getGrpcJsonGateway() *gatewayv1.Gateway {
 			HttpGateway: &gatewayv1.HttpGateway{
 				Options: &gloov1.HttpListenerOptions{
 					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
-						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bin},
+						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
 						Services:      []string{"glootest.TestService"},
 					},
 				},
