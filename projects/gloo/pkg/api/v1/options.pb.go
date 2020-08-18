@@ -169,7 +169,9 @@ type HttpListenerOptions struct {
 	// that the filter will buffer before the connection
 	// manager will stop buffering and return a 413 response.
 	Buffer *v3.Buffer `protobuf:"bytes,12,opt,name=buffer,proto3" json:"buffer,omitempty"`
-	// grpc to json config
+	// Exposed envoy config for the gRPC to JSON transcoding filter,
+	// envoy.filters.http.grpc_json_transcoder.
+	// For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
 	GrpcJsonTranscoder   *grpc_json.GrpcJsonTranscoder `protobuf:"bytes,13,opt,name=grpc_json_transcoder,json=grpcJsonTranscoder,proto3" json:"grpc_json_transcoder,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`

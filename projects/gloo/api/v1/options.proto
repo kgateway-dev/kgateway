@@ -116,7 +116,9 @@ message HttpListenerOptions {
     // manager will stop buffering and return a 413 response.
     envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
 
-    // grpc to json config
+    // Exposed envoy config for the gRPC to JSON transcoding filter,
+    // envoy.filters.http.grpc_json_transcoder.
+    // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
     grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 13;
 }
 
