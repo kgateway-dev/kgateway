@@ -23,7 +23,7 @@ We will use the `demo` command from  `glooctl` to set up the environment. The en
 You can generate the demo environment by running the following command:
 
 ```
-glooctl demo federation --license <license key>
+glooctl demo federation --license-key <license key>
 ```
 
 You will need a license key to deploy the demonstration environment. You can request a key by visiting the [Solo.io website](https://solo.io).
