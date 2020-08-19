@@ -105,9 +105,6 @@ func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		if err != nil {
 			return nil, err
 		}
-		// should be aws upstream
-
-		*p.transformsAdded = true
 
 		// get function
 		ret := &transformapi.RouteTransformations{

@@ -1,0 +1,6 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Fix styling on v1.3 upgrade doc.
+    issueLink: https://github.com/solo-io/gloo/issues/3464
+  - type: NON_USER_FACING
+    description: Fix typo on gloo fed getting started page.

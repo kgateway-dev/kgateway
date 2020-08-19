@@ -86,6 +86,9 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
+        env:
+        - name: GLOO_MTLS_SDS_ENABLED
+          value: "true"
         securityContext:
           runAsNonRoot: true
           {{- if not .Values.gloo.deployment.floatingUserId }}

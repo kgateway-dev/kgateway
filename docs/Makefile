@@ -25,6 +25,8 @@ PRODUCT_SCOPE := gloo
 
 HUGO_VERSION := 0.69.2
 
+SOLO_HUGO_THEME_REVISION := d6e08db07e34d7823b5a5e0112f83a33cb1a40dc
+
 #----------------------------------------------------------------------------------
 # Docs
 #----------------------------------------------------------------------------------
@@ -32,7 +34,7 @@ HUGO_VERSION := 0.69.2
 .PHONY: site-common
 site-common: clean
 	if [ ! -d themes/hugo-theme-soloio ]; then git clone https://github.com/solo-io/hugo-theme-soloio themes/hugo-theme-soloio; fi
-	git -C themes/hugo-theme-soloio checkout 654684e74999c6e388564598c371854b4fad01a1
+	git -C themes/hugo-theme-soloio checkout $(SOLO_HUGO_THEME_REVISION)
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md gloo > content/static/content/gloo-changelog.docgen
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-changelog-md glooe > content/static/content/glooe-changelog.docgen
 

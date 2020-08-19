@@ -96,7 +96,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	for _, svc := range grpcSpec.GrpcServices {
 
 		// find the relevant service
-
 		err := addHttpRulesToProto(in, svc, descriptors)
 		if err != nil {
 			return errors.Wrapf(err, "failed to generate http rules for service %s in proto descriptors", svc.ServiceName)
@@ -135,6 +134,9 @@ func convertProto(encodedBytes []byte) (*descriptor.FileDescriptorSet, error) {
 	return &fileDescriptor, nil
 }
 
+// envoy needs the protobuf descriptors to convert from json to gRPC
+// gloo creates these descriptors automatically (if gRPC reflection is enabled),
+// uses its transformation filter to provide the context for the json-grpc translation.
 func (p *plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *envoyroute.Route) error {
 	return pluginutils.MarkPerFilterConfig(p.ctx, params.Snapshot, in, out, transformation.FilterName, func(spec *v1.Destination) (proto.Message, error) {
 		// check if it's grpc destination
@@ -288,6 +290,7 @@ func (p *plugin) HttpFilters(params plugins.Params, listener *v1.HttpListener) (
 	var filters []plugins.StagedHttpFilter
 	for _, serviceAndDescriptor := range p.upstreamServices {
 		descriptorBytes, err := proto.Marshal(serviceAndDescriptor.Descriptors)
+
 		if err != nil {
 			return nil, errors.Wrapf(err, "marshaling proto descriptor")
 		}
