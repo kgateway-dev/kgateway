@@ -7,29 +7,25 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/gogo/protobuf/types"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
 	"github.com/solo-io/gloo/pkg/utils"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gwdefaults "github.com/solo-io/gloo/projects/gateway/pkg/defaults"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc"
-	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/transformation"
-	"github.com/solo-io/gloo/test/helpers"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/grpc_json"
 	"github.com/solo-io/gloo/test/services"
 	"github.com/solo-io/gloo/test/v1helpers"
 	glootest "github.com/solo-io/gloo/test/v1helpers/test_grpc_service/glootest/protos"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
-
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
+var _ = Describe("GRPC to JSON Transcoding Plugin - Envoy API", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
@@ -55,18 +51,14 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 			WhatToRun: services.What{
 				DisableGateway: false,
 				DisableUds:     true,
-				// test relies on FDS to discover the grpc spec via reflection
-				DisableFds: false,
-			},
-			Settings: &gloov1.Settings{
-				Discovery: &gloov1.Settings_DiscoveryOptions{
-					FdsMode: gloov1.Settings_DiscoveryOptions_BLACKLIST,
-				},
+				DisableFds:     true,
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		err = helpers.WriteDefaultGateways(writeNamespace, testClients.GatewayClient)
-		Expect(err).NotTo(HaveOccurred(), "Should be able to create the default gateways")
+
+		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(), clients.WriteOpts{Ctx: ctx})
+		Expect(err).ToNot(HaveOccurred())
+
 		err = envoyInstance.RunWithRole(writeNamespace+"~"+gwdefaults.GatewayProxyName, testClients.GlooPort)
 		Expect(err).NotTo(HaveOccurred())
 
@@ -99,42 +91,15 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 
 	It("Routes to GRPC Functions", func() {
 
-		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
+		vs := getGrpcJsonRawVs(writeNamespace, tu.Upstream.Metadata.Ref())
 		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 
-		body := []byte(`{"str": "foo"}`)
+		body := []byte(`"foo"`) // this is valid JSON because of the quotes
 
 		testRequest := basicReq(body)
 
-		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
-
-		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
-			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
-		}))))
-	})
-
-	It("Routes to GRPC Functions with parameters", func() {
-
-		vs := getGrpcVs(writeNamespace, tu.Upstream.Metadata.Ref())
-		grpc := vs.VirtualHost.Routes[0].GetRouteAction().GetSingle().GetDestinationSpec().GetGrpc()
-		grpc.Parameters = &transformation.Parameters{
-			Path: &types.StringValue{Value: "/test/{str}"},
-		}
-		_, err := testClients.VirtualServiceClient.Write(vs, clients.WriteOpts{})
-		Expect(err).NotTo(HaveOccurred())
-
-		testRequest := func() (string, error) {
-			res, err := http.Get(fmt.Sprintf("http://%s:%d/test/foo", "localhost", defaults.HttpPort))
-			if err != nil {
-				return "", err
-			}
-			defer res.Body.Close()
-			body, err := ioutil.ReadAll(res.Body)
-			return string(body), err
-		}
-
-		Eventually(testRequest, 30, 1).Should(Equal(`{"str":"foo"}`))
+		Eventually(testRequest, 5, 1).Should(Equal(`{"str":"foo"}`))
 
 		Eventually(tu.C).Should(Receive(PointTo(MatchFields(IgnoreExtras, Fields{
 			"GRPCRequest": PointTo(Equal(glootest.TestRequest{Str: "foo"})),
@@ -142,7 +107,37 @@ var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	})
 })
 
-func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.VirtualService {
+func getGrpcJsonGateway() *gatewayv1.Gateway {
+
+	// Get the descriptor set bytes from the generated proto, rather than the go file (pb.go)
+	// as the generated go file doesn't have the annotations we need for gRPC to JSON transcoding
+	pathToDescriptors := "../v1helpers/test_grpc_service/descriptors/proto.pb"
+	bytes, err := ioutil.ReadFile(pathToDescriptors)
+	Expect(err).ToNot(HaveOccurred())
+
+	return &gatewayv1.Gateway{
+		BindAddress: "::",
+		BindPort:    defaults.HttpPort,
+		Status:      core.Status{},
+		Metadata: core.Metadata{
+			Name:      "gateway-proxy",
+			Namespace: "gloo-system",
+		},
+		GatewayType: &gatewayv1.Gateway_HttpGateway{
+			HttpGateway: &gatewayv1.HttpGateway{
+				Options: &gloov1.HttpListenerOptions{
+					GrpcJsonTranscoder: &grpc_json.GrpcJsonTranscoder{
+						DescriptorSet: &grpc_json.GrpcJsonTranscoder_ProtoDescriptorBin{ProtoDescriptorBin: bytes},
+						Services:      []string{"glootest.TestService"},
+					},
+				},
+			},
+		},
+		ProxyNames: []string{"gateway-proxy"},
+	}
+}
+
+func getGrpcJsonRawVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.VirtualService {
 	return &gatewayv1.VirtualService{
 		Metadata: core.Metadata{
 			Name:      "default",
@@ -153,7 +148,8 @@ func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.Virtual
 				{
 					Matchers: []*matchers.Matcher{{
 						PathSpecifier: &matchers.Matcher_Prefix{
-							Prefix: "/test",
+							// the grpc_json transcoding filter clears the cache so it no longer would match on /test (this can be configured)
+							Prefix: "/",
 						},
 					}},
 					Action: &gatewayv1.Route_RouteAction{
@@ -162,15 +158,6 @@ func getGrpcVs(writeNamespace string, usRef core.ResourceRef) *gatewayv1.Virtual
 								Single: &gloov1.Destination{
 									DestinationType: &gloov1.Destination_Upstream{
 										Upstream: utils.ResourceRefPtr(usRef),
-									},
-									DestinationSpec: &gloov1.DestinationSpec{
-										DestinationType: &gloov1.DestinationSpec_Grpc{
-											Grpc: &grpc.DestinationSpec{
-												Package:  "glootest",
-												Function: "TestMethod",
-												Service:  "TestService",
-											},
-										},
 									},
 								},
 							},

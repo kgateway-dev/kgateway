@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/extauth"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/faultinjection"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpc"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcjson"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/grpcweb"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/gzip"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/hcm"
@@ -82,6 +83,7 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 		listener.NewPlugin(),
 		virtualhost.NewPlugin(),
 		protocoloptions.NewPlugin(),
+		grpcjson.NewPlugin(),
 	)
 	if opts.KubeClient != nil {
 		reg.plugins = append(reg.plugins, kubernetes.NewPlugin(opts.KubeClient, opts.KubeCoreCache))

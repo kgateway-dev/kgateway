@@ -926,6 +926,9 @@ apis:
   grpc.options.gloo.solo.io.ServiceSpec:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc/grpc.proto.sk/#ServiceSpec
     package: grpc.options.gloo.solo.io
+  grpc_json.options.gloo.solo.io.GrpcJsonTranscoder:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto.sk/#GrpcJsonTranscoder
+    package: grpc_json.options.gloo.solo.io
   grpc_web.options.gloo.solo.io.GrpcWeb:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto.sk/#GrpcWeb
     package: grpc_web.options.gloo.solo.io
