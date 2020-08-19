@@ -249,7 +249,7 @@ $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway: $(GATEWAY_DIR)/cmd/Dockerfile
 	cp $< $@
 
 gateway-docker: $(GATEWAY_OUTPUT_DIR)/gateway-linux-arm64 $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway
-	docker build $(GATEWAY_OUTPUT_DIR) -f $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway \
+	docker build --build-arg GOARCH=arm64 $(GATEWAY_OUTPUT_DIR) -f $(GATEWAY_OUTPUT_DIR)/Dockerfile.gateway \
 		-t $(IMAGE_REPO)/gateway:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -270,7 +270,7 @@ $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress: $(INGRESS_DIR)/cmd/Dockerfile
 	cp $< $@
 
 ingress-docker: $(INGRESS_OUTPUT_DIR)/ingress-linux-arm64 $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress
-	docker build $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
+	docker build --build-arg GOARCH=arm64 $(INGRESS_OUTPUT_DIR) -f $(INGRESS_OUTPUT_DIR)/Dockerfile.ingress \
 		-t $(IMAGE_REPO)/ingress:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -291,7 +291,7 @@ $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger: $(ACCESS_LOG_DIR)/cmd/Dockerf
 	cp $< $@
 
 access-logger-docker: $(ACCESS_LOG_OUTPUT_DIR)/access-logger-linux-arm64 $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger
-	docker build $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
+	docker build --build-arg GOARCH=arm64 $(ACCESS_LOG_OUTPUT_DIR) -f $(ACCESS_LOG_OUTPUT_DIR)/Dockerfile.access-logger \
 		-t $(IMAGE_REPO)/access-logger:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -312,7 +312,7 @@ $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery: $(DISCOVERY_DIR)/cmd/Dockerfile
 	cp $< $@
 
 discovery-docker: $(DISCOVERY_OUTPUT_DIR)/discovery-linux-arm64 $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery
-	docker build $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
+	docker build --build-arg GOARCH=arm64 $(DISCOVERY_OUTPUT_DIR) -f $(DISCOVERY_OUTPUT_DIR)/Dockerfile.discovery \
 		-t $(IMAGE_REPO)/discovery:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ $(GLOO_OUTPUT_DIR)/Dockerfile.gloo: $(GLOO_DIR)/cmd/Dockerfile
 	cp $< $@
 
 gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-arm64 $(GLOO_OUTPUT_DIR)/Dockerfile.gloo
-	docker build $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
+	docker build --build-arg GOARCH=arm64 $(GLOO_OUTPUT_DIR) -f $(GLOO_OUTPUT_DIR)/Dockerfile.gloo \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo:$(VERSION)
 
@@ -357,7 +357,7 @@ $(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
 
 .PHONY: sds-docker
 sds-docker: $(SDS_OUTPUT_DIR)/sds-linux-arm64 $(SDS_OUTPUT_DIR)/Dockerfile.sds
-	docker build $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
+	docker build --build-arg GOARCH=arm64 $(SDS_OUTPUT_DIR) -f $(SDS_OUTPUT_DIR)/Dockerfile.sds \
 		-t $(IMAGE_REPO)/sds:$(VERSION)
 
 #----------------------------------------------------------------------------------
@@ -382,7 +382,7 @@ $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh: $(ENVOYINIT_DIR)/docker-entrypoint
 
 .PHONY: gloo-envoy-wrapper-docker
 gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-arm64 $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit $(ENVOYINIT_OUTPUT_DIR)/docker-entrypoint.sh
-	docker build $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
+	docker build --build-arg GOARCH=arm64 $(ENVOYINIT_OUTPUT_DIR) -f $(ENVOYINIT_OUTPUT_DIR)/Dockerfile.envoyinit \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
@@ -405,7 +405,7 @@ $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envo
 
 .PHONY: gloo-envoy-wasm-wrapper-docker
 gloo-envoy-wasm-wrapper-docker: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-arm64 $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm
-	docker build $(ENVOY_WASM_OUTPUT_DIR) -f $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm \
+	docker build --build-arg GOARCH=arm64 $(ENVOY_WASM_OUTPUT_DIR) -f $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm \
 		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_WASM_IMAGE) \
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION)
 
@@ -428,7 +428,7 @@ $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen: $(CERTGEN_DIR)/Dockerfile
 
 .PHONY: certgen-docker
 certgen-docker: $(CERTGEN_OUTPUT_DIR)/certgen-linux-arm64 $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen
-	docker build $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
+	docker build --build-arg GOARCH=arm64 $(CERTGEN_OUTPUT_DIR) -f $(CERTGEN_OUTPUT_DIR)/Dockerfile.certgen \
 		-t $(IMAGE_REPO)/certgen:$(VERSION)
 
 #----------------------------------------------------------------------------------
