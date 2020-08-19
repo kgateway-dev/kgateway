@@ -20,8 +20,8 @@ There are two ways to add custom headers to health check requests, both of which
     httpHealthCheck:
       requestHeadersToAdd:
         - header:
-            key: example_name
-            value: example_value
+            key: example-name
+            value: example-value
           append: true
         - headerSecretRef:
             name: example-name
