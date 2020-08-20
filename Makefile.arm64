@@ -63,7 +63,7 @@ GCFLAGS := all="-N -l"
 
 # Define Architecture. Default: amd64
 ifeq ($(GOARCH),)
-	GOARCH := amd64
+	GOARCH := arm64
 endif
 
 GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
