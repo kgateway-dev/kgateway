@@ -1,7 +1,8 @@
-ARG GOARCH=amd64
 ARG ENVOY_IMAGE
 
 FROM $ENVOY_IMAGE
+
+ARG GOARCH=amd64
 
 RUN apk upgrade --update-cache \
     && apk add ca-certificates \

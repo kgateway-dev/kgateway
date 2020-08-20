@@ -61,6 +61,7 @@ print-git-info:
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
+# Define Architecture. Default: amd64
 ifeq ($(GOARCH),)
 	GOARCH := amd64
 endif
