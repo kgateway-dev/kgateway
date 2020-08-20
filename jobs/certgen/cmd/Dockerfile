@@ -4,8 +4,8 @@ ARG GOARCH=amd64
 
 # Needed for access to AWS
 RUN apk upgrade --update-cache \
-  && apk add ca-certificates \
-  && rm -rf /var/cache/apk/*
+    && apk add ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 COPY certgen-linux-$GOARCH /usr/local/bin/certgen
 
