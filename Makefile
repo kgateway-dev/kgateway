@@ -340,17 +340,17 @@ gloo-docker: $(GLOO_OUTPUT_DIR)/gloo-linux-amd64 $(GLOO_OUTPUT_DIR)/Dockerfile.g
 # SDS Server - gRPC server for serving Secret Discovery Service config for Gloo MTLS
 #----------------------------------------------------------------------------------
 
-SDS_DIR=projects/sds/cmd
+SDS_DIR=projects/sds
 SDS_SOURCES=$(call get_sources,$(SDS_DIR))
 SDS_OUTPUT_DIR=$(OUTPUT_DIR)/$(SDS_DIR)
 
 $(SDS_OUTPUT_DIR)/sds-linux-amd64: $(SDS_SOURCES)
-	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/main.go
+	GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64 GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(SDS_DIR)/cmd/main.go
 
 .PHONY: sds
 sds: $(SDS_OUTPUT_DIR)/sds-linux-amd64
 
-$(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/Dockerfile
+$(SDS_OUTPUT_DIR)/Dockerfile.sds: $(SDS_DIR)/cmd/Dockerfile
 	cp $< $@
 
 .PHONY: sds-docker
