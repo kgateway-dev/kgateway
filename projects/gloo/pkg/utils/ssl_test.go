@@ -68,7 +68,7 @@ var _ = Describe("Ssl", func() {
 				upstreamCfg.SslSecrets.(*v1.UpstreamSslConfig_SslFiles).SslFiles.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 			})
 
 			It("should add SAN verification when provided", func() {
@@ -229,9 +229,9 @@ var _ = Describe("Ssl", func() {
 				tlsSecret.RootCa = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, true)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 				_, err = configTranslator.ResolveCommonSslConfig(upstreamCfg, secrets, false)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(RootCaMustBeProvidedError))
 			})
 
 			It("should add SAN verification when provided", func() {
@@ -281,10 +281,104 @@ var _ = Describe("Ssl", func() {
 				TargetUri:              "TargetUri",
 				CertificatesSecretName: "CertificatesSecretName",
 				ValidationContextName:  "ValidationContextName",
-				CallCredentials: &v1.CallCredentials{
-					FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
-						TokenFileName: "TokenFileName",
-						Header:        "Header",
+			}
+			upstreamCfg = &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_Sds{
+					Sds: sdsConfig,
+				},
+			}
+			configTranslator = NewSslConfigTranslator()
+		})
+
+		It("should have a sds setup with a default cluster name", func() {
+			c, err := resolveCommonSslConfig(upstreamCfg, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+			Expect(c.ValidationContextType).ToNot(BeNil())
+
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+			cert := c.TlsCertificateSdsSecretConfigs[0]
+			Expect(vctx.Name).To(Equal("ValidationContextName"))
+			Expect(cert.Name).To(Equal("CertificatesSecretName"))
+			// If they are no equivalent, it means that any serialization is different.
+			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+			// and here: https://github.com/envoyproxy/envoy/pull/6241
+			// this may lead to envoy updates being too frequent
+			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
+			Expect(envoyGrpc.ClusterName).To(Equal("gateway-proxy-sds"))
+
+		})
+
+		It("should have a sds setup with a custom cluster name", func() {
+			cfgCustomCluster := &v1.UpstreamSslConfig{
+				Sni: "test.com",
+				SslSecrets: &v1.UpstreamSslConfig_Sds{
+					Sds: &v1.SDSConfig{
+						TargetUri:              "TargetUri",
+						CertificatesSecretName: "CertificatesSecretName",
+						ValidationContextName:  "ValidationContextName",
+						SdsBuilder: &v1.SDSConfig_ClusterName{
+							ClusterName: "custom-cluster",
+						},
+					},
+				},
+			}
+			c, err := resolveCommonSslConfig(cfgCustomCluster, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
+			Expect(c.ValidationContextType).ToNot(BeNil())
+
+			vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_ValidationContextSdsSecretConfig).ValidationContextSdsSecretConfig
+			cert := c.TlsCertificateSdsSecretConfigs[0]
+			Expect(vctx.Name).To(Equal("ValidationContextName"))
+			Expect(cert.Name).To(Equal("CertificatesSecretName"))
+			// If they are no equivalent, it means that any serialization is different.
+			// see here: https://github.com/envoyproxy/go-control-plane/pull/158
+			// and here: https://github.com/envoyproxy/envoy/pull/6241
+			// this may lead to envoy updates being too frequent
+			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
+
+			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
+			Expect(envoyGrpc.ClusterName).To(Equal("custom-cluster"))
+
+		})
+
+		Context("san", func() {
+			It("should error with san and not validationContext", func() {
+				sdsConfig.ValidationContextName = ""
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				_, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).To(Equal(MissingValidationContextError))
+			})
+
+			It("should add SAN verification when provided", func() {
+				upstreamCfg.VerifySubjectAltName = []string{"test"}
+				c, err := resolveCommonSslConfig(upstreamCfg, nil)
+				Expect(err).NotTo(HaveOccurred())
+				vctx := c.ValidationContextType.(*envoyauth.CommonTlsContext_CombinedValidationContext).CombinedValidationContext
+				Expect(vctx.DefaultValidationContext.MatchSubjectAltNames).To(Equal(verifySanListToMatchSanList(upstreamCfg.VerifySubjectAltName)))
+			})
+		})
+	})
+
+	Context("sds with tokenFile", func() {
+		var (
+			sdsConfig *v1.SDSConfig
+		)
+		BeforeEach(func() {
+			sdsConfig = &v1.SDSConfig{
+				TargetUri:              "TargetUri",
+				CertificatesSecretName: "CertificatesSecretName",
+				ValidationContextName:  "ValidationContextName",
+				SdsBuilder: &v1.SDSConfig_CallCredentials{
+					CallCredentials: &v1.CallCredentials{
+						FileCredentialSource: &v1.CallCredentials_FileCredentialSource{
+							TokenFileName: "TokenFileName",
+							Header:        "Header",
+						},
 					},
 				},
 			}
@@ -297,7 +391,7 @@ var _ = Describe("Ssl", func() {
 			configTranslator = NewSslConfigTranslator()
 		})
 
-		It("should have a sds setup", func() {
+		It("should have a sds setup with a file-based metadata", func() {
 			c, err := resolveCommonSslConfig(upstreamCfg, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.TlsCertificateSdsSecretConfigs).To(HaveLen(1))
@@ -341,11 +435,11 @@ var _ = Describe("Ssl", func() {
 		})
 
 		Context("san", func() {
-			It("should error with san and not rootca", func() {
+			It("should error with san and not validationContext", func() {
 				sdsConfig.ValidationContextName = ""
 				upstreamCfg.VerifySubjectAltName = []string{"test"}
 				_, err := resolveCommonSslConfig(upstreamCfg, nil)
-				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(MissingValidationContextError))
 			})
 
 			It("should add SAN verification when provided", func() {

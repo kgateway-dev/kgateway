@@ -13,6 +13,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -71,6 +73,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 	}
 
 	us := newTestUpstream(addr, ports, received)
+	us.Upstream.UseHttp2 = &types.BoolValue{Value: true}
 	us.GrpcServers = grpcServices
 	return us
 }

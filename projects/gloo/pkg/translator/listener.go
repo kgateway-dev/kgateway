@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	errors "github.com/rotisserie/eris"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -22,6 +24,13 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"github.com/solo-io/go-utils/contextutils"
+)
+
+var (
+	ConflictingSniDomainsInListenerErr = func(listenerName string, conflictingDomains []string) error {
+		return errors.Errorf("SNI domain conflict: the [%s] listener has conflicting SNI domains that appear in"+
+			" multiple SSL configurations: [%v]", listenerName, conflictingDomains)
+	}
 )
 
 func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
@@ -153,6 +162,8 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		}}
 	}
 
+	ValidateListenerSniDomains(listener, listenerReport)
+
 	var secureFilterChains []*envoylistener.FilterChain
 
 	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
@@ -167,6 +178,33 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
+}
+
+// This is the same test that's done in the validateVirtualServiceSniDomains function in http.go, but for envoy listeners.
+// Visible for testing
+func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validationapi.ListenerReport) {
+	sslConfigsBySniDomain := map[string][]*v1.SslConfig{}
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
+
+		sniDomains := append([]string{}, sslConfig.SniDomains...)
+
+		for _, sniDomain := range sniDomains {
+			sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
+		}
+
+	}
+
+	var conflictingSniDomains []string
+	for sniDomain, sslConfigswithThisDomain := range sslConfigsBySniDomain {
+		if len(sslConfigswithThisDomain) > 1 {
+			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
+		}
+	}
+
+	if len(conflictingSniDomains) > 0 {
+		validation.AppendListenerError(listenerReport,
+			validationapi.ListenerReport_Error_SSLConfigError, ConflictingSniDomainsInListenerErr(listener.Name, conflictingSniDomains).Error())
+	}
 }
 
 func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {

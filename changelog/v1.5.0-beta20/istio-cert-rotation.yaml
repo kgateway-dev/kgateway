@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3295
+    description: >-
+      Fixes an issue where Istio certificates used in mTLS were not being rotated in envoy.
