@@ -6,7 +6,7 @@ ROOTDIR := $(shell pwd)
 OUTPUT_DIR ?= $(ROOTDIR)/_output
 
 # If you just put your username, then that refers to your account at hub.docker.com
-ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if REGISTRY is unset
+ifeq ($(IMAGE_REPO),) # Set quay.io/solo-io as default if IMAGE_REPO is unset
 	IMAGE_REPO := quay.io/solo-io
 endif
 
@@ -61,7 +61,13 @@ print-git-info:
 LDFLAGS := "-X github.com/solo-io/gloo/pkg/version.Version=$(VERSION)"
 GCFLAGS := all="-N -l"
 
-GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=amd64
+# Define Architecture. Default: amd64
+# If GOARCH is unset, docker-build will fail
+ifeq ($(GOARCH),)
+	GOARCH := amd64
+endif
+
+GO_BUILD_FLAGS := GO111MODULE=on CGO_ENABLED=0 GOARCH=$(GOARCH)
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
