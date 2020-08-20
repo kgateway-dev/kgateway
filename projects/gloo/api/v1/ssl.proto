@@ -71,12 +71,16 @@ message UpstreamSslConfig {
 message SDSConfig {
     // Target uri for the sds channel. currently only a unix domain socket is supported.
     string target_uri = 1;
-    // Call credentials.
-    CallCredentials call_credentials = 2;
+    oneof sds_builder {
+        // Call credentials.
+        CallCredentials call_credentials = 2;
+        // The name of the sds cluster in envoy
+        string cluster_name = 5;
+    }
     // The name of the secret containing the certificate
     string certificates_secret_name = 3;
     // The name of secret containing the validation context (i.e. root ca)
-    string validation_context_name= 4;
+    string validation_context_name = 4;
 }
 
 message CallCredentials {

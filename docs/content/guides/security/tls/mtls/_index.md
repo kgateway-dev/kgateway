@@ -96,6 +96,9 @@ In the gloo deployment, this sidecar is added as:
       - name: sds
         image: "quay.io/solo-io/sds:1.3.4"
         imagePullPolicy: IfNotPresent
+        env:
+        - name: GLOO_MTLS_SDS_ENABLED
+          value: "true"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
@@ -198,8 +201,11 @@ An SDS sidecar is also added to the gateway-proxy deployment:
 
 ```yaml
       - name: sds
-        image: "quay.io/solo-io/sds:1.3.4"
+        image: "quay.io/solo-io/sds:1.5.0-beta20"
         imagePullPolicy: IfNotPresent
+        env:
+        - name: GLOO_MTLS_SDS_ENABLED
+          value: "true"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs

@@ -288,15 +288,17 @@ func domains(v *v1.VirtualService) string {
 func sslConfig(v *v1.VirtualService) string {
 	if v.GetSslConfig() == nil {
 		return "none"
-	} else {
-		switch v.GetSslConfig().SslSecrets.(type) {
-		case *gloov1.SslConfig_SecretRef:
-			return "secret_ref"
-		case *gloov1.SslConfig_SslFiles:
-			return "ssl_files"
-		default:
-			return "unknown"
-		}
+	}
+
+	switch v.GetSslConfig().SslSecrets.(type) {
+	case *gloov1.SslConfig_SecretRef:
+		return "secret_ref"
+	case *gloov1.SslConfig_SslFiles:
+		return "ssl_files"
+	case *gloov1.SslConfig_Sds:
+		return "sds"
+	default:
+		return "unknown"
 	}
 }
 
