@@ -247,7 +247,7 @@ to take advantage of a script we provide for comparing the dependencies of your 
 It is located at `scripts/compare_dependencies.go` and can be invoked via the following `make` command:
 
 ```bash
-GLOOE_VERSION=desired_version make compare-deps
+GLOOE_VERSION=desired_version make resolve-deps
 ```
 
 If all dependencies match, the command will exit with a zero code, else it will output the discrepancies to both stdout 
@@ -304,11 +304,11 @@ Gloo Enterprise. You can find it in the aforementioned Google Cloud bucket at
 `http://storage.googleapis.com/gloo-ee-dependencies/[GLOOE_VERSION]/verify-plugins-linux-amd64`. The script accepts 
 three arguments:
 
-| Arg Name | Description | Optional |
-| ---- | ----------- | -------- |
-| pluginDir | Path to a directory containing the plugin `.so` files to verify |  No |
-| manifest | A .yaml file containing information required to load the plugin | No |
-| debug | Set debug log level | Yes |
+| Arg Name  | Description                                                     | Optional |
+| --------- | --------------------------------------------------------------- | -------- |
+| pluginDir | Path to a directory containing the plugin `.so` files to verify | No       |
+| manifest  | A .yaml file containing information required to load the plugin | No       |
+| debug     | Set debug log level                                             | Yes      |
 
 The `manifest` file is needed to instruct the script on how to load the plugins. It intentionally has a very similar 
 format as the configuration defined on the `AuthConfig` resource:
