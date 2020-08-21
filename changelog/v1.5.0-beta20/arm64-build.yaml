@@ -1,0 +1,4 @@
+changelog:
+  - type: NEW_FEATURE
+    description: Adds the ability to build Gloo for ARM64 architectures
+    issueLink: https://github.com/solo-io/gloo/issues/3486
