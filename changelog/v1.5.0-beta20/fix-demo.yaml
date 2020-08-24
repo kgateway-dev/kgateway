@@ -3,3 +3,4 @@ changelog:
     description: >
       Use the gateway_proxy.GATEWAY_PROXY_NAME.failover.enabled helm value in the 
       `glooctl demo federation` script.
+    issueLink: https://github.com/solo-io/gloo-fed/issues/265
