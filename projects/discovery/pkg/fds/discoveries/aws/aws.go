@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -16,6 +18,11 @@ import (
 	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	awsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 	"github.com/solo-io/go-utils/contextutils"
+)
+
+const (
+	AWS_WEB_IDENTITY_TOKEN_FILE = "AWS_WEB_IDENTITY_TOKEN_FILE"
+	AWS_ROLE_ARN                = "AWS_ROLE_ARN"
 )
 
 type AWSLambdaFunctionDiscoveryFactory struct {
@@ -113,7 +120,20 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}
-	svc := lambda.New(sess)
+
+	var svc *lambda.Lambda
+
+	tokenPath := os.Getenv(AWS_WEB_IDENTITY_TOKEN_FILE)
+	roleArn := os.Getenv(AWS_ROLE_ARN)
+	if tokenPath != "" && roleArn != "" {
+		if awsspec.Aws.GetRoleArn() != "" {
+			roleArn = awsspec.Aws.GetRoleArn()
+		}
+		webProvider := stscreds.NewWebIdentityCredentials(sess, roleArn, "", tokenPath)
+		svc = lambda.New(sess, aws.NewConfig().WithCredentials(webProvider))
+	} else {
+		svc = lambda.New(sess)
+	}
 
 	var newfunctions []*glooaws.LambdaFunctionSpec
 
