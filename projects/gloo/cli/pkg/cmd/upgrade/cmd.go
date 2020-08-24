@@ -38,7 +38,7 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 }
 
 func upgradeGlooCtl(ctx context.Context, upgrade options.Upgrade) error {
-	glooctlBinaryName := fmt.Sprintf("glooctl-%v-amd64", runtime.GOOS)
+	glooctlBinaryName := fmt.Sprintf("glooctl-%v-%v", runtime.GOOS, runtime.GOARCH)
 	release, err := getReleaseWithAsset(ctx, upgrade.ReleaseTag, glooctlBinaryName)
 	if err != nil {
 		return errors.Wrapf(err, "getting release '%v' from solo-io/gloo repository", upgrade.ReleaseTag)

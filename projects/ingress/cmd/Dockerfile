@@ -1,5 +1,7 @@
 FROM alpine:3.11.3
 
-COPY ingress-linux-amd64 /usr/local/bin/ingress
+ARG GOARCH=amd64
+
+COPY ingress-linux-$GOARCH /usr/local/bin/ingress
 
 ENTRYPOINT ["/usr/local/bin/ingress"]
