@@ -1,7 +1,9 @@
 ---
-title: Gloo and Istio mTLS
-weight: 3
+title: Gloo and Istio mTLS with older versions of Istio
+weight: 1
 ---
+
+This reference guide contains instructions for older versions of Istio (1.0 to 1.5). If you are running Istio 1.6, you can use the latest documentation [here](/guides/integrations/service_mesh/gloo_istio_mtls/).
 
 Serving as the Ingress for an Istio cluster -- without compromising on security -- means supporting mutual TLS (mTLS) communication between Gloo and the rest of the cluster. Mutual TLS means that the client proves its identity to the server (in addition to the server proving its identity to the client, which happens in regular TLS).
 
@@ -9,7 +11,7 @@ Serving as the Ingress for an Istio cluster -- without compromising on security 
 
 ### Istio versions
 
-This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, 1.5.1, and 1.6.0.
+This guide was tested with Istio 1.0.9, 1.1.17, 1.3.6, 1.4.3, and 1.5.1.
 
 ### Gloo versions
 
@@ -93,7 +95,6 @@ Version-specific configurations for the gateway-proxy and the sample Upstream ca
 - [Istio 1.1.x](#istio-11x)
 - [Istio 1.3.x and 1.4.x](#istio-13x-and-14x)
 - [Istio 1.5.x](#istio-15x)
-- [Istio 1.6.x](#istio-16x)
 
 Edit the gateway-proxy with this command:
 ```bash
@@ -486,7 +487,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.4.0-beta1
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta20
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -507,8 +508,29 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
+      - name: cert-rotator
+        image: quay.io/solo-io/sds:1.5.0-beta20
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8234
+          name: sds
+          protocol: TCP
+        volumeMounts:
         - mountPath: /etc/istio-certs/
           name: istio-certs
+        - mountPath: /etc/envoy
+          name: envoy-config
+        env:
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: ISTIO_MTLS_SDS_ENABLED
+            value: "true"
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.5.1
         args:
@@ -650,239 +672,13 @@ spec:
   sslConfig:
     alpn_protocols:
     - istio
-    sslFiles:
-      tlsCert: /etc/istio-certs/cert-chain.pem
-      tlsKey: /etc/istio-certs/key.pem
-      rootCa: /etc/istio-certs/root-cert.pem
+    sds:
+      targetUri: 127.0.0.1:8234
+      certificatesSecretName: istio_server_cert
+      validationContextName: istio_validation_context
 ...
 {{< /highlight >}}
 
 Note that `alpn_protocols` is supported in Upstreams starting in Gloo 1.3.20.
-
-{{% /expand %}}
-
-### Istio 1.6.x
-
-{{% expand "Click to see configuration for Istio 1.6.x." %}}
-
-{{% notice warning %}}
-
-The Gloo integration with Istio 1.6.x requires Gloo version 1.3.20 or 1.4.0-beta1, or higher.
-
-{{% /notice %}}
-
-Running Gloo with Istio 1.6.0 is largely the same as the instructions above for 1.5.x. The only minor differences are bumping the verison of Istio to 1.6.0, and changing the readiness port from 15020 to 15021.
-
-We will update our gateway-proxy deployment as follows:
-
-{{< highlight yaml "hl_lines=61-156 162-179" >}}
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: gloo
-    gateway-proxy-id: gateway-proxy
-    gloo: gateway-proxy
-  name: gateway-proxy
-  namespace: gloo-system
-spec:
-  selector:
-    matchLabels:
-      gateway-proxy-id: gateway-proxy
-      gloo: gateway-proxy
-  template:
-    metadata:
-      annotations:
-        prometheus.io/path: /metrics
-        prometheus.io/port: "8081"
-        prometheus.io/scrape: "true"
-      labels:
-        gateway-proxy: live
-        gateway-proxy-id: gateway-proxy
-        gloo: gateway-proxy
-    spec:
-      containers:
-      - args:
-        - --disable-hot-restart
-        env:
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.4.0-beta1
-        imagePullPolicy: IfNotPresent
-        name: gateway-proxy
-        ports:
-        - containerPort: 8080
-          name: http
-          protocol: TCP
-        - containerPort: 8443
-          name: https
-          protocol: TCP
-        resources: {}
-        securityContext:
-          allowPrivilegeEscalation: false
-          capabilities:
-            add:
-            - NET_BIND_SERVICE
-            drop:
-            - ALL
-        volumeMounts:
-        - mountPath: /etc/envoy
-          name: envoy-config
-        - mountPath: /etc/istio-certs/
-          name: istio-certs
-      - name: istio-proxy
-        image: docker.io/istio/proxyv2:1.6.0
-        args:
-        - proxy
-        - sidecar
-        - --domain
-        - $(POD_NAMESPACE).svc.cluster.local
-        - --configPath
-        - /etc/istio/proxy
-        - --binaryPath
-        - /usr/local/bin/envoy
-        - --serviceCluster
-        - istio-proxy-prometheus
-        - --drainDuration
-        - 45s
-        - --parentShutdownDuration
-        - 1m0s
-        - --discoveryAddress
-        - istio-pilot.istio-system.svc:15012
-        - --proxyLogLevel=warning
-        - --proxyComponentLogLevel=misc:error
-        - --connectTimeout
-        - 10s
-        - --proxyAdminPort
-        - "15000"
-        - --controlPlaneAuthPolicy
-        - NONE
-        - --dnsRefreshRate
-        - 300s
-        - --statusPort
-        - "15021"
-        - --trust-domain=cluster.local
-        - --controlPlaneBootstrap=false
-        env:
-          - name: OUTPUT_CERTS
-            value: "/etc/istio-certs"
-          - name: JWT_POLICY
-            value: third-party-jwt
-          - name: PILOT_CERT_PROVIDER
-            value: istiod
-          - name: CA_ADDR
-            value: istiod.istio-system.svc:15012
-          - name: ISTIO_META_MESH_ID
-            value: cluster.local
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.namespace
-          - name: INSTANCE_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
-          - name: SERVICE_ACCOUNT
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.serviceAccountName
-          - name: HOST_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: ISTIO_META_POD_NAME
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.name
-          - name: ISTIO_META_CONFIG_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-        imagePullPolicy: IfNotPresent
-        readinessProbe:
-          failureThreshold: 30
-          httpGet:
-            path: /healthz/ready
-            port: 15021
-            scheme: HTTP
-          initialDelaySeconds: 1
-          periodSeconds: 2
-          successThreshold: 1
-          timeoutSeconds: 1
-        volumeMounts:
-        - mountPath: /var/run/secrets/istio
-          name: istiod-ca-cert
-        - mountPath: /etc/istio/proxy
-          name: istio-envoy
-        - mountPath: /etc/istio-certs/
-          name: istio-certs
-        - mountPath: /var/run/secrets/tokens
-          name: istio-token
-      volumes:
-      - configMap:
-          defaultMode: 420
-          name: gateway-proxy-envoy-config
-        name: envoy-config
-      - name: istio-certs
-        emptyDir:
-          medium: Memory
-      - name: istiod-ca-cert
-        configMap:
-          defaultMode: 420
-          name: istio-ca-root-cert
-      - emptyDir:
-          medium: Memory
-        name: istio-envoy
-      - name: istio-token
-        projected:
-          defaultMode: 420
-          sources:
-          - serviceAccountToken:
-              audience: istio-ca
-              expirationSeconds: 43200
-              path: istio-token
-{{</highlight>}}
-
-Here's an example of the edited Upstream for Istio 1.6.0:
-
-{{< highlight yaml "hl_lines=17-23" >}}
-apiVersion: gloo.solo.io/v1
-kind: Upstream
-metadata:
-  labels:
-    app: productpage
-    service: productpage
-  name: default-productpage-9080-sds
-  namespace: gloo-system
-spec:
-  discoveryMetadata: {}
-  kube:
-    selector:
-      app: productpage
-    serviceName: productpage
-    serviceNamespace: default
-    servicePort: 9080
-  sslConfig:
-    alpn_protocols:
-    - istio
-    sslFiles:
-      tlsCert: /etc/istio-certs/cert-chain.pem
-      tlsKey: /etc/istio-certs/key.pem
-      rootCa: /etc/istio-certs/root-cert.pem
-{{</highlight>}}
 
 {{% /expand %}}

@@ -2,15 +2,16 @@ package server_test
 
 import (
 	"context"
+	"time"
 
 	"github.com/solo-io/gloo/projects/sds/pkg/server"
+	"github.com/solo-io/gloo/projects/sds/pkg/testutils"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	"github.com/spf13/afero"
 	"google.golang.org/grpc"
 
-	cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -22,6 +23,9 @@ var _ = Describe("SDS Server", func() {
 		dir                       string
 		keyFile, certFile, caFile afero.File
 		err                       error
+		serverAddr                = "127.0.0.1:8888"
+		sdsClient                 = "test-client"
+		srv                       *server.Server
 	)
 
 	BeforeEach(func() {
@@ -41,6 +45,16 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).To(BeNil())
 		_, err = caFile.WriteString(fileString)
 		Expect(err).To(BeNil())
+		secrets := []server.Secret{
+			{
+				ServerCert:        "test-server",
+				SslCaFile:         caFile.Name(),
+				SslCertFile:       certFile.Name(),
+				SslKeyFile:        keyFile.Name(),
+				ValidationContext: "test-validation",
+			},
+		}
+		srv = server.SetupEnvoySDS(secrets, sdsClient, serverAddr)
 	})
 
 	AfterEach(func() {
@@ -48,40 +62,35 @@ var _ = Describe("SDS Server", func() {
 	})
 
 	It("correctly reads tls secrets from files to generate snapshot version", func() {
-		snapshotVersion, err := server.GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
+		certs, err := testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
+		Expect(err).NotTo(HaveOccurred())
+
+		snapshotVersion, err := server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("11240719828806193304"))
+		Expect(snapshotVersion).To(Equal("6730780456972595554"))
 
 		// Test that the snapshot version changes if the contents of the file changes
 		_, err = keyFile.WriteString(`newFileString`)
 		Expect(err).To(BeNil())
-		snapshotVersion, err = server.GetSnapshotVersion(keyFile.Name(), certFile.Name(), caFile.Name())
-		Expect(err).To(BeNil())
-		Expect(snapshotVersion).To(Equal("15327026688369869607"))
-	})
+		certs, err = testutils.FilesToBytes(keyFile.Name(), certFile.Name(), caFile.Name())
+		Expect(err).NotTo(HaveOccurred())
 
-	It("correctly updates SDSConfig", func() {
-		ctx, _ := context.WithCancel(context.Background())
-		hasher := &server.EnvoyKey{}
-		snapshotCache := cache.NewSnapshotCache(false, hasher, nil)
-		server.UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
-		_, err := snapshotCache.GetSnapshot(hasher.ID(nil))
+		snapshotVersion, err = server.GetSnapshotVersion(certs)
 		Expect(err).To(BeNil())
+		Expect(snapshotVersion).To(Equal("4234248347190811569"))
 	})
 
 	Context("Test gRPC Server", func() {
 		var (
-			ctx               context.Context
-			cancel            context.CancelFunc
-			grpcServer        *grpc.Server
-			snapshotCache     cache.SnapshotCache
-			testServerAddress = "127.0.0.1:8236"
+			ctx    context.Context
+			cancel context.CancelFunc
 		)
 
 		BeforeEach(func() {
 			ctx, cancel = context.WithCancel(context.Background())
-			grpcServer, snapshotCache = server.SetupEnvoySDS()
-			_, err = server.RunSDSServer(ctx, grpcServer, testServerAddress)
+			_, err = srv.Run(ctx)
+			// Give it a second to come up + read the certs
+			time.Sleep(time.Second * 1)
 			Expect(err).To(BeNil())
 		})
 
@@ -89,12 +98,12 @@ var _ = Describe("SDS Server", func() {
 			cancel()
 		})
 
-		It("accepts client connections", func() {
+		It("accepts client connections & updates secrets", func() {
 			// Check that it's answering
 			var conn *grpc.ClientConn
 
 			// Initiate a connection with the server
-			conn, err := grpc.Dial(testServerAddress, grpc.WithInsecure())
+			conn, err := grpc.Dial(serverAddr, grpc.WithInsecure())
 			Expect(err).To(BeNil())
 			defer conn.Close()
 
@@ -105,7 +114,7 @@ var _ = Describe("SDS Server", func() {
 			Expect(err).NotTo(BeNil())
 
 			// After snapshot is set, expect to see the secrets
-			server.UpdateSDSConfig(ctx, keyFile.Name(), certFile.Name(), caFile.Name(), snapshotCache)
+			srv.UpdateSDSConfig(ctx)
 			resp, err = client.FetchSecrets(ctx, &envoy_api_v2.DiscoveryRequest{})
 			Expect(err).To(BeNil())
 			Expect(len(resp.GetResources())).To(Equal(2))

@@ -25,6 +25,7 @@ type NatsStreamingFactory struct {
 
 func downloadNats(destDir string) (string, error) {
 	// get us some natsss
+	// TODO (celsosantos): Add ARM64 support
 	natsurl := fmt.Sprintf("https://github.com/nats-io/nats-streaming-server/releases/download/v0.9.0/nats-streaming-server-v0.9.0-%s-amd64.zip",
 		runtime.GOOS)
 

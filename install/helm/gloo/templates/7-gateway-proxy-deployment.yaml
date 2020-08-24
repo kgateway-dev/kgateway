@@ -228,6 +228,9 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
+        env:
+        - name: GLOO_MTLS_SDS_ENABLED
+          value: "true"
         volumeMounts:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
