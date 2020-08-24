@@ -131,7 +131,7 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 		if sslConfig != nil {
 			// Envoy won't accept multiple SSL configs for the same domain, including the empty/wildcard domain.
 			if len(sslConfig.GetSniDomains()) == 0 {
-				vsBySniDomain[""] =  append(vsBySniDomain[""], vs)
+				vsBySniDomain[""] = append(vsBySniDomain[""], vs)
 			} else {
 				sniDomains := append([]string{}, sslConfig.SniDomains...)
 				for _, sniDomain := range sniDomains {
