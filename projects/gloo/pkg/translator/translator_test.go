@@ -1790,7 +1790,7 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
-			It("should not merge 2 ssl config if they are different", func() {
+			FIt("should not allow 2 ssl configs without sni domain differentiation", func() {
 				prep([]*v1.SslConfig{
 					{
 						SslSecrets: &v1.SslConfig_SslFiles{
@@ -1809,8 +1809,10 @@ var _ = Describe("Translator", func() {
 						},
 					},
 				})
-
-				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				report := &validation.ListenerReport{}
+				Expect(report.Errors).NotTo(BeNil())
+				Expect(report.Errors).To(HaveLen(1))
+				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))
 			})
 			It("should merge 2 ssl config if they are the same", func() {
 				prep([]*v1.SslConfig{
