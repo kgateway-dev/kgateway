@@ -127,7 +127,56 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 			continue
 		}
 
-		if len(vs.GetSslConfig().GetSniDomains()) > 0 {
+		sslConfig := vs.GetSslConfig()
+		if sslConfig != nil {
+			// Envoy won't accept multiple SSL configs for the same domain, including the empty/wildcard domain.
+			if len(sslConfig.GetSniDomains()) == 0 {
+				vsBySniDomain[""] =  append(vsBySniDomain[""], vs)
+			} else {
+				sniDomains := append([]string{}, sslConfig.SniDomains...)
+				for _, sniDomain := range sniDomains {
+					vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
+				}
+			}
+		}
+	}
+
+	var conflictingSniDomains []string
+	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
+		if len(vsWithThisSniDomain) > 1 {
+			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
+			for idx1, vs := range vsWithThisSniDomain {
+				var conflictingVsNames []string
+				for idx2, otherVs := range vsWithThisSniDomain {
+					if idx1 != idx2 {
+						conflictingVsNames = append(conflictingVsNames, otherVs.Metadata.Ref().Key())
+					}
+				}
+				reports.AddError(vs, SniDomainInOtherVirtualServicesErr(sniDomain, conflictingVsNames))
+			}
+		}
+	}
+	if len(conflictingSniDomains) > 0 {
+		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingSniDomains))
+	}
+}
+
+/*
+// Similar to previous function, but for the entire SSL config
+// todo add better description once I understand this issue better
+func validateVirtualServiceSSLConfigs(gateway *v1.Gateway, virtualServices v1.VirtualServiceList, reports reporter.ResourceReports) {
+
+	// Index the virtual services for this gateway by the domain
+	vsBySniDomain := map[string]v1.VirtualServiceList{}
+	for _, vs := range virtualServices {
+
+		// Add skip if no virtual host, warning added already so no need to do it here
+		if vs.VirtualHost == nil {
+			continue
+		}
+		con := vs.SslConfig
+
+		if  {
 			sniDomains := append([]string{}, vs.SslConfig.SniDomains...)
 			for _, sniDomain := range sniDomains {
 				vsBySniDomain[sniDomain] = append(vsBySniDomain[sniDomain], vs)
@@ -153,7 +202,7 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 	if len(conflictingSniDomains) > 0 {
 		reports.AddError(gateway, GatewayHasConflictingVirtualServicesErr(conflictingSniDomains))
 	}
-}
+}*/
 
 func getVirtualServicesForGateway(gateway *v1.Gateway, virtualServices v1.VirtualServiceList) v1.VirtualServiceList {
 

@@ -188,8 +188,12 @@ func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validatio
 
 		sniDomains := append([]string{}, sslConfig.SniDomains...)
 
-		for _, sniDomain := range sniDomains {
-			sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
+		if len(sniDomains) == 0 {
+			sslConfigsBySniDomain[""] = append(sslConfigsBySniDomain[""], sslConfig)
+		} else {
+			for _, sniDomain := range sniDomains {
+				sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
+			}
 		}
 
 	}
