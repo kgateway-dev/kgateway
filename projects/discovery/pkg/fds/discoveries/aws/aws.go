@@ -23,6 +23,7 @@ import (
 const (
 	AWS_WEB_IDENTITY_TOKEN_FILE = "AWS_WEB_IDENTITY_TOKEN_FILE"
 	AWS_ROLE_ARN                = "AWS_ROLE_ARN"
+	AWS_REGION                  = "AWS_REGION"
 )
 
 type AWSLambdaFunctionDiscoveryFactory struct {
@@ -116,6 +117,10 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		return nil, errors.New("not a lambda upstream spec")
 	}
 	lambdaSpec := awsspec.Aws
+	awsRegion := lambdaSpec.GetRegion()
+	if awsRegion == "" {
+		awsRegion = os.Getenv(AWS_REGION)
+	}
 	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, &aws.Config{Region: aws.String(lambdaSpec.Region)})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
@@ -129,6 +134,7 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		if awsspec.Aws.GetRoleArn() != "" {
 			roleArn = awsspec.Aws.GetRoleArn()
 		}
+		contextutils.LoggerFrom(ctx).Debugf("Discovering lambda functions using assumed role [%s]", roleArn)
 		webProvider := stscreds.NewWebIdentityCredentials(sess, roleArn, "", tokenPath)
 		svc = lambda.New(sess, aws.NewConfig().WithCredentials(webProvider))
 	} else {
