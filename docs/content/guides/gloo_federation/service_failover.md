@@ -20,6 +20,11 @@ If you wish to quickly spin up the entire environment and validate the process, 
 
 For the purposes of this example, we have two clusters `local` and `remote`. The local cluster is also running Gloo Federation in addition to Gloo Enterprise. The kubectl context for the local cluster is `gloo-fed` and the remote cluster is `gloo-fed-2`.
 
+{{% notice note %}}
+Gloo Enterprise version >= 1.5.0-beta4 is needed for failover.
+If you are using the demo command, that uses the latest version by default.
+{{% /notice %}}
+
 ## Configure Gloo for Failover
 
 The first step to enabling failover is security. As failover allows communication between multiple clusters, it is crucial that the traffic be encrypted. Therefore certificates need to be provisioned and placed in the clusters to allow for mTLS between the Gloo instances running on separate clusters. 
@@ -118,6 +123,11 @@ spec:
  type: LoadBalancer
 EOF
 ```
+
+{{% notice note %}}
+The gateway and service above can also be applied by setting the helm value for Gloo:
+`gatewayProxies.NAME.failover.enabled=true`.
+{{% /notice %}}
 
 You can validate the service and gateway have deployed successfully using the following commands:
 
