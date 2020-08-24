@@ -74,7 +74,7 @@ The Gateway resource below sets up a TCP proxy which is configured to terminate 
 The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. If you are using clusters built with kind, you will need to use a NodePort service. Gloo Federation will automatically discover all external addresses for any Gloo instance.
 
 {{% notice note %}}
-The gateway and service below will be created by setting the helm value for Gloo when installing:
+The gateway and service below can also be created by setting the helm value for Gloo when installing:
 `gatewayProxies.NAME.failover.enabled=true`.
 {{% /notice %}}
 
