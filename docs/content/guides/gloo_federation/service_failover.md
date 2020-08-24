@@ -73,6 +73,11 @@ The Gateway resource below sets up a TCP proxy which is configured to terminate 
 
 The service creates an externally addressable way of communicating with the Gloo instance in question. This service may look different for different setups, in our example it is a LoadBalancer service on the specified port. If you are using clusters built with kind, you will need to use a NodePort service. Gloo Federation will automatically discover all external addresses for any Gloo instance.
 
+{{% notice note %}}
+The gateway and service below will be created by setting the helm value for Gloo when installing:
+`gatewayProxies.NAME.failover.enabled=true`.
+{{% /notice %}}
+
 ```yaml
 # Set context to remote cluster
 kubectl config use-context $REMOTE_CLUSTER_CONTEXT
@@ -123,11 +128,6 @@ spec:
  type: LoadBalancer
 EOF
 ```
-
-{{% notice note %}}
-The gateway and service above can also be applied by setting the helm value for Gloo:
-`gatewayProxies.NAME.failover.enabled=true`.
-{{% /notice %}}
 
 You can validate the service and gateway have deployed successfully using the following commands:
 
