@@ -200,7 +200,9 @@ func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validatio
 
 	var conflictingSniDomains []string
 	for sniDomain, sslConfigswithThisDomain := range sslConfigsBySniDomain {
-		if len(sslConfigswithThisDomain) > 1 {
+		// remove duplicate ssl configs for this sni domaim. If there are still multiples, we have a problem.
+		mergedConfigs := mergeSslConfigs(sslConfigswithThisDomain)
+		if len(mergedConfigs) > 1 {
 			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
 		}
 	}
