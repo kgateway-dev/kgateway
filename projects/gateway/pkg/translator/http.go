@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+
 	"github.com/solo-io/go-utils/hashutils"
 
 	errors "github.com/rotisserie/eris"
@@ -144,7 +145,7 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 	var conflictingSniDomains []string
 	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
 		sslConfigs := []*gloov1.SslConfig{}
-		for _, vs := range(vsWithThisSniDomain) {
+		for _, vs := range vsWithThisSniDomain {
 			sslConfigs = append(sslConfigs, vs.SslConfig)
 		}
 		// only record errors if there are multiple ssl configs associated with this SNI domain.
