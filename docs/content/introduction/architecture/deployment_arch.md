@@ -51,7 +51,7 @@ In the above architecture, we can expose the sharded proxies directly to the edg
 
 ![]({{% versioned_link_path fromRoot="/img/deployments/sharded-gateway2.png" %}})
 
-Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk.md" %}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it. 
+Envoy already has a way to safely isolate calls upstream by [using circuit breaking]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/circuit_breaker.proto.sk" %}}) but sharding the calls across multiple proxies enables a higher-degree of isolation for certain APIs that need it. 
 
 ---
 
@@ -75,7 +75,7 @@ A service mesh doesn't inherently solve (nor should it) API-level challenges. Th
 
 ---
 
-## Ingress for multi-tentant clusters like OpenShift
+## Ingress for multi-tenant clusters like OpenShift
 
 OpenShift environments, when multi-tenancy is enabled, don’t allow traffic across namespaces directly except through well known egress/ingress points (typically controlled by multi-tenent SDN or network policy). In some cases, traffic destined for another service inside the cluster is forced out of the cluster, to external load balancers or API Management software, and back into the cluster. 
 
