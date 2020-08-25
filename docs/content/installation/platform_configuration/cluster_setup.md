@@ -10,6 +10,7 @@ Click on the links below for details specific to your Kubernetes distribution:
 
 - [Minikube](#minikube)
 - [Minishift](#minishift)
+- [Kind (Kubernetes in Docker)](#kind)
 - [OpenShift](#openshift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
   - [Private clusters](#private-clusters)
@@ -93,6 +94,52 @@ oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-server -n gloo-system
 oc adm policy add-scc-to-user anyuid  -z glooe-prometheus-kube-state-metrics  -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z default -n gloo-system 
 oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
+```
+
+Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+
+---
+
+## Kind
+
+[Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) is a tool for running local Kubernetes clusters using Docker container “nodes”.  Kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.  
+
+Kind is ideal for getting started with Gloo on your personal workstation.  It is simpler than Minikube or Minishift because no external hypervisor is required.  
+
+You can find details on setting up Kind to run locally [here](https://kind.sigs.k8s.io/docs/user/quick-start).
+
+If you create a cluster using default settings with `kind create cluster`, you should be able to verify that a default cluster was created.
+
+```bash
+kind get clusters
+```
+If you're starting from scratch, the "get clusters" command should show you a single cluster `kind`.
+
+In order to interact with a specific cluster, you only need to specify the cluster name as a context in kubectl:
+
+```bash
+kubectl cluster-info --context kind-kind
+```
+
+```bash
+Kubernetes master is running at https://127.0.0.1:51832
+KubeDNS is running at https://127.0.0.1:51832/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+To verify that your `kubectl` context is pointing to your new `kind` cluster.
+
+```bash
+kubectl config current-context
+```
+
+This command should return `kind-kind` as the context.
+
+If it does not, you can switch to the `kind-kind` context by running the following:
+
+```bash
+kubectl config use-context kind-kind
 ```
 
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
