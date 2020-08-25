@@ -166,7 +166,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 
 	var secureFilterChains []*envoylistener.FilterChain
 
-	for _, sslConfig := range MergeSslConfigs(listener.SslConfigurations) {
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 		// get secrets
 		downstreamConfig, err := t.sslConfigTranslator.ResolveDownstreamSslConfig(snap.Secrets, sslConfig)
 		if err != nil {
@@ -184,8 +184,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 // Visible for testing
 func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validationapi.ListenerReport) {
 	sslConfigsBySniDomain := map[string][]*v1.SslConfig{}
-	for _, sslConfig := range MergeSslConfigs(listener.SslConfigurations) {
-
+	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
 		sniDomains := append([]string{}, sslConfig.SniDomains...)
 
 		if len(sniDomains) == 0 {
@@ -195,14 +194,11 @@ func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validatio
 				sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
 			}
 		}
-
 	}
 
 	var conflictingSniDomains []string
 	for sniDomain, sslConfigswithThisDomain := range sslConfigsBySniDomain {
-		// remove duplicate ssl configs for this sni domain. If there are still multiples, we have a problem.
-		mergedConfigs := MergeSslConfigs(sslConfigswithThisDomain)
-		if len(mergedConfigs) > 1 {
+		if len(sslConfigswithThisDomain) > 1 {
 			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
 		}
 	}
@@ -213,7 +209,7 @@ func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validatio
 	}
 }
 
-func MergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
+func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 	// we can merge ssl config if:
 	// they have the same SslSecrets and VerifySubjectAltName
 	// combine SNI information.
