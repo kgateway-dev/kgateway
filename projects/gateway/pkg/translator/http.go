@@ -3,7 +3,6 @@ package translator
 import (
 	"context"
 	"fmt"
-
 	"github.com/solo-io/go-utils/hashutils"
 
 	errors "github.com/rotisserie/eris"
@@ -12,6 +11,7 @@ import (
 
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	translatorPkg "github.com/solo-io/gloo/projects/gloo/pkg/translator"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
@@ -143,7 +143,14 @@ func validateVirtualServiceSniDomains(gateway *v1.Gateway, virtualServices v1.Vi
 
 	var conflictingSniDomains []string
 	for sniDomain, vsWithThisSniDomain := range vsBySniDomain {
-		if len(vsWithThisSniDomain) > 1 {
+		sslConfigs := []*gloov1.SslConfig{}
+		for _, vs := range(vsWithThisSniDomain) {
+			sslConfigs = append(sslConfigs, vs.SslConfig)
+		}
+		// only record errors if there are multiple ssl configs associated with this SNI domain.
+		// since we've already splut them by SNI domain, we know that successful merging indicates
+		// that they have the same SslSecrets and VerifySubjectAltName
+		if len(translatorPkg.MergeSslConfigs(sslConfigs)) > 1 {
 			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
 			for idx1, vs := range vsWithThisSniDomain {
 				var conflictingVsNames []string
