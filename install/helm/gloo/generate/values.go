@@ -166,6 +166,7 @@ type DiscoveryDeployment struct {
 	Stats                *Stats            `json:"stats,omitempty" desc:"overrides for prometheus stats published by the discovery pod"`
 	FloatingUserId       bool              `json:"floatingUserId" desc:"set to true to allow the cluster to dynamically assign a user ID"`
 	RunAsUser            float64           `json:"runAsUser" desc:"Explicitly set the user ID for the container to run as. Default is 10101"`
+	FsGroup              float64           `json:"fsGroup" desc:"Explicitly set the group ID for volume ownership. Default is 10101"`
 	ExtraDiscoveryLabels map[string]string `json:"extraDiscoveryLabels,omitempty" desc:"Optional extra key-value pairs to add to the metadata.labels data of the gloo discovery pod."`
 	*DeploymentSpec
 }

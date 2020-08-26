@@ -42,6 +42,7 @@ spec:
         resources:
 {{ toYaml .Values.discovery.deployment.resources | indent 10}}
 {{- end}}
+        # container security context
         securityContext:
           readOnlyRootFilesystem: true
           allowPrivilegeEscalation: false
@@ -64,4 +65,7 @@ spec:
           - name: START_STATS_SERVER
             value: "true"
         {{- end}}
+      # Pod security context
+      securityContext:
+        fsGroup: {{ printf "%.0f" (float64 .Values.discovery.deployment.fsGroup) }}
 {{- end }}

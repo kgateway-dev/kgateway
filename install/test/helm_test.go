@@ -2380,6 +2380,10 @@ metadata:
 						deploy := rb.GetDeploymentAppsv1()
 						updateDeployment(deploy)
 						deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
+						user := int64(10101)
+						deploy.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+							FSGroup: &user,
+						}
 						discoveryDeployment = deploy
 					})
 
