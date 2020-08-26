@@ -109,18 +109,6 @@ var _ = Describe("AWS Lambda", func() {
 			},
 			UpstreamType: &gloov1.Upstream_Aws{
 				Aws: &aws_plugin.UpstreamSpec{
-					// LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{
-					// 	{
-					// 		LambdaFunctionName: "uppercase",
-					// 		Qualifier:          "",
-					// 		LogicalName:        "uppercase",
-					// 	},
-					// 	{
-					// 		LambdaFunctionName: "contact-form",
-					// 		Qualifier:          "",
-					// 		LogicalName:        "contact-form",
-					// 	},
-					// },
 					Region:    region,
 					SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
 				},
