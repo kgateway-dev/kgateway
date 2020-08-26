@@ -25,4 +25,4 @@ Add any other context about the problem here, e.g.
 - Kubernetes version
 
 
-TODO(kdorosh) remove me. commit with some content pt 3
+TODO(kdorosh) remove me. commit with some content pt 4
