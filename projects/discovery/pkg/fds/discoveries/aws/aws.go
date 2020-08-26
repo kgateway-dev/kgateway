@@ -4,10 +4,12 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"os"
 	"sort"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/service/lambda"
 	errors "github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/projects/discovery/pkg/fds"
@@ -16,6 +18,12 @@ import (
 	glooaws "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/aws"
 	awsutils "github.com/solo-io/gloo/projects/gloo/pkg/utils/aws"
 	"github.com/solo-io/go-utils/contextutils"
+)
+
+const (
+	AWS_WEB_IDENTITY_TOKEN_FILE = "AWS_WEB_IDENTITY_TOKEN_FILE"
+	AWS_ROLE_ARN                = "AWS_ROLE_ARN"
+	AWS_REGION                  = "AWS_REGION"
 )
 
 type AWSLambdaFunctionDiscoveryFactory struct {
@@ -109,11 +117,31 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 		return nil, errors.New("not a lambda upstream spec")
 	}
 	lambdaSpec := awsspec.Aws
+	awsRegion := lambdaSpec.GetRegion()
+	if awsRegion == "" {
+		awsRegion = os.Getenv(AWS_REGION)
+	}
 	sess, err := awsutils.GetAwsSession(lambdaSpec.SecretRef, secrets, &aws.Config{Region: aws.String(lambdaSpec.Region)})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create AWS session")
 	}
-	svc := lambda.New(sess)
+
+	var svc *lambda.Lambda
+
+	tokenPath := os.Getenv(AWS_WEB_IDENTITY_TOKEN_FILE)
+	roleArn := os.Getenv(AWS_ROLE_ARN)
+	// If aws web token, and role arn are available, authenticate lambda service using mounted credentials.
+	// See: https://aws.amazon.com/blogs/opensource/introducing-fine-grained-iam-roles-service-accounts/
+	if tokenPath != "" && roleArn != "" {
+		if awsspec.Aws.GetRoleArn() != "" {
+			roleArn = awsspec.Aws.GetRoleArn()
+		}
+		contextutils.LoggerFrom(ctx).Debugf("Discovering lambda functions using assumed role [%s]", roleArn)
+		webProvider := stscreds.NewWebIdentityCredentials(sess, roleArn, "", tokenPath)
+		svc = lambda.New(sess, aws.NewConfig().WithCredentials(webProvider))
+	} else {
+		svc = lambda.New(sess)
+	}
 
 	var newfunctions []*glooaws.LambdaFunctionSpec
 
