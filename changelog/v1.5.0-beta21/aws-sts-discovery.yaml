@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add AWS lambda function discovery using EKS Service Account credentials.
+  issueLink:  https://github.com/solo-io/gloo/issues/3559
+
