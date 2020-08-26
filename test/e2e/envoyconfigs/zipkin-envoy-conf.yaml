@@ -44,19 +44,6 @@ static_resources:
                 collector_endpoint: "/api/v2/spans"
                 collector_endpoint_version: HTTP_JSON
   clusters:
-  - name: xds_cluster
-    connect_timeout: 5.000s
-    load_assignment:
-      cluster_name: xds_cluster
-      endpoints:
-        - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    address: 192.168.86.92
-                    port_value: 31401
-    http2_protocol_options: {}
-    type: STATIC
 
   - name: zipkin
     connect_timeout: 1s
@@ -101,25 +88,6 @@ static_resources:
     http2_protocol_options: {}
     type: STATIC
 
-  - name: aws_sts_cluster
-    connect_timeout: 5.000s
-    type: LOGICAL_DNS
-    lb_policy: ROUND_ROBIN
-    load_assignment:
-      cluster_name: aws_sts_cluster
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                port_value: 443
-                address: sts.amazonaws.com
-    transport_socket:
-      name: envoy.transport_sockets.tls
-      typed_config:
-        "@type": type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-        sni: sts.amazonaws.com
-
   - name: metrics_cluster
     connect_timeout: 5.000s
     load_assignment:
@@ -136,14 +104,6 @@ static_resources:
 
 
 dynamic_resources:
-  ads_config:
-    api_type: GRPC
-    grpc_services:
-    - envoy_grpc: {cluster_name: xds_cluster}
-  cds_config:
-    ads: {}
-  lds_config:
-    ads: {}
 
 admin:
   access_log_path: /dev/null
@@ -151,5 +111,3 @@ admin:
     socket_address:
       address: 0.0.0.0
       port_value: 21001
-
-

@@ -12,45 +12,23 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/solo-io/gloo/test/services"
-	"github.com/solo-io/gloo/test/v1helpers"
-	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = FDescribe("Zipkin config loading", func() {
+var _ = Describe("Zipkin config loading", func() {
 	var (
-		ctx            context.Context
-		cancel         context.CancelFunc
-		testClients    services.TestClients
-		envoyInstance  *services.EnvoyInstance
-		tu             *v1helpers.TestUpstream
-		writeNamespace string
+		cancel        context.CancelFunc
+		envoyInstance *services.EnvoyInstance
 	)
 
 	BeforeEach(func() {
-		ctx, cancel = context.WithCancel(context.Background())
+		_, cancel = context.WithCancel(context.Background())
 		defaults.HttpPort = services.NextBindPort()
 		defaults.HttpsPort = services.NextBindPort()
 
 		var err error
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
-		Expect(err).NotTo(HaveOccurred())
-
-		// Run Gloo Gateway and add a test upstream
-		writeNamespace = defaults.GlooSystem
-		ro := &services.RunOptions{
-			NsToWrite: writeNamespace,
-			NsToWatch: []string{"default", writeNamespace},
-			WhatToRun: services.What{
-				DisableGateway: false,
-				DisableUds:     true,
-				DisableFds:     true,
-			},
-		}
-		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
-		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -63,8 +41,10 @@ var _ = FDescribe("Zipkin config loading", func() {
 
 	basicReq := func() func() (string, error) {
 		return func() (string, error) {
-			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", defaults.HttpPort), nil)
-			Expect(err).NotTo(HaveOccurred())
+			req, err := http.NewRequest("GET", fmt.Sprintf("http://%s:%d/", "localhost", 11082), nil)
+			if err != nil {
+				return "", err
+			}
 			req.Header.Set("Content-Type", "application/json")
 
 			// Set a random trace ID
@@ -100,7 +80,7 @@ var _ = FDescribe("Zipkin config loading", func() {
 
 		testRequest := basicReq()
 
-		Eventually(testRequest, 10, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
+		Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
 
 		timeout := time.After(5 * time.Second)
 		select {
@@ -116,7 +96,7 @@ var _ = FDescribe("Zipkin config loading", func() {
 	})
 
 	It("should fail to load bad config", func() {
-		err := envoyInstance.RunWithConfig(8080, "./envoyconfigs/zipkin-envoy-invalid-conf.yaml")
+		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-invalid-conf.yaml")
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(And(ContainSubstring("can't unmarshal"), ContainSubstring(`unknown field "invalid_field"`)))
 	})

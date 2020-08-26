@@ -381,7 +381,7 @@ ENVOYINIT_SOURCES=$(call get_sources,$(ENVOYINIT_DIR))
 ENVOYINIT_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOYINIT_DIR)
 
 $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH): $(ENVOYINIT_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go $(ENVOYINIT_DIR)/filter_types.gen.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOYINIT_DIR)/main.go
 
 .PHONY: envoyinit
 envoyinit: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH)
@@ -408,7 +408,7 @@ ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
 ENVOY_WASM_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOY_WASM_DIR)
 
 $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-$(GOARCH): $(ENVOY_WASM_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go $(ENVOY_WASM_DIR)/filter_types.gen.go
+	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
 
 .PHONY: envoywasm
 envoywasm: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-$(GOARCH)
