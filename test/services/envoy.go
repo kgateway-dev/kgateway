@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"text/template"
 
+	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"bytes"
@@ -51,14 +52,13 @@ func (ei *EnvoyInstance) buildBootstrap() string {
 	return b.String()
 }
 
-func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) string {
-	var b bytes.Buffer
-	fileBytes, err := ioutil.ReadFile(configFile)
+func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, error) {
+	// Will error on missing file or invalid config
+	config, err := utils.GetConfig(configFile)
 	if err != nil {
-		panic("couldn't read envoy config from path " + configFile)
+		return "", err
 	}
-	template.Must(template.New("bootstrap").Parse(string(fileBytes))).Execute(&b, ei)
-	return b.String()
+	return config, nil
 }
 
 const envoyConfigTemplate = `
@@ -424,7 +424,12 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFil
 	if configFile == "" {
 		ei.envoycfg = ei.buildBootstrap()
 	} else {
-		ei.envoycfg = ei.buildBootstrapFromConfig(configFile)
+		var err error
+		ei.envoycfg, err = ei.buildBootstrapFromConfig(configFile)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	if ei.UseDocker {

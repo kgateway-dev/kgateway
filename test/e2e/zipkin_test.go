@@ -18,9 +18,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-// TODO (Shane): remove
-// Intentionally focused describe to test CI/CD version
-var _ = FDescribe("Zipkin", func() {
+var _ = FDescribe("Zipkin config loading", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc
@@ -39,6 +37,7 @@ var _ = FDescribe("Zipkin", func() {
 		envoyInstance, err = envoyFactory.NewEnvoyInstance()
 		Expect(err).NotTo(HaveOccurred())
 
+		// Run Gloo Gateway and add a test upstream
 		writeNamespace = defaults.GlooSystem
 		ro := &services.RunOptions{
 			NsToWrite: writeNamespace,
@@ -50,13 +49,6 @@ var _ = FDescribe("Zipkin", func() {
 			},
 		}
 		testClients = services.RunGlooGatewayUdsFds(ctx, ro)
-
-		_, err = testClients.GatewayClient.Write(getGrpcJsonGateway(), clients.WriteOpts{Ctx: ctx})
-		Expect(err).ToNot(HaveOccurred())
-
-		err = envoyInstance.RunWithConfig(8080, "./envoyconfigs/zipkin-envoy-conf.yaml")
-		Expect(err).NotTo(HaveOccurred())
-
 		tu = v1helpers.NewTestGRPCUpstream(ctx, envoyInstance.LocalAddr(), 1)
 		_, err = testClients.UpstreamClient.Write(tu.Upstream, clients.WriteOpts{})
 		Expect(err).NotTo(HaveOccurred())
@@ -89,6 +81,9 @@ var _ = FDescribe("Zipkin", func() {
 	}
 
 	It("should send trace msgs to the zipkin server", func() {
+		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-conf.yaml")
+		Expect(err).NotTo(HaveOccurred())
+
 		apiHit := make(chan bool, 1)
 
 		// Start a dummy server listening on 9411 for Zipkin requests
@@ -118,5 +113,11 @@ var _ = FDescribe("Zipkin", func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
 		server.Shutdown(ctx)
+	})
+
+	It("should fail to load bad config", func() {
+		err := envoyInstance.RunWithConfig(8080, "./envoyconfigs/zipkin-envoy-invalid-conf.yaml")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(And(ContainSubstring("can't unmarshal"), ContainSubstring(`unknown field "invalid_field"`)))
 	})
 })

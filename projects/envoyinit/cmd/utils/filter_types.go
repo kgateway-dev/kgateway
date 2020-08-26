@@ -29,7 +29,7 @@
 //go:generate sh -c "echo 'package main\n\nimport (' >> filter_types.gen.go"
 //go:generate sh -c "go list github.com/envoyproxy/go-control-plane/... | grep 'v[2-9]' | xargs -n1 -I{} echo '\t_ \"{}\"' >> filter_types.gen.go"
 //go:generate sh -c "echo ')' >> filter_types.gen.go"
-package main
+package utils
 
 // Import all Envoy filter types so they are registered and deserialization does not fail
 // when using them in the "typed_config" attributes.

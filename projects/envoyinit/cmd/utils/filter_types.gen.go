@@ -14,7 +14,7 @@
 
 //  GENERATED FILE -- DO NOT EDIT
 
-package main
+package utils
 
 import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/admin/v2alpha"
