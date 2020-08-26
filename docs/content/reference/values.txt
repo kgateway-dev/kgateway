@@ -107,6 +107,7 @@
 |discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
+|discovery.deployment.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |discovery.deployment.extraDiscoveryLabels.NAME|string||Optional extra key-value pairs to add to the metadata.labels data of the gloo discovery pod.|
 |discovery.deployment.replicas|int|1|number of instances to deploy|
 |discovery.deployment.customEnv[].name|string|||

@@ -60,6 +60,7 @@ discovery:
       repository: discovery
     replicas: 1
     runAsUser: 10101
+    fsGroup: 10101
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
