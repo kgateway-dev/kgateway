@@ -2,6 +2,7 @@ package translator
 
 import (
 	"fmt"
+	"reflect"
 	"sort"
 	"strings"
 
@@ -45,7 +46,7 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 		if len(listenerFilters) == 0 {
 			return nil
 		}
-		filterChains = t.computeFilterChainsFromSslConfig(params.Snapshot, listener, listenerFilters, listenerReport)
+		filterChains = t.computeFilterChainsFromSslConfig(params, listener, listenerFilters, listenerReport)
 	case *v1.Listener_TcpListener:
 		// run the tcp filter chain plugins
 		for _, plug := range t.plugins {
@@ -152,8 +153,9 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 
 // create a duplicate of the listener filter chain for each ssl cert we want to serve
 // if there is no SSL config on the listener, the envoy listener will have one insecure filter chain
-func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapshot, listener *v1.Listener, listenerFilters []*envoylistener.Filter, listenerReport *validationapi.ListenerReport) []*envoylistener.FilterChain {
-
+func (t *translatorInstance) computeFilterChainsFromSslConfig(params plugins.Params, listener *v1.Listener, listenerFilters []*envoylistener.Filter, listenerReport *validationapi.ListenerReport) []*envoylistener.FilterChain {
+	logger := contextutils.LoggerFrom(params.Ctx)
+	snap := params.Snapshot
 	// if no ssl config is provided, return a single insecure filter chain
 	if len(listener.SslConfigurations) == 0 {
 		return []*envoylistener.FilterChain{{
@@ -175,6 +177,19 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 			continue
 		}
 		filterChain := newSslFilterChain(downstreamConfig, sslConfig.SniDomains, listener.UseProxyProto, listenerFilters)
+
+		// Check for overlapping filterChains according to the same rules that envoy uses here:
+		// https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L162-L166
+		for _, existingFilterChain := range secureFilterChains {
+			if reflect.DeepEqual(filterChain.FilterChainMatch, existingFilterChain.FilterChainMatch) {
+				logger.Debugf("Tried to apply multiple filter chains "+
+					"with the same FilterChainMatch value: {%s}", filterChain.FilterChainMatch.String())
+				validation.AppendListenerError(listenerReport,
+					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
+						"with the same FilterChainMatch value: {%s}", filterChain.FilterChainMatch.String()))
+				break
+			}
+		}
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
