@@ -18,3 +18,6 @@ Users ran into this bug doing ... \ Users needed this feature to ...
 - [ ] I have commented my code, particularly in hard-to-understand areas
 - [ ] I have made corresponding changes to the documentation
 - [ ] I have added tests that prove my fix is effective or that my feature works
+
+
+TODO(kdorosh) figure out how to set labels in PR templates
