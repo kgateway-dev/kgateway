@@ -130,6 +130,8 @@ func (f *AWSLambdaFunctionDiscovery) DetectFunctionsOnce(ctx context.Context, se
 
 	tokenPath := os.Getenv(AWS_WEB_IDENTITY_TOKEN_FILE)
 	roleArn := os.Getenv(AWS_ROLE_ARN)
+	// If aws web token, and role arn are available, authenticate lambda service using mounted credentials.
+	// See: https://aws.amazon.com/blogs/opensource/introducing-fine-grained-iam-roles-service-accounts/
 	if tokenPath != "" && roleArn != "" {
 		if awsspec.Aws.GetRoleArn() != "" {
 			roleArn = awsspec.Aws.GetRoleArn()
