@@ -37,7 +37,7 @@ var _ = Describe("Translate", func() {
 			Spec: v1alpha1.IngressSpec{
 				Rules: []v1alpha1.IngressRule{
 					{
-						Hosts: []string{"petes.com", "zah.net", "mysvc.myns.svc.cluster.local", "mysvc.myns.svc", "mysvc.myns", "mysvc.myns.example.com"},
+						Hosts: []string{"petes.com", "zah.net", "mysvc.myns.svc.cluster.local", "mysvc.myns.example.com"},
 						HTTP: &v1alpha1.HTTPIngressRuleValue{
 							Paths: []v1alpha1.HTTPIngressPath{
 								{
@@ -162,18 +162,18 @@ var _ = Describe("Translate", func() {
 								{
 									Name: "example.ing-0",
 									Domains: []string{
-										"petes.com",
-										"petes.com:80",
-										"zah.net",
-										"zah.net:80",
-										"mysvc.myns.svc.cluster.local",
-										"mysvc.myns.svc.cluster.local:80",
-										"mysvc.myns.svc",
-										"mysvc.myns.svc:80",
 										"mysvc.myns",
 										"mysvc.myns:80",
 										"mysvc.myns.example.com",
 										"mysvc.myns.example.com:80",
+										"mysvc.myns.svc",
+										"mysvc.myns.svc:80",
+										"mysvc.myns.svc.cluster.local",
+										"mysvc.myns.svc.cluster.local:80",
+										"petes.com",
+										"petes.com:80",
+										"zah.net",
+										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
 										{
@@ -229,10 +229,10 @@ var _ = Describe("Translate", func() {
 								{
 									Name: "example.ing-1",
 									Domains: []string{
-										"pog.com",
-										"pog.com:80",
 										"champ.net",
 										"champ.net:80",
+										"pog.com",
+										"pog.com:80",
 										"zah.net",
 										"zah.net:80",
 									},
