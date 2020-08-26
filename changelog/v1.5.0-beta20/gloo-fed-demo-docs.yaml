@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >
+      Add notes to Gloo Federation docs guide about the `gatewayProxies.NAME.failover.enabled` helm value.
+    issueLink: https://github.com/solo-io/gloo-fed/issues/265
