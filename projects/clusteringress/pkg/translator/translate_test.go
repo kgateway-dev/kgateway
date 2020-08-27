@@ -222,10 +222,10 @@ var _ = Describe("Translate", func() {
 								{
 									Name: "example.ing-1",
 									Domains: []string{
-										"pog.com",
-										"pog.com:80",
 										"champ.net",
 										"champ.net:80",
+										"pog.com",
+										"pog.com:80",
 										"zah.net",
 										"zah.net:80",
 									},
