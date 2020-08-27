@@ -9,6 +9,8 @@ import subprocess
 import re
 import base64
 
+# adlifjdalskfjasld;kjf;laksdjf;lkasdjfl;kasdjfl;kasdjflkadjfl;kd
+
 def main():
     print("Checking commit for JWTs...")
     #get git diff lines
