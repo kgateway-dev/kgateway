@@ -39,7 +39,7 @@ def main():
                     print("Probable JWT found in commit: " + token + " gets decoded into: " + out.decode("utf-8"))
                     raiseIssue = True
             except Exception as e:
-                print(token + " could not be decoded for reason: " + str(e))
+                continue
     # found a likely JWT, send user through prompt sequence to double check
     if raiseIssue:
         prompt = "This commit appears to add a JSON web token, which is often accidental and can be problematic (unless it's for a test). Are you sure you want to commit these changes? (y/n): "
