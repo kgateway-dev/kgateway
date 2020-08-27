@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 
 import subprocess
+import re
+
+#testalonglineyesthisisverylone helloitsmeimalso-along_tokenhithere
 
 def main():
     print("Hello World!")
@@ -8,7 +11,9 @@ def main():
     lines = subprocess.check_output(['git', 'diff', 'HEAD~1']).decode("utf-8").split('\n')
     lines2 = list(filter(lambda line : len(line) > 10 and line[0] == '+', lines))
     for line in lines2:
-        print(line)
+        longTokens = re.findall("[A-Za-z0-9_=-]{20,}", line)
+        for token in longTokens:
+            print(token)
 
 if __name__ == "__main__":
     main()
