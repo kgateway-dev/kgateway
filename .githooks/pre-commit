@@ -10,6 +10,7 @@ import re
 import base64
 
 # adlifjdalskfjasld;kjf;laksdjf;lkasdjfl;kasdjfl;kasdjflkadjfl;kd
+# adlifjdalskfjasld;kjf;laksdjf;lkasdjfl;kasdjfl;kasdjflkadjfl;kd
 
 def main():
     print("Checking commit for JWTs...")
@@ -64,7 +65,7 @@ def main():
                 prompt = "You've entered an incorrect input " + str(failCount) + " times now. Please respond with 'y' or 'n' (sans apostrophes) regarding whether or not you wish to proceed with this commit which possibly contains a JWT: "
             failCount += 1
     else:
-        "No likely JWTs found, proceeding with commit"
+        print("No likely JWTs found, proceeding with commit")
         return 0
 
 if __name__ == "__main__":
