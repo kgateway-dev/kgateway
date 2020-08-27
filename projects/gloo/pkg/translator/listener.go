@@ -75,7 +75,7 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 			}
 			if reflect.DeepEqual(filterChain.FilterChainMatch, otherFilterChain.FilterChainMatch) {
 				logger.Debugf("Tried to apply multiple filter chains "+
-					"with the same FilterChainMatch value: {%s}", filterChain.FilterChainMatch.String())
+					"with the same FilterChainMatch value: %v", filterChain.FilterChainMatch)
 				validation.AppendListenerError(listenerReport,
 					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
 						"with the same FilterChainMatch value: %v", filterChain.FilterChainMatch))
