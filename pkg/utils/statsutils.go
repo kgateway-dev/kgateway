@@ -9,6 +9,20 @@ import (
 	"go.opencensus.io/tag"
 )
 
+func MakeGauge(name, description string, tagKeys ...tag.Key) *stats.Int64Measure {
+	gauge := stats.Int64(name, description, stats.UnitDimensionless)
+
+	_ = view.Register(&view.View{
+		Name:        gauge.Name(),
+		Measure:     gauge,
+		Description: gauge.Description(),
+		Aggregation: view.LastValue(),
+		TagKeys:     tagKeys,
+	})
+
+	return gauge
+}
+
 func MakeSumCounter(name, description string, tagKeys ...tag.Key) *stats.Int64Measure {
 	return MakeCounter(name, description, view.Sum(), tagKeys...)
 }
@@ -18,7 +32,7 @@ func MakeLastValueCounter(name, description string, tagKeys ...tag.Key) *stats.I
 }
 
 func MakeCounter(name, description string, aggregation *view.Aggregation, tagKeys ...tag.Key) *stats.Int64Measure {
-	counter := stats.Int64(name, description, "1")
+	counter := stats.Int64(name, description, stats.UnitDimensionless)
 
 	_ = view.Register(&view.View{
 		Name:        counter.Name(),
@@ -29,6 +43,10 @@ func MakeCounter(name, description string, aggregation *view.Aggregation, tagKey
 	})
 
 	return counter
+}
+
+func MeasureZero(ctx context.Context, counter *stats.Int64Measure, tags ...tag.Mutator) {
+	Measure(ctx, counter, 0, tags...)
 }
 
 func MeasureOne(ctx context.Context, counter *stats.Int64Measure, tags ...tag.Mutator) {
