@@ -41,7 +41,7 @@ var _ = Describe("Validator", func() {
 	It("returns error before sync called", func() {
 		_, err := v.ValidateVirtualService(nil, nil, false)
 		Expect(err).To(testutils.HaveInErrorChain(NotReadyErr))
-		err = v.Sync(nil, &gatewayv1.ApiSnapshot{})
+		err = v.Sync(context.Background(), &gatewayv1.ApiSnapshot{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 

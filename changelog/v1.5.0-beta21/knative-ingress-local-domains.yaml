@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Use Set to store expanded cluster local service domains for Knative.
