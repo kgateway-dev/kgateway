@@ -3,7 +3,7 @@
 # This script runs whenever a user tries to commit something in this repo.
 # It checks the commit for any text that resembled an encoded JSON web token,
 # and asks the user to verify that they want to commit a JWT if it finds any.
-
+# eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ
 import sys
 import subprocess
 import re
