@@ -13,11 +13,11 @@ def main():
     lines = subprocess.check_output(['git', 'diff', 'HEAD~1']).decode("utf-8").split('\n')
     # filter out short lines and lines that don't begin with a '+' to only
     # test longer, newly added text
-    lines2 = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
+    filteredLines = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
     
     jwtPattern = re.compile('JWT|ait|name|sub|alg')
     raiseIssue = False
-    for line in lines2:
+    for line in filteredLines:
         # try to find long (20+ character) words consisting only of valid JWT characters
         longTokens = re.findall("[A-Za-z0-9_=-]{20,}", line)
         # try to decode any found tokens and see if they look like a JSONfragment
