@@ -82,13 +82,8 @@ var _ = Describe("Zipkin config loading", func() {
 
 		Eventually(testRequest, 15, 1).Should(ContainSubstring(`<title>Envoy Admin</title>`))
 
-		timeout := time.After(5 * time.Second)
-		select {
-		case <-timeout:
-			Fail("timeout waiting for zipkin api to be hit")
-		case <-apiHit:
-			// Successfully received a trace req, do nothing
-		}
+		truez := true
+		Eventually(apiHit, 5*time.Second).Should(Receive(&truez))
 
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cancel()
@@ -98,6 +93,6 @@ var _ = Describe("Zipkin config loading", func() {
 	It("should fail to load bad config", func() {
 		err := envoyInstance.RunWithConfig(int(defaults.HttpPort), "./envoyconfigs/zipkin-envoy-invalid-conf.yaml")
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(And(ContainSubstring("can't unmarshal"), ContainSubstring(`unknown field "invalid_field"`)))
+		Expect(err).To(MatchError(And(ContainSubstring("can't unmarshal"), ContainSubstring(`unknown field "invalid_field"`))))
 	})
 })
