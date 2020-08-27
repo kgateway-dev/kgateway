@@ -10,7 +10,7 @@ import (
 )
 
 func MakeGauge(name, description string, tagKeys ...tag.Key) *stats.Int64Measure {
-	gauge := stats.Int64(name, description, "1")
+	gauge := stats.Int64(name, description, stats.UnitDimensionless)
 
 	_ = view.Register(&view.View{
 		Name:        gauge.Name(),
@@ -32,7 +32,7 @@ func MakeLastValueCounter(name, description string, tagKeys ...tag.Key) *stats.I
 }
 
 func MakeCounter(name, description string, aggregation *view.Aggregation, tagKeys ...tag.Key) *stats.Int64Measure {
-	counter := stats.Int64(name, description, "1")
+	counter := stats.Int64(name, description, stats.UnitDimensionless)
 
 	_ = view.Register(&view.View{
 		Name:        counter.Name(),

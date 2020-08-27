@@ -48,7 +48,7 @@ var (
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
 
-	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether the config is valid")
+	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 )
 
 const (
