@@ -16,7 +16,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("Zipkin config loading", func() {
+var _ = FDescribe("Zipkin config loading", func() {
 	var (
 		cancel        context.CancelFunc
 		envoyInstance *services.EnvoyInstance

@@ -58,6 +58,16 @@ func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, er
 	if err != nil {
 		return "", err
 	}
+
+	addr, err := localAddr()
+	if err != nil {
+		return "", err
+	}
+	// When running envoy in docker, replace localhost
+	// loopback address with the docker routable IP.
+	if addr != "" && addr != "127.0.0.1" {
+		config = strings.ReplaceAll(config, "127.0.0.1", addr)
+	}
 	return config, nil
 }
 
