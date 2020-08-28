@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix opentracing causing envoy failure. Adds type-checking for all envoy go-control-plane data structures.
+    issueLink: https://github.com/solo-io/gloo/issues/3496

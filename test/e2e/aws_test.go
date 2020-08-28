@@ -109,18 +109,6 @@ var _ = Describe("AWS Lambda", func() {
 			},
 			UpstreamType: &gloov1.Upstream_Aws{
 				Aws: &aws_plugin.UpstreamSpec{
-					LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{
-						{
-							LambdaFunctionName: "uppercase",
-							Qualifier:          "",
-							LogicalName:        "uppercase",
-						},
-						{
-							LambdaFunctionName: "contact-form",
-							Qualifier:          "",
-							LogicalName:        "contact-form",
-						},
-					},
 					Region:    region,
 					SecretRef: utils.ResourceRefPtr(secret.Metadata.Ref()),
 				},
@@ -130,6 +118,22 @@ var _ = Describe("AWS Lambda", func() {
 		var opts clients.WriteOpts
 		_, err := testClients.UpstreamClient.Write(upstream, opts)
 		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func() []*aws_plugin.LambdaFunctionSpec {
+			us, err := testClients.UpstreamClient.Read(
+				upstream.GetMetadata().Namespace,
+				upstream.GetMetadata().Name,
+				clients.ReadOpts{},
+			)
+			if err != nil {
+				return nil
+			}
+			return us.GetAws().GetLambdaFunctions()
+		}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
+			LogicalName:        "uppercase",
+			LambdaFunctionName: "uppercase",
+			Qualifier:          "$LATEST",
+		}))
 	}
 
 	testProxy := func() {
@@ -322,7 +326,7 @@ var _ = Describe("AWS Lambda", func() {
 
 		It("should be able to call lambda", testProxy)
 
-		It("should be able lambda with response transform", testProxyWithResponseTransform)
+		It("should be able to call lambda with response transform", testProxyWithResponseTransform)
 
 		It("should be able to call lambda via gateway", testLambdaWithVirtualService)
 	})
@@ -407,7 +411,7 @@ var _ = Describe("AWS Lambda", func() {
 				"nbf":   now.Unix(),
 				"iss":   "https://fake-oidc.solo.io",
 				"aud":   "sts.amazonaws.com",
-				"kid":   "test1",
+				"kid":   "XwCb60dEzG6QF4-5iCwFRE1w1hP_VEoy3JWcokISRp4",
 			})
 
 			signedJwt, err := tokenToSign.SignedString(privateKey)
@@ -438,18 +442,6 @@ var _ = Describe("AWS Lambda", func() {
 				},
 				UpstreamType: &gloov1.Upstream_Aws{
 					Aws: &aws_plugin.UpstreamSpec{
-						LambdaFunctions: []*aws_plugin.LambdaFunctionSpec{
-							{
-								LambdaFunctionName: "uppercase",
-								Qualifier:          "uppercase",
-								LogicalName:        "uppercase",
-							},
-							{
-								LambdaFunctionName: "contact-form",
-								Qualifier:          "uppercase",
-								LogicalName:        "contact-form",
-							},
-						},
 						Region: region,
 					},
 				},
@@ -458,6 +450,22 @@ var _ = Describe("AWS Lambda", func() {
 			var opts clients.WriteOpts
 			_, err := testClients.UpstreamClient.Write(upstream, opts)
 			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() []*aws_plugin.LambdaFunctionSpec {
+				us, err := testClients.UpstreamClient.Read(
+					upstream.GetMetadata().Namespace,
+					upstream.GetMetadata().Name,
+					clients.ReadOpts{},
+				)
+				if err != nil {
+					return nil
+				}
+				return us.GetAws().GetLambdaFunctions()
+			}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
+				LogicalName:        "uppercase",
+				LambdaFunctionName: "uppercase",
+				Qualifier:          "$LATEST",
+			}))
 		}
 
 		setupEnvoySts := func() {

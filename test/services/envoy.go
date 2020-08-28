@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"text/template"
 
+	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 
 	"bytes"
@@ -49,6 +50,25 @@ func (ei *EnvoyInstance) buildBootstrap() string {
 		panic(err)
 	}
 	return b.String()
+}
+
+func (ei *EnvoyInstance) buildBootstrapFromConfig(configFile string) (string, error) {
+	// Will error on missing file or invalid config
+	config, err := utils.GetConfig(configFile)
+	if err != nil {
+		return "", err
+	}
+
+	addr, err := localAddr()
+	if err != nil {
+		return "", err
+	}
+	// When running envoy in docker, replace localhost
+	// loopback address with the docker routable IP.
+	if addr != "" && addr != "127.0.0.1" {
+		config = strings.ReplaceAll(config, "127.0.0.1", addr)
+	}
+	return config, nil
 }
 
 const envoyConfigTemplate = `
@@ -367,33 +387,41 @@ func (ei *EnvoyInstance) RunWithId(id string) error {
 	ei.Role = "default~proxy"
 
 	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), 8081)
+	return ei.runWithPort(context.TODO(), 8081, "")
 }
 
 func (ei *EnvoyInstance) Run(port int) error {
 	ei.Role = "default~proxy"
 
 	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), uint32(port))
+	return ei.runWithPort(context.TODO(), uint32(port), "")
+}
+
+func (ei *EnvoyInstance) RunWithConfig(port int, configFile string) error {
+	ei.Role = "default~proxy"
+
+	// TODO: refactor this function to include a context.
+	return ei.runWithPort(context.TODO(), uint32(port), configFile)
 }
 func (ei *EnvoyInstance) RunWithRole(role string, port int) error {
 	ei.Role = role
 	// TODO: refactor this function to include a context.
-	return ei.runWithPort(context.TODO(), uint32(port))
+	return ei.runWithPort(context.TODO(), uint32(port), "")
 }
 
 type EnvoyInstanceConfig interface {
 	Role() string
 	Port() uint32
+
 	Context() context.Context
 }
 
 func (ei *EnvoyInstance) RunWith(eic EnvoyInstanceConfig) error {
 	ei.Role = eic.Role()
-	return ei.runWithPort(eic.Context(), eic.Port())
+	return ei.runWithPort(eic.Context(), eic.Port(), "")
 }
 
-func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32) error {
+func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32, configFile string) error {
 	go func() {
 		<-ctx.Done()
 		ei.Clean()
@@ -403,7 +431,17 @@ func (ei *EnvoyInstance) runWithPort(ctx context.Context, port uint32) error {
 	}
 	ei.Port = port
 
-	ei.envoycfg = ei.buildBootstrap()
+	if configFile == "" {
+		ei.envoycfg = ei.buildBootstrap()
+	} else {
+		var err error
+		ei.envoycfg, err = ei.buildBootstrapFromConfig(configFile)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	if ei.UseDocker {
 		err := ei.runContainer(ctx)
 		if err != nil {
