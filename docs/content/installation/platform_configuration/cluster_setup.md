@@ -10,6 +10,7 @@ Click on the links below for details specific to your Kubernetes distribution:
 
 - [Minikube](#minikube)
 - [Minishift](#minishift)
+- [Kind (Kubernetes in Docker)](#kind)
 - [OpenShift](#openshift)
 - [Google Kubernetes Engine (GKE)](#google-kubernetes-engine-gke)
   - [Private clusters](#private-clusters)
@@ -96,6 +97,100 @@ oc adm policy add-scc-to-user anyuid  -z glooe-grafana -n gloo-system
 ```
 
 Now you're all set to install Gloo, simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).
+
+---
+
+## Kind
+
+[Kind](https://kind.sigs.k8s.io/) (Kubernetes in Docker) is a tool for running local Kubernetes clusters using Docker container “nodes”.  Kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.  
+
+Kind is ideal for getting started with Gloo on your personal workstation.  It is simpler than Minikube or Minishift because no external hypervisor is required.
+
+We advise customizing kind cluster creation slightly to make it easier to access your services from your host workstation.  Since services deployed in kind are inside a Docker container, you cannot easily access them.  It is more convenient if you expose ports from inside the container to your host machine.
+
+```bash
+cat <<EOF | kind create cluster --name kind --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 31500
+    hostPort: 31500
+    protocol: TCP
+  - containerPort: 32500
+    hostPort: 32500
+    protocol: TCP
+EOF
+```
+
+Note that Kind's docker container will be publishing ports 31500 (for http) and 32500 (https) to the host machine.
+
+```
+Creating cluster "kind" ...
+ ✓ Ensuring node image (kindest/node:v1.18.2) 🖼
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+Set kubectl context to "kind-kind"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-kind
+
+Thanks for using kind! 😊
+```
+
+It will also be necessary for you to customize Gloo installation to use these same ports.  See the special Kind instructions for both [open source]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) and [enterprise]({{< versioned_link_path fromRoot="installation/enterprise/#installing-on-kubernetes-with-glooctl" >}}) versions.
+
+Note also that the url to invoke services published through Gloo will be slightly different with Kind-hosted clusters.  Much of the Gloo documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
+
+```bash
+curl $(glooctl proxy url)/all-pets
+```
+
+You will instead route your request to the custom port that you configured above for your docker container to publish. For example:
+
+```bash
+curl http://localhost:31500/all-pets
+```
+
+If you use the options in this section to create your kind cluster, then you should be able to verify that the cluster was created like this:
+
+```bash
+kind get clusters
+```
+If you're starting from scratch with kind, the "get clusters" command should show you a single cluster `kind`.
+
+In order to interact with a specific cluster, you only need to specify the cluster name as a context in kubectl:
+
+```bash
+kubectl cluster-info --context kind-kind
+```
+
+```bash
+Kubernetes master is running at https://127.0.0.1:51832
+KubeDNS is running at https://127.0.0.1:51832/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+To verify that your `kubectl` context is pointing to your new Kind cluster.
+
+```bash
+kubectl config current-context
+```
+
+This command should return `kind-kind` as the context.
+
+If it does not, you can switch to the `kind-kind` context by running the following:
+
+```bash
+kubectl config use-context kind-kind
+```
+
+Now you're all set to install Gloo.  Simply follow the Gloo installation guide [here]({{< versioned_link_path fromRoot="/installation" >}}).  Be sure to watch for the [special instructions]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) for installing with Kind.
 
 ---
 

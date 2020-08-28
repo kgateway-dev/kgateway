@@ -37,6 +37,44 @@ Once your Kubernetes cluster is up and running, run the following command to dep
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY
 ```
 
+<details>
+<summary>Special Instructions to Install Gloo Enterprise on Kind</summary>
+If you followed the cluster setup instructions for Kind [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/#kind-kubernetes-in-docker" >}}), then you should have exposed custom ports 31500 (for http) and 32500 (https) from your cluster's Docker container to its host machine. The purpose of this is to make it easier to access your service endpoints from your host workstation.  Use the following custom installation for Gloo to publish those same ports from the proxy as well.
+
+```bash
+cat <<EOF | glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY --values -
+gloo:
+  gatewayProxies:
+    gatewayProxy:
+      service:
+        type: NodePort
+        httpPort: 31500
+        httpsPort: 32500
+        httpNodePort: 31500
+        httpsNodePort: 32500
+EOF
+```
+
+```
+Creating namespace gloo-system... Done.
+Starting Gloo Enterprise installation...
+
+Gloo Enterprise was successfully installed!
+```
+
+Note also that the url to invoke services published via Gloo will be slightly different with Kind-hosted clusters.  Much of the Gloo documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
+
+```bash
+curl $(glooctl proxy url)/all-pets
+```
+
+You will instead route your request to the custom port that you configured above for your docker container to publish. For example:
+
+```bash
+curl http://localhost:31500/all-pets
+```
+</details>
+
 Once you've installed Gloo, please be sure [to verify your installation](#verify-your-installation).
 
 
