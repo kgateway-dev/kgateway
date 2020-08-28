@@ -17,7 +17,7 @@ import (
 
 const (
 	MetadataPluginName    = "envoy.grpc_credentials.file_based_metadata"
-	defaultSdsClusterName = "gateway-proxy-sds"
+	defaultSdsClusterName = "gateway_proxy_sds"
 )
 
 var (

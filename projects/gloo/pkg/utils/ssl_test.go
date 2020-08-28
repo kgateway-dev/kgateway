@@ -308,7 +308,7 @@ var _ = Describe("Ssl", func() {
 			Expect(vctx.SdsConfig).To(BeEquivalentTo(cert.SdsConfig))
 
 			envoyGrpc := vctx.SdsConfig.ConfigSourceSpecifier.(*envoycore.ConfigSource_ApiConfigSource).ApiConfigSource.GrpcServices[0].TargetSpecifier.(*envoycore.GrpcService_EnvoyGrpc_).EnvoyGrpc
-			Expect(envoyGrpc.ClusterName).To(Equal("gateway-proxy-sds"))
+			Expect(envoyGrpc.ClusterName).To(Equal("gateway_proxy_sds"))
 
 		})
 
