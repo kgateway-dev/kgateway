@@ -15,7 +15,7 @@ def main():
     # test longer, newly added text
     filteredLines = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
     
-    jwtPattern = re.compile('JWT|ait|name|sub|alg')
+    jwtPattern = re.compile('JWT|iat|name|sub|alg|exp|k')
     raiseIssue = False
     for line in filteredLines:
         # try to find long (20+ character) words consisting only of valid JWT characters
