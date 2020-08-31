@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	utils2 "github.com/solo-io/gloo/pkg/utils"
+
 	"github.com/hashicorp/go-multierror"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -45,6 +47,8 @@ var (
 	WrappedUnmarshalErr = func(err error) error {
 		return errors.Wrapf(err, unmarshalErrMsg)
 	}
+
+	mValidConfig = utils2.MakeGauge("validation.gateway.solo.io/valid_config", "A boolean indicating whether gloo config is valid")
 )
 
 const (
@@ -123,9 +127,11 @@ func (v *validator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	v.latestSnapshot = &snapCopy
 
 	if errs != nil {
+		utils2.MeasureZero(ctx, mValidConfig)
 		return errors.Wrapf(errs, InvalidSnapshotErrMessage)
 	}
 
+	utils2.MeasureOne(ctx, mValidConfig)
 	return nil
 }
 
@@ -163,11 +169,13 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	snap := v.latestSnapshot.Clone()
 
 	if v.latestSnapshotErr != nil {
+		utils2.MeasureZero(ctx, mValidConfig)
 		contextutils.LoggerFrom(ctx).Errorw(InvalidSnapshotErrMessage, zap.Error(v.latestSnapshotErr))
 		// allow writes if storage is already broken
 		return nil, nil
 	}
 
+	utils2.MeasureOne(ctx, mValidConfig)
 	proxyNames, resource, ref := apply(&snap)
 
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)

@@ -1,39 +1,21 @@
 package main
 
 import (
-	"bytes"
 	"io/ioutil"
 	"log"
 	"os"
 	"syscall"
 
-	"github.com/solo-io/envoy-operator/pkg/downward"
+	"github.com/solo-io/gloo/projects/envoyinit/cmd/utils"
 )
-
-func getConfig() (string, error) {
-	inputfile := inputCfg()
-
-	inreader, err := os.Open(inputfile)
-	if err != nil {
-		return "", err
-	}
-	defer inreader.Close()
-
-	var buffer bytes.Buffer
-	transformer := downward.NewTransformer()
-	err = transformer.Transform(inreader, &buffer)
-	if err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
-}
 
 func writeConfig(cfg string) {
 	ioutil.WriteFile(outputCfg(), []byte(cfg), 0444)
 }
 
 func main() {
-	outCfg, err := getConfig()
+	inputFile := inputCfg()
+	outCfg, err := utils.GetConfig(inputFile)
 	if err != nil {
 		log.Fatalf("initializer failed: %v", err)
 	}

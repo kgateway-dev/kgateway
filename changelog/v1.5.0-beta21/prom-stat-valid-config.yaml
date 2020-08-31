@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX 
+    description: Added a prometheus metric to the gateway pod that indicates whether the validating admission webhook determined that the config was valid.
+    issueLink: https://github.com/solo-io/gloo/issues/3408

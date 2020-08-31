@@ -162,18 +162,18 @@ var _ = Describe("Translate", func() {
 								{
 									Name: "example.ing-0",
 									Domains: []string{
-										"petes.com",
-										"petes.com:80",
-										"zah.net",
-										"zah.net:80",
-										"mysvc.myns.svc.cluster.local",
-										"mysvc.myns.svc.cluster.local:80",
-										"mysvc.myns.svc",
-										"mysvc.myns.svc:80",
 										"mysvc.myns",
 										"mysvc.myns:80",
 										"mysvc.myns.example.com",
 										"mysvc.myns.example.com:80",
+										"mysvc.myns.svc",
+										"mysvc.myns.svc:80",
+										"mysvc.myns.svc.cluster.local",
+										"mysvc.myns.svc.cluster.local:80",
+										"petes.com",
+										"petes.com:80",
+										"zah.net",
+										"zah.net:80",
 									},
 									Routes: []*gloov1.Route{
 										{
@@ -229,10 +229,10 @@ var _ = Describe("Translate", func() {
 								{
 									Name: "example.ing-1",
 									Domains: []string{
-										"pog.com",
-										"pog.com:80",
 										"champ.net",
 										"champ.net:80",
+										"pog.com",
+										"pog.com:80",
 										"zah.net",
 										"zah.net:80",
 									},
