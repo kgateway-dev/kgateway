@@ -129,7 +129,7 @@ var _ = Describe("AWS Lambda", func() {
 				return nil
 			}
 			return us.GetAws().GetLambdaFunctions()
-		}, "10m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
+		}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
 			LogicalName:        "uppercase",
 			LambdaFunctionName: "uppercase",
 			Qualifier:          "$LATEST",
