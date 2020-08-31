@@ -129,7 +129,7 @@ var _ = Describe("AWS Lambda", func() {
 				return nil
 			}
 			return us.GetAws().GetLambdaFunctions()
-		}, "10m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
+		}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
 			LogicalName:        "uppercase",
 			LambdaFunctionName: "uppercase",
 			Qualifier:          "$LATEST",
@@ -411,7 +411,7 @@ var _ = Describe("AWS Lambda", func() {
 				"nbf":   now.Unix(),
 				"iss":   "https://fake-oidc.solo.io",
 				"aud":   "sts.amazonaws.com",
-				"kid":   "test1",
+				"kid":   "XwCb60dEzG6QF4-5iCwFRE1w1hP_VEoy3JWcokISRp4",
 			})
 
 			signedJwt, err := tokenToSign.SignedString(privateKey)
@@ -461,7 +461,7 @@ var _ = Describe("AWS Lambda", func() {
 					return nil
 				}
 				return us.GetAws().GetLambdaFunctions()
-			}, "10m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
+			}, "2m", "1s").Should(ContainElement(&aws_plugin.LambdaFunctionSpec{
 				LogicalName:        "uppercase",
 				LambdaFunctionName: "uppercase",
 				Qualifier:          "$LATEST",
