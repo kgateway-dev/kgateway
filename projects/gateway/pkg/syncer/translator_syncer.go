@@ -30,25 +30,21 @@ import (
 type translatorSyncer struct {
 	writeNamespace     string
 	reporter           reporter.Reporter
-	proxyClient        gloov1.ProxyClient
-	gwClient           v1.GatewayClient
-	vsClient           v1.VirtualServiceClient
+	proxyWatcher       gloov1.ProxyWatcher
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
 	statusSyncer       statusSyncer
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyClient gloov1.ProxyClient, proxyReconciler reconciler.ProxyReconciler, gwClient v1.GatewayClient, vsClient v1.VirtualServiceClient, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
-		proxyClient:     proxyClient,
-		gwClient:        gwClient,
-		vsClient:        vsClient,
+		proxyWatcher:    proxyWatcher,
 		proxyReconciler: proxyReconciler,
 		translator:      translator,
-		statusSyncer:    newStatusSyncer(writeNamespace, proxyClient, reporter),
+		statusSyncer:    newStatusSyncer(writeNamespace, proxyWatcher, reporter),
 		managedProxyLabels: map[string]string{
 			"created_by": "gateway",
 		},
@@ -113,17 +109,17 @@ type statusSyncer struct {
 	mapLock                 sync.RWMutex
 	reporter                reporter.Reporter
 
-	proxyClient    gloov1.ProxyWatcher
+	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
 	syncNeeded     chan struct{}
 }
 
-func newStatusSyncer(writeNamespace string, proxyClient gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
 		currentGeneratedProxies: nil,
 		reporter:                reporter,
-		proxyClient:             proxyClient,
+		proxyWatcher:            proxyWatcher,
 		writeNamespace:          writeNamespace,
 		syncNeeded:              make(chan struct{}, 1),
 	}
@@ -160,7 +156,7 @@ func (s *statusSyncer) watchProxies(ctx context.Context) error {
 	ctx = contextutils.WithLogger(ctx, "proxy-err-watcher")
 	logger := contextutils.LoggerFrom(ctx)
 	defer logger.Debugw("done watching proxies")
-	proxies, errs, err := s.proxyClient.Watch(s.writeNamespace, clients.WatchOpts{
+	proxies, errs, err := s.proxyWatcher.Watch(s.writeNamespace, clients.WatchOpts{
 		Ctx: ctx,
 	})
 	if err != nil {
@@ -304,10 +300,13 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// write reports may update the status, so clone the object
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		inputResource := resources.Clone(inputResource).(resources.InputResource)
-		inputResource.SetStatus(core.Status{})
 		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
+		// inputResource.SetStatus(core.Status{})
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
+		} else {
+			// write status back to the snapshot?
+			// write status to a map??/s
 		}
 	}
 	return errs

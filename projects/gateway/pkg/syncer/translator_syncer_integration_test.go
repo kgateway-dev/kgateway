@@ -1,0 +1,220 @@
+package syncer
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	. "github.com/onsi/ginkgo"
+	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
+	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
+)
+
+var _ = Describe("TranslatorSyncer", func() {
+	var (
+		ts                       v1.ApiSyncer
+		baseVirtualServiceClient v1.VirtualServiceClient
+		proxyClient              gloov1.ProxyClient
+		vs                       *v1.VirtualService
+		snapshot                 func() *v1.ApiSnapshot
+	)
+	BeforeEach(func() {
+		memFactory := &factory.MemoryResourceClientFactory{
+			Cache: memory.NewInMemoryResourceCache(),
+		}
+
+		gatewayClient, err := v1.NewGatewayClient(memFactory)
+		Expect(err).NotTo(HaveOccurred())
+		if err := gatewayClient.Register(); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		baseVirtualServiceClient, err = v1.NewVirtualServiceClient(memFactory)
+		virtualServiceClient := &delayingVsClient{
+			VirtualServiceClient: baseVirtualServiceClient,
+			// delay vs write, to induce the bug
+			SleepDuration: time.Second / 2,
+		}
+		Expect(err).NotTo(HaveOccurred())
+		if err := virtualServiceClient.Register(); err != nil {
+			Expect(err).NotTo(HaveOccurred())
+		}
+		routeTableClient, err := v1.NewRouteTableClient(memFactory)
+		Expect(err).NotTo(HaveOccurred())
+		if err := routeTableClient.Register(); err != nil {
+
+			Expect(err).NotTo(HaveOccurred())
+		}
+
+		proxyClient, err = gloov1.NewProxyClient(memFactory)
+		Expect(err).NotTo(HaveOccurred())
+		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient)
+		rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
+		xlator := translator.NewDefaultTranslator(translator.Opts{})
+		ts = NewTranslatorSyncer(context.TODO(), "gloo-system", proxyClient, proxyReconciler, rpt, xlator)
+
+		vs = &v1.VirtualService{
+			Metadata: core.Metadata{
+				Name:      "name",
+				Namespace: "gloo-system",
+			},
+			VirtualHost: &v1.VirtualHost{
+				Routes: []*v1.Route{
+					{
+						Matchers: []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/"},
+							},
+						},
+						Action: &v1.Route_DirectResponseAction{
+							DirectResponseAction: &gloov1.DirectResponseAction{
+								Status: 200,
+								Body:   "foo",
+							},
+						},
+					},
+				},
+			},
+		}
+		_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		gw := &v1.Gateway{
+			GatewayType: &v1.Gateway_HttpGateway{
+				HttpGateway: &v1.HttpGateway{
+					VirtualServices: []core.ResourceRef{
+						vs.Metadata.Ref(),
+					},
+				},
+			},
+			BindAddress: "::",
+			BindPort:    8080,
+			ProxyNames:  []string{"gateway-proxy"},
+			Metadata: core.Metadata{
+				Name:      "gateway-proxy",
+				Namespace: "gloo-system",
+			},
+		}
+		_, err = gatewayClient.Write(gw, clients.WriteOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		snapshot = func() *v1.ApiSnapshot {
+			vss, err := baseVirtualServiceClient.List("gloo-system", clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			gws, err := gatewayClient.List("gloo-system", clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			return &v1.ApiSnapshot{
+				VirtualServices: vss,
+				Gateways:        gws,
+			}
+		}
+
+	})
+
+	EventuallyProxyStatusInVs := func() gomega.AsyncAssertion {
+		return Eventually(func() (core.Status_State, error) {
+			newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+			if err != nil {
+				return core.Status_Pending, err
+			}
+			subresouce := newvs.GetStatus().SubresourceStatuses
+			if subresouce == nil {
+				return core.Status_Pending, fmt.Errorf("no status")
+			}
+			proxyState := subresouce["*v1.Proxy.gloo-system.gateway-proxy"]
+			if proxyState == nil {
+				return core.Status_Pending, fmt.Errorf("no state")
+			}
+			return proxyState.State, nil
+		})
+	}
+	EventuallyProxyStatus := func() gomega.AsyncAssertion {
+		return Eventually(func() (core.Status_State, error) {
+			proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+			if err != nil {
+				return core.Status_Pending, err
+			}
+			return proxy.Status.State, nil
+		})
+	}
+
+	Context("translator syncer", func() {
+
+		FIt("should set status correctly even when the status from the snapshot was not updated", func() {
+
+			ts.Sync(context.TODO(), snapshot())
+			// wait for proxy to be written
+			Eventually(func() (bool, error) {
+				_, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+				if err != nil {
+					return false, err
+				}
+				return true, nil
+			}).Should(BeTrue())
+			proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			// write the proxy status.
+			proxy.Status = core.Status{State: core.Status_Accepted}
+			proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+
+			// wait for statuses to be written to VS
+			EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
+
+			// re-sync so now the snapshot has the update status
+			ts.Sync(context.TODO(), snapshot())
+
+			// update the VS
+			vs, err = baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
+			_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+			Expect(err).NotTo(HaveOccurred())
+
+			// re-sync so to process the new VS
+			ts.Sync(context.TODO(), snapshot())
+
+			// wait for proxy status to become pending
+			EventuallyProxyStatus().Should(Equal(core.Status_Pending))
+
+			// wait for the status propagate
+			EventuallyProxyStatusInVs().Should(Equal(core.Status_Pending))
+
+			// write the proxy status again to the same status
+			proxy, err = proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			proxy.Status = core.Status{State: core.Status_Accepted}
+			proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+
+			// BUG: the vs sub resource status will not update,
+			// as the last status is the same as the one from Sync
+			Eventually(func() (bool, error) {
+				newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+				if err != nil {
+					return false, err
+				}
+				return newvs.Status.SubresourceStatuses["*v1.Proxy.gloo-system.gateway-proxy"].State == core.Status_Accepted, nil
+			}).Should(BeTrue())
+
+		})
+
+	})
+
+})
+
+type delayingVsClient struct {
+	v1.VirtualServiceClient
+	SleepDuration time.Duration
+}
+
+func (d *delayingVsClient) Write(resource *v1.VirtualService, opts clients.WriteOpts) (*v1.VirtualService, error) {
+	time.Sleep(d.SleepDuration)
+	return d.VirtualServiceClient.Write(resource, opts)
+}
