@@ -459,8 +459,6 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 		if !childMethodsSet.HasAll(parentMatcher.Methods...) {
 			return InvalidRouteTableForDelegateMethodsErr(parentMatcher.Methods, childMatch.Methods)
 		}
-
-		// test to ensure we can't delegate to ourselves?
 	}
 	return nil
 }
