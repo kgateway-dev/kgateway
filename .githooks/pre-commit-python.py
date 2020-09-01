@@ -32,7 +32,6 @@ def contains_jwt(lines):
         # try to decode any found tokens and see if they look like a JSONfragment
         # where :look like a JSON fragment" is defined as "contains any of the words in the 'jwtPattern' regex pattern"
         for token in longTokens:
-            print (token)
             try:
                 # python's base64 decoder fails if padding is missing; but does not fail if there's
                 # extra padding; so always add padding
@@ -53,7 +52,7 @@ def main():
     # filter out short lines and lines that don't begin with a '+' to only
     # test longer, newly added text
     filteredLines = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
-    
+
     # found a likely JWT, send user through prompt sequence to double check
     if contains_jwt(filteredLines):
         prompt = "This commit appears to add a JSON web token, which is often accidental and can be problematic (unless it's for a test). Are you sure you want to commit these changes? (y/n): "
