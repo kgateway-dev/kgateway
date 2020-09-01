@@ -8,17 +8,25 @@ import subprocess
 import re
 import base64
 import binascii
+import unittest
 
-def main():
-    #get git diff lines
-    lines = subprocess.check_output(['git', 'diff', 'HEAD~1']).decode("utf-8").split('\n')
-    # filter out short lines and lines that don't begin with a '+' to only
-    # test longer, newly added text
-    filteredLines = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
-    
+# run test like so:
+# (cd .githooks/; python -m unittest pre-commit-python.py)
+class TestStringMethods(unittest.TestCase):
+
+    def test_jwts(self):
+        self.assertTrue(contains_jwt(["eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0.POstGetfAytaZS82wHcjoTyoqhMyxXiWdR7Nn7A29DNSl0EiXLdwJ6xC6AfgZWF1bOsS_TuYI3OG85AmiExREkrS6tDfTQ2B3WXlrr-wp5AokiRbz3_oB4OxG-W9KcEEbDRcZc0nH3L7LzYptiy1PtAylQGxHTWZXtGz4ht0bAecBgmpdgXMguEIcoqPJ1n3pIWk_dUZegpqx0Lka21H6XxUTxiy8OcaarA8zdnPUnV6AmNP3ecFawIFYdvJB_cm-GvpCSbr8G8y_Mllj8f4x9nBH8pQux89_6gUY618iYv7tuPWBFfEbLxtF2pZS6YC1aSfLQxeNe8djT9YjpvRZA"]))
+        self.assertTrue(contains_jwt(["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c"]))
+
+    def test_ok(self):
+        self.assertFalse(contains_jwt(["test test"]))
+        self.assertFalse(contains_jwt(["thisisnotajwteventhoughitisalongstring"]))
+ 
+
+def contains_jwt(lines):
     jwtPattern = re.compile('JWT|iat|name|sub|alg|exp|k')
     raiseIssue = False
-    for line in filteredLines:
+    for line in lines:
         # try to find long (20+ character) words consisting only of valid JWT characters
         longTokens = re.findall("[A-Za-z0-9_=-]{20,}", line)
         # try to decode any found tokens and see if they look like a JSONfragment
@@ -36,8 +44,18 @@ def main():
             # be very specific about the exceptions we ignore:
             except (UnicodeDecodeError, binascii.Error) as e:
                 continue
+    return raiseIssue
+
+def main():
+    #get git diff lines
+    lines = subprocess.check_output(['git', 'diff', 'HEAD~1']).decode("utf-8").split('\n')
+
+    # filter out short lines and lines that don't begin with a '+' to only
+    # test longer, newly added text
+    filteredLines = list(filter(lambda line : len(line) > 20 and line[0] == '+', lines))
+    
     # found a likely JWT, send user through prompt sequence to double check
-    if raiseIssue:
+    if contains_jwt(filteredLines):
         prompt = "This commit appears to add a JSON web token, which is often accidental and can be problematic (unless it's for a test). Are you sure you want to commit these changes? (y/n): "
         failCount = 0
         while True:
