@@ -7,6 +7,7 @@ import sys
 import subprocess
 import re
 import base64
+import binascii
 
 def main():
     #get git diff lines
@@ -23,22 +24,17 @@ def main():
         # try to decode any found tokens and see if they look like a JSONfragment
         # where :look like a JSON fragment" is defined as "contains any of the words in the 'jwtPattern' regex pattern"
         for token in longTokens:
+            print (token)
             try:
-                #python's base64 decoder is super fragile, and consistently fails to decode JWT words due to unresolvable padding issues
-                p1 = subprocess.Popen(["echo", token], stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(["base64", "--decode"], stdin=p1.stdout, stdout=subprocess.PIPE)
-                p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-                out,err = p2.communicate()
-                if err is not None:
-                    print("terminal decoding failed while trying to check the following text for JWTs: " + token)
-                    continue
-                utfOut = out.decode("utf-8")
-                
+                # python's base64 decoder fails if padding is missing; but does not fail if there's
+                # extra padding; so always add padding
+                utfOut = base64.urlsafe_b64decode(token+'==').decode("utf-8")
                 match = jwtPattern.search(utfOut)
                 if match:
-                    print("Probable JWT found in commit: " + token + " gets decoded into: " + out.decode("utf-8"))
+                    print("Probable JWT found in commit: " + token + " gets decoded into: " + utfOut)
                     raiseIssue = True
-            except Exception as e:
+            # be very specific about the exceptions we ignore:
+            except (UnicodeDecodeError, binascii.Error) as e:
                 continue
     # found a likely JWT, send user through prompt sequence to double check
     if raiseIssue:
