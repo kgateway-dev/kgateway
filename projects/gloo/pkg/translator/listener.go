@@ -272,10 +272,13 @@ func sortListenerFilters(filters plugins.StagedListenerFilterList) []*envoyliste
 	return sortedFilters
 }
 
-// Check for overlapping FilterChains according to the same rules that envoy uses here:
+// Check for identical FilterChains to avoid the envoy error that occurs here:
 // https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L162-L166
-// Note, this is not address non-equal but overlapping FilterChainMatches, which is a separate check here:
-// https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L346
+// Note: this is NOT address non-equal but overlapping FilterChainMatches, which is a separate check here:
+// https://github.com/envoyproxy/envoy/blob/50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/source/server/filter_chain_manager_impl.cc#L218-L354
+// Given the complexity of the overlap detection implementation, we don't want to duplicate that behavior here.
+// We may want to consider invoking envoy from a library to detect overlapping and other issues, which would build
+// off this discussion: https://github.com/solo-io/gloo/issues/2114
 // Visible for testing
 func CheckForDuplicateFilterChainMatches(filterChains []*envoylistener.FilterChain, listenerReport *validationapi.ListenerReport) {
 	for idx1, filterChain := range filterChains {
