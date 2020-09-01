@@ -1790,33 +1790,6 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
-			It("should not allow 2 ssl configs without sni domain differentiation", func() {
-				listener := &v1.Listener{
-					SslConfigurations: []*v1.SslConfig{
-						{
-							SslSecrets: &v1.SslConfig_SslFiles{
-								SslFiles: &v1.SSLFiles{
-									TlsCert: "cert1",
-									TlsKey:  "key1",
-								},
-							},
-						},
-						{
-							SslSecrets: &v1.SslConfig_SslFiles{
-								SslFiles: &v1.SSLFiles{
-									TlsCert: "cert2",
-									TlsKey:  "key2",
-								},
-							},
-						},
-					},
-				}
-				report := &validation.ListenerReport{}
-				ValidateListenerSniDomains(listener, report)
-				Expect(report.Errors).NotTo(BeNil())
-				Expect(report.Errors).To(HaveLen(1))
-				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))
-			})
 			It("should merge 2 ssl config if they are the same", func() {
 				prep([]*v1.SslConfig{
 					{
@@ -1842,19 +1815,21 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
-			It("should reject configs if they have overlapping sni domains", func() {
-				listener := &v1.Listener{
-					SslConfigurations: []*v1.SslConfig{
-						{
-							SniDomains: []string{"a.com"},
+			It("should reject configs if different FilterChains have identical FilterChainMatches", func() {
+				filterChains := []*envoylistener.FilterChain{
+					{
+						FilterChainMatch: &envoylistener.FilterChainMatch{
+							DestinationPort: &wrappers.UInt32Value{Value: 1},
 						},
-						{
-							SniDomains: []string{"a.com"},
+					},
+					{
+						FilterChainMatch: &envoylistener.FilterChainMatch{
+							DestinationPort: &wrappers.UInt32Value{Value: 1},
 						},
 					},
 				}
 				report := &validation.ListenerReport{}
-				ValidateListenerSniDomains(listener, report)
+				CheckForDuplicateFilterChainMatches(filterChains, report)
 				Expect(report.Errors).NotTo(BeNil())
 				Expect(report.Errors).To(HaveLen(1))
 				Expect(report.Errors[0].Type).To(Equal(validation.ListenerReport_Error_SSLConfigError))

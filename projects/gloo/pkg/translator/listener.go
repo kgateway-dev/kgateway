@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	errors "github.com/rotisserie/eris"
-
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
@@ -27,16 +25,8 @@ import (
 	"github.com/solo-io/go-utils/contextutils"
 )
 
-var (
-	ConflictingSniDomainsInListenerErr = func(listenerName string, conflictingDomains []string) error {
-		return errors.Errorf("SNI domain conflict: the [%s] listener has conflicting SNI domains that appear in"+
-			" multiple SSL configurations: [%v]", listenerName, conflictingDomains)
-	}
-)
-
 func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Proxy, listener *v1.Listener, listenerReport *validationapi.ListenerReport) *envoyapi.Listener {
 	params.Ctx = contextutils.WithLogger(params.Ctx, "compute_listener."+listener.Name)
-	logger := contextutils.LoggerFrom(params.Ctx)
 
 	validateListenerPorts(proxy, listenerReport)
 	var filterChains []*envoylistener.FilterChain
@@ -65,24 +55,8 @@ func (t *translatorInstance) computeListener(params plugins.Params, proxy *v1.Pr
 			filterChains = append(filterChains, result...)
 		}
 	}
-	// Check for overlapping filterChains according to the same rules that envoy uses here:
-	// https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L162-L166
-	for idx1, filterChain := range filterChains {
-		for idx2, otherFilterChain := range filterChains {
-			// only need to compare each pair once
-			if idx2 <= idx1 {
-				continue
-			}
-			if reflect.DeepEqual(filterChain.FilterChainMatch, otherFilterChain.FilterChainMatch) {
-				logger.Debugf("Tried to apply multiple filter chains "+
-					"with the same FilterChainMatch value: %v", filterChain.FilterChainMatch)
-				validation.AppendListenerError(listenerReport,
-					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
-						"with the same FilterChainMatch value: %v", filterChain.FilterChainMatch))
-				break
-			}
-		}
-	}
+
+	CheckForDuplicateFilterChainMatches(filterChains, listenerReport)
 
 	out := &envoyapi.Listener{
 		Name: listener.Name,
@@ -181,8 +155,6 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		}}
 	}
 
-	ValidateListenerSniDomains(listener, listenerReport)
-
 	var secureFilterChains []*envoylistener.FilterChain
 
 	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
@@ -198,35 +170,6 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 		secureFilterChains = append(secureFilterChains, filterChain)
 	}
 	return secureFilterChains
-}
-
-// This is the same test that's done in the validateVirtualServiceSniDomains function in http.go, but for envoy listeners.
-// Visible for testing
-func ValidateListenerSniDomains(listener *v1.Listener, listenerReport *validationapi.ListenerReport) {
-	sslConfigsBySniDomain := map[string][]*v1.SslConfig{}
-	for _, sslConfig := range mergeSslConfigs(listener.SslConfigurations) {
-		sniDomains := append([]string{}, sslConfig.SniDomains...)
-
-		if len(sniDomains) == 0 {
-			sslConfigsBySniDomain[""] = append(sslConfigsBySniDomain[""], sslConfig)
-		} else {
-			for _, sniDomain := range sniDomains {
-				sslConfigsBySniDomain[sniDomain] = append(sslConfigsBySniDomain[sniDomain], sslConfig)
-			}
-		}
-	}
-
-	var conflictingSniDomains []string
-	for sniDomain, sslConfigswithThisDomain := range sslConfigsBySniDomain {
-		if len(sslConfigswithThisDomain) > 1 {
-			conflictingSniDomains = append(conflictingSniDomains, sniDomain)
-		}
-	}
-
-	if len(conflictingSniDomains) > 0 {
-		validation.AppendListenerError(listenerReport,
-			validationapi.ListenerReport_Error_SSLConfigError, ConflictingSniDomainsInListenerErr(listener.Name, conflictingSniDomains).Error())
-	}
 }
 
 func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
@@ -327,4 +270,25 @@ func sortListenerFilters(filters plugins.StagedListenerFilterList) []*envoyliste
 		sortedFilters = append(sortedFilters, filter.ListenerFilter)
 	}
 	return sortedFilters
+}
+
+// Check for overlapping FilterChains according to the same rules that envoy uses here:
+// https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L162-L166
+// Note, this is not address non-equal but overlapping FilterChainMatches, which is a separate check here:
+// https://github.com/envoyproxy/envoy/blob/v1.15.0/source/server/filter_chain_manager_impl.cc#L346
+// Visible for testing
+func CheckForDuplicateFilterChainMatches(filterChains []*envoylistener.FilterChain, listenerReport *validationapi.ListenerReport) {
+	for idx1, filterChain := range filterChains {
+		for idx2, otherFilterChain := range filterChains {
+			// only need to compare each pair once
+			if idx2 <= idx1 {
+				continue
+			}
+			if reflect.DeepEqual(filterChain.FilterChainMatch, otherFilterChain.FilterChainMatch) {
+				validation.AppendListenerError(listenerReport,
+					validationapi.ListenerReport_Error_SSLConfigError, fmt.Sprintf("Tried to apply multiple filter chains "+
+						"with the same FilterChainMatch. This is usually caused by overlapping sniDomains in virtual services: {%v}", filterChain.FilterChainMatch))
+			}
+		}
+	}
 }
