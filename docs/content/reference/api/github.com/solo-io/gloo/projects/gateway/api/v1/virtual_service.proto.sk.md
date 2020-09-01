@@ -16,6 +16,8 @@ weight: 5
 - [Route](#route)
 - [DelegateAction](#delegateaction)
 - [RouteTableSelector](#routetableselector)
+- [Expression](#expression)
+- [Operator](#operator)
   
 
 
@@ -241,6 +243,7 @@ Select route tables for delegation by namespace, labels, or both.
 ```yaml
 "namespaces": []string
 "labels": map<string, string>
+"expressions": []gateway.solo.io.RouteTableSelector.Expression
 
 ```
 
@@ -248,6 +251,47 @@ Select route tables for delegation by namespace, labels, or both.
 | ----- | ---- | ----------- |----------- | 
 | `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
 | `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
+| `expressions` | [[]gateway.solo.io.RouteTableSelector.Expression](../virtual_service.proto.sk/#expression) | Expressions allow for more powerful Route Tables label matching, such as equality-based or set-based requirements. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |  |
+
+
+
+
+---
+### Expression
+
+
+
+```yaml
+"key": string
+"operator": .gateway.solo.io.RouteTableSelector.Expression.Operator
+"values": []string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `key` | `string` |  |  |
+| `operator` | [.gateway.solo.io.RouteTableSelector.Expression.Operator](../virtual_service.proto.sk/#operator) | The operator can only be In, NotIn, Equals, DoubleEquals, NotEquals, Exists, or DoesNotExist. |  |
+| `values` | `[]string` |  |  |
+
+
+
+
+---
+### Operator
+
+
+
+| Name | Description |
+| ----- | ----------- | 
+| `UNKNOWN` |  |
+| `In` |  |
+| `NotIn` |  |
+| `Equals` |  |
+| `DoubleEquals` |  |
+| `NotEquals` |  |
+| `Exists` |  |
+| `DoesNotExist` |  |
 
 
 

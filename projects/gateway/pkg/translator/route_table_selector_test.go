@@ -46,6 +46,35 @@ var _ = Describe("RouteTableSelector", func() {
 		})
 	})
 
+	When("expressions and labels are both specified in the selector", func() {
+		It("returns nil and adds a warning", func() {
+			selector := &v1.RouteTableSelector{
+				Expressions: []*v1.RouteTableSelector_Expression{
+					{
+						Key:      "foo",
+						Operator: v1.RouteTableSelector_Expression_In,
+						Values: []string{
+							"bar",
+							"baz",
+						},
+					},
+				},
+				Labels: map[string]string{"team": "dev", "foo": "bar"},
+			}
+
+			rtSelector := translator.NewRouteTableSelector(nil)
+			list, err := rtSelector.SelectRouteTables(&v1.DelegateAction{
+				DelegationType: &v1.DelegateAction_Selector{
+					Selector: selector,
+				},
+			}, "")
+
+			Expect(list).To(HaveLen(0))
+			Expect(err).To(HaveOccurred())
+			Expect(err).To(testutils.HaveInErrorChain(translator.RouteTableSelectorExpressionsAndLabelsWarning))
+		})
+	})
+
 	When("selector has no matches", func() {
 		It("returns the appropriate warning", func() {
 			action := &v1.DelegateAction{
@@ -108,26 +137,26 @@ var _ = Describe("RouteTableSelector", func() {
 				Expect(list).To(BeEquivalentTo(expectedRouteTables))
 			},
 
-			Entry("when no labels nor namespaces are provided",
+			Entry("when no labels nor namespaces nor expressions are provided",
 				toAction(&v1.RouteTableSelector{}),
 				v1.RouteTableList{rt1, rt2},
 			),
 
-			Entry("when a label is specified in the selector (but no namespace)",
+			Entry("when a label is specified in the selector (but no namespace nor expressions)",
 				toAction(&v1.RouteTableSelector{
 					Labels: map[string]string{"foo": "bar"},
 				}),
 				v1.RouteTableList{rt2},
 			),
 
-			Entry("when namespaces are specified in the selector (but no labels)",
+			Entry("when namespaces are specified in the selector (but no labels nor expressions)",
 				toAction(&v1.RouteTableSelector{
 					Namespaces: []string{"ns-1", "ns-2"},
 				}),
 				v1.RouteTableList{rt1, rt2, rt3},
 			),
 
-			Entry("when both namespaces and labels are specified in the selector",
+			Entry("when both namespaces and labels are specified in the selector (but no expressions)",
 				toAction(&v1.RouteTableSelector{
 					Labels:     map[string]string{"foo": "bar"},
 					Namespaces: []string{"ns-2"},
@@ -140,6 +169,19 @@ var _ = Describe("RouteTableSelector", func() {
 					Namespaces: []string{"ns-1", "*"},
 				}),
 				v1.RouteTableList{rt1, rt2, rt3, rt4, rt5, rt6},
+			),
+
+			Entry("when a single expression is specified in the selector (but no namespace or labels)",
+				toAction(&v1.RouteTableSelector{
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "foo",
+							Operator: v1.RouteTableSelector_Expression_Equals,
+							Values:   []string{"bar"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt2, rt3},
 			),
 		)
 	})

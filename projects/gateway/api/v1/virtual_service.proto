@@ -245,18 +245,24 @@ message RouteTableSelector {
     // Delegate to Route Tables whose labels match the ones specified here.
     map<string, string> labels = 2;
 
-    // Expressions allow for more powerful Route Tables label matching, such as equality-based or set-based requirements.
-    // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
-    message Expressions {
+    message Expression {
       string key = 1;
-
       enum Operator {
-        IN = 0;
-        // TODO: support all operator values supported by Kubernetes
+        UNKNOWN = 0;
+        In = 1;
+        NotIn = 2;
+        Equals = 3;
+        DoubleEquals = 4;
+        NotEquals = 5;
+        Exists = 6;
+        DoesNotExist = 7;
       }
+      // The operator can only be In, NotIn, Equals, DoubleEquals, NotEquals, Exists, or DoesNotExist.
       Operator operator = 2;
-
       repeated string values = 3;
     }
-    repeated Expressions expressions = 3;
+
+    // Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both.
+    // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement
+    repeated Expression expressions = 3;
 }
