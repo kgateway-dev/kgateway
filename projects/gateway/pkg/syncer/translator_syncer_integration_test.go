@@ -155,7 +155,7 @@ var _ = Describe("TranslatorSyncer", func() {
 
 	Context("translator syncer", func() {
 
-		FIt("should set status correctly even when the status from the snapshot was not updated", func() {
+		It("should set status correctly even when the status from the snapshot was not updated", func() {
 
 			ts.Sync(context.TODO(), snapshot())
 			// wait for proxy to be written
