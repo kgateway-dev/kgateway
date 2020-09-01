@@ -781,7 +781,7 @@ var _ = Describe("Route converter", func() {
 							PathSpecifier: &matchers.Matcher_Prefix{
 								Prefix: "/foo/baz",
 							},
-							// only get the first method, not a subset of parent methods
+							// only get the first method, not a superset of parent methods
 							Methods: []string{methods[0]},
 						},
 					}
