@@ -20,7 +20,7 @@ import (
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
 )
 
-var _ = Describe("TranslatorSyncer", func() {
+var _ = Describe("TranslatorSyncer integration test", func() {
 	var (
 		ts                       v1.ApiSyncer
 		baseVirtualServiceClient v1.VirtualServiceClient
@@ -153,56 +153,52 @@ var _ = Describe("TranslatorSyncer", func() {
 		proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 	}
 
-	Context("translator syncer", func() {
+	It("should set status correctly even when the status from the snapshot was not updated", func() {
 
-		It("should set status correctly even when the status from the snapshot was not updated", func() {
+		ts.Sync(context.TODO(), snapshot())
+		// wait for proxy to be written
+		Eventually(func() (bool, error) {
+			_, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+			if err != nil {
+				return false, err
+			}
+			return true, nil
+		}).Should(BeTrue())
 
-			ts.Sync(context.TODO(), snapshot())
-			// wait for proxy to be written
-			Eventually(func() (bool, error) {
-				_, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-				if err != nil {
-					return false, err
-				}
-				return true, nil
-			}).Should(BeTrue())
+		// write the proxy status.
+		AcceptProxy()
 
-			// write the proxy status.
-			AcceptProxy()
+		// wait for the proxy status to be written in the VS
+		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
-			// wait for the proxy status to be written in the VS
-			EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
+		// re-sync so now the snapshot, so that the snapshot has the updates status.
+		ts.Sync(context.TODO(), snapshot())
 
-			// re-sync so now the snapshot, so that the snapshot has the updates status.
-			ts.Sync(context.TODO(), snapshot())
+		// Second round of updates:
+		// update the VS but adding a route to it (anything will do here)
+		vs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
+		_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
 
-			// Second round of updates:
-			// update the VS but adding a route to it (anything will do here)
-			vs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
-			_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
-			Expect(err).NotTo(HaveOccurred())
+		// re-sync to process the new VS
+		ts.Sync(context.TODO(), snapshot())
 
-			// re-sync to process the new VS
-			ts.Sync(context.TODO(), snapshot())
+		// wait for proxy status to become pending
+		EventuallyProxyStatus().Should(Equal(core.Status_Pending))
 
-			// wait for proxy status to become pending
-			EventuallyProxyStatus().Should(Equal(core.Status_Pending))
+		// wait for the status propagate
+		EventuallyProxyStatusInVs().Should(Equal(core.Status_Pending))
 
-			// wait for the status propagate
-			EventuallyProxyStatusInVs().Should(Equal(core.Status_Pending))
+		// write the proxy status again to the same status as the one currently in the snapshot
+		AcceptProxy()
 
-			// write the proxy status again to the same status as the one currently in the snapshot
-			AcceptProxy()
-
-			//status should be accepted.
-			// this tests the bug that we saw where the status stayed pending.
-			// the vs sub resource status did not update,
-			// as the last status is the same as the one from Sync
-			EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
-		})
-
+		//status should be accepted.
+		// this tests the bug that we saw where the status stayed pending.
+		// the vs sub resource status did not update,
+		// as the last status is the same as the one from Sync
+		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 	})
 
 })
