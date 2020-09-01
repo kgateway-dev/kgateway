@@ -43,6 +43,7 @@ type selector struct {
 // When an error is returned, the returned list is empty
 func (s *selector) SelectRouteTables(action *gatewayv1.DelegateAction, parentNamespace string) (gatewayv1.RouteTableList, error) {
 	var routeTables gatewayv1.RouteTableList
+	var err error
 
 	if routeTableRef := getRouteTableRef(action); routeTableRef != nil {
 		// missing refs should only result in a warning
@@ -54,7 +55,7 @@ func (s *selector) SelectRouteTables(action *gatewayv1.DelegateAction, parentNam
 		routeTables = gatewayv1.RouteTableList{routeTable}
 
 	} else if rtSelector := action.GetSelector(); rtSelector != nil {
-		routeTables, err := RouteTablesForSelector(s.toSearch, rtSelector, parentNamespace)
+		routeTables, err = RouteTablesForSelector(s.toSearch, rtSelector, parentNamespace)
 		if err != nil {
 			return nil, err
 		}
