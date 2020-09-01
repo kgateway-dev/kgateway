@@ -146,6 +146,13 @@ var _ = Describe("TranslatorSyncer", func() {
 		})
 	}
 
+	AcceptProxy := func() {
+		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+		Expect(err).NotTo(HaveOccurred())
+		proxy.Status = core.Status{State: core.Status_Accepted}
+		proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+	}
+
 	Context("translator syncer", func() {
 
 		FIt("should set status correctly even when the status from the snapshot was not updated", func() {
@@ -159,26 +166,25 @@ var _ = Describe("TranslatorSyncer", func() {
 				}
 				return true, nil
 			}).Should(BeTrue())
-			proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			// write the proxy status.
-			proxy.Status = core.Status{State: core.Status_Accepted}
-			proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
 
-			// wait for statuses to be written to VS
+			// write the proxy status.
+			AcceptProxy()
+
+			// wait for the proxy status to be written in the VS
 			EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
-			// re-sync so now the snapshot has the update status
+			// re-sync so now the snapshot, so that the snapshot has the updates status.
 			ts.Sync(context.TODO(), snapshot())
 
-			// update the VS
-			vs, err = baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
+			// Second round of updates:
+			// update the VS but adding a route to it (anything will do here)
+			vs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
 			Expect(err).NotTo(HaveOccurred())
 			vs.VirtualHost.Routes = append(vs.VirtualHost.Routes, vs.VirtualHost.Routes[0])
 			_, err = baseVirtualServiceClient.Write(vs, clients.WriteOpts{OverwriteExisting: true})
 			Expect(err).NotTo(HaveOccurred())
 
-			// re-sync so to process the new VS
+			// re-sync to process the new VS
 			ts.Sync(context.TODO(), snapshot())
 
 			// wait for proxy status to become pending
@@ -187,22 +193,14 @@ var _ = Describe("TranslatorSyncer", func() {
 			// wait for the status propagate
 			EventuallyProxyStatusInVs().Should(Equal(core.Status_Pending))
 
-			// write the proxy status again to the same status
-			proxy, err = proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-			Expect(err).NotTo(HaveOccurred())
-			proxy.Status = core.Status{State: core.Status_Accepted}
-			proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+			// write the proxy status again to the same status as the one currently in the snapshot
+			AcceptProxy()
 
-			// BUG: the vs sub resource status will not update,
+			//status should be accepted.
+			// this tests the bug that we saw where the status stayed pending.
+			// the vs sub resource status did not update,
 			// as the last status is the same as the one from Sync
-			Eventually(func() (bool, error) {
-				newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
-				if err != nil {
-					return false, err
-				}
-				return newvs.Status.SubresourceStatuses["*v1.Proxy.gloo-system.gateway-proxy"].State == core.Status_Accepted, nil
-			}).Should(BeTrue())
-
+			EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 		})
 
 	})
