@@ -6,7 +6,6 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
-import "google/protobuf/descriptor.proto";
 
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
@@ -253,15 +252,24 @@ message RouteTableSelector {
 
       // Route Table Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
       enum Operator {
-        Equals = 0;        // =
-        DoubleEquals = 1;  // ==
-        NotEquals = 2;     // !=
-        In = 3;            // in
-        NotIn = 4;         // notin
-        Exists = 5;        // exists
-        DoesNotExist = 6;  // !
-        GreaterThan = 7;   // gt
-        LessThan = 8;      // lt
+        // =
+        Equals = 0;
+        // ==
+        DoubleEquals = 1;
+        // !=
+        NotEquals = 2;
+        // in
+        In = 3;
+        // notin
+        NotIn = 4;
+        // exists
+        Exists = 5;
+        // !
+        DoesNotExist = 6;
+        // gt
+        GreaterThan = 7;
+        // lt
+        LessThan = 8;
       }
       // The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan).
       Operator operator = 2;

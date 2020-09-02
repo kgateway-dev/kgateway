@@ -456,7 +456,7 @@ spec:
        - prefix: '/'
       delegateAction:
         selector:
-          # 'expressions' and 'labels' cannot coexist within a single selector 
+          # 'expressions' and 'labels' cannot coexist within a single selector
           expressions:
             - key: domain
               operator: In
@@ -470,7 +470,7 @@ spec:
 ```
 
 {{% notice warning %}}
-Note that candidate route tables must match **all** selector expressions (logical AND) to be selected. 
+Note that candidate route tables must match **all** selector expressions (logical AND) to be selected.
 {{% /notice %}}
 
 #### Route Table weight
