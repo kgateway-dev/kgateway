@@ -27,8 +27,12 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxyClient              gloov1.ProxyClient
 		vs                       *v1.VirtualService
 		snapshot                 func() *v1.ApiSnapshot
+
+		ctx    context.Context
+		cancel context.CancelFunc
 	)
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		memFactory := &factory.MemoryResourceClientFactory{
 			Cache: memory.NewInMemoryResourceCache(),
 		}
@@ -61,7 +65,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxyReconciler := reconciler.NewProxyReconciler(nil, proxyClient)
 		rpt := reporter.NewReporter("gateway", gatewayClient.BaseClient(), virtualServiceClient.BaseClient(), routeTableClient.BaseClient())
 		xlator := translator.NewDefaultTranslator(translator.Opts{})
-		ts = NewTranslatorSyncer(context.TODO(), "gloo-system", proxyClient, proxyReconciler, rpt, xlator)
+		ts = NewTranslatorSyncer(ctx, "gloo-system", proxyClient, proxyReconciler, rpt, xlator)
 
 		vs = &v1.VirtualService{
 			Metadata: core.Metadata{
@@ -119,6 +123,10 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 
 	})
 
+	AfterEach(func() {
+		cancel()
+	})
+
 	EventuallyProxyStatusInVs := func() gomega.AsyncAssertion {
 		return Eventually(func() (core.Status_State, error) {
 			newvs, err := baseVirtualServiceClient.Read(vs.Metadata.Namespace, vs.Metadata.Name, clients.ReadOpts{})
@@ -155,7 +163,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 
 	It("should set status correctly even when the status from the snapshot was not updated", func() {
 
-		ts.Sync(context.TODO(), snapshot())
+		ts.Sync(ctx, snapshot())
 		// wait for proxy to be written
 		Eventually(func() (bool, error) {
 			_, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
@@ -172,7 +180,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
 		// re-sync so now the snapshot, so that the snapshot has the updates status.
-		ts.Sync(context.TODO(), snapshot())
+		ts.Sync(ctx, snapshot())
 
 		// Second round of updates:
 		// update the VS but adding a route to it (anything will do here)
@@ -183,7 +191,7 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		// re-sync to process the new VS
-		ts.Sync(context.TODO(), snapshot())
+		ts.Sync(ctx, snapshot())
 
 		// wait for proxy status to become pending
 		EventuallyProxyStatus().Should(Equal(core.Status_Pending))
