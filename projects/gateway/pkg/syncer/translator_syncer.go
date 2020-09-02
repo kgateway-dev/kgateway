@@ -29,7 +29,7 @@ import (
 
 type translatorSyncer struct {
 	writeNamespace     string
-	reporter           reporter.Reporter
+	reporter           reporter.StatusReporter
 	proxyWatcher       gloov1.ProxyWatcher
 	proxyReconciler    reconciler.ProxyReconciler
 	translator         translator.Translator
@@ -37,7 +37,7 @@ type translatorSyncer struct {
 	managedProxyLabels map[string]string
 }
 
-func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.Reporter, translator translator.Translator) v1.ApiSyncer {
+func NewTranslatorSyncer(ctx context.Context, writeNamespace string, proxyWatcher gloov1.ProxyWatcher, proxyReconciler reconciler.ProxyReconciler, reporter reporter.StatusReporter, translator translator.Translator) v1.ApiSyncer {
 	t := &translatorSyncer{
 		writeNamespace:  writeNamespace,
 		reporter:        reporter,
@@ -108,14 +108,14 @@ type statusSyncer struct {
 	inputResourceLastStatus map[resources.InputResource]core.Status
 	currentGeneratedProxies []core.ResourceRef
 	mapLock                 sync.RWMutex
-	reporter                reporter.Reporter
+	reporter                reporter.StatusReporter
 
 	proxyWatcher   gloov1.ProxyWatcher
 	writeNamespace string
 	syncNeeded     chan struct{}
 }
 
-func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.Reporter) statusSyncer {
+func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, reporter reporter.StatusReporter) statusSyncer {
 	return statusSyncer{
 		proxyToLastStatus:       map[core.ResourceRef]reportsAndStatus{},
 		currentGeneratedProxies: nil,
@@ -273,6 +273,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		// grab a local copy of the map. it only updated here,
 		// and the variable is cleared under the lock; so is safe.
 		localInputResourceLastStatus = s.inputResourceLastStatus
+
 		// iterate s.currentGeneratedProxies to guarantee order
 		for _, ref := range s.currentGeneratedProxies {
 			reportsAndStatus, ok := s.proxyToLastStatus[ref]
@@ -307,19 +308,20 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	for inputResource, subresourceStatuses := range allReports {
 		// write reports may update the status, so clone the object
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
-		inputResource := resources.Clone(inputResource).(resources.InputResource)
-		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
+		clonedInputResource := resources.Clone(inputResource).(resources.InputResource)
+		reports := reporter.ResourceReports{clonedInputResource: subresourceStatuses}
 		// set the last known status on the input resource.
 		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
 		// on status changes.
 		if status, ok := localInputResourceLastStatus[inputResource]; ok {
-			inputResource.SetStatus(status)
+			clonedInputResource.SetStatus(status)
 		}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
 			// cache the status written by the reporter
-			localInputResourceLastStatus[inputResource] = s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
+			status := s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
+			localInputResourceLastStatus[inputResource] = status
 		}
 	}
 	return errs
