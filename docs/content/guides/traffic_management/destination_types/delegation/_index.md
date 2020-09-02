@@ -437,6 +437,42 @@ graph LR;
     
 {{< /mermaid >}}
 
+#### Route Table Selector Expression
+
+To allow for flexible route table label matching in more complex architecture scenarios, the `expressions` attribute of the `delegateAction.selector` field can be used as such:
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: 'example'
+  namespace: 'gloo-system'
+spec:
+  virtualHost:
+    domains:
+    - 'example.com'
+    routes:
+    - matchers:
+       - prefix: '/'
+      delegateAction:
+        selector:
+          # 'expressions' and 'labels' cannot coexist within a single selector
+          expressions:
+            - key: domain
+              operator: In
+              values:
+                - example.com
+            # Do not include route tables exposing the 'shouldnotexist' label
+            - key: shouldnotexist
+              operator: !
+          namespaces:
+          - gloo-system
+```
+
+{{% notice warning %}}
+Note that candidate route tables must match **all** selector expressions (logical AND) to be selected.
+{{% /notice %}}
+
 #### Route Table weight
 As you might have noticed, we specified a `weight` attribute on the above route tables. This attribute can be used 
 to determine the order in which the routes will appear on the final Proxy resource when multiple route tables match 
