@@ -105,6 +105,7 @@ type reportsAndStatus struct {
 }
 type statusSyncer struct {
 	proxyToLastStatus       map[core.ResourceRef]reportsAndStatus
+	inputResourceLastStatus map[resources.InputResource]core.Status
 	currentGeneratedProxies []core.ResourceRef
 	mapLock                 sync.RWMutex
 	reporter                reporter.Reporter
@@ -128,6 +129,8 @@ func newStatusSyncer(writeNamespace string, proxyWatcher gloov1.ProxyWatcher, re
 func (s *statusSyncer) setCurrentProxies(desiredProxies reconciler.GeneratedProxies) {
 	s.mapLock.Lock()
 	defer s.mapLock.Unlock()
+	// clear out the status map
+	s.inputResourceLastStatus = make(map[resources.InputResource]core.Status)
 	s.currentGeneratedProxies = nil
 	for proxy, reports := range desiredProxies {
 		// start propagating for new set of resources
@@ -262,9 +265,14 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 	var nilProxy *gloov1.Proxy
 	allReports := reporter.ResourceReports{}
 	inputResourceBySubresourceStatuses := map[resources.InputResource]map[string]*core.Status{}
+	var localInputResourceLastStatus map[resources.InputResource]core.Status
+
 	func() {
 		s.mapLock.RLock()
 		defer s.mapLock.RUnlock()
+		// grab a local copy of the map. it only updated here,
+		// and the variable is cleared under the lock; so is safe.
+		localInputResourceLastStatus = s.inputResourceLastStatus
 		// iterate s.currentGeneratedProxies to guarantee order
 		for _, ref := range s.currentGeneratedProxies {
 			reportsAndStatus, ok := s.proxyToLastStatus[ref]
@@ -301,12 +309,17 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		currentStatuses := inputResourceBySubresourceStatuses[inputResource]
 		inputResource := resources.Clone(inputResource).(resources.InputResource)
 		reports := reporter.ResourceReports{inputResource: subresourceStatuses}
-		// inputResource.SetStatus(core.Status{})
+		// set the last known status on the input resource.
+		// this may be different than the status on the snapshot, as the snapshot doesn't get updated
+		// on status changes.
+		if status, ok := localInputResourceLastStatus[inputResource]; ok {
+			inputResource.SetStatus(status)
+		}
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
-			// write status back to the snapshot?
-			// write status to a map??/s
+			// read the status written:
+			localInputResourceLastStatus[inputResource] = s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 		}
 	}
 	return errs
