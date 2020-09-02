@@ -318,7 +318,7 @@ func (s *statusSyncer) syncStatus(ctx context.Context) error {
 		if err := s.reporter.WriteReports(ctx, reports, currentStatuses); err != nil {
 			errs = multierror.Append(errs, err)
 		} else {
-			// read the status written:
+			// cache the status written by the reporter
 			localInputResourceLastStatus[inputResource] = s.reporter.StatusFromReport(subresourceStatuses, currentStatuses)
 		}
 	}
