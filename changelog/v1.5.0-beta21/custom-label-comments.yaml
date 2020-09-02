@@ -1,0 +1,4 @@
+changelog:
+- type: NON_USER_FACING
+  description: Correct gloo documentation of custom label helm values to match GlooE descriptions.
+  issueLink:  https://github.com/solo-io/gloo/issues/3441
