@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/sets"
+
 	"github.com/gogo/protobuf/types"
 
 	"github.com/gogo/protobuf/proto"
@@ -24,18 +26,28 @@ const (
 )
 
 var (
-	NoActionErr         = errors.New("invalid route: route must specify an action")
-	MatcherCountErr     = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
-	MissingPrefixErr    = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
-	InvalidPrefixErr    = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
-	HasHeaderMatcherErr = errors.New("invalid route: routes with delegate actions cannot use header matchers")
-	HasMethodMatcherErr = errors.New("invalid route: routes with delegate actions cannot use method matchers")
-	HasQueryMatcherErr  = errors.New("invalid route: routes with delegate actions cannot use query matchers")
-	DelegationCycleErr  = func(cycleInfo string) error {
+	NoActionErr          = errors.New("invalid route: route must specify an action")
+	MatcherCountErr      = errors.New("invalid route: routes with delegate actions must omit or specify a single matcher")
+	MissingPrefixErr     = errors.New("invalid route: routes with delegate actions must use a prefix matcher")
+	InvalidPrefixErr     = errors.New("invalid route: route table matchers must begin with the prefix of their parent route's matcher")
+	InvalidHeaderErr     = errors.New("invalid route: route table matchers must have all headers that were specified on their parent route's matcher")
+	InvalidQueryParamErr = errors.New("invalid route: route table matchers must have all query params that were specified on their parent route's matcher")
+	InvalidMethodErr     = errors.New("invalid route: route table matchers must have all methods that were specified on their parent route's matcher")
+
+	DelegationCycleErr = func(cycleInfo string) error {
 		return errors.Errorf("invalid route: delegation cycle detected: %s", cycleInfo)
 	}
-	InvalidRouteTableForDelegateErr = func(delegatePrefix, pathString string) error {
-		return errors.Wrapf(InvalidPrefixErr, "required prefix: %v, path: %v", delegatePrefix, pathString)
+	InvalidRouteTableForDelegatePrefixErr = func(delegatePrefix, prefixString string) error {
+		return errors.Wrapf(InvalidPrefixErr, "required prefix: %v, prefix: %v", delegatePrefix, prefixString)
+	}
+	InvalidRouteTableForDelegateHeadersErr = func(delegateHeaders, childHeaders []*matchersv1.HeaderMatcher) error {
+		return errors.Wrapf(InvalidHeaderErr, "required headers: %v, headers: %v", delegateHeaders, childHeaders)
+	}
+	InvalidRouteTableForDelegateQueryParamsErr = func(delegateQueryParams, childQueryParams []*matchersv1.QueryParameterMatcher) error {
+		return errors.Wrapf(InvalidQueryParamErr, "required query params: %v, query params: %v", delegateQueryParams, childQueryParams)
+	}
+	InvalidRouteTableForDelegateMethodsErr = func(delegateMethods, childMethods []string) error {
+		return errors.Wrapf(InvalidMethodErr, "required methods: %v, methods: %v", delegateMethods, childMethods)
 	}
 	TopLevelVirtualResourceErr = func(rtRef core.Metadata, err error) error {
 		return errors.Wrapf(err, "on sub route table %s", rtRef.Ref().Key())
@@ -91,8 +103,9 @@ type routeVisitor struct {
 
 // Helper object used to store information about previously visited routes.
 type routeInfo struct {
-	// The path prefix for the route.
-	prefix string
+	// The matcher for the route
+	matcher *matchersv1.Matcher
+
 	// The options on the route.
 	options *gloov1.RouteOptions
 	// Used to build the name of the route as we traverse the tree.
@@ -171,7 +184,7 @@ func (rv *routeVisitor) visit(
 		case *gatewayv1.Route_DelegateAction:
 
 			// Validate the matcher of the delegate route
-			prefix, err := getDelegateRoutePrefix(routeClone)
+			delegateMatcher, err := getDelegateRouteMatcher(routeClone)
 			if err != nil {
 				reporterHelper.addError(resource.InputResource(), err)
 				continue
@@ -210,7 +223,7 @@ func (rv *routeVisitor) visit(
 
 					// Collect information about this route that are relevant when visiting the delegated route table
 					currentRouteInfo := &routeInfo{
-						prefix:  prefix,
+						matcher: delegateMatcher,
 						options: routeClone.Options,
 						name:    name,
 						hasName: routeHasName,
@@ -364,39 +377,28 @@ func checkForCycles(toVisit *gatewayv1.RouteTable, visited gatewayv1.RouteTableL
 	return nil
 }
 
-func getDelegateRoutePrefix(route *gatewayv1.Route) (string, error) {
+func getDelegateRouteMatcher(route *gatewayv1.Route) (*matchersv1.Matcher, error) {
 	switch len(route.GetMatchers()) {
 	case 0:
-		return defaults.DefaultMatcher().GetPrefix(), nil
+		return defaults.DefaultMatcher(), nil
 	case 1:
 		matcher := route.GetMatchers()[0]
-		var prefix string
-		if len(matcher.GetHeaders()) > 0 {
-			return prefix, HasHeaderMatcherErr
-		}
-		if len(matcher.GetMethods()) > 0 {
-			return prefix, HasMethodMatcherErr
-		}
-		if len(matcher.GetQueryParameters()) > 0 {
-			return prefix, HasQueryMatcherErr
-		}
 		if matcher.GetPathSpecifier() == nil {
-			return defaults.DefaultMatcher().GetPrefix(), nil // no path specifier provided, default to '/' prefix matcher
+			return defaults.DefaultMatcher(), nil // no path specifier provided, default to '/' prefix matcher
 		}
-		prefix = matcher.GetPrefix()
-		if prefix == "" {
-			return prefix, MissingPrefixErr
+		if matcher.GetPrefix() == "" {
+			return nil, MissingPrefixErr
 		}
-		return prefix, nil
+		return matcher, nil
 	default:
-		return "", MatcherCountErr
+		return nil, MatcherCountErr
 	}
 }
 
 func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
 
 	// Verify that the matchers are compatible with the parent prefix
-	if err := isRouteTableValidForDelegatePrefix(parent.prefix, child); err != nil {
+	if err := isRouteTableValidForDelegateMatcher(parent.matcher, child); err != nil {
 		return nil, err
 	}
 
@@ -412,18 +414,50 @@ func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*ga
 	return child, nil
 }
 
-func isRouteTableValidForDelegatePrefix(parentPrefix string, childRoute *gatewayv1.Route) error {
+func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, childRoute *gatewayv1.Route) error {
 
 	// If the route has no matchers, we fall back to the default prefix matcher like for regular routes.
 	// In these case, we only accept it if the parent also uses the default matcher.
-	if len(childRoute.Matchers) == 0 && parentPrefix != defaults.DefaultMatcher().GetPrefix() {
-		return InvalidRouteTableForDelegateErr(parentPrefix, defaults.DefaultMatcher().GetPrefix())
+	if len(childRoute.Matchers) == 0 && parentMatcher.GetPrefix() != defaults.DefaultMatcher().GetPrefix() {
+		return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), defaults.DefaultMatcher().GetPrefix())
 	}
 
-	for _, match := range childRoute.Matchers {
+	for _, childMatch := range childRoute.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
-		if pathString := glooutils.PathAsString(match); !strings.HasPrefix(pathString, parentPrefix) {
-			return InvalidRouteTableForDelegateErr(parentPrefix, pathString)
+		if pathString := glooutils.PathAsString(childMatch); !strings.HasPrefix(pathString, parentMatcher.GetPrefix()) {
+			return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), pathString)
+		}
+
+		// ensure all headers in the delegated route table are a superset of those from the parent route resource
+		childHeaderNameToHeader := map[string]*matchersv1.HeaderMatcher{}
+		for _, childHeader := range childMatch.Headers {
+			childHeaderNameToHeader[childHeader.Name] = childHeader
+		}
+		for _, parentHeader := range parentMatcher.Headers {
+			if childHeader, ok := childHeaderNameToHeader[parentHeader.GetName()]; !ok {
+				return InvalidRouteTableForDelegateHeadersErr(parentMatcher.Headers, childMatch.Headers)
+			} else if !parentHeader.Equal(childHeader) {
+				return InvalidRouteTableForDelegateHeadersErr(parentMatcher.Headers, childMatch.Headers)
+			}
+		}
+
+		// ensure all query parameters in the delegated route table are a superset of those from the parent route resource
+		childQueryParamNameToHeader := map[string]*matchersv1.QueryParameterMatcher{}
+		for _, childQueryParam := range childMatch.QueryParameters {
+			childQueryParamNameToHeader[childQueryParam.Name] = childQueryParam
+		}
+		for _, parentQueryParameter := range parentMatcher.QueryParameters {
+			if childQueryParam, ok := childQueryParamNameToHeader[parentQueryParameter.GetName()]; !ok {
+				return InvalidRouteTableForDelegateQueryParamsErr(parentMatcher.QueryParameters, childMatch.QueryParameters)
+			} else if !parentQueryParameter.Equal(childQueryParam) {
+				return InvalidRouteTableForDelegateQueryParamsErr(parentMatcher.QueryParameters, childMatch.QueryParameters)
+			}
+		}
+
+		// ensure all HTTP methods in the delegated route table are a superset of those from the parent route resource
+		childMethodsSet := sets.NewString(childMatch.Methods...)
+		if !childMethodsSet.HasAll(parentMatcher.Methods...) {
+			return InvalidRouteTableForDelegateMethodsErr(parentMatcher.Methods, childMatch.Methods)
 		}
 	}
 	return nil
