@@ -285,15 +285,15 @@ Route Table Selector expression operator, while the set-based syntax differs fro
 
 | Name | Description |
 | ----- | ----------- | 
-| `Equals` |  |
-| `DoubleEquals` |  |
-| `NotEquals` |  |
-| `In` |  |
-| `NotIn` |  |
-| `Exists` |  |
-| `DoesNotExist` |  |
-| `GreaterThan` |  |
-| `LessThan` |  |
+| `Equals` | = |
+| `DoubleEquals` | == |
+| `NotEquals` | != |
+| `In` | in |
+| `NotIn` | notin |
+| `Exists` | exists |
+| `DoesNotExist` | ! |
+| `GreaterThan` | gt |
+| `LessThan` | lt |
 
 
 
