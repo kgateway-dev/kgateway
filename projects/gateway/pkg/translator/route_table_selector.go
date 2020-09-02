@@ -21,9 +21,20 @@ var (
 		"either via a resource reference or a selector")
 	RouteTableSelectorExpressionsAndLabelsWarning = errors.New("cannot use both labels and expressions within the " +
 		"same selector")
-	RouteTableSelectorInvalidExpressionWarning         = errors.New("the route table selector expression is invalid")
-	RouteTableSelectorInvalidExpressionOperatorWarning = errors.New("the route table selector expression operator " +
-		"is invalid, must be In, NotIn, Equals, DoubleEquals, NotEquals, Exists, or DoesNotExist")
+	RouteTableSelectorInvalidExpressionWarning = errors.New("the route table selector expression is invalid")
+
+	// Map connecting Gloo Route Tables expression operator values and Kubernetes expression operator string values.
+	RouteTableExpressionOperatorValues = map[gatewayv1.RouteTableSelector_Expression_Operator]selection.Operator{
+		gatewayv1.RouteTableSelector_Expression_Equals:       selection.Equals,
+		gatewayv1.RouteTableSelector_Expression_DoubleEquals: selection.DoubleEquals,
+		gatewayv1.RouteTableSelector_Expression_NotEquals:    selection.NotEquals,
+		gatewayv1.RouteTableSelector_Expression_In:           selection.In,
+		gatewayv1.RouteTableSelector_Expression_NotIn:        selection.NotIn,
+		gatewayv1.RouteTableSelector_Expression_Exists:       selection.Exists,
+		gatewayv1.RouteTableSelector_Expression_DoesNotExist: selection.DoesNotExist,
+		gatewayv1.RouteTableSelector_Expression_GreaterThan:  selection.GreaterThan,
+		gatewayv1.RouteTableSelector_Expression_LessThan:     selection.LessThan,
+	}
 )
 
 type RouteTableSelector interface {
@@ -103,18 +114,9 @@ func RouteTablesForSelector(routeTables gatewayv1.RouteTableList, selector *gate
 	var requirements labels.Requirements
 	if len(selector.Expressions) > 0 {
 		for _, expression := range selector.Expressions {
-			var operator selection.Operator
-
-			switch expression.Operator {
-			case gatewayv1.RouteTableSelector_Expression_UNKNOWN:
-				return nil, RouteTableSelectorInvalidExpressionOperatorWarning
-			default:
-				operator = selection.Operator(expression.Operator)
-			}
-
 			r, err := labels.NewRequirement(
 				expression.Key,
-				operator,
+				RouteTableExpressionOperatorValues[expression.Operator],
 				expression.Values)
 			if err != nil {
 				return nil, errors.Wrap(RouteTableSelectorInvalidExpressionWarning, err.Error())

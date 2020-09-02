@@ -251,7 +251,7 @@ Select route tables for delegation by namespace, labels, or both.
 | ----- | ---- | ----------- |----------- | 
 | `namespaces` | `[]string` | Delegate to Route Tables in these namespaces. If omitted, Gloo will only select Route Tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved value "*" can be used to select Route Tables in all namespaces watched by Gloo. |  |
 | `labels` | `map<string, string>` | Delegate to Route Tables whose labels match the ones specified here. |  |
-| `expressions` | [[]gateway.solo.io.RouteTableSelector.Expression](../virtual_service.proto.sk/#expression) | Expressions allow for more powerful Route Tables label matching, such as equality-based or set-based requirements. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |  |
+| `expressions` | [[]gateway.solo.io.RouteTableSelector.Expression](../virtual_service.proto.sk/#expression) | Expressions allow for more flexible Route Tables label matching, such as equality-based requirements, set-based requirements, or a combination of both. https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement. |  |
 
 
 
@@ -270,8 +270,8 @@ Select route tables for delegation by namespace, labels, or both.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `key` | `string` |  |  |
-| `operator` | [.gateway.solo.io.RouteTableSelector.Expression.Operator](../virtual_service.proto.sk/#operator) | The operator can only be In, NotIn, Equals, DoubleEquals, NotEquals, Exists, or DoesNotExist. |  |
+| `key` | `string` | Kubernetes label key, must conform to Kubernetes syntax requirements https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set. |  |
+| `operator` | [.gateway.solo.io.RouteTableSelector.Expression.Operator](../virtual_service.proto.sk/#operator) | The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan). |  |
 | `values` | `[]string` |  |  |
 
 
@@ -280,18 +280,20 @@ Select route tables for delegation by namespace, labels, or both.
 ---
 ### Operator
 
-
+ 
+Route Table Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
 
 | Name | Description |
 | ----- | ----------- | 
-| `UNKNOWN` |  |
-| `In` |  |
-| `NotIn` |  |
 | `Equals` |  |
 | `DoubleEquals` |  |
 | `NotEquals` |  |
+| `In` |  |
+| `NotIn` |  |
 | `Exists` |  |
 | `DoesNotExist` |  |
+| `GreaterThan` |  |
+| `LessThan` |  |
 
 
 

@@ -6,6 +6,7 @@ import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
+import "google/protobuf/descriptor.proto";
 
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
@@ -246,18 +247,23 @@ message RouteTableSelector {
     map<string, string> labels = 2;
 
     message Expression {
+      // Kubernetes label key, must conform to Kubernetes syntax requirements
+      // https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#syntax-and-character-set
       string key = 1;
+
+      // Route Table Selector expression operator, while the set-based syntax differs from Kubernetes (kubernetes: `key: !mylabel`, gloo: `key: mylabel, operator: "!"` | kubernetes: `key: mylabel`, gloo: `key: mylabel, operator: exists`), the functionality remains the same.
       enum Operator {
-        UNKNOWN = 0;
-        In = 1;
-        NotIn = 2;
-        Equals = 3;
-        DoubleEquals = 4;
-        NotEquals = 5;
-        Exists = 6;
-        DoesNotExist = 7;
+        Equals = 0;        // =
+        DoubleEquals = 1;  // ==
+        NotEquals = 2;     // !=
+        In = 3;            // in
+        NotIn = 4;         // notin
+        Exists = 5;        // exists
+        DoesNotExist = 6;  // !
+        GreaterThan = 7;   // gt
+        LessThan = 8;      // lt
       }
-      // The operator can only be In, NotIn, Equals, DoubleEquals, NotEquals, Exists, or DoesNotExist.
+      // The operator can only be in, notin, =, ==, !=, exists, ! (DoesNotExist), gt (GreaterThan), lt (LessThan).
       Operator operator = 2;
       repeated string values = 3;
     }

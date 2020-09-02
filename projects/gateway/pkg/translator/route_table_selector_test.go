@@ -112,8 +112,10 @@ var _ = Describe("RouteTableSelector", func() {
 					Namespaces: []string{"ns-1", "ns-5"},
 				})
 			rt6 = buildRouteTableWithSimpleAction("rt-6", "ns-5", "/foo/6", map[string]string{"team": "dev"})
+			rt7 = buildRouteTableWithSimpleAction("rt-7", "ns-1", "/foo/7", map[string]string{"complex.key-label/threshold": "10"})
+			rt8 = buildRouteTableWithSimpleAction("rt-8", "ns-2", "/foo/8", map[string]string{"complex.key-label/threshold": "20", "team": "ops"})
 
-			allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt4, rt5, rt6}
+			allRouteTables = v1.RouteTableList{rt1, rt2, rt3, rt4, rt5, rt6, rt7, rt8}
 
 			toAction = func(selector *v1.RouteTableSelector) *v1.DelegateAction {
 				return &v1.DelegateAction{
@@ -139,7 +141,7 @@ var _ = Describe("RouteTableSelector", func() {
 
 			Entry("when no labels nor namespaces nor expressions are provided",
 				toAction(&v1.RouteTableSelector{}),
-				v1.RouteTableList{rt1, rt2},
+				v1.RouteTableList{rt1, rt2, rt7},
 			),
 
 			Entry("when a label is specified in the selector (but no namespace nor expressions)",
@@ -153,7 +155,7 @@ var _ = Describe("RouteTableSelector", func() {
 				toAction(&v1.RouteTableSelector{
 					Namespaces: []string{"ns-1", "ns-2"},
 				}),
-				v1.RouteTableList{rt1, rt2, rt3},
+				v1.RouteTableList{rt1, rt2, rt3, rt7, rt8},
 			),
 
 			Entry("when both namespaces and labels are specified in the selector (but no expressions)",
@@ -168,20 +170,126 @@ var _ = Describe("RouteTableSelector", func() {
 				toAction(&v1.RouteTableSelector{
 					Namespaces: []string{"ns-1", "*"},
 				}),
-				v1.RouteTableList{rt1, rt2, rt3, rt4, rt5, rt6},
+				allRouteTables,
 			),
 
-			Entry("when a single expression is specified in the selector (but no namespace or labels)",
+			Entry("when an expression is specified in the selector (but no namespace or labels)",
 				toAction(&v1.RouteTableSelector{
 					Expressions: []*v1.RouteTableSelector_Expression{
 						{
 							Key:      "foo",
-							Operator: v1.RouteTableSelector_Expression_Equals,
+							Operator: v1.RouteTableSelector_Expression_In,
+							Values:   []string{"bar"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt2},
+			),
+
+			Entry("when an expression (in operator) and namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "foo",
+							Operator: v1.RouteTableSelector_Expression_In,
 							Values:   []string{"bar"},
 						},
 					},
 				}),
 				v1.RouteTableList{rt2, rt3},
+			),
+
+			Entry("when an expression (notin operator) and namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "foo",
+							Operator: v1.RouteTableSelector_Expression_NotIn,
+							Values:   []string{"bar"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt1, rt4, rt5, rt6, rt7, rt8},
+			),
+
+			Entry("when an expression (exists operator) and a namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "foo",
+							Operator: v1.RouteTableSelector_Expression_Exists,
+						},
+					},
+				}),
+				v1.RouteTableList{rt2, rt3, rt4},
+			),
+
+			Entry("when an expression (greaterThan operator) and a namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "complex.key-label/threshold",
+							Operator: v1.RouteTableSelector_Expression_GreaterThan,
+							Values:   []string{"15"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt8},
+			),
+
+			Entry("when an expression (LessThan operator) and a namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "complex.key-label/threshold",
+							Operator: v1.RouteTableSelector_Expression_LessThan,
+							Values:   []string{"15"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt7},
+			),
+
+			Entry("when an expression (DoesNotExists operator) and a namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "complex.key-label/threshold",
+							Operator: v1.RouteTableSelector_Expression_DoesNotExist,
+						},
+					},
+				}),
+				v1.RouteTableList{rt1, rt2, rt3, rt4, rt5, rt6},
+			),
+
+			Entry("when multiple expressions and a namespace are specified in the selector (but no labels)",
+				toAction(&v1.RouteTableSelector{
+					Namespaces: []string{"*"},
+					Expressions: []*v1.RouteTableSelector_Expression{
+						{
+							Key:      "complex.key-label/threshold",
+							Operator: v1.RouteTableSelector_Expression_GreaterThan,
+							Values:   []string{"5"},
+						},
+						{
+							Key:      "team",
+							Operator: v1.RouteTableSelector_Expression_In,
+							Values:   []string{"dev", "ops"},
+						},
+						{
+							Key:      "bar",
+							Operator: v1.RouteTableSelector_Expression_NotEquals,
+							Values:   []string{"baz"},
+						},
+					},
+				}),
+				v1.RouteTableList{rt8},
 			),
 		)
 	})
