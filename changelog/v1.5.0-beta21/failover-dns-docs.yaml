@@ -1,5 +1,5 @@
 changelog:
-- type: FIX
+- type: NON_USER_FACING
   description: >
     Fix documentation for failover endpoints to indicate that DNS addreses cannot be specified with weights
     for any locality
