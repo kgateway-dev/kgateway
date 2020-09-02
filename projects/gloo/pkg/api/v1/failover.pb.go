@@ -126,6 +126,8 @@ type LocalityLbEndpoints struct {
 	// Identifies where the parent upstream hosts run.
 	Locality *Locality `protobuf:"bytes,1,opt,name=locality,proto3" json:"locality,omitempty"`
 	// The group of endpoints belonging to the locality specified.
+	// Note: If any address is DNS resolvable than `lb_endpoints[].load_balancing_weight` is not allowed on any of
+	// this locality's endpoints.
 	LbEndpoints []*LbEndpoint `protobuf:"bytes,2,rep,name=lb_endpoints,json=lbEndpoints,proto3" json:"lb_endpoints,omitempty"`
 	// Optional: Per priority/region/zone/sub_zone weight; at least 1. The load
 	// balancing weight for a locality is divided by the sum of the weights of all
