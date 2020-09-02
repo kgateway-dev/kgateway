@@ -1,0 +1,7 @@
+changelog:
+- type: NON_USER_FACING
+  description: >
+    Fix documentation for failover endpoints to indicate that DNS addreses cannot be specified with weights
+    for any locality
+  issueLink: https://github.com/solo-io/gloo/issues/3565
+  resolvesIssue: false
