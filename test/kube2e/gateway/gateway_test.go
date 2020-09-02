@@ -3,11 +3,12 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
