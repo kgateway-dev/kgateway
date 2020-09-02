@@ -357,6 +357,7 @@ type IngressProxy struct {
 	ConfigMap       *IngressProxyConfigMap  `json:"configMap,omitempty"`
 	Tracing         *string                 `json:"tracing,omitempty"`
 	LoopBackAddress string                  `json:"loopBackAddress,omitempty" desc:"Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1"`
+	Label           string                  `json:"label" desc:"Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy"`
 	*ServiceSpec
 }
 

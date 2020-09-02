@@ -8,7 +8,7 @@ kind: Deployment
 metadata:
   labels:
     app: gloo
-    gloo: ingress-proxy
+    gloo: {{ .Values.ingressProxy.label }}
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 spec:
@@ -19,7 +19,7 @@ spec:
   template:
     metadata:
       labels:
-        gloo: ingress-proxy
+        gloo: {{ .Values.ingressProxy.label }}
         {{- if .Values.ingressProxy.deployment.extraIngressProxyLabels }}
         {{- range $key, $value := .Values.ingressProxy.deployment.extraIngressProxyLabels }}
         {{ $key }}: {{ $value | quote }}
@@ -46,6 +46,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        - name: INGRESS_PROXY_LABEL
+          value: {{ .Values.ingressProxy.label }}
         image: {{template "gloo.image" $image}}
         imagePullPolicy: {{ $image.pullPolicy }}
         name: ingress-proxy

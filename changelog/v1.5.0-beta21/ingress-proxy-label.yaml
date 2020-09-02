@@ -1,0 +1,6 @@
+changelog:
+  - type: FIX 
+    description: >
+      Allow changing a label value for ingress proxy to enable multiple ingress proxy instances in
+      the same cluster.
+    issueLink: https://github.com/solo-io/gloo/issues/3587
