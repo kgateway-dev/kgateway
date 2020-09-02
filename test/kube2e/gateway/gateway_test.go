@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -1418,14 +1419,12 @@ spec:
      - unique2
     routes:
       - matchers:
-        - methods:
-           - GET # not allowed
-          prefix: /delegated-prefix
+        - exact: /delegated-nonprefix  # not allowed
         delegateAction:
           name: does-not-exist # also not allowed, but caught later
           namespace: anywhere
 `,
-					expectedErr: "routes with delegate actions cannot use method matchers",
+					expectedErr: gwtranslator.MissingPrefixErr.Error(),
 				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErr)
