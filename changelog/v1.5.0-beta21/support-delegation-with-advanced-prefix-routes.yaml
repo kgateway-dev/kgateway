@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >-
+      Added support for query parameter matchers, header matchers, and method matchers to the route table delegation
+      API. Delegated routes must still use the prefix matcher, but now they can also leverage the aforementioned
+      matchers so long as the delegated route's matchers are a superset of the parent route's matchers.
+    issueLink: https://github.com/solo-io/gloo/issues/3327
