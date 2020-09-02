@@ -424,8 +424,8 @@ func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, chil
 
 	for _, childMatch := range childRoute.Matchers {
 		// ensure all sub-routes in the delegated route table match the parent prefix
-		if !strings.HasPrefix(childMatch.GetPrefix(), parentMatcher.GetPrefix()) {
-			return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), childMatch.GetPrefix())
+		if pathString := glooutils.PathAsString(childMatch); !strings.HasPrefix(pathString, parentMatcher.GetPrefix()) {
+			return InvalidRouteTableForDelegatePrefixErr(parentMatcher.GetPrefix(), pathString)
 		}
 
 		// ensure all headers in the delegated route table are a superset of those from the parent route resource
