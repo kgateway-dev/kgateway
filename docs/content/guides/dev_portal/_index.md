@@ -4,15 +4,26 @@ weight: 70
 description: Publish interactive documentation for your APIs
 ---
 
-{{% notice note %}}
-The developer portal feature was introduced with **Gloo Enterprise**, release v1.3.0. If you are using an 
-earlier version, this feature will not be available.
-{{% /notice %}}
-
 In this guide we will see how to publish interactive documentation for your APIs and expose it to users via the 
 Gloo Enterprise developer portal.
 
+## Important Update
+We recently released an updated version of the Developer Portal. The new Developer Portal adds a number of new features, 
+including the ability to automatically generate routing configuration for your Gloo Gateways based on your service 
+specifications.
+
+The new Developer Portal is a standalone application that can be installed on top of **Gloo Enterprise** starting with 
+release v1.5.0-beta10. For more information, check out the 
+[new Developer Portal documentation](https://docs.solo.io/dev-portal/latest).
+
 ## Initial setup
+{{% notice warning %}}
+The developer portal feature described on this page was introduced with **Gloo Enterprise**, release v1.3.0 and 
+deprecated with **Gloo Enterprise**, release v1.5.0-beta10. 
+If you are using an earlier version, this feature will not be available. If you are running this (or a later) version of 
+Gloo Enterprise, use [these installation instructions](https://docs.solo.io/dev-portal/latest/setup/gloo).
+{{% /notice %}}
+
 Before we can start configuring our portal, we need to enable the developer portal feature in Gloo and configure our 
 cluster with an example application and the corresponding routing configuration.
 
