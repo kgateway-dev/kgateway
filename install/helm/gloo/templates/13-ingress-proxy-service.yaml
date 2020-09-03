@@ -4,7 +4,7 @@ kind: Service
 metadata:
   labels:
     app: gloo
-    gloo: ingress-proxy
+    gloo: {{ .Values.ingressProxy.label }}
   name: ingress-proxy
   namespace: {{ .Release.Namespace }}
 {{- if .Values.ingressProxy.service }}
