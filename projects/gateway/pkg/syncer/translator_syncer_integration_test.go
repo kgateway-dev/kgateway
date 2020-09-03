@@ -158,20 +158,17 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		proxy, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
 		Expect(err).NotTo(HaveOccurred())
 		proxy.Status = core.Status{State: core.Status_Accepted}
-		proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+		_, err = proxyClient.Write(proxy, clients.WriteOpts{OverwriteExisting: true})
+		Expect(err).NotTo(HaveOccurred())
 	}
 
 	It("should set status correctly even when the status from the snapshot was not updated", func() {
 
 		ts.Sync(ctx, snapshot())
 		// wait for proxy to be written
-		Eventually(func() (bool, error) {
-			_, err := proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
-			if err != nil {
-				return false, err
-			}
-			return true, nil
-		}).Should(BeTrue())
+		Eventually(func() (*gloov1.Proxy, error) {
+			return proxyClient.Read("gloo-system", "gateway-proxy", clients.ReadOpts{})
+		}).ShouldNot(BeNil())
 
 		// write the proxy status.
 		AcceptProxy()
@@ -179,7 +176,8 @@ var _ = Describe("TranslatorSyncer integration test", func() {
 		// wait for the proxy status to be written in the VS
 		EventuallyProxyStatusInVs().Should(Equal(core.Status_Accepted))
 
-		// re-sync so now the snapshot, so that the snapshot has the updates status.
+		// re-sync, so that the snapshot has the updated status.
+		// the translator will cache the updated status.
 		ts.Sync(ctx, snapshot())
 
 		// Second round of updates:
