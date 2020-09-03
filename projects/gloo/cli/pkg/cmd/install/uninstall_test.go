@@ -158,8 +158,6 @@ spec:
 				clusterScopedDeleteCmds = append(clusterScopedDeleteCmds,
 					fmt.Sprintf("delete %s -l %s", kind, glooAppFlags))
 			}
-
-			crdDeleteCmd += " " + strings.Join(install.GlooECrdNames, " ")
 		})
 
 		It("deletes all resources with the app=gloo label in the given namespace", func() {

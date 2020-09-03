@@ -117,7 +117,7 @@ func (u *uninstaller) Uninstall(cliArgs *options.HelmUninstall, mode Mode) error
 			u.deleteGlooCrds(GlooFedCrdNames)
 		} else {
 			if len(crdNames) == 0 {
-				crdNames = append(GlooCrdNames, GlooECrdNames...)
+				crdNames = GlooCrdNames
 			}
 			u.deleteGlooCrds(crdNames)
 		}
