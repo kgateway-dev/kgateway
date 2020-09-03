@@ -47,7 +47,7 @@ def contains_jwt(lines):
 
 def main():
     #get git diff lines
-    lines = subprocess.check_output(['git', 'diff', 'HEAD~1']).decode("utf-8").split('\n')
+    lines = subprocess.check_output(['git', 'diff', '--staged']).decode("utf-8").split('\n')
 
     # filter out short lines and lines that don't begin with a '+' to only
     # test longer, newly added text
