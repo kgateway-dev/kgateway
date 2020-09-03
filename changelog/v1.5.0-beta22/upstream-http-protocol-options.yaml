@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Expose Envoy's cluster configuration `common_http_protocol_options` parameters in the Gloo API.
+    issueLink: https://github.com/solo-io/gloo/issues/3560
