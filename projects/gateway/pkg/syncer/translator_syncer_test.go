@@ -302,3 +302,7 @@ func (f *fakeReporter) WriteReports(ctx context.Context, errs reporter.ResourceR
 	f.Err = nil
 	return err
 }
+
+func (f *fakeReporter) StatusFromReport(report reporter.Report, subresourceStatuses map[string]*core.Status) core.Status {
+	return core.Status{}
+}
