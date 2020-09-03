@@ -514,6 +514,7 @@
 |ingressProxy.configMap.data.NAME|string|||
 |ingressProxy.tracing|string|||
 |ingressProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
+|ingressProxy.label|string|ingress-proxy|Value for label gloo. Use a unique value to use several ingress proxy instances in the same cluster. Default is ingress-proxy|
 |ingressProxy.service.type|string|LoadBalancer|K8s service type|
 |ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |ingressProxy.service.loadBalancerIP|string||IP address of the load balancer|
