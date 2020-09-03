@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Handle and edge case where the gateway does not publish the status for its resources.
+    issueLink: https://github.com/solo-io/gloo/issues/3592
