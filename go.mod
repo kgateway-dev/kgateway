@@ -56,7 +56,7 @@ require (
 	github.com/solo-io/go-utils v0.16.2
 	github.com/solo-io/protoc-gen-ext v0.0.7
 	github.com/solo-io/reporting-client v0.1.2
-	github.com/solo-io/solo-kit v0.13.8-patch2
+	github.com/solo-io/solo-kit v0.13.8-patch4
 	github.com/solo-io/wasme v0.0.13-rc1
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v0.0.5
