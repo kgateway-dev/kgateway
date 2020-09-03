@@ -1790,6 +1790,35 @@ var _ = Describe("Translator", func() {
 				Expect(tlsContext(fc)).NotTo(BeNil())
 			})
 
+			It("should not merge 2 ssl config if they are different", func() {
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert1",
+								TlsKey:  "key1",
+							},
+						},
+						SniDomains: []string{
+							"sni1",
+						},
+					},
+					{
+						SslSecrets: &v1.SslConfig_SslFiles{
+							SslFiles: &v1.SSLFiles{
+								TlsCert: "cert2",
+								TlsKey:  "key2",
+							},
+						},
+						SniDomains: []string{
+							"sni2",
+						},
+					},
+				})
+
+				Expect(listener.GetFilterChains()).To(HaveLen(2))
+			})
+
 			It("should merge 2 ssl config if they are the same", func() {
 				prep([]*v1.SslConfig{
 					{
