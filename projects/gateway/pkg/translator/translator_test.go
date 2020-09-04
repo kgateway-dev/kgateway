@@ -539,27 +539,6 @@ var _ = Describe("Translator", func() {
 				Expect(listener.VirtualHosts[0].Name).To(ContainSubstring("name1"))
 			})
 
-			It("should error when 2 virtual services linked to the same gateway have overlapping sni domains", func() {
-				snap.Gateways[0].Ssl = true
-
-				snap.VirtualServices[0].SslConfig = new(gloov1.SslConfig)
-				snap.VirtualServices[1].SslConfig = new(gloov1.SslConfig)
-				snap.VirtualServices[0].SslConfig.SniDomains = []string{"a.com"}
-				snap.VirtualServices[1].SslConfig.SniDomains = []string{"a.com"}
-				_, reports := translator.Translate(context.Background(), defaults.GatewayProxyName, ns, snap, snap.Gateways)
-				errs := reports.ValidateStrict()
-				Expect(errs).To(HaveOccurred())
-
-				multiErr, ok := errs.(*multierror.Error)
-				Expect(ok).To(BeTrue())
-
-				for _, expectedError := range []error{
-					SniDomainInOtherVirtualServicesErr("a.com", []string{"gloo-system.name1"}),
-				} {
-					Expect(multiErr.WrappedErrors()).To(ContainElement(testutils.HaveInErrorChain(expectedError)))
-				}
-			})
-
 			Context("validate domains", func() {
 				BeforeEach(func() {
 					snap.VirtualServices[1].VirtualHost.Domains = snap.VirtualServices[0].VirtualHost.Domains

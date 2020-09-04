@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3459
+    description: Changes our sni domain checking logic to more broadly check against duplicate filter chain matches in a listener like envoy. Backport for gloo 1.4.
+    
