@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3459
+    description: Virtual Services with overlapping SNI domains in the same gateway are invalid. This change fixes our matching rules to consider cases where the sni domain is unset, and not allow multiple configs with an unset sni domain.
+    
