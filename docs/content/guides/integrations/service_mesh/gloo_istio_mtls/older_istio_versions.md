@@ -487,7 +487,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta21
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta23
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -509,7 +509,7 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
       - name: cert-rotator
-        image: quay.io/solo-io/sds:1.5.0-beta21
+        image: quay.io/solo-io/sds:1.5.0-beta23
         imagePullPolicy: Always
         ports:
         - containerPort: 8234

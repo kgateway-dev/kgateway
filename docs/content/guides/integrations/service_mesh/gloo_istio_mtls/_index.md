@@ -13,11 +13,11 @@ This guide was tested with Istio 1.6.6 and 1.7. For older versions of Istio, see
 
 ### Gloo versions
 
-This guide was tested with Gloo v1.5.0-beta21.
+This guide was tested with Gloo v1.5.0-beta23.
 
 {{% notice warning %}}
 
-The Gloo integration with Istio 1.6.x requires Gloo version 1.4.10, or 1.5.0-beta21 or higher.
+The Gloo integration with Istio 1.6.x requires Gloo version 1.4.10, or 1.5.0-beta23 or higher.
 
 {{% /notice %}}
 
@@ -72,7 +72,7 @@ glooctl install gateway
 ```
 or with helm:
 ```
-kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0-beta21 gloo gloo/gloo
+kubectl create ns gloo-system; helm install --namespace gloo-system --version 1.5.0-beta23 gloo gloo/gloo
 ```
 See the [quick start]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) guide for more information.
 
@@ -310,7 +310,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.name
-        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta21
+        image: quay.io/solo-io/gloo-envoy-wrapper:1.5.0-beta23
         imagePullPolicy: IfNotPresent
         name: gateway-proxy
         ports:
@@ -332,7 +332,7 @@ spec:
         - mountPath: /etc/envoy
           name: envoy-config
       - name: cert-rotator
-        image: quay.io/solo-io/sds:1.5.0-beta21
+        image: quay.io/solo-io/sds:1.5.0-beta23
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8234
