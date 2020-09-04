@@ -3,6 +3,8 @@ package upstreamconn_test
 import (
 	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
+
 	"github.com/gogo/protobuf/types"
 
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -93,5 +95,38 @@ var _ = Describe("Plugin", func() {
 		err := plugin.ProcessUpstream(params, upstream, out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(out.GetPerConnectionBufferLimitBytes().Value).To(BeEquivalentTo(uint32(4096)))
+	})
+
+	It("should set CommonHttpProtocolOptions", func() {
+		hour := time.Hour
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			CommonHttpProtocolOptions: &v1.ConnectionConfig_HttpProtocolOptions{
+				MaxHeadersCount:              3,
+				MaxStreamDuration:            &hour,
+				HeadersWithUnderscoresAction: 1,
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).NotTo(HaveOccurred())
+		outChpo := out.GetCommonHttpProtocolOptions()
+		expectedValue := envoycore.HttpProtocolOptions{
+			MaxHeadersCount:              &wrappers.UInt32Value{Value: 3},
+			MaxStreamDuration:            &duration.Duration{Seconds: 60 * 60},
+			HeadersWithUnderscoresAction: envoycore.HttpProtocolOptions_REJECT_REQUEST,
+		}
+
+		Expect(*outChpo).To(Equal(expectedValue))
+	})
+
+	It("should error setting CommonHttpProtocolOptions when an invalid enum value is used", func() {
+		upstream.ConnectionConfig = &v1.ConnectionConfig{
+			CommonHttpProtocolOptions: &v1.ConnectionConfig_HttpProtocolOptions{
+				HeadersWithUnderscoresAction: 4,
+			},
+		}
+
+		err := plugin.ProcessUpstream(params, upstream, out)
+		Expect(err).To(HaveOccurred())
 	})
 })
