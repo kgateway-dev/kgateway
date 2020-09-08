@@ -1,0 +1,6 @@
+changelog:
+- type: DEPENDENCY_BUMP
+  description: Update envoy to pull in aws-sts connection pools.
+  dependencyOwner: envoyproxy
+  dependencyRepo: envoy
+  dependencyTag: v1.16-rc2
