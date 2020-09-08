@@ -240,8 +240,6 @@ func RunGateway(opts translator.Opts) error {
 		opts.WriteNamespace,
 		proxyClient,
 		proxyReconciler,
-		gatewayClient,
-		virtualServiceClient,
 		rpt,
 		txlator)
 

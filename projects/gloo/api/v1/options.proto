@@ -15,6 +15,7 @@ import "gloo/projects/gloo/api/v1/options/rest/rest.proto";
 import "gloo/projects/gloo/api/v1/options/grpc/grpc.proto";
 import "gloo/projects/gloo/api/v1/options/als/als.proto";
 import "gloo/projects/gloo/api/v1/options/grpc_web/grpc_web.proto";
+import "gloo/projects/gloo/api/v1/options/grpc_json/grpc_json.proto";
 import "gloo/projects/gloo/api/v1/options/hcm/hcm.proto";
 import "gloo/projects/gloo/api/v1/options/lbhash/lbhash.proto";
 import "gloo/projects/gloo/api/v1/options/shadowing/shadowing.proto";
@@ -114,6 +115,11 @@ message HttpListenerOptions {
     // that the filter will buffer before the connection
     // manager will stop buffering and return a 413 response.
     envoy.extensions.filters.http.buffer.v3.Buffer buffer = 12;
+
+    // Exposed envoy config for the gRPC to JSON transcoding filter,
+    // envoy.filters.http.grpc_json_transcoder.
+    // For more, see https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/http/grpc_json_transcoder/v3/transcoder.proto
+    grpc_json.options.gloo.solo.io.GrpcJsonTranscoder grpc_json_transcoder = 13;
 }
 
 // Optional, feature-specific configuration that lives on tcp listeners

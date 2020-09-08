@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Removes ratelimit from default values template, which should prevent ratelimit warnings on gloo installation.
+    issueLink: https://github.com/solo-io/gloo/issues/3467

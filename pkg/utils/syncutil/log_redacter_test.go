@@ -93,8 +93,10 @@ var _ = Describe("Log Redacter", func() {
 		Configs: []*xdsproto.ExtAuthConfig_Config{{
 			AuthConfig: &xdsproto.ExtAuthConfig_Config_ApiKeyAuth{
 				ApiKeyAuth: &xdsproto.ExtAuthConfig_ApiKeyAuthConfig{
-					ValidApiKeyAndUser: map[string]string{
-						"my-secret-api-key": "user-name",
+					ValidApiKeys: map[string]*xdsproto.ExtAuthConfig_ApiKeyAuthConfig_KeyMetadata{
+						"my-secret-api-key": {
+							Username: "user-name",
+						},
 					},
 				},
 			},

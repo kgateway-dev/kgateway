@@ -39,6 +39,8 @@ settings:
   # If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes.
   # If true, Gloo will keep serving the routes from the last applied valid configuration.
   disableProxyGarbageCollection: false
+  # Set this value to a an array of ratelimit descriptors to have rate limits on the gloo instance's installation namespace.
+  # For more info, see https://docs.solo.io/gloo/latest/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/ratelimit/ratelimit.proto.sk/#servicesettings
 gloo:
   deployment:
     image:
@@ -58,6 +60,7 @@ discovery:
       repository: discovery
     replicas: 1
     runAsUser: 10101
+    fsGroup: 10101
 gateway:
   enabled: true
   readGatewaysFromAllNamespaces: false
@@ -140,6 +143,8 @@ ingress:
     replicas: 1
     runAsUser: 10101
 ingressProxy:
+  # Set to a unique value to allow using several ingress proxy instances in the same cluster.
+  label: ingress-proxy
   loopBackAddress: 127.0.0.1
   deployment:
     image:

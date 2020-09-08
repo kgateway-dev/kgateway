@@ -1,0 +1,5 @@
+changelog:
+- type: NEW_FEATURE
+  description: Add route table delegation selector expressions.
+  issueLink: https://github.com/solo-io/gloo/issues/3586
+

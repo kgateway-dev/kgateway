@@ -140,6 +140,17 @@ var _ = Describe("Plugin", func() {
 		})
 	})
 
+	Context("health check config", func() {
+		It("health check config gets propagated", func() {
+			upstreamSpec.Hosts[0].HealthCheckConfig = &v1static.Host_HealthCheckConfig{
+				Path: "/foo",
+			}
+			p.ProcessUpstream(params, upstream, out)
+			Expect(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[HttpPathCheckerName].Fields[PathFieldName].GetStringValue()).To(Equal("/foo"))
+		})
+
+	})
+
 	Context("ssl", func() {
 		tlsContext := func() *envoyauth.UpstreamTlsContext {
 			if out.TransportSocket == nil {

@@ -60,6 +60,7 @@ func CheckMulticlusterResources(opts *options.Options) {
 		printGlooInstanceCheckSummary("route tables", glooInstance.Spec.GetCheck().GetRouteTables())
 		printGlooInstanceCheckSummary("gateways", glooInstance.Spec.GetCheck().GetGateways())
 		printGlooInstanceCheckSummary("proxies", glooInstance.Spec.GetCheck().GetProxies())
+		fmt.Printf("\n\n")
 	}
 }
 

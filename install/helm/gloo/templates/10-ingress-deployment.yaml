@@ -20,6 +20,11 @@ spec:
     metadata:
       labels:
         gloo: ingress
+        {{- if .Values.ingress.deployment.extraIngressLabels }}
+        {{- range $key, $value := .Values.ingress.deployment.extraIngressLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       securityContext:
         runAsNonRoot: true

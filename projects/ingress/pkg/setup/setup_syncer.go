@@ -107,6 +107,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	enableKnative := envTrue("ENABLE_KNATIVE_INGRESS")
 	customIngressClass := os.Getenv("CUSTOM_INGRESS_CLASS")
 	knativeVersion := os.Getenv("KNATIVE_VERSION")
+	ingressProxyLabel := os.Getenv("INGRESS_PROXY_LABEL")
 
 	clusterIngressProxyAddress := defaultClusterIngressProxyAddress
 	if settings.Knative != nil && settings.Knative.ClusterIngressProxyAddress != "" {
@@ -121,6 +122,10 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 	knativeInternalProxyAddress := defaultKnativeInternalProxyAddress
 	if settings.Knative != nil && settings.Knative.KnativeInternalProxyAddress != "" {
 		knativeInternalProxyAddress = settings.Knative.KnativeInternalProxyAddress
+	}
+
+	if len(ingressProxyLabel) == 0 {
+		ingressProxyLabel = "ingress-proxy"
 	}
 
 	opts := Opts{
@@ -141,6 +146,7 @@ func Setup(ctx context.Context, kubeCache kube.SharedCache, inMemoryCache memory
 		DisableKubeIngress:  disableKubeIngress,
 		RequireIngressClass: requireIngressClass,
 		CustomIngressClass:  customIngressClass,
+		IngressProxyLabel:   ingressProxyLabel,
 	}
 
 	return RunIngress(opts)
@@ -200,9 +206,8 @@ func RunIngress(opts Opts) error {
 
 		// note (ilackarms): we must set the selector correctly here or the status syncer will not work
 		// the selector should return exactly 1 service which is our <install-namespace>.ingress-proxy service
-		// TODO (ilackarms): make the service labels configurable
 		ingressServiceClient := service.NewClientWithSelector(kubeServiceClient, map[string]string{
-			"gloo": "ingress-proxy",
+			"gloo": opts.IngressProxyLabel,
 		})
 		statusEmitter := v1.NewStatusEmitter(ingressServiceClient, ingressClient)
 		statusSync := status.NewSyncer(ingressClient)

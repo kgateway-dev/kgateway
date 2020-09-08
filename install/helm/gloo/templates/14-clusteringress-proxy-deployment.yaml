@@ -21,6 +21,11 @@ spec:
     metadata:
       labels:
         gloo: clusteringress-proxy
+        {{- if .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}
+        {{- range $key, $value := .Values.settings.integrations.knative.proxy.extraClusterIngressProxyLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]

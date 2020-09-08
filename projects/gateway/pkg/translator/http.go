@@ -20,13 +20,13 @@ var (
 	NoVirtualHostErr = func(vs *v1.VirtualService) error {
 		return errors.Errorf("virtual service [%s] does not specify a virtual host", vs.Metadata.Ref().Key())
 	}
-	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsNames []string) error {
+	DomainInOtherVirtualServicesErr = func(domain string, conflictingVsRefs []string) error {
 		if domain == "" {
 			return errors.Errorf("domain conflict: other virtual services that belong to the same Gateway"+
-				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsNames)
+				" as this one don't specify a domain (and thus default to '*'): %v", conflictingVsRefs)
 		}
 		return errors.Errorf("domain conflict: the [%s] domain is present in other virtual services "+
-			"that belong to the same Gateway as this one: %v", domain, conflictingVsNames)
+			"that belong to the same Gateway as this one: %v", domain, conflictingVsRefs)
 	}
 	GatewayHasConflictingVirtualServicesErr = func(conflictingDomains []string) error {
 		var loggedDomains []string

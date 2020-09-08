@@ -20,4 +20,5 @@ type Opts struct {
 	DisableKubeIngress          bool
 	RequireIngressClass         bool
 	CustomIngressClass          string
+	IngressProxyLabel           string
 }

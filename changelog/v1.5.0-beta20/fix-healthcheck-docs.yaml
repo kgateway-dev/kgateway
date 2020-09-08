@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Remove incorrect gateway healthcheck documentation, adding that info to a new upstream healthcheck page instead.
+    issueLink: https://github.com/solo-io/gloo/issues/2914

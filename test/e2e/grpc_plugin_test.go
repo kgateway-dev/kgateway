@@ -29,7 +29,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 )
 
-var _ = Describe("GRPC Plugin", func() {
+var _ = Describe("GRPC to JSON Transcoding Plugin - Gloo API", func() {
 	var (
 		ctx            context.Context
 		cancel         context.CancelFunc

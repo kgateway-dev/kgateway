@@ -215,6 +215,96 @@ var _ = Describe("Helm Test", func() {
 					})
 				})
 
+				It("should be able to set custom labels for pods", func() {
+					// This test expects ALL pods to be capable of setting custom labels unless exceptions are added
+					// here, which means that this test will fail if new deployments are added to the helm chart without
+					// custom labeling, unless those deployments aren't enabled by default (like the accessLogger).
+					// Note: test panics if values-template.yaml doesn't contain at least an empty definition
+					// of each label object that's modified here.
+					// Note note: Update number in final expectation if you add new labels here.
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gateway.deployment.extraGatewayLabels.foo=bar",
+							"gloo.deployment.extraGlooLabels.foo=bar",
+							"discovery.deployment.extraDiscoveryLabels.foo=bar",
+							"gatewayProxies.gatewayProxy.podTemplate.extraGatewayProxyLabels.foo=bar",
+							"accessLogger.enabled=true", // required to test accessLogger
+							"accessLogger.extraAccessLoggerLabels.foo=bar",
+							"ingress.deployment.extraIngressLabels.foo=bar",
+							"ingress.enabled=true", // required to test Ingress Proxy, but not Ingress.
+							"ingressProxy.deployment.extraIngressProxyLabels.foo=bar",
+							"settings.integrations.knative.enabled=true", // required to test cluster ingress proxy and knative labels.
+							"settings.integrations.knative.extraKnativeExternalLabels.foo=bar",
+							"settings.integrations.knative.extraKnativeInternalLabels.foo=bar",
+						},
+					})
+
+					var resourcesTested = 0
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						deploymentLabels := structuredDeployment.Spec.Template.Labels
+						var foundTestValue = false
+						for label, value := range deploymentLabels {
+							if label == "foo" {
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+									" value bar. Found value %s", deployment.GetName(), value))
+								foundTestValue = true
+							}
+						}
+						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						resourcesTested += 1
+					})
+					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
+					Expect(resourcesTested).To(Equal(9), "Tested %d resources when we were expecting 9."+
+						" Was a new pod added, or is an existing pod no longer being generated?", resourcesTested)
+				})
+
+				// due to the version requirements for rendering knative-related templates, the cluster ingress proxy
+				// template is mutually exclusive to the other knative templates, and needs to be tested separately.
+				It("should be able to set custom labels for cluster ingress proxy pod", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.7.0",
+							"settings.integrations.knative.proxy.extraClusterIngressProxyLabels.foo=bar",
+						},
+					})
+
+					var resourcesTested = 0
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "Deployment"
+					}).ExpectAll(func(deployment *unstructured.Unstructured) {
+						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+
+						deploymentLabels := structuredDeployment.Spec.Template.Labels
+						if structuredDeployment.Name != "clusteringress-proxy" {
+							return
+						}
+						var foundTestValue = false
+						for label, value := range deploymentLabels {
+							if label == "foo" {
+								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+									" value bar. Found value %s", deployment.GetName(), value))
+								foundTestValue = true
+							}
+						}
+						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						resourcesTested += 1
+					})
+					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
+					Expect(resourcesTested).To(Equal(1), "Tested %d resources when we were expecting 1."+
+						"What happened to the clusteringress-proxy deployment?", resourcesTested)
+				})
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},
@@ -1431,6 +1521,59 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly allows setting ratelimit descriptors in the rateLimit field.", func() {
+						settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+   invalidConfigPolicy:
+     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
+       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
+     invalidRouteResponseCode: 404
+
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+ rateLimit:
+   descriptors:
+     - key: generic_key
+       value: "per-second"
+       rateLimit:
+         requestsPerUnit: 2
+         unit: SECOND
+`)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.rateLimit.descriptors[0].key=generic_key",
+								"settings.rateLimit.descriptors[0].value=per-second",
+								"settings.rateLimit.descriptors[0].rateLimit.requestsPerUnit=2",
+								"settings.rateLimit.descriptors[0].rateLimit.unit=SECOND",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("correctly sets the `disableProxyGarbageCollection` field in the settings", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
@@ -2237,6 +2380,10 @@ metadata:
 						deploy := rb.GetDeploymentAppsv1()
 						updateDeployment(deploy)
 						deploy.Spec.Template.Spec.ServiceAccountName = "discovery"
+						user := int64(10101)
+						deploy.Spec.Template.Spec.SecurityContext = &v1.PodSecurityContext{
+							FSGroup: &user,
+						}
 						discoveryDeployment = deploy
 					})
 

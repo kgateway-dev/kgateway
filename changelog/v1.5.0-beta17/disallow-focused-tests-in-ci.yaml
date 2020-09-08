@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Ensure regression tests fail if focused by using ginkgo with the `failOnPending` flag in CI
+    issueLink: https://github.com/solo-io/gloo/issues/3315

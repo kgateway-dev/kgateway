@@ -66,13 +66,13 @@ var _ = Describe("Secret", func() {
 			out, err := testutils.GlooctlOut("create secret aws --dry-run --name test --access-key foo --secret-key bar")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`data:
-  aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiBiYXIK
+  aws_access_key_id: Zm9v
+  aws_secret_access_key: YmFy
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
   namespace: gloo-system
+type: Opaque
 `))
 		})
 
@@ -80,13 +80,14 @@ metadata:
 			out, err := testutils.GlooctlOut("create secret aws --dry-run --name test --access-key foo --secret-key bar --session-token waz")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(out).To(Equal(`data:
-  aws: YWNjZXNzS2V5OiBmb28Kc2VjcmV0S2V5OiB3YXoK
+  aws_access_key_id: Zm9v
+  aws_secret_access_key: YmFy
+  aws_session_token: d2F6
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   creationTimestamp: null
   name: test
   namespace: gloo-system
+type: Opaque
 `))
 		})
 
@@ -146,6 +147,28 @@ metadata:
 
 		It("should work with custom namespace", func() {
 			shouldWork("create secret azure test --namespace custom --api-keys foo=bar,gloo=baz", "custom")
+		})
+	})
+
+	Context("Header", func() {
+		shouldWork := func(command, namespace string) {
+			err := testutils.Glooctl(command)
+			Expect(err).NotTo(HaveOccurred())
+
+			secret, err := helpers.MustSecretClient().Read(namespace, "test", clients.ReadOpts{})
+			Expect(err).NotTo(HaveOccurred())
+
+			header := v1.HeaderSecret{
+				Headers: map[string]string{
+					"foo": "bar",
+					"bat": "=b=a=z=",
+				},
+			}
+			Expect(*secret.GetHeader()).To(Equal(header))
+		}
+
+		It("should work", func() {
+			shouldWork("create secret header --name test --headers foo=bar,bat==b=a=z=", "gloo-system")
 		})
 	})
 

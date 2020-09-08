@@ -8,6 +8,12 @@ description: How to setup ApiKey authentication.
 The API keys authentication feature was introduced with **Gloo Enterprise**, release 0.18.5. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
+{{% notice note %}}
+The API key secret format shown in this guide was introduced with **Gloo Enterprise**, release v1.5.0-beta8. 
+If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo/1.3.0/security/auth/apikey_auth/) 
+of this guide.
+{{% /notice %}}
+
 Sometimes when you need to protect a service, the set of users that will need to access it is known in advance and does 
 not change frequently. For example, these users might be other services or specific persons or teams in your organization. 
 
@@ -26,7 +32,10 @@ To secure your services using API keys, you first need to provide Gloo with your
 1. You can specify a **label selector** that matches one or more labelled API key secrets (this is the preferred option), or
 1. You can **explicitly reference** a set of secrets by their identifier (namespace and name).
 
-When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the `api-key` header. If the header is not present, or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, Gloo will deny the request and return a 401 response to the downstream client.
+When Gloo matches a request to a route secured with API keys, it looks for a valid API key in the request headers. 
+The name of the header that is expected to contain the API key is configurable. If the header is not present, 
+or if the API key it contains does not match one of the API keys in the secrets referenced on the Virtual Service, 
+Gloo will deny the request and return a 401 response to the downstream client.
 
 Internally, Gloo will generate a mapping of API keys to _user identities_ for all API keys present in the system. The _user identity_ for a given API key is the name of the `Secret` which contains the API key. The _user identity_ will be added to the request as a header, `x-user-id` by default, which can be utilized in subsequent filters. You can see the [default order of the filters in the Gloo source](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/plugin_interface.go#L187-L198). In this specific case, the extauth plugin (which handles the api key flow) is part of the `AuthNStage` stage, so filters after this stage will have access to the `user identity` header. For example, this functionality is used in [Gloo's rate limiting API to provide different rate limits for anonymous vs. authorized users]({{< versioned_link_path fromRoot="/guides/security/rate_limiting/simple" >}}). For security reasons, this header will be sanitized from the response before it leaves the proxy.
 
@@ -80,19 +89,24 @@ The above command should return:
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-As we just saw, we were able to reach the upstream without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that only requests containing a valid API key in their `api-key` header are allowed.
+As we just saw, we were able to reach the upstream without having to provide any credentials. 
+This is because by default Gloo allows any request on routes that do not specify authentication configuration. 
+Let's change this behavior. We will update the Virtual Service so that only requests containing 
+a valid API key are allowed.
 
 We start by creating an API key secret using `glooctl`:
 
 ```shell
-glooctl create secret apikey infra-apikey --apikey N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy --apikey-labels team=infrastructure
+glooctl create secret apikey infra-apikey \
+    --apikey N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy \
+    --apikey-labels team=infrastructure
 ```
 
 The above command creates a secret that:
 
 - is named `infra-apikey`,
 - is placed in the `gloo-system` namespace (this  is the default if no namespace is provided via the `--namespace` flag),
-- is of kind `apikey` (this is just a Kubernetes secret with additional metadata that can be interpreted by Gloo),
+- is of kind `apikey` (this is just a Kubernetes secret which contains the API key in the `data` entry with the key expected by Gloo),
 - is marked with a label named `team` with value `infrastructure`, and 
 - contains an API key with value `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`.
 
@@ -110,39 +124,27 @@ You secret should look similar to this:
 ```yaml
 apiVersion: v1
 kind: Secret
+type: extauth.solo.io/apikey
 metadata:
-  annotations:
-    resource_kind: '*v1.Secret'
   labels:
     team: infrastructure
   name: infra-apikey
   namespace: gloo-system
-type: Opaque
 data:
-  apiKey: YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK
+  api-key: TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5
 ```
 
-Now let's take the value of `data.apiKey`, which is base64-encoded, and decode it:
+The value of `data.api-key` is base64-encoded. Let's decode it to verify that it is indeed our API key:
 
 ```shell
-echo YXBpS2V5OiBOMll3TURJeFpURXROR1V6TlMxak56Z3pMVFJrWWpBdFlqRTJZelJrWkdWbU5qY3kKbGFiZWxzOgotIHRlYW09aW5mcmFzdHJ1Y3R1cmUK | base64 -D
+echo TjJZd01ESXhaVEV0TkdVek5TMWpOemd6TFRSa1lqQXRZakUyWXpSa1pHVm1OamN5 | base64 -D
 ```
 
-You should get the following 
-{{< protobuf display="API key secret configuration" name="enterprise.gloo.solo.io.ApiKeySecret" >}}:
-
-```yaml
-config:
-  api_key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy
-  labels:
-  - team=infrastructure
-```
-
-Our API key is indeed `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`! 
+The command should return `N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy`, which is indeed our API key.
 
 Now that we have a valid API key secret, let's go ahead and create an `AuthConfig` Custom Resource (CR) with our API key authentication configuration:
 
-{{< highlight shell "hl_lines=9-11" >}}
+{{< highlight shell "hl_lines=9-14" >}}
 kubectl apply -f - <<EOF
 apiVersion: enterprise.gloo.solo.io/v1
 kind: AuthConfig
@@ -151,8 +153,11 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - api_key_auth:
-      label_selector:
+  - apiKeyAuth:
+      # This is the name of the header that is expected to contain the API key.
+      # This field is optional and defaults to `api-key` if not present.
+      headerName: api-key
+      labelSelector:
         team: infrastructure
 EOF
 {{< /highlight >}}
@@ -213,7 +218,8 @@ You will see that the response now contains a **401 Unauthorized** code, indicat
 {{< /highlight >}}
 
 ### Testing authenticated requests
-For a request to be allowed, it must include a header named `api-key` with the value set to the API key we previously stored in our secret. Now let's add the authorization headers:
+For a request to be allowed, it must include a header named `api-key` with the value set to the 
+API key we previously stored in our secret. Now let's add the authorization headers:
 
 ```shell
 curl -H "api-key: N2YwMDIxZTEtNGUzNS1jNzgzLTRkYjAtYjE2YzRkZGVmNjcy" -H "Host: foo" $(glooctl proxy url)/posts/1

@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix the default clustername in sds to match the name given in the docs.
+    issueLink: https://github.com/solo-io/gloo/issues/3573

@@ -9,8 +9,11 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
+
+	"github.com/gogo/protobuf/types"
 
 	"github.com/gogo/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -27,6 +30,7 @@ import (
 
 type ReceivedRequest struct {
 	Method      string
+	URL         *url.URL
 	Body        []byte
 	Host        string
 	GRPCRequest proto.Message
@@ -69,6 +73,7 @@ func NewTestGRPCUpstream(ctx context.Context, addr string, replicas int) *TestUp
 	}
 
 	us := newTestUpstream(addr, ports, received)
+	us.Upstream.UseHttp2 = &types.BoolValue{Value: true}
 	us.GrpcServers = grpcServices
 	return us
 }
@@ -135,6 +140,7 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 		}
 
 		rr.Host = r.Host
+		rr.URL = r.URL
 
 		bodyChan <- &rr
 	}

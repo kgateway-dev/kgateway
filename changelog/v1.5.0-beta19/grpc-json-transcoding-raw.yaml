@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >
+      Expose the raw envoy configuration for the gRPC to JSON transcoding filter, which can be leveraged to expose a
+      gRPC service both as a gRPC service and as a REST API. Exposing the underlying envoy configuration allows users
+      more granular control over the gRPC to JSON mappings than the current Gloo API for gRPC to JSON (that doesn't
+      require explicit protobuf descriptors to be provided since they will be discovered). One example where users
+      may want more granular control of their gRPC to JSON mappings may be to leverage query parameter transcoding.
+    issueLink: https://github.com/solo-io/gloo/issues/2188

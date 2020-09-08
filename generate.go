@@ -15,9 +15,9 @@ func main() {
 	protoImports := sk_anyvendor.CreateDefaultMatchOptions(
 		[]string{"projects/**/*.proto", sk_anyvendor.SoloKitMatchPattern},
 	)
-	// Import rate limit API
 	protoImports.External["github.com/solo-io/solo-apis"] = []string{
-		"api/**/*.proto",
+		"api/rate-limiter/**/*.proto", // Import rate limit API
+		"api/gloo-fed/fed/**/*.proto", // Import gloo fed gloo instance API
 	}
 	// Import gloo instance API dependencies
 	protoImports.External["github.com/solo-io/skv2"] = []string{

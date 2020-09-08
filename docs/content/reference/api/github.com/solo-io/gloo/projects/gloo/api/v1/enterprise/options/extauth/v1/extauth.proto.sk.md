@@ -30,6 +30,7 @@ weight: 5
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
 - [ApiKeyAuth](#apikeyauth)
+- [SecretKey](#secretkey)
 - [ApiKeySecret](#apikeysecret)
 - [OpaAuth](#opaauth)
 - [Ldap](#ldap)
@@ -39,6 +40,7 @@ weight: 5
 - [OidcAuthorizationCodeConfig](#oidcauthorizationcodeconfig)
 - [OAuth2Config](#oauth2config)
 - [ApiKeyAuthConfig](#apikeyauthconfig)
+- [KeyMetadata](#keymetadata)
 - [OpaAuthConfig](#opaauthconfig)
 - [Config](#config)
   
@@ -458,13 +460,36 @@ Deprecated: Prefer OAuth2
 ```yaml
 "labelSelector": map<string, string>
 "apiKeySecretRefs": []core.solo.io.ResourceRef
+"headerName": string
+"headersFromMetadata": map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `labelSelector` | `map<string, string>` | identify all valid apikey secrets using the provided label selector.<br/> apikey secrets must be in gloo's watch namespaces for gloo to locate them.<br/> **These are labels on the apikey secret's metadata, not the 'labels' field of the `ApiKeySecret`**. |  |
-| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | a way to reference apikey secrets individually (good for testing); prefer apikey groups via label selector. |  |
+| `labelSelector` | `map<string, string>` | Identify all valid API key secrets that match the provided label selector.<br/> API key secrets must be in one of the watch namespaces for gloo to locate them. |  |
+| `apiKeySecretRefs` | [[]core.solo.io.ResourceRef](../../../../../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | A way to directly reference API key secrets. This configuration can be useful for testing, but in general the more flexible label selector should be preferred. |  |
+| `headerName` | `string` | When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |  |
+| `headersFromMetadata` | `map<string, .enterprise.gloo.solo.io.ApiKeyAuth.SecretKey>` | API key secrets might contain additional data (e.g. the ID of the user that the API key belongs to) in the form of extra keys included in the secret's `data` field. This configuration can be used to add this data to the headers of successfully authenticated requests. Each key in the map represents the name of header to be added; the corresponding value determines the key in the secret data that will be inspected to determine the value for the header. |  |
+
+
+
+
+---
+### SecretKey
+
+
+
+```yaml
+"name": string
+"required": bool
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `name` | `string` | (Required) The key of the secret data entry to inspect. |  |
+| `required` | `bool` | If this field is set to `true`, Gloo will reject an API key secret that does not contain the given key. Defaults to `false`. In this case, if a secret does not contain the requested data, no header will be added to the request. |  |
 
 
 
@@ -478,14 +503,16 @@ Deprecated: Prefer OAuth2
 "generateApiKey": bool
 "apiKey": string
 "labels": []string
+"metadata": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `generateApiKey` | `bool` | if true, generate an apikey. |  |
-| `apiKey` | `string` | if present, use the provided apikey. |  |
-| `labels` | `[]string` | a list of labels (key=value) for the apikey secret.<br/> These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret. |  |
+| `generateApiKey` | `bool` | If true, generate an API key. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |  |
+| `apiKey` | `string` | The value of the API key. |  |
+| `labels` | `[]string` | A list of labels (key=value) for the apikey secret.<br/> These labels are used when creating an ApiKeySecret via `glooctl` and then are copied to the metadata of the created secret. This field is deprecated as it was used only internally by `glooctl` and is not actually part of the secret API. |  |
+| `metadata` | `map<string, string>` | If the secret data contains entries in addition to the API key one, they will be copied to this field. |  |
 
 
 
@@ -665,13 +692,36 @@ Deprecated, prefer OAuth2Config
 **NOTE: This configuration is not user-facing and will be auto generated**
 
 ```yaml
-"validApiKeyAndUser": map<string, string>
+"validApiKeys": map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>
+"headerName": string
+"headersFromKeyMetadata": map<string, string>
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `validApiKeyAndUser` | `map<string, string>` | A mapping of valid apikeys to their associated plaintext users. This map is automatically populated with the relevant `ApiKeySecret`s. The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |  |
+| `validApiKeys` | `map<string, .enterprise.gloo.solo.io.ExtAuthConfig.ApiKeyAuthConfig.KeyMetadata>` | A mapping of valid API keys to their associated metadata. This map is automatically populated with the information from the relevant `ApiKeySecret`s. |  |
+| `headerName` | `string` | (Optional) When receiving a request, the Gloo Enterprise external auth server will look for an API key in a header with this name. This field is optional; if not provided it defaults to `api-key`. |  |
+| `headersFromKeyMetadata` | `map<string, string>` | Determines the key metadata that will be included as headers on the upstream request. Each entry represents a header to add: the key is the name of the header, and the value is the key that will be used to look up the data entry in the key metadata. |  |
+
+
+
+
+---
+### KeyMetadata
+
+
+
+```yaml
+"username": string
+"metadata": map<string, string>
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `username` | `string` | The user is mapped as the name of `Secret` which contains the `ApiKeySecret`. |  |
+| `metadata` | `map<string, string>` | The metadata present on the `ApiKeySecret`. |  |
 
 
 

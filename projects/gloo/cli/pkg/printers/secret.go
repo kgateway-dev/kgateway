@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 
+	kubeconverters "github.com/solo-io/gloo/projects/gloo/pkg/api/converters/kube"
+	corev1 "k8s.io/api/core/v1"
+
 	"github.com/ghodss/yaml"
 	"github.com/olekukonko/tablewriter"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -57,13 +60,12 @@ func SecretTable(list v1.SecretList, w io.Writer) {
 	table.Render()
 }
 
-// note: prints secrets in the traditional way, without using plain secrets or a custom secret converter
 func printKubeSecret(ctx context.Context, in resources.Resource) error {
-	baseSecretClient, err := secretBaseClient(ctx, in)
+	kubeSecret, err := toKubeSecret(ctx, in)
 	if err != nil {
 		return err
 	}
-	kubeSecret, err := baseSecretClient.ToKubeSecret(ctx, in)
+
 	raw, err := yaml.Marshal(kubeSecret)
 	if err != nil {
 		return err
@@ -84,11 +86,22 @@ func printKubeSecretList(ctx context.Context, in resources.ResourceList) error {
 	return nil
 }
 
-func secretBaseClient(ctx context.Context, resourceType resources.Resource) (*kubesecret.ResourceClient, error) {
+func toKubeSecret(ctx context.Context, resource resources.Resource) (*corev1.Secret, error) {
 	clientset := fake.NewSimpleClientset()
 	coreCache, err := cache.NewKubeCoreCache(ctx, clientset)
 	if err != nil {
 		return nil, err
 	}
-	return kubesecret.NewResourceClient(clientset, resourceType, false, coreCache)
+	rc, err := kubesecret.NewResourceClient(clientset, resource, false, coreCache)
+	if err != nil {
+		return nil, err
+	}
+
+	// Try converters first
+	secret, err := kubeconverters.GlooSecretConverterChain.ToKubeSecret(ctx, rc, resource)
+	if err != nil || secret != nil {
+		return secret, err
+	}
+
+	return rc.ToKubeSecret(ctx, resource)
 }

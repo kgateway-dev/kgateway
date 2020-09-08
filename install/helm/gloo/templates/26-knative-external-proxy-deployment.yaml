@@ -21,6 +21,11 @@ spec:
     metadata:
       labels:
         gloo: knative-external-proxy
+        {{- if .Values.settings.integrations.knative.extraKnativeExternalLabels }}
+        {{- range $key, $value := .Values.settings.integrations.knative.extraKnativeExternalLabels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
     spec:
       containers:
       - args: ["--disable-hot-restart"]

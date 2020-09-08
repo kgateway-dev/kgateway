@@ -16,6 +16,30 @@ To successfully follow this Getting Started guide, you will need the following s
 * **Helm** - Used to deploy the Gloo Federation and Gloo charts.
 * **Glooctl** - Used to deploy the demonstration environment.
 
+{{% notice note %}}
+Gloo Enterprise version >= 1.5.0-beta4 is needed for failover.
+If you are using the demo command, that uses the latest version by default.
+{{% /notice %}}
+
+## Upgrading Gloo to use failover
+
+Failover can be enabled by setting following helm value: `gatewayProxies.NAME.failover.enabled=true`.
+
+An example Helm override file for installing Gloo with failover is:
+```yaml
+gatewayProxies:
+  gatewayProxy:
+    failover:
+      enabled: true
+    service:
+      type: NodePort
+```
+
+An example helm command to upgrade Gloo is:
+```
+helm upgrade gloo gloo/gloo --namespace gloo-system --values enable-failover.yaml
+```
+
 ## Deploy the demonstration environment
 
 We will use the `demo` command from  `glooctl` to set up the environment. The end result will be a fully functioning local environment running two Kubernetes clusters, Gloo Enterprise, and Gloo Federation. 
@@ -23,7 +47,7 @@ We will use the `demo` command from  `glooctl` to set up the environment. The en
 You can generate the demo environment by running the following command:
 
 ```
-glooctl demo federation --license <license key>
+glooctl demo federation --license-key <license key>
 ```
 
 You will need a license key to deploy the demonstration environment. You can request a key by visiting the [Solo.io website](https://solo.io).
