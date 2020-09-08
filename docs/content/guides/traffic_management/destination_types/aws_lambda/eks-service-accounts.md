@@ -36,6 +36,10 @@ After creating this role the following ENV variables need to be set for the rema
     * AWS_ROLE_ARN: The role ARN of the role created above.
     * $SECONDARY_AWS_ROLE_ARN(optional): A secondary role arn with lambda access.
 
+The ARN will be of the form: `arn:aws:iam::123456789012:user/Development/product_1234/*`
+For more info on ARNs see: https://docs.aws.amazon.com/general/latest/gr/aws-arns-and-namespaces.html
+
+
 ## Deploying Gloo
 
 As this feature is brand new, it is currently only available on a beta branch of gloo. The following 
