@@ -30,6 +30,12 @@ Actions for this tutorial to function properly.
     * lambda:GetFunction
     * lambda:InvokeAsync
 
+After creating this role the following ENV variables need to be set for the remainder of this demo
+
+    * AWS_REGION: The region in which the lambdas are located
+    * AWS_ROLE_ARN: The role ARN of the role created above.
+    * $SECONDARY_AWS_ROLE_ARN(optional): A secondary role arn with lambda access.
+
 ## Deploying Gloo
 
 As this feature is brand new, it is currently only available on a beta branch of gloo. The following 
@@ -158,7 +164,8 @@ spec:
 EOF
 ```
 
-Now we can go ahead and try our route!
+Now we can go ahead and try our route! The very first request will take slightly longer, as the STS credential request 
+must be performed in band. However, each subsequent request will be much quicker as the credentials will be cached.
 ```shell script
 curl -v $(glooctl proxy url)/lambda --data '"abc"' --request POST -H"content-type: application/json"
 Note: Unnecessary use of -X or --request, POST is already inferred.
@@ -202,5 +209,36 @@ spec:
     region: us-east-1
     roleArn: $SECONDARY_AWS_ROLE_ARN
 EOF
+```
+
+Now we can go ahead and try our route again! Everything should just work, notice that the request may take as long as 
+the initial request since the credentials for this ARN have not been cached yet.
+```shell script
+curl -v $(glooctl proxy url)/lambda --data '"abc"' --request POST -H"content-type: application/json"
+Note: Unnecessary use of -X or --request, POST is already inferred.
+*   Trying 3.129.77.154...
+* TCP_NODELAY set
+* Connected to <redacted> port 80 (#0)
+> POST /lambda HTTP/1.1
+> Host: <redacted>
+> User-Agent: curl/7.64.1
+> Accept: */*
+> content-type: application/json
+> Content-Length: 5
+>
+* upload completely sent off: 5 out of 5 bytes
+< HTTP/1.1 200 OK
+< date: Wed, 05 Aug 2020 17:59:58 GMT
+< content-type: application/json
+< content-length: 5
+< x-amzn-requestid: e5cc4545-2989-4105-a4b2-49707d654bce
+< x-amzn-remapped-content-length: 0
+< x-amz-executed-version: 1
+< x-amzn-trace-id: root=1-5f2af39e-5b3e38488ffeb5ec541107d4;sampled=0
+< x-envoy-upstream-service-time: 53
+< server: envoy
+<
+* Connection #0 to host <redacted> left intact
+"ABC"* Closing connection 0
 ```
 
