@@ -160,7 +160,7 @@ data:
           tcp_keepalive: {}
         type: STRICT_DNS
         respect_dns_ttl: true
-{{- if $global.glooMtls.enabled}}
+{{- if $global.glooMtls.enabled }}
         transport_socket:
           name: envoy.transport_sockets.tls
           typed_config:
@@ -183,7 +183,7 @@ data:
                     - envoy_grpc:
                         cluster_name: gateway_proxy_sds
 {{- end }}
-{{- if or $global.istioSDS.enabled $global.glooMtls.enabled}}
+{{- if or $global.istioSDS.enabled $global.glooMtls.enabled }}
       - name: gateway_proxy_sds
         connect_timeout: 0.25s
         http2_protocol_options: {}
