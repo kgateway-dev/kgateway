@@ -85,7 +85,7 @@ We can use `glooctl` to update our `gateway-proxy` deployment to handle Istio mT
 glooctl istio inject
 ```
 
-Under the hood, this will update the deployment to add the SDS server sidecar, as well as the istio-proxy to generate the mTLS certs. It will also update the `configMap` used by the `gateway-proxy` pod to bootstrap envoy, so that it has the SDS server listed in it's static_resources.
+Under the hood, this will update the deployment to add the SDS server sidecar, as well as the istio-proxy to generate the mTLS certs. It will also update the `configMap` used by the `gateway-proxy` pod to bootstrap envoy, so that it has the SDS server listed in its `static_resources`.
 
 The last configuration step is to configure the relevant Gloo Upstreams with mTLS. We can be fine-grained about which Upstreams have these settings as not all Gloo Upstreams may need/want mTLS enabled. This gives us the flexibility to route to Upstreams both with and without mTLS enabled - a common occurrence in a brown-field environment or during a migration to Istio.
 
