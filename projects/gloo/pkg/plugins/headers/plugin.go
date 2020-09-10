@@ -34,7 +34,14 @@ func (p *Plugin) ProcessWeightedDestination(params plugins.RouteParams, in *v1.W
 	if headerManipulation == nil {
 		return nil
 	}
-	envoyHeader, err := convertHeaderConfig(headerManipulation, &params.Snapshot.Secrets)
+	snapshot := params.Snapshot
+	var secrets *v1.SecretList
+	if snapshot == nil {
+		secrets = &v1.SecretList{}
+	} else {
+		secrets = &snapshot.Secrets
+	}
+	envoyHeader, err := convertHeaderConfig(headerManipulation, secrets)
 	if err != nil {
 		return err
 	}
@@ -54,7 +61,15 @@ func (p *Plugin) ProcessVirtualHost(params plugins.VirtualHostParams, in *v1.Vir
 		return nil
 	}
 
-	envoyHeader, err := convertHeaderConfig(headerManipulation, &params.Snapshot.Secrets)
+	snapshot := params.Snapshot
+	var secrets *v1.SecretList
+	if snapshot == nil {
+		secrets = &v1.SecretList{}
+	} else {
+		secrets = &snapshot.Secrets
+	}
+
+	envoyHeader, err := convertHeaderConfig(headerManipulation, secrets)
 	if err != nil {
 		return err
 	}
@@ -74,7 +89,14 @@ func (p *Plugin) ProcessRoute(params plugins.RouteParams, in *v1.Route, out *env
 		return nil
 	}
 
-	envoyHeader, err := convertHeaderConfig(headerManipulation, &params.Snapshot.Secrets)
+	snapshot := params.Snapshot
+	var secrets *v1.SecretList
+	if snapshot == nil {
+		secrets = &v1.SecretList{}
+	} else {
+		secrets = &snapshot.Secrets
+	}
+	envoyHeader, err := convertHeaderConfig(headerManipulation, secrets)
 	if err != nil {
 		return err
 	}
