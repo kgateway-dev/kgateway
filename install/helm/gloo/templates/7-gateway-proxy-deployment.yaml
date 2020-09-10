@@ -288,10 +288,10 @@ spec:
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
 {{- if $global.istioSDS.enabled }}
-{{- if $global.istioSDS.customIstioSidecar }}
-{{ toYaml $global.istioSDS.customIstioSidecar | indent 6}}
+{{- if $global.istioSDS.customSidecars }}
+{{ toYaml $global.istioSDS.customSidecars | indent 6}}
 {{- end }}
-{{- if not $global.istioSDS.customIstioSidecar }}
+{{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.6.8
         args:
