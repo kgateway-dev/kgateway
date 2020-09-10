@@ -84,6 +84,12 @@ spec:
   ...
 {{< /highlight >}}
 
+### ExtAuth with mTLS
+
+Production Gloo installations may require all communications between pods in a cluster to be encrypted; for most users, enabling [Gloo mTLS mode]({{< versioned_link_path fromRoot="/guides/security/tls/mtls" >}}) will be sufficient. When enabled, each container is deployed with an envoy sidecar that handles TLS connections.
+
+While co-located on the same hardware, these Envoy sidecars do technically require an extra network "hop" and may increase latency. For users that require mTLS with very strict latency requirements, we added mTLS support to the Gloo extauth service itself. As of Gloo Enterprise 1.4.11+ (1.5.0-beta9+), users can use kubernetes tls secrets (e.g. created by `glooctl create secret tls`) with the extauth container by enabling native extauth mTLS with the `global.extensions.extAuth.tlsEnabled=true` helm value. To configure Gloo to look for the TLS secret, you will need to set the `global.extensions.extAuth.secretName` helm value to a secret that lives in the same namespace as extauth.
+
 ### Auth Configuration Overview
 
 {{% notice info %}}
