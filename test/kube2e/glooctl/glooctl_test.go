@@ -63,9 +63,6 @@ var _ = Describe("Kube2e: glooctl", func() {
 			err = toggleStictModePetstore(true)
 			Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls strict mode on the petstore app")
 
-			// err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "apply", "-f", "https://raw.githubusercontent.com/solo-io/gloo/v1.4.12/example/petstore/petstore.yaml")
-			// Expect(err).NotTo(HaveOccurred(), "should be able to install petstore")
-
 			// Check that the endpoint works
 			co := helper.CurlOpts{
 				Protocol:          "http",
@@ -123,7 +120,8 @@ var _ = Describe("Kube2e: glooctl", func() {
 			err = toggleStictModePetstore(false)
 			Expect(err).NotTo(HaveOccurred(), "should be able to enable mtls permissive mode on the petstore app")
 
-			// Remove SDS config from the petstore upstream
+			// Remove SDS config from the petstore upstream.
+			// We do this by simply deleting the upstream. Then UDS will automatically re-create it, without the sslConfig changes we made.
 			err = exec.RunCommand(testHelper.RootDir, false, "kubectl", "delete", "-n", testHelper.InstallNamespace, "upstream", "default-petstore-8080")
 			Expect(err).NotTo(HaveOccurred(), "should be able to delete the petstore upstream")
 
