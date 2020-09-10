@@ -57,9 +57,7 @@ func Inject(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.C
 		Use:   "inject",
 		Short: "Enable SDS & istio-proxy sidecars in gateway-proxy pod",
 		Long: "Adds an istio-proxy sidecar to the gateway-proxy pod for mTLS certificate generation purposes. " +
-			"Also adds an sds sidecar to the gateway-proxy pod for mTLS certificate rotation purposes." +
-			"" +
-			"Usage: `glooctl istio inject [--version istio-version] [--namespace namespace]`",
+			"Also adds an sds sidecar to the gateway-proxy pod for mTLS certificate rotation purposes.",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},

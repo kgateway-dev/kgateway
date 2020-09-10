@@ -27,9 +27,7 @@ func EnableMTLS(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cob
 	cmd := &cobra.Command{
 		Use:   "enable-mtls",
 		Short: "Enables Istio mTLS for a given upstream",
-		Long: "Enables Istio mTLS for a given upstream. " +
-			"" +
-			"Usage: `glooctl istio enable-mtls [--upstream upstream] [--namespace namespace]`",
+		Long:  "Enables Istio mTLS for a given upstream, by adding an sslConfig which lets envoy know to get the certs via SDS",
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},
