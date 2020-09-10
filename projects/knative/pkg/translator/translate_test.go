@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/gogo/protobuf/types"
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
+
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/headers"
 
@@ -213,14 +216,8 @@ var _ = Describe("Translate", func() {
 													PerTryTimeout: durptr(1000),
 												},
 												HeaderManipulation: &headers.HeaderManipulation{
-													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														{
-															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
-															},
-														},
-													},
+													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}},
+														Append: &types.BoolValue{Value: true}}},
 												},
 											},
 										},
@@ -274,14 +271,8 @@ var _ = Describe("Translate", func() {
 													PerTryTimeout: durptr(1000),
 												},
 												HeaderManipulation: &headers.HeaderManipulation{
-													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														{
-															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
-															},
-														},
-													},
+													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}},
+														Append: &types.BoolValue{Value: true}}},
 												},
 											},
 										},
@@ -344,14 +335,8 @@ var _ = Describe("Translate", func() {
 													PerTryTimeout: durptr(1000),
 												},
 												HeaderManipulation: &headers.HeaderManipulation{
-													RequestHeadersToAdd: []*headers.HeaderValueOption{
-														{
-															Header: &headers.HeaderValue{
-																Key:   "add",
-																Value: "me",
-															},
-														},
-													},
+													RequestHeadersToAdd: []*envoycore_sk.HeaderValueOption{{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: "add", Value: "me"}},
+														Append: &types.BoolValue{Value: true}}},
 												},
 											},
 										},
