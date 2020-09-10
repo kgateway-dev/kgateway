@@ -3,11 +3,12 @@ package translator
 import (
 	"context"
 	"fmt"
-	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	"knative.dev/pkg/network"
 	"knative.dev/serving/pkg/apis/networking"
