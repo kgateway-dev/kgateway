@@ -3,6 +3,7 @@ package translator
 import (
 	"context"
 	"fmt"
+	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 	"sort"
 	"strconv"
 	"strings"
@@ -300,9 +301,9 @@ func getHeaderManipulation(headersToAppend map[string]string) *headers.HeaderMan
 	if len(headersToAppend) == 0 {
 		return nil
 	}
-	var headersToAdd []*headers.HeaderValueOption
+	var headersToAdd []*envoycore_sk.HeaderValueOption
 	for name, value := range headersToAppend {
-		headersToAdd = append(headersToAdd, &headers.HeaderValueOption{Header: &headers.HeaderValue{Key: name, Value: value}})
+		headersToAdd = append(headersToAdd, &envoycore_sk.HeaderValueOption{HeaderOption: &envoycore_sk.HeaderValueOption_Header{Header: &envoycore_sk.HeaderValue{Key: name, Value: value}}})
 	}
 	return &headers.HeaderManipulation{
 		RequestHeadersToAdd: headersToAdd,
