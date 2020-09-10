@@ -14,10 +14,9 @@ var ErrNoSupportedSidecar = errors.New("no valid istio sidecar found for this is
 // version of Istio, with the given jwtPolicy, to run
 // in the gateway-proxy pod
 func GetIstioSidecar(istioVersion, jwtPolicy string) (*corev1.Container, error) {
-	// TODO (shane): Placeholder - build out proper version checking logic here
-	if strings.Contains(istioVersion, "1.7.") {
+	if strings.HasPrefix(istioVersion, "1.7.") {
 		return generateIstio17Sidecar(istioVersion, jwtPolicy), nil
-	} else if strings.Contains(istioVersion, "1.6.") {
+	} else if strings.HasPrefix(istioVersion, "1.6.") {
 		return generateIstio16Sidecar(istioVersion, jwtPolicy), nil
 	}
 	return nil, ErrNoSupportedSidecar

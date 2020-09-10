@@ -288,8 +288,12 @@ spec:
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
 {{- if $global.istioSDS.enabled }}
+{{- if $global.istioSDS.customIstioSidecar }}
+{{ toYaml $global.istioSDS.customIstioSidecar | indent 6}}
+{{- end }}
+{{- if not $global.istioSDS.customIstioSidecar }}
       - name: istio-proxy
-        image: docker.io/istio/proxyv2:1.6.6 # TODO: (shane) Istio version as configured value
+        image: docker.io/istio/proxyv2:1.6.8
         args:
         - proxy
         - sidecar
@@ -382,6 +386,7 @@ spec:
           name: istio-certs
         - mountPath: /var/run/secrets/tokens
           name: istio-token 
+{{- end}}
 {{- end}}
       volumes:
       - configMap:

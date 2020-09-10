@@ -415,5 +415,6 @@ type EnvoySidecarContainer struct {
 }
 
 type IstioSDS struct {
-	Enabled bool `json:"enabled" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation`
+	Enabled            bool               `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation`
+	CustomIstioSidecar []appsv1.Container `json:"customIstioSidecar,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. If left unset, the default istio-proxy sidecar container will be used"`
 }
