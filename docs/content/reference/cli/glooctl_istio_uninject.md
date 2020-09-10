@@ -8,7 +8,7 @@ Remove SDS & istio-proxy sidecars from gateway-proxy pod
 
 ### Synopsis
 
-Removes the istio-proxy sidecar from the gateway-proxy pod. Also removes the sds sidecar from the gateway-proxy pod. Also removes the gateway_proxy_sds cluster from the gateway-proxy envoy bootstrap ConfigMap.Usage: `glooctl istio uninject [--namespace namespace]`
+Removes the istio-proxy sidecar from the gateway-proxy pod. Also removes the sds sidecar from the gateway-proxy pod. Also removes the gateway_proxy_sds cluster from the gateway-proxy envoy bootstrap ConfigMap.
 
 ```
 glooctl istio uninject [flags]

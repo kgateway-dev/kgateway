@@ -8,7 +8,7 @@ Enable SDS & istio-proxy sidecars in gateway-proxy pod
 
 ### Synopsis
 
-Adds an istio-proxy sidecar to the gateway-proxy pod for mTLS certificate generation purposes. Also adds an sds sidecar to the gateway-proxy pod for mTLS certificate rotation purposes.Usage: `glooctl istio inject [--version istio-version] [--namespace namespace]`
+Adds an istio-proxy sidecar to the gateway-proxy pod for mTLS certificate generation purposes. Also adds an sds sidecar to the gateway-proxy pod for mTLS certificate rotation purposes.
 
 ```
 glooctl istio inject [flags]

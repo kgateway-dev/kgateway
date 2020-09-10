@@ -8,7 +8,7 @@ Enables Istio mTLS for a given upstream
 
 ### Synopsis
 
-Enables Istio mTLS for a given upstream. Usage: `glooctl istio enable-mtls [--upstream upstream] [--namespace namespace]`
+Enables Istio mTLS for a given upstream, by adding an sslConfig which lets envoy know to get the certs via SDS
 
 ```
 glooctl istio enable-mtls [flags]
