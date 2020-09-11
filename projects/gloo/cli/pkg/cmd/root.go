@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/debug"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/demo"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation"
+	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/istio"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/plugin"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"k8s.io/kubernetes/pkg/kubectl/cmd"
@@ -110,6 +111,7 @@ func GlooCli() *cobra.Command {
 			dashboard.RootCmd(opts),
 			federation.RootCmd(opts),
 			plugin.RootCmd(opts),
+			istio.RootCmd(opts),
 			completionCmd(),
 		)
 	}

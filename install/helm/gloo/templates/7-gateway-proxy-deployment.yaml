@@ -223,19 +223,45 @@ spec:
           name: shared-data
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
 {{- end }} # $spec.extraContainersHelper
-{{- if $global.glooMtls.enabled }}
+{{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
         env:
-        - name: GLOO_MTLS_SDS_ENABLED
-          value: "true"
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+{{- if $global.glooMtls.enabled }}
+          - name: GLOO_MTLS_SDS_ENABLED
+            value: "true"
+{{- end }}
+{{- if $global.istioSDS.enabled }}
+          - name: ISTIO_MTLS_SDS_ENABLED
+            value: "true"
+{{- end }}
         volumeMounts:
+{{- if $global.glooMtls.enabled }}
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- end}} # $global.glooMtls.enabled
+{{- end }}
+{{- if $global.istioSDS.enabled }}
+        - mountPath: /etc/istio-certs/
+          name: istio-certs
+        - mountPath: /etc/envoy
+          name: envoy-config
+{{- end }}
+        ports:
+        - containerPort: 8234
+          name: sds
+          protocol: TCP
+{{- end }} # $global.glooMtls.enabled or $.Values.istioSDS.enabled
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
@@ -261,10 +287,132 @@ spec:
       {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
+{{- if $global.istioSDS.enabled }}
+{{- if $global.istioSDS.customSidecars }}
+{{ toYaml $global.istioSDS.customSidecars | indent 6}}
+{{- end }}
+{{- if not $global.istioSDS.customSidecars }}
+      - name: istio-proxy
+        image: docker.io/istio/proxyv2:1.6.8
+        args:
+        - proxy
+        - sidecar
+        - --domain
+        - $(POD_NAMESPACE).svc.cluster.local
+        - --configPath
+        - /etc/istio/proxy
+        - --binaryPath
+        - /usr/local/bin/envoy
+        - --serviceCluster
+        - istio-proxy-prometheus
+        - --drainDuration
+        - 45s
+        - --parentShutdownDuration
+        - 1m0s
+        - --discoveryAddress
+        - istio-pilot.istio-system.svc:15012
+        - --proxyLogLevel=warning
+        - --proxyComponentLogLevel=misc:error
+        - --connectTimeout
+        - 10s
+        - --proxyAdminPort
+        - "15000"
+        - --controlPlaneAuthPolicy
+        - NONE
+        - --dnsRefreshRate
+        - 300s
+        - --statusPort
+        - "15021"
+        - --trust-domain=cluster.local
+        - --controlPlaneBootstrap=false
+        env:
+          - name: OUTPUT_CERTS
+            value: "/etc/istio-certs"
+          - name: JWT_POLICY
+            value: third-party-jwt
+          - name: PILOT_CERT_PROVIDER
+            value: istiod
+          - name: CA_ADDR
+            value: istiod.istio-system.svc:15012
+          - name: ISTIO_META_MESH_ID
+            value: cluster.local
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: INSTANCE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: ISTIO_META_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: ISTIO_META_CONFIG_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+        imagePullPolicy: IfNotPresent
+        readinessProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /healthz/ready
+            port: 15021
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /var/run/secrets/istio
+          name: istiod-ca-cert
+        - mountPath: /etc/istio/proxy
+          name: istio-envoy
+        - mountPath: /etc/istio-certs/
+          name: istio-certs
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token 
+{{- end}}
+{{- end}}
       volumes:
       - configMap:
           name: {{ $name | kebabcase }}-envoy-config
         name: envoy-config
+{{- if $global.istioSDS.enabled }}
+      - name: istio-certs
+        emptyDir:
+          medium: Memory
+      - name: istiod-ca-cert
+        configMap:
+          defaultMode: 420
+          name: istio-ca-root-cert
+      - emptyDir:
+          medium: Memory
+        name: istio-envoy
+      - name: istio-token
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: istio-ca
+              expirationSeconds: 43200
+              path: istio-token
+{{- end}}
+
 {{- if $global.glooMtls.enabled }}
       - name: gloo-mtls-certs
         secret:

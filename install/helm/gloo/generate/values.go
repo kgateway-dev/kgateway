@@ -31,6 +31,7 @@ type Global struct {
 	Wasm       Wasm        `json:"wasm,omitempty"`
 	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
 	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
+	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
 }
 
 type Namespace struct {
@@ -411,4 +412,9 @@ type SdsContainer struct {
 
 type EnvoySidecarContainer struct {
 	Image *Image `json:"image,omitempty"`
+}
+
+type IstioSDS struct {
+	Enabled        bool          `json:"enabled,omitempty" desc:"Enables SDS cert-rotator sidecar for istio mTLS cert rotation`
+	CustomSidecars []interface{} `json:"customSidecars,omitempty" desc:"Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false"`
 }

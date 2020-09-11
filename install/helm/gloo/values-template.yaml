@@ -174,3 +174,5 @@ global:
     envoy:
       image:
         repository: gloo-envoy-wrapper
+  istioSDS:
+    enabled: false
