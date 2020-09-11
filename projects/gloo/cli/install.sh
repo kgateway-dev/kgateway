@@ -8,7 +8,7 @@ if ! [ -x "$(command -v python)" ]; then
  fi
 
 if [ -z "${GLOO_VERSION:-}" ]; then
-  GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python -c "import sys; from distutils.version import LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  releases.sort(key=LooseVersion, reverse=True); print('\n'.join(releases))")
+    GLOO_VERSIONS=$(curl -sH"Accept: application/vnd.github.v3+json" https://api.github.com/repos/solo-io/gloo/releases | python -c "import sys; from distutils.version import LooseVersion; from json import loads as l; releases = l(sys.stdin.read()); releases = [release['tag_name'] for release in releases];  releases.sort(key=LooseVersion, reverse=True); filtered_releases = list(filter(lambda version: version.find('beta') == -1, releases)); print('\n'.join(filtered_releases))")
 else
   GLOO_VERSIONS="${GLOO_VERSION}"
 fi
