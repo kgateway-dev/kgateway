@@ -29,7 +29,7 @@ var _ = Describe("Route converter", func() {
 					Routes: []*v1.Route{route},
 				},
 			}
-			rv := translator.NewRouteConverter(nil, nil)
+			rv := translator.NewRouteConverter(nil, nil, false)
 			_, err := rv.ConvertVirtualService(vs, reports)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -143,6 +143,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -180,6 +181,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -223,6 +225,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -275,6 +278,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 
@@ -329,6 +333,7 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 
@@ -396,6 +401,7 @@ var _ = Describe("Route converter", func() {
 			rv = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 		})
 
@@ -554,6 +560,150 @@ var _ = Describe("Route converter", func() {
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
 					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 				})
+
+				Context("inheritance mode", func() {
+					JustBeforeEach(func() {
+						rv = translator.NewRouteConverter(
+							translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+							translator.NewRouteTableIndexer(),
+							true,
+						)
+					})
+
+					FIt("accepts the route table if its parent has different headers but inheritance is on", func() {
+
+						mismatchedHeaders := []*matchers.HeaderMatcher{
+							{
+								Name:        "mismatchedheadername",
+								Value:       "mismatchedheaderval",
+								Regex:       false,
+								InvertMatch: false,
+							},
+						}
+
+						vs.VirtualHost.Routes[0].Matchers[0].Headers = mismatchedHeaders
+
+						rt.Routes[0].Matchers = []*matchers.Matcher{
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/bar",
+								},
+								Headers: headers,
+							},
+							{
+								PathSpecifier: &matchers.Matcher_Prefix{
+									Prefix: "/baz",
+								},
+								Headers: headers,
+							},
+						}
+
+						expectedHeaders := append(headers, mismatchedHeaders...)
+
+						rpt := reporter.ResourceReports{}
+						converted, err := rv.ConvertVirtualService(vs, rpt)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(converted).To(HaveLen(1))
+						Expect(rpt).To(HaveLen(0))
+
+						Expect(converted[0].Matchers).To(HaveLen(2))
+						Expect(converted[0].Matchers[0].Headers).To(ConsistOf(expectedHeaders))
+						Expect(converted[0].Matchers[1].Headers).To(ConsistOf(expectedHeaders))
+
+						// zero out headers since we asserted them above
+						// ConsistOf doesn't handle the nested objects, so we need to assert the headers for
+						// each matcher (above) separate from the matchers
+						converted[0].Matchers[0].Headers = nil
+						converted[0].Matchers[1].Headers = nil
+
+						Expect(converted[0].Matchers).To(ConsistOf(
+							[]*matchers.Matcher{
+								{
+									PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/bar"},
+									// asserted above
+									// Headers:       expectedHeaders,
+								},
+								{
+									PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/baz"},
+									// asserted above
+									// Headers:       expectedHeaders,
+								},
+							},
+						))
+					})
+
+					FIt("accepts the route table if its parent has different headers but inheritance is on -- nested route tables", func() {
+
+						mismatchedHeaders := []*matchers.HeaderMatcher{
+							{
+								Name:        "mismatchedheadername",
+								Value:       "mismatchedheaderval",
+								Regex:       false,
+								InvertMatch: false,
+							},
+						}
+
+						vs.VirtualHost.Routes[0].Matchers[0].Headers = mismatchedHeaders
+
+						rt = buildRouteTableWithDelegateAction("rt", "default", "/bar", nil,
+							&v1.DelegateAction{
+								DelegationType: &v1.DelegateAction_Ref{
+									Ref: &core.ResourceRef{
+										Name:      "rt-child",
+										Namespace: "default",
+									},
+								},
+							},
+						)
+						rt.Routes[0].Matchers[0].Headers = headers
+
+						rt2 := buildRouteTableWithDelegateAction("rt-child", "default", "/baz", nil,
+							&v1.DelegateAction{
+								DelegationType: &v1.DelegateAction_Ref{
+									Ref: &core.ResourceRef{
+										Name:      "rt-grandchild",
+										Namespace: "default",
+									},
+								},
+							},
+						)
+						rt3 := buildRouteTableWithSimpleAction("rt-grandchild", "default", "/quz", nil)
+
+						rv = translator.NewRouteConverter(
+							translator.NewRouteTableSelector(v1.RouteTableList{rt, rt2, rt3}),
+							translator.NewRouteTableIndexer(),
+							true,
+						)
+
+						expectedHeaders := append(headers, mismatchedHeaders...)
+
+						rpt := reporter.ResourceReports{}
+						converted, err := rv.ConvertVirtualService(vs, rpt)
+						Expect(err).NotTo(HaveOccurred())
+						Expect(converted).To(HaveLen(1))
+						Expect(rpt).To(HaveLen(0))
+
+						Expect(converted[0].Matchers).To(HaveLen(1))
+						Expect(converted[0].Matchers[0].Headers).To(ConsistOf(expectedHeaders))
+
+						// zero out headers since we asserted them above
+						// ConsistOf doesn't handle the nested objects, so we need to assert the headers for
+						// each matcher (above) separate from the matchers
+						converted[0].Matchers[0].Headers = nil
+
+						Expect(converted[0].Matchers).To(ConsistOf(
+							[]*matchers.Matcher{
+								{
+									PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/bar/baz/quz"},
+									// asserted above
+									// Headers:       expectedHeaders,
+								},
+							},
+						))
+					})
+
+				})
+
 			})
 
 		})
@@ -882,6 +1032,7 @@ var _ = Describe("Route converter", func() {
 			visitor = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(allRouteTables),
 				translator.NewRouteTableIndexer(),
+				false,
 			)
 		})
 
