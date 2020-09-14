@@ -212,4 +212,9 @@ var (
 		Use:   "list",
 		Short: "List available glooctl plugins",
 	}
+
+	ISTIO_COMMAND = cobra.Command{
+		Use:   "istio",
+		Short: "Commands for interacting with Istio in Gloo",
+	}
 )

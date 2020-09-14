@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    description: >-
+      Added improvements to the user experience for using gloo with Istio. Added helper commands for glooctl,
+      so that users can simply perform `glooctl istio inject` and `glooctl istio enable-mtls --upstream foo` 
+      in order to have Gloo and Istio up and running and communicating together over mTLS.
+    issueLink: https://github.com/solo-io/gloo/issues/3532

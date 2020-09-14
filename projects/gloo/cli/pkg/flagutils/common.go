@@ -108,3 +108,7 @@ func AddVaultSecretFlags(set *pflag.FlagSet, vault *options.Vault) {
 		return vaultClient, nil
 	}
 }
+
+func AddUpstreamFlag(set *pflag.FlagSet, strptr *string) {
+	set.StringVarP(strptr, "upstream", "u", "", "upstream for which the istio sslConfig needs to change")
+}
