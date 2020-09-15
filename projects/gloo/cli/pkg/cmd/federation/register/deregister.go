@@ -9,21 +9,21 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func Register(opts *options.Options) error {
+func Deregister(opts *options.Options) error {
 	ctx := context.Background()
-	registerOpts := opts.Cluster.Register
+	deregisterOpts := opts.Cluster.Deregister
 
 	clusterRegisterOpts := register.RegistrationOptions{
-		RemoteKubeCfgPath: registerOpts.RemoteKubeConfig,
-		RemoteKubeContext: registerOpts.RemoteContext,
-		APIServerAddress:  registerOpts.LocalClusterDomainOverride,
-		ClusterName:       registerOpts.ClusterName,
+		RemoteKubeCfgPath: deregisterOpts.RemoteKubeConfig,
+		RemoteKubeContext: deregisterOpts.RemoteContext,
+		APIServerAddress:  deregisterOpts.LocalClusterDomainOverride,
+		ClusterName:       deregisterOpts.ClusterName,
 		Namespace:         opts.Cluster.FederationNamespace,
-		RemoteNamespace:   registerOpts.RemoteNamespace,
+		RemoteNamespace:   deregisterOpts.RemoteNamespace,
 		ClusterRoles: []*v1.ClusterRole{
 			{
 				ObjectMeta: metav1.ObjectMeta{
-					Namespace: registerOpts.RemoteNamespace,
+					Namespace: deregisterOpts.RemoteNamespace,
 					Name:      "gloo-federation-controller",
 				},
 				Rules: glooFederationPolicyRules,
@@ -31,5 +31,5 @@ func Register(opts *options.Options) error {
 		},
 	}
 
-	return clusterRegisterOpts.RegisterCluster(ctx)
+	return clusterRegisterOpts.DeregisterCluster(ctx)
 }

@@ -2,15 +2,14 @@ package federation
 
 import (
 	"github.com/rotisserie/eris"
+	"github.com/solo-io/go-utils/cliutils"
+	"github.com/spf13/cobra"
+
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation/list"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation/register"
-	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/federation/unregister"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/cmd/options"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/constants"
 	"github.com/solo-io/gloo/projects/gloo/cli/pkg/prerun"
-
-	"github.com/solo-io/go-utils/cliutils"
-	"github.com/spf13/cobra"
 )
 
 var MissingSubcommandError = eris.New("please provide a subcommand")
@@ -33,8 +32,8 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	}
 
 	cmd.AddCommand(list.RootCmd(opts))
-	cmd.AddCommand(register.RootCmd(opts))
-	cmd.AddCommand(unregister.RootCmd(opts))
+	cmd.AddCommand(register.RegisterCmd(opts))
+	cmd.AddCommand(register.DeregisterCmd(opts))
 
 	cliutils.ApplyOptions(cmd, optionsFunc)
 	return cmd
