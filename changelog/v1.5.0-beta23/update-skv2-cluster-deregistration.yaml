@@ -1,0 +1,12 @@
+changelog:
+    - type: NEW_FEATURE
+      issueLink: https://github.com/solo-io/gloo/issues/3369
+      description: >
+        Change the `glooctl cluster unregister` command to `glooctl cluster deregister`.
+        The deregister command now deletes the service account, cluster role, and cluster
+        role binding created on the remote cluster during the cluster registration process.
+        Example usage is `glooctl cluster deregister --cluster-name kind-remote --remote-context kind-remote`.
+    - type: DEPENDENCY_BUMP
+      dependencyOwner: solo-io
+      dependencyRepo: skv2
+      dependencyTag: v0.8.1
