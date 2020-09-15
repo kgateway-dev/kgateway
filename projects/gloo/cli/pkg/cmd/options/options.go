@@ -422,7 +422,7 @@ type OpaAuth struct {
 type Cluster struct {
 	FederationNamespace string
 	Register            Register
-	Unregister          Unregister
+	Deregister          Register
 }
 
 type Register struct {
@@ -431,8 +431,4 @@ type Register struct {
 	ClusterName                string
 	LocalClusterDomainOverride string
 	RemoteNamespace            string
-}
-
-type Unregister struct {
-	ClusterName string
 }
