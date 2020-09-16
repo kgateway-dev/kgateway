@@ -240,11 +240,11 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	}
 
 	if errs != nil {
-		contextutils.LoggerFrom(ctx).Debugw("Rejected %T %v: %v", resource, ref, errs)
+		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", resource, ref, errs)
 		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
-	contextutils.LoggerFrom(ctx).Debugw("Accepted %T %v", resource, ref)
+	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
 
 	if !dryRun {
 		// update internal snapshot to handle race where a lot of resources may be applied at once, before syncer updates
