@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3589
+    description: Change the tutorial install script to install the latest stable version, instead of possibly installing beta releases.
+    
