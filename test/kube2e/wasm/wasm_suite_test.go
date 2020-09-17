@@ -104,9 +104,11 @@ gloo:
 }
 
 func TearDownTestHelper() {
-	Expect(testHelper).ToNot(BeNil())
-	err := testHelper.UninstallGloo()
-	Expect(err).NotTo(HaveOccurred())
-	_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
-	Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	if os.Getenv("TEAR_DOWN") == "true" {
+		Expect(testHelper).ToNot(BeNil())
+		err := testHelper.UninstallGloo()
+		Expect(err).NotTo(HaveOccurred())
+		_, err = kube2e.MustKubeClient().CoreV1().Namespaces().Get(testHelper.InstallNamespace, metav1.GetOptions{})
+		Expect(apierrors.IsNotFound(err)).To(BeTrue())
+	}
 }
