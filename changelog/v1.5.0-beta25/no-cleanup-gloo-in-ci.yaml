@@ -1,0 +1,3 @@
+changelog:
+  - type: NON_USER_FACING
+    description: Gate cleanup logic so it doesn't run in CI since uninstall is slow and ci clusters are ephemeral
