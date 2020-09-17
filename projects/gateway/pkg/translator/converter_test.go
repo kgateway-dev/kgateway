@@ -338,6 +338,197 @@ var _ = Describe("Route converter", func() {
 			Expect(converted[1].Name).To(Equal(""))
 			Expect(converted[2].Name).To(Equal("vs:vs1_route:<unnamed>_rt:any_route:routeAction"))
 		})
+
+		Context("inheritance mode", func() {
+
+			var (
+				rtOnlyHeaders []*matchers.HeaderMatcher
+				vsOnlyHeaders []*matchers.HeaderMatcher
+				vs            *v1.VirtualService
+				rt            *v1.RouteTable
+				rv            translator.RouteConverter
+			)
+
+			BeforeEach(func() {
+				rtOnlyHeaders = []*matchers.HeaderMatcher{
+					{
+						Name:        "headername",
+						Value:       "headerval",
+						Regex:       false,
+						InvertMatch: false,
+					},
+				}
+				vsOnlyHeaders = []*matchers.HeaderMatcher{
+					{
+						Name:        "mismatchedheadername",
+						Value:       "mismatchedheaderval",
+						Regex:       false,
+						InvertMatch: false,
+					},
+				}
+
+				rt = &v1.RouteTable{
+					Metadata: core.Metadata{
+						Name:      "rt",
+						Namespace: "default",
+					},
+					Routes: []*v1.Route{{
+						Name: "route-1",
+						Action: &v1.Route_DirectResponseAction{
+							DirectResponseAction: &gloov1.DirectResponseAction{
+								Status: 200,
+								Body:   "foo",
+							},
+						},
+					}},
+				}
+
+				vs = &v1.VirtualService{
+					Metadata: core.Metadata{
+						Name:      "vs",
+						Namespace: "default",
+					},
+					VirtualHost: &v1.VirtualHost{
+						Routes: []*v1.Route{
+							{
+								Matchers: []*matchers.Matcher{{
+									Headers: vsOnlyHeaders,
+									PathSpecifier: &matchers.Matcher_Prefix{
+										Prefix: "/foo",
+									},
+								}},
+								InheritableMatchers: &types.BoolValue{Value: true},
+								Action: &v1.Route_DelegateAction{
+									DelegateAction: &v1.DelegateAction{
+										DelegationType: &v1.DelegateAction_Ref{
+											Ref: &core.ResourceRef{
+												Name:      "rt",
+												Namespace: "default",
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				}
+
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt}),
+					translator.NewRouteTableIndexer(),
+				)
+			})
+
+			It("accepts the route table if its parent has different headers but inheritance is on", func() {
+
+				rt.Routes[0].Matchers = []*matchers.Matcher{
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/foo/bar",
+						},
+						Headers: rtOnlyHeaders,
+					},
+					{
+						PathSpecifier: &matchers.Matcher_Prefix{
+							Prefix: "/foo/baz",
+						},
+						Headers: rtOnlyHeaders,
+					},
+				}
+
+				expectedHeaders := append(rtOnlyHeaders, vsOnlyHeaders...)
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				Expect(rpt).To(HaveLen(0))
+
+				Expect(converted[0].Matchers).To(HaveLen(2))
+				Expect(converted[0].Matchers[0].Headers).To(ConsistOf(expectedHeaders))
+				Expect(converted[0].Matchers[1].Headers).To(ConsistOf(expectedHeaders))
+
+				// zero out headers since we asserted them above
+				// ConsistOf doesn't handle the nested objects, so we need to assert the headers for
+				// each matcher (above) separate from the matchers
+				converted[0].Matchers[0].Headers = nil
+				converted[0].Matchers[1].Headers = nil
+
+				Expect(converted[0].Matchers).To(BeEquivalentTo(
+					[]*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/bar"},
+							// asserted above
+							//Headers:       expectedHeaders,
+						},
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/baz"},
+							// asserted above
+							//Headers:       expectedHeaders,
+						},
+					},
+				))
+			})
+
+			It("accepts the route table if its parent has different headers but inheritance is on -- nested route tables", func() {
+
+				rt = buildRouteTableWithDelegateAction("rt", "default", "/foo/bar", nil,
+					&v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "rt-child",
+								Namespace: "default",
+							},
+						},
+					},
+				)
+				rt.Routes[0].Matchers[0].Headers = rtOnlyHeaders
+
+				rt2 := buildRouteTableWithDelegateAction("rt-child", "default", "/foo/bar/baz", nil,
+					&v1.DelegateAction{
+						DelegationType: &v1.DelegateAction_Ref{
+							Ref: &core.ResourceRef{
+								Name:      "rt-grandchild",
+								Namespace: "default",
+							},
+						},
+					},
+				)
+				rt3 := buildRouteTableWithSimpleAction("rt-grandchild", "default", "/foo/bar/baz/quz", nil)
+
+				rv = translator.NewRouteConverter(
+					translator.NewRouteTableSelector(v1.RouteTableList{rt, rt2, rt3}),
+					translator.NewRouteTableIndexer(),
+				)
+
+				expectedHeaders := append(rtOnlyHeaders, vsOnlyHeaders...)
+
+				rpt := reporter.ResourceReports{}
+				converted, err := rv.ConvertVirtualService(vs, rpt)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(converted).To(HaveLen(1))
+				Expect(rpt).To(HaveLen(0))
+
+				Expect(converted[0].Matchers).To(HaveLen(1))
+				Expect(converted[0].Matchers[0].Headers).To(ConsistOf(expectedHeaders))
+
+				// zero out headers since we asserted them above
+				// ConsistOf doesn't handle the nested objects, so we need to assert the headers for
+				// each matcher (above) separate from the matchers
+				converted[0].Matchers[0].Headers = nil
+
+				Expect(converted[0].Matchers).To(ConsistOf(
+					[]*matchers.Matcher{
+						{
+							PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/bar/baz/quz"},
+							// asserted above
+							// Headers:       expectedHeaders,
+						},
+					},
+				))
+			})
+
+		})
 	})
 
 	When("bad route table config", func() {
@@ -554,6 +745,7 @@ var _ = Describe("Route converter", func() {
 					_, rtReport := rpt.Find("*v1.RouteTable", rt.Metadata.Ref())
 					Expect(rtReport.Errors).To(MatchError(ContainSubstring(expectedErr)))
 				})
+
 			})
 
 		})
