@@ -29,7 +29,7 @@ var _ = Describe("Route converter", func() {
 					Routes: []*v1.Route{route},
 				},
 			}
-			rv := translator.NewRouteConverter(nil, nil, false)
+			rv := translator.NewRouteConverter(nil, nil)
 			_, err := rv.ConvertVirtualService(vs, reports)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -143,7 +143,6 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -181,7 +180,6 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -225,7 +223,6 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 			Expect(err).NotTo(HaveOccurred())
@@ -278,7 +275,6 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 
@@ -333,7 +329,6 @@ var _ = Describe("Route converter", func() {
 			rv := translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{&rt}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 			converted, err := rv.ConvertVirtualService(vs, rpt)
 
@@ -401,7 +396,6 @@ var _ = Describe("Route converter", func() {
 			rv = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(v1.RouteTableList{rt}),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 		})
 
@@ -562,15 +556,8 @@ var _ = Describe("Route converter", func() {
 				})
 
 				Context("inheritance mode", func() {
-					JustBeforeEach(func() {
-						rv = translator.NewRouteConverter(
-							translator.NewRouteTableSelector(v1.RouteTableList{rt}),
-							translator.NewRouteTableIndexer(),
-							true,
-						)
-					})
 
-					FIt("accepts the route table if its parent has different headers but inheritance is on", func() {
+					It("accepts the route table if its parent has different headers but inheritance is on", func() {
 
 						mismatchedHeaders := []*matchers.HeaderMatcher{
 							{
@@ -582,17 +569,18 @@ var _ = Describe("Route converter", func() {
 						}
 
 						vs.VirtualHost.Routes[0].Matchers[0].Headers = mismatchedHeaders
+						vs.VirtualHost.Routes[0].InheritableMatchers = &types.BoolValue{Value: true}
 
 						rt.Routes[0].Matchers = []*matchers.Matcher{
 							{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/bar",
+									Prefix: "/foo/bar",
 								},
 								Headers: headers,
 							},
 							{
 								PathSpecifier: &matchers.Matcher_Prefix{
-									Prefix: "/baz",
+									Prefix: "/foo/baz",
 								},
 								Headers: headers,
 							},
@@ -616,23 +604,23 @@ var _ = Describe("Route converter", func() {
 						converted[0].Matchers[0].Headers = nil
 						converted[0].Matchers[1].Headers = nil
 
-						Expect(converted[0].Matchers).To(ConsistOf(
+						Expect(converted[0].Matchers).To(BeEquivalentTo(
 							[]*matchers.Matcher{
 								{
 									PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/bar"},
 									// asserted above
-									// Headers:       expectedHeaders,
+									//Headers:       expectedHeaders,
 								},
 								{
 									PathSpecifier: &matchers.Matcher_Prefix{Prefix: "/foo/baz"},
 									// asserted above
-									// Headers:       expectedHeaders,
+									//Headers:       expectedHeaders,
 								},
 							},
 						))
 					})
 
-					FIt("accepts the route table if its parent has different headers but inheritance is on -- nested route tables", func() {
+					It("accepts the route table if its parent has different headers but inheritance is on -- nested route tables", func() {
 
 						mismatchedHeaders := []*matchers.HeaderMatcher{
 							{
@@ -644,8 +632,9 @@ var _ = Describe("Route converter", func() {
 						}
 
 						vs.VirtualHost.Routes[0].Matchers[0].Headers = mismatchedHeaders
+						vs.VirtualHost.Routes[0].InheritableMatchers = &types.BoolValue{Value: true}
 
-						rt = buildRouteTableWithDelegateAction("rt", "default", "/bar", nil,
+						rt = buildRouteTableWithDelegateAction("rt", "default", "/foo/bar", nil,
 							&v1.DelegateAction{
 								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
@@ -657,7 +646,7 @@ var _ = Describe("Route converter", func() {
 						)
 						rt.Routes[0].Matchers[0].Headers = headers
 
-						rt2 := buildRouteTableWithDelegateAction("rt-child", "default", "/baz", nil,
+						rt2 := buildRouteTableWithDelegateAction("rt-child", "default", "/foo/bar/baz", nil,
 							&v1.DelegateAction{
 								DelegationType: &v1.DelegateAction_Ref{
 									Ref: &core.ResourceRef{
@@ -667,12 +656,11 @@ var _ = Describe("Route converter", func() {
 								},
 							},
 						)
-						rt3 := buildRouteTableWithSimpleAction("rt-grandchild", "default", "/quz", nil)
+						rt3 := buildRouteTableWithSimpleAction("rt-grandchild", "default", "/foo/bar/baz/quz", nil)
 
 						rv = translator.NewRouteConverter(
 							translator.NewRouteTableSelector(v1.RouteTableList{rt, rt2, rt3}),
 							translator.NewRouteTableIndexer(),
-							true,
 						)
 
 						expectedHeaders := append(headers, mismatchedHeaders...)
@@ -1032,7 +1020,6 @@ var _ = Describe("Route converter", func() {
 			visitor = translator.NewRouteConverter(
 				translator.NewRouteTableSelector(allRouteTables),
 				translator.NewRouteTableIndexer(),
-				false,
 			)
 		})
 

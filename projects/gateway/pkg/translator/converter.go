@@ -60,11 +60,10 @@ type RouteConverter interface {
 	ConvertVirtualService(virtualService *gatewayv1.VirtualService, reports reporter.ResourceReports) ([]*gloov1.Route, error)
 }
 
-func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer, inheritance bool) RouteConverter {
+func NewRouteConverter(selector RouteTableSelector, indexer RouteTableIndexer) RouteConverter {
 	return &routeVisitor{
 		routeTableSelector: selector,
 		routeTableIndexer:  indexer,
-		inheritance:        inheritance,
 	}
 }
 
@@ -100,21 +99,20 @@ type routeVisitor struct {
 	routeTableSelector RouteTableSelector
 	// Used to sort route tables when multiple ones are matched by a selector.
 	routeTableIndexer RouteTableIndexer
-	// inheritance mode
-	inheritance bool
 }
 
 // Helper object used to store information about previously visited routes.
 type routeInfo struct {
 	// The matcher for the route
 	matcher *matchersv1.Matcher
-
 	// The options on the route.
 	options *gloov1.RouteOptions
 	// Used to build the name of the route as we traverse the tree.
 	name string
 	// Is true if any route on the current route tree branch is explicitly named by the user.
 	hasName bool
+	// Whether any child route objects should inherit headers, methods, and query param matchers from the parent.
+	inheritableMatchers bool
 }
 
 // Helper object for reporting errors and warnings
@@ -176,7 +174,7 @@ func (rv *routeVisitor) visit(
 		// If the parent route is not nil, this route has been delegated to and we need to perform additional operations
 		if parentRoute != nil {
 			var err error
-			routeClone, err = rv.validateAndMergeParentRoute(routeClone, parentRoute)
+			routeClone, err = validateAndMergeParentRoute(routeClone, parentRoute)
 			if err != nil {
 				reporterHelper.addError(resource.InputResource(), err)
 				continue
@@ -226,10 +224,11 @@ func (rv *routeVisitor) visit(
 
 					// Collect information about this route that are relevant when visiting the delegated route table
 					currentRouteInfo := &routeInfo{
-						matcher: delegateMatcher,
-						options: routeClone.Options,
-						name:    name,
-						hasName: routeHasName,
+						matcher:             delegateMatcher,
+						options:             routeClone.Options,
+						name:                name,
+						hasName:             routeHasName,
+						inheritableMatchers: routeClone.InheritableMatchers.GetValue(),
 					}
 
 					// Make a copy of the existing set of visited route tables. We need to pass this information into
@@ -398,21 +397,27 @@ func getDelegateRouteMatcher(route *gatewayv1.Route) (*matchersv1.Matcher, error
 	}
 }
 
-func (rv *routeVisitor) validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
+func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
 
-	// Verify that the matchers are compatible with the parent prefix
-	if err := rv.isRouteTableValidForDelegateMatcher(parent.matcher, child); err != nil {
-		return nil, err
+	// inherit inheritance config from parent if unset
+	if child.InheritableMatchers == nil {
+		child.InheritableMatchers = &types.BoolValue{
+			Value: parent.inheritableMatchers,
+		}
 	}
 
-	// inherit rt config from parent
-	if rv.inheritance {
+	// inherit route table config from parent
+	if parent.inheritableMatchers {
 		for _, childMatch := range child.Matchers {
-			childMatch.PathSpecifier = &matchersv1.Matcher_Prefix{Prefix: parent.matcher.GetPrefix() + glooutils.PathAsString(childMatch)}
 			childMatch.Headers = append(parent.matcher.Headers, childMatch.Headers...)
 			childMatch.Methods = append(parent.matcher.Methods, childMatch.Methods...)
 			childMatch.QueryParameters = append(parent.matcher.QueryParameters, childMatch.QueryParameters...)
 		}
+	}
+
+	// Verify that the matchers are compatible with the parent prefix
+	if err := isRouteTableValidForDelegateMatcher(parent.matcher, child); err != nil {
+		return nil, err
 	}
 
 	// Merge plugins from parent routes
@@ -427,12 +432,7 @@ func (rv *routeVisitor) validateAndMergeParentRoute(child *gatewayv1.Route, pare
 	return child, nil
 }
 
-func (rv *routeVisitor) isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, childRoute *gatewayv1.Route) error {
-
-	if rv.inheritance {
-		// everything is valid if we automatically build on and inherit parent config
-		return nil
-	}
+func isRouteTableValidForDelegateMatcher(parentMatcher *matchersv1.Matcher, childRoute *gatewayv1.Route) error {
 
 	// If the route has no matchers, we fall back to the default prefix matcher like for regular routes.
 	// In these case, we only accept it if the parent also uses the default matcher.
