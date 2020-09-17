@@ -83,6 +83,8 @@ weight: 5
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
 "customInterventionMessage": string
 "auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
+"requestHeadersOnly": bool
+"responseHeadersOnly": bool
 "regressionLogs": bool
 
 ```
@@ -93,6 +95,8 @@ weight: 5
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Global rule sets for the current http connection manager. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../waf.proto.sk/#auditlogging) | This instructs the filter what to do with the transaction's audit log. |  |
+| `requestHeadersOnly` | `bool` | If set, the body will not be buffered and fed to ModSecurity. Only the headers will. This can help improve performance. |  |
+| `responseHeadersOnly` | `bool` |  |  |
 | `regressionLogs` | `bool` | log in a format suited for the OWASP regression tests. this format is a multiline log format, so it is disabled for regular use. do not enable this in production!. |  |
 
 
@@ -129,6 +133,8 @@ weight: 5
 "ruleSets": []envoy.config.filter.http.modsecurity.v2.RuleSet
 "customInterventionMessage": string
 "auditLogging": .envoy.config.filter.http.modsecurity.v2.AuditLogging
+"requestHeadersOnly": bool
+"responseHeadersOnly": bool
 
 ```
 
@@ -138,6 +144,8 @@ weight: 5
 | `ruleSets` | [[]envoy.config.filter.http.modsecurity.v2.RuleSet](../waf.proto.sk/#ruleset) | Overwrite the global rules on this route. |  |
 | `customInterventionMessage` | `string` | Custom message to display when an intervention occurs. |  |
 | `auditLogging` | [.envoy.config.filter.http.modsecurity.v2.AuditLogging](../waf.proto.sk/#auditlogging) | This instructs the filter what to do with the transaction's audit log. |  |
+| `requestHeadersOnly` | `bool` | If set, the body will not be buffered and fed to ModSecurity. Only the headers will. This can help improve performance. |  |
+| `responseHeadersOnly` | `bool` |  |  |
 
 
 
