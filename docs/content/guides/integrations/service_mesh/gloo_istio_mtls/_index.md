@@ -416,6 +416,7 @@ status:
 (...)
 {{< /highlight >}}
 
+##### Upstream changes
 Finally, running `glooctl istio enable-mtls --upstream default-productpage-9080` adds the `sslConfig` to our upstream so that Envoy knows to get the certs via SDS:
 
 {{< highlight yaml "hl_lines=17-24" >}}
