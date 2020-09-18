@@ -1,0 +1,6 @@
+changelog:
+- type: NEW_FEATURE
+  description: >-
+    Generate standard Kubernetes `go` types and clients for `AuthConfig` custom resources so users can programmatically
+    manage these objects without having to use our solo-kit based clients.
+  issueLink: https://github.com/solo-io/gloo/issues/3643
