@@ -1,0 +1,11 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3641
+    description: >
+      Fix a bug that was causing `glooctl istio inject` to use
+      the wrong version for the SDS sidecar in GlooE environments.
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3640
+    description: >
+      Update istio mTLS docs to note what YAML changes that
+      glooctl istio inject does under the hood.

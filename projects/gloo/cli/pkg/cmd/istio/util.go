@@ -16,6 +16,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+// List of pods in which we could find the Gloo (OS) version
+var glooOSPods = map[string]bool{
+	"gateway":   true,
+	"ingress":   true,
+	"discovery": true,
+}
+
 func envoyConfigFromString(config string) (envoy_config_bootstrap.Bootstrap, error) {
 	var bootstrapConfig envoy_config_bootstrap.Bootstrap
 	bootstrapConfig, err := unmarshalYAMLConfig(config)
@@ -83,15 +90,17 @@ func getGlooVersion(namespace string) (string, error) {
 		return "", err
 	}
 
+	// For each deployment
 	for _, deployment := range deployments.Items {
-		if deployment.Name == "gloo" {
+		// If it's a Gloo OS pod
+		if _, ok := glooOSPods[deployment.Name]; ok {
 			containers := deployment.Spec.Template.Spec.Containers
+			// Grab the container named the same as deploy (in case of eg istio sidecars)
 			for _, container := range containers {
-				if container.Name == "gloo" {
+				if container.Name == deployment.Name {
 					return getImageVersion(container)
 				}
 			}
-
 		}
 	}
 	return "", ErrGlooVerUndetermined
