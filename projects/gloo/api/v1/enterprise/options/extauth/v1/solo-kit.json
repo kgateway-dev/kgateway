@@ -1,4 +1,13 @@
 {
   "name": "enterprise.gloo.solo.io",
-  "version": "v1"
+  "version": "v1",
+  "gen_kube_types": true,
+  "resource_groups": {
+    "enterprise.gloo.solo.io": [
+      {
+        "name": "AuthConfig",
+        "package": "enterprise.gloo.solo.io"
+      }
+    ]
+  }
 }
