@@ -7,6 +7,7 @@ option (gogoproto.equal_all) = true;
 import "extproto/ext.proto";
 option (extproto.hash_all) = true;
 
+import "google/protobuf/wrappers.proto";
 import "solo-kit/api/v1/metadata.proto";
 import "solo-kit/api/v1/status.proto";
 import "solo-kit/api/v1/ref.proto";
@@ -186,6 +187,10 @@ message Route {
     // If empty, the route will match all requests (i.e, a single "/" path prefix matcher)
     // For delegated routes, the matcher must contain only a `prefix` path matcher and no other config
     repeated matchers.core.gloo.solo.io.Matcher matchers = 1;
+
+    // Whether any child route objects should inherit headers, methods, and query parameter matchers from the parent.
+    // Defaults to value of parent; for virtual services (no parent) defaults to false.
+    google.protobuf.BoolValue inheritable_matchers = 8;
 
     // The Route Action Defines what action the proxy should take when a request matches the route.
     oneof action {

@@ -312,7 +312,7 @@ You can specify three types of selection criteria (`labels` and `expressions` ca
 
 1. `labels`: if present, Gloo will select route tables whose labels match the specified ones;
 1. `expressions`: if present, Gloo will select according to the expression (adhering to the same semantics as [kubernetes label selectors](https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/#equality-based-requirement)).
-An example config for this selection model follows [here](#route-table-selector-expression).;
+An example config for this selection model follows [here](#route-table-selector-expression);
 1. `namespaces`: if present, Gloo will select route tables in these namespaces. If omitted, Gloo will only select route 
 tables in the same namespace as the resource (Virtual Service or Route Table) that owns this selector. The reserved 
 value `*` can be used to select Route Tables in all namespaces watched by Gloo.
@@ -478,7 +478,7 @@ Note that candidate route tables must match **all** selector expressions (logica
 
 #### Route Table weight
 As you might have noticed, we specified a `weight` attribute on the above route tables. This attribute can be used 
-to determine the order in which the routes will appear on the final Proxy resource when multiple route tables match 
+to determine the order in which the routes will appear on the final `Proxy` resource when multiple route tables match 
 a `RouteTableSelector`. The field is optional; if no value is specified, the `weight` defaults to 0 (zero). 
 Gloo will process the route tables matched by a selector in ascending order by weight and collect the routes of each 
 route table in the order they are defined. 
@@ -488,13 +488,17 @@ the former; hence, we set the weight of the `a-b-routes` table to `10` and the w
 As you can see in the diagram above, the resulting `Proxy` object defines the routes in the desired order.
 
 #### Matcher restrictions
-The Gloo route table configuration model imposes some restrictions on the virtual service and parent route table's
+The Gloo route delegation model imposes some restrictions on the virtual service and parent route table's
 matchers (i.e., any resource delegating routing config to another route table). Most notably, parent matchers must have
-only a single prefix matcher.
+only a single prefix matcher. Further, any parent matcher must have its own prefix start with the same prefix as _its_
+parent (if any).
 
 Further, in versions prior to **Gloo 1.5.0-beta21**, parent matchers cannot use header, query parameter, or method matchers.
 In more recent Gloo versions, parent matchers can now use those matchers so long as their child route tables have
-headers, query parameters, and methods that are a superset of those defined on the parent.
+headers, query parameters, and methods that are a superset of those defined on the parent. In Gloo versions
+**Gloo 1.5.0-beta25** and higher, the `inheritableMatchers` boolean field was added to virtual services and route
+tables, which allows users to enable matcher inheritance for non-path matchers from parents (rather than requiring the
+whole subset enumerated on any chlidren).
 
 In all versions of Gloo, the leaf route table can use any kind of path matcher, so long as it begins with the same prefix
 as its parent.

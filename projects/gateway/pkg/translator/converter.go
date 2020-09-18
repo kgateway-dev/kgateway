@@ -105,13 +105,14 @@ type routeVisitor struct {
 type routeInfo struct {
 	// The matcher for the route
 	matcher *matchersv1.Matcher
-
 	// The options on the route.
 	options *gloov1.RouteOptions
 	// Used to build the name of the route as we traverse the tree.
 	name string
 	// Is true if any route on the current route tree branch is explicitly named by the user.
 	hasName bool
+	// Whether any child route objects should inherit headers, methods, and query param matchers from the parent.
+	inheritableMatchers bool
 }
 
 // Helper object for reporting errors and warnings
@@ -223,10 +224,11 @@ func (rv *routeVisitor) visit(
 
 					// Collect information about this route that are relevant when visiting the delegated route table
 					currentRouteInfo := &routeInfo{
-						matcher: delegateMatcher,
-						options: routeClone.Options,
-						name:    name,
-						hasName: routeHasName,
+						matcher:             delegateMatcher,
+						options:             routeClone.Options,
+						name:                name,
+						hasName:             routeHasName,
+						inheritableMatchers: routeClone.InheritableMatchers.GetValue(),
 					}
 
 					// Make a copy of the existing set of visited route tables. We need to pass this information into
@@ -396,6 +398,22 @@ func getDelegateRouteMatcher(route *gatewayv1.Route) (*matchersv1.Matcher, error
 }
 
 func validateAndMergeParentRoute(child *gatewayv1.Route, parent *routeInfo) (*gatewayv1.Route, error) {
+
+	// inherit inheritance config from parent if unset
+	if child.InheritableMatchers == nil {
+		child.InheritableMatchers = &types.BoolValue{
+			Value: parent.inheritableMatchers,
+		}
+	}
+
+	// inherit route table config from parent
+	if parent.inheritableMatchers {
+		for _, childMatch := range child.Matchers {
+			childMatch.Headers = append(parent.matcher.Headers, childMatch.Headers...)
+			childMatch.Methods = append(parent.matcher.Methods, childMatch.Methods...)
+			childMatch.QueryParameters = append(parent.matcher.QueryParameters, childMatch.QueryParameters...)
+		}
+	}
 
 	// Verify that the matchers are compatible with the parent prefix
 	if err := isRouteTableValidForDelegateMatcher(parent.matcher, child); err != nil {

@@ -1,0 +1,9 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3327
+    description: >-
+      Add new field `inheritableMatchers` boolean field (default false) to virtual services and route tables that,
+      when true, changes how route delegation handles header, method, and query parameter matchers from the parent
+      resource. By default, route tables must have matchers that are a superset of those from the parent, as this
+      improves readability. By setting `inheritableMatchers` to true, any header, method, and query parameter matchers
+      from the parent that are absent from the child will be automatically included on the generated route.

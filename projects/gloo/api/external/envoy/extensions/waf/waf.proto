@@ -41,6 +41,10 @@ message ModSecurity {
   string custom_intervention_message = 3;
   // This instructs the filter what to do with the transaction's audit log.
   AuditLogging audit_logging = 5;
+  // If set, the body will not be buffered and fed to ModSecurity. Only the headers will.
+  // This can help improve performance.
+  bool request_headers_only = 6;
+  bool response_headers_only = 7;
 
   // log in a format suited for the OWASP regression tests.
   // this format is a multiline log format, so it is disabled for regular use.
@@ -68,4 +72,8 @@ message ModSecurityPerRoute {
   string custom_intervention_message = 3;
   // This instructs the filter what to do with the transaction's audit log.
   AuditLogging audit_logging = 5;
+  // If set, the body will not be buffered and fed to ModSecurity. Only the headers will.
+  // This can help improve performance.
+  bool request_headers_only = 6;
+  bool response_headers_only = 7;
 }

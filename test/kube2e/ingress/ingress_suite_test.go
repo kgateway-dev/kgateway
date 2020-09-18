@@ -11,10 +11,6 @@ import (
 
 	"github.com/solo-io/gloo/test/helpers"
 
-	"github.com/avast/retry-go"
-	"github.com/solo-io/gloo/test/kube2e"
-	"github.com/solo-io/go-utils/testutils/clusterlock"
-
 	"github.com/solo-io/go-utils/testutils"
 	"github.com/solo-io/go-utils/testutils/helper"
 
@@ -36,7 +32,6 @@ func TestIngress(t *testing.T) {
 }
 
 var testHelper *helper.SoloTestHelper
-var locker *clusterlock.TestClusterLocker
 
 var _ = BeforeSuite(func() {
 	cwd, err := os.Getwd()
@@ -54,24 +49,21 @@ var _ = BeforeSuite(func() {
 	skhelpers.RegisterPreFailHandler(helpers.KubeDumpOnFail(GinkgoWriter, testHelper.InstallNamespace))
 	testHelper.Verbose = true
 
-	locker, err = clusterlock.NewTestClusterLocker(kube2e.MustKubeClient(), clusterlock.Options{})
-	Expect(err).NotTo(HaveOccurred())
-	Expect(locker.AcquireLock(retry.Attempts(40))).NotTo(HaveOccurred())
-
 	// Install Gloo
 	err = testHelper.InstallGloo(helper.INGRESS, 5*time.Minute)
 	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
-	defer locker.ReleaseLock()
-	err := testHelper.UninstallGlooAll()
-	Expect(err).NotTo(HaveOccurred())
+	if os.Getenv("TEAR_DOWN") == "true" {
+		err := testHelper.UninstallGlooAll()
+		Expect(err).NotTo(HaveOccurred())
 
-	// TODO go-utils should expose `glooctl uninstall --delete-namespace`
-	testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
+		// TODO go-utils should expose `glooctl uninstall --delete-namespace`
+		testutils.Kubectl("delete", "namespace", testHelper.InstallNamespace)
 
-	Eventually(func() error {
-		return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
-	}, "60s", "1s").Should(HaveOccurred())
+		Eventually(func() error {
+			return testutils.Kubectl("get", "namespace", testHelper.InstallNamespace)
+		}, "60s", "1s").Should(HaveOccurred())
+	}
 })
