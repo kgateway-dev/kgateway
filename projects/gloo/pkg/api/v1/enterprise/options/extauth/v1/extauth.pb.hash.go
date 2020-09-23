@@ -84,9 +84,18 @@ func (m *AuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetAllowAnyConfig())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetBooleanLogic()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetBooleanLogic(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	return hasher.Sum64(), nil
@@ -990,6 +999,20 @@ func (m *AuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
+	if h, ok := interface{}(m.GetName()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetName(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
+	}
+
 	switch m.AuthConfig.(type) {
 
 	case *AuthConfig_Config_BasicAuth:
@@ -1096,6 +1119,53 @@ func (m *AuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 			}
 		} else {
 			if val, err := hashstructure.Hash(m.GetLdap(), nil); err != nil {
+				return 0, err
+			} else {
+				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+					return 0, err
+				}
+			}
+		}
+
+	}
+
+	return hasher.Sum64(), nil
+}
+
+// Hash function
+func (m *AuthConfig_BooleanLogic) Hash(hasher hash.Hash64) (uint64, error) {
+	if m == nil {
+		return 0, nil
+	}
+	if hasher == nil {
+		hasher = fnv.New64()
+	}
+	var err error
+	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AuthConfig_BooleanLogic")); err != nil {
+		return 0, err
+	}
+
+	err = binary.Write(hasher, binary.LittleEndian, m.GetOperator())
+	if err != nil {
+		return 0, err
+	}
+
+	for _, v := range m.GetArgs() {
+
+		if _, err = hasher.Write([]byte(v)); err != nil {
+			return 0, err
+		}
+
+	}
+
+	for _, v := range m.GetNestedArgs() {
+
+		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
+			if _, err = h.Hash(hasher); err != nil {
+				return 0, err
+			}
+		} else {
+			if val, err := hashstructure.Hash(v, nil); err != nil {
 				return 0, err
 			} else {
 				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
