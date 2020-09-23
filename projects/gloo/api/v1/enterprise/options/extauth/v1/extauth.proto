@@ -523,6 +523,9 @@ message ExtAuthConfig {
 
     reserved 1, 2;
 
+    // optional, only required by use in complex boolean logic, if `boolean_logic` is defined below
+    google.protobuf.StringValue name = 11;
+
     oneof auth_config {
       OAuthConfig oauth = 3 [deprecated=true];
       OAuth2Config oauth2 = 9;
@@ -534,7 +537,14 @@ message ExtAuthConfig {
     }
   }
 
+  // List of auth configs to be checked for requests on a route referencing this auth config,
+  // By default, every config must be authorized for the entire request to be authorized. This
+  // behavior can be changed by setting names to each config and defining `boolean_logic` below.
   repeated Config configs = 8;
+
+  // How to handle processing of named configs within an auth config.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) )
+  google.protobuf.StringValue boolean_logic = 10;
 }
 
 /*

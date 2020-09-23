@@ -600,13 +600,15 @@ is requested (meaning that all the polled connections are in use), the connectio
 ```yaml
 "authConfigRefName": string
 "configs": []enterprise.gloo.solo.io.ExtAuthConfig.Config
+"booleanLogic": .google.protobuf.StringValue
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `authConfigRefName` | `string` |  |  |
-| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) |  |  |
+| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by setting names to each config and defining `boolean_logic` below. |  |
+| `booleanLogic` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config. An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) ). |  |
 
 
 
@@ -755,6 +757,7 @@ Deprecated, prefer OAuth2Config
 
 
 ```yaml
+"name": .google.protobuf.StringValue
 "oauth": .enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig
 "oauth2": .enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config
 "basicAuth": .enterprise.gloo.solo.io.BasicAuth
@@ -767,6 +770,7 @@ Deprecated, prefer OAuth2Config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional, only required by use in complex boolean logic, if `boolean_logic` is defined below. |  |
 | `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
