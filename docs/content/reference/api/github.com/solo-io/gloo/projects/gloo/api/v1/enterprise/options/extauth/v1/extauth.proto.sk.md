@@ -13,8 +13,6 @@ weight: 5
 
 - [AuthConfig](#authconfig) **Top-Level Resource**
 - [Config](#config)
-- [BooleanLogic](#booleanlogic)
-- [Operator](#operator)
 - [ExtAuthExtension](#extauthextension)
 - [Settings](#settings)
 - [HttpService](#httpservice)
@@ -67,7 +65,7 @@ format that will be included in the extauth snapshot.
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
-"booleanLogic": .enterprise.gloo.solo.io.AuthConfig.BooleanLogic
+"booleanLogic": .google.protobuf.StringValue
 
 ```
 
@@ -76,7 +74,7 @@ format that will be included in the extauth snapshot.
 | `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
 | `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by setting names to each config and defining `boolean_logic` below. |  |
-| `booleanLogic` | [.enterprise.gloo.solo.io.AuthConfig.BooleanLogic](../extauth.proto.sk/#booleanlogic) | How to handle processing of named configs within an auth config. For example, the following yaml boolean_logic: operator: or args: - basic1 - basic2 nested_args: - operator: and args: - oidc1 - oidc2 translates to: (basic1 | basic2 | (oidc1 && oidc2) ). |  |
+| `booleanLogic` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config. An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) ). |  |
 
 
 
@@ -108,40 +106,6 @@ format that will be included in the extauth snapshot.
 | `pluginAuth` | [.enterprise.gloo.solo.io.AuthPlugin](../extauth.proto.sk/#authplugin) |  Only one of `pluginAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, or `ldap` can be set. |  |
 | `opaAuth` | [.enterprise.gloo.solo.io.OpaAuth](../extauth.proto.sk/#opaauth) |  Only one of `opaAuth`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, or `ldap` can be set. |  |
 | `ldap` | [.enterprise.gloo.solo.io.Ldap](../extauth.proto.sk/#ldap) |  Only one of `ldap`, `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, or `opaAuth` can be set. |  |
-
-
-
-
----
-### BooleanLogic
-
-
-
-```yaml
-"operator": .enterprise.gloo.solo.io.AuthConfig.BooleanLogic.Operator
-"args": []string
-"nestedArgs": []enterprise.gloo.solo.io.AuthConfig.BooleanLogic
-
-```
-
-| Field | Type | Description | Default |
-| ----- | ---- | ----------- |----------- | 
-| `operator` | [.enterprise.gloo.solo.io.AuthConfig.BooleanLogic.Operator](../extauth.proto.sk/#operator) |  |  |
-| `args` | `[]string` | names of configs from auth config chain to be handled by operator. |  |
-| `nestedArgs` | [[]enterprise.gloo.solo.io.AuthConfig.BooleanLogic](../extauth.proto.sk/#booleanlogic) | nested config for more complex boolean logic; nested logic is evaluated before outer logic. |  |
-
-
-
-
----
-### Operator
-
-
-
-| Name | Description |
-| ----- | ----------- | 
-| `AND` |  |
-| `OR` |  |
 
 
 

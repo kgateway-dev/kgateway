@@ -1133,53 +1133,6 @@ func (m *AuthConfig_Config) Hash(hasher hash.Hash64) (uint64, error) {
 }
 
 // Hash function
-func (m *AuthConfig_BooleanLogic) Hash(hasher hash.Hash64) (uint64, error) {
-	if m == nil {
-		return 0, nil
-	}
-	if hasher == nil {
-		hasher = fnv.New64()
-	}
-	var err error
-	if _, err = hasher.Write([]byte("enterprise.gloo.solo.io.github.com/solo-io/gloo/projects/gloo/pkg/api/v1/enterprise/options/extauth/v1.AuthConfig_BooleanLogic")); err != nil {
-		return 0, err
-	}
-
-	err = binary.Write(hasher, binary.LittleEndian, m.GetOperator())
-	if err != nil {
-		return 0, err
-	}
-
-	for _, v := range m.GetArgs() {
-
-		if _, err = hasher.Write([]byte(v)); err != nil {
-			return 0, err
-		}
-
-	}
-
-	for _, v := range m.GetNestedArgs() {
-
-		if h, ok := interface{}(v).(safe_hasher.SafeHasher); ok {
-			if _, err = h.Hash(hasher); err != nil {
-				return 0, err
-			}
-		} else {
-			if val, err := hashstructure.Hash(v, nil); err != nil {
-				return 0, err
-			} else {
-				if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
-					return 0, err
-				}
-			}
-		}
-
-	}
-
-	return hasher.Sum64(), nil
-}
-
-// Hash function
 func (m *HttpService_Request) Hash(hasher hash.Hash64) (uint64, error) {
 	if m == nil {
 		return 0, nil

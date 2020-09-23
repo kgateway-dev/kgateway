@@ -56,37 +56,9 @@ message AuthConfig {
   // behavior can be changed by setting names to each config and defining `boolean_logic` below.
   repeated Config configs = 3;
 
-  // How to handle processing of named configs within an auth config. For example, the following yaml
-  //
-  // boolean_logic:
-  //   operator: or
-  //   args:
-  //   - basic1
-  //   - basic2
-  //   nested_args:
-  //     - operator: and
-  //       args:
-  //         - oidc1
-  //         - oidc2
-  //
-  // translates to: (basic1 | basic2 | (oidc1 && oidc2) )
-  BooleanLogic boolean_logic = 10;
-
-  message BooleanLogic {
-
-    enum Operator {
-      AND = 0;
-      OR = 1;
-    }
-
-    Operator operator = 11;
-
-    // names of configs from auth config chain to be handled by operator
-    repeated string args = 12;
-
-    // nested config for more complex boolean logic; nested logic is evaluated before outer logic
-    repeated BooleanLogic nested_args = 13;
-  }
+  // How to handle processing of named configs within an auth config.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) )
+  google.protobuf.StringValue boolean_logic = 10;
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
