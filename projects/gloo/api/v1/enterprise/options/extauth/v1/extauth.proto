@@ -47,7 +47,16 @@ message AuthConfig {
     }
   }
 
+  // List of auth configs to be checked for requests on a route referencing this auth config,
+  // By default, every config must be authorized for the entire request to be authorized. This
+  // behavior can be changed to OR logic (any config that passes allows request) by setting
+  // `allowAnyConfig` to true.
   repeated Config configs = 3;
+
+  // By default, every config on an auth config must be authorized for the entire request to be
+  // authorized. This behavior can be changed to OR logic (any config that passes allows request)
+  // by setting `allowAnyConfig` to true.
+  bool allowAnyConfig = 8;
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.

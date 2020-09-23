@@ -65,6 +65,7 @@ format that will be included in the extauth snapshot.
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
+"allowAnyConfig": bool
 
 ```
 
@@ -72,7 +73,8 @@ format that will be included in the extauth snapshot.
 | ----- | ---- | ----------- |----------- | 
 | `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
-| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) |  |  |
+| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed to OR logic (any config that passes allows request) by setting `allowAnyConfig` to true. |  |
+| `allowAnyConfig` | `bool` | By default, every config on an auth config must be authorized for the entire request to be authorized. This behavior can be changed to OR logic (any config that passes allows request) by setting `allowAnyConfig` to true. |  |
 
 
 
