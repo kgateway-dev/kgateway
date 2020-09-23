@@ -108,7 +108,7 @@ var _ = Describe("Kube2e: wasm", func() {
 				return err
 			}, "10s", "0.5s").Should(Not(HaveOccurred()), "should update gateway to use wasm filter")
 
-			wasmHeader := "valuefromconfig: test"
+			wasmHeader := "example-header: test"
 
 			co := helper.CurlOpts{
 				Protocol:          "http",
@@ -187,7 +187,7 @@ func writeWasmFilterToGateway(gatewayClient gatewayv1.GatewayClient, gatewayName
 	gw.HttpGateway.Options = &gloov1.HttpListenerOptions{
 		Wasm: &wasm.PluginSource{
 			Filters: []*wasm.WasmFilter{{
-				Image:  "webassemblyhub.io/sodman/example-filter:v0.2",
+				Image:  "webassemblyhub.io/sodman/example-filter:v0.5",
 				Config: configAny,
 				Name:   "wasm-test-filter",
 				RootId: "add_header_root_id",

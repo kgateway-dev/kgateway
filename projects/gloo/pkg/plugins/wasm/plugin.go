@@ -91,8 +91,9 @@ func (p *Plugin) ensureFilter(wasmFilter *wasm.WasmFilter) (*plugins.StagedHttpF
 			Configuration: wasmFilter.Config,
 			Vm: &wasmv3ext.PluginConfig_VmConfig{
 				VmConfig: &wasmv3ext.VmConfig{
-					VmId:    VmId,
-					Runtime: runtime,
+					VmId:                VmId,
+					Runtime:             runtime,
+					NackOnCodeCacheMiss: true,
 					Code: &configcore.AsyncDataSource{
 						Specifier: &configcore.AsyncDataSource_Remote{
 							Remote: &configcore.RemoteDataSource{
