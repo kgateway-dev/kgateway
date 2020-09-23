@@ -65,31 +65,30 @@ reachable from you machine at `localhost:8080`:
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a 
-minute for the containers to start):
+If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a minute for the containers to start):
 
 ![Pet Clinic app homepage](./../petclinic-home.png)
 
 ## Securing the Virtual Service
-As we just saw, we were able to reach our application without having to provide any credentials. This is because by 
-default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. 
-We will update the Virtual Service so that each request to the sample application is authenticated using an 
-**OpenID Connect** flow.
+As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
 
 ### Register your application with Google
 In order to use Google as our identity provider, we need to register our application with the Google API.
 To do so:
  
-- log in to the [Google Developer Console](https://console.developers.google.com/);
-- if this is the first time using the console, create a [project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
+- Log in to the [Google Developer Console](https://console.developers.google.com/)
+- If this is the first time using the console, create a [project](https://cloud.google.com/resource-manager/docs/creating-managing-projects)
 as prompted;
-- navigate to the [OAuth consent screen](https://console.developers.google.com/apis/credentials/consent) menu item;
-- input a name for your application in the **Application name** text field;
-- click `Save`;
-- navigate to the [Credentials](https://console.developers.google.com/apis/credentials) menu item;
-- click `Create credentials`, and then `OAuth client ID`;
-- on the next page, select `Other` as the type of the client (as we are only going to use it for demonstration purposes), 
-- choose a name and click `Create`.
+- Navigate to the [OAuth consent screen](https://console.developers.google.com/apis/credentials/consent) menu item
+- Input a name for your application in the *Application name* text field and select **Internal** as the *Application type*
+- Click **Save**;
+- Navigate to the [Credentials](https://console.developers.google.com/apis/credentials) menu item
+- click **Create credentials**, and then **OAuth client ID**
+- On the next page, select *Web Application* as the type of the client (as we are only going to use it for demonstration purposes), 
+- Enter a name for the OAuth client ID or accept the default value
+- Under *Authorized redirect URIs* click on **Add URI**
+- Enter the URI: `http://localhost:8080/callback`
+- Click **Create**
 
 You will be presented with the **client id** and **client secret** for your application.
 Let's store them in two environment variables:
@@ -100,8 +99,7 @@ CLIENT_SECRET=<your client secret>
 ```
 
 ### Create a client ID secret
-Gloo expects the client secret to stored in a Kubernetes secret. Let's create the secret with the value of our 
-`CLIENT_SECRET` variable:
+Gloo expects the client secret to stored in a Kubernetes secret. Let's create the secret with the value of our `CLIENT_SECRET` variable:
 
 ```shell
 glooctl create secret oauth --namespace gloo-system --name google --client-secret $CLIENT_SECRET
@@ -134,12 +132,12 @@ spec:
 EOF
 {{< /highlight >}}
 
-Notice how we set the `CLIENT_ID` and reference the client secret we just created.
+Notice how we set the `CLIENT_ID` and reference the client secret we just created. The `callback_path` matches the authorized redirect URI we added for the OAuth Client ID. Redirecting to an unauthorized URI would result in an error from the Google authentication flow.
 
 ### Update the Virtual Service
 Once the AuthConfig has been created, we can use it to secure our Virtual Service:
 
-{{< highlight yaml "hl_lines=20-24" >}}
+{{< highlight yaml "hl_lines=11-21" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -150,6 +148,17 @@ spec:
     domains:
     - '*'
     routes:
+    - matchers:
+      - prefix: /callback
+      routeAction:
+        single:
+          kube:
+            ref:
+              name: petclinic
+              namespace: default
+            port: 80
+        options:
+          prefixRewrite: '/login'
     - matchers:
       - prefix: /
       routeAction:
@@ -167,11 +176,11 @@ spec:
 {{< /highlight >}}
 
 {{% notice note %}}
-Note this is a simplistic example that has a `/` catch-all path prefix route. Gloo needs to handle the `/callback` route and does so in the External Auth service. If you don't have a matching route (ie, either using a `/` or `/callback`) for the `callback` setting, you'll see `404`s when the Identity Provider tries to callback to Gloo with the correct tokens. Please reach out to us on the [Slack](https://slack.solo.io) if you run into trouble here.
+This example is sending the `/callback` prefix to `/login`, a path that does not exist. The request will not be interpreted by the petclinic service, but you could easily add code for the `/login` path that would parse the state information from Google and use it to load a profile of the user.
 {{% /notice %}}
 
 ## Testing our configuration
-Since we didn't register any URL, Google will only allow authentication with applications running on localhost for 
+Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for 
 security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:
 
 ```shell
@@ -183,9 +192,9 @@ Now if you open your browser and go to http://localhost:8080 you should be redir
 
 ![Google login page](google-login.png)
  
-If you provide your Google credentials, Gloo should redirect you to the main page of our sample application!
+If you provide your Google credentials, Gloo should redirect you to the `/callback` page, with the information from Google added as a query string.
 
-![Pet Clinic app homepage](./../petclinic-home.png)
+![Pet Clinic app homepage](petclinic-querystring.jpeg)
 
 If this does not work, one thing to check is the `requestTimeout` setting on your `extauth` Settings. See the warning in the [setup section](#setup) for more details.
 
