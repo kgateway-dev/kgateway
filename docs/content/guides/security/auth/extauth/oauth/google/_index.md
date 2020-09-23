@@ -35,7 +35,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/p
 ```
 
 ### Creating a Virtual Service
-Now we can create a Virtual Service that routes all requests (note the `/` prefix) to the `petclinic` service.
+Now we can create a Virtual Service that routes all requests (note the `/app` prefix) to the `petclinic` service.
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -49,7 +49,7 @@ spec:
     - '*'
     routes:
     - matchers:
-      - prefix: /
+      - prefix: /app
       routeAction:
         single:
           kube:
@@ -57,6 +57,8 @@ spec:
               name: petclinic
               namespace: default
             port: 80
+      options:
+        prefixRewrite: '/'
 ```
 
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
@@ -65,9 +67,9 @@ reachable from you machine at `localhost:8080`:
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
 
-If you open your browser and navigate to [http://localhost:8080](http://localhost:8080) you should see the following page (you might need to wait a minute for the containers to start):
+If you open your browser and navigate to [http://localhost:8080/app](http://localhost:8080/app) you should see the following page (you might need to wait a minute for the containers to start):
 
-![Pet Clinic app homepage](./../petclinic-home.png)
+![Pet Clinic app homepage](petclinic-home.png)
 
 ## Securing the Virtual Service
 As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior. We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
@@ -157,10 +159,10 @@ spec:
               name: petclinic
               namespace: default
             port: 80
-        options:
-          prefixRewrite: '/login'
+      options:
+        prefixRewrite: '/login'
     - matchers:
-      - prefix: /
+      - prefix: /app
       routeAction:
         single:
           kube:
@@ -168,6 +170,8 @@ spec:
               name: petclinic
               namespace: default
             port: 80
+      options:
+          prefixRewrite: '/'
     options:
       extauth:
         configRef:
@@ -180,15 +184,14 @@ This example is sending the `/callback` prefix to `/login`, a path that does not
 {{% /notice %}}
 
 ## Testing our configuration
-Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for 
-security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:
+Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for security reasons. We can make the Gloo Gateway available on localhost using `kubectl port-forward`:
 
 ```shell
 kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &
 portForwardPid=$! # Store the port-forward pid so we can kill the process later
 ```
 
-Now if you open your browser and go to http://localhost:8080 you should be redirected to the Google login screen:
+Now if you open your browser and go to http://localhost:8080/app you should be redirected to the Google login screen:
 
 ![Google login page](google-login.png)
  
