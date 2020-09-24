@@ -3,7 +3,6 @@ module github.com/solo-io/gloo
 go 1.14
 
 require (
-	contrib.go.opencensus.io/exporter/stackdriver v0.13.4 // indirect
 	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
@@ -104,6 +103,7 @@ replace (
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
 	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5 // prevent wasme override
 	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // prevent wasme override
+	contrib.go.opencensus.io/exporter/stackdriver => contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // prevent wasme override
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1
