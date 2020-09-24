@@ -56,7 +56,7 @@ require (
 	github.com/sergi/go-diff v1.0.0
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
-	github.com/solo-io/go-utils v0.16.5
+	github.com/solo-io/go-utils v0.16.6
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.8.1
@@ -74,7 +74,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
-	google.golang.org/genproto v0.0.0-20200527145253-8367513e4ece
+	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
 	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
 	gopkg.in/yaml.v2 v2.3.0
@@ -96,12 +96,15 @@ require (
 )
 
 replace (
+	cloud.google.com/go => cloud.google.com/go v0.47.0 // prevent go-utils override
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	github.com/golang/mock => github.com/golang/mock v1.4.3
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
-	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24
+	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5 // prevent wasme override
+	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // prevent wasme override
+
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.17.1
