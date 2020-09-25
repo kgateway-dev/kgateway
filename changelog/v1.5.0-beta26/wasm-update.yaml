@@ -1,0 +1,7 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3624
+    description: >
+      Update the envoy-wasm version to the latest 1.16.x version,
+      which now replies with a NACK on a wasm image cache miss,
+      fixing several caching issues.
