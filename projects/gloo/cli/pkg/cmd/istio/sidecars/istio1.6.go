@@ -63,6 +63,10 @@ func generateIstio16Sidecar(version, jwtPolicy string) *corev1.Container {
 				Value: "cluster.local",
 			},
 			{
+				Name:  "ISTIO_META_CLUSTER_ID",
+				Value: "Kubernetes",
+			},
+			{
 				Name: "POD_NAME",
 				ValueFrom: &corev1.EnvVarSource{
 					FieldRef: &corev1.ObjectFieldSelector{
