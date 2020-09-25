@@ -35,7 +35,7 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamLis
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		us := CreateUpstreamsFromService(svc)
-		for _,upstream := range us {
+		for _, upstream := range us {
 			if forNamespace != "" && upstream.Metadata.Namespace != forNamespace {
 				continue
 			}
@@ -67,9 +67,9 @@ func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
 			},
 			UpstreamType: &v1.Upstream_Consul{
 				Consul: &consulplugin.UpstreamSpec{
-					ServiceName: service.Name,
-					DataCenters: service.DataCenters,
-					ServiceTags: service.Tags,
+					ServiceName:  service.Name,
+					DataCenters:  service.DataCenters,
+					ServiceTags:  service.Tags,
 					InstanceTags: []string{"glooUseTls"},
 				},
 			},

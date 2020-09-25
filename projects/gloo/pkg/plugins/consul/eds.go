@@ -375,6 +375,7 @@ func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*cor
 	}
 	return
 }
+
 // are there no upstream tags = return true.
 // Otherwise, check if upstream tags is a subset of endpoint tags
 func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
