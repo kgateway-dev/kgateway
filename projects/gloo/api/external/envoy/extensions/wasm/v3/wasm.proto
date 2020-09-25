@@ -1,4 +1,4 @@
-// Copied from https://github.com/envoyproxy/envoy/blob/edc016b1fa5adca3ebd3d7020eaed0ad7b8814ca/api/envoy/extensions/wasm/v3/wasm.proto
+// Copied from https://github.com/envoyproxy/envoy/blob/26eaa2e85cee69e5c32ab6bf4c5ae3d338fa462f/api/envoy/extensions/wasm/v3/wasm.proto
 
 syntax = "proto3";
 
@@ -12,21 +12,19 @@ import "validate/validate.proto";
 
 // manually updated this line:
 option go_package = "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/extensions/wasm/v3";
-
-// manually added equal_all:
 import "gogoproto/gogo.proto";
 option (gogoproto.equal_all) = true;
-import "extproto/ext.proto";
-option (extproto.hash_all) = true;
 
 option java_package = "io.envoyproxy.envoy.extensions.wasm.v3";
 option java_outer_classname = "WasmProto";
 option java_multiple_files = true;
 
-// [#protodoc-title: Wasm service]
+
+// [#protodoc-title: Wasm]
+// [#extension: envoy.bootstrap.wasm]
 
 // Configuration for a Wasm VM.
-// [#next-free-field: 6]
+// [#next-free-field: 7]
 message VmConfig {
   // An ID which will be used along with a hash of the wasm code (or the name of the registered Null
   // VM plugin) to determine which VM will be used for the plugin. All plugins which use the same
@@ -41,20 +39,28 @@ message VmConfig {
   // The Wasm code that Envoy will execute.
   config.core.v3.AsyncDataSource code = 3;
 
-  // The Wasm configuration used in initialization of a new VM (proxy_on_start).
+  // The Wasm configuration used in initialization of a new VM
+  // (proxy_on_start). `google.protobuf.Struct` is serialized as JSON before
+  // passing it to the plugin. `google.protobuf.BytesValue` and
+  // `google.protobuf.StringValue` are passed directly without the wrapper.
   google.protobuf.Any configuration = 4;
 
   // Allow the wasm file to include pre-compiled code on VMs which support it.
   // Warning: this should only be enable for trusted sources as the precompiled code is not
   // verified.
   bool allow_precompiled = 5;
+
+  // If true and the code needs to be remotely fetched and it is not in the cache then NACK the configuration
+  // update and do a background fetch to fill the cache, otherwise fetch the code asynchronously and enter
+  // warming state.
+  bool nack_on_code_cache_miss = 6;
 }
 
 // Base Configuration for Wasm Plugins e.g. filters and services.
 // [#next-free-field: 6]
 message PluginConfig {
   // A unique name for a filters/services in a VM for use in identifying the filter/service if
-  // multiple filters/services are handled by the same *vm_id* and *group_name* and for
+  // multiple filters/services are handled by the same *vm_id* and *root_id* and for
   // logging/debugging.
   string name = 1;
 
@@ -71,6 +77,9 @@ message PluginConfig {
 
   // Filter/service configuration used to configure or reconfigure a plugin
   // (proxy_on_configuration).
+  // `google.protobuf.Struct` is serialized as JSON before
+  // passing it to the plugin. `google.protobuf.BytesValue` and
+  // `google.protobuf.StringValue` are passed directly without the wrapper.
   google.protobuf.Any configuration = 4;
 
   // If there is a fatal error on the VM (e.g. exception, abort(), on_start or on_configure return false),
@@ -81,9 +90,8 @@ message PluginConfig {
   bool fail_open = 5;
 }
 
-// WasmService is configured as a built-in *envoy.wasm_service* :ref:`ServiceConfig
-// <envoy_api_msg_extensions.wasm.v3.WasmService>`. This opaque configuration will be used to
-// create a Wasm Service.
+// WasmService is configured as a built-in *envoy.wasm_service* :ref:`WasmService
+// <config_wasm_service>` This opaque configuration will be used to create a Wasm Service.
 message WasmService {
   // General plugin configuration.
   PluginConfig config = 1;
