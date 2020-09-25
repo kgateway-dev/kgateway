@@ -12,6 +12,7 @@ import (
 
 //go:generate mockgen -destination ./mocks/mock_watcher.go -source watcher.go -aux_files github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul=./consul_client.go
 
+// Data for a single consul service (not serviceInstance)
 type ServiceMeta struct {
 	Name        string
 	DataCenters []string

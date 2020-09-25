@@ -63,10 +63,6 @@ func setRealName(list v1.UpstreamList, writeNamespace string) v1.UpstreamList {
 	return list
 }
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	return UpdateUpstream(original, desired)
-}
-
-func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(original, "original")
@@ -74,6 +70,37 @@ func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(desired, "desired")
+	}
+	//todo actually get inptus from settings somehow
+
+	// settings = *v1.settings
+	// s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue()
+	// todo change this to actually get this value from settings
+	consulTlsDiscovery := false
+	// if true, then search through instannce tags for tag that indicates TLS.
+	if consulTlsDiscovery {
+		for _, tag := range originalSpec.Consul.InstanceTags {
+			// todo question: should we override existing SSL configs?
+			if tag == consul.TlsTag && original.SslConfig == nil {
+				// todo question: the consulSettings struct (settings.pb.go) already has file refs to relevant data. Can we use those?
+				rootCaFname := p.consulSettings.GetCaFile()
+				// rootCaPath := p.consulSettings.GetCaPath()
+				keyFile := p.consulSettings.GetKeyFile()
+				certFile := p.consulSettings.GetCertFile()
+				// todo question: assuming these inputs are correct, does anything else need to be done to setup ssl?
+				original.SslConfig = &v1.UpstreamSslConfig{
+					SslSecrets: &v1.UpstreamSslConfig_SslFiles{
+						SslFiles: &v1.SSLFiles{
+							TlsCert: certFile,
+							TlsKey:  keyFile,
+							RootCa:  rootCaFname,
+						},
+					},
+				}
+				break
+			}
+		}
+
 	}
 
 	// copy service spec, we don't want to overwrite that

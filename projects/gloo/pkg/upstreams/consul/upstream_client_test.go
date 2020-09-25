@@ -77,9 +77,9 @@ var _ = Describe("ConsulClient", func() {
 
 			Expect(upstreams).To(HaveLen(3))
 			Expect(upstreams).To(ConsistOf(
-				ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}}),
-				ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}}),
-				ToUpstream(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tag-1", "tag-2"}})[0],
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}, Tags: []string{"tag-2"}})[0],
+				CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}})[0],
 			))
 		})
 	})
@@ -148,9 +148,9 @@ var _ = Describe("ConsulClient", func() {
 				Expect(err).NotTo(HaveOccurred())
 
 				Eventually(upstreamChan, 500*time.Millisecond).Should(Receive(ConsistOf(
-					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}}),
-					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
-					ToUpstream(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}}),
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-3", DataCenters: []string{"dc2"}})[0],
 				)))
 
 				Consistently(errChan).ShouldNot(Receive())
@@ -215,8 +215,8 @@ var _ = Describe("ConsulClient", func() {
 
 				// The retry delay in the consul client is 100ms
 				Eventually(upstreamChan, 300*time.Millisecond).Should(Receive(ConsistOf(
-					ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}),
-					ToUpstream(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}}),
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}})[0],
+					CreateUpstreamsFromService(&ServiceMeta{Name: "svc-2", DataCenters: []string{"dc1"}})[0],
 				)))
 
 				Consistently(errChan).ShouldNot(Receive())
@@ -259,7 +259,7 @@ var _ = Describe("ConsulClient", func() {
 				time.Sleep(50 * time.Millisecond)
 
 				// We get the expected message
-				Expect(upstreamChan).Should(Receive(ConsistOf(ToUpstream(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}}))))
+				Expect(upstreamChan).Should(Receive(ConsistOf(CreateUpstreamsFromService(&ServiceMeta{Name: "svc-1", DataCenters: []string{"dc1"}})[0])))
 
 				// We don't get any further messages
 				Consistently(upstreamChan).ShouldNot(Receive())

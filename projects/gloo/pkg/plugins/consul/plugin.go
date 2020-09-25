@@ -30,6 +30,7 @@ type plugin struct {
 	client             consul.ConsulWatcher
 	resolver           DnsResolver
 	dnsPollingInterval time.Duration
+	consulSettings     *v1.Settings_ConsulConfiguration
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -83,6 +84,7 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.consulSettings = params.Settings.Consul
 	return nil
 }
 

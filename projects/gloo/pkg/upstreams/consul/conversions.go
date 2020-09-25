@@ -13,6 +13,7 @@ import (
 )
 
 const UpstreamNamePrefix = "consul-svc:"
+const TlsTag = "glooUseTls"
 
 func IsConsulUpstream(upstreamName string) bool {
 	return strings.HasPrefix(upstreamName, UpstreamNamePrefix)
@@ -33,17 +34,49 @@ func fakeUpstreamName(consulSvcName string) string {
 func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
-		us := ToUpstream(svc)
-		if forNamespace != "" && us.Metadata.Namespace != forNamespace {
-			continue
+		us := CreateUpstreamsFromService(svc)
+		for _,upstream := range us {
+			if forNamespace != "" && upstream.Metadata.Namespace != forNamespace {
+				continue
+			}
+			upstreams = append(upstreams, upstream)
 		}
-		upstreams = append(upstreams, us)
 	}
 	return upstreams.Sort()
 }
 
-func ToUpstream(service *ServiceMeta) *v1.Upstream {
-	return &v1.Upstream{
+// This function normally returns 1 upstream. It instead returns two upstreams if
+// automatic tls discovery is on for consul, and this service contains the designated
+// useTls tag (which by default is glooUseTls).
+// In this case, it returns 2 upstreams that are identical save for the presense of
+// InstanceTags: []string{"glooUseTls"} in the upstream that'll use TLS.
+func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
+	var result []*v1.Upstream
+	useTls := false
+	for _, tag := range service.Tags {
+		if tag == TlsTag {
+			useTls = true
+			break
+		}
+	}
+	if useTls {
+		result = append(result, &v1.Upstream{
+			Metadata: core.Metadata{
+				Name:      fakeUpstreamName(service.Name),
+				Namespace: defaults.GlooSystem,
+			},
+			UpstreamType: &v1.Upstream_Consul{
+				Consul: &consulplugin.UpstreamSpec{
+					ServiceName: service.Name,
+					DataCenters: service.DataCenters,
+					ServiceTags: service.Tags,
+					InstanceTags: []string{"glooUseTls"},
+				},
+			},
+		})
+	}
+
+	result = append(result, &v1.Upstream{
 		Metadata: core.Metadata{
 			Name:      fakeUpstreamName(service.Name),
 			Namespace: defaults.GlooSystem,
@@ -55,7 +88,8 @@ func ToUpstream(service *ServiceMeta) *v1.Upstream {
 				ServiceTags: service.Tags,
 			},
 		},
-	}
+	})
+	return result
 }
 
 func toServiceMetaSlice(dcToSvcMap []*dataCenterServicesTuple) []*ServiceMeta {
