@@ -18,7 +18,7 @@ import (
 const (
 	istioCertSecret        = "istio_server_cert"
 	istioValidationContext = "istio_validation_context"
-	sdsTargetURI           = "127.0.01:8234"
+	sdsTargetURI           = "127.0.0.1:8234"
 )
 
 // EnableMTLS adds an sslConfig to the given upstream which will
