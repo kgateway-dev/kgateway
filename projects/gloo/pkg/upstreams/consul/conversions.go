@@ -67,7 +67,7 @@ func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
 			},
 			UpstreamType: &v1.Upstream_Consul{
 				Consul: &consulplugin.UpstreamSpec{
-					ServiceName:  service.Name,
+					ServiceName:  service.Name + "-tls",
 					DataCenters:  service.DataCenters,
 					ServiceTags:  service.Tags,
 					InstanceTags: []string{"glooUseTls"},

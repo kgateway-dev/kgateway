@@ -3,6 +3,8 @@ package consul
 import (
 	"strings"
 
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -71,29 +73,21 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if !ok {
 		return false, InvalidSpecTypeError(desired, "desired")
 	}
-	//todo actually get inptus from settings somehow
 
-	// settings = *v1.settings
-	// s.settings.GetGloo().GetDisableProxyGarbageCollection().GetValue()
-	// todo change this to actually get this value from settings
-	consulTlsDiscovery := false
-	// if true, then search through instannce tags for tag that indicates TLS.
-	if consulTlsDiscovery {
+	// if true, then search through instance tags for tag that indicates TLS.
+	if p.consulSettings.GetUseTlsTagging() {
 		for _, tag := range originalSpec.Consul.InstanceTags {
-			// todo question: should we override existing SSL configs?
+			// todo question: should we override existing SSL configs if an upstream already has one?
 			if tag == consul.TlsTag && original.SslConfig == nil {
-				// todo question: the consulSettings struct (settings.pb.go) already has file refs to relevant data. Can we use those?
-				rootCaFname := p.consulSettings.GetCaFile()
-				// rootCaPath := p.consulSettings.GetCaPath()
-				keyFile := p.consulSettings.GetKeyFile()
-				certFile := p.consulSettings.GetCertFile()
+				rootCaName := p.consulSettings.GetRootCaName()
+				rootCaNamespace := p.consulSettings.GetRootCaNamespace()
 				// todo question: assuming these inputs are correct, does anything else need to be done to setup ssl?
+				// todo question: should we just create/cache this config during plugin init?
 				original.SslConfig = &v1.UpstreamSslConfig{
-					SslSecrets: &v1.UpstreamSslConfig_SslFiles{
-						SslFiles: &v1.SSLFiles{
-							TlsCert: certFile,
-							TlsKey:  keyFile,
-							RootCa:  rootCaFname,
+					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+						SecretRef: &core.ResourceRef{
+							Name:      rootCaName,
+							Namespace: rootCaNamespace,
 						},
 					},
 				}

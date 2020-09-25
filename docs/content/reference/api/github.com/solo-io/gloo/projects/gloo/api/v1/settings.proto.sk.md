@@ -298,9 +298,6 @@ need to be set on the Gloo container.
 
 ```yaml
 "address": string
-"httpAddress": string
-"dnsAddress": string
-"dnsPollingInterval": .google.protobuf.Duration
 "datacenter": string
 "username": string
 "password": string
@@ -312,15 +309,19 @@ need to be set on the Gloo container.
 "insecureSkipVerify": .google.protobuf.BoolValue
 "waitTime": .google.protobuf.Duration
 "serviceDiscovery": .gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions
+"httpAddress": string
+"dnsAddress": string
+"dnsPollingInterval": .google.protobuf.Duration
+"useTlsTagging": bool
+"tlsTagName": string
+"rootCaNamespace": string
+"rootCaName": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `address` | `string` | Deprecated: prefer http_address. The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |  |
-| `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
 | `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
 | `username` | `string` | Username to use for HTTP Basic Authentication. |  |
 | `password` | `string` | Password to use for HTTP Basic Authentication. |  |
@@ -332,6 +333,13 @@ need to be set on the Gloo container.
 | `insecureSkipVerify` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | InsecureSkipVerify if set to true will disable TLS host verification. |  |
 | `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |  |
 | `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk/#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults. |  |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |  |
+| `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
+| `useTlsTagging` | `bool` | If true, partition consul services into 2 upstreams based on the presence of the tag specified by the tlsTag value - one without TLS, and one which will use the CA resource specified by rootCaNamespace:rootCaName to establish TLS. |  |
+| `tlsTagName` | `string` | The tag that gloo should use to identify consul services that should use TLS, and then partition consul serviceInstances. |  |
+| `rootCaNamespace` | `string` | The namespace of the root CA resource to be used by discovered consul TLS upstreams. |  |
+| `rootCaName` | `string` | The name of the root CA resource to be used by discovered consul TLS upstreams. |  |
 
 
 

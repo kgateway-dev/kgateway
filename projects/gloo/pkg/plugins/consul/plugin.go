@@ -24,6 +24,16 @@ var _ discovery.DiscoveryPlugin = new(plugin)
 var (
 	DefaultDnsAddress         = "127.0.0.1:8600"
 	DefaultDnsPollingInterval = 5 * time.Second
+
+	ConsulTlsInputError = func(tag, namespace, name string) error {
+		return eris.Errorf("Consul settings set to automatically detect TLS services, "+
+			"but at least one of the following required values are missing.\n"+
+			"tlsTag:%s\n"+
+			"rootCaNameppace%s\n"+
+			"rootCaName",
+			tag, namespace, name)
+
+	}
 )
 
 type plugin struct {
@@ -85,6 +95,16 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.consulSettings = params.Settings.Consul
+	// if automatically discovering TLS in consul services, make sure we have a specified tag (has a default)
+	// and a resource location for the validation context.
+	if p.consulSettings.UseTlsTagging {
+		tlsTag := p.consulSettings.GetTlsTagName()
+		rootCaName := p.consulSettings.GetRootCaName()
+		rootCaNamespace := p.consulSettings.GetRootCaNamespace()
+		if tlsTag == "" || rootCaName == "" || rootCaNamespace == "" {
+			return ConsulTlsInputError(tlsTag, rootCaName, rootCaNamespace)
+		}
+	}
 	return nil
 }
 

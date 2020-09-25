@@ -87,6 +87,14 @@ type DeploymentSpec struct {
 
 type Integrations struct {
 	Knative *Knative `json:"knative,omitEmpty"`
+	Consul  *Consul  `json:"consul,omitEmpty"`
+}
+
+type Consul struct {
+	UseTlsDiscovery         *bool   `json:"useTlsDiscovery" desc:"Allow gloo to automatically apply tls to consul services that are tagged appropriately."`
+	TlsTagName              *string `json:"TlsTagName,omitEmpty" desc:"the tag value gloo should search for when identifying consul services to add TLS to. Defaults to glooUseTls."`
+	RootCAResourceNamespace *string `json:"rootCAResourceNamespace,omitEmpty" desc:"The namespace that the consul root CA resource is stored in"`
+	RootCAResourceName      *string `json:"rootCAResourceName,omitEmpty" desc:"The name of the resource contain the root CA that should be used for TLS with consul services."`
 }
 
 type Knative struct {

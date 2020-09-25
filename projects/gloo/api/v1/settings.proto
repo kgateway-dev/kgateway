@@ -199,22 +199,6 @@ message Settings {
         // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
         string address = 1 [deprecated=true];
 
-        // The address of the Consul HTTP server.
-        // Used by service discovery and key-value storage (if-enabled).
-        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
-        string http_address = 13;
-
-        // The address of the DNS server used to resolve hostnames in the Consul service address.
-        // Used by service discovery (required when Consul service instances are stored as DNS names).
-        // Defaults to 127.0.0.1:8600. (the default Consul DNS server)
-        string dns_address = 14;
-
-        // The polling interval for the DNS server.
-        // If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the
-        // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
-        // Defaults to 5s.
-        google.protobuf.Duration dns_polling_interval = 15;
-
         // Datacenter to use. If not provided, the default agent datacenter is used.
         string datacenter = 2;
 
@@ -262,7 +246,36 @@ message Settings {
         // set to empty struct `{}` to enable with defaults
         ServiceDiscoveryOptions service_discovery = 12;
 
+        // The address of the Consul HTTP server.
+        // Used by service discovery and key-value storage (if-enabled).
+        // Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.
+        string http_address = 13;
 
+        // The address of the DNS server used to resolve hostnames in the Consul service address.
+        // Used by service discovery (required when Consul service instances are stored as DNS names).
+        // Defaults to 127.0.0.1:8600. (the default Consul DNS server)
+        string dns_address = 14;
+
+        // The polling interval for the DNS server.
+        // If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the
+        // hostname with the configured frequency to update endpoints with any changes to DNS resolution.
+        // Defaults to 5s.
+        google.protobuf.Duration dns_polling_interval = 15;
+
+        // If true, partition consul services into 2 upstreams based on the presence of the tag specified by the
+        // tlsTag value - one without TLS, and one which will use the CA resource specified by rootCaNamespace:rootCaName
+        // to establish TLS.
+        bool useTlsTagging = 16;
+
+        // The tag that gloo should use to identify consul services that should use TLS, and then partition
+        // consul serviceInstances.
+        string tlsTagName = 17;
+
+        // The namespace of the root CA resource to be used by discovered consul TLS upstreams.
+        string rootCaNamespace = 18;
+
+        // The name of the root CA resource to be used by discovered consul TLS upstreams.
+        string rootCaName = 19;
     }
 
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).
