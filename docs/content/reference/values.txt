@@ -46,7 +46,7 @@
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
-|settings.integrations.consul.useTls|bool|false|Allow gloo to automatically apply tls to consul services that are tagged appropriately.|
+|settings.integrations.consul.useTlsDiscovery|bool||Allow gloo to automatically apply tls to consul services that are tagged appropriately.|
 |settings.integrations.consul.TlsTagName|string|glooUseTls|the tag value gloo should search for when identifying consul services to add TLS to. Defaults to glooUseTls.|
 |settings.integrations.consul.rootCAResourceNamespace|string||The namespace that the consul root CA resource is stored in|
 |settings.integrations.consul.rootCAResourceName|string||The name of the resource contain the root CA that should be used for TLS with consul services.|
