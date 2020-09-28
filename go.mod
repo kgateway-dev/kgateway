@@ -96,7 +96,7 @@ require (
 )
 
 replace (
-	cloud.google.com/go => cloud.google.com/go v0.53.0 // cloud.google.com/go/iam breaks with v0.54.0+
+	cloud.google.com/go => cloud.google.com/go v0.52.0 // cloud.google.com/go/iam breaks with v0.53.0+
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
