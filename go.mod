@@ -96,14 +96,14 @@ require (
 )
 
 replace (
-	cloud.google.com/go => cloud.google.com/go v0.47.0 // prevent go-utils override
+	cloud.google.com/go => cloud.google.com/go v0.53.0 // cloud.google.com/go/iam breaks with v0.54.0+
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.0.0+incompatible
 	github.com/Sirupsen/logrus => github.com/sirupsen/logrus v1.4.2
 	github.com/docker/docker => github.com/moby/moby v0.7.3-0.20190826074503-38ab9da00309
 	github.com/golang/mock => github.com/golang/mock v1.4.3
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.5
-	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5 // prevent wasme override
-	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // prevent wasme override
+	github.com/spf13/cobra => github.com/spf13/cobra v0.0.5 // override wasme requirement
+	google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // override wasme requirement
 
 	// kube 1.17
 	k8s.io/api => k8s.io/api v0.17.1
