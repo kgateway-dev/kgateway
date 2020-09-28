@@ -71,7 +71,7 @@ and change the `httpGateway` object to the following:
 
 Once that is saved, the hard work has been done. All traffic on the http gateway will call the wasm filter.
 
-To find our more information about WASM filters, and how to build/run them check out [`wasme`](https://github.com/solo-io/wasme).
+To find our more information about WASM filters, and how to build/run them check out [`wasm`](https://github.com/solo-io/wasm).
 
 `wasme` is a tool for building and deploying Envoy WASM filters, in Gloo, and in vanilla Envoy. Much more detailed information can be found there on how the filters work.
 
