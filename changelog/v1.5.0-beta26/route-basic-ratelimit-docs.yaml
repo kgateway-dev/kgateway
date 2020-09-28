@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/2517/
+    description: Update the basic rate limit API page with instructions for route-level rate limits.

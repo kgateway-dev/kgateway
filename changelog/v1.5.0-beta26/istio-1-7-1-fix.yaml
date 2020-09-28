@@ -1,0 +1,5 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3650
+    description: >
+      Fix for Istio mTLS integration for Istio versions 1.6.9+ and Istio 1.7.1+
