@@ -19,7 +19,7 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:v1.15.0-patch4
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.15.0-patch4
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
