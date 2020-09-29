@@ -1,0 +1,3 @@
+changelog:
+- type: NON_USER_FACING
+  description: Swapped dependency on "wasme" for the new "wasm/pkg" module
