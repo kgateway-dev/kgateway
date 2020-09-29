@@ -74,6 +74,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
+	desiredProxies := s.generatedDesiredProxies(ctx, snap)
+
+	return s.reconcile(ctx, desiredProxies)
+}
+
+func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) reconciler.GeneratedProxies {
+	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
@@ -91,8 +98,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 			desiredProxies[proxy] = reports
 		}
 	}
-
-	return s.reconcile(ctx, desiredProxies)
+	return desiredProxies
 }
 
 func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
