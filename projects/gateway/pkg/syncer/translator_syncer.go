@@ -96,7 +96,7 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 }
 
 func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
-	return settingsutil.FromContext(ctx).GetGateway().GetCompressedProxySpec()
+	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
