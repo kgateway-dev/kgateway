@@ -46,6 +46,9 @@ type AuthConfig struct {
 	// List of auth configs to be checked for requests on a route referencing this auth config,
 	// By default, every config must be authorized for the entire request to be authorized. This
 	// behavior can be changed by defining names for each config and defining `boolean_expr` below.
+	//
+	// State is shared between successful requests on the chain, i.e., the headers returned from each
+	// successful auth service get appended into the final auth response.
 	Configs []*AuthConfig_Config `protobuf:"bytes,3,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
 	// An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
@@ -1732,6 +1735,9 @@ type ExtAuthConfig struct {
 	// List of auth configs to be checked for requests on a route referencing this auth config,
 	// By default, every config must be authorized for the entire request to be authorized. This
 	// behavior can be changed by defining names for each config and defining `boolean_expr` below.
+	//
+	// State is shared between successful requests on the chain, i.e., the headers returned from each
+	// successful auth service get appended into the final auth response.
 	Configs []*ExtAuthConfig_Config `protobuf:"bytes,8,rep,name=configs,proto3" json:"configs,omitempty"`
 	// How to handle processing of named configs within an auth config chain.
 	// An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
