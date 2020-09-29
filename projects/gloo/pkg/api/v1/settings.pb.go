@@ -1425,10 +1425,13 @@ type GatewayOptions struct {
 	ReadGatewaysFromAllNamespaces bool `protobuf:"varint,4,opt,name=read_gateways_from_all_namespaces,json=readGatewaysFromAllNamespaces,proto3" json:"read_gateways_from_all_namespaces,omitempty"`
 	// Deprecated.
 	// This setting is ignored. Maintained for backwards compatibility with settings exposed on 1.2.x branch of Gloo.
-	AlwaysSortRouteTableRoutes bool     `protobuf:"varint,5,opt,name=always_sort_route_table_routes,json=alwaysSortRouteTableRoutes,proto3" json:"always_sort_route_table_routes,omitempty"` // Deprecated: Do not use.
-	XXX_NoUnkeyedLiteral       struct{} `json:"-"`
-	XXX_unrecognized           []byte   `json:"-"`
-	XXX_sizecache              int32    `json:"-"`
+	AlwaysSortRouteTableRoutes bool `protobuf:"varint,5,opt,name=always_sort_route_table_routes,json=alwaysSortRouteTableRoutes,proto3" json:"always_sort_route_table_routes,omitempty"` // Deprecated: Do not use.
+	// If set, compresses proxy space. This can help make the Proxy CRD smaller to fit in etcd.
+	// This is an advanced option. Use with care.
+	CompressedProxySpec  bool     `protobuf:"varint,6,opt,name=compressed_proxy_spec,json=compressedProxySpec,proto3" json:"compressed_proxy_spec,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *GatewayOptions) Reset()         { *m = GatewayOptions{} }
@@ -1480,6 +1483,13 @@ func (m *GatewayOptions) GetReadGatewaysFromAllNamespaces() bool {
 func (m *GatewayOptions) GetAlwaysSortRouteTableRoutes() bool {
 	if m != nil {
 		return m.AlwaysSortRouteTableRoutes
+	}
+	return false
+}
+
+func (m *GatewayOptions) GetCompressedProxySpec() bool {
+	if m != nil {
+		return m.CompressedProxySpec
 	}
 	return false
 }
@@ -2615,6 +2625,9 @@ func (this *GatewayOptions) Equal(that interface{}) bool {
 		return false
 	}
 	if this.AlwaysSortRouteTableRoutes != that1.AlwaysSortRouteTableRoutes {
+		return false
+	}
+	if this.CompressedProxySpec != that1.CompressedProxySpec {
 		return false
 	}
 	if !bytes.Equal(this.XXX_unrecognized, that1.XXX_unrecognized) {
