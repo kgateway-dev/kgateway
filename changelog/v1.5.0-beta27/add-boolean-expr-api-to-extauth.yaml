@@ -1,0 +1,10 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3207
+    description: >-
+      Add API to `AuthConfig` that allows users to specify a boolean expression to determine how to evaluate auth
+      configs within an auth chain. Previously, each config on an auth config must be authorized for the entire request
+      to be authorized. This remains the default, but now users can additionally specify a boolean expression (the
+      `booleanExpr` field on an auth config) to reference the auth configs and AND/OR/NOT them together to achieve the
+      desired access policy.
+    resolvesIssue: false
