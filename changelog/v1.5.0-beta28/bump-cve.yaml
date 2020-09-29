@@ -1,0 +1,12 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.16.0-rc3
+    description: >
+      Upgrade envoy-gloo version to handle CVEs CVE-2020-25017 and CVE-2020-25018
+  - type: FIX
+    # issueLink: TODO
+    description: >
+      Upgrade envoy-gloo version to handle CVEs CVE-2020-25017 and CVE-2020-25018
+
