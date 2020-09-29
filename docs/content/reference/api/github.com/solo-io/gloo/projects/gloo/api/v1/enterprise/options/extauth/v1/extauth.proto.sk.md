@@ -65,7 +65,7 @@ format that will be included in the extauth snapshot.
 "status": .core.solo.io.Status
 "metadata": .core.solo.io.Metadata
 "configs": []enterprise.gloo.solo.io.AuthConfig.Config
-"booleanLogic": .google.protobuf.StringValue
+"booleanExpr": .google.protobuf.StringValue
 
 ```
 
@@ -73,8 +73,8 @@ format that will be included in the extauth snapshot.
 | ----- | ---- | ----------- |----------- | 
 | `status` | [.core.solo.io.Status](../../../../../../../../../../solo-kit/api/v1/status.proto.sk/#status) | Status indicates the validation status of this resource. Status is read-only by clients, and set by gloo during validation. |  |
 | `metadata` | [.core.solo.io.Metadata](../../../../../../../../../../solo-kit/api/v1/metadata.proto.sk/#metadata) | Metadata contains the object metadata for this resource. |  |
-| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by setting names to each config and defining `boolean_logic` below. |  |
-| `booleanLogic` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config. An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) ). |  |
+| `configs` | [[]enterprise.gloo.solo.io.AuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. |  |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |  |
 
 
 
@@ -98,7 +98,7 @@ format that will be included in the extauth snapshot.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional, only required by use in complex boolean logic, if `boolean_logic` is defined below. |  |
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) |  Only one of `oauth`, `basicAuth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth2` | [.enterprise.gloo.solo.io.OAuth2](../extauth.proto.sk/#oauth2) |  Only one of `oauth2`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
@@ -600,15 +600,15 @@ is requested (meaning that all the polled connections are in use), the connectio
 ```yaml
 "authConfigRefName": string
 "configs": []enterprise.gloo.solo.io.ExtAuthConfig.Config
-"booleanLogic": .google.protobuf.StringValue
+"booleanExpr": .google.protobuf.StringValue
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `authConfigRefName` | `string` |  |  |
-| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by setting names to each config and defining `boolean_logic` below. |  |
-| `booleanLogic` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config. An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) ). |  |
+| `configs` | [[]enterprise.gloo.solo.io.ExtAuthConfig.Config](../extauth.proto.sk/#config) | List of auth configs to be checked for requests on a route referencing this auth config, By default, every config must be authorized for the entire request to be authorized. This behavior can be changed by defining names for each config and defining `boolean_expr` below. |  |
+| `booleanExpr` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | How to handle processing of named configs within an auth config chain. An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) ) The boolean expression is evaluated left to right but honors parenthesis and short-circuiting. |  |
 
 
 
@@ -770,7 +770,7 @@ Deprecated, prefer OAuth2Config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional, only required by use in complex boolean logic, if `boolean_logic` is defined below. |  |
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
 | `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |

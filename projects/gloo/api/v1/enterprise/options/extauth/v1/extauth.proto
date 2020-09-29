@@ -37,7 +37,10 @@ message AuthConfig {
 
   message Config {
 
-    // optional, only required by use in complex boolean logic, if `boolean_logic` is defined below
+    // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
+    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
+    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // the name assigned on the plugin config itself.
     google.protobuf.StringValue name = 9;
 
     oneof auth_config {
@@ -53,12 +56,13 @@ message AuthConfig {
 
   // List of auth configs to be checked for requests on a route referencing this auth config,
   // By default, every config must be authorized for the entire request to be authorized. This
-  // behavior can be changed by setting names to each config and defining `boolean_logic` below.
+  // behavior can be changed by defining names for each config and defining `boolean_expr` below.
   repeated Config configs = 3;
 
-  // How to handle processing of named configs within an auth config.
-  // An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) )
-  google.protobuf.StringValue boolean_logic = 10;
+  // How to handle processing of named configs within an auth config chain.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+  google.protobuf.StringValue boolean_expr = 10;
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
@@ -523,7 +527,10 @@ message ExtAuthConfig {
 
     reserved 1, 2;
 
-    // optional, only required by use in complex boolean logic, if `boolean_logic` is defined below
+    // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
+    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
+    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // the name assigned on the plugin config itself.
     google.protobuf.StringValue name = 11;
 
     oneof auth_config {
@@ -539,12 +546,13 @@ message ExtAuthConfig {
 
   // List of auth configs to be checked for requests on a route referencing this auth config,
   // By default, every config must be authorized for the entire request to be authorized. This
-  // behavior can be changed by setting names to each config and defining `boolean_logic` below.
+  // behavior can be changed by defining names for each config and defining `boolean_expr` below.
   repeated Config configs = 8;
 
-  // How to handle processing of named configs within an auth config.
-  // An example config might be: ( basic1 || basic2 || (oidc1 && oidc2) )
-  google.protobuf.StringValue boolean_logic = 10;
+  // How to handle processing of named configs within an auth config chain.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+  google.protobuf.StringValue boolean_expr = 10;
 }
 
 /*

@@ -84,12 +84,12 @@ func (m *AuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetBooleanLogic()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetBooleanExpr()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetBooleanLogic(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetBooleanExpr(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
@@ -983,12 +983,12 @@ func (m *ExtAuthConfig) Hash(hasher hash.Hash64) (uint64, error) {
 
 	}
 
-	if h, ok := interface{}(m.GetBooleanLogic()).(safe_hasher.SafeHasher); ok {
+	if h, ok := interface{}(m.GetBooleanExpr()).(safe_hasher.SafeHasher); ok {
 		if _, err = h.Hash(hasher); err != nil {
 			return 0, err
 		}
 	} else {
-		if val, err := hashstructure.Hash(m.GetBooleanLogic(), nil); err != nil {
+		if val, err := hashstructure.Hash(m.GetBooleanExpr(), nil); err != nil {
 			return 0, err
 		} else {
 			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
