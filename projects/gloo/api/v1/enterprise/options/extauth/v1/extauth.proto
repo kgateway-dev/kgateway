@@ -36,6 +36,13 @@ message AuthConfig {
   core.solo.io.Metadata metadata = 2 [(gogoproto.nullable) = false];
 
   message Config {
+
+    // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
+    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
+    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // the name assigned on the plugin config itself.
+    google.protobuf.StringValue name = 9;
+
     oneof auth_config {
       BasicAuth basic_auth = 1;
       OAuth oauth = 2 [deprecated=true];
@@ -47,7 +54,18 @@ message AuthConfig {
     }
   }
 
+  // List of auth configs to be checked for requests on a route referencing this auth config,
+  // By default, every config must be authorized for the entire request to be authorized. This
+  // behavior can be changed by defining names for each config and defining `boolean_expr` below.
+  //
+  // State is shared between successful requests on the chain, i.e., the headers returned from each
+  // successful auth service get appended into the final auth response.
   repeated Config configs = 3;
+
+  // How to handle processing of named configs within an auth config chain.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+  google.protobuf.StringValue boolean_expr = 10;
 }
 
 // Auth configurations defined on virtual hosts, routes, and weighted destinations will be unmarshalled to this message.
@@ -512,6 +530,12 @@ message ExtAuthConfig {
 
     reserved 1, 2;
 
+    // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
+    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
+    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // the name assigned on the plugin config itself.
+    google.protobuf.StringValue name = 11;
+
     oneof auth_config {
       OAuthConfig oauth = 3 [deprecated=true];
       OAuth2Config oauth2 = 9;
@@ -523,7 +547,18 @@ message ExtAuthConfig {
     }
   }
 
+  // List of auth configs to be checked for requests on a route referencing this auth config,
+  // By default, every config must be authorized for the entire request to be authorized. This
+  // behavior can be changed by defining names for each config and defining `boolean_expr` below.
+  //
+  // State is shared between successful requests on the chain, i.e., the headers returned from each
+  // successful auth service get appended into the final auth response.
   repeated Config configs = 8;
+
+  // How to handle processing of named configs within an auth config chain.
+  // An example config might be: ( basic1 || basic2 || (oidc1 && !oidc2) )
+  // The boolean expression is evaluated left to right but honors parenthesis and short-circuiting.
+  google.protobuf.StringValue boolean_expr = 10;
 }
 
 /*
