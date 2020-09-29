@@ -91,7 +91,8 @@ type Integrations struct {
 }
 
 type Consul struct {
-	UseTlsDiscovery         *bool   `json:"useTlsDiscovery" desc:"Allow gloo to automatically apply tls to consul services that are tagged with the 'glooUseTls' tag (case sensitive). Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	UseTlsDiscovery         *bool   `json:"useTlsDiscovery,omitEmpty" desc:"Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	TlsTagName              *string `json:"tlsTagName,omitEmpty" desc:"The tag gloo should use to split consul services and their instances into two upstreams, one which uses TLS and one which does not. Defaults to 'glooUseTls'."`
 	RootCaResourceNamespace *string `json:"rootCaResourceNamespace,omitEmpty" desc:"The namespace that the consul root CA resource is stored in."`
 	RootCaResourceName      *string `json:"rootCaResourceName,omitEmpty" desc:"The name of the resource contain the root CA that should be used for TLS with consul services."`
 }

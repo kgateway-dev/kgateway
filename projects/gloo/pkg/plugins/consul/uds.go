@@ -22,7 +22,7 @@ var (
 )
 
 func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client).Watch("", opts)
+	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulSettings.GetUseTlsTagging(), p.consulSettings.GetTlsTagName()).Watch("", opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -78,7 +78,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if p.consulSettings.GetUseTlsTagging() {
 		for _, tag := range originalSpec.Consul.InstanceTags {
 			// todo question: should we override existing SSL configs if an upstream already has one?
-			if tag == consul.UseTlsTag && original.SslConfig == nil {
+			if tag == p.consulSettings.GetTlsTagName() && original.SslConfig == nil {
 				rootCaName := p.consulSettings.GetRootCaName()
 				rootCaNamespace := p.consulSettings.GetRootCaNamespace()
 				original.SslConfig = &v1.UpstreamSslConfig{

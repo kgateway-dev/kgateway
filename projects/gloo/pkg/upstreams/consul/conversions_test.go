@@ -24,7 +24,7 @@ var _ = Describe("Conversions", func() {
 			{Name: "svc-2", DataCenters: []string{"dc1", "dc3", "dc4"}},
 		}
 
-		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters)
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, false, "")
 		usList.Sort()
 
 		Expect(usList).To(HaveLen(2))
@@ -40,6 +40,29 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[1].GetConsul()).NotTo(BeNil())
 		Expect(usList[1].GetConsul().ServiceName).To(Equal("svc-2"))
 		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc3", "dc4"))
+	})
+
+	FIt("correctly splits upstreams that have the TLS tag", func() {
+		servicesWithDataCenters := []*ServiceMeta{
+			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tls"}},
+		}
+
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, true, "tls")
+		usList.Sort()
+
+		Expect(usList).To(HaveLen(3))
+
+		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1"))
+		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
+		Expect(usList[0].GetConsul()).NotTo(BeNil())
+		Expect(usList[0].GetConsul().ServiceName).To(Equal("svc-1"))
+		Expect(usList[0].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
+
+		Expect(usList[1].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1-tls"))
+		Expect(usList[1].Metadata.Namespace).To(Equal(defaults.GlooSystem))
+		Expect(usList[1].GetConsul()).NotTo(BeNil())
+		Expect(usList[1].GetConsul().ServiceName).To(Equal("svc-1"))
+		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
 	})
 
 	It("correctly consolidates service information from different data centers", func() {

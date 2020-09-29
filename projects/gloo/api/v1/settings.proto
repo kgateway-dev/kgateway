@@ -267,11 +267,15 @@ message Settings {
         // the other will try apply TLS using the rootCA resource specified by rootCaNamespace:rootCaName.
         bool useTlsTagging = 16;
 
+        // The tag that gloo should use to make TLS upstreams from consul services, and to partition consul
+        // serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'
+        string tlsTagName = 17;
+
         // The namespace of the root CA resource to be used by discovered consul TLS upstreams.
-        string rootCaNamespace = 17;
+        string rootCaNamespace = 18;
 
         // The name of the root CA resource to be used by discovered consul TLS upstreams.
-        string rootCaName = 18;
+        string rootCaName = 19;
     }
 
     // Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/).

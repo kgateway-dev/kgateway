@@ -899,12 +899,12 @@ type Settings_ConsulConfiguration struct {
 	// hostname with the configured frequency to update endpoints with any changes to DNS resolution.
 	// Defaults to 5s.
 	DnsPollingInterval *types.Duration `protobuf:"bytes,15,opt,name=dns_polling_interval,json=dnsPollingInterval,proto3" json:"dns_polling_interval,omitempty"`
-	// If true, partition consul services into 2 upstreams based on the presence of the tag specified by the
-	// tlsTag value - one without TLS, and one which will use the CA resource specified by rootCaNamespace:rootCaName
-	// to establish TLS.
+	// If true, partition consul services into 2 upstreams based on the presence of the 'glooUseTls' tag among its
+	// service instances. One upstream is for servicesInstances without TLS,
+	// the other will try apply TLS using the rootCA resource specified by rootCaNamespace:rootCaName.
 	UseTlsTagging bool `protobuf:"varint,16,opt,name=useTlsTagging,proto3" json:"useTlsTagging,omitempty"`
-	// The tag that gloo should use to identify consul services that should use TLS, and then partition
-	// consul serviceInstances.
+	// The tag that gloo should use to make TLS upstreams from consul services, and to partition consul
+	// serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'
 	TlsTagName string `protobuf:"bytes,17,opt,name=tlsTagName,proto3" json:"tlsTagName,omitempty"`
 	// The namespace of the root CA resource to be used by discovered consul TLS upstreams.
 	RootCaNamespace string `protobuf:"bytes,18,opt,name=rootCaNamespace,proto3" json:"rootCaNamespace,omitempty"`

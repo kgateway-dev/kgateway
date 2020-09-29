@@ -336,8 +336,8 @@ need to be set on the Gloo container.
 | `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
 | `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |  |
 | `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
-| `useTlsTagging` | `bool` | If true, partition consul services into 2 upstreams based on the presence of the tag specified by the tlsTag value - one without TLS, and one which will use the CA resource specified by rootCaNamespace:rootCaName to establish TLS. |  |
-| `tlsTagName` | `string` | The tag that gloo should use to identify consul services that should use TLS, and then partition consul serviceInstances. |  |
+| `useTlsTagging` | `bool` | If true, partition consul services into 2 upstreams based on the presence of the 'glooUseTls' tag among its service instances. One upstream is for servicesInstances without TLS, the other will try apply TLS using the rootCA resource specified by rootCaNamespace:rootCaName. |  |
+| `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |  |
 | `rootCaNamespace` | `string` | The namespace of the root CA resource to be used by discovered consul TLS upstreams. |  |
 | `rootCaName` | `string` | The name of the root CA resource to be used by discovered consul TLS upstreams. |  |
 

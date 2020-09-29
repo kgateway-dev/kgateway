@@ -24,6 +24,7 @@ var _ discovery.DiscoveryPlugin = new(plugin)
 var (
 	DefaultDnsAddress         = "127.0.0.1:8600"
 	DefaultDnsPollingInterval = 5 * time.Second
+	DefaultTlsTagName         = "glooUseTls"
 
 	ConsulTlsInputError = func(namespace, name string) error {
 		return eris.Errorf("Consul settings specify automatic detection of TLS services, "+
@@ -102,6 +103,11 @@ func (p *plugin) Init(params plugins.InitParams) error {
 		rootCaNamespace := p.consulSettings.GetRootCaNamespace()
 		if rootCaName == "" || rootCaNamespace == "" {
 			return ConsulTlsInputError(rootCaName, rootCaNamespace)
+		}
+
+		tlsTagName := p.consulSettings.GetTlsTagName()
+		if tlsTagName == "" {
+			p.consulSettings.TlsTagName = DefaultTlsTagName
 		}
 	}
 	return nil

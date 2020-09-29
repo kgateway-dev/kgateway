@@ -13,7 +13,6 @@ import (
 )
 
 const UpstreamNamePrefix = "consul-svc:"
-const UseTlsTag = "glooUseTls"
 
 func IsConsulUpstream(upstreamName string) bool {
 	return strings.HasPrefix(upstreamName, UpstreamNamePrefix)
@@ -31,10 +30,10 @@ func fakeUpstreamName(consulSvcName string) string {
 }
 
 // Creates an upstream for each service in the map
-func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamList {
+func toUpstreamList(forNamespace string, services []*ServiceMeta, discoverTls bool, tlsTag string) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
-		us := CreateUpstreamsFromService(svc)
+		us := CreateUpstreamsFromService(svc, discoverTls, tlsTag)
 		for _, upstream := range us {
 			if forNamespace != "" && upstream.Metadata.Namespace != forNamespace {
 				continue
@@ -51,30 +50,32 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamLis
 // In this case, it returns 2 upstreams that are identical save for the presence of
 // InstanceTags: []string{"glooUseTls"} in the upstream that'll use TLS, "-tls"
 // added to the metadata name
-func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
+func CreateUpstreamsFromService(service *ServiceMeta, discoverTls bool, tlsTag string) []*v1.Upstream {
 	var result []*v1.Upstream
-	useTls := false
-	for _, tag := range service.Tags {
-		if tag == UseTlsTag {
-			useTls = true
-			break
+	if discoverTls {
+		useTls := false
+		for _, tag := range service.Tags {
+			if tag == tlsTag {
+				useTls = true
+				break
+			}
 		}
-	}
-	if useTls {
-		result = append(result, &v1.Upstream{
-			Metadata: core.Metadata{
-				Name:      fakeUpstreamName(service.Name + "-tls"),
-				Namespace: defaults.GlooSystem,
-			},
-			UpstreamType: &v1.Upstream_Consul{
-				Consul: &consulplugin.UpstreamSpec{
-					ServiceName:  service.Name,
-					DataCenters:  service.DataCenters,
-					ServiceTags:  service.Tags,
-					InstanceTags: []string{UseTlsTag},
+		if useTls {
+			result = append(result, &v1.Upstream{
+				Metadata: core.Metadata{
+					Name:      fakeUpstreamName(service.Name + "-tls"),
+					Namespace: defaults.GlooSystem,
 				},
-			},
-		})
+				UpstreamType: &v1.Upstream_Consul{
+					Consul: &consulplugin.UpstreamSpec{
+						ServiceName:  service.Name,
+						DataCenters:  service.DataCenters,
+						ServiceTags:  service.Tags,
+						InstanceTags: []string{tlsTag},
+					},
+				},
+			})
+		}
 	}
 
 	result = append(result, &v1.Upstream{

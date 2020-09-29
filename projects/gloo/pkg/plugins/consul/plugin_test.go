@@ -4,12 +4,15 @@ import (
 	"net"
 	"net/url"
 
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
 	"github.com/golang/mock/gomock"
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )
 
@@ -99,6 +102,39 @@ var _ = Describe("Resolve", func() {
 	It("can resolve consul service addresses in an unfiltered upstream", func() {
 
 		plug := NewPlugin(consulWatcherMock, nil, nil)
+
+		svcName := "my-svc"
+		dc := "dc1"
+
+		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
+
+		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
+
+		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
+			{
+				ServiceAddress: "5.6.7.8",
+				ServicePort:    1234,
+			},
+		}, nil, nil)
+
+		u, err := plug.Resolve(us)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
+	})
+
+	It("Can create upstreams with TLSm.", func() {
+
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+		plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{
+				Consul: &v1.Settings_ConsulConfiguration{
+					UseTlsTagging:   true,
+					RootCaName:      "testName",
+					RootCaNamespace: "testNamespace",
+				},
+			},
+		})
 
 		svcName := "my-svc"
 		dc := "dc1"
