@@ -9,4 +9,3 @@ changelog:
     # issueLink: TODO
     description: >
       Upgrade envoy-gloo version to handle CVEs CVE-2020-25017 and CVE-2020-25018
-
