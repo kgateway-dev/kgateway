@@ -42,7 +42,6 @@ func (*consulUpstreamClient) Delete(namespace, name string, opts skclients.Delet
 }
 
 func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (v1.UpstreamList, error) {
-
 	// Get a list of the available data centers
 	dataCenters, err := c.consul.DataCenters()
 	if err != nil {

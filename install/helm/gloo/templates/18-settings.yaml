@@ -36,7 +36,16 @@ spec:
       enableCredentialsDiscovey: true
 {{- end }}
 
-
+  consul:
+{{- if .Values.settings.consul.useTlsDiscovery }}
+    useTlsDiscovery:  {{ .Values.settings.consul.useTlsDiscovery }}
+{{- end }}
+{{- if .Values.settings.consul.rootCaResourceNamespace }}
+    rootCaResourceNamespace:  {{ .Values.settings.consul.rootCaResourceNamespace }}
+{{- end }}
+{{- if .Values.settings.consul.rootCaResourceName }}
+    rootCaResourceName:  {{ .Values.settings.consul.rootCaResourceName }}
+{{- end }}
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}

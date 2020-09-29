@@ -13,7 +13,7 @@ import (
 )
 
 const UpstreamNamePrefix = "consul-svc:"
-const TlsTag = "glooUseTls"
+const UseTlsTag = "glooUseTls"
 
 func IsConsulUpstream(upstreamName string) bool {
 	return strings.HasPrefix(upstreamName, UpstreamNamePrefix)
@@ -48,13 +48,14 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta) v1.UpstreamLis
 // This function normally returns 1 upstream. It instead returns two upstreams if
 // automatic tls discovery is on for consul, and this service contains the designated
 // useTls tag (which by default is glooUseTls).
-// In this case, it returns 2 upstreams that are identical save for the presense of
-// InstanceTags: []string{"glooUseTls"} in the upstream that'll use TLS.
+// In this case, it returns 2 upstreams that are identical save for the presence of
+// InstanceTags: []string{"glooUseTls"} in the upstream that'll use TLS, "-tls"
+// added to the metadata name
 func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
 	var result []*v1.Upstream
 	useTls := false
 	for _, tag := range service.Tags {
-		if tag == TlsTag {
+		if tag == UseTlsTag {
 			useTls = true
 			break
 		}
@@ -62,15 +63,15 @@ func CreateUpstreamsFromService(service *ServiceMeta) []*v1.Upstream {
 	if useTls {
 		result = append(result, &v1.Upstream{
 			Metadata: core.Metadata{
-				Name:      fakeUpstreamName(service.Name),
+				Name:      fakeUpstreamName(service.Name + "-tls"),
 				Namespace: defaults.GlooSystem,
 			},
 			UpstreamType: &v1.Upstream_Consul{
 				Consul: &consulplugin.UpstreamSpec{
-					ServiceName:  service.Name + "-tls",
+					ServiceName:  service.Name,
 					DataCenters:  service.DataCenters,
 					ServiceTags:  service.Tags,
-					InstanceTags: []string{"glooUseTls"},
+					InstanceTags: []string{UseTlsTag},
 				},
 			},
 		})

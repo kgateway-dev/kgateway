@@ -78,11 +78,9 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	if p.consulSettings.GetUseTlsTagging() {
 		for _, tag := range originalSpec.Consul.InstanceTags {
 			// todo question: should we override existing SSL configs if an upstream already has one?
-			if tag == consul.TlsTag && original.SslConfig == nil {
+			if tag == consul.UseTlsTag && original.SslConfig == nil {
 				rootCaName := p.consulSettings.GetRootCaName()
 				rootCaNamespace := p.consulSettings.GetRootCaNamespace()
-				// todo question: assuming these inputs are correct, does anything else need to be done to setup ssl?
-				// todo question: should we just create/cache this config during plugin init?
 				original.SslConfig = &v1.UpstreamSslConfig{
 					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
