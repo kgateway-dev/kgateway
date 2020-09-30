@@ -113,8 +113,8 @@ func (m *AuthConfig) GetBooleanExpr() *types.StringValue {
 
 type AuthConfig_Config struct {
 	// optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
-	// in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
-	// pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+	// in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the
+	// pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of
 	// the name assigned on the plugin config itself.
 	Name *types.StringValue `protobuf:"bytes,9,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are valid to be assigned to AuthConfig:
@@ -2241,8 +2241,8 @@ func (m *ExtAuthConfig_OpaAuthConfig) GetQuery() string {
 
 type ExtAuthConfig_Config struct {
 	// optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
-	// in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
-	// pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+	// in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the
+	// pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of
 	// the name assigned on the plugin config itself.
 	Name *types.StringValue `protobuf:"bytes,11,opt,name=name,proto3" json:"name,omitempty"`
 	// Types that are valid to be assigned to AuthConfig:
