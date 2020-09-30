@@ -447,3 +447,132 @@ spec:
 status:
 (...)
 {{< /highlight >}}
+
+## Declarative Approach
+
+The glooctl istio inject feature we have walked through above is great for testing out the istio integration and quickly getting started. However, given that it is a manual step, it may not be suitable for all environments - for example a helm-only install in a production cluster. In such cases, we also have the option of taking a declarative approach instead.
+
+{{< tabs >}}
+{{< tab name="glooctl" codelang="shell" >}}
+glooctl install gateway --values <(echo '{"crds":{"create":true},"global":{"istioSDS":{"enabled":true}}}')
+{{< /tab >}}
+{{< tab name="helm" codelang="shell">}}
+helm install gloo gloo/gloo --namespace gloo-system --set global.istioSDS.enabled=true
+{{< /tab >}}
+{{< /tabs >}}
+
+This will set up the ConfigMap and gateway-proxy deployments to handle mTLS cert rotation.
+
+Any upstreams using mTLS will need to be contain the sslConfig as described above in the [Upstream changes section]({{% versioned_link_path fromRoot="/guides/integrations/service_mesh/gloo_istio_mtls/#upstream-changes" %}}).
+
+##### Custom Sidecars
+
+The default istio-proxy image used as a sidecar by this declarative approach is `docker.io/istio/proxyv2:1.6.8`. If this image doesn't work for you (for example, your mesh is on a different, incompatible Istio versio), you can override the default sidecar with your own.
+
+To do this, you must set your custom sidecar in the helm value `global.istioSDS.customSidecars`. For example, if you wanted to use istio proxy v1.6.6 instead:
+
+```yaml
+global:
+  istioSDS:
+    enabled: true
+    customSidecars:
+      - name: istio-proxy
+        image: docker.io/istio/proxyv2:1.6.6
+        args:
+        - proxy
+        - sidecar
+        - --domain
+        - $(POD_NAMESPACE).svc.cluster.local
+        - --configPath
+        - /etc/istio/proxy
+        - --binaryPath
+        - /usr/local/bin/envoy
+        - --serviceCluster
+        - istio-proxy-prometheus
+        - --drainDuration
+        - 45s
+        - --parentShutdownDuration
+        - 1m0s
+        - --discoveryAddress
+        - istio-pilot.istio-system.svc:15012
+        - --proxyLogLevel=warning
+        - --proxyComponentLogLevel=misc:error
+        - --connectTimeout
+        - 10s
+        - --proxyAdminPort
+        - "15000"
+        - --controlPlaneAuthPolicy
+        - NONE
+        - --dnsRefreshRate
+        - 300s
+        - --statusPort
+        - "15021"
+        - --trust-domain=cluster.local
+        - --controlPlaneBootstrap=false
+        env:
+          - name: OUTPUT_CERTS
+            value: "/etc/istio-certs"
+          - name: JWT_POLICY
+            value: third-party-jwt
+          - name: PILOT_CERT_PROVIDER
+            value: istiod
+          - name: CA_ADDR
+            value: istiod.istio-system.svc:15012
+          - name: ISTIO_META_MESH_ID
+            value: cluster.local
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: INSTANCE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          - name: SERVICE_ACCOUNT
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.serviceAccountName
+          - name: HOST_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: ISTIO_META_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+          - name: ISTIO_META_CONFIG_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+        imagePullPolicy: IfNotPresent
+        readinessProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /healthz/ready
+            port: 15021
+            scheme: HTTP
+          initialDelaySeconds: 1
+          periodSeconds: 2
+          successThreshold: 1
+          timeoutSeconds: 1
+        volumeMounts:
+        - mountPath: /var/run/secrets/istio
+          name: istiod-ca-cert
+        - mountPath: /etc/istio/proxy
+          name: istio-envoy
+        - mountPath: /etc/istio-certs/
+          name: istio-certs
+        - mountPath: /var/run/secrets/tokens
+          name: istio-token 
+```
+
+If any value is set in `global.istioSDS.customSidecars`, this is used instead of the default istio-proxy sidecar. Multiple custom sidecars can be added if necessary.
+
+See also [helm values references doc]({{% versioned_link_path fromRoot="/reference/helm_chart_values/" %}}).
+
