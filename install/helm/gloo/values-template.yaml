@@ -109,6 +109,11 @@ gatewayProxies:
         enabled: false
         sleepTimeSeconds: 25
       customReadinessProbe: {}
+    hpa:
+      enabled: false
+      maxReplicas:
+      minReplicas:
+      targetCPUUtilizationPercentage:
     service:
       customPorts: []
       type: LoadBalancer
