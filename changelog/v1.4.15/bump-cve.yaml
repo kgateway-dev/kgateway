@@ -4,8 +4,8 @@ changelog:
     dependencyRepo: envoy-gloo
     dependencyTag: 1.15.0-patch4
     description: >
-      Upgrade envoy-gloo version to handle CVEs CVE-2020-25017 and CVE-2020-25018
+      Upgrade envoy-gloo version to handle CVE-2020-25017 and CVE-2020-25018
   - type: FIX
-    # issueLink: TODO
+    issueLink: https://github.com/solo-io/gloo/issues/3687
     description: >
-      Upgrade envoy-gloo version to handle CVEs CVE-2020-25017 and CVE-2020-25018
+      Upgrade envoy-gloo version to handle CVE-2020-25017 and CVE-2020-25018
