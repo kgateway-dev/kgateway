@@ -60,7 +60,7 @@ local   solo.io/kubeconfig   1      37s
 In the registered cluster, Gloo Federation has created a service account, cluster role, and role binding. They can be viewed by running the following commands:
 
 ```
-kubectl get serviceaccount local -n gloo-fed
+kubectl get serviceaccount local -n gloo-system
 kubectl get clusterrole gloo-federation-controller
 kubectl get clusterrolebinding local-gloo-federation-controller-clusterrole-binding
 ```
@@ -73,7 +73,7 @@ kubectl get glooinstances -n gloo-fed
 
 ```
 NAME                      AGE
-local-gloo-fed         95m
+local-gloo-system         95m
 ```
 
 You have now successfully added a remote cluster to Gloo Federation. You can repeat the same process for any other clusters you want to include in Gloo Federation.

@@ -22,7 +22,7 @@ glooctl cluster register [flags]
   -h, --help                          help for register
       --remote-context string         name of the kubeconfig context to use for registration
       --remote-kubeconfig string      path to the kubeconfig from which the registered cluster will be accessed
-      --remote-namespace string       namespace in the target cluster where registration artifacts should be written (default "gloo-fed")
+      --remote-namespace string       namespace in the target cluster where registration artifacts should be written (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
