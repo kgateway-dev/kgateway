@@ -6,9 +6,13 @@ weight: 20
 
 Gloo's 2-layer API aggregates all the routes in to a single Proxy CRD. This is helpful for usability and debugging, and allows rapid support in various user level APIs.
 
-When using many routes, the Proxy CRDs can get quite big, and may surpass the storage limits set by etcd.
+When using many routes, the Proxy CRDs can get quite big, and may surpass the storage limits set by etcd (you will see a message in the logs: `etcdserver: request is too large`).
 
 To workaround that (as of Gloo 1.5.0+), you can enable compression for the Proxy CRD spec, so that the data stored in etcd is reduced significantly (by a factor of 10 or so).
+
+
+ {{% notice note %}} Note that this is a **workaround** and should only be used when necessary. {{% /notice %}}
+
 
 To enable proxy spec compression, edit the gloo the settings, like so:
 ```
