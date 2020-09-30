@@ -9,9 +9,9 @@ One of the core features of any API Gateway is the ability to transform the traf
 ## Defining a transformation
 Transformations are defined by adding the `transformations` attribute to your Virtual Services. You can define this attribute on three different Virtual Service sub-resources:
  
-- on **VirtualHosts**,
-- on **Routes**, and
-- on **WeightedDestinations**.
+- **VirtualHosts**
+- **Routes**
+- **WeightedDestinations**
 
 The configuration format is the same in all three cases and must be specified under the relevant `options` attribute. For example, to configure transformations for all traffic matching a Virtual Host, you need to add the following attribute to your Virtual Host definition:
 
@@ -80,7 +80,7 @@ Let's go ahead and describe each one of these attributes in detail.
 ##### parseBodyBehavior
 This attribute determines how the request/response body will be parsed and can have one of two values:
 
-- `ParseAsJson`: Gloo will attempt to parse the body as a JSON structure. This is the default behavior.
+- `ParseAsJson`: Gloo will attempt to parse the body as a JSON structure. *This is the default behavior*.
 - `DontParse`: the body will be treated as plain text.
 
 The important part to know about the `DontParse` setting is that the body will be buffered and available, but will not be parsed. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
@@ -88,7 +88,7 @@ The important part to know about the `DontParse` setting is that the body will b
 As we will [see later](#templating-language), some of the templating features won't be available when treating the body as plain text.
 
 ##### ignoreErrorOnParse
-If set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
+By default, Gloo will attempt to parse the body as JSON, unless you have `DontParse` set as the `parseBodyBehavior`. If `ignoreErrorOnParse` is set to `true`, Envoy will not throw an exception in case the body parsing fails. Defaults to `false`.
 
 Implicit in this setting is that the body will be buffered and available. If you're looking to skip any body buffering completely, see the section [on passthrough: {}](#passthrough)
 
@@ -116,6 +116,8 @@ An extraction must have one of two sources:
 {{% notice note %}}
 The `body` extraction source has been introduced with **Gloo**, release 0.20.12, and **Gloo Enterprise**, release 0.20.7. If you are using an earlier version, it will not work.
 {{% /notice %}}
+
+Extracting the body is generally not useful when Gloo has already parsed it as JSON, the default behavior. The parsed body data can be directly referenced using standard JSON syntax. The `body` extractor treats the body as plaintext, and is interpreted using a regular expression as noted below. This can be useful for body data that cannot be parsed as JSON.
 
 An extraction must also define which information is to be extracted from the source. This can be done by providing a regular expression via the `regex` attribute. The regular expression will be applied to the body or to the value of relevant header. If your regular expression uses _capturing groups_, you can select the group match you want to use via the `subgroup` attribute.
 
@@ -148,6 +150,26 @@ transformationTemplate:
   headers:
     foo:
       text: '{{ header("bar") }}'
+```
+
+You could also use the parsed data from the body and add information to the header. For instance, given a request body:
+
+```json
+{
+  "Name": "Gloo",
+  "Favorites": {
+    "Color": "Blue"
+  }
+}
+```
+
+You could reference the value stored in `Color` and place it into the headers like so:
+
+```yaml
+transformationTemplate:
+  headers:
+    color:
+      text: '{{ Favorites.Color }}'
 ```
 
 See the [template language section](#templating-language) for more details about template strings.

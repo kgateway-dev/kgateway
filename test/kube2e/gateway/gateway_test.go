@@ -1473,6 +1473,94 @@ spec:
 				"header template ':status': [inja.exception.parser_error] expected statement close, got '%'")))
 		})
 	})
+
+	Context("compressed spec is working", func() {
+		var (
+			settingsClient gloov1.SettingsClient
+		)
+
+		BeforeEach(func() {
+			var err error
+			settingsClientFactory := &factory.KubeResourceClientFactory{
+				Crd:         gloov1.SettingsCrd,
+				Cfg:         cfg,
+				SharedCache: kube.NewKubeCache(ctx),
+			}
+
+			settingsClient, err = gloov1.NewSettingsClient(settingsClientFactory)
+			Expect(err).NotTo(HaveOccurred())
+			err = settingsClient.Register()
+			Expect(err).NotTo(HaveOccurred())
+
+			settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(settingsList).To(HaveLen(1))
+			settings := settingsList[0]
+
+			if settings.Gateway == nil {
+				settings.Gateway = &gloov1.GatewayOptions{
+					CompressedProxySpec: true,
+				}
+			}
+
+			_, err = settingsClient.Write(settings, clients.WriteOpts{
+				OverwriteExisting: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+		})
+
+		AfterEach(func() {
+			settingsList, err := settingsClient.List(testHelper.InstallNamespace, clients.ListOpts{})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(settingsList).To(HaveLen(1))
+			settings := settingsList[0]
+			settings.Gateway.CompressedProxySpec = false
+			_, err = settingsClient.Write(settings, clients.WriteOpts{
+				OverwriteExisting: true,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			cancel()
+			err = virtualServiceClient.Delete(testHelper.InstallNamespace, "vs", clients.DeleteOpts{IgnoreNotExist: true})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("correctly routes requests to an upstream", func() {
+			dest := &gloov1.Destination{
+				DestinationType: &gloov1.Destination_Upstream{
+					Upstream: &core.ResourceRef{
+						Namespace: testHelper.InstallNamespace,
+						Name:      fmt.Sprintf("%s-%s-%v", testHelper.InstallNamespace, helper.TestrunnerName, helper.TestRunnerPort),
+					},
+				},
+			}
+			// give proxy validation a chance to start
+			Eventually(func() error {
+				_, err := virtualServiceClient.Write(getVirtualService(dest, nil), clients.WriteOpts{})
+				return err
+			}).ShouldNot(HaveOccurred())
+
+			defaultGateway := defaults.DefaultGateway(testHelper.InstallNamespace)
+			// wait for default gateway to be created
+			Eventually(func() (*gatewayv1.Gateway, error) {
+				return gatewayClient.Read(testHelper.InstallNamespace, defaultGateway.Metadata.Name, clients.ReadOpts{})
+			}, "15s", "0.5s").Should(Not(BeNil()))
+
+			testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
+				Protocol:          "http",
+				Path:              "/",
+				Method:            "GET",
+				Host:              gatewayProxy,
+				Service:           gatewayProxy,
+				Port:              gatewayPort,
+				ConnectionTimeout: 1, // this is important, as sometimes curl hangs
+				WithoutStats:      true,
+			}, helper.SimpleHttpResponse, 1, 60*time.Second, 1*time.Second)
+		})
+
+	})
+
 })
 
 func ToFile(content string) string {

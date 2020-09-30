@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3689
+    description: Update default remote cluster registration namespace to "gloo-system" to simplify the Gloo Fed cluster registration process for most users.
