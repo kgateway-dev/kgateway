@@ -29,8 +29,8 @@ var (
 	ConsulTlsInputError = func(namespace, name string) error {
 		return eris.Errorf("Consul settings specify automatic detection of TLS services, "+
 			"but at least one of the following required values are missing.\n"+
-			"rootCaNamespace%s\n"+
-			"rootCaName",
+			"rootCaNamespace: %s\n"+
+			"rootCaName: %s.\n",
 			namespace, name)
 
 	}
