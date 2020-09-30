@@ -50,7 +50,7 @@ var _ = Describe("Conversions", func() {
 		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, true, "tls")
 		usList.Sort()
 
-		Expect(usList).To(HaveLen(3))
+		Expect(usList).To(HaveLen(2))
 
 		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1"))
 		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
