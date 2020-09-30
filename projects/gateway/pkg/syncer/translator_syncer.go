@@ -10,6 +10,7 @@ import (
 	"go.uber.org/zap/zapcore"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	"github.com/solo-io/gloo/pkg/utils/syncutil"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
 	"github.com/solo-io/go-utils/hashutils"
@@ -18,6 +19,7 @@ import (
 	v1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"github.com/solo-io/gloo/projects/gateway/pkg/utils"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
@@ -72,6 +74,13 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 		logger.Debug(syncutil.StringifySnapshot(snap))
 	}
 
+	desiredProxies := s.generatedDesiredProxies(ctx, snap)
+
+	return s.reconcile(ctx, desiredProxies)
+}
+
+func (s *translatorSyncer) generatedDesiredProxies(ctx context.Context, snap *v1.ApiSnapshot) reconciler.GeneratedProxies {
+	logger := contextutils.LoggerFrom(ctx)
 	gatewaysByProxy := utils.GatewaysByProxyName(snap.Gateways)
 
 	desiredProxies := make(reconciler.GeneratedProxies)
@@ -79,13 +88,21 @@ func (s *translatorSyncer) Sync(ctx context.Context, snap *v1.ApiSnapshot) error
 	for proxyName, gatewayList := range gatewaysByProxy {
 		proxy, reports := s.translator.Translate(ctx, proxyName, s.writeNamespace, snap, gatewayList)
 		if proxy != nil {
+
+			if s.shouldCompresss(ctx) {
+				compress.SetShouldCompressed(proxy)
+			}
+
 			logger.Infof("desired proxy %v", proxy.Metadata.Ref())
 			proxy.Metadata.Labels = s.managedProxyLabels
 			desiredProxies[proxy] = reports
 		}
 	}
+	return desiredProxies
+}
 
-	return s.reconcile(ctx, desiredProxies)
+func (s *translatorSyncer) shouldCompresss(ctx context.Context) bool {
+	return settingsutil.MaybeFromContext(ctx).GetGateway().GetCompressedProxySpec()
 }
 
 func (s *translatorSyncer) reconcile(ctx context.Context, desiredProxies reconciler.GeneratedProxies) error {
