@@ -38,8 +38,8 @@ message AuthConfig {
   message Config {
 
     // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
-    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
-    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the
+    // pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of
     // the name assigned on the plugin config itself.
     google.protobuf.StringValue name = 9;
 
@@ -531,8 +531,8 @@ message ExtAuthConfig {
     reserved 1, 2;
 
     // optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used
-    // in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the
-    // pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of
+    // in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the
+    // pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of
     // the name assigned on the plugin config itself.
     google.protobuf.StringValue name = 11;
 
