@@ -95,10 +95,13 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 
 func (p *plugin) Init(params plugins.InitParams) error {
 	p.consulSettings = params.Settings.Consul
+	if p.consulSettings == nil {
+		p.consulSettings = &v1.Settings_ConsulConfiguration{UseTlsTagging: false}
+	}
 	// if automatically discovering TLS in consul services, make sure we have a specified tag
 	// and a resource location for the validation context.
 	// Of these three values, on the tag has a default; the resource name/namespace must be set manually.
-	if p.consulSettings.UseTlsTagging {
+	if p.consulSettings != nil && p.consulSettings.UseTlsTagging {
 		rootCaName := p.consulSettings.GetRootCaName()
 		rootCaNamespace := p.consulSettings.GetRootCaNamespace()
 		if rootCaName == "" || rootCaNamespace == "" {
