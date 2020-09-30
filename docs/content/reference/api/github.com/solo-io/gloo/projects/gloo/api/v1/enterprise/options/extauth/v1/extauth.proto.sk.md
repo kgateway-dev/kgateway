@@ -98,7 +98,7 @@ format that will be included in the extauth snapshot.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth` | [.enterprise.gloo.solo.io.OAuth](../extauth.proto.sk/#oauth) |  Only one of `oauth`, `basicAuth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth2` | [.enterprise.gloo.solo.io.OAuth2](../extauth.proto.sk/#oauth2) |  Only one of `oauth2`, `basicAuth`, `oauth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
@@ -770,7 +770,7 @@ Deprecated, prefer OAuth2Config
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. *apikeys.config-0, of the pattern $CONFIG_TYPE-$INDEX_IN_CHAIN). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
+| `name` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | optional: used when defining complex boolean logic, if `boolean_expr` is defined below. Also used in logging. If omitted, an automatically generated name will be used (e.g. config_0, of the pattern 'config_$INDEX_IN_CHAIN'). In the case of plugin auth, this field is ignored in favor of the name assigned on the plugin config itself. |  |
 | `oauth` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuthConfig](../extauth.proto.sk/#oauthconfig) |  Only one of `oauth`, `oauth2`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `oauth2` | [.enterprise.gloo.solo.io.ExtAuthConfig.OAuth2Config](../extauth.proto.sk/#oauth2config) |  Only one of `oauth2`, `oauth`, `basicAuth`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
 | `basicAuth` | [.enterprise.gloo.solo.io.BasicAuth](../extauth.proto.sk/#basicauth) |  Only one of `basicAuth`, `oauth`, `oauth2`, `apiKeyAuth`, `pluginAuth`, or `ldap` can be set. |  |
