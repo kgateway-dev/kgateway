@@ -22,7 +22,7 @@ glooctl cluster deregister [flags]
   -h, --help                          help for deregister
       --remote-context string         name of the kubeconfig context to use for deregistration
       --remote-kubeconfig string      path to the kubeconfig from which the deregistered cluster will be accessed
-      --remote-namespace string       namespace in the target cluster where artifacts should be deleted (default "gloo-fed")
+      --remote-namespace string       namespace in the target cluster where artifacts should be deleted (default "gloo-system")
 ```
 
 ### Options inherited from parent commands
