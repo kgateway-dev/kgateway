@@ -42,7 +42,7 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc3", "dc4"))
 	})
 
-	FIt("correctly splits upstreams that have the TLS tag", func() {
+	It("correctly splits upstreams that have the TLS tag", func() {
 		servicesWithDataCenters := []*ServiceMeta{
 			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"tls"}},
 		}
