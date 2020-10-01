@@ -1,0 +1,5 @@
+changelog:
+  - type: NON_USER_FACING
+    issueLink: https://github.com/solo-io/gloo/issues/3646
+    description: >
+      Document declarative approach to setting up the Istio/Gloo mTLS integration via Helm.
