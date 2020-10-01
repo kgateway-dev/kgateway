@@ -1,7 +1,7 @@
 changelog:
   - type: NEW_FEATURE
     issueLink: https://github.com/solo-io/gloo/issues/2544
-    description: >-
+    description: |
       Allow automatic discovery of TLS when using consul services. Requires serveral changes to gloo's helm config to use:
       Set the settings.integrations.consul.useTls flag to true.
       Assign a tag for gloo to recognize as the TLS tag if the default (settings.integrations.consul.tlsTagName=glooUseTls) is insufficient.
