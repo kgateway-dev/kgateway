@@ -22,7 +22,7 @@ var (
 )
 
 func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulSettings.GetUseTlsTagging(), p.consulSettings.GetTlsTagName()).Watch("", opts)
+	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulSettings).Watch("", opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -74,6 +74,7 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 		return false, InvalidSpecTypeError(desired, "desired")
 	}
 
+	// todo move ssl creation to upstream creation
 	// if true, then search through instance tags for tag that indicates TLS.
 	if p.consulSettings.GetUseTlsTagging() {
 		for _, tag := range originalSpec.Consul.InstanceTags {

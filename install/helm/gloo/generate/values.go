@@ -92,9 +92,11 @@ type Integrations struct {
 
 type Consul struct {
 	UseTlsDiscovery         *bool   `json:"useTlsDiscovery,omitEmpty" desc:"Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
-	TlsTagName              *string `json:"tlsTagName,omitEmpty" desc:"The tag gloo should use to split consul services and their instances into two upstreams, one which uses TLS and one which does not. Defaults to 'glooUseTls'."`
+	TlsTagName              *string `json:"tlsTagName,omitEmpty" desc:"The tag gloo should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
 	RootCaResourceNamespace *string `json:"rootCaResourceNamespace,omitEmpty" desc:"The namespace that the consul root CA resource is stored in."`
 	RootCaResourceName      *string `json:"rootCaResourceName,omitEmpty" desc:"The name of the resource contain the root CA that should be used for TLS with consul services."`
+	SplitTlsServices        *bool   `json:"splitTlsServices,omitEmpty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without. Requires noTlsTagName to be set if true."`
+	NoTlsTagName            *string `json:"noTlsTagName,omitEmpty" desc:"The tag gloo should use to identify consul ServiceInstances that should be associated with the non-tls upstream when both a tls and non-tls upstream exist for a consul service."`
 }
 
 type Knative struct {

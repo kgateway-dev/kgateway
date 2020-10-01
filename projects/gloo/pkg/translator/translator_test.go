@@ -1428,9 +1428,9 @@ var _ = Describe("Translator", func() {
 				Tags:        []string{dev, prod},
 			}
 			// These are the "fake" upstreams that represent the above service in the snapshot
-			initialUsList := consul.CreateUpstreamsFromService(svc, false, "")
+			initialUsList := consul.CreateUpstreamsFromService(svc, nil)
 			if len(initialUsList) == 1 {
-				fakeUsList = v1.UpstreamList{consul.CreateUpstreamsFromService(svc, false, "")[0]}
+				fakeUsList = v1.UpstreamList{consul.CreateUpstreamsFromService(svc, nil)[0]}
 			} else {
 				fakeUsList = v1.UpstreamList{}
 			}

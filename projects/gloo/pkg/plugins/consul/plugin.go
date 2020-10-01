@@ -26,12 +26,8 @@ var (
 	DefaultDnsPollingInterval = 5 * time.Second
 	DefaultTlsTagName         = "glooUseTls"
 
-	ConsulTlsInputError = func(namespace, name string) error {
-		return eris.Errorf("Consul settings specify automatic detection of TLS services, "+
-			"but at least one of the following required values are missing.\n"+
-			"rootCaNamespace: %s\n"+
-			"rootCaName: %s.\n",
-			namespace, name)
+	ConsulTlsInputError = func(msg string) error {
+		return eris.Errorf(msg)
 
 	}
 )
@@ -67,6 +63,18 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 		scheme = "https"
 	}
 
+	// Match serviceInstances (basically consul endpoints) to gloo upstreams. A match is found if the upstream's
+	// IntanceTags array is a subset of the serviceInstance's tags, or always if IntanceTags is empty.
+	//
+	// There's no coordination between upstreams when matching. This makes it a little awkward to sort
+	// consul serviceInstance's among upstreams if we have any upstream with an empty InstanceTags array,
+	// since that will also auto-match with serviceInstances that had matching tags for another upstream.
+	//
+	// The resulting implication is:
+	// If there are multiple upstreams associated with the same consul service, each upstream MUST have a non-empty
+	// InstanceTags array, and that service's serviceInstances MUST have enough tags to match them to at least one
+	// service. If a serviceInstance has the tags to match into multiple upstreams, there's no guarantee which it'll
+	// be associated with.
 	for _, inst := range instances {
 		if (len(spec.InstanceTags) == 0) || matchTags(spec.InstanceTags, inst.ServiceTags) {
 			ipAddresses, err := getIpAddresses(context.TODO(), inst.ServiceAddress, p.resolver)
@@ -105,12 +113,23 @@ func (p *plugin) Init(params plugins.InitParams) error {
 		rootCaName := p.consulSettings.GetRootCaName()
 		rootCaNamespace := p.consulSettings.GetRootCaNamespace()
 		if rootCaName == "" || rootCaNamespace == "" {
-			return ConsulTlsInputError(rootCaName, rootCaNamespace)
+			return ConsulTlsInputError(fmt.Sprintf("Consul settings specify automatic detection of TLS services, "+
+				"but at least one of the following required values are missing.\n"+
+				"rootCaNamespace: %s\n"+
+				"rootCaName: %s.\n",
+				rootCaNamespace, rootCaName))
 		}
 
 		tlsTagName := p.consulSettings.GetTlsTagName()
 		if tlsTagName == "" {
 			p.consulSettings.TlsTagName = DefaultTlsTagName
+		}
+
+		splitServices := p.consulSettings.GetSplitTlsServices()
+		noTlsTagName := p.consulSettings.GetNoTlsTagName()
+		if splitServices && noTlsTagName == "" {
+			return ConsulTlsInputError("Consul settings specified TLS service-splitting, but the " +
+				"required noTlsTagName configuration value is unset. ")
 		}
 	}
 	return nil
@@ -128,8 +147,9 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	return nil
 }
 
+// make sure t1 is a subset of t2
 func matchTags(t1, t2 []string) bool {
-	if len(t1) != len(t2) {
+	if len(t1) > len(t2) {
 		return false
 	}
 	for _, tag1 := range t1 {
