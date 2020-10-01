@@ -111,7 +111,7 @@ config:
   staticPasswords:
   - email: "admin@example.com"
     # bcrypt hash of the string "password"
-    hash: "\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+    hash: '\$2a\$10\$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W'
     username: "admin"
     userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
 EOF
@@ -178,16 +178,17 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      app_url: http://localhost:8080/
-      callback_path: /callback
-      client_id: gloo
-      client_secret_ref:
-        name: oauth
-        namespace: gloo-system
-      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
-      scopes:
-      - email
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: http://localhost:8080/
+        callback_path: /callback
+        client_id: gloo
+        client_secret_ref:
+          name: oauth
+          namespace: gloo-system
+        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
 {{< /highlight >}}
 
 The above configuration instructs Gloo to use its extauth OIDC module to authenticate the incoming request. 
