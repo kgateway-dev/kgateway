@@ -1,0 +1,12 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-io
+    dependencyRepo: envoy-gloo
+    dependencyTag: 1.16.0-rc4
+    description: >
+      Upgrade envoy-gloo version to fix seg fault in aws lambda filter
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3684
+    resolvesIssue: false
+    description: >
+      Upgrade envoy-gloo version to fix seg fault in aws lambda filter
