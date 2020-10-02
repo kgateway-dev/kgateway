@@ -71,7 +71,7 @@ In the example below, the virtual service, through CORS parameters, will inform 
 `GET` and `POST` calls from services located on `*.supergloo.dev`. This could allow you to host scripts or
 other needed resources on the `'*.supergloo.dev'`, even if your application is not being server from that location.
 
-{{< highlight yaml "hl_lines=9-23" >}}
+{{< highlight yaml "hl_lines=9-24" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -89,9 +89,10 @@ spec:
         - GET
         - POST
         allowOrigin:
-        - solo.io
+        # The scheme portion of the URL is required
+        - 'https://solo.io'
         allowOriginRegex:
-        - '[a-zA-Z0-9]*.supergloo.dev'
+        - 'https://[a-zA-Z0-9]*.gloo.dev'
         exposeHeaders:
         - origin
         maxAge: 1d
