@@ -1,0 +1,4 @@
+changelog:
+- type: FIX
+  issueLink: https://github.com/solo-io/gloo/issues/3704
+  description: Fix misleading message in `glooctl install` output when the install namespace already exists.

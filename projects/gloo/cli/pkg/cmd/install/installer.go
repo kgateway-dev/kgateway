@@ -192,6 +192,8 @@ func (i *installer) createNamespace(namespace string) {
 		} else {
 			fmt.Printf("Done.\n")
 		}
+	} else if apierrors.IsAlreadyExists(err) {
+		fmt.Printf("\nNamespace %s already exists. Continuing...\n", namespace)
 	} else {
 		fmt.Printf("\nUnable to check if namespace %s exists. Continuing...\n", namespace)
 	}
