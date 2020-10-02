@@ -146,7 +146,7 @@ Then update the `spec.template` section of the yaml with these additional annota
         ad.datadoghq.com/gateway-proxy.init_configs: '[{}]'
         ad.datadoghq.com/gateway-proxy.instances: '[{"stats_url": "http://%%host%%:8081/metrics"}]'
         ad.datadoghq.com/gateway-proxy.logs: '[{"source": "envoy", "service": "gloo","log_processing_rules":
-          [{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}"}]}]'
+         [{"type": "multi_line", "name": "log_start_with_date","pattern" : "^\\[[0-9]{4}-[0-9]{2}-[0-9]{2}|{"}]}]'
 ```
 
 {{< notice note >}}
