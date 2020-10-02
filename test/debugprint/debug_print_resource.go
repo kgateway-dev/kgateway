@@ -22,12 +22,19 @@ func GinkgoPrintYaml(ress ...proto.Message) {
 	fmt.Fprint(ginkgo.GinkgoWriter, SprintYaml(ress...))
 }
 
-func PrintKube(crd crd.Crd, ress ...resources.InputResource) {
+func PrintKube(crd crd.Crd, ress ...resources.InputResource) error {
 	for _, rs := range ress {
-		res := crd.KubeResource(rs)
-		yam, _ := yaml.Marshal(res)
+		res, err := crd.KubeResource(rs)
+		if err != nil {
+			return err
+		}
+		yam, err := yaml.Marshal(res)
+		if err != nil {
+			return err
+		}
 		log.Printf("%s", yam)
 	}
+	return nil
 }
 
 func PrintAny(any ...interface{}) {

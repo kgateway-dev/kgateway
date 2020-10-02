@@ -5,10 +5,14 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/solo-io/gloo/pkg/utils/settingsutil"
 	gatewayv1 "github.com/solo-io/gloo/projects/gateway/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gateway/pkg/reconciler"
+	gatewaymocks "github.com/solo-io/gloo/projects/gateway/pkg/translator/mocks"
+	"github.com/solo-io/gloo/projects/gloo/pkg/api/compress"
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
@@ -247,6 +251,70 @@ var _ = Describe("TranslatorSyncer", func() {
 			"*v1.Proxy.gloo-system.test2": {State: core.Status_Rejected},
 		}
 		Expect(mockReporter.Statuses()[reportedKey]).To(BeEquivalentTo(m))
+	})
+
+	Context("translator syncer", func() {
+		var (
+			mockTranslator *gatewaymocks.MockTranslator
+			ctrl           *gomock.Controller
+
+			ctx      context.Context
+			settings *gloov1.Settings
+
+			ts    *translatorSyncer
+			snap  *gatewayv1.ApiSnapshot
+			proxy *gloov1.Proxy
+		)
+		BeforeEach(func() {
+			ctrl = gomock.NewController(GinkgoT())
+			mockTranslator = gatewaymocks.NewMockTranslator(ctrl)
+			settings = &gloov1.Settings{
+				Gateway: &gloov1.GatewayOptions{
+					CompressedProxySpec: true,
+				},
+			}
+			ctx = context.Background()
+
+			ts = &translatorSyncer{
+				writeNamespace: "gloo-system",
+				translator:     mockTranslator,
+			}
+			snap = &gatewayv1.ApiSnapshot{
+				Gateways: gatewayv1.GatewayList{
+					&gatewayv1.Gateway{},
+				},
+			}
+			proxy = &gloov1.Proxy{
+				Metadata: core.Metadata{
+					Name: "proxy",
+				},
+			}
+		})
+		AfterEach(func() {
+			ctrl.Finish()
+		})
+
+		It("should compress proxy spec when setttings are set", func() {
+
+			ctx = settingsutil.WithSettings(ctx, settings)
+
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+				Return(proxy, nil)
+
+			ts.generatedDesiredProxies(ctx, snap)
+
+			Expect(proxy.Metadata.Annotations).To(HaveKeyWithValue(compress.CompressedKey, compress.CompressedValue))
+		})
+
+		It("should not compress proxy spec when setttings are not set", func() {
+			mockTranslator.EXPECT().Translate(gomock.Any(), "gateway-proxy", "gloo-system", snap, gomock.Any()).
+				Return(proxy, nil)
+
+			ts.generatedDesiredProxies(ctx, snap)
+
+			Expect(proxy.Metadata.Annotations).NotTo(HaveKeyWithValue(compress.CompressedKey, compress.CompressedValue))
+		})
+
 	})
 
 })
