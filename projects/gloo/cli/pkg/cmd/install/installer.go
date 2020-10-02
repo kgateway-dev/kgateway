@@ -267,7 +267,7 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 	}
 
 	// Print hook resources
-	nonCleanupHooks, err := helm.GetNonCleanupHooks(release.Hooks)
+	nonCleanupHooks, err := helm.GetHooks(release.Hooks)
 	if err != nil {
 		return err
 	}
