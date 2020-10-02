@@ -1,6 +1,6 @@
 ---
 title: Authenticate with an Access Token
-weight: 20
+weight: 30
 description: Integrating Gloo and Access Tokens
 ---
 
