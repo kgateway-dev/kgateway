@@ -62,14 +62,14 @@ Note that Gloo uses [ECMAScript](https://en.cppreference.com/w/cpp/regex/ecmascr
 
 For example, in order to match all subdomains:
 
-  - Do not use: `*.example.com`
-  - Instead, use: `[a-zA-Z0-9]*.example.com`
+  - Do not use: `https://*.example.com`
+  - Instead, use: `https://[a-zA-Z0-9]*.example.com`
 
 ### Example
 
 In the example below, the virtual service, through CORS parameters, will inform your browser that it should also allow
-`GET` and `POST` calls from services located on `*.gloo.dev`. This could allow you to host scripts or
-other needed resources on the `'*.gloo.dev'`, even if your application is not being server from that location.
+`GET` and `POST` calls from services located on `https://*.gloo.dev` (or `https://solo.io`). This could allow you to host scripts or
+other needed resources on the `'https://*.gloo.dev'` (or `https://solo.io`), even if your application is not being server from that location.
 
 {{< highlight yaml "hl_lines=9-24" >}}
 apiVersion: gateway.solo.io/v1
