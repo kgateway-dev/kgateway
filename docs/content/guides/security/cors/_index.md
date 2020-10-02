@@ -68,8 +68,8 @@ For example, in order to match all subdomains:
 ### Example
 
 In the example below, the virtual service, through CORS parameters, will inform your browser that it should also allow
-`GET` and `POST` calls from services located on `*.supergloo.dev`. This could allow you to host scripts or
-other needed resources on the `'*.supergloo.dev'`, even if your application is not being server from that location.
+`GET` and `POST` calls from services located on `*.gloo.dev`. This could allow you to host scripts or
+other needed resources on the `'*.gloo.dev'`, even if your application is not being server from that location.
 
 {{< highlight yaml "hl_lines=9-24" >}}
 apiVersion: gateway.solo.io/v1
