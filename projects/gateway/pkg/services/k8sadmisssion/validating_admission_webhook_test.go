@@ -191,7 +191,7 @@ func makeReviewRequest(url string, crd crd.Crd, gvk schema.GroupVersionKind, ope
 		Expect(err).To(BeNil())
 		return makeReviewRequestRawJsonEncoded(url, gvk, operation, "name", "namespace", jsonBytes)
 	case resources.InputResource:
-		resourceCrd, err := crd.KubeResource(resource)
+		resourceCrd, err := crd.KubeResource(typedResource)
 		if err != nil {
 			return nil, err
 		}
