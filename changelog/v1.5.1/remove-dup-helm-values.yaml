@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    description: Remove duplicate helm values that are no longer needed to keep hook-created values in helm releases. Backport for v1.5.
+    issueLink: https://github.com/solo-io/gloo/issues/3498
