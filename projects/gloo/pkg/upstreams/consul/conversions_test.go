@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Conversions", func() {
@@ -52,8 +53,10 @@ var _ = Describe("Conversions", func() {
 			TlsTagName:       "glooUseTls",
 			UseTlsTagging:    true,
 			SplitTlsServices: false,
-			RootCaNamespace:  "rootNs",
-			RootCaName:       "rootName",
+			RootCa: &core.ResourceRef{
+				Namespace: "rootNs",
+				Name:      "rootName",
+			},
 		})
 		usList.Sort()
 
@@ -65,6 +68,7 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[0].GetConsul().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
 		Expect(usList[0].GetConsul().InstanceTags).To(BeEmpty())
+		Expect(usList[0].GetConsul().InstanceBlacklistTags).To(BeEmpty())
 		Expect(usList[0].GetSslConfig()).NotTo(BeNil())
 		Expect(usList[0].GetSslConfig().GetSslSecrets()).NotTo(BeNil())
 		Expect(usList[0].GetSslConfig().GetSecretRef().Namespace).To(Equal("rootNs"))
@@ -80,9 +84,10 @@ var _ = Describe("Conversions", func() {
 			TlsTagName:       "glooUseTls",
 			UseTlsTagging:    true,
 			SplitTlsServices: true,
-			NoTlsTagName:     "glooNoTls",
-			RootCaNamespace:  "rootNs",
-			RootCaName:       "rootName",
+			RootCa: &core.ResourceRef{
+				Namespace: "rootNs",
+				Name:      "rootName",
+			},
 		})
 		usList.Sort()
 
@@ -93,7 +98,8 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[0].GetConsul()).NotTo(BeNil())
 		Expect(usList[0].GetConsul().ServiceName).To(Equal("svc-1"))
 		Expect(usList[0].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
-		Expect(usList[0].GetConsul().InstanceTags).To(ConsistOf("glooNoTls"))
+		Expect(usList[0].GetConsul().InstanceBlacklistTags).To(ConsistOf("glooUseTls"))
+		Expect(usList[0].GetConsul().InstanceTags).To(BeNil())
 		Expect(usList[0].GetSslConfig()).To(BeNil())
 
 		Expect(usList[1].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1-tls"))
@@ -102,6 +108,7 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[1].GetConsul().ServiceName).To(Equal("svc-1"))
 		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
 		Expect(usList[1].GetConsul().InstanceTags).To(ConsistOf("glooUseTls"))
+		Expect(usList[1].GetConsul().InstanceBlacklistTags).To(BeNil())
 		Expect(usList[1].GetSslConfig()).NotTo(BeNil())
 	})
 

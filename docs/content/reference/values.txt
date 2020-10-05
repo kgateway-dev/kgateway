@@ -48,10 +48,9 @@
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
 |settings.integrations.consul.useTlsDiscovery|bool||Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true.|
 |settings.integrations.consul.tlsTagName|string||The tag gloo should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'.|
-|settings.integrations.consul.rootCaResourceNamespace|string||The namespace that the consul root CA resource is stored in.|
-|settings.integrations.consul.rootCaResourceName|string||The name of the resource contain the root CA that should be used for TLS with consul services.|
-|settings.integrations.consul.splitTlsServices|bool||If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without. Requires noTlsTagName to be set if true.|
-|settings.integrations.consul.noTlsTagName|string||The tag gloo should use to identify consul ServiceInstances that should be associated with the non-tls upstream when both a tls and non-tls upstream exist for a consul service.|
+|settings.integrations.consul.splitTlsServices|bool||If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without.|
+|settings.integrations.consul.rootCa.namespace|string|||
+|settings.integrations.consul.rootCa.namespace|string||The name of this resource.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool|false|Enable to use install namespace as WatchNamespace and WriteNamespace|

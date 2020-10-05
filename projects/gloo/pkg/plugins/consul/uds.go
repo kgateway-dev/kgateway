@@ -3,8 +3,6 @@ package consul
 import (
 	"strings"
 
-	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
-
 	"github.com/rotisserie/eris"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/discovery"
@@ -72,28 +70,6 @@ func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	desiredSpec, ok := desired.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(desired, "desired")
-	}
-
-	// todo move ssl creation to upstream creation
-	// if true, then search through instance tags for tag that indicates TLS.
-	if p.consulSettings.GetUseTlsTagging() {
-		for _, tag := range originalSpec.Consul.InstanceTags {
-			// todo question: should we override existing SSL configs if an upstream already has one?
-			if tag == p.consulSettings.GetTlsTagName() && original.SslConfig == nil {
-				rootCaName := p.consulSettings.GetRootCaName()
-				rootCaNamespace := p.consulSettings.GetRootCaNamespace()
-				original.SslConfig = &v1.UpstreamSslConfig{
-					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
-						SecretRef: &core.ResourceRef{
-							Name:      rootCaName,
-							Namespace: rootCaNamespace,
-						},
-					},
-				}
-				break
-			}
-		}
-
 	}
 
 	// copy service spec, we don't want to overwrite that

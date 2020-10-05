@@ -44,18 +44,18 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *
 	return upstreams.Sort()
 }
 
-// This function normally returns 1 upstream. It returns two upstreams if
+// This function normally returns 1 upstream. It instead returns two upstreams if
 // both automatic tls discovery and service-splitting is on for consul,
 // and this service's tag list contains the tag specified by the tlsTagName config.
 // In this case, it returns 2 upstreams that are identical save for the presence of
-// the tlsTagName and noTlsTagNmae values in the InstanceTags arrays for the
-// tls and non-tls upstreams respectively. Splitting or not, '-tls' is always
-// appended to the tls upstreams metadata name.
+// the tlsTagName in the instanceTags array for the tls upstream, and the same value
+// in the instanceBlacklistTags array for the non-tls upstream.
 func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_ConsulConfiguration) []*v1.Upstream {
 	var result []*v1.Upstream
 	// if config isn't nil, then it's assumed then it's been validated in the consul plugin's init function
 	// (or is properly formatted in testing).
 	// if useTlsTagging is true, then check the consul service for the tls tag.
+	var tlsInstanceTags = []string{}
 	if consulConfig != nil && consulConfig.GetUseTlsTagging() {
 		tlsTagFound := false
 		for _, tag := range service.Tags {
@@ -67,11 +67,8 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 		// if the tls tag is found create an upstream with an ssl config.
 		if tlsTagFound {
 			// additionally include the tls tag in the upstream's instanceTags if we're service splitting.
-			var tlsInstanceTags []string
 			if consulConfig.GetSplitTlsServices() {
 				tlsInstanceTags = []string{consulConfig.GetTlsTagName()}
-			} else {
-				tlsInstanceTags = []string{}
 			}
 			result = append(result, &v1.Upstream{
 				Metadata: core.Metadata{
@@ -81,8 +78,8 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 				SslConfig: &v1.UpstreamSslConfig{
 					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
 						SecretRef: &core.ResourceRef{
-							Name:      consulConfig.GetRootCaName(),
-							Namespace: consulConfig.GetRootCaNamespace(),
+							Name:      consulConfig.GetRootCa().GetName(),
+							Namespace: consulConfig.GetRootCa().GetNamespace(),
 						},
 					},
 				},
@@ -101,14 +98,6 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 			}
 		}
 	}
-	// if we're service splitting, and we've already created a tls upstream, add the no-tls tag to the
-	// non-tls upstream.
-	var noTlsInstanceTags []string
-	if len(result) == 1 {
-		noTlsInstanceTags = []string{consulConfig.GetNoTlsTagName()}
-	} else {
-		noTlsInstanceTags = []string{}
-	}
 	result = append(result, &v1.Upstream{
 		Metadata: core.Metadata{
 			Name:      fakeUpstreamName(service.Name),
@@ -116,10 +105,10 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 		},
 		UpstreamType: &v1.Upstream_Consul{
 			Consul: &consulplugin.UpstreamSpec{
-				ServiceName:  service.Name,
-				DataCenters:  service.DataCenters,
-				ServiceTags:  service.Tags,
-				InstanceTags: noTlsInstanceTags,
+				ServiceName:           service.Name,
+				DataCenters:           service.DataCenters,
+				ServiceTags:           service.Tags,
+				InstanceBlacklistTags: tlsInstanceTags, //
 			},
 		},
 	})

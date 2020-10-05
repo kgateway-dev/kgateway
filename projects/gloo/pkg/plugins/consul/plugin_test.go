@@ -4,7 +4,9 @@ import (
 	"net"
 	"net/url"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
@@ -12,7 +14,6 @@ import (
 	consulapi "github.com/hashicorp/consul/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	mock_consul "github.com/solo-io/gloo/projects/gloo/pkg/upstreams/consul/mocks"
 )
 
@@ -123,36 +124,55 @@ var _ = Describe("Resolve", func() {
 		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
 	})
 
-	It("Can create upstreams with TLSm.", func() {
+	It("properly initializes in reponse to various consul setting configurations.", func() {
 
+		// correct w/custom tag
 		plug := NewPlugin(consulWatcherMock, nil, nil)
-		plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{
-				Consul: &v1.Settings_ConsulConfiguration{
-					UseTlsTagging:   true,
-					RootCaName:      "testName",
-					RootCaNamespace: "testNamespace",
+		err := plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+				UseTlsTagging: true,
+				TlsTagName:    "testTag",
+				RootCa: &core.ResourceRef{
+					Namespace: "rootNs",
+					Name:      "rootName",
 				},
 			},
-		})
-
-		svcName := "my-svc"
-		dc := "dc1"
-
-		us := createTestFilteredUpstream(svcName, svcName, nil, nil, []string{dc})
-
-		queryOpts := &consulapi.QueryOptions{Datacenter: dc, RequireConsistent: true}
-
-		consulWatcherMock.EXPECT().Service(svcName, "", queryOpts).Return([]*consulapi.CatalogService{
-			{
-				ServiceAddress: "5.6.7.8",
-				ServicePort:    1234,
 			},
-		}, nil, nil)
+		})
+		Expect(err).To(BeNil())
+		Expect(plug.consulSettings.TlsTagName).To(Equal("testTag"))
+		Expect(plug.consulSettings.RootCa.Namespace).To(Equal("rootNs"))
+		Expect(plug.consulSettings.RootCa.Name).To(Equal("rootName"))
 
-		u, err := plug.Resolve(us)
-		Expect(err).NotTo(HaveOccurred())
+		// correct w/default tag
+		plug = NewPlugin(consulWatcherMock, nil, nil)
+		err = plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+				UseTlsTagging: true,
+				RootCa: &core.ResourceRef{
+					Namespace: "rootNs",
+					Name:      "rootName",
+				},
+			},
+			},
+		})
+		Expect(err).To(BeNil())
+		Expect(plug.consulSettings.TlsTagName).To(Equal(DefaultTlsTagName))
 
-		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
+		// missing resource value, expect err.
+		plug = NewPlugin(consulWatcherMock, nil, nil)
+		err = plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+				UseTlsTagging: true,
+				RootCa: &core.ResourceRef{
+					Namespace: "rootNs",
+					Name:      "",
+				},
+			},
+			},
+		})
+		Expect(err).NotTo(BeNil())
+		Expect(err.Error()).To(Equal("Consul settings specify automatic detection of TLS services, " +
+			"but the rootCA resource's name/namespace are not properly specified: {namespace:\"rootNs\" }"))
 	})
 })

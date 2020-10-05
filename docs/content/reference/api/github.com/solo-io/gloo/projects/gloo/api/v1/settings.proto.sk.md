@@ -314,10 +314,8 @@ need to be set on the Gloo container.
 "dnsPollingInterval": .google.protobuf.Duration
 "useTlsTagging": bool
 "tlsTagName": string
-"rootCaNamespace": string
-"rootCaName": string
+"rootCa": .core.solo.io.ResourceRef
 "splitTlsServices": bool
-"noTlsTagName": string
 
 ```
 
@@ -340,10 +338,8 @@ need to be set on the Gloo container.
 | `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
 | `useTlsTagging` | `bool` | If true, then gloo will add TLS to upstreams created for any consul service that has the tag specified by tlsTagName. If splitTlsServices is true, then this tag is also used to identify serviceInstances that should be tied to the TLS upstream. Requires rootCaNamespace and rootCaName to be set if true. |  |
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |  |
-| `rootCaNamespace` | `string` | The namespace of the root CA resource to be used by discovered consul TLS upstreams. |  |
-| `rootCaName` | `string` | The name of the root CA resource to be used by discovered consul TLS upstreams. |  |
-| `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those with the noTlsTagName tag are sorted into the non-TLS upstream. ServiceInstances with both tags have no sorting guarantee, while those with neither will be effectively lost. Requires noTlsTagName to be set if true. |  |
-| `noTlsTagName` | `string` | The tag that gloo should use to identity serviceInstances that should not use TLS if SplitTlsServices is true. |  |
+| `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |  |
+| `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |  |
 
 
 

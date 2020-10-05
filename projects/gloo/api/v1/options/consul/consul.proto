@@ -34,6 +34,10 @@ message UpstreamSpec {
     // for this upstream.
     repeated string instance_tags = 7;
 
+    // The opposite of instanceTags, this is a list of service tags that gloo should ensure are not
+    // in a service instance before including it in an upstream.
+    repeated string instance_blacklist_tags = 8;
+
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 3;
 
