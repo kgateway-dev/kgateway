@@ -192,6 +192,8 @@ func (i *installer) createNamespace(namespace string) {
 		} else {
 			fmt.Printf("Done.\n")
 		}
+	} else if apierrors.IsAlreadyExists(err) {
+		fmt.Printf("\nNamespace %s already exists. Continuing...\n", namespace)
 	} else {
 		fmt.Printf("\nUnable to check if namespace %s exists. Continuing...\n", namespace)
 	}
@@ -265,7 +267,7 @@ func (i *installer) printReleaseManifest(release *release.Release) error {
 	}
 
 	// Print hook resources
-	nonCleanupHooks, err := helm.GetNonCleanupHooks(release.Hooks)
+	nonCleanupHooks, err := helm.GetHooks(release.Hooks)
 	if err != nil {
 		return err
 	}

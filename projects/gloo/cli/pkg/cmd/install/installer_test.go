@@ -64,7 +64,6 @@ metadata:
   annotations:
     "helm.sh/hook": post-install
     "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
-    "` + constants.HookCleanupResourceAnnotation + `": "true" # Used internally to mark "hook cleanup" resources
 rules:
 - apiGroups: [""]
   resources: ["secrets"]
@@ -284,7 +283,6 @@ rules:
 		dryRunOutput := dryRunOutputBuffer.String()
 
 		Expect(dryRunOutput).To(ContainSubstring(testCrdContent), "Should output CRD definitions")
-		Expect(dryRunOutput).NotTo(ContainSubstring(constants.HookCleanupResourceAnnotation), "Should not output cleanup hooks")
 		Expect(dryRunOutput).To(ContainSubstring("helm.sh/hook"), "Should output non-cleanup hooks")
 
 		// Make sure that namespace was not created

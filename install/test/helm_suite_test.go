@@ -103,7 +103,7 @@ type helmValues struct {
 }
 
 type ChartRenderer interface {
-	// returns a TestManifest containing all resources NOT marked by our hook-cleanup annotation
+	// returns a TestManifest containing all resources
 	RenderManifest(namespace string, values helmValues) (TestManifest, error)
 }
 
@@ -128,12 +128,11 @@ func (h3 helm3Renderer) RenderManifest(namespace string, values helmValues) (Tes
 	_, err = f.Write([]byte(rel.Manifest))
 	Expect(err).NotTo(HaveOccurred(), "Should be able to write the release manifest to the temp file for the helm unit tests")
 
-	// also need to add in the hooks, which are not included in the release manifest
-	// be sure to skip the resources that we duplicate because of Helm hook weirdness (see the comment on install.GetNonCleanupHooks)
-	nonCleanupHooks, err := helm.GetNonCleanupHooks(rel.Hooks)
-	Expect(err).NotTo(HaveOccurred(), "Should be able to get the non-cleanup hooks in the helm unit test setup")
+	hooks, err := helm.GetHooks(rel.Hooks)
 
-	for _, hook := range nonCleanupHooks {
+	Expect(err).NotTo(HaveOccurred(), "Should be able to get the hooks in the helm unit test setup")
+
+	for _, hook := range hooks {
 		manifest := hook.Manifest
 		_, err = f.Write([]byte("\n---\n" + manifest))
 		Expect(err).NotTo(HaveOccurred(), "Should be able to write the hook manifest to the temp file for the helm unit tests")
