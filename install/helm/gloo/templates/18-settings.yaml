@@ -40,8 +40,9 @@ spec:
   consul:
   {{- toYaml .Values.settings.integrations.consul | nindent 4 }}
   {{- end }}
-  consulServiceDiscovery:
-  {{- toYaml .Values.settings.integrations.consulServiceDiscovery | nindent 4 }}
+  {{- if .Values.settings.integrations.consulUpstreamDiscovery }}
+  consulUpstreamDiscovery:
+  {{- toYaml .Values.settings.integrations.consulUpstreamDiscovery | nindent 4 }}
   {{- end }}
 
 {{- if .Values.settings.writeNamespace }}
