@@ -1,0 +1,7 @@
+changelog:
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3628
+    description: >
+      Expose the max_connection_duration and max_stream_duration settings via the Gloo API.
+      See https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+      for more details on these settings.
