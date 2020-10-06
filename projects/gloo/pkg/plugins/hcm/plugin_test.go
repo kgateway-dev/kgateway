@@ -74,6 +74,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			},
+			MaxConnectionDuration: pd(time.Hour),
+			MaxStreamDuration:     pd(time.Hour),
 		}
 		hl := &v1.HttpListener{
 			Options: &v1.HttpListenerOptions{
@@ -132,6 +134,8 @@ var _ = Describe("Plugin", func() {
 
 		Expect(cfg.CommonHttpProtocolOptions).NotTo(BeNil())
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxConnectionDuration)))
+		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxStreamDuration)))
 
 		trace := cfg.Tracing
 		Expect(trace.CustomTags).To(ConsistOf([]*envoytracing.CustomTag{
