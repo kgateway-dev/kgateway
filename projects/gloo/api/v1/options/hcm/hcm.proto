@@ -62,4 +62,8 @@ message HttpConnectionManagerSettings {
     // HttpConnectionManager configuration for protocol upgrade requests. 
     // Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled.
     repeated protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig upgrades = 21;
+
+    // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
+    google.protobuf.Duration max_connection_duration = 23 [ (gogoproto.stdduration) = true ];
+    google.protobuf.Duration max_stream_duration = 24 [ (gogoproto.stdduration) = true ];
 }
