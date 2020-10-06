@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-GLOO_VERSION='1.3.1'
+GLOO_VERSION='1.4.13'
 
 # Will exit script if we would use an uninitialised variable (nounset) or when a
 # simple command (not a control structure) fails (errexit)
