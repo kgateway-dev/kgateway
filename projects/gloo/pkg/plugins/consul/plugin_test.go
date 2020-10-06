@@ -129,7 +129,7 @@ var _ = Describe("Resolve", func() {
 		// correct w/custom tag
 		plug := NewPlugin(consulWatcherMock, nil, nil)
 		err := plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
 				TlsTagName:    "testTag",
 				RootCa: &core.ResourceRef{
@@ -140,14 +140,14 @@ var _ = Describe("Resolve", func() {
 			},
 		})
 		Expect(err).To(BeNil())
-		Expect(plug.consulSettings.TlsTagName).To(Equal("testTag"))
-		Expect(plug.consulSettings.RootCa.Namespace).To(Equal("rootNs"))
-		Expect(plug.consulSettings.RootCa.Name).To(Equal("rootName"))
+		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal("testTag"))
+		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Namespace).To(Equal("rootNs"))
+		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Name).To(Equal("rootName"))
 
 		// correct w/default tag
 		plug = NewPlugin(consulWatcherMock, nil, nil)
 		err = plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
 				RootCa: &core.ResourceRef{
 					Namespace: "rootNs",
@@ -157,12 +157,12 @@ var _ = Describe("Resolve", func() {
 			},
 		})
 		Expect(err).To(BeNil())
-		Expect(plug.consulSettings.TlsTagName).To(Equal(DefaultTlsTagName))
+		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal(DefaultTlsTagName))
 
 		// missing resource value, expect err.
 		plug = NewPlugin(consulWatcherMock, nil, nil)
 		err = plug.Init(plugins.InitParams{
-			Settings: &v1.Settings{Consul: &v1.Settings_ConsulConfiguration{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
 				RootCa: &core.ResourceRef{
 					Namespace: "rootNs",
