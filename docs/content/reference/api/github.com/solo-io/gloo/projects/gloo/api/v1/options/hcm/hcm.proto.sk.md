@@ -53,6 +53,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 "setCurrentClientCertDetails": .hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails
 "preserveExternalRequestId": bool
 "upgrades": []protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig
+"maxConnectionDuration": .google.protobuf.Duration
+"maxStreamDuration": .google.protobuf.Duration
 
 ```
 
@@ -79,6 +81,8 @@ See here for more information: https://www.envoyproxy.io/docs/envoy/v1.9.0/confi
 | `setCurrentClientCertDetails` | [.hcm.options.gloo.solo.io.HttpConnectionManagerSettings.SetCurrentClientCertDetails](../hcm.proto.sk/#setcurrentclientcertdetails) |  |  |
 | `preserveExternalRequestId` | `bool` |  |  |
 | `upgrades` | [[]protocol_upgrade.options.gloo.solo.io.ProtocolUpgradeConfig](../../protocol_upgrade/protocol_upgrade.proto.sk/#protocolupgradeconfig) | HttpConnectionManager configuration for protocol upgrade requests. Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled. |  |
+| `maxConnectionDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions. |  |
+| `maxStreamDuration` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
 
 
 
