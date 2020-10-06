@@ -30,7 +30,7 @@ func fakeUpstreamName(consulSvcName string) string {
 }
 
 // Creates an upstream for each service in the map
-func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *v1.Settings_ConsulConfiguration) v1.UpstreamList {
+func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *v1.Settings_ConsulUpstreamDiscoveryConfiguration) v1.UpstreamList {
 	var upstreams v1.UpstreamList
 	for _, svc := range services {
 		us := CreateUpstreamsFromService(svc, consulConfig)
@@ -50,7 +50,7 @@ func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *
 // In this case, it returns 2 upstreams that are identical save for the presence of
 // the tlsTagName in the instanceTags array for the tls upstream, and the same value
 // in the instanceBlacklistTags array for the non-tls upstream.
-func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_ConsulConfiguration) []*v1.Upstream {
+func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_ConsulUpstreamDiscoveryConfiguration) []*v1.Upstream {
 	var result []*v1.Upstream
 	// if config isn't nil, then it's assumed then it's been validated in the consul plugin's init function
 	// (or is properly formatted in testing).

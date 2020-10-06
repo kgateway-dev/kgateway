@@ -49,7 +49,7 @@ var _ = Describe("Conversions", func() {
 			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"glooUseTls"}},
 		}
 
-		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulConfiguration{
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 			TlsTagName:       "glooUseTls",
 			UseTlsTagging:    true,
 			SplitTlsServices: false,
@@ -80,7 +80,7 @@ var _ = Describe("Conversions", func() {
 			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"glooUseTls"}},
 		}
 
-		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulConfiguration{
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 			TlsTagName:       "glooUseTls",
 			UseTlsTagging:    true,
 			SplitTlsServices: true,

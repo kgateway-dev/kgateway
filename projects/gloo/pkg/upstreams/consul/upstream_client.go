@@ -13,13 +13,13 @@ const notImplementedErrMsg = "this operation is not supported by this client"
 // these upstreams across the available data centers.
 //
 // NOTE: any method except List and Watch will panic!
-func NewConsulUpstreamClient(consul ConsulWatcher, consulConfig *v1.Settings_ConsulConfiguration) v1.UpstreamClient {
-	return &consulUpstreamClient{consul: consul, consulConfig: consulConfig}
+func NewConsulUpstreamClient(consul ConsulWatcher, consulDiscoveryConfig *v1.Settings_ConsulUpstreamDiscoveryConfiguration) v1.UpstreamClient {
+	return &consulUpstreamClient{consul: consul, consulUpstreamDiscoveryConfig: consulDiscoveryConfig}
 }
 
 type consulUpstreamClient struct {
-	consul       ConsulWatcher
-	consulConfig *v1.Settings_ConsulConfiguration
+	consul                        ConsulWatcher
+	consulUpstreamDiscoveryConfig *v1.Settings_ConsulUpstreamDiscoveryConfiguration
 }
 
 func (*consulUpstreamClient) BaseClient() skclients.ResourceClient {
@@ -65,7 +65,7 @@ func (c *consulUpstreamClient) List(namespace string, opts skclients.ListOpts) (
 		})
 	}
 
-	return toUpstreamList(namespace, toServiceMetaSlice(services), c.consulConfig), nil
+	return toUpstreamList(namespace, toServiceMetaSlice(services), c.consulUpstreamDiscoveryConfig), nil
 }
 
 func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts) (<-chan v1.UpstreamList, <-chan error, error) {
@@ -83,7 +83,7 @@ func (c *consulUpstreamClient) Watch(namespace string, opts skclients.WatchOpts)
 			case services, ok := <-servicesChan:
 				if ok {
 					//  Transform to upstreams
-					upstreams := toUpstreamList(namespace, services, c.consulConfig)
+					upstreams := toUpstreamList(namespace, services, c.consulUpstreamDiscoveryConfig)
 					upstreamsChan <- upstreams
 				}
 			case <-opts.Ctx.Done():

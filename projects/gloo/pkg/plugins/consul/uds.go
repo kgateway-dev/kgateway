@@ -20,7 +20,7 @@ var (
 )
 
 func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulSettings).Watch("", opts)
+	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulUpstreamDiscoverySettings).Watch("", opts)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -33,10 +33,10 @@ var (
 )
 
 type plugin struct {
-	client             consul.ConsulWatcher
-	resolver           DnsResolver
-	dnsPollingInterval time.Duration
-	consulSettings     *v1.Settings_ConsulConfiguration
+	client                          consul.ConsulWatcher
+	resolver                        DnsResolver
+	dnsPollingInterval              time.Duration
+	consulUpstreamDiscoverySettings *v1.Settings_ConsulUpstreamDiscoveryConfiguration
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -107,23 +107,23 @@ func NewPlugin(client consul.ConsulWatcher, resolver DnsResolver, dnsPollingInte
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
-	p.consulSettings = params.Settings.Consul
-	if p.consulSettings == nil {
-		p.consulSettings = &v1.Settings_ConsulConfiguration{UseTlsTagging: false}
+	p.consulUpstreamDiscoverySettings = params.Settings.ConsulDiscovery
+	if p.consulUpstreamDiscoverySettings == nil {
+		p.consulUpstreamDiscoverySettings = &v1.Settings_ConsulUpstreamDiscoveryConfiguration{UseTlsTagging: false}
 	}
 	// if automatic TLS discovery is enabled for consul services, make sure we have a specified tag
 	// and a resource location for the validation context's root CA.
 	// The tag has a default value, but the resource name/namespace must be set manually.
-	if p.consulSettings != nil && p.consulSettings.UseTlsTagging {
-		rootCa := p.consulSettings.GetRootCa()
+	if p.consulUpstreamDiscoverySettings != nil && p.consulUpstreamDiscoverySettings.UseTlsTagging {
+		rootCa := p.consulUpstreamDiscoverySettings.GetRootCa()
 		if rootCa == nil || rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
 			return ConsulTlsInputError(fmt.Sprintf("Consul settings specify automatic detection of TLS services, "+
 				"but the rootCA resource's name/namespace are not properly specified: {%s}", rootCa.String()))
 		}
 
-		tlsTagName := p.consulSettings.GetTlsTagName()
+		tlsTagName := p.consulUpstreamDiscoverySettings.GetTlsTagName()
 		if tlsTagName == "" {
-			p.consulSettings.TlsTagName = DefaultTlsTagName
+			p.consulUpstreamDiscoverySettings.TlsTagName = DefaultTlsTagName
 		}
 	}
 	return nil
