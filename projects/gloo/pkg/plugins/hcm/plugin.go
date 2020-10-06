@@ -127,6 +127,20 @@ func copyCoreHcmSettings(ctx context.Context, cfg *envoyhttp.HttpConnectionManag
 		cfg.CommonHttpProtocolOptions.IdleTimeout = gogoutils.DurationStdToProto(hcmSettings.GetIdleTimeout())
 	}
 
+	if hcmSettings.GetMaxConnectionDuration() != nil {
+		if cfg.GetCommonHttpProtocolOptions() == nil {
+			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		cfg.CommonHttpProtocolOptions.MaxConnectionDuration = gogoutils.DurationStdToProto(hcmSettings.GetMaxConnectionDuration())
+	}
+
+	if hcmSettings.GetMaxStreamDuration() != nil {
+		if cfg.GetCommonHttpProtocolOptions() == nil {
+			cfg.CommonHttpProtocolOptions = &envoycore.HttpProtocolOptions{}
+		}
+		cfg.CommonHttpProtocolOptions.MaxStreamDuration = gogoutils.DurationStdToProto(hcmSettings.GetMaxStreamDuration())
+	}
+
 	// allowed upgrades
 	protocolUpgrades := hcmSettings.GetUpgrades()
 
