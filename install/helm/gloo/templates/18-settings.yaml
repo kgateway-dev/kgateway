@@ -16,7 +16,7 @@ spec:
     xdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.xdsPort }}"
     restXdsBindAddr: "0.0.0.0:{{ .Values.gloo.deployment.restXdsPort }}"
 {{- end }}
-{{- if .Values.settings.invalidConfigPolicy }}
+{{- if .Values.settings.replaceInvalidRoutes }}
     invalidConfigPolicy:
 {{ toYaml .Values.settings.invalidConfigPolicy | indent 6}}
 {{- end }}
