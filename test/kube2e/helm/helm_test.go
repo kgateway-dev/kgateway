@@ -48,21 +48,24 @@ var _ = Describe("Kube2e: helm", func() {
 
 	It("uses helm to update the settings without errors", func() {
 
-		By("should start with the default settings.invalidConfigPolicy.invalidRouteResponseCode=404")
+		By("should start with the settings.invalidConfigPolicy.invalidRouteResponseCode=404")
 		client := helpers.MustSettingsClient()
 		settings, err := client.Read(testHelper.InstallNamespace, defaults.SettingsName, clients.ReadOpts{})
 		Expect(err).To(BeNil())
 		Expect(settings.GetGloo().GetInvalidConfigPolicy().GetInvalidRouteResponseCode()).To(Equal(uint32(404)))
 
+		// following logic handles chartUri for focused test
 		// update the settings with `helm upgrade` (without updating the gloo version)
 		if chartUri == "" { // hasn't yet upgraded to the chart being tested- use regular gloo/gloo chart
 			runAndCleanCommand("helm", "upgrade", "gloo", "gloo/gloo",
 				"-n", testHelper.InstallNamespace,
+				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400",
 				"--version", GetGlooServerVersion(testHelper.InstallNamespace))
 		} else { // has already upgraded to the chart being tested- use it
 			runAndCleanCommand("helm", "upgrade", "gloo", chartUri,
 				"-n", testHelper.InstallNamespace,
+				"--set", "settings.replaceInvalidRoutes=true",
 				"--set", "settings.invalidConfigPolicy.invalidRouteResponseCode=400")
 		}
 

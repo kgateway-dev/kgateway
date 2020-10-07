@@ -1591,7 +1591,6 @@ spec:
      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
      invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -1599,7 +1598,11 @@ spec:
  discoveryNamespace: ` + namespace + `
 `)
 
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.replaceInvalidRoutes=true",
+							},
+						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
@@ -1626,11 +1629,6 @@ spec:
    restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: true
    disableProxyGarbageCollection: false
-   invalidConfigPolicy:
-     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-     invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -1665,11 +1663,6 @@ spec:
    restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
-   invalidConfigPolicy:
-     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-     invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -1709,11 +1702,6 @@ spec:
    restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: false
-   invalidConfigPolicy:
-     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-     invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -1762,11 +1750,6 @@ spec:
    restXdsBindAddr: 0.0.0.0:9976
    disableKubernetesDestinations: false
    disableProxyGarbageCollection: true
-   invalidConfigPolicy:
-     invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-       ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-     invalidRouteResponseCode: 404
-
  kubernetesArtifactSource: {}
  kubernetesConfigSource: {}
  kubernetesSecretSource: {}
@@ -1807,11 +1790,6 @@ spec:
     disableProxyGarbageCollection: false
     awsOptions:
       enableCredentialsDiscovey: true
-    invalidConfigPolicy:
-      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-      invalidRouteResponseCode: 404
-
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
@@ -1854,11 +1832,6 @@ spec:
       serviceAccountCredentials:
         cluster: aws_sts_cluster
         uri: sts.us-east-2.amazonaws.com
-    invalidConfigPolicy:
-      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators should run
-        ` + "`" + `glooctl check` + "`" + ` to find and fix config errors.
-      invalidRouteResponseCode: 404
-
   kubernetesArtifactSource: {}
   kubernetesConfigSource: {}
   kubernetesSecretSource: {}
