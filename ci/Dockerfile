@@ -1,0 +1,9 @@
+ARG BASE_IMAGE
+
+FROM $BASE_IMAGE
+
+USER root
+
+RUN apk add curl=7.67.0-r1
+
+USER 10101

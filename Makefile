@@ -591,6 +591,7 @@ docker: discovery-docker gateway-docker gloo-docker \
 # docker-push is intended to be run by CI
 .PHONY: docker-push
 docker-push: $(DOCKER_IMAGES)
+ifeq ($(RELEASE),"true")
 	docker push $(IMAGE_REPO)/gateway:$(VERSION) && \
 	docker push $(IMAGE_REPO)/ingress:$(VERSION) && \
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
@@ -600,6 +601,13 @@ docker-push: $(DOCKER_IMAGES)
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
+endif
+
+.PHONY: docker-push-extended
+docker-push-extended:
+ifeq ($(RELEASE),"true")
+	ci/extended-docker.sh
+endif
 
 CLUSTER_NAME ?= kind
 
