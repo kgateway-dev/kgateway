@@ -4,6 +4,10 @@ weight: 30
 description: Integrating Gloo and Access Tokens
 ---
 
+{{% notice note %}}
+{{< readfile file="static/content/enterprise_only_feature_disclaimer" markdown="true">}}
+{{% /notice %}}
+
 You may already have an OIDC compliant authentication system in place at your organization which can issue and validate access tokens. In that case, Gloo can rely on your existing system by accepting requests with an access token and validating that token against an introspection endpoint.
 
 In this guide we will deploy ORY Hydra, a simple OpenID Connect Provider. Hydra will serve as our existing OIDC compliant authentication system. We will generate a valid access token from the Hydra deployment and have Gloo validate that token using Hyrda's introspection endpoint.
@@ -91,7 +95,7 @@ helm install \
     --set 'ingress.admin.enabled=true' \
     --set 'hydra.dangerousForceHttp=true' \
     hydra-example \
-    ory/hydra
+    ory/hydra --version 0.4.5
 ```
 
 In the above command, we are using an in-memory database of Hydra and setting `hydra.dangerousForceHttp` to `true`, disabling SSL. This is for demonstration purposes and should not be used outside of a development context.
@@ -110,10 +114,10 @@ The administrative endpoint is running on port 4445 and the public endpoint is r
 
 #### Create the Client and Access Token
 
-Now that we have Hydra up and running, we need to create a client id and client secret by interfacing with the administrative endpoint on Hydra. First we will make the administrative endpoint accessible by forwarding port 4445 of the Hydra pod to our localhost. Be sure to change the pod name as appropriate and make a note of the job id.
+Now that we have Hydra up and running, we need to create a client id and client secret by interfacing with the administrative endpoint on Hydra. First we will make the administrative endpoint accessible by forwarding port 4445 of the Hydra pod to our localhost.
 
 ```bash
-kubectl port-forward hydra-example-POD_ID 4445:4445 &
+kubectl port-forward deploy/hydra-example 4445 &
 portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 ```
 
@@ -140,7 +144,7 @@ You should see output similar to this:
 Now we will using the public endpoint to generate our access token. First we will port-forward the hydra pod on port 4444.
 
 ```bash
-kubectl port-forward hydra-example-POD_ID 4444:4444 &
+kubectl port-forward deploy/hydra-example 4444 &
 portForwardPid2=$! # Store the port-forward pid so we can kill the process later
 ```
 
