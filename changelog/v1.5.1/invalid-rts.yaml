@@ -1,0 +1,8 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3619
+    description: >-
+      Fix helm chart to honor `.Values.settings.replaceInvalidRoutes` value. This change makes the default invalid
+      route behavior match what's documented (disabled by default). To enable again, set
+      `.Values.settings.replaceInvalidRoutes=true`
+    resolvesIssue: false
