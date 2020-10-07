@@ -73,6 +73,7 @@ global:
 settings:
   singleNamespace: true
   create: true
+  replaceInvalidRoutes: true
 gloo:
   deployment:
     disableUsageStatistics: true
