@@ -17,5 +17,5 @@ echo ">> Temporary output file ${TEMP_FILE}"
 # grab the image names out of the `make docker` output
 sed -nE 's|Successfully tagged (.*$)|\1|p' ${TEMP_FILE} | while read f; do kind load docker-image --name kind $f; done
 
-VERSION=kind make build-kind-chart
+VERSION=kind make build-test-chart
 make glooctl-linux-amd64
