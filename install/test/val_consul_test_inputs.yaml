@@ -1,0 +1,22 @@
+settings:
+  integrations:
+    consul:
+      datacenter: datacenter
+      username: user
+      password: 1234
+      token: aToken
+      caFile: testCaFile
+      caPath: testCaPath
+      certFile: testCertFile
+      keyFile: testKeyFile
+      insecureSkipVerify: true
+      waitTime:
+        seconds: 12
+      serviceDiscovery:
+        dataCenters:
+          - dc1
+          - dc2
+      httpAddress: 1.2.3.4
+      dnsAddress: 5.6.7.8
+      dnsPollingInterval:
+        nanos: 5
