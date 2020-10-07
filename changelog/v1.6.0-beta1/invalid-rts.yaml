@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3619
+    description: Fix helm chart to honor `.Values.settings.replaceInvalidRoutes` value.
+    resolvesIssue: false
