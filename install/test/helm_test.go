@@ -1599,7 +1599,11 @@ spec:
  discoveryNamespace: ` + namespace + `
 `)
 
-						prepareMakefile(namespace, helmValues{})
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.replaceInvalidRoutes=true",
+							},
+						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
