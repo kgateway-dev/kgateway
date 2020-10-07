@@ -53,6 +53,7 @@ spec:
 
 To verify that the Virtual Service has been accepted by Gloo, let's port-forward the Gateway Proxy service so that it is 
 reachable from your machine at `localhost:8080`:
+
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80
 ```
@@ -62,14 +63,12 @@ If you open your browser and navigate to [http://localhost:8080](http://localhos
 ![Pet Clinic app homepage](./../petclinic-home.png)
 
 ## Securing the Virtual Service
-As we just saw, we were able to reach our application without having to provide any credentials. This is because by 
-default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior.
+As we just saw, we were able to reach our application without having to provide any credentials. This is because by default Gloo allows any request on routes that do not specify authentication configuration. Let's change this behavior.
 
 We will update the Virtual Service so that each request to the sample application is authenticated using an **OpenID Connect** flow.
 
 ### Install Hydra
-To implement the authentication flow, we need an OpenID Connect provider to be running in your cluster. To this end, we 
-will deploy the [Hydra](https://www.ory.sh/hydra/docs/) provider, as it easy to install and configure.
+To implement the authentication flow, we need an OpenID Connect provider available to Gloo. For demonstration purposes, will deploy the [Hydra](https://www.ory.sh/hydra/docs/) provider in the same cluster, as it easy to install and configure.
 
 Let's start by adding the Ory helm repository.
 
@@ -95,7 +94,7 @@ helm install \
     ory/hydra
 ```
 
-In the above example we are using an in-memory database of Hydra and setting `hydra.dangerousForceHttp` to `true`, disabling SSL. This is for demonstration purposes and should not be used outside of a development context.
+In the above command, we are using an in-memory database of Hydra and setting `hydra.dangerousForceHttp` to `true`, disabling SSL. This is for demonstration purposes and should not be used outside of a development context.
 
 We should now see the two Hydra pods running in the default namespace:
 
@@ -111,14 +110,12 @@ The administrative endpoint is running on port 4445 and the public endpoint is r
 
 #### Create the Client and Access Token
 
-Now that we have Hydra up and running, we need to create a client id and client secret by interfacing with the administrative endpoint on Hydra. First we will make the administrative endpoint accessible by forwarding port 4445 of the Hydra pod to our localhost.
+Now that we have Hydra up and running, we need to create a client id and client secret by interfacing with the administrative endpoint on Hydra. First we will make the administrative endpoint accessible by forwarding port 4445 of the Hydra pod to our localhost. Be sure to change the pod name as appropriate and make a note of the job id.
 
 ```bash
-kubectl port-forward hydra-example-58cd5bf699-9jgz5 4445:4445 &
+kubectl port-forward hydra-example-POD_ID 4445:4445 &
 portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 ```
-
-Be sure to change the pod name as appropriate and make a note of the job id.
 
 ```bash
 [1] 1417
@@ -140,14 +137,12 @@ You should see output similar to this:
 {"client_id":"my-client","client_name":"","client_secret":"secret","redirect_uris":null,"grant_types":["client_credentials"],"response_types":null,"scope":"offline_access offline openid","audience":null,"owner":"","policy_uri":"","allowed_cors_origins":null,"tos_uri":"","client_uri":"","logo_uri":"","contacts":null,"client_secret_expires_at":0,"subject_type":"public","token_endpoint_auth_method":"client_secret_basic","userinfo_signed_response_alg":"none","created_at":"2020-10-01T19:46:51Z","updated_at":"2020-10-01T19:46:51Z"}
 ```
 
-Now we will using the public endpoint to generate our access token. First we will port-forward 4444.
+Now we will using the public endpoint to generate our access token. First we will port-forward the hydra pod on port 4444.
 
 ```bash
-kubectl port-forward hydra-example-58cd5bf699-9jgz5 4444:4444 &
+kubectl port-forward hydra-example-POD_ID 4444:4444 &
 portForwardPid2=$! # Store the port-forward pid so we can kill the process later
 ```
-
-Be sure to change the pod name as appropriate and make a note of the job id.
 
 ```bash
 [2] 1431
@@ -164,18 +159,20 @@ curl -X POST http://127.0.0.1:4444/oauth2/token \
   -d 'grant_type=client_credentials' | jq .access_token -r
 ```
 
-The command should rended the access token as output which we can set as a variable:
+The command should render the access token as output which we can set as a variable:
 
 ```bash
+#OUTPUT
 vn83zER2AjyOPbzoVXS3A3S65OCC2LvdGcsz3i5CxlY.NWWWsEixtTLSxN7E0Yk5NsWEZvVZEIjlOCtre0T-s4Q
 
+#SET VARIABLE
 ACCESS_TOKEN=vn83zER2AjyOPbzoVXS3A3S65OCC2LvdGcsz3i5CxlY.NWWWsEixtTLSxN7E0Yk5NsWEZvVZEIjlOCtre0T-s4Q
 ```
 
 We can validate the token using the introspection path of the administrative endpoint:
 
 ```bash
-curl -X POST http://admin.hydra.localhost/oauth2/introspect \
+curl -X POST http://127.0.0.1:4445/oauth2/introspect \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -H 'Accept: application/json' \
   -d "token=$ACCESS_TOKEN" | jq
@@ -188,8 +185,7 @@ This is the same path that Gloo will use to check on the validity of tokens. The
 {{% extauth_version_info_note %}}
 {{% /notice %}}
 
-Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our
-Virtual Service.
+Now that all the necessary resources are in place we can create the `AuthConfig` resource that we will use to secure our Virtual Service.
 
 {{< highlight shell "hl_lines=8-10" >}}
 apiVersion: enterprise.gloo.solo.io/v1
@@ -201,10 +197,10 @@ spec:
   configs:
   - oauth2:
       accessTokenValidation:
-        introspectionUrl: http://hydra-example-admin:4445/oauth2/introspect
+        introspectionUrl: http://hydra-example-admin.default:4445/oauth2/introspect
 {{< /highlight >}}
 
-The above configuration instructs Gloo to use the `introspectionUrl` to validate access tokens that are submitted with the request. If the token is missing or invalid, Gloo will deny the request.
+The above configuration instructs Gloo to use the `introspectionUrl` to validate access tokens that are submitted with the request. If the token is missing or invalid, Gloo will deny the request. We can use the internal hostname of the Hydra administrative service, since the request will come from Gloo's exauth pod which has access to Kubernetes DNS.
 
 #### Update the Virtual Service
 Once the AuthConfig has been created, we can use it to secure our Virtual Service:
@@ -237,7 +233,7 @@ spec:
 {{< /highlight >}}
 
 ### Testing our configuration
-The authentication flow to get the access token happens outside of Gloo's purview. To access the petclinic site, we will simply include the access token in our request.
+The authentication flow to get the access token happens outside of Gloo's purview. To access the petclinic site, we will simply include the access token in our request. Gloo will validate that the token is active using the URL we specified in the AuthConfig.
 
 1. Port-forward the Gloo Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
@@ -267,6 +263,8 @@ curl http://localhost:8080 \
   -H "Authorization: Bearer $ACCESS_TOKEN" -v
 ```
 
+You will receive a 200 HTTP response and the body of the petclinic homepage. 
+
 ### Logging
 
 If Gloo is running on kubernetes, the extauth server logs can be viewed with:
@@ -284,9 +282,13 @@ You can clean up the resources created in this guide by running:
 ```
 kill $portForwardPid1
 kill $portForwardPid2
-kill $portForwardPid2
+kill $portForwardPid3
 helm delete --purge hydra-example
 kubectl delete virtualservice -n gloo-system petclinic
 kubectl delete authconfig -n gloo-system oidc-hydra
 kubectl delete -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
 ```
+
+## Summary and Next Steps
+
+In this guide you saw how Gloo could be used with an existing OIDC system to validate access tokens and grant access to a VirtualService. You may want to also check out the authentication guides that use [Dex]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) and [Google]({{< versioned_link_path fromRoot="/guides/security/auth/extauth/oauth/dex/" >}}) for more alternatives when it comes to OAuth-based authentication.
