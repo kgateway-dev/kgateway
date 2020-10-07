@@ -107,7 +107,7 @@ petclinic-0                              1/1     Running   1          25h
 petclinic-db-0                           1/1     Running   0          25h
 ```
 
-The administrative endpoint is running on port 4445 and the public endpoint is running on port 4444. We will be using the former to create a client id and password, and then the latter to generate and validate an access token.
+The administrative endpoint is running on port 4445 and the public endpoint is running on port 4444. We will be using the former to create a client id and password and validate the token, and then the latter to generate an access token.
 
 #### Create the Client and Access Token
 
@@ -164,19 +164,21 @@ curl -X POST http://127.0.0.1:4444/oauth2/token \
   -d 'grant_type=client_credentials' | jq .access_token -r
 ```
 
-The command should rended the access token as output:
+The command should rended the access token as output which we can set as a variable:
 
 ```bash
 vn83zER2AjyOPbzoVXS3A3S65OCC2LvdGcsz3i5CxlY.NWWWsEixtTLSxN7E0Yk5NsWEZvVZEIjlOCtre0T-s4Q
+
+ACCESS_TOKEN=vn83zER2AjyOPbzoVXS3A3S65OCC2LvdGcsz3i5CxlY.NWWWsEixtTLSxN7E0Yk5NsWEZvVZEIjlOCtre0T-s4Q
 ```
 
 We can validate the token using the introspection path of the administrative endpoint:
 
 ```bash
-curl -X POST http://127.0.0.1:4445/oauth2/introspect \
+curl -X POST http://admin.hydra.localhost/oauth2/introspect \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -H 'Accept: application/json' \
-  -d 'token=YOUR_TOKEN_VALUE' | jq
+  -d "token=$ACCESS_TOKEN" | jq
 ```
 
 This is the same path that Gloo will use to check on the validity of tokens. The next step is to take the introspection URL and add it to an *AuthConfig* and then associate that AuthConfig with the Virtual Service we created earlier.
@@ -199,7 +201,7 @@ spec:
   configs:
   - oauth2:
       accessTokenValidation:
-        introspectionUrl: http://hydra-example-admin/oauth2/introspect
+        introspectionUrl: http://hydra-example-admin:4445/oauth2/introspect
 {{< /highlight >}}
 
 The above configuration instructs Gloo to use the `introspectionUrl` to validate access tokens that are submitted with the request. If the token is missing or invalid, Gloo will deny the request.
@@ -248,21 +250,21 @@ Now we are ready to test our complete setup! We are going to use `curl` instead 
 First let's try and access the site without a token value set:
 
 ```bash
-curl http://localhost:8080
+curl http://localhost:8080 -v
 ```
 
-We will receive a 404 message letting us know that our access was not authorized. Now let's try an invalid access token value:
+We will receive a 403 (Forbidden) message letting us know that our access was not authorized. Now let's try an invalid access token value:
 
 ```bash
 curl http://localhost:8080 \
-  -H "Authorization: OAuth qwertyuio23456789"
+  -H "Authorization: Bearer qwertyuio23456789" -v
 ```
 
-Again we will receive a 404 message. Finally, let's try using the access token we generated earlier. Be sure to paste in your proper access token value:
+Again we will receive a 403 message. Finally, let's try using the access token we generated earlier. Be sure to paste in your proper access token value:
 
 ```bash
 curl http://localhost:8080 \
-  -H "Authorization: OAuth ACCESS_TOKEN"
+  -H "Authorization: Bearer $ACCESS_TOKEN" -v
 ```
 
 ### Logging
