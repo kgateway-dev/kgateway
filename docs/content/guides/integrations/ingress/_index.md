@@ -4,7 +4,7 @@ weight: 5
 description: Setting up Gloo to handle Kubernetes Ingress Objects.
 ---
 
-Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command. Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users.
+Kubernetes Ingress Controllers are for simple traffic routing in a Kubernetes cluster. Gloo supports managing Ingress objects with the `glooctl install ingress` command. Gloo will configure Envoy using [Kubernetes Ingress objects](https://kubernetes.io/docs/concepts/services-networking/ingress/) created by users. Learn more about [Kubernetes Ingress](https://www.solo.io/solutions/solutions-kubernetes-ingress/).
 
 ## Ingress Class
 
