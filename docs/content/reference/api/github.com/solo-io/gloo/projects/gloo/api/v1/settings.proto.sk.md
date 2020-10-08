@@ -374,7 +374,7 @@ upstreams to connect to those services and their instances.
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `useTlsTagging` | `bool` | If true, then gloo will add TLS to upstreams created for any consul service that has the tag specified by tlsTagName. If splitTlsServices is true, then this tag is also used to identify serviceInstances that should be tied to the TLS upstream. Requires rootCaNamespace and rootCaName to be set if true. |  |
+| `useTlsTagging` | `bool` | If true, then gloo will add TLS to upstreams created for any consul service that has the tag specified by tlsTagName. If splitTlsServices is true, then this tag is also used to identify serviceInstances that should be tied to the TLS upstream. Requires rootCa to be set if true. |  |
 | `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |  |
 | `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |  |
 | `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |  |

@@ -31,17 +31,17 @@ func fakeUpstreamName(consulSvcName string) string {
 
 // Creates an upstream for each service in the map
 func toUpstreamList(forNamespace string, services []*ServiceMeta, consulConfig *v1.Settings_ConsulUpstreamDiscoveryConfiguration) v1.UpstreamList {
-	var upstreams v1.UpstreamList
+	var results v1.UpstreamList
 	for _, svc := range services {
-		us := CreateUpstreamsFromService(svc, consulConfig)
-		for _, upstream := range us {
+		upstreams := CreateUpstreamsFromService(svc, consulConfig)
+		for _, upstream := range upstreams {
 			if forNamespace != "" && upstream.Metadata.Namespace != forNamespace {
 				continue
 			}
-			upstreams = append(upstreams, upstream)
+			results = append(results, upstream)
 		}
 	}
-	return upstreams.Sort()
+	return results.Sort()
 }
 
 // This function normally returns 1 upstream. It instead returns two upstreams if
@@ -55,8 +55,8 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 	// if config isn't nil, then it's assumed then it's been validated in the consul plugin's init function
 	// (or is properly formatted in testing).
 	// if useTlsTagging is true, then check the consul service for the tls tag.
-	var tlsInstanceTags = []string{}
-	if consulConfig != nil && consulConfig.GetUseTlsTagging() {
+	var tlsInstanceTags []string
+	if consulConfig.GetUseTlsTagging() {
 		tlsTagFound := false
 		for _, tag := range service.Tags {
 			if tag == consulConfig.GetTlsTagName() {
@@ -92,7 +92,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 					},
 				},
 			})
-			// just return the tls upstream unless we're splitting the upstream.
+			// Only return the tls upstream unless we're splitting the upstream.
 			if !consulConfig.GetSplitTlsServices() {
 				return result
 			}
@@ -108,7 +108,7 @@ func CreateUpstreamsFromService(service *ServiceMeta, consulConfig *v1.Settings_
 				ServiceName:           service.Name,
 				DataCenters:           service.DataCenters,
 				ServiceTags:           service.Tags,
-				InstanceBlacklistTags: tlsInstanceTags, //
+				InstanceBlacklistTags: tlsInstanceTags, // Set blacklist on non-tls upstreams to the tls tag.
 			},
 		},
 	})

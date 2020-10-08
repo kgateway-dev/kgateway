@@ -1092,7 +1092,7 @@ func (m *Settings_ConsulConfiguration_ServiceDiscoveryOptions) GetDataCenters() 
 type Settings_ConsulUpstreamDiscoveryConfiguration struct {
 	// If true, then gloo will add TLS to upstreams created for any consul service that has the tag specified by
 	// tlsTagName. If splitTlsServices is true, then this tag is also used to identify serviceInstances that
-	// should be tied to the TLS upstream. Requires rootCaNamespace and rootCaName to be set if true.
+	// should be tied to the TLS upstream. Requires rootCa to be set if true.
 	UseTlsTagging bool `protobuf:"varint,16,opt,name=useTlsTagging,proto3" json:"useTlsTagging,omitempty"`
 	// The tag that gloo should use to make TLS upstreams from consul services, and to partition consul
 	// serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'

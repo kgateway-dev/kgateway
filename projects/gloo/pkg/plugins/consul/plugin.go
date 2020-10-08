@@ -75,8 +75,8 @@ func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
 	// The resulting implication is:
 	// If there are multiple upstreams associated with the same consul service, each upstream MUST have a non-empty
 	// InstanceTags array, and that service's serviceInstances MUST have enough tags to match them to at least one
-	// service. If a serviceInstance has the tags to match into multiple upstreams, there's no guarantee which it'll
-	// be associated with.
+	// service. If a serviceInstance has the tags to match into multiple upstreams, then it'll be associated with
+	// multiple upstreams. This isn't always bad par se, but is not ideal when only some upstreams are secure.
 	for _, inst := range instances {
 		instanceMatch := len(spec.InstanceTags) == 0 || matchTags(spec.InstanceTags, inst.ServiceTags)
 		antiInstanceMatch := len(spec.InstanceBlacklistTags) == 0 || mutuallyExclusiveTags(spec.InstanceBlacklistTags, inst.ServiceTags)
@@ -114,9 +114,9 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	// if automatic TLS discovery is enabled for consul services, make sure we have a specified tag
 	// and a resource location for the validation context's root CA.
 	// The tag has a default value, but the resource name/namespace must be set manually.
-	if p.consulUpstreamDiscoverySettings != nil && p.consulUpstreamDiscoverySettings.UseTlsTagging {
+	if p.consulUpstreamDiscoverySettings.UseTlsTagging {
 		rootCa := p.consulUpstreamDiscoverySettings.GetRootCa()
-		if rootCa == nil || rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
+		if rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
 			return ConsulTlsInputError(fmt.Sprintf("Consul settings specify automatic detection of TLS services, "+
 				"but the rootCA resource's name/namespace are not properly specified: {%s}", rootCa.String()))
 		}

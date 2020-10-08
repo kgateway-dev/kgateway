@@ -42,7 +42,6 @@ func NewHybridUpstreamClient(
 		clientMap[sourceKube] = kubernetes.NewKubernetesUpstreamClient(serviceClient)
 	}
 
-	// todo can we get a consul config here?
 	if consulClient != nil {
 		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient, nil)
 	}

@@ -4,6 +4,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	consulPkg "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
@@ -62,17 +63,27 @@ var _ = Describe("Conversions", func() {
 
 		Expect(usList).To(HaveLen(1))
 
-		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1-tls"))
-		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
-		Expect(usList[0].GetConsul()).NotTo(BeNil())
-		Expect(usList[0].GetConsul().ServiceName).To(Equal("svc-1"))
-		Expect(usList[0].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
-		Expect(usList[0].GetConsul().InstanceTags).To(BeEmpty())
-		Expect(usList[0].GetConsul().InstanceBlacklistTags).To(BeEmpty())
-		Expect(usList[0].GetSslConfig()).NotTo(BeNil())
-		Expect(usList[0].GetSslConfig().GetSslSecrets()).NotTo(BeNil())
-		Expect(usList[0].GetSslConfig().GetSecretRef().Namespace).To(Equal("rootNs"))
-		Expect(usList[0].GetSslConfig().GetSecretRef().Name).To(Equal("rootName"))
+		Expect(usList[0]).To(Equal(&v1.Upstream{
+			Status: core.Status{},
+			Metadata: core.Metadata{
+				Name:      UpstreamNamePrefix + "svc-1-tls",
+				Namespace: defaults.GlooSystem,
+			},
+			SslConfig: &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{
+						Name:      "rootName",
+						Namespace: "rootNs",
+					},
+				},
+			},
+			UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+				ServiceName: "svc-1",
+				ServiceTags: []string{"glooUseTls"},
+				DataCenters: []string{"dc1", "dc2"},
+			},
+			},
+		}))
 	})
 
 	It("splits upstreams that have the TLS tag when service-splitting is on", func() {
@@ -92,6 +103,47 @@ var _ = Describe("Conversions", func() {
 		usList.Sort()
 
 		Expect(usList).To(HaveLen(2))
+
+		expectedUpstreams := []*v1.Upstream{
+			{
+				Status: core.Status{},
+				Metadata: core.Metadata{
+					Name:      UpstreamNamePrefix + "svc-1",
+					Namespace: defaults.GlooSystem,
+				},
+				UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+					ServiceName:           "svc-1",
+					ServiceTags:           []string{"glooUseTls"},
+					DataCenters:           []string{"dc1", "dc2"},
+					InstanceBlacklistTags: []string{"glooUseTls"},
+				},
+				},
+			},
+			{
+				Status: core.Status{},
+				Metadata: core.Metadata{
+					Name:      UpstreamNamePrefix + "svc-1-tls",
+					Namespace: defaults.GlooSystem,
+				},
+				SslConfig: &v1.UpstreamSslConfig{
+					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+						SecretRef: &core.ResourceRef{
+							Name:      "rootName",
+							Namespace: "rootNs",
+						},
+					},
+				},
+				UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+					ServiceName:  "svc-1",
+					ServiceTags:  []string{"glooUseTls"},
+					DataCenters:  []string{"dc1", "dc2"},
+					InstanceTags: []string{"glooUseTls"},
+				},
+				},
+			},
+		}
+
+		Expect(usList).To(ConsistOf(expectedUpstreams))
 
 		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1"))
 		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
