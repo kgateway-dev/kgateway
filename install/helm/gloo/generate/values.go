@@ -56,7 +56,7 @@ type Image struct {
 	Registry   string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
 	PullPolicy string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
-	Extended   bool   `json:"extended,omitempty" desc:"if true, deploy an extended version of the container with additional debug tools"`
+	Extended   bool   `json:"extended" desc:"if true, deploy an extended version of the container with additional debug tools"`
 }
 
 type ResourceAllocation struct {
