@@ -102,7 +102,7 @@ steps:
 
   # 1) Run make targets to push docker images
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
-  args: ['docker-push']
+  args: ['docker-push-extended']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
