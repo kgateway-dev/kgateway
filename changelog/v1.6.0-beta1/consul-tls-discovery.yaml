@@ -6,5 +6,5 @@ changelog:
       Set the settings.integrations.consul.useTls flag to true.
       Assign a tag for gloo to recognize as the TLS tag if the default (settings.integrations.consul.tlsTagName=glooUseTls) is insufficient.
       Add the consul root CA for gloo to use at settings.integrations.consul.rootCA
-      Once these are setup in gloo, adding the tlsTagName value as a tag to consul services should cause them to automatically
+      Once these are setup in gloo, adding the tlsTagName value as a tag to consul services should cause upstreams to automatically
       have TLS when discovered by gloo.
