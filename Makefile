@@ -606,7 +606,7 @@ endif
 .PHONY: docker-push-extended
 docker-push-extended:
 ifeq ($(RELEASE),"true")
-	ci/extended-docker.sh
+	ci/extended-docker/extended-docker.sh
 endif
 
 CLUSTER_NAME ?= kind
