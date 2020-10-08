@@ -20,8 +20,3 @@ do
   docker build ci/extended-docker --build-arg BASE_IMAGE=$f -t $f-extended;
   docker push $f-extended;
 done
-
-#xargs -I % docker build ci/extended-docker --build-arg BASE_IMAGE=% -t %-extended < docker-containers.txt
-#xargs -I % docker push %-extended < docker-containers.txt
-
-#rm docker-logs.txt docker-containers.txt
