@@ -58,7 +58,7 @@ var _ = Describe("Kube2e: Ingress", func() {
 		Expect(kubeIng).NotTo(BeNil())
 
 		ingressProxy := "ingress-proxy"
-		ingressPort := 8080
+		ingressPort := 80
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "http",
 			Path:              "/",
