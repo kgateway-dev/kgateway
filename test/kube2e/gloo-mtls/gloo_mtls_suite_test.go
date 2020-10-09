@@ -36,10 +36,6 @@ func TestGlooMtls(t *testing.T) {
 			"To enable, set KUBE2E_TESTS to 'gloomtls' in your env.")
 		return
 	}
-
-	if testutils.AreTestsDisabled() {
-		return
-	}
 	skhelpers.RegisterCommonFailHandlers()
 	skhelpers.SetupLog()
 	_ = os.Remove(cliutil.GetLogsPath())

@@ -17,10 +17,12 @@ metadata:
 {{- end }}
 spec:
   ports:
-  - port: {{ .Values.ingressProxy.deployment.httpPort }}
+  - port: {{ .Values.ingressProxy.service.httpPort }}
+    targetPort: {{ .Values.ingressProxy.deployment.httpPort }}
     protocol: TCP
     name: http
-  - port: {{ .Values.ingressProxy.deployment.httpsPort }}
+  - port: {{ .Values.ingressProxy.service.httpsPort }}
+    targetPort: {{ .Values.ingressProxy.deployment.httpsPort }}
     protocol: TCP
     name: https
   selector:

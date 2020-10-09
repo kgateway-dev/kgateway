@@ -24,12 +24,13 @@ var _ = Describe("Translate", func() {
 	var (
 		ctx = context.Background()
 	)
+
 	It("creates the appropriate proxy object for the provided ingress objects", func() {
 		testIngressTranslate := func(requireIngressClass bool) {
 
 			namespace := "example"
 			serviceName := "wow-service"
-			servicePort := int32(80)
+			servicePort := int32(8080)
 			secretName := "areallygreatsecret"
 			ingress := &extensions.Ingress{
 				ObjectMeta: metav1.ObjectMeta{
@@ -193,7 +194,7 @@ var _ = Describe("Translate", func() {
 					{
 						Name:        "http",
 						BindAddress: "::",
-						BindPort:    0x00000050,
+						BindPort:    8080,
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
@@ -201,7 +202,7 @@ var _ = Describe("Translate", func() {
 										Name: "wow.com-http",
 										Domains: []string{
 											"wow.com",
-											"wow.com:80",
+											"wow.com:8080",
 										},
 										Routes: []*gloov1.Route{
 											{
@@ -234,7 +235,7 @@ var _ = Describe("Translate", func() {
 					{
 						Name:        "https",
 						BindAddress: "::",
-						BindPort:    0x000001bb,
+						BindPort:    8443,
 						ListenerType: &gloov1.Listener_HttpListener{
 							HttpListener: &gloov1.HttpListener{
 								VirtualHosts: []*gloov1.VirtualHost{
@@ -242,7 +243,7 @@ var _ = Describe("Translate", func() {
 										Name: "wow.com-https",
 										Domains: []string{
 											"wow.com",
-											"wow.com:443",
+											"wow.com:8443",
 										},
 										Routes: []*gloov1.Route{
 											{
@@ -300,7 +301,7 @@ var _ = Describe("Translate", func() {
 										Namespace: "example",
 									},
 								},
-								SniDomains: []string{"wow.com", "wow.com:443"},
+								SniDomains: []string{"wow.com", "wow.com:8443"},
 							},
 						},
 					},
@@ -314,6 +315,7 @@ var _ = Describe("Translate", func() {
 		testIngressTranslate(true)
 		testIngressTranslate(false)
 	})
+
 	It("handles multiple secrets correctly", func() {
 		ingresses := func() v1.IngressList {
 			var ingressList extensions.IngressList
@@ -330,23 +332,23 @@ var _ = Describe("Translate", func() {
 		}()
 
 		us1 := &gloov1.Upstream{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-80"},
+			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
 			UpstreamType: &gloov1.Upstream_Kube{
 				Kube: &kubernetes.UpstreamSpec{
 					ServiceNamespace: "amoeba-dev",
 					ServiceName:      "api-gateway-amoeba-dev",
-					ServicePort:      uint32(80),
+					ServicePort:      uint32(8080),
 				},
 			},
 		}
 
 		us2 := &gloov1.Upstream{
-			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-80"},
+			Metadata: core.Metadata{Namespace: "gloo-system", Name: "amoeba-dev-api-gateway-amoeba-dev-8080"},
 			UpstreamType: &gloov1.Upstream_Kube{
 				Kube: &kubernetes.UpstreamSpec{
 					ServiceNamespace: "amoeba-dev",
 					ServiceName:      "amoeba-ui",
-					ServicePort:      uint32(80),
+					ServicePort:      uint32(8080),
 				},
 			},
 		}
@@ -368,7 +370,7 @@ var _ = Describe("Translate", func() {
 				},
 				SniDomains: []string{
 					"api-dev.intellishift.com",
-					"api-dev.intellishift.com:443",
+					"api-dev.intellishift.com:8443",
 				},
 			},
 			{
@@ -380,17 +382,18 @@ var _ = Describe("Translate", func() {
 				},
 				SniDomains: []string{
 					"ui-dev.intellishift.com",
-					"ui-dev.intellishift.com:443",
+					"ui-dev.intellishift.com:8443",
 				},
 			},
 		}))
 	})
+
 	It("produces a proxy for valid ingresses and ignores invalid ones", func() {
 
 		namespace := "ns"
 
-		svc := makeService("svc", namespace, "http", 8080)
-		port := intstr.IntOrString{Type: intstr.Int, IntVal: 8080}
+		svc := makeService("svc", namespace, "http", 8081)
+		port := intstr.IntOrString{Type: intstr.Int, IntVal: 8081}
 
 		us := makeUpstream("us", namespace, svc)
 
@@ -409,8 +412,9 @@ var _ = Describe("Translate", func() {
 		vhosts := proxy.Listeners[0].GetHttpListener().GetVirtualHosts()
 		Expect(vhosts).To(HaveLen(1))
 		// expect only ing1 to have been translated
-		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":80"}))
+		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":8080"}))
 	})
+
 	It("respects a custom ingress class", func() {
 
 		customClass1 := "fancy"
@@ -418,8 +422,8 @@ var _ = Describe("Translate", func() {
 
 		namespace := "ns"
 
-		svc := makeService("svc", namespace, "http", 8080)
-		port := intstr.IntOrString{Type: intstr.Int, IntVal: 8080}
+		svc := makeService("svc", namespace, "http", 8081)
+		port := intstr.IntOrString{Type: intstr.Int, IntVal: 8081}
 
 		us := makeUpstream("us", namespace, svc)
 
@@ -438,13 +442,14 @@ var _ = Describe("Translate", func() {
 		vhosts := proxy.Listeners[0].GetHttpListener().GetVirtualHosts()
 		Expect(vhosts).To(HaveLen(1))
 		// expect only ing1 to have been translated
-		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":80"}))
+		Expect(vhosts[0].Domains).To(Equal([]string{host1, host1 + ":8080"}))
 	})
+
 	It("supports named ports", func() {
 
 		namespace := "ns"
 
-		svc := makeService("svc", namespace, "http", 8080)
+		svc := makeService("svc", namespace, "http", 8081)
 		port := intstr.IntOrString{Type: intstr.String, StrVal: "http"}
 
 		us := makeUpstream("us", namespace, svc)
@@ -558,7 +563,7 @@ items:
         paths:
         - backend:
             serviceName: api-gateway-amoeba-dev
-            servicePort: 80
+            servicePort: 8080
           path: /
     tls:
     - hosts:
@@ -586,7 +591,7 @@ items:
         paths:
         - backend:
             serviceName: amoeba-ui
-            servicePort: 80
+            servicePort: 8080
           path: /
     tls:
     - hosts:

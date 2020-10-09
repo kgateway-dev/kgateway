@@ -11,8 +11,9 @@
 |settings.integrations.knative.proxy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |settings.integrations.knative.proxy.image.pullPolicy|string||image pull policy for the container|
 |settings.integrations.knative.proxy.image.pullSecret|string||image pull policy for the container |
-|settings.integrations.knative.proxy.httpPort|int|80|HTTP port for the proxy|
-|settings.integrations.knative.proxy.httpsPort|int|443|HTTPS port for the proxy|
+|settings.integrations.knative.proxy.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
+|settings.integrations.knative.proxy.httpPort|int|8080|HTTP port for the proxy|
+|settings.integrations.knative.proxy.httpsPort|int|8443|HTTPS port for the proxy|
 |settings.integrations.knative.proxy.tracing|string||tracing configuration|
 |settings.integrations.knative.proxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
 |settings.integrations.knative.proxy.extraClusterIngressProxyLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the cluster ingress proxy deployment.|
@@ -43,6 +44,8 @@
 |settings.integrations.knative.proxy.service.type|string|LoadBalancer|K8s service type|
 |settings.integrations.knative.proxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |settings.integrations.knative.proxy.service.loadBalancerIP|string||IP address of the load balancer|
+|settings.integrations.knative.proxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
+|settings.integrations.knative.proxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
@@ -64,6 +67,7 @@
 |gloo.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gloo.deployment.image.pullPolicy|string||image pull policy for the container|
 |gloo.deployment.image.pullSecret|string||image pull policy for the container |
+|gloo.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
@@ -104,6 +108,7 @@
 |discovery.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |discovery.deployment.image.pullPolicy|string||image pull policy for the container|
 |discovery.deployment.image.pullSecret|string||image pull policy for the container |
+|discovery.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
@@ -149,6 +154,7 @@
 |gateway.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gateway.deployment.image.pullPolicy|string||image pull policy for the container|
 |gateway.deployment.image.pullSecret|string||image pull policy for the container |
+|gateway.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |gateway.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
 |gateway.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
@@ -182,6 +188,7 @@
 |gateway.certGenJob.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gateway.certGenJob.image.pullPolicy|string||image pull policy for the container|
 |gateway.certGenJob.image.pullSecret|string||image pull policy for the container |
+|gateway.certGenJob.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |gateway.certGenJob.restartPolicy|string|OnFailure|restart policy to use when the pod exits|
 |gateway.certGenJob.enabled|bool|true|enable the job that generates the certificates for the validating webhook at install time (default true)|
 |gateway.certGenJob.setTtlAfterFinished|bool|true|Set ttlSecondsAfterFinished (a k8s feature in Alpha) on the job. Defaults to true|
@@ -220,6 +227,7 @@
 |gatewayProxies.NAME.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gatewayProxies.NAME.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.NAME.podTemplate.image.pullSecret|string||image pull policy for the container |
+|gatewayProxies.NAME.podTemplate.image.extended|bool||if true, deploy an extended version of the container with additional debug tools|
 |gatewayProxies.NAME.podTemplate.httpPort|int||HTTP port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.httpsPort|int||HTTPS port for the gateway service target port|
 |gatewayProxies.NAME.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -344,6 +352,7 @@
 |gatewayProxies.gatewayProxy.podTemplate.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullPolicy|string||image pull policy for the container|
 |gatewayProxies.gatewayProxy.podTemplate.image.pullSecret|string||image pull policy for the container |
+|gatewayProxies.gatewayProxy.podTemplate.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |gatewayProxies.gatewayProxy.podTemplate.httpPort|int|8080|HTTP port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.httpsPort|int|8443|HTTPS port for the gateway service target port|
 |gatewayProxies.gatewayProxy.podTemplate.extraPorts[]|interface||extra ports for the gateway pod|
@@ -448,6 +457,7 @@
 |ingress.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |ingress.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingress.deployment.image.pullSecret|string||image pull policy for the container |
+|ingress.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |ingress.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |ingress.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |ingress.deployment.extraIngressLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the ingress deployment.|
@@ -482,8 +492,9 @@
 |ingressProxy.deployment.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |ingressProxy.deployment.image.pullPolicy|string||image pull policy for the container|
 |ingressProxy.deployment.image.pullSecret|string||image pull policy for the container |
-|ingressProxy.deployment.httpPort|int|80|HTTP port for the ingress container|
-|ingressProxy.deployment.httpsPort|int|443|HTTPS port for the ingress container|
+|ingressProxy.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
+|ingressProxy.deployment.httpPort|int|8080|HTTP port for the ingress container|
+|ingressProxy.deployment.httpsPort|int|8443|HTTPS port for the ingress container|
 |ingressProxy.deployment.extraPorts[]|interface|||
 |ingressProxy.deployment.extraAnnotations.NAME|string|||
 |ingressProxy.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
@@ -520,12 +531,15 @@
 |ingressProxy.service.type|string|LoadBalancer|K8s service type|
 |ingressProxy.service.extraAnnotations.NAME|string||extra annotations to add to the service|
 |ingressProxy.service.loadBalancerIP|string||IP address of the load balancer|
+|ingressProxy.service.httpPort|int|80|HTTP port for the knative/ingress proxy service|
+|ingressProxy.service.httpsPort|int|443|HTTPS port for the knative/ingress proxy service|
 |k8s.clusterName|string|cluster.local|cluster name to use when referencing services.|
 |accessLogger.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |accessLogger.image.repository|string|access-logger|image name (repository) for the container.|
 |accessLogger.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |accessLogger.image.pullPolicy|string||image pull policy for the container|
 |accessLogger.image.pullSecret|string||image pull policy for the container |
+|accessLogger.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |accessLogger.port|uint|8083||
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
@@ -562,6 +576,7 @@
 |global.image.registry|string|quay.io/solo-io|image prefix/registry e.g. (quay.io/solo-io)|
 |global.image.pullPolicy|string|IfNotPresent|image pull policy for the container|
 |global.image.pullSecret|string||image pull policy for the container |
+|global.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |global.extensions|interface|||
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
@@ -574,10 +589,12 @@
 |global.glooMtls.sds.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |global.glooMtls.sds.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.sds.image.pullSecret|string||image pull policy for the container |
+|global.glooMtls.sds.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |global.glooMtls.envoy.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |global.glooMtls.envoy.image.repository|string|gloo-envoy-wrapper|image name (repository) for the container.|
 |global.glooMtls.envoy.image.registry|string||image prefix/registry e.g. (quay.io/solo-io)|
 |global.glooMtls.envoy.image.pullPolicy|string||image pull policy for the container|
 |global.glooMtls.envoy.image.pullSecret|string||image pull policy for the container |
+|global.glooMtls.envoy.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
 |global.istioSDS.enabled|bool|false||
 |global.istioSDS.customSidecars[]|interface||Override the default Istio sidecar in gateway-proxy with a custom container. Ignored if IstioSDS.enabled is false|
