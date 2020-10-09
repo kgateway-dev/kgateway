@@ -6,7 +6,7 @@ changelog:
   - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/3346
     description: Ensure the rest of our docker containers run with user 10101 rather than root
-  - type: NEW_FEATURE
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/3399
     description: >-
       With each release, we will additionally be publishing an alternate set of docker containers (tagged as usual but
