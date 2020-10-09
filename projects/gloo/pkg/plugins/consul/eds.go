@@ -188,10 +188,10 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 // build gloo endpoints out of consul catalog services and gloo upstreams
 // trackedServiceToUpstreams is a map from consul service names to a list of gloo upstreams associated with it.
 // Each spec is a grouping of serviceInstances (aka endpoints) associated with a single consul service on one datacenter.
-// This means that for each consul service/datacenter combo, we produce an many endpoints for each associated IP we find
+// This means that for each consul service/datacenter combo, we produce as many endpoints for each associated IP we find
 // using getIpAddresses(), each of which will be labeled to reflect which of its tags/datacenters are associated with that endpoint.
 // This awkward labeling is needed because our constructed endpoints are made on a per datacenter basis, but gloo
-// upstreams are not devided this way, so we have to divide them ourselves with metadata.
+// upstreams are not divided this way, so we have to divide them ourselves with metadata.
 func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
@@ -215,8 +215,8 @@ func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolve
 
 // The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
 // data centers. We create an endpoint label for each tag from the gloo upstreams,
-// where the label key is the name of the tag and
-// the label value is "1" if the current service contains the same tag, else "0".
+// where the label key is the name of the tag and the label value is "1" if the current service contains the same tag,
+// and "0" otherwise.
 func BuildTagMetadata(tags []string, upstreams []*v1.Upstream) map[string]string {
 
 	// Build maps for quick lookup
