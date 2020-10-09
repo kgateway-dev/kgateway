@@ -25,7 +25,7 @@ var _ = Describe("Kube2e: Knative-Ingress", func() {
 
 	It("works", func() {
 		ingressProxy := "knative-external-proxy"
-		ingressPort := 80
+		ingressPort := 8080
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "http",
 			Path:              "/",
