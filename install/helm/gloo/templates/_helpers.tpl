@@ -24,7 +24,7 @@ ClusterRole
 Expand the name of a container image
 */}}
 {{- define "gloo.image" -}}
-{{ .registry }}/{{ .repository }}:{{ .tag }}
+{{ .registry }}/{{ .repository }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
 {{- end -}}
 
 {{/*

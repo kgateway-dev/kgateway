@@ -22,12 +22,14 @@ settings:
         loopBackAddress: 127.0.0.1
         image:
           repository: gloo-envoy-wrapper
-        httpPort: 80
-        httpsPort: 443
+        httpPort: 8080
+        httpsPort: 8443
         replicas: 1
         service:
           type: LoadBalancer
           extraAnnotations: {}
+          httpPort: 80
+          httpsPort: 443
   # Namespaces that Gloo should watch. This includes watches set for pods, services, as well as CRD configuration objects.
   watchNamespaces: []
   # Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature,
@@ -147,12 +149,14 @@ ingressProxy:
   deployment:
     image:
       repository: gloo-envoy-wrapper
-    httpPort: 80
-    httpsPort: 443
+    httpPort: 8080
+    httpsPort: 8443
     replicas: 1
   service:
     type: LoadBalancer
     extraAnnotations: {}
+    httpPort: 80
+    httpsPort: 443
   configMap:
     data:
   tracing:
@@ -160,6 +164,7 @@ global:
   image:
     registry: quay.io/solo-io
     pullPolicy: IfNotPresent
+    extended: false
   glooRbac:
     create: true
   glooStats:

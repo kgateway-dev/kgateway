@@ -6,5 +6,7 @@ ARG GOARCH=amd64
 
 COPY envoywasm-linux-$GOARCH /usr/local/bin/envoyinit
 
+USER 10101
+
 ENTRYPOINT ["/usr/bin/dumb-init", "--", "/usr/local/bin/envoyinit"]
 CMD []
