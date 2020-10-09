@@ -38,7 +38,7 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 		deployKnativeTestService(knativeTLSTestServiceFile())
 
 		clusterIP := getClusterIP()
-		ingressPort := 443
+		ingressPort := 8443
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "https",
 			Path:              "/",
@@ -61,7 +61,7 @@ var _ = Describe("Kube2e: Knative-Ingress with manual TLS enabled", func() {
 		addTLSSecret()
 
 		clusterIP := getClusterIP()
-		ingressPort := 443
+		ingressPort := 8443
 		testHelper.CurlEventuallyShouldRespond(helper.CurlOpts{
 			Protocol:          "https",
 			Path:              "/",

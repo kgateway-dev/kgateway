@@ -36,8 +36,8 @@ const (
 )
 
 const (
-	bindPortHttp  = 80
-	bindPortHttps = 443
+	bindPortHttp  = 8080
+	bindPortHttps = 8443
 
 	// a comma-separated list of sni domains
 	sslAnnotationKeySniDomains = "gloo.networking.knative.dev/ssl.sni_domains"
