@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	matchers2 "github.com/solo-io/gloo/test/matchers"
+
 	envoycore_sk "github.com/solo-io/solo-kit/pkg/api/external/envoy/api/v2/core"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/core/matchers"
@@ -29,7 +31,7 @@ var _ = Describe("Translate", func() {
 		namespace := "example"
 		serviceName := "peteszah-service"
 		serviceNamespace := "peteszah-service-namespace"
-		servicePort := int32(80)
+		servicePort := int32(8080)
 		secretName := "areallygreatsecret"
 		ingress := &v1alpha1.Ingress{
 			ObjectMeta: metav1.ObjectMeta{
@@ -150,14 +152,14 @@ var _ = Describe("Translate", func() {
 		Expect(errs).NotTo(HaveOccurred())
 		Expect(proxy.Listeners).To(HaveLen(2))
 		Expect(proxy.Listeners[0].Name).To(Equal("http"))
-		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(80)))
+		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(8080)))
 
 		expected := &gloov1.Proxy{
 			Listeners: []*gloov1.Listener{
 				{
 					Name:        "http",
 					BindAddress: "::",
-					BindPort:    0x00000050,
+					BindPort:    8080,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
@@ -165,17 +167,17 @@ var _ = Describe("Translate", func() {
 									Name: "example.ing-0",
 									Domains: []string{
 										"mysvc.myns",
-										"mysvc.myns:80",
+										"mysvc.myns:8080",
 										"mysvc.myns.example.com",
-										"mysvc.myns.example.com:80",
+										"mysvc.myns.example.com:8080",
 										"mysvc.myns.svc",
-										"mysvc.myns.svc:80",
+										"mysvc.myns.svc:8080",
 										"mysvc.myns.svc.cluster.local",
-										"mysvc.myns.svc.cluster.local:80",
+										"mysvc.myns.svc.cluster.local:8080",
 										"petes.com",
-										"petes.com:80",
+										"petes.com:8080",
 										"zah.net",
-										"zah.net:80",
+										"zah.net:8080",
 									},
 									Routes: []*gloov1.Route{
 										{
@@ -197,7 +199,7 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port: 8080,
 																			},
 																		},
 																	},
@@ -225,11 +227,11 @@ var _ = Describe("Translate", func() {
 									Name: "example.ing-1",
 									Domains: []string{
 										"champ.net",
-										"champ.net:80",
+										"champ.net:8080",
 										"pog.com",
-										"pog.com:80",
+										"pog.com:8080",
 										"zah.net",
-										"zah.net:80",
+										"zah.net:8080",
 									},
 									Routes: []*gloov1.Route{
 										{
@@ -251,7 +253,7 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port: 8080,
 																			},
 																		},
 																	},
@@ -282,7 +284,7 @@ var _ = Describe("Translate", func() {
 				{
 					Name:        "https",
 					BindAddress: "::",
-					BindPort:    0x000001bb,
+					BindPort:    8443,
 					ListenerType: &gloov1.Listener_HttpListener{
 						HttpListener: &gloov1.HttpListener{
 							VirtualHosts: []*gloov1.VirtualHost{
@@ -290,9 +292,9 @@ var _ = Describe("Translate", func() {
 									Name: "example.ing-tls-0",
 									Domains: []string{
 										"petes.com",
-										"petes.com:443",
+										"petes.com:8443",
 										"zah.net",
-										"zah.net:443",
+										"zah.net:8443",
 									},
 									Routes: []*gloov1.Route{
 										{
@@ -314,7 +316,7 @@ var _ = Describe("Translate", func() {
 																					Name:      "peteszah-service",
 																					Namespace: "peteszah-service-namespace",
 																				},
-																				Port: 0x00000050,
+																				Port: 8080,
 																			},
 																		},
 																	},
@@ -362,14 +364,14 @@ var _ = Describe("Translate", func() {
 				Namespace: "example",
 			},
 		}
-		Expect(proxy).To(Equal(expected))
+		Expect(proxy).To(matchers2.BeEquivalentToDiff(expected))
 	})
 
 	It("renders proxies on ssl config based on annotations", func() {
 		namespace := "example"
 		serviceName := "peteszah-service"
 		serviceNamespace := "peteszah-service-namespace"
-		servicePort := int32(80)
+		servicePort := int32(8080)
 		secretName := "areallygreatsecret"
 		secretNamespace := "areallygreatnamespace"
 		annotations := map[string]string{
@@ -415,7 +417,7 @@ var _ = Describe("Translate", func() {
 		Expect(errs).NotTo(HaveOccurred())
 		Expect(proxy.Listeners).To(HaveLen(1))
 		Expect(proxy.Listeners[0].Name).To(Equal("https"))
-		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(443)))
+		Expect(proxy.Listeners[0].BindPort).To(Equal(uint32(8443)))
 		Expect(proxy.Listeners[0].SslConfigurations).To(HaveLen(1))
 		Expect(proxy.Listeners[0].SslConfigurations[0].SslSecrets).To(Equal(&gloov1.SslConfig_SecretRef{SecretRef: &core.ResourceRef{Name: secretName, Namespace: secretNamespace}}))
 		Expect(proxy.Listeners[0].SslConfigurations[0].SniDomains).To(Equal([]string{"domain.com", "domain.io"}))
