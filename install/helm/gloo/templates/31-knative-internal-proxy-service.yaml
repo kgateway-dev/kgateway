@@ -10,11 +10,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
-  - port: {{ .Values.settings.integrations.knative.service.httpPort }}
+  - port: {{ .Values.settings.integrations.knative.proxy.service.httpPort }}
     targetPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
     protocol: TCP
     name: http
-  - port: {{ .Values.settings.integrations.knative.service.httpsPort }}
+  - port: {{ .Values.settings.integrations.knative.proxy.service.httpsPort }}
     targetPort: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
     protocol: TCP
     name: https
