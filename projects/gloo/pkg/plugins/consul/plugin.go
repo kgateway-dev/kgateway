@@ -28,7 +28,6 @@ var (
 
 	ConsulTlsInputError = func(msg string) error {
 		return eris.Errorf(msg)
-
 	}
 )
 

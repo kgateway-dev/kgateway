@@ -128,8 +128,8 @@ type ResourceRef struct {
 
 // google.protobuf.Duration
 type Duration struct {
-	Seconds *int32 `json:"seconds,omitEmpty" desc:".""`
-	Nanos   *int32 `json:"nanos,omitEmpty" desc:"."`
+	Seconds *int32 `json:"seconds,omitEmpty" desc:"The value of this duration in seconds."`
+	Nanos   *int32 `json:"nanos,omitEmpty" desc:"The value of this duration in nanoseconds."`
 }
 
 type Knative struct {

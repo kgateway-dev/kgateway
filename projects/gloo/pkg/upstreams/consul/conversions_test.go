@@ -144,24 +144,6 @@ var _ = Describe("Conversions", func() {
 		}
 
 		Expect(usList).To(ConsistOf(expectedUpstreams))
-
-		Expect(usList[0].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1"))
-		Expect(usList[0].Metadata.Namespace).To(Equal(defaults.GlooSystem))
-		Expect(usList[0].GetConsul()).NotTo(BeNil())
-		Expect(usList[0].GetConsul().ServiceName).To(Equal("svc-1"))
-		Expect(usList[0].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
-		Expect(usList[0].GetConsul().InstanceBlacklistTags).To(ConsistOf("glooUseTls"))
-		Expect(usList[0].GetConsul().InstanceTags).To(BeNil())
-		Expect(usList[0].GetSslConfig()).To(BeNil())
-
-		Expect(usList[1].Metadata.Name).To(Equal(UpstreamNamePrefix + "svc-1-tls"))
-		Expect(usList[1].Metadata.Namespace).To(Equal(defaults.GlooSystem))
-		Expect(usList[1].GetConsul()).NotTo(BeNil())
-		Expect(usList[1].GetConsul().ServiceName).To(Equal("svc-1"))
-		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc2"))
-		Expect(usList[1].GetConsul().InstanceTags).To(ConsistOf("glooUseTls"))
-		Expect(usList[1].GetConsul().InstanceBlacklistTags).To(BeNil())
-		Expect(usList[1].GetSslConfig()).NotTo(BeNil())
 	})
 
 	It("correctly consolidates service information from different data centers", func() {

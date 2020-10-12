@@ -177,7 +177,7 @@ var _ = Describe("Resolve", func() {
 			},
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("Consul settings specify automatic detection of TLS services, " +
-			"but the rootCA resource's name/namespace are not properly specified: {namespace:\"rootNs\" }"))
+		Expect(err.Error()).To(Equal(ConsulTlsInputError("Consul settings specify automatic detection of TLS services, " +
+			"but the rootCA resource's name/namespace are not properly specified: {namespace:\"rootNs\" }").Error()))
 	})
 })
