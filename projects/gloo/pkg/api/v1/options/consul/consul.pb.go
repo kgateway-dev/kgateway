@@ -42,7 +42,7 @@ type UpstreamSpec struct {
 	// The list of service tags Gloo should search for on a service instance
 	// before deciding whether or not to include the instance as part of this
 	// upstream. Empty list means that all service instances with the same service name will be
-	// included. When not empty, only service instances that match all of the tags will be selected
+	// included. When not empty, only service instances that match all of the tags (subset match) will be selected
 	// for this upstream.
 	InstanceTags []string `protobuf:"bytes,7,rep,name=instance_tags,json=instanceTags,proto3" json:"instance_tags,omitempty"`
 	// The opposite of instanceTags, this is a list of service tags that gloo should ensure are not

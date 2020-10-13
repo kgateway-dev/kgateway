@@ -166,18 +166,18 @@ var _ = Describe("Resolve", func() {
 	It("returns an error if it tries to init with missing required values.", func() {
 		// missing resource value, expect err.
 		plug := NewPlugin(consulWatcherMock, nil, nil)
+		var rootCa = &core.ResourceRef{
+			Namespace: "rootNs",
+			Name:      "",
+		}
 		err := plug.Init(plugins.InitParams{
 			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
 				UseTlsTagging: true,
-				RootCa: &core.ResourceRef{
-					Namespace: "rootNs",
-					Name:      "",
-				},
+				RootCa:        rootCa,
 			},
 			},
 		})
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(ConsulTlsInputError("Consul settings specify automatic detection of TLS services, " +
-			"but the rootCA resource's name/namespace are not properly specified: {namespace:\"rootNs\" }").Error()))
+		Expect(err.Error()).To(Equal(ConsulTlsInputError(rootCa.String()).Error()))
 	})
 })

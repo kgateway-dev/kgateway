@@ -26,8 +26,10 @@ var (
 	DefaultDnsPollingInterval = 5 * time.Second
 	DefaultTlsTagName         = "glooUseTls"
 
-	ConsulTlsInputError = func(msg string) error {
-		return eris.Errorf(msg)
+	UnformattedErrorMsg = "Consul settings specify automatic detection of TLS services, " +
+		"but the rootCA resource's name/namespace are not properly specified: {%s}"
+	ConsulTlsInputError = func(nsString string) error {
+		return eris.Errorf(fmt.Sprintf(UnformattedErrorMsg, nsString))
 	}
 )
 
@@ -116,8 +118,7 @@ func (p *plugin) Init(params plugins.InitParams) error {
 	if p.consulUpstreamDiscoverySettings.UseTlsTagging {
 		rootCa := p.consulUpstreamDiscoverySettings.GetRootCa()
 		if rootCa.GetNamespace() == "" || rootCa.GetName() == "" {
-			return ConsulTlsInputError(fmt.Sprintf("Consul settings specify automatic detection of TLS services, "+
-				"but the rootCA resource's name/namespace are not properly specified: {%s}", rootCa.String()))
+			return ConsulTlsInputError(rootCa.String())
 		}
 
 		tlsTagName := p.consulUpstreamDiscoverySettings.GetTlsTagName()
