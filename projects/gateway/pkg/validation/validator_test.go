@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	k8syamlutil "sigs.k8s.io/yaml"
@@ -625,6 +626,27 @@ var _ = Describe("Validator", func() {
 				Expect(err).NotTo(HaveOccurred())
 				Expect(proxyReports).To(HaveLen(1))
 				Expect(proxyReports).To(HaveKey(ContainSubstring("listener-::-8080")))
+			})
+		})
+
+		Context("unmarshal errors", func() {
+			FIt("doesn't mask other errors when there's an unmarshal error in a list", func() {
+
+				vc.validateProxy = acceptProxy
+				us := samples.SimpleUpstream()
+				snap := samples.SimpleGatewaySnapshot(us.Metadata.Ref(), ns)
+				err := v.Sync(context.TODO(), snap)
+				Expect(err).NotTo(HaveOccurred())
+
+				ul := &unstructured.UnstructuredList{}
+				jsonBytes, err := ioutil.ReadFile("fixtures/unmarshal-err.json")
+				Expect(err).ToNot(HaveOccurred())
+				err = ul.UnmarshalJSON(jsonBytes)
+				Expect(err).ToNot(HaveOccurred())
+				proxyReports, err := v.ValidateList(context.TODO(), ul, false)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(proxyReports).To(HaveLen(2))
+
 			})
 		})
 

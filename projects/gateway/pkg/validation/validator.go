@@ -294,24 +294,27 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 			var (
 				gw v1.Gateway
 			)
-			if err := skprotoutils.UnmarshalResource(jsonBytes, &gw); err != nil {
-				return nil, WrappedUnmarshalErr(err)
+			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &gw); unmarshalErr != nil {
+				err = WrappedUnmarshalErr(unmarshalErr)
+				break
 			}
 			itemProxyReports, err = v.validateGatewayInternal(ctx, &gw, false, false)
 		case v1.VirtualServiceGVK:
 			var (
 				vs v1.VirtualService
 			)
-			if err := skprotoutils.UnmarshalResource(jsonBytes, &vs); err != nil {
-				return nil, WrappedUnmarshalErr(err)
+			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &vs); unmarshalErr != nil {
+				err = WrappedUnmarshalErr(unmarshalErr)
+				break
 			}
 			itemProxyReports, err = v.validateVirtualServiceInternal(ctx, &vs, false, false)
 		case v1.RouteTableGVK:
 			var (
 				rt v1.RouteTable
 			)
-			if err := skprotoutils.UnmarshalResource(jsonBytes, &rt); err != nil {
-				return nil, WrappedUnmarshalErr(err)
+			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &rt); unmarshalErr != nil {
+				err = WrappedUnmarshalErr(unmarshalErr)
+				break
 			}
 			itemProxyReports, err = v.validateRouteTableInternal(ctx, &rt, false, false)
 		}
