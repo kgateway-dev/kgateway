@@ -132,6 +132,8 @@ spec:
           name: google
           namespace: gloo-system
         issuer_url: https://accounts.google.com
+        scopes:
+        - email
 EOF
 {{< /highlight >}}
 

@@ -191,6 +191,10 @@ spec:
         - email
 {{< /highlight >}}
 
+{{% notice note %}}
+The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
+{{% /notice %}}
+
 The above configuration instructs Gloo to use its extauth OIDC module to authenticate the incoming request. 
 Notice how the configuration references the client secret we created earlier and compare the configuration values 
 with the ones we used to bootstrap Dex.
