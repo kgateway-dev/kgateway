@@ -56,13 +56,20 @@ const (
 		"Please correct any Rejected resources to re-enable validation."
 )
 
+type ValidationResponse struct {
+	ProxyReports ProxyReports
+	ExtraErrs    *multierror.Error
+}
+
+var _ Validator = &validator{}
+
 type Validator interface {
 	v1.ApiSyncer
-	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error)
-	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error)
-	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error)
+	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*ValidationResponse, error)
+	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (*ValidationResponse, error)
+	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*ValidationResponse, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef, dryRun bool) error
-	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error)
+	ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*ValidationResponse, error)
 	ValidateDeleteRouteTable(ctx context.Context, rt core.ResourceRef, dryRun bool) error
 }
 
@@ -159,7 +166,7 @@ func (v *validator) deleteFromLocalSnapshot(resource resources.Resource) {
 	}
 }
 
-func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, dryRun, acquireLock bool) (*ValidationResponse, error) {
 	if !v.ready() {
 		return nil, NotReadyErr
 	}
@@ -241,7 +248,10 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 	if errs != nil {
 		contextutils.LoggerFrom(ctx).Debugf("Rejected %T %v: %v", resource, ref, errs)
-		return proxyReports, errors.Wrapf(errs, "validating %T %v", resource, ref)
+		return &ValidationResponse{
+			ProxyReports: proxyReports,
+			ExtraErrs:    nil,
+		}, errors.Wrapf(errs, "validating %T %v", resource, ref)
 	}
 
 	contextutils.LoggerFrom(ctx).Debugf("Accepted %T %v", resource, ref)
@@ -257,10 +267,13 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 		}
 	}
 
-	return proxyReports, nil
+	return &ValidationResponse{
+		ProxyReports: proxyReports,
+		ExtraErrs:    nil,
+	}, nil
 }
 
-func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (*ValidationResponse, error) {
 	var (
 		proxyReports = ProxyReports{}
 		errs         = &multierror.Error{}
@@ -274,7 +287,10 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
 		if err != nil {
-			return ProxyReports{}, err
+			return &ValidationResponse{
+				ProxyReports: ProxyReports{},
+				ExtraErrs:    nil,
+			}, err
 		}
 
 		itemGvk := schema.GroupVersionKind{
@@ -285,42 +301,53 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 		jsonBytes, err := item.MarshalJSON()
 		if err != nil {
-			return ProxyReports{}, err
+			return &ValidationResponse{
+				ProxyReports: ProxyReports{},
+				ExtraErrs:    nil,
+			}, err
 		}
 
-		var itemProxyReports ProxyReports
+		var itemValidationResponse *ValidationResponse
+		var uErr error
 		switch itemGvk {
 		case v1.GatewayGVK:
 			var (
 				gw v1.Gateway
 			)
 			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &gw); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
+				uErr = WrappedUnmarshalErr(unmarshalErr)
 				break
 			}
-			itemProxyReports, err = v.validateGatewayInternal(ctx, &gw, false, false)
+			itemValidationResponse, err = v.validateGatewayInternal(ctx, &gw, false, false)
 		case v1.VirtualServiceGVK:
 			var (
 				vs v1.VirtualService
 			)
 			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &vs); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
+				uErr = WrappedUnmarshalErr(unmarshalErr)
 				break
 			}
-			itemProxyReports, err = v.validateVirtualServiceInternal(ctx, &vs, false, false)
+			itemValidationResponse, err = v.validateVirtualServiceInternal(ctx, &vs, false, false)
 		case v1.RouteTableGVK:
 			var (
 				rt v1.RouteTable
 			)
 			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &rt); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
+				uErr = WrappedUnmarshalErr(unmarshalErr)
 				break
 			}
-			itemProxyReports, err = v.validateRouteTableInternal(ctx, &rt, false, false)
+			itemValidationResponse, err = v.validateRouteTableInternal(ctx, &rt, false, false)
 		}
 
-		errs = multierror.Append(errs, err)
-		for proxy, report := range itemProxyReports {
+		if uErr != nil {
+			errs = multierror.Append(errs, uErr)
+		}
+
+		if itemValidationResponse == nil {
+			continue
+		}
+
+		for proxy, report := range itemValidationResponse.ProxyReports {
 			// ok to return final proxy reports as the latest result includes latest proxy calculated
 			// for each resource, as we process incrementally, storing new state in memory as we go
 			proxyReports[proxy] = report
@@ -331,14 +358,17 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		v.latestSnapshot = &snap
 	}
 
-	return proxyReports, errs.ErrorOrNil()
+	return &ValidationResponse{
+		ProxyReports: proxyReports,
+		ExtraErrs:    errs,
+	}, errs.ErrorOrNil()
 }
 
-func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (*ValidationResponse, error) {
 	return v.validateVirtualServiceInternal(ctx, vs, dryRun, true)
 }
 
-func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.VirtualService, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateVirtualServiceInternal(ctx context.Context, vs *v1.VirtualService, dryRun, acquireLock bool) (*ValidationResponse, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		vsRef := vs.GetMetadata().Ref()
 
@@ -410,11 +440,11 @@ func (v *validator) ValidateDeleteVirtualService(ctx context.Context, vsRef core
 	return nil
 }
 
-func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateRouteTable(ctx context.Context, rt *v1.RouteTable, dryRun bool) (*ValidationResponse, error) {
 	return v.validateRouteTableInternal(ctx, rt, dryRun, true)
 }
 
-func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.RouteTable, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateRouteTableInternal(ctx context.Context, rt *v1.RouteTable, dryRun, acquireLock bool) (*ValidationResponse, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		rtRef := rt.GetMetadata().Ref()
 
@@ -488,11 +518,11 @@ func (v *validator) ValidateDeleteRouteTable(ctx context.Context, rtRef core.Res
 	return nil
 }
 
-func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (*ValidationResponse, error) {
 	return v.validateGatewayInternal(ctx, gw, dryRun, true)
 }
 
-func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway, dryRun, acquireLock bool) (ProxyReports, error) {
+func (v *validator) validateGatewayInternal(ctx context.Context, gw *v1.Gateway, dryRun, acquireLock bool) (*ValidationResponse, error) {
 	apply := func(snap *v1.ApiSnapshot) ([]string, resources.Resource, core.ResourceRef) {
 		gwRef := gw.GetMetadata().Ref()
 
