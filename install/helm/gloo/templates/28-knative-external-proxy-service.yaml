@@ -18,10 +18,12 @@ metadata:
 {{- end }}
 spec:
   ports:
-  - port: {{ .Values.settings.integrations.knative.proxy.httpPort }}
+  - port: {{ .Values.settings.integrations.knative.proxy.service.httpPort }}
+    targetPort: {{ .Values.settings.integrations.knative.proxy.httpPort }}
     protocol: TCP
     name: http
-  - port: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
+  - port: {{ .Values.settings.integrations.knative.proxy.service.httpsPort }}
+    targetPort: {{ .Values.settings.integrations.knative.proxy.httpsPort }}
     protocol: TCP
     name: https
   selector:

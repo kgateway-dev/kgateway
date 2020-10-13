@@ -100,26 +100,16 @@ steps:
   waitFor: ['prepare-workspace']
   id: 'docker-login'
 
-- name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
-  args: ['docker']
-  env:
-    - 'TAGGED_VERSION=$TAG_NAME'
-    - 'BUILD_ID=$BUILD_ID'
-    - 'GCLOUD_PROJECT_ID=$PROJECT_ID'
-  dir: *dir
-  waitFor: ['prepare-workspace']
-  id: 'compile'
-
   # 1) Run make targets to push docker images
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.4'
-  args: ['docker-push']
+  args: ['docker-push-extended']
   env:
   - 'DOCKER_CONFIG=/workspace/docker-config'
   - 'TAGGED_VERSION=$TAG_NAME'
   dir: *dir
   secretEnv: ['GITHUB_TOKEN']
-  waitFor: ['compile']
-  id: 'docker-push'
+  waitFor: ['docker-login']
+  id: 'docker-push-extended'
 
 # 2) Publish helm chart, compile manifests, produce release artifacts, deploy docs
 # isolating this portion of the release in order to force the manifest to be regenerated with the tagged version
@@ -128,7 +118,7 @@ steps:
   env:
     - 'DOCKER_CONFIG=/workspace/docker-config'
   dir: *dir
-  waitFor: ['compile']
+  waitFor: ['docker-push-extended']
   id: 'gcr-auth'
 
 - name: 'gcr.io/$PROJECT_ID/go-mod-make:0.4.2'

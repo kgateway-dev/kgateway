@@ -9,4 +9,6 @@ RUN apk upgrade --update-cache \
 
 COPY discovery-linux-$GOARCH /usr/local/bin/discovery
 
+USER 10101
+
 ENTRYPOINT ["/usr/local/bin/discovery"]

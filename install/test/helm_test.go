@@ -2773,13 +2773,13 @@ metadata:
 							Name:       "http",
 							Protocol:   "TCP",
 							Port:       80,
-							TargetPort: intstr.IntOrString{IntVal: 0},
+							TargetPort: intstr.IntOrString{IntVal: 8080},
 						},
 						{
 							Name:       "https",
 							Protocol:   "TCP",
 							Port:       443,
-							TargetPort: intstr.IntOrString{IntVal: 0},
+							TargetPort: intstr.IntOrString{IntVal: 8443},
 						},
 					}
 					ingressProxyService.Spec.Type = v1.ServiceTypeLoadBalancer

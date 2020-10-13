@@ -56,6 +56,7 @@ type Image struct {
 	Registry   string `json:"registry,omitempty" desc:"image prefix/registry e.g. (quay.io/solo-io)"`
 	PullPolicy string `json:"pullPolicy,omitempty"  desc:"image pull policy for the container"`
 	PullSecret string `json:"pullSecret,omitempty" desc:"image pull policy for the container "`
+	Extended   bool   `json:"extended" desc:"if true, deploy an extended version of the container with additional debug tools"`
 }
 
 type ResourceAllocation struct {
@@ -382,6 +383,8 @@ type Service struct {
 	Type             *string           `json:"type,omitempty" desc:"K8s service type"`
 	ExtraAnnotations map[string]string `json:"extraAnnotations,omitempty" desc:"extra annotations to add to the service"`
 	LoadBalancerIP   string            `json:"loadBalancerIP,omitempty" desc:"IP address of the load balancer"`
+	HttpPort         int               `json:"httpPort,omitempty" desc:"HTTP port for the knative/ingress proxy service"`
+	HttpsPort        int               `json:"httpsPort,omitempty" desc:"HTTPS port for the knative/ingress proxy service"`
 }
 
 type IngressProxyConfigMap struct {
