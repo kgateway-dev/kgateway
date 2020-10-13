@@ -59,7 +59,6 @@ var _ = Describe("Conversions", func() {
 				Name:      "rootName",
 			},
 		})
-		usList.Sort()
 
 		Expect(usList).To(HaveLen(1))
 
@@ -100,7 +99,6 @@ var _ = Describe("Conversions", func() {
 				Name:      "rootName",
 			},
 		})
-		usList.Sort()
 
 		Expect(usList).To(HaveLen(2))
 

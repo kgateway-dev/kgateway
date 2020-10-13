@@ -29,7 +29,7 @@ var (
 	UnformattedErrorMsg = "Consul settings specify automatic detection of TLS services, " +
 		"but the rootCA resource's name/namespace are not properly specified: {%s}"
 	ConsulTlsInputError = func(nsString string) error {
-		return eris.Errorf(fmt.Sprintf(UnformattedErrorMsg, nsString))
+		return eris.Errorf(UnformattedErrorMsg, nsString)
 	}
 )
 
