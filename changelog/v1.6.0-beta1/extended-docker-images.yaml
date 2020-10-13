@@ -1,0 +1,15 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      improve some makefile style by adding missing phony targets and cleanup some ci cruft.
+      now we should only push containers to quay on releases
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3346
+    description: Ensure the rest of our docker containers run with user 10101 rather than root
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3399
+    description: >-
+      With each release, we will additionally be publishing an alternate set of docker containers (tagged as usual but
+      with the "-extended" suffix) that have some additional dependencies built in (e.g., `curl` for debugging). You
+      can deploy these images by setting the helm value `global.image.extended=true`.
+    resolvesIssue: false

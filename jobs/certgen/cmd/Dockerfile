@@ -9,4 +9,6 @@ RUN apk upgrade --update-cache \
 
 COPY certgen-linux-$GOARCH /usr/local/bin/certgen
 
+USER 10101
+
 ENTRYPOINT ["/usr/local/bin/certgen"]

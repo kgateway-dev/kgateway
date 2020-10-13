@@ -167,8 +167,13 @@ type gatewayValidationWebhook struct {
 }
 
 type AdmissionReviewWithProxies struct {
+	AdmissionRequestWithProxies
+	AdmissionResponseWithProxies
+}
+
+type AdmissionRequestWithProxies struct {
 	v1beta1.AdmissionReview
-	Proxies []*gloov1.Proxy `json:"proxies,omitempty"`
+	ReturnProxies bool `json:"returnProxies,omitempty"`
 }
 
 // Validation webhook works properly even if extra fields are provided in the response
@@ -217,7 +222,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 
 	var (
 		admissionResponse = &AdmissionResponseWithProxies{}
-		review            v1beta1.AdmissionReview
+		review            AdmissionReviewWithProxies
 		err               error
 	)
 
@@ -243,7 +248,9 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	admissionReview := AdmissionReviewWithProxies{}
 	if admissionResponse != nil {
 		admissionReview.Response = admissionResponse.AdmissionResponse
-		admissionReview.Proxies = admissionResponse.Proxies
+		if review.ReturnProxies {
+			admissionReview.Proxies = admissionResponse.Proxies
+		}
 		if review.Request != nil {
 			admissionReview.Response.UID = review.Request.UID
 		}
@@ -264,7 +271,7 @@ func (wh *gatewayValidationWebhook) ServeHTTP(w http.ResponseWriter, r *http.Req
 	logger.Debugf("responded with review: %s", resp)
 }
 
-func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *v1beta1.AdmissionReview) *AdmissionResponseWithProxies {
+func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, review *AdmissionReviewWithProxies) *AdmissionResponseWithProxies {
 	logger := contextutils.LoggerFrom(ctx)
 
 	req := review.Request
