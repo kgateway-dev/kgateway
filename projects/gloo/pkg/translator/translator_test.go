@@ -1428,7 +1428,12 @@ var _ = Describe("Translator", func() {
 				Tags:        []string{dev, prod},
 			}
 			// These are the "fake" upstreams that represent the above service in the snapshot
-			fakeUsList = v1.UpstreamList{consul.ToUpstream(svc)}
+			initialUsList := consul.CreateUpstreamsFromService(svc, nil)
+			if len(initialUsList) == 1 {
+				fakeUsList = v1.UpstreamList{consul.CreateUpstreamsFromService(svc, nil)[0]}
+			} else {
+				fakeUsList = v1.UpstreamList{}
+			}
 			params.Snapshot.Upstreams = append(params.Snapshot.Upstreams, fakeUsList...)
 
 			// We need to manually add some fake endpoints for the above Consul service

@@ -23,6 +23,7 @@ weight: 5
 - [FdsMode](#fdsmode)
 - [ConsulConfiguration](#consulconfiguration)
 - [ServiceDiscoveryOptions](#servicediscoveryoptions)
+- [ConsulUpstreamDiscoveryConfiguration](#consulupstreamdiscoveryconfiguration)
 - [KubernetesConfiguration](#kubernetesconfiguration)
 - [RateLimits](#ratelimits)
 - [GlooOptions](#gloooptions)
@@ -66,6 +67,7 @@ Represents global settings for all the Gloo components.
 "gloo": .gloo.solo.io.GlooOptions
 "gateway": .gloo.solo.io.GatewayOptions
 "consul": .gloo.solo.io.Settings.ConsulConfiguration
+"consulDiscovery": .gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration
 "kubernetes": .gloo.solo.io.Settings.KubernetesConfiguration
 "extensions": .gloo.solo.io.Extensions
 "ratelimit": .ratelimit.options.gloo.solo.io.ServiceSettings
@@ -98,6 +100,7 @@ Represents global settings for all the Gloo components.
 | `gloo` | [.gloo.solo.io.GlooOptions](../settings.proto.sk/#gloooptions) | Options for configuring `gloo`, the core Gloo controller, which serves dynamic configuration to Envoy. |  |
 | `gateway` | [.gloo.solo.io.GatewayOptions](../settings.proto.sk/#gatewayoptions) | Options for configuring `gateway`, the Gateway Gloo controller, which enables the VirtualService/Gateway API in Gloo. |  |
 | `consul` | [.gloo.solo.io.Settings.ConsulConfiguration](../settings.proto.sk/#consulconfiguration) | Options to configure Gloo's integration with [HashiCorp Consul](https://www.consul.io/). |  |
+| `consulDiscovery` | [.gloo.solo.io.Settings.ConsulUpstreamDiscoveryConfiguration](../settings.proto.sk/#consulupstreamdiscoveryconfiguration) |  |  |
 | `kubernetes` | [.gloo.solo.io.Settings.KubernetesConfiguration](../settings.proto.sk/#kubernetesconfiguration) | Options to configure Gloo's integration with [Kubernetes](https://www.kubernetes.io/). |  |
 | `extensions` | [.gloo.solo.io.Extensions](../extensions.proto.sk/#extensions) | Extensions will be passed along from Listeners, Gateways, VirtualServices, Routes, and Route tables to the underlying Proxy, making them useful for controllers, validation tools, etc. which interact with kubernetes yaml. Some sample use cases: * controllers, deployment pipelines, helm charts, etc. which wish to use extensions as a kind of opaque metadata. * In the future, Gloo may support gRPC-based plugins which communicate with the Gloo translator out-of-process. Opaque Extensions enables development of out-of-process plugins without requiring recompiling & redeploying Gloo's API. |  |
 | `ratelimit` | [.ratelimit.options.gloo.solo.io.ServiceSettings](../enterprise/options/ratelimit/ratelimit.proto.sk/#servicesettings) | Enterprise-only: Partial config for GlooE's rate-limiting service, based on Envoy's rate-limit service; supports Envoy's rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit *descriptors* here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of *actions*, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes. |  |
@@ -298,9 +301,6 @@ need to be set on the Gloo container.
 
 ```yaml
 "address": string
-"httpAddress": string
-"dnsAddress": string
-"dnsPollingInterval": .google.protobuf.Duration
 "datacenter": string
 "username": string
 "password": string
@@ -312,15 +312,15 @@ need to be set on the Gloo container.
 "insecureSkipVerify": .google.protobuf.BoolValue
 "waitTime": .google.protobuf.Duration
 "serviceDiscovery": .gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions
+"httpAddress": string
+"dnsAddress": string
+"dnsPollingInterval": .google.protobuf.Duration
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `address` | `string` | Deprecated: prefer http_address. The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
-| `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |  |
-| `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
 | `datacenter` | `string` | Datacenter to use. If not provided, the default agent datacenter is used. |  |
 | `username` | `string` | Username to use for HTTP Basic Authentication. |  |
 | `password` | `string` | Password to use for HTTP Basic Authentication. |  |
@@ -332,6 +332,9 @@ need to be set on the Gloo container.
 | `insecureSkipVerify` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | InsecureSkipVerify if set to true will disable TLS host verification. |  |
 | `waitTime` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used. |  |
 | `serviceDiscovery` | [.gloo.solo.io.Settings.ConsulConfiguration.ServiceDiscoveryOptions](../settings.proto.sk/#servicediscoveryoptions) | Enable Service Discovery via Consul with this field set to empty struct `{}` to enable with defaults. |  |
+| `httpAddress` | `string` | The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500. |  |
+| `dnsAddress` | `string` | The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server). |  |
+| `dnsPollingInterval` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) | The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s. |  |
 
 
 
@@ -350,6 +353,31 @@ service discovery options for Consul
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `dataCenters` | `[]string` | Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers. |  |
+
+
+
+
+---
+### ConsulUpstreamDiscoveryConfiguration
+
+ 
+Settings related to gloo's behavior when discovering consul services and creating
+upstreams to connect to those services and their instances.
+
+```yaml
+"useTlsTagging": bool
+"tlsTagName": string
+"rootCa": .core.solo.io.ResourceRef
+"splitTlsServices": bool
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `useTlsTagging` | `bool` | If true, then gloo will add TLS to upstreams created for any consul service that has the tag specified by tlsTagName. If splitTlsServices is true, then this tag is also used to identify serviceInstances that should be tied to the TLS upstream. Requires rootCa to be set if true. |  |
+| `tlsTagName` | `string` | The tag that gloo should use to make TLS upstreams from consul services, and to partition consul serviceInstances between TLS/non-TLS upstreams. Defaults to 'glooUseTls'. |  |
+| `rootCa` | [.core.solo.io.ResourceRef](../../../../../../solo-kit/api/v1/ref.proto.sk/#resourceref) | The reference for the root CA resource to be used by discovered consul TLS upstreams. |  |
+| `splitTlsServices` | `bool` | If true, then create two upstreams when the tlsTagName is found on a consul service, one with tls and one without. This requires a consul service's serviceInstances be individually tagged; servicesInstances with the tlsTagName tag are directed to the TLS upstream, while those without the tlsTagName tag are sorted into the non-TLS upstream. |  |
 
 
 

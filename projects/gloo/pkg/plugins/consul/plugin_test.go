@@ -4,6 +4,10 @@ import (
 	"net"
 	"net/url"
 
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
+
 	mock_consul2 "github.com/solo-io/gloo/projects/gloo/pkg/plugins/consul/mocks"
 
 	"github.com/golang/mock/gomock"
@@ -118,5 +122,62 @@ var _ = Describe("Resolve", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(u).To(Equal(&url.URL{Scheme: "http", Host: "5.6.7.8:1234"}))
+	})
+
+	It("properly initializes with a detailed upstream discovery config.", func() {
+
+		// correct w/custom tag
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+		err := plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+				UseTlsTagging: true,
+				TlsTagName:    "testTag",
+				RootCa: &core.ResourceRef{
+					Namespace: "rootNs",
+					Name:      "rootName",
+				},
+			},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal("testTag"))
+		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Namespace).To(Equal("rootNs"))
+		Expect(plug.consulUpstreamDiscoverySettings.RootCa.Name).To(Equal("rootName"))
+	})
+
+	It("properly uses the default tls tag if it's not set in the input config.", func() {
+
+		// correct w/default tag
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+		err := plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+				UseTlsTagging: true,
+				RootCa: &core.ResourceRef{
+					Namespace: "rootNs",
+					Name:      "rootName",
+				},
+			},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+		Expect(plug.consulUpstreamDiscoverySettings.TlsTagName).To(Equal(DefaultTlsTagName))
+	})
+
+	It("returns an error if it tries to init with missing required values.", func() {
+		// missing resource value, expect err.
+		plug := NewPlugin(consulWatcherMock, nil, nil)
+		var rootCa = &core.ResourceRef{
+			Namespace: "rootNs",
+			Name:      "",
+		}
+		err := plug.Init(plugins.InitParams{
+			Settings: &v1.Settings{ConsulDiscovery: &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+				UseTlsTagging: true,
+				RootCa:        rootCa,
+			},
+			},
+		})
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal(ConsulTlsInputError(rootCa.String()).Error()))
 	})
 })

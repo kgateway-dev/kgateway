@@ -20,7 +20,7 @@ var (
 )
 
 func (p *plugin) DiscoverUpstreams(_ []string, writeNamespace string, opts clients.WatchOpts, discOpts discovery.Opts) (chan v1.UpstreamList, chan error, error) {
-	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client).Watch("", opts)
+	upstreams, errs, err := consul.NewConsulUpstreamClient(p.client, p.consulUpstreamDiscoverySettings).Watch("", opts)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -63,10 +63,6 @@ func setRealName(list v1.UpstreamList, writeNamespace string) v1.UpstreamList {
 	return list
 }
 func (p *plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
-	return UpdateUpstream(original, desired)
-}
-
-func UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 	originalSpec, ok := original.UpstreamType.(*v1.Upstream_Consul)
 	if !ok {
 		return false, InvalidSpecTypeError(original, "original")

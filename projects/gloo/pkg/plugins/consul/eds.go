@@ -100,6 +100,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 				ctx, newCancel := context.WithCancel(opts.Ctx)
 				cancel = newCancel
 
+				// Here is where the specs are produced; each resulting spec is a grouping of serviceInstances (aka endpoints)
+				// associated with a single consul service on one datacenter.
 				specs := refreshSpecs(ctx, p.client, serviceMeta, errChan)
 				endpoints := buildEndpointsFromSpecs(opts.Ctx, writeNamespace, p.resolver, specs, trackedServiceToUpstreams)
 
@@ -137,6 +139,8 @@ func (p *plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstr
 	return endpointsChan, errChan, nil
 }
 
+// For each service AND data center combination, return a CatalogService that contains a list of all service instances
+// belonging to that service within that datacenter.
 func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta []*consul.ServiceMeta, errChan chan error) []*consulapi.CatalogService {
 	logger := contextutils.LoggerFrom(contextutils.WithLogger(ctx, "consul_eds"))
 
@@ -181,6 +185,13 @@ func refreshSpecs(ctx context.Context, client consul.ConsulWatcher, serviceMeta 
 	return specs.Get()
 }
 
+// build gloo endpoints out of consul catalog services and gloo upstreams
+// trackedServiceToUpstreams is a map from consul service names to a list of gloo upstreams associated with it.
+// Each spec is a grouping of serviceInstances (aka endpoints) associated with a single consul service on one datacenter.
+// This means that for each consul service/datacenter combo, we produce as many endpoints for each associated IP we find
+// using getIpAddresses(), each of which will be labeled to reflect which of its tags/datacenters are associated with that endpoint.
+// This awkward labeling is needed because our constructed endpoints are made on a per datacenter basis, but gloo
+// upstreams are not divided this way, so we have to divide them ourselves with metadata.
 func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolver DnsResolver, specs []*consulapi.CatalogService, trackedServiceToUpstreams map[string][]*v1.Upstream) v1.EndpointList {
 	var endpoints v1.EndpointList
 	for _, spec := range specs {
@@ -203,8 +214,9 @@ func buildEndpointsFromSpecs(ctx context.Context, writeNamespace string, resolve
 }
 
 // The ServiceTags on the Consul Upstream(s) represent all tags for Consul services with the given ServiceName across
-// data centers. We create an endpoint label for each of these tags, where the label key is the name of the tag and
-// the label value is "1" if the current service contains the same tag, else "0".
+// data centers. We create an endpoint label for each tag from the gloo upstreams,
+// where the label key is the name of the tag and the label value is "1" if the current service contains the same tag,
+// and "0" otherwise.
 func BuildTagMetadata(tags []string, upstreams []*v1.Upstream) map[string]string {
 
 	// Build maps for quick lookup
@@ -254,6 +266,10 @@ func BuildDataCenterMetadata(dataCenters []string, upstreams []*v1.Upstream) map
 	return labels
 }
 
+// Construct gloo endpoints for one consul CatalogService and a bunch of gloo upstreams.
+// Produces 1 endpoint for each ip address discovered by the DNS resolver.
+// Each resulting endpoint has labels representing all tags/datacenters on the upstreams, with flags for
+// which of those is or isn't in the current catalog service (see BuildTagMetadata function)
 func buildEndpoints(ctx context.Context, namespace string, resolver DnsResolver, service *consulapi.CatalogService, upstreams []*v1.Upstream) ([]*v1.Endpoint, error) {
 
 	// Address is the IP address of the Consul node on which the service is registered.
@@ -336,7 +352,11 @@ func buildEndpointName(address string, service *consulapi.CatalogService) string
 	return kubeutils.SanitizeNameV2(unsanitizedName)
 }
 
-// The labels will be used by to match the endpoint to the subsets of the cluster represented by the upstream.
+// The labels will be used to match the endpoint to the subsets of the cluster represented by the upstream.
+// This is a union of BuildTagMetadata and BuildDataCenterMetadata,
+// which means that the labels map contains all of the upstreams' tags and datacenters as keys,
+// with a 1 as the value if that tag/datacenter in the associated catalogService, and a 0 otherwise.
+// Both the tags and dataCenters inputs come from the catalog service.
 func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[string]string {
 	labels := BuildTagMetadata(tags, upstreams)
 	for dcLabelKey, dcLabelValue := range BuildDataCenterMetadata(dataCenters, upstreams) {
@@ -345,6 +365,7 @@ func buildLabels(tags, dataCenters []string, upstreams []*v1.Upstream) map[strin
 	return labels
 }
 
+// endpointTags come from a consul catalog service
 func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*core.ResourceRef) {
 	for _, us := range upstreams {
 		upstreamTags := us.GetConsul().GetInstanceTags()
@@ -355,6 +376,8 @@ func toResourceRefs(upstreams []*v1.Upstream, endpointTags []string) (out []*cor
 	return
 }
 
+// are there no upstream tags = return true.
+// Otherwise, check if upstream tags is a subset of endpoint tags
 func shouldAddToUpstream(endpointTags, upstreamTags []string) bool {
 	if len(upstreamTags) == 0 {
 		return true
