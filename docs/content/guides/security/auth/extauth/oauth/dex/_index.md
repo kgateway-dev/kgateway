@@ -181,17 +181,22 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      app_url: http://localhost:8080/
-      callback_path: /callback
-      client_id: gloo
-      client_secret_ref:
-        name: oauth
-        namespace: gloo-system
-      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
-      scopes:
-      - email
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: http://localhost:8080/
+        callback_path: /callback
+        client_id: gloo
+        client_secret_ref:
+          name: oauth
+          namespace: gloo-system
+        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
 {{< /highlight >}}
+
+{{% notice note %}}
+The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
+{{% /notice %}}
 
 The above configuration instructs Gloo to use its extauth OIDC module to authenticate the incoming request. 
 Notice how the configuration references the client secret we created earlier and compare the configuration values 
