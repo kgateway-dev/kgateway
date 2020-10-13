@@ -327,6 +327,99 @@ var _ = Describe("Helm Test", func() {
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
 				})
 
+				It("should be able to set consul config values", func() {
+					settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+ consul:
+   datacenter: datacenter
+   username: user
+   password: 1234
+   token: aToken
+   caFile: testCaFile
+   caPath: testCaPath
+   certFile: testCertFile
+   keyFile: testKeyFile
+   insecureSkipVerify: true
+   waitTime: 
+     seconds: 12
+   serviceDiscovery: 
+     dataCenters:
+       - dc1
+       - dc2
+   httpAddress: 1.2.3.4
+   dnsAddress: 5.6.7.8
+   dnsPollingInterval: 
+     nanos: 5
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+`)
+					prepareMakefileFromValuesFile("val_consul_test_inputs.yaml")
+					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+				})
+
+				It("should be able to set consul config upstream discovery values", func() {
+					settings := makeUnstructured(`
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: ` + namespace + `
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+ consulUpstreamDiscovery:
+   useTlsDiscovery: true
+   tlsTagName: tag
+   splitTlsServices: true
+   discoveryRootCa:
+     name: testName
+     namespace: testNamespace
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: ` + namespace + `
+`)
+					prepareMakefileFromValuesFile("val_consul_discovery_test_inputs.yaml")
+					testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+				})
+
 				It("should be able to override global defaults", func() {
 					prepareMakefile(namespace, helmValues{
 						valuesArgs: []string{"discovery.deployment.stats.enabled=true", "global.glooStats.enabled=false"},

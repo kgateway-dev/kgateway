@@ -3,7 +3,10 @@ package consul
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
+	consulPkg "github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/consul"
 	"github.com/solo-io/gloo/projects/gloo/pkg/defaults"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources/core"
 )
 
 var _ = Describe("Conversions", func() {
@@ -24,7 +27,7 @@ var _ = Describe("Conversions", func() {
 			{Name: "svc-2", DataCenters: []string{"dc1", "dc3", "dc4"}},
 		}
 
-		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters)
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, nil)
 		usList.Sort()
 
 		Expect(usList).To(HaveLen(2))
@@ -40,6 +43,105 @@ var _ = Describe("Conversions", func() {
 		Expect(usList[1].GetConsul()).NotTo(BeNil())
 		Expect(usList[1].GetConsul().ServiceName).To(Equal("svc-2"))
 		Expect(usList[1].GetConsul().DataCenters).To(ConsistOf("dc1", "dc3", "dc4"))
+	})
+
+	It("adds TLS to upstreams that have the TLS tag", func() {
+		servicesWithDataCenters := []*ServiceMeta{
+			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"glooUseTls"}},
+		}
+
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+			TlsTagName:       "glooUseTls",
+			UseTlsTagging:    true,
+			SplitTlsServices: false,
+			RootCa: &core.ResourceRef{
+				Namespace: "rootNs",
+				Name:      "rootName",
+			},
+		})
+
+		Expect(usList).To(HaveLen(1))
+
+		Expect(usList[0]).To(Equal(&v1.Upstream{
+			Status: core.Status{},
+			Metadata: core.Metadata{
+				Name:      UpstreamNamePrefix + "svc-1-tls",
+				Namespace: defaults.GlooSystem,
+			},
+			SslConfig: &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &core.ResourceRef{
+						Name:      "rootName",
+						Namespace: "rootNs",
+					},
+				},
+			},
+			UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+				ServiceName: "svc-1",
+				ServiceTags: []string{"glooUseTls"},
+				DataCenters: []string{"dc1", "dc2"},
+			},
+			},
+		}))
+	})
+
+	It("splits upstreams that have the TLS tag when service-splitting is on", func() {
+		servicesWithDataCenters := []*ServiceMeta{
+			{Name: "svc-1", DataCenters: []string{"dc1", "dc2"}, Tags: []string{"glooUseTls"}},
+		}
+
+		usList := toUpstreamList(defaults.GlooSystem, servicesWithDataCenters, &v1.Settings_ConsulUpstreamDiscoveryConfiguration{
+			TlsTagName:       "glooUseTls",
+			UseTlsTagging:    true,
+			SplitTlsServices: true,
+			RootCa: &core.ResourceRef{
+				Namespace: "rootNs",
+				Name:      "rootName",
+			},
+		})
+
+		Expect(usList).To(HaveLen(2))
+
+		expectedUpstreams := []*v1.Upstream{
+			{
+				Status: core.Status{},
+				Metadata: core.Metadata{
+					Name:      UpstreamNamePrefix + "svc-1",
+					Namespace: defaults.GlooSystem,
+				},
+				UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+					ServiceName:           "svc-1",
+					ServiceTags:           []string{"glooUseTls"},
+					DataCenters:           []string{"dc1", "dc2"},
+					InstanceBlacklistTags: []string{"glooUseTls"},
+				},
+				},
+			},
+			{
+				Status: core.Status{},
+				Metadata: core.Metadata{
+					Name:      UpstreamNamePrefix + "svc-1-tls",
+					Namespace: defaults.GlooSystem,
+				},
+				SslConfig: &v1.UpstreamSslConfig{
+					SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+						SecretRef: &core.ResourceRef{
+							Name:      "rootName",
+							Namespace: "rootNs",
+						},
+					},
+				},
+				UpstreamType: &v1.Upstream_Consul{Consul: &consulPkg.UpstreamSpec{
+					ServiceName:  "svc-1",
+					ServiceTags:  []string{"glooUseTls"},
+					DataCenters:  []string{"dc1", "dc2"},
+					InstanceTags: []string{"glooUseTls"},
+				},
+				},
+			},
+		}
+
+		Expect(usList).To(ConsistOf(expectedUpstreams))
 	})
 
 	It("correctly consolidates service information from different data centers", func() {

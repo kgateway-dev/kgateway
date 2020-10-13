@@ -49,6 +49,27 @@
 |settings.integrations.knative.requireIngressClass|bool||only serve traffic for Knative Ingress objects with the annotation 'networking.knative.dev/ingress.class: gloo.ingress.networking.knative.dev'.|
 |settings.integrations.knative.extraKnativeInternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative internal deployment.|
 |settings.integrations.knative.extraKnativeExternalLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the knative external deployment.|
+|settings.integrations.consul.datacenter|string||Datacenter to use. If not provided, the default agent datacenter is used.|
+|settings.integrations.consul.username|string||Username to use for HTTP Basic Authentication.|
+|settings.integrations.consul.password|string||Password to use for HTTP Basic Authentication.|
+|settings.integrations.consul.token|string||Token is used to provide a per-request ACL token which overrides the agent's default token.|
+|settings.integrations.consul.caFile|string||caFile is the optional path to the CA certificate used for Consul communication, defaults to the system bundle if not specified.|
+|settings.integrations.consul.caPath|string||caPath is the optional path to a directory of CA certificates to use for Consul communication, defaults to the system bundle if not specified.|
+|settings.integrations.consul.certFile|string||CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile.|
+|settings.integrations.consul.keyFile|string||KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile.|
+|settings.integrations.consul.insecureSkipVerify|bool||InsecureSkipVerify if set to true will disable TLS host verification.|
+|settings.integrations.consul.waitTime.seconds|int32||The value of this duration in seconds.|
+|settings.integrations.consul.waitTime.nanos|int32||The value of this duration in nanoseconds.|
+|settings.integrations.consul.serviceDiscovery.dataCenters[]|string||Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers.|
+|settings.integrations.consul.httpAddress|string||The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500.|
+|settings.integrations.consul.dnsAddress|string||The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)|
+|settings.integrations.consul.dnsPollingInterval.seconds|int32||The value of this duration in seconds.|
+|settings.integrations.consul.dnsPollingInterval.nanos|int32||The value of this duration in nanoseconds.|
+|settings.integrations.consulUpstreamDiscovery.useTlsDiscovery|bool||Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true.|
+|settings.integrations.consulUpstreamDiscovery.tlsTagName|string||The tag gloo should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'.|
+|settings.integrations.consulUpstreamDiscovery.splitTlsServices|bool||If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without.|
+|settings.integrations.consulUpstreamDiscovery.discoveryRootCa.namespace|string||The namespace of this resource.|
+|settings.integrations.consulUpstreamDiscovery.discoveryRootCa.namespace|string||The name of this resource.|
 |settings.create|bool|true|create a Settings CRD which provides bootstrap configuration to Gloo controllers|
 |settings.extensions|interface|||
 |settings.singleNamespace|bool|false|Enable to use install namespace as WatchNamespace and WriteNamespace|
