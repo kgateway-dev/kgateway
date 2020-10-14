@@ -16,7 +16,6 @@ import (
 	skprotoutils "github.com/solo-io/solo-kit/pkg/utils/protoutils"
 
 	"github.com/avast/retry-go"
-	"github.com/solo-io/go-utils/protoutils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 
 	"go.uber.org/multierr"
@@ -56,9 +55,11 @@ const (
 		"Please correct any Rejected resources to re-enable validation."
 )
 
+var _ Validator = &validator{}
+
 type Validator interface {
 	v1.ApiSyncer
-	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error)
+	ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, *multierror.Error)
 	ValidateGateway(ctx context.Context, gw *v1.Gateway, dryRun bool) (ProxyReports, error)
 	ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error)
 	ValidateDeleteVirtualService(ctx context.Context, vs core.ResourceRef, dryRun bool) error
@@ -230,10 +231,6 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 
 		proxyReports[proxy] = proxyReport.ProxyReport
 		if err := validationutils.GetProxyError(proxyReport.ProxyReport); err != nil {
-
-			if reportData, marshalErr := protoutils.MarshalBytes(proxyReport); marshalErr == nil {
-				err = errors.Wrapf(err, "%s", reportData)
-			}
 			errs = multierr.Append(errs, errors.Wrapf(err, "failed to validate Proxy with Gloo validation server"))
 			continue
 		}
@@ -260,7 +257,7 @@ func (v *validator) validateSnapshot(ctx context.Context, apply applyResource, d
 	return proxyReports, nil
 }
 
-func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, error) {
+func (v *validator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (ProxyReports, *multierror.Error) {
 	var (
 		proxyReports = ProxyReports{}
 		errs         = &multierror.Error{}
@@ -274,7 +271,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
 		if err != nil {
-			return ProxyReports{}, err
+			return ProxyReports{}, &multierror.Error{Errors: []error{err}}
 		}
 
 		itemGvk := schema.GroupVersionKind{
@@ -285,7 +282,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 		jsonBytes, err := item.MarshalJSON()
 		if err != nil {
-			return ProxyReports{}, err
+			return ProxyReports{}, &multierror.Error{Errors: []error{err}}
 		}
 
 		var itemProxyReports ProxyReports
@@ -331,7 +328,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 		v.latestSnapshot = &snap
 	}
 
-	return proxyReports, errs.ErrorOrNil()
+	return proxyReports, errs
 }
 
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
