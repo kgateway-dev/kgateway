@@ -1440,10 +1440,12 @@ items:
 - apiVersion: gateway.solo.io/v1
   kind: VirtualService
   metadata:
-    name: invalid-vs-1
+    name: warning-vs-1
     namespace: ` + testHelper.InstallNamespace + `
   spec:
     virtualHost:
+      domains:
+       - notunique
       routes:
       - matchers:
         - prefix: "/"
@@ -1455,8 +1457,10 @@ items:
   metadata:
     name: invalid-vs-2
     namespace: ` + testHelper.InstallNamespace + `
-  specs:
+  spec:
     virtualHost:
+      domains:
+       - notunique
       routes:
       - matchers:
         - prefix: "/"
@@ -1466,7 +1470,7 @@ items:
 `,
 					expectedErrSubstrings: []string{
 						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
-						"Reason: domain * is shared by the following virtual hosts:"},
+						"the following domains are present in more than one of the virtual services associated with this gateway: [notunique]"},
 				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
