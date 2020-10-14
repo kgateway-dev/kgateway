@@ -1351,23 +1351,26 @@ var _ = Describe("Kube2e: gateway", func() {
 	})
 
 	Context("tests for the validation server", func() {
-		testValidation := func(yaml, expectedErr string) {
+		testValidation := func(yaml string, expectedErrSubstrings []string) {
 			out, err := install.KubectlApplyOut([]byte(yaml))
-			if expectedErr == "" {
+			if len(expectedErrSubstrings) == 0 {
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(yaml))
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return
 			}
 			ExpectWithOffset(1, err).To(HaveOccurred())
-			ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
+			for _, errSubstring := range expectedErrSubstrings {
+				ExpectWithOffset(1, string(out)).To(ContainSubstring(errSubstring))
+			}
 		}
 
 		It("rejects bad resources", func() {
 			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 			// for every test case
 			type testCase struct {
-				resourceYaml, expectedErr string
+				resourceYaml          string
+				expectedErrSubstrings []string
 			}
 
 			for _, tc := range []testCase{
@@ -1381,7 +1384,7 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`,
+					expectedErrSubstrings: []string{`could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`},
 				},
 				{
 					resourceYaml: `
@@ -1405,7 +1408,7 @@ spec:
               name: does-not-exist
               namespace: anywhere
 `,
-					expectedErr: "", // should not fail
+					expectedErrSubstrings: nil, // should not fail
 				},
 				{
 					resourceYaml: `
@@ -1425,10 +1428,12 @@ spec:
           name: does-not-exist # also not allowed, but caught later
           namespace: anywhere
 `,
-					expectedErr: gwtranslator.MissingPrefixErr.Error(),
+					expectedErrSubstrings: []string{
+						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", // ensure resource type, name, and namespace are in error
+							testHelper.InstallNamespace), gwtranslator.MissingPrefixErr.Error()},
 				},
 			} {
-				testValidation(tc.resourceYaml, tc.expectedErr)
+				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
 			}
 		})
 
