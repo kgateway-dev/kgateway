@@ -43,7 +43,7 @@ func NewHybridUpstreamClient(
 	}
 
 	if consulClient != nil {
-		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient)
+		clientMap[sourceConsul] = consul.NewConsulUpstreamClient(consulClient, nil)
 	}
 
 	return &hybridUpstreamClient{

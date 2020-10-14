@@ -36,7 +36,14 @@ spec:
       enableCredentialsDiscovey: true
 {{- end }}
 
-
+  {{- if .Values.settings.integrations.consul }}
+  consul:
+  {{- toYaml .Values.settings.integrations.consul | nindent 4 }}
+  {{- end }}
+  {{- if .Values.settings.integrations.consulUpstreamDiscovery }}
+  consulUpstreamDiscovery:
+  {{- toYaml .Values.settings.integrations.consulUpstreamDiscovery | nindent 4 }}
+  {{- end }}
 
 {{- if .Values.settings.writeNamespace }}
   discoveryNamespace: {{ .Values.settings.writeNamespace }}

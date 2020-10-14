@@ -87,7 +87,49 @@ type DeploymentSpec struct {
 }
 
 type Integrations struct {
-	Knative *Knative `json:"knative,omitEmpty"`
+	Knative                 *Knative                 `json:"knative,omitEmpty"`
+	Consul                  *Consul                  `json:"consul,omitEmpty" desc:"Consul settings to inject into the consul client on startup"`
+	ConsulUpstreamDiscovery *ConsulUpstreamDiscovery `json:"consulUpstreamDiscovery,omitEmpty" desc:"Settings for gloo's behavior when discovering consul services and creating upstreams for them."`
+}
+
+type Consul struct {
+	Datacenter         string                   `json:"datacenter,omitEmpty" desc:"Datacenter to use. If not provided, the default agent datacenter is used."`
+	Username           string                   `json:"username,omitEmpty" desc:"Username to use for HTTP Basic Authentication."`
+	Password           string                   `json:"password,omitEmpty" desc:"Password to use for HTTP Basic Authentication."`
+	Token              string                   `json:"token,omitEmpty" desc:"Token is used to provide a per-request ACL token which overrides the agent's default token."`
+	CaFile             string                   `json:"caFile,omitEmpty" desc:"caFile is the optional path to the CA certificate used for Consul communication, defaults to the system bundle if not specified."`
+	CaPath             string                   `json:"caPath,omitEmpty" desc:"caPath is the optional path to a directory of CA certificates to use for Consul communication, defaults to the system bundle if not specified."`
+	CertFile           string                   `json:"certFile,omitEmpty" desc:"CertFile is the optional path to the certificate for Consul communication. If this is set then you need to also set KeyFile."`
+	KeyFile            string                   `json:"keyFile,omitEmpty" desc:"KeyFile is the optional path to the private key for Consul communication. If this is set then you need to also set CertFile."`
+	InsecureSkipVerify bool                     `json:"insecureSkipVerify,omitEmpty" desc:"InsecureSkipVerify if set to true will disable TLS host verification."`
+	WaitTime           *Duration                `json:"waitTime,omitEmpty" desc:"WaitTime limits how long a watches for Consul resources will block. If not provided, the agent default values will be used."`
+	ServiceDiscovery   *ServiceDiscoveryOptions `json:"serviceDiscovery,omitEmpty" desc:"Enable Service Discovery via Consul with this field set to empty struct '{}' to enable with defaults"`
+	HttpAddress        string                   `json:"httpAddress,omitEmpty" desc:"The address of the Consul HTTP server. Used by service discovery and key-value storage (if-enabled). Defaults to the value of the standard CONSUL_HTTP_ADDR env if set, otherwise to 127.0.0.1:8500."`
+	DnsAddress         string                   `json:"dnsAddress,omitEmpty" desc:"The address of the DNS server used to resolve hostnames in the Consul service address. Used by service discovery (required when Consul service instances are stored as DNS names). Defaults to 127.0.0.1:8600. (the default Consul DNS server)"`
+	DnsPollingInterval *Duration                `json:"dnsPollingInterval,omitEmpty" desc:"The polling interval for the DNS server. If there is a Consul service address with a hostname instead of an IP, Gloo will resolve the hostname with the configured frequency to update endpoints with any changes to DNS resolution. Defaults to 5s."`
+}
+
+type ServiceDiscoveryOptions struct {
+	DataCenters []string `json:"dataCenters,omitEmpty" desc:"Use this parameter to restrict the data centers that will be considered when discovering and routing to services. If not provided, Gloo will use all available data centers."`
+}
+
+type ConsulUpstreamDiscovery struct {
+	UseTlsDiscovery  bool         `json:"useTlsDiscovery,omitEmpty" desc:"Allow gloo to automatically apply tls to consul services that are tagged the tlsTagName value. Requires RootCaResourceNamespace and RootCaResourceName to be set if true."`
+	TlsTagName       string       `json:"tlsTagName,omitEmpty" desc:"The tag gloo should use to identify consul services that ought to use TLS. If splitTlsServices is true, then this tag is also used to sort serviceInstances into the tls upstream. Defaults to 'glooUseTls'."`
+	SplitTlsServices bool         `json:"splitTlsServices,omitEmpty" desc:"If true, then create two upstreams to be created when a consul service contains the tls tag; one with TLS and one without."`
+	DiscoveryRootCa  *ResourceRef `json:"discoveryRootCa" desc:"The name/namespace of the root CA needed to use TLS with consul services."`
+}
+
+// equivalent of core.solo.io.ResourceRef
+type ResourceRef struct {
+	Namespace *string `json:"namespace,omitEmpty" desc:"The namespace of this resource."`
+	Name      *string `json:"namespace,omitEmpty" desc:"The name of this resource."`
+}
+
+// google.protobuf.Duration
+type Duration struct {
+	Seconds *int32 `json:"seconds,omitEmpty" desc:"The value of this duration in seconds."`
+	Nanos   *int32 `json:"nanos,omitEmpty" desc:"The value of this duration in nanoseconds."`
 }
 
 type Knative struct {

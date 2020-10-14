@@ -123,16 +123,23 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      app_url: http://localhost:8080
-      callback_path: /callback
-      client_id: $CLIENT_ID
-      client_secret_ref:
-        name: google
-        namespace: gloo-system
-      issuer_url: https://accounts.google.com
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: http://localhost:8080
+        callback_path: /callback
+        client_id: $CLIENT_ID
+        client_secret_ref:
+          name: google
+          namespace: gloo-system
+        issuer_url: https://accounts.google.com
+        scopes:
+        - email
 EOF
 {{< /highlight >}}
+
+{{% notice note %}}
+The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
+{{% /notice %}}
 
 Notice how we set the `CLIENT_ID` and reference the client secret we just created. The `callback_path` matches the authorized redirect URI we added for the OAuth Client ID. Redirecting to an unauthorized URI would result in an error from the Google authentication flow.
 

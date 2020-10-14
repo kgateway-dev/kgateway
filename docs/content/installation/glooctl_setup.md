@@ -5,7 +5,7 @@ The `glooctl` command line provides useful functions to install, configure, and 
 * To install `glooctl` using the [Homebrew](https://brew.sh) package manager, run the following.
 
   ```shell
-  brew install solo-io/tap/glooctl
+  brew install glooctl
   ```
 
 * To install on most platforms you can use the install script. Python is required for installation to execute properly.

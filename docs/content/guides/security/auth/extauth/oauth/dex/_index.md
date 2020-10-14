@@ -117,8 +117,11 @@ config:
 EOF
 ```
 
-This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` 
-for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
+This configures Dex with a static users. Notice how we choose a **client secret** with value `secretvalue` for the client named `gloo`. Gloo will need to provide this secret when connecting to Dex in order to confirm its identity.
+
+{{< notice note >}}
+The above configuration uses unsecured http traffic without SSL certificates. You can have Dex generate its own certificates by including settings for the Helm chart on the path `certs.web.altNames`. The names should be set to the fully-qualified domain name of the Dex service on Kubernetes and the Dex URL, which would be `dex.gloo-system.svc.cluster.local` and `https://dex.gloo-system.svc.cluster.local:32000`. You would then need to add the Dex web server certificate authority to Gloo's external authentication so the web certificates used by the Dex service will be trusted. You can find more information about adding trusted CAs to the Ext Auth service [here]({{< versioned_link_path fromRoot="/installation/advanced_configuration/extauth_custom/" >}}).
+{{< /notice >}}
 
 Using this configuration, we can deploy Dex to our cluster using Helm.
 
@@ -178,17 +181,22 @@ metadata:
   namespace: gloo-system
 spec:
   configs:
-  - oauth:
-      app_url: http://localhost:8080/
-      callback_path: /callback
-      client_id: gloo
-      client_secret_ref:
-        name: oauth
-        namespace: gloo-system
-      issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
-      scopes:
-      - email
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: http://localhost:8080/
+        callback_path: /callback
+        client_id: gloo
+        client_secret_ref:
+          name: oauth
+          namespace: gloo-system
+        issuer_url: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
 {{< /highlight >}}
+
+{{% notice note %}}
+The above configuration uses the new `oauth2` syntax. The older `oauth` syntax is still supported, but has been deprecated.
+{{% /notice %}}
 
 The above configuration instructs Gloo to use its extauth OIDC module to authenticate the incoming request. 
 Notice how the configuration references the client secret we created earlier and compare the configuration values 
