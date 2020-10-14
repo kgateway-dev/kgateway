@@ -269,52 +269,7 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 
 	for _, item := range ul.Items {
 
-		gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
-		if err != nil {
-			return ProxyReports{}, &multierror.Error{Errors: []error{err}}
-		}
-
-		itemGvk := schema.GroupVersionKind{
-			Version: gv.Version,
-			Group:   gv.Group,
-			Kind:    item.GetKind(),
-		}
-
-		jsonBytes, err := item.MarshalJSON()
-		if err != nil {
-			return ProxyReports{}, &multierror.Error{Errors: []error{err}}
-		}
-
-		var itemProxyReports ProxyReports
-		switch itemGvk {
-		case v1.GatewayGVK:
-			var (
-				gw v1.Gateway
-			)
-			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &gw); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
-				break
-			}
-			itemProxyReports, err = v.validateGatewayInternal(ctx, &gw, false, false)
-		case v1.VirtualServiceGVK:
-			var (
-				vs v1.VirtualService
-			)
-			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &vs); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
-				break
-			}
-			itemProxyReports, err = v.validateVirtualServiceInternal(ctx, &vs, false, false)
-		case v1.RouteTableGVK:
-			var (
-				rt v1.RouteTable
-			)
-			if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &rt); unmarshalErr != nil {
-				err = WrappedUnmarshalErr(unmarshalErr)
-				break
-			}
-			itemProxyReports, err = v.validateRouteTableInternal(ctx, &rt, false, false)
-		}
+		var itemProxyReports, err = v.processItem(ctx, item)
 
 		errs = multierror.Append(errs, err)
 		for proxy, report := range itemProxyReports {
@@ -329,6 +284,53 @@ func (v *validator) ValidateList(ctx context.Context, ul *unstructured.Unstructu
 	}
 
 	return proxyReports, errs
+}
+
+func (v *validator) processItem(ctx context.Context, item unstructured.Unstructured) (ProxyReports, error) {
+	gv, err := schema.ParseGroupVersion(item.GetAPIVersion())
+	if err != nil {
+		return ProxyReports{}, err
+	}
+
+	itemGvk := schema.GroupVersionKind{
+		Version: gv.Version,
+		Group:   gv.Group,
+		Kind:    item.GetKind(),
+	}
+
+	jsonBytes, err := item.MarshalJSON()
+	if err != nil {
+		return ProxyReports{}, err
+	}
+
+	switch itemGvk {
+	case v1.GatewayGVK:
+		var (
+			gw v1.Gateway
+		)
+		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &gw); unmarshalErr != nil {
+			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+		}
+		return v.validateGatewayInternal(ctx, &gw, false, false)
+	case v1.VirtualServiceGVK:
+		var (
+			vs v1.VirtualService
+		)
+		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &vs); unmarshalErr != nil {
+			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+		}
+		return v.validateVirtualServiceInternal(ctx, &vs, false, false)
+	case v1.RouteTableGVK:
+		var (
+			rt v1.RouteTable
+		)
+		if unmarshalErr := skprotoutils.UnmarshalResource(jsonBytes, &rt); unmarshalErr != nil {
+			return ProxyReports{}, WrappedUnmarshalErr(unmarshalErr)
+		}
+		return v.validateRouteTableInternal(ctx, &rt, false, false)
+	}
+	// should not happen
+	return ProxyReports{}, errors.Errorf("Unknown group/version/kind, %v", itemGvk)
 }
 
 func (v *validator) ValidateVirtualService(ctx context.Context, vs *v1.VirtualService, dryRun bool) (ProxyReports, error) {
