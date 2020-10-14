@@ -1429,8 +1429,44 @@ spec:
           namespace: anywhere
 `,
 					expectedErrSubstrings: []string{
-						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", // ensure resource type, name, and namespace are in error
-							testHelper.InstallNamespace), gwtranslator.MissingPrefixErr.Error()},
+						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
+						gwtranslator.MissingPrefixErr.Error()},
+				},
+				{
+					resourceYaml: `
+apiVersion: v1
+kind: List
+items:
+- apiVersion: gateway.solo.io/v1
+  kind: VirtualService
+  metadata:
+    name: invalid-vs-1
+    namespace: ` + testHelper.InstallNamespace + `
+  spec:
+    virtualHost:
+      routes:
+      - matchers:
+        - prefix: "/"
+        delegateAction:
+          name: i-dont-exist-rt
+          namespace: ` + testHelper.InstallNamespace + `
+- apiVersion: gateway.solo.io/v1
+  kind: VirtualService
+  metadata:
+    name: invalid-vs-2
+    namespace: ` + testHelper.InstallNamespace + `
+  specs:
+    virtualHost:
+      routes:
+      - matchers:
+        - prefix: "/"
+        delegateAction:
+          name: rt1
+          namespace: ` + testHelper.InstallNamespace + `
+`,
+					expectedErrSubstrings: []string{
+						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
+						"Reason: domain * is shared by the following virtual hosts:"},
 				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
