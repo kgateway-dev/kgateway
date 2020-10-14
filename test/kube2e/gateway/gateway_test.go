@@ -1363,6 +1363,7 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, errSubstring := range expectedErrSubstrings {
 				ExpectWithOffset(1, string(out)).To(ContainSubstring(errSubstring))
 			}
+			_ = install.KubectlDelete([]byte(yaml))
 		}
 
 		It("rejects bad resources", func() {
