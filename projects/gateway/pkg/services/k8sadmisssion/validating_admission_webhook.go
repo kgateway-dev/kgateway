@@ -326,15 +326,15 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		dryRun = *req.DryRun
 	}
 
-	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
+	proxyReports, validationErrs := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
 	var proxies []*gloov1.Proxy
 	for proxy, _ := range proxyReports {
 		proxies = append(proxies, proxy)
 	}
 
 	hasUnmarshalErr := false
-	if validationErr != nil {
-		for _, e := range validationErr.Errors {
+	if validationErrs != nil {
+		for _, e := range validationErrs.Errors {
 			if errors.Is(e, UnmarshalErr) {
 				hasUnmarshalErr = true
 			}
@@ -342,8 +342,8 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	}
 
 	// even if validation is set to always accept, we want to fail on unmarshal errors
-	if validationErr.ErrorOrNil() == nil || (wh.alwaysAccept && !hasUnmarshalErr) {
-		logger.Debug("Succeeded, alwaysAccept: %v validationErr: %v", wh.alwaysAccept, validationErr)
+	if validationErrs.ErrorOrNil() == nil || (wh.alwaysAccept && !hasUnmarshalErr) {
+		logger.Debug("Succeeded, alwaysAccept: %v validationErrs: %v", wh.alwaysAccept, validationErrs)
 		incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesAccepted)
 		return &AdmissionResponseWithProxies{
 			AdmissionResponse: &v1beta1.AdmissionResponse{
@@ -354,14 +354,14 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	}
 
 	incrementMetric(ctx, gvk.String(), ref, mGatewayResourcesRejected)
-	logger.Errorf("Validation failed: %v", validationErr)
+	logger.Errorf("Validation failed: %v", validationErrs)
 
-	finalErr := errors.Errorf("resource incompatible with current Gloo snapshot: %v", validationErr.Errors)
+	finalErr := errors.Errorf("resource incompatible with current Gloo snapshot: %v", validationErrs.Errors)
 	details := &metav1.StatusDetails{
 		Name:   req.Name,
 		Group:  gvk.Group,
 		Kind:   gvk.Kind,
-		Causes: wh.getFailureCauses(validationErr),
+		Causes: wh.getFailureCauses(validationErrs),
 	}
 
 	return &AdmissionResponseWithProxies{
