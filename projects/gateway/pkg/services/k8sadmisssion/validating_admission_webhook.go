@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	validationutil "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -23,6 +22,8 @@ import (
 
 	"go.opencensus.io/stats"
 	"go.opencensus.io/tag"
+
+	validationutil "github.com/solo-io/gloo/projects/gloo/pkg/utils/validation"
 
 	validationapi "github.com/solo-io/gloo/projects/gloo/pkg/api/grpc/validation"
 
@@ -327,10 +328,9 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		dryRun = *req.DryRun
 	}
 
-	validationResp, validationErr := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
-
+	proxyReports, validationErr := wh.validate(ctx, gvk, ref, req.Object.Raw, isDelete, dryRun)
 	var proxies []*gloov1.Proxy
-	for proxy, _ := range validationResp.ProxyReports {
+	for proxy, _ := range proxyReports {
 		proxies = append(proxies, proxy)
 	}
 
@@ -352,7 +352,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	logger.Errorf("Validation failed: %v", validationErr)
 
 	var proxyErrs []error
-	for _, rpt := range validationResp.ProxyReports {
+	for _, rpt := range proxyReports {
 		err := validationutil.GetProxyError(rpt)
 		if err != nil {
 			proxyErrs = append(proxyErrs, err)
@@ -366,7 +366,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		Name:   req.Name,
 		Group:  gvk.Group,
 		Kind:   gvk.Kind,
-		Causes: wh.getFailureCauses(validationResp),
+		Causes: wh.getFailureCauses(proxyReports),
 	}
 
 	return &AdmissionResponseWithProxies{
@@ -380,32 +380,32 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	}
 }
 
-func (wh *gatewayValidationWebhook) getFailureCauses(validationResp *validation.ValidationResponse) []metav1.StatusCause {
+func (wh *gatewayValidationWebhook) getFailureCauses(proxyReports validation.ProxyReports) []metav1.StatusCause {
 	var causes []metav1.StatusCause
-	for _, proxyReport := range validationResp.ProxyReports {
+	for _, proxyReport := range proxyReports {
 		for _, listenerReport := range proxyReport.ListenerReports {
 			for _, err := range listenerReport.Errors {
 				causes = append(causes, metav1.StatusCause{
-					Message: fmt.Sprintf("Listener Error, %v: %v", err.Type.String(), err.Reason),
+					Message: fmt.Sprintf("Listener Error %v: %v", err.Type.String(), err.Reason),
 				})
 			}
 			switch listener := listenerReport.ListenerTypeReport.(type) {
 			case *validationapi.ListenerReport_HttpListenerReport:
 				for _, err := range listener.HttpListenerReport.Errors {
 					causes = append(causes, metav1.StatusCause{
-						Message: fmt.Sprintf("HTTPListener Error, %v: %v", err.Type.String(), err.Reason),
+						Message: fmt.Sprintf("HTTPListener Error %v: %v", err.Type.String(), err.Reason),
 					})
 				}
 				for _, vh := range listener.HttpListenerReport.VirtualHostReports {
 					for _, err := range vh.Errors {
 						causes = append(causes, metav1.StatusCause{
-							Message: fmt.Sprintf("VirtualHost Error, %v: %v", err.Type.String(), err.Reason),
+							Message: fmt.Sprintf("VirtualHost Error %v: %v", err.Type.String(), err.Reason),
 						})
 					}
 					for _, r := range vh.RouteReports {
 						for _, err := range r.Errors {
 							causes = append(causes, metav1.StatusCause{
-								Message: fmt.Sprintf("Route Error, %v: %v", err.Type.String(), err.Reason),
+								Message: fmt.Sprintf("Route Error %v: %v", err.Type.String(), err.Reason),
 							})
 						}
 					}
@@ -413,13 +413,13 @@ func (wh *gatewayValidationWebhook) getFailureCauses(validationResp *validation.
 			case *validationapi.ListenerReport_TcpListenerReport:
 				for _, err := range listener.TcpListenerReport.Errors {
 					causes = append(causes, metav1.StatusCause{
-						Message: fmt.Sprintf("TCPListener Error, %v: %v", err.Type.String(), err.Reason),
+						Message: fmt.Sprintf("TCPListener Error %v: %v", err.Type.String(), err.Reason),
 					})
 				}
 				for _, host := range listener.TcpListenerReport.TcpHostReports {
 					for _, err := range host.Errors {
 						causes = append(causes, metav1.StatusCause{
-							Message: fmt.Sprintf("TcpHost Error, %v: %v", err.Type.String(), err.Reason),
+							Message: fmt.Sprintf("TcpHost Error %v: %v", err.Type.String(), err.Reason),
 						})
 					}
 				}
@@ -427,17 +427,10 @@ func (wh *gatewayValidationWebhook) getFailureCauses(validationResp *validation.
 		}
 	}
 
-	merr := validationResp.ExtraErrs.ErrorOrNil()
-	if merr != nil {
-		causes = append(causes, metav1.StatusCause{
-			Message: fmt.Sprintf("UNKNOWN Error, %v", merr),
-		})
-	}
-
 	return causes
 }
 
-func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete, dryRun bool) (*validation.ValidationResponse, error) {
+func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.GroupVersionKind, ref core.ResourceRef, rawJson []byte, isDelete, dryRun bool) (validation.ProxyReports, error) {
 
 	switch gvk {
 	case ListGVK:
@@ -450,51 +443,41 @@ func (wh *gatewayValidationWebhook) validate(ctx context.Context, gvk schema.Gro
 		return wh.validateGateway(ctx, rawJson, dryRun)
 	case gwv1.VirtualServiceGVK:
 		if isDelete {
-			return &validation.ValidationResponse{
-				ProxyReports: validation.ProxyReports{},
-				ExtraErrs:    nil,
-			}, wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)
+			return validation.ProxyReports{}, wh.validator.ValidateDeleteVirtualService(ctx, ref, dryRun)
 		} else {
 			return wh.validateVirtualService(ctx, rawJson, dryRun)
 		}
 	case gwv1.RouteTableGVK:
 		if isDelete {
-
-			return &validation.ValidationResponse{
-				ProxyReports: validation.ProxyReports{},
-				ExtraErrs:    nil,
-			}, wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)
+			return validation.ProxyReports{}, wh.validator.ValidateDeleteRouteTable(ctx, ref, dryRun)
 		} else {
 			return wh.validateRouteTable(ctx, rawJson, dryRun)
 		}
 	}
-	return &validation.ValidationResponse{
-		ProxyReports: validation.ProxyReports{},
-		ExtraErrs:    nil,
-	}, nil
+	return validation.ProxyReports{}, nil
 
 }
 
-func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (*validation.ValidationResponse, error) {
+func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, error) {
 	var (
 		ul           unstructured.UnstructuredList
-		validationResp *validation.ValidationResponse
+		proxyReports validation.ProxyReports
 		err          error
 	)
 
 	if err := ul.UnmarshalJSON(rawJson); err != nil {
 		return nil, WrappedUnmarshalErr(err)
 	}
-	if validationResp, err = wh.validator.ValidateList(ctx, &ul, dryRun); err != nil {
-		return validationResp, errors.Wrapf(err, "Validating %T failed", ul)
+	if proxyReports, err = wh.validator.ValidateList(ctx, &ul, dryRun); err != nil {
+		return proxyReports, errors.Wrapf(err, "Validating %T failed", ul)
 	}
-	return validationResp, nil
+	return proxyReports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte, dryRun bool) (*validation.ValidationResponse, error) {
+func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, error) {
 	var (
 		gw           gwv1.Gateway
-		validationResp *validation.ValidationResponse
+		proxyReports validation.ProxyReports
 		err          error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &gw); err != nil {
@@ -503,16 +486,16 @@ func (wh *gatewayValidationWebhook) validateGateway(ctx context.Context, rawJson
 	if skipValidationCheck(gw.Metadata.Annotations) {
 		return nil, nil
 	}
-	if validationResp, err = wh.validator.ValidateGateway(ctx, &gw, dryRun); err != nil {
-		return validationResp, errors.Wrapf(err, "Validating %T failed", gw)
+	if proxyReports, err = wh.validator.ValidateGateway(ctx, &gw, dryRun); err != nil {
+		return proxyReports, errors.Wrapf(err, "Validating %T failed", gw)
 	}
-	return validationResp, nil
+	return proxyReports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte, dryRun bool) (*validation.ValidationResponse, error) {
+func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, error) {
 	var (
 		vs           gwv1.VirtualService
-		validationResp *validation.ValidationResponse
+		proxyReports validation.ProxyReports
 		err          error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &vs); err != nil {
@@ -521,16 +504,16 @@ func (wh *gatewayValidationWebhook) validateVirtualService(ctx context.Context, 
 	if skipValidationCheck(vs.Metadata.Annotations) {
 		return nil, nil
 	}
-	if validationResp, err = wh.validator.ValidateVirtualService(ctx, &vs, dryRun); err != nil {
-		return validationResp, errors.Wrapf(err, "Validating %T failed", vs)
+	if proxyReports, err = wh.validator.ValidateVirtualService(ctx, &vs, dryRun); err != nil {
+		return proxyReports, errors.Wrapf(err, "Validating %T failed", vs)
 	}
-	return validationResp, nil
+	return proxyReports, nil
 }
 
-func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte, dryRun bool) (*validation.ValidationResponse, error) {
+func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJson []byte, dryRun bool) (validation.ProxyReports, error) {
 	var (
 		rt           gwv1.RouteTable
-		validationResp *validation.ValidationResponse
+		proxyReports validation.ProxyReports
 		err          error
 	)
 	if err := protoutils.UnmarshalResource(rawJson, &rt); err != nil {
@@ -539,8 +522,8 @@ func (wh *gatewayValidationWebhook) validateRouteTable(ctx context.Context, rawJ
 	if skipValidationCheck(rt.Metadata.Annotations) {
 		return nil, nil
 	}
-	if validationResp, err = wh.validator.ValidateRouteTable(ctx, &rt, dryRun); err != nil {
-		return validationResp, errors.Wrapf(err, "Validating %T failed", rt)
+	if proxyReports, err = wh.validator.ValidateRouteTable(ctx, &rt, dryRun); err != nil {
+		return proxyReports, errors.Wrapf(err, "Validating %T failed", rt)
 	}
-	return validationResp, nil
+	return proxyReports, nil
 }
