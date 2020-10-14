@@ -417,14 +417,14 @@ func (wh *gatewayValidationWebhook) validateList(ctx context.Context, rawJson []
 	var (
 		ul           unstructured.UnstructuredList
 		proxyReports validation.ProxyReports
-		err          *multierror.Error
+		errs         *multierror.Error
 	)
 
 	if err := ul.UnmarshalJSON(rawJson); err != nil {
 		return nil, &multierror.Error{Errors: []error{WrappedUnmarshalErr(err)}}
 	}
-	if proxyReports, err = wh.validator.ValidateList(ctx, &ul, dryRun); err != nil {
-		return proxyReports, err
+	if proxyReports, errs = wh.validator.ValidateList(ctx, &ul, dryRun); errs != nil {
+		return proxyReports, errs
 	}
 	return proxyReports, nil
 }
