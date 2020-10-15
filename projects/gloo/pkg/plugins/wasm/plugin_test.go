@@ -2,7 +2,6 @@ package wasm
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/gogo/protobuf/types"
 
@@ -33,7 +32,6 @@ var _ = Describe("wasm plugin", func() {
 		mockCache = mock_cache.NewMockCache(ctrl)
 		imageCache = mockCache
 		p = NewPlugin()
-		Expect(os.Setenv(WasmEnabled, "1")).NotTo(HaveOccurred())
 	})
 
 	It("should not add filter if wasm config is nil", func() {
@@ -62,28 +60,6 @@ var _ = Describe("wasm plugin", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(f).To(BeNil())
 		Expect(err).To(Equal(fakeErr))
-	})
-
-	It("should not add filter if wasm env is not set", func() {
-		Expect(os.Setenv(WasmEnabled, "")).NotTo(HaveOccurred())
-		sha := "test-sha"
-		image := "image"
-		hl := &v1.HttpListener{
-			Options: &v1.HttpListenerOptions{
-				Wasm: &wasm.PluginSource{
-					Filters: []*wasm.WasmFilter{
-						{
-							Image: image,
-						},
-					},
-				},
-			},
-		}
-
-		mockCache.EXPECT().Add(gomock.Any(), image).Return(digest.Digest(sha), nil)
-		f, err := p.HttpFilters(plugins.Params{}, hl)
-		Expect(err).NotTo(HaveOccurred())
-		Expect(f).To(BeNil())
 	})
 
 	It("will return the proper config", func() {

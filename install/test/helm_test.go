@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"regexp"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/solo-io/go-utils/manifesttestutils"
@@ -1261,26 +1259,6 @@ spec:
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(matchers.BeEquivalentToDiff(gatewayProxyDeployment))
 					})
 
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						podname := v1.EnvVar{
-							Name: "POD_NAME",
-							ValueFrom: &v1.EnvVarSource{
-								FieldRef: &v1.ObjectFieldSelector{
-									FieldPath: "metadata.name",
-								},
-							},
-						}
-
-						versionRegex := regexp.MustCompile("([0-9]+\\.[0-9]+\\.[0-9]+)")
-						wasmVersion := versionRegex.ReplaceAllString(version, "${1}-wasm")
-						container := GetQuayContainerSpec("gloo-envoy-wrapper", wasmVersion, GetPodNamespaceEnvVar(), podname)
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = container.Image
-						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
-					})
-
 					It("disables net bind", func() {
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{"gatewayProxies.gatewayProxy.podTemplate.disableNetBind=true"},
@@ -2282,18 +2260,6 @@ metadata:
 
 					It("should create a deployment", func() {
 						prepareMakefile(namespace, helmValues{})
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
-
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-								Name:  wasm.WasmEnabled,
-								Value: "true",
-							})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 

@@ -21,16 +21,7 @@ ifeq ($(TAGGED_VERSION),)
 endif
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
-# WASM version has '-wasm' added after major.minor.patch but before label. Eg 1.2.3-wasm or 1.2.3-wasm-rc1
-WASM_VERSION ?= $(shell echo $(VERSION) | sed 's/\([0-9]\{1,\}\.[0-9]\{1,\}\.[0-9]\{1,\}\)/\1-wasm/g')
-
-# For non-versioned releases like local or dev builds, just prepend 'wasm-', eg wasm-dev
-ifeq ($(VERSION), $(WASM_VERSION))
-	WASM_VERSION = wasm-$(VERSION)
-endif
-
-ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.16.0-rc4
-ENVOY_GLOO_WASM_IMAGE ?= quay.io/solo-io/envoy-gloo:1.16.0-wasm-rc1
+ENVOY_GLOO_IMAGE ?= quay.io/solo-io/envoy-gloo:1.17.0-rc1
 
 # The full SHA of the currently checked out commit
 CHECKED_OUT_SHA := $(shell git rev-parse HEAD)
@@ -403,30 +394,6 @@ gloo-envoy-wrapper-docker: $(ENVOYINIT_OUTPUT_DIR)/envoyinit-linux-$(GOARCH) $(E
 		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION)
 
 #----------------------------------------------------------------------------------
-# Envoy init (WASM)
-#----------------------------------------------------------------------------------
-
-ENVOY_WASM_DIR=projects/envoyinit/cmd
-ENVOY_WASM_SOURCES=$(call get_sources,$(ENVOY_WASM_DIR))
-ENVOY_WASM_OUTPUT_DIR=$(OUTPUT_DIR)/$(ENVOY_WASM_DIR)
-
-$(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-$(GOARCH): $(ENVOY_WASM_SOURCES)
-	$(GO_BUILD_FLAGS) GOOS=linux go build -ldflags=$(LDFLAGS) -gcflags=$(GCFLAGS) -o $@ $(ENVOY_WASM_DIR)/main.go
-
-.PHONY: envoywasm
-envoywasm: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-$(GOARCH)
-
-$(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm: $(ENVOY_WASM_DIR)/Dockerfile.envoywasm
-	cp $< $@
-
-.PHONY: gloo-envoy-wasm-wrapper-docker
-gloo-envoy-wasm-wrapper-docker: $(ENVOY_WASM_OUTPUT_DIR)/envoywasm-linux-$(GOARCH) $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm
-	docker build $(ENVOY_WASM_OUTPUT_DIR) -f $(ENVOY_WASM_OUTPUT_DIR)/Dockerfile.envoywasm \
-		--build-arg GOARCH=$(GOARCH) \
-		--build-arg ENVOY_IMAGE=$(ENVOY_GLOO_WASM_IMAGE) \
-		-t $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION)
-
-#----------------------------------------------------------------------------------
 # Certgen - Job for creating TLS Secrets in Kubernetes
 #----------------------------------------------------------------------------------
 
@@ -582,8 +549,8 @@ endif
 
 .PHONY: docker docker-push
 docker: discovery-docker gateway-docker gloo-docker \
- 		gloo-envoy-wrapper-docker gloo-envoy-wasm-wrapper-docker \
-		certgen-docker sds-docker ingress-docker access-logger-docker
+ 		gloo-envoy-wrapper-docker certgen-docker sds-docker \
+		ingress-docker access-logger-docker
 
 # Depends on DOCKER_IMAGES, which is set to docker if RELEASE is "true", otherwise empty (making this a no-op).
 # This prevents executing the dependent targets if RELEASE is not true, while still enabling `make docker`
@@ -597,7 +564,6 @@ ifeq ($(RELEASE),"true")
 	docker push $(IMAGE_REPO)/discovery:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo:$(VERSION) && \
 	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) && \
-	docker push $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) && \
 	docker push $(IMAGE_REPO)/certgen:$(VERSION) && \
 	docker push $(IMAGE_REPO)/sds:$(VERSION) && \
 	docker push $(IMAGE_REPO)/access-logger:$(VERSION)
@@ -618,7 +584,6 @@ push-kind-images: docker
 	kind load docker-image $(IMAGE_REPO)/discovery:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(VERSION) --name $(CLUSTER_NAME)
-	kind load docker-image $(IMAGE_REPO)/gloo-envoy-wrapper:$(WASM_VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/certgen:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/access-logger:$(VERSION) --name $(CLUSTER_NAME)
 	kind load docker-image $(IMAGE_REPO)/sds:$(VERSION) --name $(CLUSTER_NAME)

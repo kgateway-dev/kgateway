@@ -1,0 +1,16 @@
+changelog:
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: envoy-gloo
+    dependencyRepo: solo-io
+    dependencyTag: v1.17.0-rc1
+    description: >-
+      Updated envoy-gloo to one based on envoy master (1.17.0). This includes new wasm capabilities in envoy.
+  - type: NEW_FEATURE
+    description: Use official wasm support from upstream envoy, rather than envoy-wasm fork.
+    issueLink: https://github.com/solo-io/gloo/issues/3753
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3753
+    description: >-
+      Removed the `global.wasm.enabled` HELM value for toggling experimental wasm support.
+      Wasm is now enabled by default. This flag is no longer required as there is no more need
+      for a separate gateway-proxy image since wasm support was merged into upstream envoy.

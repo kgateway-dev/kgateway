@@ -28,7 +28,6 @@ type Global struct {
 	Image      *Image      `json:"image,omitempty"`
 	Extensions interface{} `json:"extensions,omitempty"`
 	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	Wasm       Wasm        `json:"wasm,omitempty"`
 	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
 	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
 	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
@@ -435,10 +434,6 @@ type IngressProxyConfigMap struct {
 
 type K8s struct {
 	ClusterName string `json:"clusterName" desc:"cluster name to use when referencing services."`
-}
-
-type Wasm struct {
-	Enabled bool `json:"enabled" desc:"switch the gateway-proxy image to one which supports WASM"`
 }
 
 type Stats struct {
