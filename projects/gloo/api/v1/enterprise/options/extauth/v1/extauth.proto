@@ -256,6 +256,55 @@ message OAuth2 {
   }
 }
 
+message RedisOptions {
+  repeated string hosts = 1;
+  int32 db = 2;
+
+  string username         = 3;
+  string password         = 4;
+  string sentinel_password = 5;
+
+  int32 max_retries = 6;
+  google.protobuf.Duration min_retry_backoff = 7;
+  google.protobuf.Duration max_retry_backoff = 8;
+
+  google.protobuf.Duration dial_timeout = 9;
+  google.protobuf.Duration read_timeout = 10;
+  google.protobuf.Duration write_timeout = 11;
+
+  int32 pool_size = 12;
+  int32 min_idle_conns = 13;
+  google.protobuf.Duration max_conn_age = 14;
+  google.protobuf.Duration pool_timeout = 15;
+  google.protobuf.Duration idle_timeout = 16;
+  google.protobuf.Duration idle_check_frequency = 17;
+
+  // Only cluster clients.
+  int32 max_redirects = 18;
+  bool read_only       = 19;
+  bool route_by_latency = 20;
+  bool route_randomly  = 21;
+
+  // The sentinel master name.
+  // Only failover clients.
+  string master_name = 22;
+}
+
+message UserSession {
+  message InternalSession{}
+  message RedisSession{
+    RedisOptions options = 1;
+    string key_prefix = 2;
+    string cookie_name = 3;
+  }
+
+  bool fail_on_fetch_failure = 1;
+  oneof session {
+    InternalSession cookie = 2;
+    RedisSession redis = 3;
+  }
+}
+
 message OidcAuthorizationCode {
   // your client id as registered with the issuer
   string client_id = 1;
@@ -280,6 +329,7 @@ message OidcAuthorizationCode {
 
   // Scopes to request in addition to openid scope.
   repeated string scopes = 7;
+  UserSession session = 8;
 
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
@@ -446,6 +496,7 @@ message ExtAuthConfig {
   }
 
   message OidcAuthorizationCodeConfig {
+    
     // your client id as registered with the issuer
     string client_id = 1;
 
@@ -469,6 +520,8 @@ message ExtAuthConfig {
 
     // scopes to request in addition to the openid scope.
     repeated string scopes = 7;
+
+    UserSession session = 8;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow

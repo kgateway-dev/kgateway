@@ -26,6 +26,10 @@ weight: 5
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
+- [RedisOptions](#redisoptions)
+- [UserSession](#usersession)
+- [InternalSession](#internalsession)
+- [RedisSession](#redissession)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -390,6 +394,122 @@ Deprecated: Prefer OAuth2
 
 
 ---
+### RedisOptions
+
+
+
+```yaml
+"hosts": []string
+"db": int
+"username": string
+"password": string
+"sentinelPassword": string
+"maxRetries": int
+"minRetryBackoff": .google.protobuf.Duration
+"maxRetryBackoff": .google.protobuf.Duration
+"dialTimeout": .google.protobuf.Duration
+"readTimeout": .google.protobuf.Duration
+"writeTimeout": .google.protobuf.Duration
+"poolSize": int
+"minIdleConns": int
+"maxConnAge": .google.protobuf.Duration
+"poolTimeout": .google.protobuf.Duration
+"idleTimeout": .google.protobuf.Duration
+"idleCheckFrequency": .google.protobuf.Duration
+"maxRedirects": int
+"readOnly": bool
+"routeByLatency": bool
+"routeRandomly": bool
+"masterName": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `hosts` | `[]string` |  |  |
+| `db` | `int` |  |  |
+| `username` | `string` |  |  |
+| `password` | `string` |  |  |
+| `sentinelPassword` | `string` |  |  |
+| `maxRetries` | `int` |  |  |
+| `minRetryBackoff` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `maxRetryBackoff` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `dialTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `readTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `writeTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `poolSize` | `int` |  |  |
+| `minIdleConns` | `int` |  |  |
+| `maxConnAge` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `poolTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `idleCheckFrequency` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
+| `maxRedirects` | `int` | Only cluster clients. |  |
+| `readOnly` | `bool` |  |  |
+| `routeByLatency` | `bool` |  |  |
+| `routeRandomly` | `bool` |  |  |
+| `masterName` | `string` | The sentinel master name. Only failover clients. |  |
+
+
+
+
+---
+### UserSession
+
+
+
+```yaml
+"failOnFetchFailure": bool
+"cookie": .enterprise.gloo.solo.io.UserSession.InternalSession
+"redis": .enterprise.gloo.solo.io.UserSession.RedisSession
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `failOnFetchFailure` | `bool` |  |  |
+| `cookie` | [.enterprise.gloo.solo.io.UserSession.InternalSession](../extauth.proto.sk/#internalsession) |  Only one of `cookie` or `redis` can be set. |  |
+| `redis` | [.enterprise.gloo.solo.io.UserSession.RedisSession](../extauth.proto.sk/#redissession) |  Only one of `redis` or `cookie` can be set. |  |
+
+
+
+
+---
+### InternalSession
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+
+
+
+
+---
+### RedisSession
+
+
+
+```yaml
+"options": .enterprise.gloo.solo.io.RedisOptions
+"keyPrefix": string
+"cookieName": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) |  |  |
+| `keyPrefix` | `string` |  |  |
+| `cookieName` | `string` |  |  |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -402,6 +522,7 @@ Deprecated: Prefer OAuth2
 "appUrl": string
 "callbackPath": string
 "scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
 
 ```
 
@@ -414,6 +535,7 @@ Deprecated: Prefer OAuth2
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
 
 
@@ -656,6 +778,7 @@ Deprecated, prefer OAuth2Config
 "appUrl": string
 "callbackPath": string
 "scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
 
 ```
 
@@ -668,6 +791,7 @@ Deprecated, prefer OAuth2Config
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
 
 
