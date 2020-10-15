@@ -4,7 +4,7 @@ weight: 70
 description: Using WASM filters in Envoy with Gloo
 ---
 
-Support for Envoy WASM filters has been added to Open Source Gloo as of version 1.6.x. This guide is specifically for Gloo 1.6.x, as there have been some changes to the configuration API since prior versions.
+Support for Envoy WASM filters has been added to Open Source Gloo as of version 1.6.0-beta3+. This guide is specifically for Gloo 1.6.0-beta3, as there have been some changes to the configuration API since prior versions.
 
 {{% notice note %}}
 This feature is considered to be in a tech preview state of stability. While wasm functionality has
