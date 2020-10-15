@@ -1363,7 +1363,6 @@ var _ = Describe("Kube2e: gateway", func() {
 			for _, errSubstring := range expectedErrSubstrings {
 				ExpectWithOffset(1, string(out)).To(ContainSubstring(errSubstring))
 			}
-			_ = install.KubectlDelete([]byte(yaml))
 		}
 
 		It("rejects bad resources", func() {
@@ -1433,7 +1432,7 @@ spec:
 						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
 						gwtranslator.MissingPrefixErr.Error()},
 				},
-				{
+	/*			{
 					resourceYaml: `
 apiVersion: v1
 kind: List
@@ -1472,7 +1471,7 @@ items:
 					expectedErrSubstrings: []string{
 						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
 						"the following domains are present in more than one of the virtual services associated with this gateway: [notunique]"},
-				},
+				},*/
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
 			}
