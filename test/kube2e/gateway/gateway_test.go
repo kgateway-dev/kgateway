@@ -3,12 +3,11 @@ package gateway_test
 import (
 	"context"
 	"fmt"
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
-
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -1432,7 +1431,7 @@ spec:
 						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
 						gwtranslator.MissingPrefixErr.Error()},
 				},
-	/*			{
+				{
 					resourceYaml: `
 apiVersion: v1
 kind: List
@@ -1440,14 +1439,12 @@ items:
 - apiVersion: gateway.solo.io/v1
   kind: VirtualService
   metadata:
-    name: warning-vs-1
+    name: invalid-vs-1
     namespace: ` + testHelper.InstallNamespace + `
   spec:
     virtualHost:
-      domains:
-       - notunique
       routes:
-      - matchers:
+      - matcherss:
         - prefix: "/"
         delegateAction:
           name: i-dont-exist-rt
@@ -1459,19 +1456,18 @@ items:
     namespace: ` + testHelper.InstallNamespace + `
   spec:
     virtualHost:
-      domains:
-       - notunique
       routes:
       - matchers:
-        - prefix: "/"
+        - exact: "/"
         delegateAction:
           name: rt1
           namespace: ` + testHelper.InstallNamespace + `
 `,
 					expectedErrSubstrings: []string{
-						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
-						"the following domains are present in more than one of the virtual services associated with this gateway: [notunique]"},
-				},*/
+						fmt.Sprintf("parsing resource from crd spec invalid-vs-1 in namespace %s into *v1.VirtualService: unknown field \"matcherss\" in v1.Route", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
+						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
+						"invalid route: routes with delegate actions must use a prefix matcher"},
+				},
 			} {
 				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
 			}
