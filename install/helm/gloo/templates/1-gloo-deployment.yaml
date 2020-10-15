@@ -159,10 +159,6 @@ spec:
           - name: DISABLE_USAGE_REPORTING
             value: "true"
         {{- end}}
-        {{- if .Values.global.wasm.enabled }}
-          - name: WASM_ENABLED
-            value: "true"
-        {{- end }}
 {{- if not .Values.global.glooMtls.enabled }}
         readinessProbe:
           tcpSocket:

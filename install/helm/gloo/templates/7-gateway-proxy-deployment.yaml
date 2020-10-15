@@ -123,11 +123,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        {{- if not $global.wasm.enabled }}
         image: {{ template "gloo.image" $image }}
-        {{- else }}
-        image: {{ template "gloo.wasmImage" $image }}
-        {{- end}}
         imagePullPolicy: {{ $image.pullPolicy }}
         {{- if $spec.podTemplate.gracefulShutdown }}
         {{- if $spec.podTemplate.gracefulShutdown.enabled }}
