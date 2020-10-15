@@ -3,11 +3,12 @@ package gateway_test
 import (
 	"context"
 	"fmt"
-	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 	"io/ioutil"
 	"os"
 	"strings"
 	"time"
+
+	gwtranslator "github.com/solo-io/gloo/projects/gateway/pkg/translator"
 
 	"github.com/solo-io/gloo/test/kube2e"
 
@@ -1465,7 +1466,7 @@ items:
 `,
 					expectedErrSubstrings: []string{
 						fmt.Sprintf("parsing resource from crd spec invalid-vs-1 in namespace %s into *v1.VirtualService: unknown field \"matcherss\" in v1.Route", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
-						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
+						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}", testHelper.InstallNamespace),                                         // ensure resource type, name, and namespace are in error
 						"invalid route: routes with delegate actions must use a prefix matcher"},
 				},
 			} {
