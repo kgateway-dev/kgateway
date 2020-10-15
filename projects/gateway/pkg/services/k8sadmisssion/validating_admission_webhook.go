@@ -361,7 +361,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 		Name:   req.Name,
 		Group:  gvk.Group,
 		Kind:   gvk.Kind,
-		Causes: wh.getFailureCauses(validationErrs),
+		Causes: getFailureCauses(validationErrs),
 	}
 
 	return &AdmissionResponseWithProxies{
@@ -375,7 +375,7 @@ func (wh *gatewayValidationWebhook) makeAdmissionResponse(ctx context.Context, r
 	}
 }
 
-func (wh *gatewayValidationWebhook) getFailureCauses(validationErr *multierror.Error) []metav1.StatusCause {
+func getFailureCauses(validationErr *multierror.Error) []metav1.StatusCause {
 	var causes []metav1.StatusCause
 	for _, e := range validationErr.Errors {
 		causes = append(causes, metav1.StatusCause{
