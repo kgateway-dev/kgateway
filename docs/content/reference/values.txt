@@ -602,7 +602,6 @@
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
-|global.wasm.enabled|bool|false|switch the gateway-proxy image to one which supports WASM|
 |global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
