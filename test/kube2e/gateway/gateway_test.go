@@ -1351,26 +1351,23 @@ var _ = Describe("Kube2e: gateway", func() {
 	})
 
 	Context("tests for the validation server", func() {
-		testValidation := func(yaml string, expectedErrSubstrings []string) {
+		testValidation := func(yaml, expectedErr string) {
 			out, err := install.KubectlApplyOut([]byte(yaml))
-			if len(expectedErrSubstrings) == 0 {
+			if expectedErr == "" {
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				err = install.KubectlDelete([]byte(yaml))
 				ExpectWithOffset(1, err).NotTo(HaveOccurred())
 				return
 			}
 			ExpectWithOffset(1, err).To(HaveOccurred())
-			for _, errSubstring := range expectedErrSubstrings {
-				ExpectWithOffset(1, string(out)).To(ContainSubstring(errSubstring))
-			}
+			ExpectWithOffset(1, string(out)).To(ContainSubstring(expectedErr))
 		}
 
 		It("rejects bad resources", func() {
 			// specifically avoiding using a DescribeTable here in order to avoid reinstalling
 			// for every test case
 			type testCase struct {
-				resourceYaml          string
-				expectedErrSubstrings []string
+				resourceYaml, expectedErr string
 			}
 
 			for _, tc := range []testCase{
@@ -1384,7 +1381,7 @@ metadata:
 spec:
   virtualHoost: {}
 `,
-					expectedErrSubstrings: []string{`could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`},
+					expectedErr: `could not unmarshal raw object: parsing resource from crd spec default in namespace ` + testHelper.InstallNamespace + ` into *v1.VirtualService: unknown field "virtualHoost" in v1.VirtualService`,
 				},
 				{
 					resourceYaml: `
@@ -1408,7 +1405,7 @@ spec:
               name: does-not-exist
               namespace: anywhere
 `,
-					expectedErrSubstrings: nil, // should not fail
+					expectedErr: "", // should not fail
 				},
 				{
 					resourceYaml: `
@@ -1428,49 +1425,10 @@ spec:
           name: does-not-exist # also not allowed, but caught later
           namespace: anywhere
 `,
-					expectedErrSubstrings: []string{
-						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {method-matcher %s}:", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
-						gwtranslator.MissingPrefixErr.Error()},
-				},
-				{
-					resourceYaml: `
-apiVersion: v1
-kind: List
-items:
-- apiVersion: gateway.solo.io/v1
-  kind: VirtualService
-  metadata:
-    name: invalid-vs-1
-    namespace: ` + testHelper.InstallNamespace + `
-  spec:
-    virtualHost:
-      routes:
-      - matcherss:
-        - prefix: "/"
-        delegateAction:
-          name: i-dont-exist-rt
-          namespace: ` + testHelper.InstallNamespace + `
-- apiVersion: gateway.solo.io/v1
-  kind: VirtualService
-  metadata:
-    name: invalid-vs-2
-    namespace: ` + testHelper.InstallNamespace + `
-  spec:
-    virtualHost:
-      routes:
-      - matchers:
-        - exact: "/"
-        delegateAction:
-          name: rt1
-          namespace: ` + testHelper.InstallNamespace + `
-`,
-					expectedErrSubstrings: []string{
-						fmt.Sprintf("parsing resource from crd spec invalid-vs-1 in namespace %s into *v1.VirtualService: unknown field \"matcherss\" in v1.Route", testHelper.InstallNamespace), // ensure resource type, name, and namespace are in error
-						fmt.Sprintf("Validating v1.VirtualService failed: validating *v1.VirtualService {invalid-vs-2 %s}", testHelper.InstallNamespace),                                         // ensure resource type, name, and namespace are in error
-						"invalid route: routes with delegate actions must use a prefix matcher"},
+					expectedErr: gwtranslator.MissingPrefixErr.Error(),
 				},
 			} {
-				testValidation(tc.resourceYaml, tc.expectedErrSubstrings)
+				testValidation(tc.resourceYaml, tc.expectedErr)
 			}
 		})
 
