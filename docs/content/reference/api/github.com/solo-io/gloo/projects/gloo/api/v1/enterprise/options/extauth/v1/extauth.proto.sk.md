@@ -30,6 +30,7 @@ weight: 5
 - [UserSession](#usersession)
 - [InternalSession](#internalsession)
 - [RedisSession](#redissession)
+- [CookieOptions](#cookieoptions)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -459,6 +460,7 @@ Deprecated: Prefer OAuth2
 
 ```yaml
 "failOnFetchFailure": bool
+"cookieOptions": .enterprise.gloo.solo.io.UserSession.CookieOptions
 "cookie": .enterprise.gloo.solo.io.UserSession.InternalSession
 "redis": .enterprise.gloo.solo.io.UserSession.RedisSession
 
@@ -467,6 +469,7 @@ Deprecated: Prefer OAuth2
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
 | `failOnFetchFailure` | `bool` |  |  |
+| `cookieOptions` | [.enterprise.gloo.solo.io.UserSession.CookieOptions](../extauth.proto.sk/#cookieoptions) |  |  |
 | `cookie` | [.enterprise.gloo.solo.io.UserSession.InternalSession](../extauth.proto.sk/#internalsession) |  Only one of `cookie` or `redis` can be set. |  |
 | `redis` | [.enterprise.gloo.solo.io.UserSession.RedisSession](../extauth.proto.sk/#redissession) |  Only one of `redis` or `cookie` can be set. |  |
 
@@ -505,6 +508,29 @@ Deprecated: Prefer OAuth2
 | `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) |  |  |
 | `keyPrefix` | `string` |  |  |
 | `cookieName` | `string` |  |  |
+
+
+
+
+---
+### CookieOptions
+
+
+
+```yaml
+"maxAge": int
+"notSecure": bool
+"path": .google.protobuf.StringValue
+"domain": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `maxAge` | `int` | Max age for the cookie. Leave unset (or set to 0) for a cookie that does not expire. |  |
+| `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |  |
+| `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |  |
+| `domain` | `string` | Cookie domain. |  |
 
 
 

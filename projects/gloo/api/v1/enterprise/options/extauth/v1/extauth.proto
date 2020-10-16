@@ -297,11 +297,27 @@ message UserSession {
     string key_prefix = 2;
     string cookie_name = 3;
   }
-
+  
   bool fail_on_fetch_failure = 1;
+
+  message CookieOptions {
+    // Max age for the cookie. Leave unset (or set to 0) for a cookie
+    // that does not expire.
+    uint32 max_age = 1;
+    // Use a non-secure cookie. Note - this should only be used for testing and in trusted 
+    // environments.
+    bool not_secure = 2;
+    // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a 
+    // path.
+    google.protobuf.StringValue path = 3;
+    // Cookie domain
+    string domain = 4;
+  }
+
+  CookieOptions cookie_options = 2;
   oneof session {
-    InternalSession cookie = 2;
-    RedisSession redis = 3;
+    InternalSession cookie = 3;
+    RedisSession redis = 4;
   }
 }
 
