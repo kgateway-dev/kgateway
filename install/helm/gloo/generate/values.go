@@ -438,7 +438,7 @@ type K8s struct {
 
 type Stats struct {
 	Enabled            bool    `json:"enabled,omitempty" desc:"Controls whether or not envoy stats are enabled"`
-	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics endpoint is rewritten"`
+	RoutePrefixRewrite *string `json:"routePrefixRewrite,omitempty" desc:"The envoy stats endpoint to which the metrics are written"`
 }
 
 type Mtls struct {

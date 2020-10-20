@@ -2,4 +2,4 @@ changelog:
   - type: HELM
     issueLink: https://github.com/solo-io/gloo/issues/3752
     description: >-
-      Add a helm value for stats prefix rewrite. This allows to integrate with other monitoring system instead of just Prometheus.
+      Add a helm value for stats prefix rewrite. This allows Gloo to integrate with other monitoring systems instead of just Prometheus, by setting the `global.glooStats.routePrefixRewrite` helm value.
