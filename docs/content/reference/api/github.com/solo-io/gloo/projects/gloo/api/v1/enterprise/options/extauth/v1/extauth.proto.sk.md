@@ -400,55 +400,17 @@ Deprecated: Prefer OAuth2
 
 
 ```yaml
-"hosts": []string
+"host": string
 "db": int
-"username": string
-"password": string
-"sentinelPassword": string
-"maxRetries": int
-"minRetryBackoff": .google.protobuf.Duration
-"maxRetryBackoff": .google.protobuf.Duration
-"dialTimeout": .google.protobuf.Duration
-"readTimeout": .google.protobuf.Duration
-"writeTimeout": .google.protobuf.Duration
 "poolSize": int
-"minIdleConns": int
-"maxConnAge": .google.protobuf.Duration
-"poolTimeout": .google.protobuf.Duration
-"idleTimeout": .google.protobuf.Duration
-"idleCheckFrequency": .google.protobuf.Duration
-"maxRedirects": int
-"readOnly": bool
-"routeByLatency": bool
-"routeRandomly": bool
-"masterName": string
 
 ```
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `hosts` | `[]string` |  |  |
-| `db` | `int` |  |  |
-| `username` | `string` |  |  |
-| `password` | `string` |  |  |
-| `sentinelPassword` | `string` |  |  |
-| `maxRetries` | `int` |  |  |
-| `minRetryBackoff` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `maxRetryBackoff` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `dialTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `readTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `writeTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `poolSize` | `int` |  |  |
-| `minIdleConns` | `int` |  |  |
-| `maxConnAge` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `poolTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `idleTimeout` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `idleCheckFrequency` | [.google.protobuf.Duration](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/duration) |  |  |
-| `maxRedirects` | `int` | Only cluster clients. |  |
-| `readOnly` | `bool` |  |  |
-| `routeByLatency` | `bool` |  |  |
-| `routeRandomly` | `bool` |  |  |
-| `masterName` | `string` | The sentinel master name. Only failover clients. |  |
+| `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |  |
+| `db` | `int` | db to use. can leave unset for db 0. |  |
+| `poolSize` | `int` | size of the connection pool. can leave unset for default. |  |
 
 
 

@@ -257,37 +257,12 @@ message OAuth2 {
 }
 
 message RedisOptions {
-  repeated string hosts = 1;
+  // address of the redis. can be address:port or unix://path/to/unix.sock
+  string host = 1;
+  // db to use. can leave unset for db 0.
   int32 db = 2;
-
-  string username         = 3;
-  string password         = 4;
-  string sentinel_password = 5;
-
-  int32 max_retries = 6;
-  google.protobuf.Duration min_retry_backoff = 7;
-  google.protobuf.Duration max_retry_backoff = 8;
-
-  google.protobuf.Duration dial_timeout = 9;
-  google.protobuf.Duration read_timeout = 10;
-  google.protobuf.Duration write_timeout = 11;
-
-  int32 pool_size = 12;
-  int32 min_idle_conns = 13;
-  google.protobuf.Duration max_conn_age = 14;
-  google.protobuf.Duration pool_timeout = 15;
-  google.protobuf.Duration idle_timeout = 16;
-  google.protobuf.Duration idle_check_frequency = 17;
-
-  // Only cluster clients.
-  int32 max_redirects = 18;
-  bool read_only       = 19;
-  bool route_by_latency = 20;
-  bool route_randomly  = 21;
-
-  // The sentinel master name.
-  // Only failover clients.
-  string master_name = 22;
+  // size of the connection pool. can leave unset for default.
+  int32 pool_size = 3;
 }
 
 message UserSession {
