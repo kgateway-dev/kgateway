@@ -538,6 +538,50 @@ spec:
 						}
 					})
 				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.glooStats.enabled=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from gatewayProxies.gatewayProxy", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.stats.enabled=true",
+							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
 			})
 
 			Context("gloo with istio sds settings", func() {

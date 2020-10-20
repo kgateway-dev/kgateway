@@ -77,7 +77,7 @@ func (s *bookstoreServer) GetShelf(ctx context.Context, r *GetShelfRequest) (*Sh
 // Deletes a shelf, including all books that are stored on the shelf.
 func (s *bookstoreServer) DeleteShelf(ctx context.Context, r *DeleteShelfRequest) (*empty.Empty, error) {
 	s.m.Lock()
-	defer s.m.RUnlock()
+	defer s.m.Unlock()
 	delete(s.shelves, r.Shelf)
 	return nil, nil
 }
