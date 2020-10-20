@@ -200,6 +200,13 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		sort.Strings(tmp)
 		key = key + ";" + strings.Join(tmp, ",")
 
+		// make sure ssl configs are only different by sni domains
+		sslConfigCopy := *sslConfig
+		sslConfigCopy.SniDomains = nil
+		hash, _ := sslConfigCopy.Hash(nil)
+
+		key += fmt.Sprintf(";%d", hash)
+
 		if matchingCfg, ok := mergedSslSecrets[key]; ok {
 			matchingCfg.SslSecrets = sslConfig.SslSecrets
 			matchingCfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName

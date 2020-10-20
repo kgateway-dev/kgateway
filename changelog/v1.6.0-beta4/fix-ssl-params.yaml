@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    description: Fix an issue where ssl config may be re-used if only different by parameters from another ssl config.
+    issueLink: https://github.com/solo-io/gloo/issues/3776

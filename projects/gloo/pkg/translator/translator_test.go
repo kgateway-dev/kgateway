@@ -2037,9 +2037,21 @@ var _ = Describe("Translator", func() {
 						},
 						SniDomains: []string{"c.com"},
 					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"d.com"},
+					},
 				})
 
-				Expect(listener.GetFilterChains()).To(HaveLen(3))
+				Expect(listener.GetFilterChains()).To(HaveLen(4))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
@@ -2066,6 +2078,15 @@ var _ = Describe("Translator", func() {
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
+
+				By("checking forth filter chain")
+				fc = listener.GetFilterChains()[3]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"d.com"}))
 			})
 		})
 	})
