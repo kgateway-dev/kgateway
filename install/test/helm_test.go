@@ -1898,6 +1898,62 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					FIt("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
+						expectedVals := []string{"100Mi", "200m", "300Mi", "400m"}
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								fmt.Sprintf("settings.helperContainerResources.requests.memory=%s", expectedVals[0]),
+								fmt.Sprintf("settings.helperContainerResources.requests.cpu=%s", expectedVals[1]),
+								fmt.Sprintf("settings.helperContainerResources.limits.memory=%s", expectedVals[2]),
+								fmt.Sprintf("settings.helperContainerResources.limits.cpu=%s", expectedVals[3]),
+							},
+						})
+
+						// get all deployments for arbitrary examination/testing
+						var deployments []*unstructured.Unstructured
+						testManifest.SelectResources(func(unstructured *unstructured.Unstructured) bool {
+							if unstructured.GetKind() == "Deployment" {
+								deployments = append(deployments, unstructured)
+							}
+							return true
+						})
+
+						for _, deployment := range deployments {
+							// marshall unstructured object into deployment
+							rawDeploy, err := deployment.MarshalJSON()
+							Expect(err).NotTo(HaveOccurred())
+							deploy := appsv1.Deployment{}
+							err = json.Unmarshal(rawDeploy, &deploy)
+							Expect(err).NotTo(HaveOccurred())
+
+							// look for sidecar and sds containers, then test their resource values.
+							for _, container := range deploy.Spec.Template.Spec.Containers {
+								// still make sure non-sds/sidecare containers have non-nil resources, since all
+								// other containers should have default resources values set in their templates.
+								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
+								if container.Name == "envoy-sidecar" || container.Name == "sds" {
+									Expect(container.Resources.Requests.Memory().String()).To(Equal(expectedVals[0]),
+										"deployment/container %s/%s had incorrect request memory: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[0], container.Resources.Requests.Memory().String())
+
+									Expect(container.Resources.Requests.Cpu().String()).To(Equal(expectedVals[1]),
+										"deployment/container %s/%s had incorrect request cpu: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[1], container.Resources.Requests.Cpu().String())
+
+									Expect(container.Resources.Limits.Memory().String()).To(Equal(expectedVals[2]),
+										"deployment/container %s/%s had incorrect limit memory: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[2], container.Resources.Limits.Memory().String())
+
+									Expect(container.Resources.Limits.Cpu().String()).To(Equal(expectedVals[3]),
+										"deployment/container %s/%s had incorrect limit cpu: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[3], container.Resources.Limits.Cpu().String())
+								}
+							}
+						}
+					})
+
 					It("enable sts discovery", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1

@@ -3,6 +3,7 @@
 {{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
+{{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{- $image := $spec.podTemplate.image }}
@@ -228,6 +229,10 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
+{{- if $settings.helperContainerResources }}
+        resources:
+{{ toYaml $settings.helperContainerResources | indent 10}}
+{{- end}}
         env:
           - name: POD_NAME
             valueFrom:
