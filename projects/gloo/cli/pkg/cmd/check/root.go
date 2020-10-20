@@ -3,6 +3,7 @@ package check
 import (
 	"context"
 	"fmt"
+	"github.com/hashicorp/go-multierror"
 	"os"
 	"time"
 
@@ -70,76 +71,88 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 	return cmd
 }
 
-func CheckResources(opts *options.Options) (bool, error) {
+func CheckResources(opts *options.Options) (bool, *multierror.Error) {
+	var multiErr *multierror.Error
+	var status bool
+
 	err := checkConnection(opts.Metadata.Namespace)
 	if err != nil {
-		return false, err
+		multiErr = multierror.Append(multiErr, err)
 	}
 
 	deployments, ok, err := getAndCheckDeployments(opts)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
 
 	includePods := doesNotContain(opts.Top.CheckName, "pods")
 	if includePods {
 		ok, err := checkPods(opts)
 		if !ok || err != nil {
-			return ok, err
+			multiErr = multierror.Append(multiErr, err)
+			status = status && ok
 		}
 	}
 
 	settings, err := getSettings(opts)
 	if err != nil {
-		return false, err
+		multiErr = multierror.Append(multiErr, err)
 	}
 
 	namespaces, err := getNamespaces(settings)
 	if err != nil {
-		return false, err
+		multiErr = multierror.Append(multiErr, err)
 	}
 
 	knownUpstreams, ok, err := checkUpstreams(namespaces)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
 
 	includeUpstreamGroup := doesNotContain(opts.Top.CheckName, "upstreamgroup")
 	if includeUpstreamGroup {
 		ok, err := checkUpstreamGroups(namespaces)
 		if !ok || err != nil {
-			return ok, err
+			multiErr = multierror.Append(multiErr, err)
+			status = status && ok
 		}
 	}
 
 	knownAuthConfigs, ok, err := checkAuthConfigs(namespaces)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
 
 	knownRateLimitConfigs, ok, err := checkRateLimitConfigs(namespaces)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
 
 	includeSecrets := doesNotContain(opts.Top.CheckName, "secrets")
 	if includeSecrets {
 		ok, err := checkSecrets(namespaces)
 		if !ok || err != nil {
-			return ok, err
+			multiErr = multierror.Append(multiErr, err)
+			status = status && ok
 		}
 	}
 
 	ok, err = checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRateLimitConfigs)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
 
 	includeGateway := doesNotContain(opts.Top.CheckName, "gateways")
 	if includeGateway {
 		ok, err := checkGateways(namespaces)
 		if !ok || err != nil {
-			return ok, err
+			multiErr = multierror.Append(multiErr, err)
+			status = status && ok
 		}
 	}
 
@@ -147,15 +160,17 @@ func CheckResources(opts *options.Options) (bool, error) {
 	if includeProxy {
 		ok, err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace, deployments)
 		if !ok || err != nil {
-			return ok, err
+			multiErr = multierror.Append(multiErr, err)
+			status = status && ok
 		}
 	}
 
 	ok, err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
 	if !ok || err != nil {
-		return ok, err
+		multiErr = multierror.Append(multiErr, err)
+		status = status && ok
 	}
-	return true, nil
+	return status, multiErr
 }
 
 func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, bool, error) {
