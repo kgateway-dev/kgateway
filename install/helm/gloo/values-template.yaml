@@ -169,6 +169,7 @@ global:
     create: true
   glooStats:
     enabled: true
+    routePrefixRewrite: /stats/prometheus
   glooMtls:
     enabled: false
     sds:

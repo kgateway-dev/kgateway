@@ -92,7 +92,8 @@
 |gloo.deployment.xdsPort|int|9977|port where gloo serves xDS API to Envoy|
 |gloo.deployment.restXdsPort|uint32|9976|port where gloo serves REST xDS API to Envoy|
 |gloo.deployment.validationPort|int|9988|port where gloo serves gRPC Proxy Validation to Gateway|
-|gloo.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|gloo.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
+|gloo.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gloo.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gloo.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gloo.deployment.externalTrafficPolicy|string||Set the external traffic policy on the gloo service|
@@ -130,7 +131,8 @@
 |discovery.deployment.image.pullPolicy|string||image pull policy for the container|
 |discovery.deployment.image.pullSecret|string||image pull policy for the container |
 |discovery.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
-|discovery.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|discovery.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
+|discovery.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |discovery.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |discovery.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |discovery.deployment.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
@@ -176,7 +178,8 @@
 |gateway.deployment.image.pullPolicy|string||image pull policy for the container|
 |gateway.deployment.image.pullSecret|string||image pull policy for the container |
 |gateway.deployment.image.extended|bool|false|if true, deploy an extended version of the container with additional debug tools|
-|gateway.deployment.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|gateway.deployment.stats.enabled|bool||Controls whether or not envoy stats are enabled|
+|gateway.deployment.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gateway.deployment.floatingUserId|bool|false|set to true to allow the cluster to dynamically assign a user ID|
 |gateway.deployment.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |gateway.deployment.extraGatewayLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo gateway deployment.|
@@ -338,7 +341,8 @@
 |gatewayProxies.NAME.extraInitContainersHelper|string|||
 |gatewayProxies.NAME.extraVolumeHelper|string|||
 |gatewayProxies.NAME.extraListenersHelper|string|||
-|gatewayProxies.NAME.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|gatewayProxies.NAME.stats.enabled|bool||Controls whether or not envoy stats are enabled|
+|gatewayProxies.NAME.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.NAME.readConfig|bool||expose a read-only subset of the envoy admin api|
 |gatewayProxies.NAME.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.NAME.loopBackAddress|string||Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
@@ -463,7 +467,8 @@
 |gatewayProxies.gatewayProxy.extraInitContainersHelper|string|||
 |gatewayProxies.gatewayProxy.extraVolumeHelper|string|||
 |gatewayProxies.gatewayProxy.extraListenersHelper|string|||
-|gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not prometheus stats are enabled|
+|gatewayProxies.gatewayProxy.stats.enabled|bool||Controls whether or not envoy stats are enabled|
+|gatewayProxies.gatewayProxy.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |gatewayProxies.gatewayProxy.readConfig|bool|false|expose a read-only subset of the envoy admin api|
 |gatewayProxies.gatewayProxy.extraProxyVolumeMountHelper|string||name of custom made named template allowing for extra volume mounts on the proxy container|
 |gatewayProxies.gatewayProxy.loopBackAddress|string|127.0.0.1|Name on which to bind the loop-back interface for this instance of Envoy. Defaults to 127.0.0.1, but other common values may be localhost or ::1|
@@ -564,7 +569,8 @@
 |accessLogger.port|uint|8083||
 |accessLogger.serviceName|string|AccessLog||
 |accessLogger.enabled|bool|false||
-|accessLogger.stats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
+|accessLogger.stats.enabled|bool|true|Controls whether or not envoy stats are enabled|
+|accessLogger.stats.routePrefixRewrite|string||The envoy stats endpoint to which the metrics are written|
 |accessLogger.runAsUser|float64||Explicitly set the user ID for the container to run as. Default is 10101|
 |accessLogger.fsGroup|float64||Explicitly set the group ID for volume ownership. Default is 10101|
 |accessLogger.extraAccessLoggerLabels.NAME|string||Optional extra key-value pairs to add to the spec.template.metadata.labels data of the gloo access logger deployment.|
@@ -602,7 +608,8 @@
 |global.glooRbac.create|bool|true|create rbac rules for the gloo-system service account|
 |global.glooRbac.namespaced|bool|false|use Roles instead of ClusterRoles|
 |global.glooRbac.nameSuffix|string||When nameSuffix is nonempty, append '-$nameSuffix' to the names of Gloo RBAC resources; e.g. when nameSuffix is 'foo', the role 'gloo-resource-reader' will become 'gloo-resource-reader-foo'|
-|global.glooStats.enabled|bool|true|Controls whether or not prometheus stats are enabled|
+|global.glooStats.enabled|bool|true|Controls whether or not envoy stats are enabled|
+|global.glooStats.routePrefixRewrite|string|/stats/prometheus|The envoy stats endpoint to which the metrics are written|
 |global.glooMtls.enabled|bool|false|Enables internal mtls authentication|
 |global.glooMtls.sds.image.tag|string|<release_version, ex: 1.2.3>|tag for the container|
 |global.glooMtls.sds.image.repository|string|sds|image name (repository) for the container.|
