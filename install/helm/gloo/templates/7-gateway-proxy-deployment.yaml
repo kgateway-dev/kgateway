@@ -96,6 +96,7 @@ spec:
               topologyKey: kubernetes.io/hostname
 {{- end}}
 {{- end}}
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gateway-proxy
       {{- if $spec.extraInitContainersHelper }}
       initContainers:
@@ -277,9 +278,6 @@ spec:
       tolerations:
 {{ toYaml $spec.podTemplate.tolerations | indent 6}}
       {{- end }}
-      {{- if $image.pullSecret }}
-      imagePullSecrets:
-        - name: {{ $image.pullSecret }}{{end}}
       {{- if $spec.podTemplate.terminationGracePeriodSeconds }}
       terminationGracePeriodSeconds: {{ $spec.podTemplate.terminationGracePeriodSeconds }}
       {{- end }}
