@@ -5,14 +5,12 @@ package wasm
 import (
 	"context"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 
 	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/projects/gloo/pkg/api/v1/options/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
-	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/wasm/tools/wasme/pkg/defaults"
 
 	configcore "github.com/solo-io/gloo/projects/gloo/pkg/api/external/envoy/config/core/v3"
@@ -27,7 +25,6 @@ const (
 	WavmRuntime      = "envoy.wasm.runtime.wavm"
 	VmId             = "gloo-vm-id"
 	WasmCacheCluster = "wasm-cache"
-	WasmEnabled      = "WASM_ENABLED"
 )
 
 var (
@@ -45,9 +42,7 @@ func NewPlugin() *Plugin {
 		// TODO(EItanya): move this into a setup loop, rather than living in the filter
 		// It makes sense that it should only start under certain circumstances, but starting
 		// a web server from a plugin feels like an anti-pattern
-		if os.Getenv(WasmEnabled) != "" {
-			go http.ListenAndServe(":9979", imageCache)
-		}
+		go http.ListenAndServe(":9979", imageCache)
 	})
 	return &Plugin{}
 }
@@ -141,10 +136,6 @@ func (p *Plugin) verifyConfiguration(schema Schema, config *types.Any) error {
 }
 
 func (p *Plugin) HttpFilters(params plugins.Params, l *v1.HttpListener) ([]plugins.StagedHttpFilter, error) {
-	if os.Getenv(WasmEnabled) == "" {
-		contextutils.LoggerFrom(params.Ctx).Debugf("%s was not set, therefore not creating wasm config", WasmEnabled)
-		return nil, nil
-	}
 	wasm := l.GetOptions().GetWasm()
 	if wasm != nil {
 		var result []plugins.StagedHttpFilter

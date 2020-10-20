@@ -4,10 +4,11 @@ weight: 70
 description: Using WASM filters in Envoy with Gloo
 ---
 
-Experimental support for Envoy WASM filters has been added to Open Source Gloo as of version 1.2.6. This guide is specifically for Gloo 1.5.x, as there have been some changes to the configuration API since prior versions.
+Support for Envoy WASM filters has been added to Open Source Gloo as of version 1.6.0-beta3+. This guide is specifically for Gloo 1.6.0-beta3, as there have been some changes to the configuration API since prior versions.
 
 {{% notice note %}}
-This feature is considered incredibly experimental. It uses a fork of Envoy which does not have any official support. It 
+This feature is considered to be in a tech preview state of stability. While wasm functionality has
+been merged to upstream envoy, wasm filters are not yet recommended for production use. This tech preview 
 is meant to show off the potential of WASM filters, and how they will integrate with Gloo going forward.
 {{% /notice %}}
 
@@ -20,14 +21,14 @@ Getting started with WASM is simple, it requires setting one new value in the gl
 Gloo can be installed with this value set using either `glooctl` or `helm 3` as follows:
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell script">}}
-glooctl install gateway --values <(echo '{"crds":{"create":true},"global":{"wasm":{"enabled":true}}}')
+glooctl install gateway --values <(echo '{"crds":{"create":true}}')
 {{< /tab >}}
 {{< tab name="helm" codelang="shell script">}}
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
 
 helm repo update
 kubectl create ns gloo-system
-helm install --namespace gloo-system --version v1.5.0-beta13 --set global.wasm.enabled=true gloo gloo/gloo
+helm install --namespace gloo-system --version v1.6.0-beta3
 {{< /tab >}}
 {{< /tabs >}}
 

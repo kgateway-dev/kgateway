@@ -58,10 +58,10 @@ func (d *DefaultUsageReader) GetPayload() (map[string]string, error) {
 	payload[numEnvoys] = fmt.Sprintf("%d", envoys)
 
 	if requestsCount > 0 {
-		payload[totalRequests] = fmt.Sprintf("%d", requestsCount)
+		payload[totalRequests] = fmt.Sprintf("%.0f", requestsCount)
 	}
 	if connectionsCount > 0 {
-		payload[totalConnections] = fmt.Sprintf("%d", connectionsCount)
+		payload[totalConnections] = fmt.Sprintf("%.0f", connectionsCount)
 	}
 
 	return payload, nil

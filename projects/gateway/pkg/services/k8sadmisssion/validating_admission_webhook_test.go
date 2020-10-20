@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/ghodss/yaml"
 
 	"net/http"
@@ -64,8 +66,8 @@ var _ = Describe("ValidatingAdmissionWebhook", func() {
 		wh.webhookNamespace = routeTable.Metadata.Namespace
 
 		if !valid {
-			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error) {
-				return proxyReports(), fmt.Errorf(errMsg)
+			mv.fValidateList = func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error) {
+				return proxyReports(), &multierror.Error{Errors: []error{fmt.Errorf(errMsg)}}
 			}
 			mv.fValidateGateway = func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error) {
 				return proxyReports(), fmt.Errorf(errMsg)
@@ -298,7 +300,7 @@ func parseReviewResponse(resp *http.Response) (*AdmissionReviewWithProxies, erro
 
 type mockValidator struct {
 	fSync                         func(context.Context, *v1.ApiSnapshot) error
-	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error)
+	fValidateList                 func(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error)
 	fValidateGateway              func(ctx context.Context, gw *v1.Gateway, dryRun bool) (validation.ProxyReports, error)
 	fValidateVirtualService       func(ctx context.Context, vs *v1.VirtualService, dryRun bool) (validation.ProxyReports, error)
 	fValidateDeleteVirtualService func(ctx context.Context, vs core.ResourceRef, dryRun bool) error
@@ -313,7 +315,7 @@ func (v *mockValidator) Sync(ctx context.Context, snap *v1.ApiSnapshot) error {
 	return v.fSync(ctx, snap)
 }
 
-func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, error) {
+func (v *mockValidator) ValidateList(ctx context.Context, ul *unstructured.UnstructuredList, dryRun bool) (validation.ProxyReports, *multierror.Error) {
 	if v.fValidateList == nil {
 		return proxyReports(), nil
 	}

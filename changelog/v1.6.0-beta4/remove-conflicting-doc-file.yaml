@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Remove conflicting top-level markdown document claiming that documentation is not maintained in this repo
