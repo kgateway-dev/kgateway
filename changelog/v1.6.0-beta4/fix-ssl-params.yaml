@@ -1,6 +1,6 @@
 changelog:
   - type: FIX
-    description: |
+    description: >-
       Fix an issue where ssl configurations across different virtual services may be incorrectly
       cached if they ssl configurations only differ by ssl-parameters (e.g., min tls version).
       **After this change, ssl configurations that are only different by ssl parameters must have different sni domains.**
