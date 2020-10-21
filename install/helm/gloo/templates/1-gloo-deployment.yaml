@@ -32,6 +32,7 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gloo
       volumes:
 {{- if .Values.global.glooMtls.enabled }}
@@ -167,7 +168,3 @@ spec:
           periodSeconds: 2
           failureThreshold: 10
 {{- end }}
-      {{- if $image.pullSecret }}
-      imagePullSecrets:
-        - name: {{ $image.pullSecret }}
-      {{- end}}

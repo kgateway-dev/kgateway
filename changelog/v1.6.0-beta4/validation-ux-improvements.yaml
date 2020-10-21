@@ -1,0 +1,12 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3610
+    description: >-
+      Fix the validation API to return all errors encountered while validating a list of resources, rather than
+      immediately returning on the first unmarshal error encountered for a resource in a list resource.
+    resolvesIssue: false
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3610
+    description: >-
+      Fix the validation API error reporting to include the resource associated with the error returned.
+    resolvesIssue: false

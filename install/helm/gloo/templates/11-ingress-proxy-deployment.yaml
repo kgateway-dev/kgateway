@@ -32,6 +32,7 @@ spec:
       {{- end }}
 {{- end }}
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       containers:
       - args: ["--disable-hot-restart"]
         env:
@@ -75,9 +76,6 @@ spec:
         volumeMounts:
         - mountPath: /etc/envoy
           name: envoy-config
-      {{- if $image.pullSecret }}
-      imagePullSecrets:
-        - name: {{ $image.pullSecret }}{{end}}
       volumes:
       - configMap:
           name: ingress-envoy-config
