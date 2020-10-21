@@ -2147,6 +2147,47 @@ var _ = Describe("Translator", func() {
 				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
 				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
 			})
+			It("should error when different parameters have no sni domains", func() {
+
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain1",
+							PrivateKey: "key1",
+						},
+					},
+				})
+
+				prepSsl([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+					},
+				})
+				_, errs, _, _ := translator.Translate(params, proxy)
+				proxyKind := resources.Kind(proxy)
+				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
+				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
+			})
 			It("should work when different parameters have different sni domains", func() {
 
 				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
