@@ -182,23 +182,12 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 
 	for _, sslConfig := range sslConfigs {
 
-		key := ""
-		switch sslCfg := sslConfig.SslSecrets.(type) {
-		case *v1.SslConfig_SecretRef:
-			break
-		case *v1.SslConfig_SslFiles:
-			break
-		default:
-			result = append(result, sslConfig)
-			continue
-		}
-
 		// make sure ssl configs are only different by sni domains
 		sslConfigCopy := *sslConfig
 		sslConfigCopy.SniDomains = nil
 		hash, _ := sslConfigCopy.Hash(nil)
 
-		key = fmt.Sprintf(";%d", hash)
+		key := fmt.Sprintf(";%d", hash)
 
 		if matchingCfg, ok := mergedSslSecrets[key]; ok {
 			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
