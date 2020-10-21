@@ -329,6 +329,7 @@ message OidcAuthorizationCode {
 
   // a path relative to app url that will be used for logging out from an OIDC session.
   // should not be used by the application.
+  // If not provided, logout functionality will be disabled.
   string logout_path = 9;
 
   // Scopes to request in addition to openid scope.
@@ -524,6 +525,7 @@ message ExtAuthConfig {
 
     // a path relative to app url that will be used for logging out from an OIDC session.
     // should not be used by the application.
+    // If not provided, logout functionality will be disabled.
     string logout_path = 9;
 
     // scopes to request in addition to the openid scope.

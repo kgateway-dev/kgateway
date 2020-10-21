@@ -1716,6 +1716,10 @@ func (m *ExtAuthConfig_OidcAuthorizationCodeConfig) Hash(hasher hash.Hash64) (ui
 		return 0, err
 	}
 
+	if _, err = hasher.Write([]byte(m.GetLogoutPath())); err != nil {
+		return 0, err
+	}
+
 	for _, v := range m.GetScopes() {
 
 		if _, err = hasher.Write([]byte(v)); err != nil {
