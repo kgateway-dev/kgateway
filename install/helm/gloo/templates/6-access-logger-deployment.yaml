@@ -36,6 +36,7 @@ spec:
         prometheus.io/scrape: "true"
       {{- end }}
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: gateway-proxy
       securityContext:
         runAsNonRoot: true
