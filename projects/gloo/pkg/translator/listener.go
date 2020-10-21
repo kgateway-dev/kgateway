@@ -187,14 +187,14 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		sslConfigCopy.SniDomains = nil
 		hash, _ := sslConfigCopy.Hash(nil)
 
-		key := fmt.Sprintf(";%d", hash)
+		key := fmt.Sprintf("%d", hash)
 
 		if matchingCfg, ok := mergedSslSecrets[key]; ok {
 			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
 				// if either of the configs match on everything; then match on everything
 				matchingCfg.SniDomains = nil
 			} else {
-				matchingCfg.SniDomains = merge(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
+				matchingCfg.SniDomains = merge(matchingCfg.SniDomains, sslConfig.SniDomains...)
 			}
 		} else {
 			cfgCopy := *sslConfig
