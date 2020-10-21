@@ -26,6 +26,11 @@ weight: 5
 - [SaltedHashedPassword](#saltedhashedpassword)
 - [OAuth](#oauth)
 - [OAuth2](#oauth2)
+- [RedisOptions](#redisoptions)
+- [UserSession](#usersession)
+- [InternalSession](#internalsession)
+- [RedisSession](#redissession)
+- [CookieOptions](#cookieoptions)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -390,6 +395,109 @@ Deprecated: Prefer OAuth2
 
 
 ---
+### RedisOptions
+
+
+
+```yaml
+"host": string
+"db": int
+"poolSize": int
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |  |
+| `db` | `int` | db to use. can leave unset for db 0. |  |
+| `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |  |
+
+
+
+
+---
+### UserSession
+
+
+
+```yaml
+"failOnFetchFailure": bool
+"cookieOptions": .enterprise.gloo.solo.io.UserSession.CookieOptions
+"cookie": .enterprise.gloo.solo.io.UserSession.InternalSession
+"redis": .enterprise.gloo.solo.io.UserSession.RedisSession
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `failOnFetchFailure` | `bool` | should we fail auth flow when failing to get a session from redis, or allow it to continue, potentially starting a new auth flow and setting a new session. |  |
+| `cookieOptions` | [.enterprise.gloo.solo.io.UserSession.CookieOptions](../extauth.proto.sk/#cookieoptions) | Set-Cookie options. |  |
+| `cookie` | [.enterprise.gloo.solo.io.UserSession.InternalSession](../extauth.proto.sk/#internalsession) | Set the tokens in the cookie itself. No need for server side state. Only one of `cookie` or `redis` can be set. |  |
+| `redis` | [.enterprise.gloo.solo.io.UserSession.RedisSession](../extauth.proto.sk/#redissession) | Use redis to store the tokens and just store a random id in the cookie. Only one of `redis` or `cookie` can be set. |  |
+
+
+
+
+---
+### InternalSession
+
+
+
+```yaml
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+
+
+
+
+---
+### RedisSession
+
+
+
+```yaml
+"options": .enterprise.gloo.solo.io.RedisOptions
+"keyPrefix": string
+"cookieName": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Options to connect to redis. |  |
+| `keyPrefix` | `string` | Key prefix inside redis. |  |
+| `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |  |
+
+
+
+
+---
+### CookieOptions
+
+
+
+```yaml
+"maxAge": .google.protobuf.UInt32Value
+"notSecure": bool
+"path": .google.protobuf.StringValue
+"domain": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0. |  |
+| `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |  |
+| `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |  |
+| `domain` | `string` | Cookie domain. |  |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -402,6 +510,7 @@ Deprecated: Prefer OAuth2
 "appUrl": string
 "callbackPath": string
 "scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
 
 ```
 
@@ -414,6 +523,7 @@ Deprecated: Prefer OAuth2
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
 
 
@@ -656,6 +766,7 @@ Deprecated, prefer OAuth2Config
 "appUrl": string
 "callbackPath": string
 "scopes": []string
+"session": .enterprise.gloo.solo.io.UserSession
 
 ```
 
@@ -668,6 +779,7 @@ Deprecated, prefer OAuth2Config
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
 
 
