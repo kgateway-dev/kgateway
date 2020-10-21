@@ -1650,6 +1650,44 @@ spec:
 							gatewayProxyDeployment.GetNamespace(),
 							gatewayProxyDeployment.GetName()).To(BeNil())
 					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gatewayProxies.gatewayProxy.podTemplate.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayProxyDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
+						})
+					})
 				})
 
 				Context("gateway validation resources", func() {
@@ -2391,6 +2429,44 @@ metadata:
 						})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gloo.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							glooDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(glooDeployment)
+						})
+					})
 				})
 
 				Context("gateway service account", func() {
@@ -2562,6 +2638,44 @@ metadata:
 						gatewayDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
 					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("gateway.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							gatewayDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(gatewayDeployment)
+						})
+					})
 				})
 
 				Context("discovery service account", func() {
@@ -2711,6 +2825,44 @@ metadata:
 						uid := int64(10102)
 						discoveryDeployment.Spec.Template.Spec.Containers[0].SecurityContext.RunAsUser = &uid
 						testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+					})
+
+					Context("pass image pull secrets", func() {
+						pullSecretName := "test-pull-secret"
+						pullSecret := []v1.LocalObjectReference{
+							{Name: pullSecretName},
+						}
+
+						It("via global values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("global.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
+
+						It("via podTemplate values", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
+
+						It("podTemplate values win over global", func() {
+							prepareMakefile(namespace, helmValues{
+								valuesArgs: []string{
+									"global.image.pullSecret=wrong",
+									fmt.Sprintf("discovery.deployment.image.pullSecret=%s", pullSecretName),
+								},
+							})
+							discoveryDeployment.Spec.Template.Spec.ImagePullSecrets = pullSecret
+							testManifest.ExpectDeploymentAppsV1(discoveryDeployment)
+						})
 					})
 				})
 

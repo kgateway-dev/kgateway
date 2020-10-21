@@ -1,8 +1,4 @@
 {{/* vim: set filetype=mustache: */}}
-{{/*
-Expand the name of the chart.
-*/}}
-
 
 {{- define "gloo.roleKind" -}}
 {{- if .Values.global.glooRbac.namespaced -}}
@@ -25,4 +21,11 @@ Expand the name of a container image
 */}}
 {{- define "gloo.image" -}}
 {{ .registry }}/{{ .repository }}:{{ .tag }}{{ ternary "-extended" "" (default false .extended) }}
+{{- end -}}
+
+{{- define "gloo.pullSecret" -}}
+{{- if .pullSecret -}}
+imagePullSecrets:
+- name: {{ .pullSecret }}
+{{- end -}}
 {{- end -}}
