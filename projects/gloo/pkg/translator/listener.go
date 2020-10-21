@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
-	"strings"
 
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 
@@ -195,26 +194,19 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 			continue
 		}
 
-		tmp := make([]string, len(sslConfig.VerifySubjectAltName))
-		copy(tmp, sslConfig.VerifySubjectAltName)
-		sort.Strings(tmp)
-		key = key + ";" + strings.Join(tmp, ",")
-
 		// make sure ssl configs are only different by sni domains
 		sslConfigCopy := *sslConfig
 		sslConfigCopy.SniDomains = nil
 		hash, _ := sslConfigCopy.Hash(nil)
 
-		key += fmt.Sprintf(";%d", hash)
+		key = fmt.Sprintf(";%d", hash)
 
 		if matchingCfg, ok := mergedSslSecrets[key]; ok {
-			matchingCfg.SslSecrets = sslConfig.SslSecrets
-			matchingCfg.VerifySubjectAltName = sslConfig.VerifySubjectAltName
 			if len(matchingCfg.SniDomains) == 0 || len(sslConfig.SniDomains) == 0 {
 				// if either of the configs match on everything; then match on everything
 				matchingCfg.SniDomains = nil
 			} else {
-				matchingCfg.SniDomains = append(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
+				matchingCfg.SniDomains = merge(mergedSslSecrets[key].SniDomains, sslConfig.SniDomains...)
 			}
 		} else {
 			cfgCopy := *sslConfig
@@ -225,6 +217,20 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 	}
 
 	return result
+}
+
+func merge(values []string, newvalues ...string) []string {
+	existing := map[string]bool{}
+	for _, v := range values {
+		existing[v] = true
+	}
+
+	for _, v := range newvalues {
+		if _, ok := existing[v]; !ok {
+			values = append(values, v)
+		}
+	}
+	return values
 }
 
 func validateListenerPorts(proxy *v1.Proxy, listenerReport *validationapi.ListenerReport) {
