@@ -172,8 +172,7 @@ func (t *translatorInstance) computeFilterChainsFromSslConfig(snap *v1.ApiSnapsh
 }
 
 func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
-	// we can merge ssl config if:
-	// they have the same SslSecrets and VerifySubjectAltName
+	// we can merge ssl config if they look the same except for SNI domains.
 	// combine SNI information.
 	// return merged result
 
@@ -186,9 +185,9 @@ func mergeSslConfigs(sslConfigs []*v1.SslConfig) []*v1.SslConfig {
 		key := ""
 		switch sslCfg := sslConfig.SslSecrets.(type) {
 		case *v1.SslConfig_SecretRef:
-			key = sslCfg.SecretRef.GetName() + "," + sslCfg.SecretRef.GetNamespace()
+			break
 		case *v1.SslConfig_SslFiles:
-			key = sslCfg.SslFiles.GetTlsCert() + "," + sslCfg.SslFiles.GetTlsKey() + "," + sslCfg.SslFiles.GetRootCa()
+			break
 		default:
 			result = append(result, sslConfig)
 			continue
