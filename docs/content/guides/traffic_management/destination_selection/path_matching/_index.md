@@ -379,6 +379,10 @@ glooctl delete vs --name test-regex
 {{< /tab >}}
 {{< /tabs >}}
 
+{{% notice note %}}
+A more complete description of the default grammar available to Gloo `regex` matchers is provided [here](https://en.cppreference.com/w/cpp/regex/ecmascript).
+{{% /notice %}}
+
 ---
 
 ## Summary
