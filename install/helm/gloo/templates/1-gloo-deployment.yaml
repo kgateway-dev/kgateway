@@ -83,9 +83,9 @@ spec:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- if .Values.settings.helperContainerResources }}
+{{- if .Values.global.sidecarContainerResources }}
         resources:
-{{ toYaml .Values.settings.helperContainerResources | indent 10}}
+{{ toYaml .Values.global.sidecarContainerResources | indent 10}}
 {{- end}}
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
@@ -102,9 +102,9 @@ spec:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- if .Values.settings.helperContainerResources }}
+{{- if .Values.global.sidecarContainerResources }}
         resources:
-{{ toYaml .Values.settings.helperContainerResources | indent 10}}
+{{ toYaml .Values.global.sidecarContainerResources | indent 10}}
 {{- end}}
 {{- end }}
       - image: {{template "gloo.image" $image }}

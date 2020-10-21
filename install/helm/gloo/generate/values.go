@@ -25,12 +25,13 @@ type Config struct {
 }
 
 type Global struct {
-	Image      *Image      `json:"image,omitempty"`
-	Extensions interface{} `json:"extensions,omitempty"`
-	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
-	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
-	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	Image                     *Image                `json:"image,omitempty"`
+	Extensions                interface{}           `json:"extensions,omitempty"`
+	GlooRbac                  *Rbac                 `json:"glooRbac,omitempty"`
+	GlooStats                 Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls                  Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
+	IstioSDS                  IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
+	SidecarContainerResources *ResourceRequirements `json:"sidecarContainerResources,omitempty" desc:"Sets default resource requirements for sidecar containers, including all envoy-sidecar and SDS containers."`
 }
 
 type Namespace struct {
@@ -152,19 +153,18 @@ type KnativeProxy struct {
 }
 
 type Settings struct {
-	WatchNamespaces               []string              `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
-	WriteNamespace                string                `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
-	Integrations                  *Integrations         `json:"integrations,omitempty"`
-	Create                        bool                  `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
-	Extensions                    interface{}           `json:"extensions,omitempty"`
-	SingleNamespace               bool                  `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
-	InvalidConfigPolicy           *InvalidConfigPolicy  `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
-	Linkerd                       bool                  `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
-	DisableProxyGarbageCollection bool                  `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
-	DisableKubernetesDestinations bool                  `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
-	Aws                           AwsSettings           `json:"aws,omitempty"`
-	RateLimit                     interface{}           `json:"rateLimit,omitempty" desc:"Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
-	HelperContainerResources      *ResourceRequirements `json:"helperContainerResources,omitempty" desc:"Sets default resource requirements for small, helper containers, including all sidecar and SDS containers."`
+	WatchNamespaces               []string             `json:"watchNamespaces,omitempty" desc:"whitelist of namespaces for gloo to watch for services and CRDs. Empty list means all namespaces"`
+	WriteNamespace                string               `json:"writeNamespace,omitempty" desc:"namespace where intermediary CRDs will be written to, e.g. Upstreams written by Gloo Discovery."`
+	Integrations                  *Integrations        `json:"integrations,omitempty"`
+	Create                        bool                 `json:"create" desc:"create a Settings CRD which provides bootstrap configuration to Gloo controllers"`
+	Extensions                    interface{}          `json:"extensions,omitempty"`
+	SingleNamespace               bool                 `json:"singleNamespace" desc:"Enable to use install namespace as WatchNamespace and WriteNamespace"`
+	InvalidConfigPolicy           *InvalidConfigPolicy `json:"invalidConfigPolicy,omitempty" desc:"Define policies for Gloo to handle invalid configuration"`
+	Linkerd                       bool                 `json:"linkerd" desc:"Enable automatic Linkerd integration in Gloo."`
+	DisableProxyGarbageCollection bool                 `json:"disableProxyGarbageCollection" desc:"Set this option to determine the state of an Envoy listener when the corresponding Gloo Proxy resource has no routes. If false (default), Gloo will propagate the state of the Proxy to Envoy, resetting the listener to a clean slate with no routes. If true, Gloo will keep serving the routes from the last applied valid configuration."`
+	DisableKubernetesDestinations bool                 `json:"disableKubernetesDestinations" desc:"Gloo allows you to directly reference a Kubernetes service as a routing destination. To enable this feature, Gloo scans the cluster for Kubernetes services and creates a special type of in-memory Upstream to represent them. If the cluster contains a lot of services and you do not restrict the namespaces Gloo is watching, this can result in significant overhead. If you do not plan on using this feature, you can set this flag to true to turn it off."`
+	Aws                           AwsSettings          `json:"aws,omitempty"`
+	RateLimit                     interface{}          `json:"rateLimit,omitempty" desc:"Partial config for GlooE’s rate-limiting service, based on Envoy’s rate-limit service; supports Envoy’s rate-limit service API. (reference here: https://github.com/lyft/ratelimit#configuration) Configure rate-limit descriptors here, which define the limits for requests based on their descriptors. Configure rate-limits (composed of actions, which define how request characteristics get translated into descriptors) on the VirtualHost or its routes."`
 }
 
 type AwsSettings struct {

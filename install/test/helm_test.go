@@ -1926,10 +1926,10 @@ spec:
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								fmt.Sprintf("settings.helperContainerResources.requests.memory=%s", expectedVals[0]),
-								fmt.Sprintf("settings.helperContainerResources.requests.cpu=%s", expectedVals[1]),
-								fmt.Sprintf("settings.helperContainerResources.limits.memory=%s", expectedVals[2]),
-								fmt.Sprintf("settings.helperContainerResources.limits.cpu=%s", expectedVals[3]),
+								fmt.Sprintf("global.sidecarContainerResources.requests.memory=%s", expectedVals[0]),
+								fmt.Sprintf("global.sidecarContainerResources.requests.cpu=%s", expectedVals[1]),
+								fmt.Sprintf("global.sidecarContainerResources.limits.memory=%s", expectedVals[2]),
+								fmt.Sprintf("global.sidecarContainerResources.limits.cpu=%s", expectedVals[3]),
 							},
 						})
 
@@ -1952,7 +1952,7 @@ spec:
 
 							// look for sidecar and sds containers, then test their resource values.
 							for _, container := range deploy.Spec.Template.Spec.Containers {
-								// still make sure non-sds/sidecare containers have non-nil resources, since all
+								// still make sure non-sds/sidecar containers have non-nil resources, since all
 								// other containers should have default resources values set in their templates.
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" {
