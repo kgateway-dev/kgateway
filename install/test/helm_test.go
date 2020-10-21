@@ -5,10 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
-	"regexp"
 
 	gloov1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/test/matchers"
 	"github.com/solo-io/go-utils/installutils/kuberesource"
 	"github.com/solo-io/go-utils/manifesttestutils"
@@ -537,6 +535,50 @@ spec:
 						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
 							expectedTestListener := "    - name: test_listener"
 							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedTestListener))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"global.glooStats.enabled=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in gateway-proxy-envoy-config from gatewayProxies.gatewayProxy", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"gatewayProxies.gatewayProxy.stats.enabled=true",
+							"gatewayProxies.gatewayProxy.stats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "gateway-proxy-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
 						}
 					})
 				})
@@ -1259,26 +1301,6 @@ spec:
 						// deployment exists for for second declaration of gateway proxy
 						gatewayProxyDeployment.Spec.Replicas = nil
 						testManifest.Expect("Deployment", namespace, "gateway-proxy").To(matchers.BeEquivalentToDiff(gatewayProxyDeployment))
-					})
-
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						podname := v1.EnvVar{
-							Name: "POD_NAME",
-							ValueFrom: &v1.EnvVarSource{
-								FieldRef: &v1.ObjectFieldSelector{
-									FieldPath: "metadata.name",
-								},
-							},
-						}
-
-						versionRegex := regexp.MustCompile("([0-9]+\\.[0-9]+\\.[0-9]+)")
-						wasmVersion := versionRegex.ReplaceAllString(version, "${1}-wasm")
-						container := GetQuayContainerSpec("gloo-envoy-wrapper", wasmVersion, GetPodNamespaceEnvVar(), podname)
-						gatewayProxyDeployment.Spec.Template.Spec.Containers[0].Image = container.Image
-						testManifest.ExpectDeploymentAppsV1(gatewayProxyDeployment)
 					})
 
 					It("disables net bind", func() {
@@ -2338,18 +2360,6 @@ metadata:
 
 					It("should create a deployment", func() {
 						prepareMakefile(namespace, helmValues{})
-						testManifest.ExpectDeploymentAppsV1(glooDeployment)
-					})
-
-					It("creates a deployment with gloo wasm envoy", func() {
-						prepareMakefile(namespace, helmValues{
-							valuesArgs: []string{"global.wasm.enabled=true"},
-						})
-						glooDeployment.Spec.Template.Spec.Containers[0].Env = append(
-							glooDeployment.Spec.Template.Spec.Containers[0].Env, v1.EnvVar{
-								Name:  wasm.WasmEnabled,
-								Value: "true",
-							})
 						testManifest.ExpectDeploymentAppsV1(glooDeployment)
 					})
 

@@ -81,8 +81,6 @@ func getHelmaWasmValuesOverrideFile() (filename string, cleanup func()) {
 	// same cluster in CI.
 	_, err = values.Write([]byte(`
 global:
-  wasm:
-    enabled: true
   image:
     pullPolicy: IfNotPresent
   glooRbac:

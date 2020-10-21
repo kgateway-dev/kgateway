@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: >-
+      Fix mismatched Sprintf verb in /pkg/utils/usage/usage_readers.go preventing compiling of that file
