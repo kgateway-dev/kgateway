@@ -509,6 +509,7 @@ Deprecated: Prefer OAuth2
 "authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
+"logoutPath": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 
@@ -521,7 +522,8 @@ Deprecated: Prefer OAuth2
 | `issuerUrl` | `string` | The url of the issuer. We will look for OIDC information in issuerUrl+ ".well-known/openid-configuration". |  |
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
-| `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
+| `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. |  |
+| `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
@@ -765,6 +767,7 @@ Deprecated, prefer OAuth2Config
 "authEndpointQueryParams": map<string, string>
 "appUrl": string
 "callbackPath": string
+"logoutPath": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
 
@@ -778,6 +781,7 @@ Deprecated, prefer OAuth2Config
 | `authEndpointQueryParams` | `map<string, string>` | extra query parameters to apply to the Ext-Auth service's authorization request to the identity provider. |  |
 | `appUrl` | `string` | we to redirect after successful auth, if we can't determine the original url this should be your publicly available app url. |  |
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. needs to not be used by the application. |  |
+| `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
 
