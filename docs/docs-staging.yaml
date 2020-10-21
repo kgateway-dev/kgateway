@@ -91,7 +91,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:1.3.0"
+          image: "gcr.io/solo-public/gloo-docs:1.3.0-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -142,7 +142,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:1.2.0"
+          image: "gcr.io/solo-public/gloo-docs:1.2.0-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -193,7 +193,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:1.1.0"
+          image: "gcr.io/solo-public/gloo-docs:1.1.0-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -244,7 +244,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:1.0.0"
+          image: "gcr.io/solo-public/gloo-docs:1.0.0-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -295,7 +295,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:0-21-3"
+          image: "gcr.io/solo-public/gloo-docs:0-21-3-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
@@ -346,7 +346,7 @@ spec:
     spec:
       containers:
         - name: gloo-docs
-          image: "gcr.io/solo-public/gloo-docs:0-20-13"
+          image: "gcr.io/solo-public/gloo-docs:0-20-13-marked"
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
