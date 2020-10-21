@@ -131,8 +131,14 @@ apis:
   enterprise.gloo.solo.io.OpaAuth:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#OpaAuth
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.RedisOptions:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#RedisOptions
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.Settings:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#Settings
+    package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.UserSession:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#UserSession
     package: enterprise.gloo.solo.io
   envoy.api.v2.DeltaDiscoveryRequest:
     relativepath: reference/api/envoy/api/v2/discovery.proto.sk/#DeltaDiscoveryRequest
