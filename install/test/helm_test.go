@@ -1898,7 +1898,7 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					FIt("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
+					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
 						expectedVals := []string{"100Mi", "200m", "300Mi", "400m"}
 
 						prepareMakefile(namespace, helmValues{
