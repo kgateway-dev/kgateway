@@ -226,9 +226,9 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
-{{- if $global.sidecarContainerResources }}
+{{- if $global.glooMtls.sdsResources }}
         resources:
-{{ toYaml $global.sidecarContainerResources | indent 10}}
+{{ toYaml $global.glooMtls.sdsResources | indent 10}}
 {{- end}}
         env:
           - name: POD_NAME

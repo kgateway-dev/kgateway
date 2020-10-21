@@ -25,13 +25,12 @@ type Config struct {
 }
 
 type Global struct {
-	Image                     *Image                `json:"image,omitempty"`
-	Extensions                interface{}           `json:"extensions,omitempty"`
-	GlooRbac                  *Rbac                 `json:"glooRbac,omitempty"`
-	GlooStats                 Stats                 `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
-	GlooMtls                  Mtls                  `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
-	IstioSDS                  IstioSDS              `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
-	SidecarContainerResources *ResourceRequirements `json:"sidecarContainerResources,omitempty" desc:"Sets default resource requirements for sidecar containers, including all envoy-sidecar and SDS containers."`
+	Image      *Image      `json:"image,omitempty"`
+	Extensions interface{} `json:"extensions,omitempty"`
+	GlooRbac   *Rbac       `json:"glooRbac,omitempty"`
+	GlooStats  Stats       `json:"glooStats,omitempty" desc:"Config used as the default values for Prometheus stats published from Gloo pods. Can be overridden by individual deployments"`
+	GlooMtls   Mtls        `json:"glooMtls,omitempty" desc:"Config used to enable internal mtls authentication (currently just Gloo to Envoy communication)"`
+	IstioSDS   IstioSDS    `json:"istioSDS,omitempty" desc:"Config used for installing Gloo with Istio SDS cert rotation features to facilitate Istio mTLS"`
 }
 
 type Namespace struct {
@@ -443,9 +442,11 @@ type Stats struct {
 }
 
 type Mtls struct {
-	Enabled      bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
-	Sds          SdsContainer          `json:"sds,omitempty"`
-	EnvoySidecar EnvoySidecarContainer `json:"envoy,omitempty"`
+	Enabled               bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
+	Sds                   SdsContainer          `json:"sds,omitempty"`
+	EnvoySidecar          EnvoySidecarContainer `json:"envoy,omitempty"`
+	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all envoy sidecar containers."`
+	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
 type SdsContainer struct {

@@ -1959,15 +1959,20 @@ spec:
 					})
 
 					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
-						expectedVals := []string{"100Mi", "200m", "300Mi", "400m"}
+						envoySidecarVals := []string{"100Mi", "200m", "300Mi", "400m"}
+						sdsVals := []string{"101Mi", "201m", "301Mi", "401m"}
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
-								fmt.Sprintf("global.sidecarContainerResources.requests.memory=%s", expectedVals[0]),
-								fmt.Sprintf("global.sidecarContainerResources.requests.cpu=%s", expectedVals[1]),
-								fmt.Sprintf("global.sidecarContainerResources.limits.memory=%s", expectedVals[2]),
-								fmt.Sprintf("global.sidecarContainerResources.limits.cpu=%s", expectedVals[3]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.memory=%s", envoySidecarVals[0]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.cpu=%s", envoySidecarVals[1]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.memory=%s", envoySidecarVals[2]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.cpu=%s", envoySidecarVals[3]),
+								fmt.Sprintf("global.glooMtls.sdsResources.requests.memory=%s", sdsVals[0]),
+								fmt.Sprintf("global.glooMtls.sdsResources.requests.cpu=%s", sdsVals[1]),
+								fmt.Sprintf("global.glooMtls.sdsResources.limits.memory=%s", sdsVals[2]),
+								fmt.Sprintf("global.glooMtls.sdsResources.limits.cpu=%s", sdsVals[3]),
 							},
 						})
 
@@ -1994,6 +1999,11 @@ spec:
 								// other containers should have default resources values set in their templates.
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
 								if container.Name == "envoy-sidecar" || container.Name == "sds" {
+									var expectedVals = sdsVals
+									if container.Name == "envoy-sidecar" {
+										expectedVals = envoySidecarVals
+									}
+
 									Expect(container.Resources.Requests.Memory().String()).To(Equal(expectedVals[0]),
 										"deployment/container %s/%s had incorrect request memory: expected %s, got %s",
 										deployment.GetName(), container.Name, expectedVals[0], container.Resources.Requests.Memory().String())
