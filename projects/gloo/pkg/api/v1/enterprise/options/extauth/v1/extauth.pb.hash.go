@@ -1480,9 +1480,18 @@ func (m *UserSession_CookieOptions) Hash(hasher hash.Hash64) (uint64, error) {
 		return 0, err
 	}
 
-	err = binary.Write(hasher, binary.LittleEndian, m.GetMaxAge())
-	if err != nil {
-		return 0, err
+	if h, ok := interface{}(m.GetMaxAge()).(safe_hasher.SafeHasher); ok {
+		if _, err = h.Hash(hasher); err != nil {
+			return 0, err
+		}
+	} else {
+		if val, err := hashstructure.Hash(m.GetMaxAge(), nil); err != nil {
+			return 0, err
+		} else {
+			if err := binary.Write(hasher, binary.LittleEndian, val); err != nil {
+				return 0, err
+			}
+		}
 	}
 
 	err = binary.Write(hasher, binary.LittleEndian, m.GetNotSecure())

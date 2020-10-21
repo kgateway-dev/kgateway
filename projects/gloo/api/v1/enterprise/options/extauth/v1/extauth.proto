@@ -262,23 +262,29 @@ message RedisOptions {
   // db to use. can leave unset for db 0.
   int32 db = 2;
   // size of the connection pool. can leave unset for default.
+  // defaults to 10 connections per every CPU
   int32 pool_size = 3;
 }
 
 message UserSession {
   message InternalSession{}
   message RedisSession{
+    // Options to connect to redis
     RedisOptions options = 1;
+    // Key prefix inside redis
     string key_prefix = 2;
+    // Cookie name to set and store the session id. If empty the default "__session" is used.
     string cookie_name = 3;
   }
   
+  // should we fail auth flow when failing to get a session from redis, or allow it to continue,
+  // potentially starting a new auth flow and setting a new session.
   bool fail_on_fetch_failure = 1;
 
   message CookieOptions {
-    // Max age for the cookie. Leave unset (or set to 0) for a cookie
-    // that does not expire.
-    uint32 max_age = 1;
+    // Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds).
+    // To disable cookie expiry, set explicitly to 0.
+    google.protobuf.UInt32Value max_age = 1;
     // Use a non-secure cookie. Note - this should only be used for testing and in trusted 
     // environments.
     bool not_secure = 2;
@@ -289,9 +295,12 @@ message UserSession {
     string domain = 4;
   }
 
+  // Set-Cookie options
   CookieOptions cookie_options = 2;
   oneof session {
+    // Set the tokens in the cookie itself. No need for server side state.
     InternalSession cookie = 3;
+    // Use redis to store the tokens and just store a random id in the cookie.
     RedisSession redis = 4;
   }
 }

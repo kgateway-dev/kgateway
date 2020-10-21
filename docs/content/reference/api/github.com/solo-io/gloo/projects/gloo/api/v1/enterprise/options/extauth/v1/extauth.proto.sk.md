@@ -410,7 +410,7 @@ Deprecated: Prefer OAuth2
 | ----- | ---- | ----------- |----------- | 
 | `host` | `string` | address of the redis. can be address:port or unix://path/to/unix.sock. |  |
 | `db` | `int` | db to use. can leave unset for db 0. |  |
-| `poolSize` | `int` | size of the connection pool. can leave unset for default. |  |
+| `poolSize` | `int` | size of the connection pool. can leave unset for default. defaults to 10 connections per every CPU. |  |
 
 
 
@@ -430,10 +430,10 @@ Deprecated: Prefer OAuth2
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `failOnFetchFailure` | `bool` |  |  |
-| `cookieOptions` | [.enterprise.gloo.solo.io.UserSession.CookieOptions](../extauth.proto.sk/#cookieoptions) |  |  |
-| `cookie` | [.enterprise.gloo.solo.io.UserSession.InternalSession](../extauth.proto.sk/#internalsession) |  Only one of `cookie` or `redis` can be set. |  |
-| `redis` | [.enterprise.gloo.solo.io.UserSession.RedisSession](../extauth.proto.sk/#redissession) |  Only one of `redis` or `cookie` can be set. |  |
+| `failOnFetchFailure` | `bool` | should we fail auth flow when failing to get a session from redis, or allow it to continue, potentially starting a new auth flow and setting a new session. |  |
+| `cookieOptions` | [.enterprise.gloo.solo.io.UserSession.CookieOptions](../extauth.proto.sk/#cookieoptions) | Set-Cookie options. |  |
+| `cookie` | [.enterprise.gloo.solo.io.UserSession.InternalSession](../extauth.proto.sk/#internalsession) | Set the tokens in the cookie itself. No need for server side state. Only one of `cookie` or `redis` can be set. |  |
+| `redis` | [.enterprise.gloo.solo.io.UserSession.RedisSession](../extauth.proto.sk/#redissession) | Use redis to store the tokens and just store a random id in the cookie. Only one of `redis` or `cookie` can be set. |  |
 
 
 
@@ -467,9 +467,9 @@ Deprecated: Prefer OAuth2
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) |  |  |
-| `keyPrefix` | `string` |  |  |
-| `cookieName` | `string` |  |  |
+| `options` | [.enterprise.gloo.solo.io.RedisOptions](../extauth.proto.sk/#redisoptions) | Options to connect to redis. |  |
+| `keyPrefix` | `string` | Key prefix inside redis. |  |
+| `cookieName` | `string` | Cookie name to set and store the session id. If empty the default "__session" is used. |  |
 
 
 
@@ -480,7 +480,7 @@ Deprecated: Prefer OAuth2
 
 
 ```yaml
-"maxAge": int
+"maxAge": .google.protobuf.UInt32Value
 "notSecure": bool
 "path": .google.protobuf.StringValue
 "domain": string
@@ -489,7 +489,7 @@ Deprecated: Prefer OAuth2
 
 | Field | Type | Description | Default |
 | ----- | ---- | ----------- |----------- | 
-| `maxAge` | `int` | Max age for the cookie. Leave unset (or set to 0) for a cookie that does not expire. |  |
+| `maxAge` | [.google.protobuf.UInt32Value](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/u-int-32-value) | Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds). To disable cookie expiry, set explicitly to 0. |  |
 | `notSecure` | `bool` | Use a non-secure cookie. Note - this should only be used for testing and in trusted environments. |  |
 | `path` | [.google.protobuf.StringValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/string-value) | Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a path. |  |
 | `domain` | `string` | Cookie domain. |  |
