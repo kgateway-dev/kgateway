@@ -63,14 +63,14 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
+func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
 	errMessage := "Problem while checking for gloo xds errors"
 
 	// port-forward proxy deployment and get prometheus metrics
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		fmt.Println(errMessage)
-		return false, err
+		return  err
 	}
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))
@@ -78,8 +78,7 @@ func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments 
 	stats, portFwdCmd, err := cliutil.PortForwardGet(ctx, glooNamespace, "deploy/"+glooDeployment,
 		localPort, adminPort, false, glooStatsPath)
 	if err != nil {
-		fmt.Println(errMessage)
-		return false, err
+		return err
 	}
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()
@@ -87,23 +86,25 @@ func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments 
 	}
 
 	if strings.TrimSpace(stats) == "" {
-		fmt.Println(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
-		return false, nil
+		err := fmt.Sprint(errMessage+": could not find any metrics at", glooStatsPath, "endpoint of the "+glooDeployment+" deployment")
+		fmt.Println(err)
+		return fmt.Errorf(err)
 	}
 
 	if !ResourcesSyncedOverXds(stats, glooDeployment) {
-		return false, nil
+		fmt.Println(errMessage)
+		return fmt.Errorf(errMessage)
 	}
 
 	for _, deployment := range deployments.Items {
 		if deployment.Name == rateLimitDeployment {
 			fmt.Printf("Checking rate limit server... ")
 			if !RateLimitIsConnected(stats) {
-				return false, nil
+				return fmt.Errorf("rate limit server is not connected")
 			}
 			fmt.Printf("OK\n")
 		}
 	}
 
-	return true, nil
+	return nil
 }

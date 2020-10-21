@@ -20,19 +20,19 @@ const promStatsPath = "/stats/prometheus"
 
 const metricsUpdateInterval = time.Millisecond * 250
 
-func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
+func checkProxiesPromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
 	for _, deployment := range deployments.Items {
 		if deployment.Name == "gateway-proxy" || deployment.Name == "ingress-proxy" || deployment.Name == "knative-external-proxy" || deployment.Name == "knative-internal-proxy" {
-			if passed, err := checkProxyPromStats(ctx, glooNamespace, deployment.Name); !passed || err != nil {
-				return passed, err
+			if err := checkProxyPromStats(ctx, glooNamespace, deployment.Name);  err != nil {
+				return err
 			}
 		}
 	}
 	fmt.Printf("OK\n")
-	return true, nil
+	return nil
 }
 
-func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) (bool, error) {
+func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentName string) error {
 
 	// check if any proxy instances are out of sync with the Gloo control plane
 	errMessage := "Problem while checking for out of sync proxies"
@@ -41,7 +41,7 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		fmt.Println(errMessage)
-		return false, err
+		return err
 	}
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.EnvoyAdminPort))
@@ -50,40 +50,40 @@ func checkProxyPromStats(ctx context.Context, glooNamespace string, deploymentNa
 		localPort, adminPort, false, promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
-		return false, err
+		return err
 	}
 	if portFwdCmd.Process != nil {
 		defer portFwdCmd.Process.Release()
 		defer portFwdCmd.Process.Kill()
 	}
 
-	if !checkProxyConnectedState(stats, deploymentName, errMessage,
+	if err := checkProxyConnectedState(stats, deploymentName, errMessage,
 		"Your "+deploymentName+" is out of sync with the Gloo control plane and is not receiving valid gloo config.\n"+
-			"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.") {
-		return false, nil
+			"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands."); err != nil {
+		return err
 	}
 
 	return checkProxyUpdate(stats, localPort, deploymentName, errMessage)
 }
 
 // checks that envoy_control_plane_connected_state metric has a value of 1
-func checkProxyConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) bool {
+func checkProxyConnectedState(stats string, deploymentName string, genericErrMessage string, connectedStateErrMessage string) error {
 
 	if strings.TrimSpace(stats) == "" {
-		fmt.Println(genericErrMessage+": could not find any metrics at", promStatsPath, "endpoint of the "+deploymentName+" deployment")
-		return false
+		err := fmt.Errorf(genericErrMessage+": could not find any metrics at", promStatsPath, "endpoint of the "+deploymentName+" deployment")
+		return err
 	}
 
 	if !strings.Contains(stats, "envoy_control_plane_connected_state{} 1") {
-		fmt.Println(connectedStateErrMessage)
-		return false
+		err := fmt.Errorf(connectedStateErrMessage)
+		return err
 	}
 
-	return true
+	return nil
 }
 
 // checks that update_rejected and update_failure stats have not increased by getting stats from /stats/prometheus again
-func checkProxyUpdate(stats string, localPort string, deploymentName string, errMessage string) (bool, error) {
+func checkProxyUpdate(stats string, localPort string, deploymentName string, errMessage string) error {
 
 	// wait for metrics to update
 	time.Sleep(metricsUpdateInterval)
@@ -92,23 +92,23 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 	res, err := http.Get("http://localhost:" + localPort + promStatsPath)
 	if err != nil {
 		fmt.Println(errMessage)
-		return false, err
+		return err
 	}
 	if res.StatusCode != 200 {
-		fmt.Println(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
-		return false, nil
+		err := fmt.Errorf(errMessage+": received unexpected status code", res.StatusCode, "from", promStatsPath, "endpoint of the "+deploymentName+" deployment")
+		return err
 	}
 	b, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		fmt.Println(errMessage)
-		return false, err
+		return err
 	}
 	res.Body.Close()
 	newStats := string(b)
 
 	if strings.TrimSpace(newStats) == "" {
-		fmt.Println(errMessage+": could not find any metrics at", promStatsPath, "endpoint of the "+deploymentName+" deployment")
-		return false, nil
+		err := fmt.Errorf(errMessage+": could not find any metrics at", promStatsPath, "endpoint of the "+deploymentName+" deployment")
+		return err
 	}
 
 	// for example, look for stats like "envoy_http_rds_update_attempt" and "envoy_http_rds_update_rejected"
@@ -118,7 +118,7 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 	newStatsMap := parseMetrics(newStats, desiredMetricsSegments, deploymentName)
 
 	if reflect.DeepEqual(newStatsMap, statsMap) {
-		return true, nil
+		return nil
 	}
 
 	for metricName, oldVal := range statsMap {
@@ -126,17 +126,17 @@ func checkProxyUpdate(stats string, localPort string, deploymentName string, err
 		if ok && strings.Contains(metricName, "rejected") && newVal > oldVal {
 			// for example, if envoy_http_rds_update_rejected{envoy_http_conn_manager_prefix="http",envoy_rds_route_config="listener-__-8080-routes"}
 			// increases, which occurs if envoy cannot parse the config from gloo
-			fmt.Printf("An update to your "+deploymentName+" deployment was rejected due to schema/validation errors. The %v metric increased.\n"+
+			err := fmt.Errorf("An update to your "+deploymentName+" deployment was rejected due to schema/validation errors. The %v metric increased.\n"+
 				"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.\n", metricName)
-			return false, nil
+			return err
 		} else if ok && strings.Contains(metricName, "failure") && newVal > oldVal {
-			fmt.Printf("An update to your "+deploymentName+" deployment was rejected due to network errors. The %v metric increased.\n"+
+			err := fmt.Errorf("An update to your "+deploymentName+" deployment was rejected due to network errors. The %v metric increased.\n"+
 				"You may want to try using the `glooctl proxy logs` or `glooctl debug logs` commands.\n", metricName)
-			return false, nil
+			return err
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
 // parseMetrics parses prometheus metrics and returns a map from the metric name and labels to its value.
