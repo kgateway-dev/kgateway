@@ -33,6 +33,7 @@ spec:
         prometheus.io/scrape: "true"
       {{- end}}
     spec:
+      {{- include "gloo.pullSecret" $image | nindent 6 }}
       serviceAccountName: discovery
       containers:
       - image: {{template "gloo.image" $image}}
