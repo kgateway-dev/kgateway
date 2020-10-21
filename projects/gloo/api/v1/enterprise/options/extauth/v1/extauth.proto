@@ -256,6 +256,55 @@ message OAuth2 {
   }
 }
 
+message RedisOptions {
+  // address of the redis. can be address:port or unix://path/to/unix.sock
+  string host = 1;
+  // db to use. can leave unset for db 0.
+  int32 db = 2;
+  // size of the connection pool. can leave unset for default.
+  // defaults to 10 connections per every CPU
+  int32 pool_size = 3;
+}
+
+message UserSession {
+  message InternalSession{}
+  message RedisSession{
+    // Options to connect to redis
+    RedisOptions options = 1;
+    // Key prefix inside redis
+    string key_prefix = 2;
+    // Cookie name to set and store the session id. If empty the default "__session" is used.
+    string cookie_name = 3;
+  }
+  
+  // should we fail auth flow when failing to get a session from redis, or allow it to continue,
+  // potentially starting a new auth flow and setting a new session.
+  bool fail_on_fetch_failure = 1;
+
+  message CookieOptions {
+    // Max age for the cookie. Leave unset for a default of 30 days (2592000 seconds).
+    // To disable cookie expiry, set explicitly to 0.
+    google.protobuf.UInt32Value max_age = 1;
+    // Use a non-secure cookie. Note - this should only be used for testing and in trusted 
+    // environments.
+    bool not_secure = 2;
+    // Path of the cookie. If unset, defaults to "/". Set it explicitly to "" to avoid setting a 
+    // path.
+    google.protobuf.StringValue path = 3;
+    // Cookie domain
+    string domain = 4;
+  }
+
+  // Set-Cookie options
+  CookieOptions cookie_options = 2;
+  oneof session {
+    // Set the tokens in the cookie itself. No need for server side state.
+    InternalSession cookie = 3;
+    // Use redis to store the tokens and just store a random id in the cookie.
+    RedisSession redis = 4;
+  }
+}
+
 message OidcAuthorizationCode {
   // your client id as registered with the issuer
   string client_id = 1;
@@ -280,6 +329,7 @@ message OidcAuthorizationCode {
 
   // Scopes to request in addition to openid scope.
   repeated string scopes = 7;
+  UserSession session = 8;
 
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
@@ -446,6 +496,7 @@ message ExtAuthConfig {
   }
 
   message OidcAuthorizationCodeConfig {
+    
     // your client id as registered with the issuer
     string client_id = 1;
 
@@ -469,6 +520,8 @@ message ExtAuthConfig {
 
     // scopes to request in addition to the openid scope.
     repeated string scopes = 7;
+
+    UserSession session = 8;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
