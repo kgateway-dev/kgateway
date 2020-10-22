@@ -1,0 +1,6 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3752
+    description: >-
+      Set route prefix_rewrite in ingress proxy and knative proxy configs from `global.glooStats.routePrefixRewrite` helm value. This allows Gloo to integrate with other monitoring systems instead of just Prometheus.
+    resolvesIssue: false
