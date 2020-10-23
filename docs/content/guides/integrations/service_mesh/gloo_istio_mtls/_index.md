@@ -442,7 +442,7 @@ spec:
     sds:
       certificatesSecretName: istio_server_cert
       clusterName: gateway_proxy_sds
-      targetUri: 127.0.01:8234
+      targetUri: 127.0.0.1:8234
       validationContextName: istio_validation_context
 status:
 (...)
