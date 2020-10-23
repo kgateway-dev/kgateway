@@ -1958,13 +1958,14 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
-					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
+					FIt("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
 						envoySidecarVals := []string{"100Mi", "200m", "300Mi", "400m"}
 						sdsVals := []string{"101Mi", "201m", "301Mi", "401m"}
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
 								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.memory=%s", envoySidecarVals[0]),
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.cpu=%s", envoySidecarVals[1]),
 								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.memory=%s", envoySidecarVals[2]),
@@ -1998,8 +1999,9 @@ spec:
 								// still make sure non-sds/sidecar containers have non-nil resources, since all
 								// other containers should have default resources values set in their templates.
 								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
-								if container.Name == "envoy-sidecar" || container.Name == "sds" {
+								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
 									var expectedVals = sdsVals
+									//istio-proxy is another sds container
 									if container.Name == "envoy-sidecar" {
 										expectedVals = envoySidecarVals
 									}

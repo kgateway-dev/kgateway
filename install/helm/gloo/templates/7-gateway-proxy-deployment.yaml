@@ -293,6 +293,10 @@ spec:
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.6.8
+        {{- if $global.glooMtls.sdsResources }}
+        resources:
+{{ toYaml $global.glooMtls.sdsResources | indent 10}}
+        {{- end}}
         args:
         - proxy
         - sidecar
