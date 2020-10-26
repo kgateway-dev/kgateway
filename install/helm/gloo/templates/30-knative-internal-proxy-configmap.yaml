@@ -76,7 +76,7 @@ data:
                                 - name: ":method"
                                   exact_match: GET
                               route:
-                                prefix_rewrite: "/stats/prometheus"
+                                prefix_rewrite: {{ .Values.global.glooStats.routePrefixRewrite }}
                                 cluster: admin_port_cluster
                     http_filters:
                       - name: envoy.filters.http.router

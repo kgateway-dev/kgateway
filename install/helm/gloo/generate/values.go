@@ -442,9 +442,11 @@ type Stats struct {
 }
 
 type Mtls struct {
-	Enabled      bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
-	Sds          SdsContainer          `json:"sds,omitempty"`
-	EnvoySidecar EnvoySidecarContainer `json:"envoy,omitempty"`
+	Enabled               bool                  `json:"enabled" desc:"Enables internal mtls authentication"`
+	Sds                   SdsContainer          `json:"sds,omitempty"`
+	EnvoySidecar          EnvoySidecarContainer `json:"envoy,omitempty"`
+	EnvoySidecarResources *ResourceRequirements `json:"envoySidecarResources,omitempty" desc:"Sets default resource requirements for all envoy sidecar containers."`
+	SdsResources          *ResourceRequirements `json:"sdsResources,omitempty" desc:"Sets default resource requirements for all sds containers."`
 }
 
 type SdsContainer struct {

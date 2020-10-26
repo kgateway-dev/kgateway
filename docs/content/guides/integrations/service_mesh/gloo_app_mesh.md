@@ -25,7 +25,7 @@ For this guide, we'll assume you want to use AWS App Mesh on Kubernetes (AWS EKS
 
 We recommend you follow this link: [Tutorial: Configure App Mesh Integration with Kubernetes] (https://docs.aws.amazon.com/app-mesh/latest/userguide/mesh-k8s-integration.html) for getting started with AWS App Mesh and setting up the examples.
 
-We will assumed that you use `color-mesh` as the name of your mesh and you deployed your EKS cluster in the `us-east-2 (Oregon)` as the AWS region.
+We will assumed that you use `color-mesh` as the name of your mesh and you deployed your EKS cluster in the `us-east-2 (Ohio)` as the AWS region.
 
 Once you have the examples installed, you should have an environment like this:
 
@@ -170,7 +170,7 @@ Now let's figure out what the right URL is to contact Gloo:
 ```bash
 glooctl proxy url
 
-http://a034a61854c2111e992a70a2a7eb7b9a-398563398.us-west-2.elb.amazonaws.com:80
+http://a034a61854c2111e992a70a2a7eb7b9a-398563398.us-east-2.elb.amazonaws.com:80
 ```
 And then call our new API:
 
