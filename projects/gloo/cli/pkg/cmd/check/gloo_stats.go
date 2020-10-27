@@ -70,7 +70,7 @@ func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments 
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {
 		fmt.Println(errMessage)
-		return  err
+		return err
 	}
 	localPort := strconv.Itoa(freePort)
 	adminPort := strconv.Itoa(int(defaults.GlooAdminPort))

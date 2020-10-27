@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/hashicorp/go-multierror"
-	"os"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -48,11 +47,11 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 		Use:   constants.CHECK_COMMAND.Use,
 		Short: constants.CHECK_COMMAND.Short,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			 err := CheckResources(opts)
+			err := CheckResources(opts)
 			if err != nil {
 				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
 				fmt.Print(err.Error())
-				os.Exit(1)
+				return err
 			} else {
 				fmt.Printf("No problems detected.\n")
 			}
@@ -83,22 +82,24 @@ func CheckResources(opts *options.Options) *multierror.Error {
 
 	includePods := doesNotContain(opts.Top.CheckName, "pods")
 	if includePods {
-	err := checkPods(opts)
+		err := checkPods(opts)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
+
 	settings, err := getSettings(opts)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
+
 	namespaces, err := getNamespaces(settings)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
 	knownUpstreams, err := checkUpstreams(namespaces)
-	if  err != nil {
+	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
@@ -110,12 +111,12 @@ func CheckResources(opts *options.Options) *multierror.Error {
 		}
 	}
 
-	knownAuthConfigs,  err := checkAuthConfigs(namespaces)
+	knownAuthConfigs, err := checkAuthConfigs(namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
 
-	knownRateLimitConfigs,  err := checkRateLimitConfigs(namespaces)
+	knownRateLimitConfigs, err := checkRateLimitConfigs(namespaces)
 	if err != nil {
 		multiErr = multierror.Append(multiErr, err)
 	}
@@ -143,15 +144,18 @@ func CheckResources(opts *options.Options) *multierror.Error {
 
 	includeProxy := doesNotContain(opts.Top.CheckName, "proxies")
 	if includeProxy {
-		 err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace, deployments)
-		if  err != nil {
+		err := checkProxies(opts.Top.Ctx, namespaces, opts.Metadata.Namespace, deployments)
+		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
 	}
 
-	err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
-	if err != nil {
-		multiErr = multierror.Append(multiErr, err)
+	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
+	if includePrometheusStatsCheck {
+		err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
+		if err != nil {
+			multiErr = multierror.Append(multiErr, err)
+		}
 	}
 	return multiErr
 }
@@ -385,7 +389,7 @@ func checkRateLimitConfigs(namespaces []string) ([]string, error) {
 				fmt.Printf("WARN: %s\n", CrdNotFoundErr(ratelimit.RateLimitConfigCrd.KindName).Error())
 				return nil, nil
 			}
-			return nil,  err
+			return nil, err
 		}
 
 		configs, err := rlcClient.List(ns, clients.ListOpts{})
@@ -451,17 +455,17 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 				return nil
 			}
 			// Check virtual host options
-			if err := isAuthConfigRefValid(knownAuthConfigs, virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()); err != nil{
+			if err := isAuthConfigRefValid(knownAuthConfigs, virtualService.GetVirtualHost().GetOptions().GetExtauth().GetConfigRef()); err != nil {
 				return err
 			}
 			// Check route options
 			for _, route := range virtualService.GetVirtualHost().GetRoutes() {
-				if err := isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()); err != nil{
+				if err := isAuthConfigRefValid(knownAuthConfigs, route.GetOptions().GetExtauth().GetConfigRef()); err != nil {
 					return err
 				}
 				// Check weighted destination options
 				for _, weightedDest := range route.GetRouteAction().GetMulti().GetDestinations() {
-					if err := isAuthConfigRefValid(knownAuthConfigs, weightedDest.GetOptions().GetExtauth().GetConfigRef()); err != nil{
+					if err := isAuthConfigRefValid(knownAuthConfigs, weightedDest.GetOptions().GetExtauth().GetConfigRef()); err != nil {
 						return err
 					}
 				}
@@ -483,7 +487,7 @@ func checkVirtualServices(namespaces, knownUpstreams, knownAuthConfigs, knownRat
 			}
 			// Check virtual host options
 			for _, ref := range virtualService.GetVirtualHost().GetOptions().GetRateLimitConfigs().GetRefs() {
-				if err := isRateLimitConfigRefValid(knownRateLimitConfigs, ref); err!= nil {
+				if err := isRateLimitConfigRefValid(knownRateLimitConfigs, ref); err != nil {
 					return nil
 				}
 			}
@@ -549,7 +553,7 @@ func checkProxies(ctx context.Context, namespaces []string, glooNamespace string
 	return checkProxiesPromStats(ctx, glooNamespace, deployments)
 }
 
-func checkSecrets(namespaces []string)  error {
+func checkSecrets(namespaces []string) error {
 	fmt.Printf("Checking secrets... ")
 	client := helpers.MustSecretClientWithOptions(5*time.Second, namespaces)
 
