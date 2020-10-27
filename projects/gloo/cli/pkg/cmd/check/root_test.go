@@ -22,7 +22,7 @@ var _ = Describe("Root", func() {
 
 	Context("With a good kube client", func() {
 
-		FIt("all checks pass with OK status", func() {
+		It("all checks pass with OK status", func() {
 
 			client := helpers.MustKubeClient()
 			client.CoreV1().Namespaces().Create(&corev1.Namespace{
@@ -66,7 +66,7 @@ var _ = Describe("Root", func() {
 
 	Context("With a custom namespace", func() {
 
-		FIt("connection fails on incorrect namespace check", func() {
+		It("connection fails on incorrect namespace check", func() {
 
 			myNs := "my-namespace"
 			client := helpers.MustKubeClient()
