@@ -47,7 +47,7 @@ var _ = Describe("Root", func() {
 				},
 			}, clients.WriteOpts{})
 
-			output, err := testutils.GlooctlOut("check -x prometheus")
+			output, err := testutils.GlooctlOut("check -x xds-metrics")
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(output).To(ContainSubstring("Checking deployments... OK"))
@@ -92,14 +92,12 @@ var _ = Describe("Root", func() {
 				},
 			}, clients.WriteOpts{})
 
-			testutils.Glooctl("check -x prometheus")
-			output, _ := testutils.GlooctlOut("check -x prometheus")
+			output, _ := testutils.GlooctlOut("check -x xds-metrics")
 			Expect(output).To(ContainSubstring("namespaces \"gloo-system\" not found"))
 
-			output, _ = testutils.GlooctlOut("check -x prometheus -n my-namespace")
+			output, _ = testutils.GlooctlOut("check -x xds-metrics -n my-namespace")
 			Expect(output).To(ContainSubstring("No problems detected."))
 
-			testutils.Glooctl("check -n my-namespace")
 		})
 	})
 
