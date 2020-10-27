@@ -38,6 +38,7 @@ import (
 	glooutils "github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/factory"
 	"github.com/solo-io/solo-kit/pkg/api/v1/clients/memory"
+	"github.com/solo-io/solo-kit/pkg/api/v1/resources"
 	skkube "github.com/solo-io/solo-kit/pkg/api/v1/resources/common/kubernetes"
 	k8scorev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -1743,8 +1744,7 @@ var _ = Describe("Translator", func() {
 			listener *envoyapi.Listener
 		)
 
-		prep := func(s []*v1.SslConfig) {
-
+		prepSsl := func(s []*v1.SslConfig) {
 			httpListener := &v1.Listener{
 				Name:        "http-listener",
 				BindAddress: "127.0.0.1",
@@ -1763,6 +1763,10 @@ var _ = Describe("Translator", func() {
 			proxy.Listeners = []*v1.Listener{
 				httpListener,
 			}
+		}
+
+		prep := func(s []*v1.SslConfig) {
+			prepSsl(s)
 			translate()
 
 			listeners := snapshot.GetResources(xds.ListenerType).Items
@@ -2037,9 +2041,33 @@ var _ = Describe("Translator", func() {
 						},
 						SniDomains: []string{"c.com"},
 					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"d.com"},
+					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io2",
+							},
+						},
+						SniDomains: []string{"d.com", "e.com"},
+					},
 				})
 
-				Expect(listener.GetFilterChains()).To(HaveLen(3))
+				Expect(listener.GetFilterChains()).To(HaveLen(4))
 				By("checking first filter chain")
 				fc := listener.GetFilterChains()[0]
 				Expect(tlsContext(fc)).NotTo(BeNil())
@@ -2066,6 +2094,159 @@ var _ = Describe("Translator", func() {
 				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
 				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
 				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"c.com"}))
+
+				By("checking forth filter chain")
+				fc = listener.GetFilterChains()[3]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain3"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key3"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"d.com", "e.com"}))
+			})
+			It("should error when different parameters have the same sni domains", func() {
+
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain1",
+							PrivateKey: "key1",
+						},
+					},
+				})
+
+				prepSsl([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"a.com"},
+					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"a.com"},
+					},
+				})
+				_, errs, _, _ := translator.Translate(params, proxy)
+				proxyKind := resources.Kind(proxy)
+				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
+				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
+			})
+			It("should error when different parameters have no sni domains", func() {
+
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain1",
+							PrivateKey: "key1",
+						},
+					},
+				})
+
+				prepSsl([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+					},
+				})
+				_, errs, _, _ := translator.Translate(params, proxy)
+				proxyKind := resources.Kind(proxy)
+				_, reports := errs.Find(proxyKind, proxy.Metadata.Ref())
+				Expect(reports.Errors.Error()).To(ContainSubstring("Tried to apply multiple filter chains with the same FilterChainMatch."))
+			})
+			It("should work when different parameters have different sni domains", func() {
+
+				params.Snapshot.Secrets = append(params.Snapshot.Secrets, &v1.Secret{
+					Metadata: core.Metadata{
+						Name:      "solo",
+						Namespace: "solo.io",
+					},
+					Kind: &v1.Secret_Tls{
+						Tls: &v1.TlsSecret{
+							CertChain:  "chain1",
+							PrivateKey: "key1",
+						},
+					},
+				})
+
+				prep([]*v1.SslConfig{
+					{
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"a.com"},
+					},
+					{
+						Parameters: &v1.SslParameters{
+							MinimumProtocolVersion: v1.SslParameters_TLSv1_2,
+						},
+						SslSecrets: &v1.SslConfig_SecretRef{
+							SecretRef: &core.ResourceRef{
+								Name:      "solo",
+								Namespace: "solo.io",
+							},
+						},
+						SniDomains: []string{"b.com"},
+					},
+				})
+				Expect(listener.GetFilterChains()).To(HaveLen(2))
+				By("checking first filter chain")
+				fc := listener.GetFilterChains()[0]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert := tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				params := tlsContext(fc).GetCommonTlsContext().GetTlsParams()
+				Expect(params.GetTlsMinimumProtocolVersion().String()).To(Equal("TLS_AUTO"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"a.com"}))
+				By("checking second filter chain")
+				fc = listener.GetFilterChains()[1]
+				Expect(tlsContext(fc)).NotTo(BeNil())
+				cert = tlsContext(fc).GetCommonTlsContext().GetTlsCertificates()[0]
+				Expect(cert.GetCertificateChain().GetInlineString()).To(Equal("chain1"))
+				Expect(cert.GetPrivateKey().GetInlineString()).To(Equal("key1"))
+				params = tlsContext(fc).GetCommonTlsContext().GetTlsParams()
+				Expect(params.GetTlsMinimumProtocolVersion().String()).To(Equal("TLSv1_2"))
+				Expect(tlsContext(fc).GetCommonTlsContext().GetValidationContext()).To(BeNil())
+				Expect(fc.FilterChainMatch.ServerNames).To(Equal([]string{"b.com"}))
 			})
 		})
 	})

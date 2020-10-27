@@ -142,7 +142,7 @@ kubectl cluster-info --context kind-kind
 Thanks for using kind! 😊
 ```
 
-It will also be necessary for you to customize Gloo installation to use these same ports.  See the special Kind instructions for both [open source]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) and [enterprise]({{< versioned_link_path fromRoot="installation/enterprise/#installing-on-kubernetes-with-glooctl" >}}) versions.
+It will also be necessary for you to customize Gloo installation to use these same ports.  See the special Kind instructions for both [open source]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes/#installing-on-kubernetes-with-glooctl" >}}) and [enterprise]({{< versioned_link_path fromRoot="/installation/enterprise/#installing-on-kubernetes-with-glooctl" >}}) versions.
 
 Note also that the url to invoke services published through Gloo will be slightly different with Kind-hosted clusters.  Much of the Gloo documentation instructs you to use `$(glooctl proxy url)` as the header for your service url.  This will not work with kind.  For example, instead of using curl commands like this:
 

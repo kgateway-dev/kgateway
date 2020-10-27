@@ -325,6 +325,55 @@ var _ = Describe("Helm Test", func() {
 						"What happened to the clusteringress-proxy deployment?", resourcesTested)
 				})
 
+				It("should set route prefix_rewrite in clusteringress-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.7.0",
+							"settings.integrations.knative.proxy.stats=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "clusteringress-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
+				It("should set route prefix_rewrite in knative proxy configs from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"settings.integrations.knative.enabled=true",
+							"settings.integrations.knative.version=0.8.0",
+							"settings.integrations.knative.proxy.stats=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "knative-internal-proxy-config" ||
+							structuredConfigMap.GetName() == "knative-external-proxy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
+
 				It("should be able to set consul config values", func() {
 					settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
@@ -1958,6 +2007,74 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("finds resources on all containers, with identical resources on all sds and sidecar containers", func() {
+						envoySidecarVals := []string{"100Mi", "200m", "300Mi", "400m"}
+						sdsVals := []string{"101Mi", "201m", "301Mi", "401m"}
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"global.glooMtls.enabled=true", // adds gloo/gateway proxy side containers
+								"global.istioSDS.enabled=true", // add default itsio sds sidecar
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.memory=%s", envoySidecarVals[0]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.requests.cpu=%s", envoySidecarVals[1]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.memory=%s", envoySidecarVals[2]),
+								fmt.Sprintf("global.glooMtls.envoySidecarResources.limits.cpu=%s", envoySidecarVals[3]),
+								fmt.Sprintf("global.glooMtls.sdsResources.requests.memory=%s", sdsVals[0]),
+								fmt.Sprintf("global.glooMtls.sdsResources.requests.cpu=%s", sdsVals[1]),
+								fmt.Sprintf("global.glooMtls.sdsResources.limits.memory=%s", sdsVals[2]),
+								fmt.Sprintf("global.glooMtls.sdsResources.limits.cpu=%s", sdsVals[3]),
+							},
+						})
+
+						// get all deployments for arbitrary examination/testing
+						var deployments []*unstructured.Unstructured
+						testManifest.SelectResources(func(unstructured *unstructured.Unstructured) bool {
+							if unstructured.GetKind() == "Deployment" {
+								deployments = append(deployments, unstructured)
+							}
+							return true
+						})
+
+						for _, deployment := range deployments {
+							// marshall unstructured object into deployment
+							rawDeploy, err := deployment.MarshalJSON()
+							Expect(err).NotTo(HaveOccurred())
+							deploy := appsv1.Deployment{}
+							err = json.Unmarshal(rawDeploy, &deploy)
+							Expect(err).NotTo(HaveOccurred())
+
+							// look for sidecar and sds containers, then test their resource values.
+							for _, container := range deploy.Spec.Template.Spec.Containers {
+								// still make sure non-sds/sidecar containers have non-nil resources, since all
+								// other containers should have default resources values set in their templates.
+								Expect(container.Resources).NotTo(BeNil(), "deployment/container %s/%s had nil resources", deployment.GetName(), container.Name)
+								if container.Name == "envoy-sidecar" || container.Name == "sds" || container.Name == "istio-proxy" {
+									var expectedVals = sdsVals
+									//istio-proxy is another sds container
+									if container.Name == "envoy-sidecar" {
+										expectedVals = envoySidecarVals
+									}
+
+									Expect(container.Resources.Requests.Memory().String()).To(Equal(expectedVals[0]),
+										"deployment/container %s/%s had incorrect request memory: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[0], container.Resources.Requests.Memory().String())
+
+									Expect(container.Resources.Requests.Cpu().String()).To(Equal(expectedVals[1]),
+										"deployment/container %s/%s had incorrect request cpu: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[1], container.Resources.Requests.Cpu().String())
+
+									Expect(container.Resources.Limits.Memory().String()).To(Equal(expectedVals[2]),
+										"deployment/container %s/%s had incorrect limit memory: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[2], container.Resources.Limits.Memory().String())
+
+									Expect(container.Resources.Limits.Cpu().String()).To(Equal(expectedVals[3]),
+										"deployment/container %s/%s had incorrect limit cpu: expected %s, got %s",
+										deployment.GetName(), container.Name, expectedVals[3], container.Resources.Limits.Cpu().String())
+								}
+							}
+						}
+					})
+
 					It("enable sts discovery", func() {
 						settings := makeUnstructured(`
 apiVersion: gloo.solo.io/v1
@@ -3074,6 +3191,29 @@ metadata:
 					testManifest.ExpectService(ingressProxyService)
 				})
 
+				It("should set route prefix_rewrite in ingress-envoy-config from global.glooStats", func() {
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{
+							"ingress.enabled=true",
+							"ingressProxy.deployment.stats=true",
+							"global.glooStats.enabled=true",
+							"global.glooStats.routePrefixRewrite=/stats?format=json"},
+					})
+
+					testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
+						return resource.GetKind() == "ConfigMap"
+					}).ExpectAll(func(configMap *unstructured.Unstructured) {
+						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
+						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
+						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+
+						if structuredConfigMap.GetName() == "ingress-envoy-config" {
+							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
+							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+						}
+					})
+				})
 			})
 
 			Describe("merge ingress and gateway", func() {
