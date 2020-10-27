@@ -63,7 +63,7 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
+func checkPrometheusStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) (bool, error) {
 	errMessage := "Problem while checking for gloo xds errors"
 
 	// port-forward proxy deployment and get prometheus metrics

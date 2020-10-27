@@ -3,7 +3,6 @@ package check
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/rotisserie/eris"
@@ -52,10 +51,10 @@ func RootCmd(opts *options.Options, optionsFunc ...cliutils.OptionsFunc) *cobra.
 				// Not returning error here because this shouldn't propagate as a standard CLI error, which prints usage.
 				fmt.Printf("Error!\n")
 				fmt.Printf("%s\n", err.Error())
-				os.Exit(1)
+				return err
 			} else if !ok {
 				fmt.Printf("Problems detected!\n")
-				os.Exit(1)
+				return err
 			} else {
 				fmt.Printf("No problems detected.\n")
 			}
@@ -150,9 +149,9 @@ func CheckResources(opts *options.Options) (bool, error) {
 		}
 	}
 
-	includePromeCheck := doesNotContain(opts.Top.CheckName, "prometheus")
-	if includePromeCheck {
-		ok, err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
+	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
+	if includePrometheusStatsCheck {
+		ok, err = checkPrometheusStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
 		if !ok || err != nil {
 			return ok, err
 		}

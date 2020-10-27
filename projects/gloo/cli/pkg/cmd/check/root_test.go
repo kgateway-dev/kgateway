@@ -31,7 +31,6 @@ var _ = Describe("Root", func() {
 				},
 			})
 
-			println(3)
 			appName := "default"
 			client.AppsV1().Deployments("gloo-system").Create(&appsv1.Deployment{
 				ObjectMeta: metav1.ObjectMeta{
@@ -99,6 +98,8 @@ var _ = Describe("Root", func() {
 
 			output, _ = testutils.GlooctlOut("check -x prometheus -n my-namespace")
 			Expect(output).To(ContainSubstring("No problems detected."))
+
+			testutils.Glooctl("check -n my-namespace")
 		})
 	})
 
