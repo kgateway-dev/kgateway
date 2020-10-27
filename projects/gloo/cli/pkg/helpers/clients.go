@@ -537,11 +537,14 @@ func getSecretClient(timeout time.Duration, namespaces []string) (v1.SecretClien
 	return secretClient, nil
 }
 
-func GetKubernetesClient() (*kubernetes.Clientset, error) {
+func GetKubernetesClient() (kubernetes.Interface, error) {
 	return GetKubernetesClientWithTimeout(0)
 }
 
-func GetKubernetesClientWithTimeout(timeout time.Duration) (*kubernetes.Clientset, error) {
+func GetKubernetesClientWithTimeout(timeout time.Duration) (kubernetes.Interface, error) {
+	if fakeKubeClientset != nil {
+		return fakeKubeClientset, nil
+	}
 	config, err := getKubernetesConfig(timeout)
 	if err != nil {
 		return nil, err
