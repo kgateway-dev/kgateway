@@ -3,6 +3,7 @@
 {{- end -}}
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
+{{- $settings := .Values.settings }}
 {{- $isUpgrade := .Values.gateway.upgrade }}
 {{- range $name, $spec := .Values.gatewayProxies }}
 {{- $image := $spec.podTemplate.image }}
@@ -225,6 +226,10 @@ spec:
       - name: sds
         image: {{ template "gloo.image" $sdsImage }}
         imagePullPolicy: {{ $sdsImage.pullPolicy }}
+{{- if $global.glooMtls.sdsResources }}
+        resources:
+{{ toYaml $global.glooMtls.sdsResources | indent 10}}
+{{- end}}
         env:
           - name: POD_NAME
             valueFrom:
@@ -288,6 +293,10 @@ spec:
 {{- if not $global.istioSDS.customSidecars }}
       - name: istio-proxy
         image: docker.io/istio/proxyv2:1.6.8
+        {{- if $global.glooMtls.sdsResources }}
+        resources:
+{{ toYaml $global.glooMtls.sdsResources | indent 10}}
+        {{- end}}
         args:
         - proxy
         - sidecar
