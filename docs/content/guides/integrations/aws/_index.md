@@ -34,7 +34,7 @@ In general, we'd recommend using an AWS Network Load Balancer (NLB) with Gloo. G
 
 ## How To
 
-In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://kubernetes.io/docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
+In an AWS EKS cluster, whenever any Kubernetes Service of type `LoadBalancer` deploys, AWS will, by default, create an AWS Classic Load Balancer paired with that Kubernetes Service. AWS will also automatically create Load Balancer Health Checks against the first port listed in that Service. You can influence some of how AWS creates a Load Balancer for Kubernetes Services by adding [AWS specific annotations](https://v1-17.docs.kubernetes.io//docs/concepts/cluster-administration/cloud-providers/#aws) to your `LoadBalancer` type Service.
 
 Gloo's managed Envoy proxies install on EKS as a `LoadBalancer` type Service named `gateway-proxy`. Gloo's Helm chart allows the user to specify annotations added to Gloo's `gateway-proxy` Service, including adding AWS ELB annotations that influence the AWS ELB associated with the Gloo proxy service.
 
