@@ -379,6 +379,10 @@ glooctl delete vs --name test-regex
 {{< /tab >}}
 {{< /tabs >}}
 
+{{% notice note %}}
+Envoy uses the [Google RE2](https://github.com/google/re2) regular expression engine internally.  A more complete description of the grammar available to Gloo `regex` matchers is provided [here](https://github.com/google/re2/wiki/Syntax).
+{{% /notice %}}
+
 ---
 
 ## Summary
