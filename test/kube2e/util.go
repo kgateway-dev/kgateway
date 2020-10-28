@@ -44,14 +44,11 @@ func GlooctlCheckEventuallyHealthy(offset int, testHelper *helper.SoloTestHelper
 				Ctx: context.Background(),
 			},
 		}
-		ok, err := check.CheckResources(opts)
+		err := check.CheckResources(opts)
 		if err != nil {
-			return errors.Wrap(err, "unable to run glooctl check")
+			return errors.New("glooctl check detected a problem with the installation")
 		}
-		if ok {
-			return nil
-		}
-		return errors.New("glooctl check detected a problem with the installation")
+		return nil
 	}, timeoutInterval, "5s").Should(BeNil())
 }
 
