@@ -123,6 +123,7 @@ var _ = Describe("Root", func() {
 				},
 				clients.WriteOpts{},
 			)
+			testutils.Glooctl("check -x xds-metrics")
 
 			output, err := testutils.GlooctlOut("check -x xds-metrics")
 			Expect(err).To(HaveOccurred())

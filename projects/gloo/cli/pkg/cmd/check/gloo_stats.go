@@ -63,9 +63,12 @@ func RateLimitIsConnected(stats string) bool {
 	return true
 }
 
-func checkGlooePromStats(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
+func checkXdsMetrics(ctx context.Context, glooNamespace string, deployments *v1.DeploymentList) error {
 	errMessage := "Problem while checking for gloo xds errors"
-
+	if deployments == nil {
+		fmt.Printf("Skipping due to an error in checking deployments")
+		return fmt.Errorf("xds metrics check was skipped due to an error in checking deployments")
+	}
 	// port-forward proxy deployment and get prometheus metrics
 	freePort, err := cliutil.GetFreePort()
 	if err != nil {

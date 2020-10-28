@@ -153,7 +153,7 @@ func CheckResources(opts *options.Options) *multierror.Error {
 
 	includePrometheusStatsCheck := doesNotContain(opts.Top.CheckName, "xds-metrics")
 	if includePrometheusStatsCheck {
-		err = checkGlooePromStats(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
+		err = checkXdsMetrics(opts.Top.Ctx, opts.Metadata.Namespace, deployments)
 		if err != nil {
 			multiErr = multierror.Append(multiErr, err)
 		}
@@ -564,6 +564,10 @@ func checkGateways(namespaces []string) error {
 
 func checkProxies(ctx context.Context, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) error {
 	fmt.Printf("Checking proxies... ")
+	if deployments == nil {
+		fmt.Printf("Skipping due to an error in checking deployments")
+		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
+	}
 	var multiErr *multierror.Error
 	for _, ns := range namespaces {
 		proxies, err := helpers.MustNamespacedProxyClient(ns).List(ns, clients.ListOpts{})
