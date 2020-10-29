@@ -98,8 +98,7 @@ var _ = Describe("Root", func() {
 					State:  core.Status_Warning,
 					Reason: "I am an upstream with a warning",
 				},
-			},
-				clients.WriteOpts{})
+			}, clients.WriteOpts{})
 
 			helpers.MustNamespacedUpstreamClient("gloo-system").Write(&v1.Upstream{
 				Metadata: core.Metadata{
@@ -110,8 +109,7 @@ var _ = Describe("Root", func() {
 					State:  core.Status_Rejected,
 					Reason: "I am a rejected upstream",
 				},
-			},
-				clients.WriteOpts{})
+			}, clients.WriteOpts{})
 
 			helpers.MustNamespacedVirtualServiceClient("gloo-system").Write(
 				&v12.VirtualService{
@@ -120,8 +118,7 @@ var _ = Describe("Root", func() {
 						State:  core.Status_Rejected,
 						Reason: "I am a rejected vs",
 					},
-				},
-				clients.WriteOpts{},
+				}, clients.WriteOpts{},
 			)
 			testutils.Glooctl("check -x xds-metrics")
 

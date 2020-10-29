@@ -74,7 +74,7 @@ var _ = BeforeSuite(func() {
 		}
 		err := check.CheckResources(opts)
 		if err != nil {
-			return errors.New("glooctl check detected a problem with the installation")
+			return errors.Wrapf(err, "glooctl check detected a problem with the installation")
 		}
 		return nil
 	}, 2*time.Minute, "5s").Should(BeNil())

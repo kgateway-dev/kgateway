@@ -179,7 +179,7 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 		fmt.Println(errMessage)
 		return nil, fmt.Errorf(errMessage)
 	}
-
+	var multiErr *multierror.Error
 	var message string
 	setMessage := func(c appsv1.DeploymentCondition) {
 		if c.Message != "" {
@@ -194,24 +194,24 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 		for _, condition := range deployment.Status.Conditions {
 			setMessage(condition)
 			if condition.Type == appsv1.DeploymentReplicaFailure && condition.Status == corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s failed to create pods!%s\n", deployment.Name, deployment.Namespace, message)
-				return nil, err
+				err := fmt.Errorf("Deployment %s in namespace %s failed to create pods!%s", deployment.Name, deployment.Namespace, message)
+				multiErr = multierror.Append(multiErr, err)
 			}
 		}
 
 		for _, condition := range deployment.Status.Conditions {
 			setMessage(condition)
 			if condition.Type == appsv1.DeploymentProgressing && condition.Status != corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s is not progressing!%s\n", deployment.Name, deployment.Namespace, message)
-				return nil, err
+				err := fmt.Errorf("Deployment %s in namespace %s is not progressing!%s", deployment.Name, deployment.Namespace, message)
+				multiErr = multierror.Append(multiErr, err)
 			}
 		}
 
 		for _, condition := range deployment.Status.Conditions {
 			setMessage(condition)
 			if condition.Type == appsv1.DeploymentAvailable && condition.Status != corev1.ConditionTrue {
-				err := fmt.Errorf("Deployment %s in namespace %s is not available!%s\n", deployment.Name, deployment.Namespace, message)
-				return nil, err
+				err := fmt.Errorf("Deployment %s in namespace %s is not available!%s", deployment.Name, deployment.Namespace, message)
+				multiErr = multierror.Append(multiErr, err)
 			}
 
 		}
@@ -220,9 +220,14 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 			if condition.Type != appsv1.DeploymentAvailable &&
 				condition.Type != appsv1.DeploymentReplicaFailure &&
 				condition.Type != appsv1.DeploymentProgressing {
-				fmt.Printf("Note: Unhandled deployment condition %s", condition.Type)
+				err := fmt.Errorf("Deployment %s has an unhandled deployment condition %s", deployment.Name, condition.Type)
+				multiErr = multierror.Append(multiErr, err)
 			}
 		}
+	}
+	if multiErr != nil {
+		fmt.Printf("%v Errors!\n", multiErr)
+		return nil, multiErr
 	}
 	fmt.Printf("OK\n")
 	return deployments, nil
@@ -235,6 +240,7 @@ func checkPods(opts *options.Options) error {
 	if err != nil {
 		return err
 	}
+	var multiErr *multierror.Error
 	for _, pod := range pods.Items {
 		for _, condition := range pod.Status.Conditions {
 			var errorToPrint string
@@ -274,10 +280,13 @@ func checkPods(opts *options.Options) error {
 			}
 
 			if errorToPrint != "" {
-				fmt.Println(errorToPrint)
-				return fmt.Errorf(errorToPrint)
+				multiErr = multierror.Append(multiErr, fmt.Errorf(errorToPrint))
 			}
 		}
+	}
+	if multiErr != nil {
+		fmt.Printf("%v Errors!\n", multiErr.Len())
+		return multiErr
 	}
 	fmt.Printf("OK\n")
 	return nil
