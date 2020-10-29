@@ -226,7 +226,7 @@ func getAndCheckDeployments(opts *options.Options) (*appsv1.DeploymentList, erro
 		}
 	}
 	if multiErr != nil {
-		fmt.Printf("%v Errors!\n", multiErr)
+		fmt.Printf("%v Errors!\n", multiErr.Len())
 		return nil, multiErr
 	}
 	fmt.Printf("OK\n")
