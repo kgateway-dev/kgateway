@@ -1,0 +1,4 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/2979
+    description: Adds a two helm values that can be used to configure all sds/envoy-sidecar container resource usages.
