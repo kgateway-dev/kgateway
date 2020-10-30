@@ -1111,6 +1111,21 @@ spec:
 						gatewayProxyService.Spec.Type = v1.ServiceTypeLoadBalancer
 					})
 
+					It("is not created if disabled", func() {
+						prepareMakefile(namespace, helmValues{})
+						testManifest.ExpectService(gatewayProxyService)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=false"},
+						})
+						testManifest.ExpectService(gatewayProxyService)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
+						})
+						testManifest.Expect("Service", namespace, defaults.GatewayProxyName).To(BeNil())
+					})
+
 					It("sets extra annotations", func() {
 						gatewayProxyService.ObjectMeta.Annotations = map[string]string{"foo": "bar", "bar": "baz"}
 						prepareMakefile(namespace, helmValues{
@@ -3010,6 +3025,29 @@ metadata:
 					"app":              "gloo",
 					"gateway-proxy-id": "gateway-proxy",
 				}
+
+				It("is not created if disabled", func() {
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"settings.aws.enableServiceAccountCredentials=true",
+							"gatewayProxies.gatewayProxy.disabled=false"},
+					})
+					proxySpec := make(map[string]string)
+					proxySpec["envoy.yaml"] = fmt.Sprintf(awsFmtString, "", "")
+					cmRb := ResourceBuilder{
+						Namespace: namespace,
+						Name:      gatewayProxyConfigMapName,
+						Labels:    labels,
+						Data:      proxySpec,
+					}
+					proxy := cmRb.GetConfigMap()
+					testManifest.ExpectConfigMapWithYamlData(proxy)
+
+					prepareMakefile(namespace, helmValues{
+						valuesArgs: []string{"gatewayProxies.gatewayProxy.disabled=true"},
+					})
+					testManifest.Expect("ConfigMap", namespace, defaults.GatewayProxyName).To(BeNil())
+				})
 
 				Describe("gateway proxy - AWS", func() {
 
