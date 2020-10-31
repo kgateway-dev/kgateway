@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	contrib.go.opencensus.io/exporter/stackdriver v0.12.5 // indirect
+	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/semver/v3 v3.0.3
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b
 	github.com/avast/retry-go v2.4.3+incompatible
@@ -25,7 +26,7 @@ require (
 	github.com/gogo/googleapis v1.3.1
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/mock v1.4.4
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/google/go-containerregistry v0.1.3 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v31 v31.0.0
@@ -50,6 +51,7 @@ require (
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
 	github.com/opencontainers/go-digest v1.0.0-rc1
+	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/pkg/browser v0.0.0-20180916011732-0a3d74bf9ce4
 	github.com/prometheus/client_golang v1.2.1
 	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4
@@ -77,7 +79,7 @@ require (
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
-	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
+	golang.org/x/sys v0.0.0-20201029080932-201ba4db2418 // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
 	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
 	google.golang.org/grpc v1.29.1
