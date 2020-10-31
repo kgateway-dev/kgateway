@@ -187,7 +187,7 @@ func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {
 	if in.GetSniAddr() != "" {
 		return in.GetSniAddr()
 	}
-	if spec.AutoSniRewrite == nil || spec.AutoSniRewrite.Value {
+	if spec.GetAutoSniRewrite() == nil || spec.GetAutoSniRewrite().GetValue() {
 		return in.GetAddr()
 	}
 	return ""
