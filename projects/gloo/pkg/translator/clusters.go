@@ -7,11 +7,13 @@ import (
 	envoyapi "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoycluster "github.com/envoyproxy/go-control-plane/envoy/api/v2/cluster"
 	envoycore "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/gogo/protobuf/types"
 	"github.com/rotisserie/eris"
 	"github.com/solo-io/gloo/pkg/utils/gogoutils"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins"
+	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
 	"github.com/solo-io/gloo/projects/gloo/pkg/xds"
 	"github.com/solo-io/go-utils/contextutils"
 	"github.com/solo-io/solo-kit/pkg/api/v2/reporter"
@@ -80,6 +82,19 @@ func (t *translatorInstance) initializeCluster(upstream *v1.Upstream, endpoints 
 		ConnectTimeout:       gogoutils.DurationStdToProto(&ClusterConnectionTimeout),
 		Http2ProtocolOptions: getHttp2ptions(upstream),
 	}
+
+	if sslConfig := upstream.SslConfig; sslConfig != nil {
+		cfg, err := utils.NewSslConfigTranslator().ResolveUpstreamSslConfig(*secrets, sslConfig)
+		if err != nil {
+			reports.AddError(upstream, err)
+		} else {
+			out.TransportSocket = &envoycore.TransportSocket{
+				Name:       wellknown.TransportSocketTls,
+				ConfigType: &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(cfg)},
+			}
+		}
+	}
+
 	// set Type = EDS if we have endpoints for the upstream
 	if len(endpointsForUpstream(upstream, endpoints)) > 0 {
 		xds.SetEdsOnCluster(out)
