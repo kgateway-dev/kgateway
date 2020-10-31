@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	// TODO: make solo-projects use this constant
 	TransportSocketMatchKey = "envoy.transport_socket_match"
 
 	HttpPathCheckerName = "io.solo.health_checkers.http_path"
@@ -114,8 +115,6 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				},
 			})
 
-		// does the cluster have ssl configured
-
 	}
 
 	// if host port is 443 or if the user wants it, we will use TLS
@@ -185,11 +184,11 @@ func mutateSni(in *envoycore.TransportSocket, sni string) (*envoycore.TransportS
 }
 
 func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {
-	if in.SniAddr != "" {
-		return in.SniAddr
+	if in.GetSniAddr() != "" {
+		return in.GetSniAddr()
 	}
 	if spec.AutoSniRewrite == nil || spec.AutoSniRewrite.Value {
-		return in.Addr
+		return in.GetAddr()
 	}
 	return ""
 }

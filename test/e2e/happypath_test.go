@@ -206,12 +206,18 @@ var _ = Describe("Happy path", func() {
 		})
 
 		Context("ssl", func() {
+			type sslConn struct {
+				sni  string
+				port uint32
+			}
 			var (
-				upSsl  *gloov1.Upstream
-				hellos chan string
+				upSsl    *gloov1.Upstream
+				hellos   chan sslConn
+				sslport1 uint32
+				sslport2 uint32
 			)
 			BeforeEach(func() {
-				hellos = make(chan string, 100)
+				hellos = make(chan sslConn, 100)
 				sslSecret := &gloov1.Secret{
 					Metadata: core.Metadata{
 						Name:      "secret",
@@ -230,8 +236,11 @@ var _ = Describe("Happy path", func() {
 				copyUp.Metadata.Name = copyUp.Metadata.Name + "-ssl"
 				port := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Port
 				addr := tu.Upstream.UpstreamType.(*gloov1.Upstream_Static).Static.Hosts[0].Addr
-				sslport := v1helpers.StartSslProxyWithHelloCB(ctx, port, func(chi *tls.ClientHelloInfo) {
-					hellos <- chi.ServerName
+				sslport1 = v1helpers.StartSslProxyWithHelloCB(ctx, port, func(chi *tls.ClientHelloInfo) {
+					hellos <- sslConn{sni: chi.ServerName, port: sslport1}
+				})
+				sslport2 = v1helpers.StartSslProxyWithHelloCB(ctx, port, func(chi *tls.ClientHelloInfo) {
+					hellos <- sslConn{sni: chi.ServerName, port: sslport2}
 				})
 				ref := sslSecret.Metadata.Ref()
 
@@ -239,7 +248,10 @@ var _ = Describe("Happy path", func() {
 					Static: &static_plugin_gloo.UpstreamSpec{
 						Hosts: []*static_plugin_gloo.Host{{
 							Addr: addr,
-							Port: sslport,
+							Port: sslport1,
+						}, {
+							Addr: addr,
+							Port: sslport2,
 						}},
 					},
 				}
@@ -269,6 +281,8 @@ var _ = Describe("Happy path", func() {
 			Context("sni", func() {
 				BeforeEach(func() {
 					upSsl.GetStatic().GetHosts()[0].SniAddr = "solo-sni-test"
+					upSsl.GetStatic().GetHosts()[1].SniAddr = "solo-sni-test2"
+
 					_, err := testClients.UpstreamClient.Write(upSsl, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -278,8 +292,31 @@ var _ = Describe("Happy path", func() {
 					_, err := proxycli.Write(proxy, clients.WriteOpts{})
 					Expect(err).NotTo(HaveOccurred())
 
-					TestUpstreamReachable()
-					Eventually(hellos).Should(Receive(Equal("solo-sni-test")))
+					match1 := sslConn{sni: "solo-sni-test", port: sslport1}
+					match2 := sslConn{sni: "solo-sni-test2", port: sslport2}
+
+					matched1 := false
+					matched2 := false
+
+					timeout := time.After(5 * time.Second)
+					for {
+						TestUpstreamReachable()
+						select {
+						case <-timeout:
+							Fail("timedout waiting for sni")
+						case clienthello := <-hellos:
+							Expect(clienthello).To(SatisfyAny(Equal(match1), Equal(match2)))
+							if clienthello == match1 {
+								matched1 = true
+							} else {
+								matched2 = true
+							}
+						}
+						if matched1 && matched2 {
+							break
+						}
+					}
+
 				})
 			})
 		})
