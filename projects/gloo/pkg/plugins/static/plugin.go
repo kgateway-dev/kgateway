@@ -92,7 +92,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
 			&envoyendpoint.LbEndpoint{
-				Metadata: getMetadata(host),
+				Metadata: getMetadata(spec, host),
 				HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 					Endpoint: &envoyendpoint.Endpoint{
 						Hostname: host.Addr,
@@ -135,7 +135,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 	if out.TransportSocket != nil {
 		for _, host := range spec.Hosts {
-			sniname := host.SniAddr
+			sniname := sniAddr(spec, host)
 			if sniname == "" {
 				continue
 			}
@@ -144,8 +144,8 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 				return err
 			}
 			out.TransportSocketMatches = append(out.TransportSocketMatches, &envoyapi.Cluster_TransportSocketMatch{
-				Name:            name(host),
-				Match:           metadataMatch(host),
+				Name:            name(spec, host),
+				Match:           metadataMatch(spec, host),
 				TransportSocket: ts,
 			})
 		}
@@ -175,7 +175,7 @@ func mutateSni(in *envoycore.TransportSocket, sni string) (*envoycore.TransportS
 
 	typedCfg, ok := cfg.(*envoyauth.UpstreamTlsContext)
 	if !ok {
-		return nil, errors.Errorf("unknown tls config")
+		return nil, errors.Errorf("unknown tls config type: %T", cfg)
 	}
 	typedCfg.Sni = sni
 
@@ -184,16 +184,27 @@ func mutateSni(in *envoycore.TransportSocket, sni string) (*envoycore.TransportS
 	return &copy, nil
 }
 
-func getMetadata(in *v1static.Host) *envoycore.Metadata {
+func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {
+	if in.SniAddr != "" {
+		return in.SniAddr
+	}
+	if spec.AutoSniRewrite == nil || spec.AutoSniRewrite.Value {
+		return in.Addr
+	}
+	return ""
+}
+
+func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoycore.Metadata {
 	if in == nil {
 		return nil
 	}
 	var meta *envoycore.Metadata
-	if in.SniAddr != "" {
+	sniaddr := sniAddr(spec, in)
+	if sniaddr != "" {
 		if meta == nil {
 			meta = &envoycore.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
 		}
-		meta.FilterMetadata[TransportSocketMatchKey] = metadataMatch(in)
+		meta.FilterMetadata[TransportSocketMatchKey] = metadataMatch(spec, in)
 	}
 
 	if in.GetHealthCheckConfig().GetPath() != "" {
@@ -214,14 +225,14 @@ func getMetadata(in *v1static.Host) *envoycore.Metadata {
 	return meta
 }
 
-func name(in *v1static.Host) string {
-	return fmt.Sprintf("%s;%s:%d", in.SniAddr, in.Addr, in.Port)
+func name(spec *v1static.UpstreamSpec, in *v1static.Host) string {
+	return fmt.Sprintf("%s;%s:%d", sniAddr(spec, in), in.Addr, in.Port)
 }
 
-func metadataMatch(in *v1static.Host) *pbgostruct.Struct {
+func metadataMatch(spec *v1static.UpstreamSpec, in *v1static.Host) *pbgostruct.Struct {
 	return &pbgostruct.Struct{
 		Fields: map[string]*pbgostruct.Value{
-			name(in): {
+			name(spec, in): {
 				Kind: &pbgostruct.Value_BoolValue{
 					BoolValue: true,
 				},
