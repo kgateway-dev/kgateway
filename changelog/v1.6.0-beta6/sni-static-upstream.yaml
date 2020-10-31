@@ -1,0 +1,4 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3806
+    description: Allow static upstream endpoints have individual SNI entries
