@@ -1,7 +1,7 @@
 {{- range $name, $spec := .Values.gatewayProxies }}
-{{- if $spec.gatewaySettings}}
+{{- if and $spec.gatewaySettings (not $spec.disabled) }}
 {{$gatewaySettings := $spec.gatewaySettings}}
-{{- if not $gatewaySettings.disableGeneratedGateways}}
+{{- if not $gatewaySettings.disableGeneratedGateways -}}
 
 ---
 apiVersion: gateway.solo.io/v1
@@ -94,6 +94,5 @@ spec:
   - {{ $name | kebabcase }}
 {{- end }} # if failover.enabled
 {{- end }} # if failover
-
-{{- end }} # if gateway settings
+{{- end }} # if  $spec.gatewaySettings and (not $spec.disabled)
 {{- end }} # range gateways
