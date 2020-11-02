@@ -1296,12 +1296,13 @@ type GlooOptions struct {
 	// Where the `gloo` REST xDS server should bind.
 	// Defaults to `0.0.0.0:9976`
 	RestXdsBindAddr string `protobuf:"bytes,11,opt,name=rest_xds_bind_addr,json=restXdsBindAddr,proto3" json:"rest_xds_bind_addr,omitempty"`
-	// Whether or not to use rest xds for all EDS by default
+	// Whether or not to use rest xds for all EDS by default.
+	// Set to true by default in versions > `v1.6.0`.
 	// This setting is meant to solve the bug which causes updated upstreams to dissapear, or have 0 endpoints.
 	// Some examples are:
 	// 1. https://github.com/solo-io/gloo/issues/3673
 	// 2. https://github.com/solo-io/gloo/issues/3710
-	// 3. https://github.com/solo-io/gloo/issues/3673
+	// 3. https://github.com/solo-io/gloo/issues/3219
 	// Rest XDS, as opposed to grpc, uses http polling rather than streaming
 	EnableRestEds        *types.BoolValue `protobuf:"bytes,12,opt,name=enable_rest_eds,json=enableRestEds,proto3" json:"enable_rest_eds,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
