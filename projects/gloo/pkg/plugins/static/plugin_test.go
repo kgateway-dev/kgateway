@@ -3,6 +3,7 @@ package static
 import (
 	envoyendpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/gogo/protobuf/types"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "github.com/solo-io/gloo/projects/gloo/pkg/api/v1"
@@ -72,7 +73,7 @@ var _ = Describe("Plugin", func() {
 				Addr: "2603:3005:b0b:1d00::b7aa",
 				Port: 1234,
 			}}
-
+			upstreamSpec.AutoSniRewrite = &types.BoolValue{Value: false}
 			p.ProcessUpstream(params, upstream, out)
 			Expect(out.GetType()).To(Equal(envoyapi.Cluster_STATIC))
 			expected := []*envoyendpoint.LocalityLbEndpoints{
@@ -185,5 +186,65 @@ var _ = Describe("Plugin", func() {
 			p.ProcessUpstream(params, upstream, out)
 			Expect(tlsContext()).To(Equal(existing))
 		})
+
+		ExpectSniMatchesToMatch := func() {
+			// make sure sni match the transport sockers
+			Expect(out.TransportSocketMatches[0].Match).To(BeEquivalentTo(out.LoadAssignment.Endpoints[0].LbEndpoints[0].Metadata.FilterMetadata[TransportSocketMatchKey]))
+			Expect(out.TransportSocketMatches[1].Match).To(BeEquivalentTo(out.LoadAssignment.Endpoints[0].LbEndpoints[1].Metadata.FilterMetadata[TransportSocketMatchKey]))
+			// make sure 0 & 1 are different
+			Expect(out.TransportSocketMatches[0].Match).NotTo(BeEquivalentTo(out.TransportSocketMatches[1].Match))
+			Expect(out.TransportSocketMatches[0].Name).NotTo(Equal(out.TransportSocketMatches[1].Name))
+		}
+
+		It("should have sni per host", func() {
+			upstreamSpec.UseTls = true
+			upstreamSpec.AutoSniRewrite = &types.BoolValue{Value: false}
+			upstreamSpec.Hosts[0].SniAddr = "test"
+			upstreamSpec.Hosts = append(upstreamSpec.Hosts, &v1static.Host{
+				Addr:    "1.2.3.5",
+				Port:    1234,
+				SniAddr: "test2",
+			}, &v1static.Host{
+				// add a host with no sni to see that it doesn't get translated
+				Addr: "1.2.3.6",
+				Port: 1234,
+			})
+
+			p.ProcessUpstream(params, upstream, out)
+			Expect(tlsContext()).ToNot(BeNil())
+
+			Expect(out.TransportSocketMatches).To(HaveLen(2))
+			match := utils.MustAnyToMessage(out.TransportSocketMatches[0].TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			Expect(match.Sni).To(Equal("test"))
+			match = utils.MustAnyToMessage(out.TransportSocketMatches[1].TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			Expect(match.Sni).To(Equal("test2"))
+
+			// make sure sni match the transport sockers
+			ExpectSniMatchesToMatch()
+		})
+
+		It("should have sni per host by default", func() {
+			upstreamSpec.UseTls = true
+			upstreamSpec.Hosts[0].SniAddr = "test"
+			upstreamSpec.Hosts = append(upstreamSpec.Hosts, &v1static.Host{
+				Addr: "1.2.3.5",
+				Port: 1234,
+			})
+
+			p.ProcessUpstream(params, upstream, out)
+			Expect(tlsContext()).ToNot(BeNil())
+
+			Expect(out.TransportSocketMatches).To(HaveLen(2))
+			// make sure sni addr overrides
+			match := utils.MustAnyToMessage(out.TransportSocketMatches[0].TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			Expect(match.Sni).To(Equal("test"))
+			// make sure that by default address is used
+			match = utils.MustAnyToMessage(out.TransportSocketMatches[1].TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+			Expect(match.Sni).To(Equal("1.2.3.5"))
+
+			// make sure sni match the transport sockers
+			ExpectSniMatchesToMatch()
+		})
+
 	})
 })

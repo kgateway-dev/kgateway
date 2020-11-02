@@ -26,6 +26,11 @@ message UpstreamSpec {
 
     // An optional Service Spec describing the service listening at this address
     .options.gloo.solo.io.ServiceSpec service_spec = 5;
+
+    // When set, automatically set the sni address to use to the addr field.
+    // If both this and host.sni_addr are set, host.sni_addr has priority.
+    // defaults to "true".
+    google.protobuf.BoolValue auto_sni_rewrite = 6;
 }
 
 // Represents a single instance of an upstream
@@ -34,6 +39,10 @@ message Host {
     string addr = 1;
     // Port the instance is listening on
     uint32 port = 2;
+
+    // Address to use for SNI if using ssl.
+    string sni_addr = 4;
+
 
     message HealthCheckConfig {
         // (Enterprise Only): Path to use when health checking this specific host.

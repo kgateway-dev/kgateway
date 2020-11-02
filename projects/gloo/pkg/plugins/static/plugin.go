@@ -22,6 +22,9 @@ import (
 )
 
 const (
+	// TODO: make solo-projects use this constant
+	TransportSocketMatchKey = "envoy.transport_socket_match"
+
 	HttpPathCheckerName = "io.solo.health_checkers.http_path"
 	PathFieldName       = "path"
 )
@@ -90,7 +93,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 		out.LoadAssignment.Endpoints[0].LbEndpoints = append(out.LoadAssignment.Endpoints[0].LbEndpoints,
 			&envoyendpoint.LbEndpoint{
-				Metadata: getMetadata(host),
+				Metadata: getMetadata(spec, host),
 				HostIdentifier: &envoyendpoint.LbEndpoint_Endpoint{
 					Endpoint: &envoyendpoint.Endpoint{
 						Hostname: host.Addr,
@@ -111,6 +114,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 					},
 				},
 			})
+
 	}
 
 	// if host port is 443 or if the user wants it, we will use TLS
@@ -128,6 +132,23 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 			}
 		}
 	}
+	if out.TransportSocket != nil {
+		for _, host := range spec.Hosts {
+			sniname := sniAddr(spec, host)
+			if sniname == "" {
+				continue
+			}
+			ts, err := mutateSni(out.TransportSocket, sniname)
+			if err != nil {
+				return err
+			}
+			out.TransportSocketMatches = append(out.TransportSocketMatches, &envoyapi.Cluster_TransportSocketMatch{
+				Name:            name(spec, host),
+				Match:           metadataMatch(spec, host),
+				TransportSocket: ts,
+			})
+		}
+	}
 
 	// the upstream has a DNS name. We need Envoy to resolve the DNS name
 	if hostname != "" {
@@ -142,25 +163,79 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 
 	return nil
 }
+func mutateSni(in *envoycore.TransportSocket, sni string) (*envoycore.TransportSocket, error) {
+	copy := *in
 
-func getMetadata(in *v1static.Host) *envoycore.Metadata {
+	// copy the sni
+	cfg, err := utils.AnyToMessage(copy.GetTypedConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	typedCfg, ok := cfg.(*envoyauth.UpstreamTlsContext)
+	if !ok {
+		return nil, errors.Errorf("unknown tls config type: %T", cfg)
+	}
+	typedCfg.Sni = sni
+
+	copy.ConfigType = &envoycore.TransportSocket_TypedConfig{TypedConfig: utils.MustMessageToAny(typedCfg)}
+
+	return &copy, nil
+}
+
+func sniAddr(spec *v1static.UpstreamSpec, in *v1static.Host) string {
+	if in.GetSniAddr() != "" {
+		return in.GetSniAddr()
+	}
+	if spec.GetAutoSniRewrite() == nil || spec.GetAutoSniRewrite().GetValue() {
+		return in.GetAddr()
+	}
+	return ""
+}
+
+func getMetadata(spec *v1static.UpstreamSpec, in *v1static.Host) *envoycore.Metadata {
 	if in == nil {
 		return nil
 	}
+	var meta *envoycore.Metadata
+	sniaddr := sniAddr(spec, in)
+	if sniaddr != "" {
+		if meta == nil {
+			meta = &envoycore.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
+		}
+		meta.FilterMetadata[TransportSocketMatchKey] = metadataMatch(spec, in)
+	}
+
 	if in.GetHealthCheckConfig().GetPath() != "" {
-		return &envoycore.Metadata{
-			FilterMetadata: map[string]*pbgostruct.Struct{
-				HttpPathCheckerName: {
-					Fields: map[string]*pbgostruct.Value{
-						PathFieldName: {
-							Kind: &pbgostruct.Value_StringValue{
-								StringValue: in.GetHealthCheckConfig().GetPath(),
-							},
-						},
+		if meta == nil {
+			meta = &envoycore.Metadata{FilterMetadata: map[string]*pbgostruct.Struct{}}
+		}
+		meta.FilterMetadata[HttpPathCheckerName] = &pbgostruct.Struct{
+			Fields: map[string]*pbgostruct.Value{
+				PathFieldName: {
+					Kind: &pbgostruct.Value_StringValue{
+						StringValue: in.GetHealthCheckConfig().GetPath(),
 					},
 				},
 			},
 		}
+
 	}
-	return nil
+	return meta
+}
+
+func name(spec *v1static.UpstreamSpec, in *v1static.Host) string {
+	return fmt.Sprintf("%s;%s:%d", sniAddr(spec, in), in.Addr, in.Port)
+}
+
+func metadataMatch(spec *v1static.UpstreamSpec, in *v1static.Host) *pbgostruct.Struct {
+	return &pbgostruct.Struct{
+		Fields: map[string]*pbgostruct.Value{
+			name(spec, in): {
+				Kind: &pbgostruct.Value_BoolValue{
+					BoolValue: true,
+				},
+			},
+		},
+	}
 }

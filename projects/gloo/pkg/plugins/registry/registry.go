@@ -35,7 +35,6 @@ import (
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/tracing"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/transformation"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamconn"
-	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/upstreamssl"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/virtualhost"
 	"github.com/solo-io/gloo/projects/gloo/pkg/plugins/wasm"
 	"github.com/solo-io/gloo/projects/gloo/pkg/utils"
@@ -53,7 +52,6 @@ var globalRegistry = func(opts bootstrap.Opts, pluginExtensions ...func() plugin
 	reg.plugins = append(reg.plugins,
 		loadbalancer.NewPlugin(),
 		upstreamconn.NewPlugin(),
-		upstreamssl.NewPlugin(),
 		azure.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		aws.NewPlugin(&transformationPlugin.RequireTransformationFilter),
 		rest.NewPlugin(&transformationPlugin.RequireTransformationFilter),
