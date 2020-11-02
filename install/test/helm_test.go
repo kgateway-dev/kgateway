@@ -1748,7 +1748,7 @@ spec:
 
 						prepareMakefile(namespace, helmValues{
 							valuesArgs: []string{
-								"settings.gloo.enableRestEds=false",
+								"settings.enableRestEds=false",
 							},
 						})
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
