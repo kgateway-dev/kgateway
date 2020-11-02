@@ -42,6 +42,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19
 	github.com/mattbaird/jsonpatch v0.0.0-20200820163806-098863c1fc24 // indirect
+	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mgutz/ansi v0.0.0-20200706080929-d51e80ef957d // indirect
 	github.com/mitchellh/hashstructure v1.0.0
 	github.com/mitchellh/reflectwalk v1.0.1
 	github.com/olekukonko/tablewriter v0.0.4
@@ -54,6 +56,7 @@ require (
 	github.com/prometheus/prometheus v2.5.0+incompatible
 	github.com/rotisserie/eris v0.4.0
 	github.com/sergi/go-diff v1.0.0
+	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/solo-io/envoy-operator v0.1.4
 	github.com/solo-io/go-list-licenses v0.0.0-20191023220251-171e4740d00f
 	github.com/solo-io/go-utils v0.16.6
@@ -61,7 +64,7 @@ require (
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.8.1
 	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
-	github.com/solo-io/solo-kit v0.13.14
+	github.com/solo-io/solo-kit v0.13.13
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a
 	github.com/spf13/afero v1.2.2
 	github.com/spf13/cobra v1.0.0
@@ -70,13 +73,16 @@ require (
 	go.opencensus.io v0.22.4
 	go.uber.org/multierr v1.5.0
 	go.uber.org/zap v1.15.0
+	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897 // indirect
 	golang.org/x/mod v0.3.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
+	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
+	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
 	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
 	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
 	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
+	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.18.8

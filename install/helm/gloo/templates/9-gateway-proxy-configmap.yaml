@@ -4,6 +4,7 @@
 {{- if .Values.gateway.enabled }}
 {{- $global := .Values.global }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- if not $spec.disabled }}
 {{- $statsConfig := coalesce $spec.stats $global.glooStats }}
 ---
 # config_map
@@ -348,5 +349,6 @@ data:
           address: {{ $spec.loopBackAddress }}
           port_value: 19000
 {{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
+{{- end }} # - if not $spec.disabled
 {{- end }} # range $name, $spec := .Values.gatewayProxies
 {{- end -}} # if .Values.gateway.enabled
