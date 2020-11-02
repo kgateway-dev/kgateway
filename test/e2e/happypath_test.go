@@ -44,7 +44,7 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 )
 
-var _ = FDescribe("Happy path", func() {
+var _ = Describe("Happy path", func() {
 
 	var (
 		ctx           context.Context
@@ -118,7 +118,7 @@ var _ = FDescribe("Happy path", func() {
 						Settings: &gloov1.Settings{
 							Gloo: &gloov1.GlooOptions{
 								EnableRestEds: testCase.RestEdsEnabled,
-							}
+							},
 						},
 					}
 					testClients = services.RunGlooGatewayUdsFds(ctx, ro)
@@ -490,7 +490,7 @@ var _ = FDescribe("Happy path", func() {
 							Settings: &gloov1.Settings{
 								Gloo: &gloov1.GlooOptions{
 									EnableRestEds: testCase.RestEdsEnabled,
-								}
+								},
 							},
 						}
 
@@ -543,7 +543,7 @@ var _ = FDescribe("Happy path", func() {
 							Settings: &gloov1.Settings{
 								Gloo: &gloov1.GlooOptions{
 									EnableRestEds: testCase.RestEdsEnabled,
-								}
+								},
 							},
 						}
 
