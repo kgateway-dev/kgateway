@@ -16,3 +16,9 @@ changelog:
     description: >-
       Allow toggling of EDS to rest XDS to avoid the envoy issue described in the following issue: https://github.com/envoyproxy/envoy/issues/13070.
       Set to true by default starting in version > `v1.6.0`
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-kit
+    dependencyRepo: solo-io
+    dependencyTag: v0.13.14
+    description: >-
+      Updated solo-kit to remove verbose log line from rest XDS server.
