@@ -10,6 +10,8 @@ settings:
   create: true
   linkerd: false
   aws: {}
+  gloo:
+    enableRestEds: true
   invalidConfigPolicy:
     replaceInvalidRoutes: false
     invalidRouteResponseCode: 404

@@ -1743,6 +1743,17 @@ spec:
 						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
 					})
 
+					It("correctly sets the `gloo.enableRestEds` to false in the settings", func() {
+						settings := makeUnstructureFromTemplateFile("fixtures/settings/disable_rest_eds.yaml", namespace)
+
+						prepareMakefile(namespace, helmValues{
+							valuesArgs: []string{
+								"settings.gloo.enableRestEds=false",
+							},
+						})
+						testManifest.ExpectUnstructured(settings.GetKind(), settings.GetNamespace(), settings.GetName()).To(BeEquivalentTo(settings))
+					})
+
 					It("enable default credentials", func() {
 						settings := makeUnstructureFromTemplateFile("fixtures/settings/enable_default_credentials.yaml", namespace)
 

@@ -14,7 +14,17 @@ func SetEdsOnCluster(out *envoyapi.Cluster, settings *v1.Settings) {
 	out.ClusterDiscoveryType = &envoyapi.Cluster_Type{
 		Type: envoyapi.Cluster_EDS,
 	}
-	if settings.GetGloo().GetEnableRestEds().GetValue() {
+	// The default value for enableRestEds should be set to true via helm.
+	// If nil will default to rest eds.
+	if !settings.GetGloo().GetEnableRestEds().GetValue() {
+		out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
+			EdsConfig: &envoycore.ConfigSource{
+				ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
+					Ads: &envoycore.AggregatedConfigSource{},
+				},
+			},
+		}
+	} else {
 		out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 			EdsConfig: &envoycore.ConfigSource{
 				ConfigSourceSpecifier: &envoycore.ConfigSource_ApiConfigSource{
@@ -24,14 +34,6 @@ func SetEdsOnCluster(out *envoyapi.Cluster, settings *v1.Settings) {
 						RefreshDelay:   ptypes.DurationProto(time.Second * 5),
 						RequestTimeout: ptypes.DurationProto(time.Second * 5),
 					},
-				},
-			},
-		}
-	} else {
-		out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
-			EdsConfig: &envoycore.ConfigSource{
-				ConfigSourceSpecifier: &envoycore.ConfigSource_Ads{
-					Ads: &envoycore.AggregatedConfigSource{},
 				},
 			},
 		}
