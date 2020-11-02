@@ -1,5 +1,6 @@
 {{- if .Values.gateway.enabled }}
 {{- range $name, $spec := .Values.gatewayProxies }}
+{{- if not $spec.disabled }}
 {{- $svcName := default $name $spec.service.name }}
 ---
 apiVersion: v1
@@ -80,5 +81,6 @@ spec:
   {{- end }} # with spec.service.loadBalancerSourceRanges
   {{- end }} # $spec.service.loadBalancerSourceRanges
   {{- end }} # $spec.service.type "LoadBalancer"
-{{- end }}
-{{ end }}
+{{- end }} # range $name, $spec := .Values.gatewayProxies
+{{- end }} # if not $spec.disabled
+{{ end }} # if .Values.gateway.enabled
