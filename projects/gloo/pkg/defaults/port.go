@@ -2,6 +2,8 @@ package defaults
 
 import "time"
 
+const GlooRestXdsName = "rest_xds_cluster"
+
 var HttpPort uint32 = 8080
 var HttpsPort uint32 = 8443
 var EnvoyAdminPort uint32 = 19000

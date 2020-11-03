@@ -1,11 +1,13 @@
 package test
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
 	"testing"
+	"text/template"
 
 	"github.com/solo-io/go-utils/versionutils/git"
 
@@ -300,8 +302,17 @@ func mergeMaps(a, b map[string]interface{}) map[string]interface{} {
 
 func makeUnstructured(yam string) *unstructured.Unstructured {
 	jsn, err := yaml.YAMLToJSON([]byte(yam))
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	runtimeObj, err := runtime.Decode(unstructured.UnstructuredJSONScheme, jsn)
-	Expect(err).NotTo(HaveOccurred())
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
 	return runtimeObj.(*unstructured.Unstructured)
+}
+
+func makeUnstructureFromTemplateFile(fixtureName string, values interface{}) *unstructured.Unstructured {
+	tmpl, err := template.ParseFiles(fixtureName)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	var b bytes.Buffer
+	err = tmpl.Execute(&b, values)
+	ExpectWithOffset(1, err).NotTo(HaveOccurred())
+	return makeUnstructured(b.String())
 }

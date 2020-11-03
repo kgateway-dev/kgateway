@@ -34,6 +34,22 @@ data:
         upstream_connection_options:
           tcp_keepalive: {}
         type: STRICT_DNS
+      - name: rest_xds_cluster
+        alt_stat_name: rest_xds_cluster
+        connect_timeout: 5.000s
+        load_assignment:
+          cluster_name: rest_xds_cluster
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: gloo
+                    port_value: {{ $.Values.gloo.deployment.restXdsPort }}
+        upstream_connection_options:
+          tcp_keepalive: {}
+        type: STRICT_DNS
+        respect_dns_ttl: true
 {{- if .Values.ingressProxy.deployment.stats }}
       - name: admin_port_cluster
         connect_timeout: 5.000s

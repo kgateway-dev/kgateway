@@ -37,6 +37,7 @@ Unlike upstreams created by service discovery, Static Upstreams must be created 
 "hosts": []static.options.gloo.solo.io.Host
 "useTls": bool
 "serviceSpec": .options.gloo.solo.io.ServiceSpec
+"autoSniRewrite": .google.protobuf.BoolValue
 
 ```
 
@@ -45,6 +46,7 @@ Unlike upstreams created by service discovery, Static Upstreams must be created 
 | `hosts` | [[]static.options.gloo.solo.io.Host](../static.proto.sk/#host) | A list of addresses and ports at least one must be specified. |  |
 | `useTls` | `bool` | Attempt to use outbound TLS Gloo will automatically set this to true for port 443. |  |
 | `serviceSpec` | [.options.gloo.solo.io.ServiceSpec](../../service_spec.proto.sk/#servicespec) | An optional Service Spec describing the service listening at this address. |  |
+| `autoSniRewrite` | [.google.protobuf.BoolValue](https://developers.google.com/protocol-buffers/docs/reference/csharp/class/google/protobuf/well-known-types/bool-value) | When set, automatically set the sni address to use to the addr field. If both this and host.sni_addr are set, host.sni_addr has priority. defaults to "true". |  |
 
 
 
@@ -58,6 +60,7 @@ Represents a single instance of an upstream
 ```yaml
 "addr": string
 "port": int
+"sniAddr": string
 "healthCheckConfig": .static.options.gloo.solo.io.Host.HealthCheckConfig
 
 ```
@@ -66,6 +69,7 @@ Represents a single instance of an upstream
 | ----- | ---- | ----------- |----------- | 
 | `addr` | `string` | Address (hostname or IP). |  |
 | `port` | `int` | Port the instance is listening on. |  |
+| `sniAddr` | `string` | Address to use for SNI if using ssl. |  |
 | `healthCheckConfig` | [.static.options.gloo.solo.io.Host.HealthCheckConfig](../static.proto.sk/#healthcheckconfig) | (Enterprise Only): Host specific health checking configuration. |  |
 
 

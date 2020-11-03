@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
 	envoyv2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+	"github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"github.com/gogo/protobuf/types"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -146,6 +148,7 @@ func NewValidationServer(ctx context.Context, grpcServer *grpc.Server, bindAddr 
 var (
 	DefaultXdsBindAddr        = fmt.Sprintf("0.0.0.0:%v", defaults.GlooXdsPort)
 	DefaultValidationBindAddr = fmt.Sprintf("0.0.0.0:%v", defaults.GlooValidationPort)
+	DefaultRestXdsBindAddr    = fmt.Sprintf("0.0.0.0:%v", defaults.GlooRestXdsPort)
 )
 
 func getAddr(addr string) (*net.TCPAddr, error) {
@@ -425,6 +428,8 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}
 	logger := contextutils.LoggerFrom(watchOpts.Ctx)
 
+	startRestXdsServer(opts)
+
 	errs := make(chan error)
 
 	disc := discovery.NewEndpointDiscovery(opts.WatchNamespaces, opts.WriteNamespace, endpointClient, discoveryPlugins)
@@ -613,6 +618,36 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 	}()
 
 	return nil
+}
+
+func startRestXdsServer(opts bootstrap.Opts) {
+	restClient := server.NewHTTPGateway(
+		contextutils.LoggerFrom(opts.WatchOpts.Ctx),
+		opts.ControlPlane.XDSServer,
+		map[string]string{
+			resource.FetchEndpoints: resource.EndpointType,
+		},
+	)
+	restXdsAddr := opts.Settings.GetGloo().GetRestXdsBindAddr()
+	if restXdsAddr == "" {
+		restXdsAddr = DefaultRestXdsBindAddr
+	}
+	srv := &http.Server{
+		Addr:    restXdsAddr,
+		Handler: restClient,
+	}
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			// TODO: Add metrics for rest xds server
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Warnf("error while running REST xDS server", zap.Error(err))
+		}
+	}()
+	go func() {
+		<-opts.WatchOpts.Ctx.Done()
+		if err := srv.Close(); err != nil {
+			contextutils.LoggerFrom(opts.WatchOpts.Ctx).Warnf("error while shutting down REST xDS server", zap.Error(err))
+		}
+	}()
 }
 
 func constructOpts(ctx context.Context, clientset *kubernetes.Interface, kubeCache kube.SharedCache, consulClient *consulapi.Client, vaultClient *vaultapi.Client, memCache memory.InMemoryResourceCache, settings *v1.Settings) (bootstrap.Opts, error) {

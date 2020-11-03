@@ -116,6 +116,7 @@ func RunGlooGatewayUdsFds(ctx context.Context, runOptions *RunOptions) TestClien
 		WatchNamespaces:    runOptions.NsToWatch,
 		DiscoveryNamespace: runOptions.NsToWrite,
 	}
+
 	ctx = settingsutil.WithSettings(ctx, settings)
 
 	glooOpts := defaultGlooOpts(ctx, runOptions)
@@ -241,6 +242,7 @@ func defaultGlooOpts(ctx context.Context, runOptions *RunOptions) bootstrap.Opts
 	}
 
 	return bootstrap.Opts{
+		Settings:          runOptions.Settings,
 		WriteNamespace:    runOptions.NsToWrite,
 		Upstreams:         f,
 		UpstreamGroups:    f,

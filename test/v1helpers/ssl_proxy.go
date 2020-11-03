@@ -15,12 +15,23 @@ import (
 )
 
 func StartSslProxy(ctx context.Context, port uint32) uint32 {
+	return StartSslProxyWithHelloCB(ctx, port, nil)
+}
+
+func StartSslProxyWithHelloCB(ctx context.Context, port uint32, cb func(chi *tls.ClientHelloInfo)) uint32 {
 	cert := []byte(helpers.Certificate())
 	key := []byte(helpers.PrivateKey())
 	cer, err := tls.X509KeyPair(cert, key)
 	Expect(err).NotTo(HaveOccurred())
 
-	config := &tls.Config{Certificates: []tls.Certificate{cer}}
+	config := &tls.Config{
+		GetCertificate: func(chi *tls.ClientHelloInfo) (*tls.Certificate, error) {
+			if cb != nil {
+				cb(chi)
+			}
+			return &cer, nil
+		},
+	}
 	listener, err := tls.Listen("tcp", ":0", config)
 	Expect(err).NotTo(HaveOccurred())
 

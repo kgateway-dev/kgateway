@@ -25,6 +25,8 @@ Steps:
 type plugin struct {
 	secretClient v1.SecretClient
 
+	settings *v1.Settings
+
 	// pre-initialization only
 	// we need to register the clients while creating the plugin, otherwise our EDS poll and upstream watch will fail
 	// since Init can be called after our poll begins (race condition) we cannot create the client there
@@ -58,6 +60,7 @@ func NewPlugin(secretFactory factory.ResourceClientFactory) *plugin {
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.settings = params.Settings
 	return p.constructorErr
 }
 
@@ -84,7 +87,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// configure the cluster to use EDS:ADS and call it a day
-	xds.SetEdsOnCluster(out)
+	xds.SetEdsOnCluster(out, p.settings)
 	return nil
 }
 

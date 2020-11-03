@@ -1,0 +1,24 @@
+changelog:
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3673
+    description: Fix EDS so modifying configs on a TLS enabled Upstream no longer results in 503s
+    resolvesIssue: true
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3710
+    description: Gloo will no longer remove upstreams after editing their spec.
+    resolvesIssue: true
+  - type: FIX
+    issueLink: https://github.com/solo-io/gloo/issues/3219
+    description: Fix EDS so modifying health checks on Upstream no longer results in 503s
+    resolvesIssue: true
+  - type: NEW_FEATURE
+    issueLink: https://github.com/solo-io/gloo/issues/3805
+    description: >-
+      Allow toggling of EDS to rest XDS to avoid the envoy issue described in the following issue: https://github.com/envoyproxy/envoy/issues/13070.
+      Set to true by default starting in version > `v1.6.0`
+  - type: DEPENDENCY_BUMP
+    dependencyOwner: solo-kit
+    dependencyRepo: solo-io
+    dependencyTag: v0.13.14
+    description: >-
+      Updated solo-kit to remove verbose log line from rest XDS server.

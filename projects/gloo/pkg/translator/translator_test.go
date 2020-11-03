@@ -1737,6 +1737,93 @@ var _ = Describe("Translator", func() {
 			Expect(clusterSpec).To(Equal("test_gloo-system"))
 		})
 	})
+	Context("Ssl - cluster", func() {
+
+		var (
+			tlsConf *v1.TlsSecret
+		)
+		BeforeEach(func() {
+
+			tlsConf = &v1.TlsSecret{}
+			secret := &v1.Secret{
+				Metadata: core.Metadata{
+					Name:      "name",
+					Namespace: "namespace",
+				},
+				Kind: &v1.Secret_Tls{
+					Tls: tlsConf,
+				},
+			}
+			ref := secret.Metadata.Ref()
+			upstream.SslConfig = &v1.UpstreamSslConfig{
+				SslSecrets: &v1.UpstreamSslConfig_SecretRef{
+					SecretRef: &ref,
+				},
+			}
+			params = plugins.Params{
+				Ctx: context.Background(),
+				Snapshot: &v1.ApiSnapshot{
+					Secrets:   v1.SecretList{secret},
+					Upstreams: v1.UpstreamList{upstream},
+				},
+			}
+
+		})
+
+		tlsContext := func() *envoyauth.UpstreamTlsContext {
+			clusters := snapshot.GetResources(xds.ClusterType)
+			clusterResource := clusters.Items[UpstreamToClusterName(upstream.Metadata.Ref())]
+			cluster := clusterResource.ResourceProto().(*envoyapi.Cluster)
+
+			return glooutils.MustAnyToMessage(cluster.TransportSocket.GetTypedConfig()).(*envoyauth.UpstreamTlsContext)
+		}
+		It("should process an upstream with tls config", func() {
+			translate()
+			Expect(tlsContext()).ToNot(BeNil())
+		})
+
+		It("should process an upstream with tls config", func() {
+
+			tlsConf.PrivateKey = "private"
+			tlsConf.CertChain = "certchain"
+
+			translate()
+			Expect(tlsContext()).ToNot(BeNil())
+			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].PrivateKey.GetInlineString()).To(Equal("private"))
+			Expect(tlsContext().CommonTlsContext.TlsCertificates[0].CertificateChain.GetInlineString()).To(Equal("certchain"))
+		})
+
+		It("should process an upstream with rootca", func() {
+			tlsConf.RootCa = "rootca"
+
+			translate()
+			Expect(tlsContext()).ToNot(BeNil())
+			Expect(tlsContext().CommonTlsContext.GetValidationContext().TrustedCa.GetInlineString()).To(Equal("rootca"))
+		})
+
+		Context("failure", func() {
+
+			It("should fail with only private key", func() {
+
+				tlsConf.PrivateKey = "private"
+				_, errs, _, err := translator.Translate(params, proxy)
+
+				Expect(err).To(BeNil())
+				Expect(errs.Validate()).To(HaveOccurred())
+				Expect(errs.Validate().Error()).To(ContainSubstring("both or none of cert chain and private key must be provided"))
+			})
+			It("should fail with only cert chain", func() {
+
+				tlsConf.CertChain = "certchain"
+
+				_, errs, _, err := translator.Translate(params, proxy)
+
+				Expect(err).To(BeNil())
+				Expect(errs.Validate()).To(HaveOccurred())
+				Expect(errs.Validate().Error()).To(ContainSubstring("both or none of cert chain and private key must be provided"))
+			})
+		})
+	})
 
 	Context("Ssl", func() {
 

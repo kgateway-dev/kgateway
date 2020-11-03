@@ -1,0 +1,5 @@
+changelog:
+  - type: HELM
+    issueLink: https://github.com/solo-io/gloo/issues/3751
+    description: This change stops ConfigMap, Service, and Gateway objects from being created for gateway proxies if "disabled = true" under the helm chart values override.
+    resolvesIssue: false

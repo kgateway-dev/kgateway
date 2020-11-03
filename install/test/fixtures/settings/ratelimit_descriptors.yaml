@@ -1,0 +1,34 @@
+apiVersion: gloo.solo.io/v1
+kind: Settings
+metadata:
+  labels:
+    app: gloo
+  name: default
+  namespace: {{ . }}
+spec:
+ discovery:
+   fdsMode: WHITELIST
+ gateway:
+   readGatewaysFromAllNamespaces: false
+   validation:
+     alwaysAccept: true
+     allowWarnings: true
+     proxyValidationServerAddr: gloo:9988
+ gloo:
+   enableRestEds: true
+   xdsBindAddr: 0.0.0.0:9977
+   restXdsBindAddr: 0.0.0.0:9976
+   disableKubernetesDestinations: false
+   disableProxyGarbageCollection: false
+ kubernetesArtifactSource: {}
+ kubernetesConfigSource: {}
+ kubernetesSecretSource: {}
+ refreshRate: 60s
+ discoveryNamespace: {{ . }}
+ rateLimit:
+   descriptors:
+     - key: generic_key
+       value: "per-second"
+       rateLimit:
+         requestsPerUnit: 2
+         unit: SECOND

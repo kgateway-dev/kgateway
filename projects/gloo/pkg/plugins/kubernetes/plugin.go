@@ -25,6 +25,8 @@ type plugin struct {
 	UpstreamConverter UpstreamConverter
 
 	kubeCoreCache corecache.KubeCoreCache
+
+	settings *v1.Settings
 }
 
 func (p *plugin) Resolve(u *v1.Upstream) (*url.URL, error) {
@@ -45,6 +47,7 @@ func NewPlugin(kube kubernetes.Interface, kubeCoreCache corecache.KubeCoreCache)
 }
 
 func (p *plugin) Init(params plugins.InitParams) error {
+	p.settings = params.Settings
 	return nil
 }
 
@@ -56,7 +59,7 @@ func (p *plugin) ProcessUpstream(params plugins.Params, in *v1.Upstream, out *en
 	}
 
 	// configure the cluster to use EDS:ADS and call it a day
-	xds.SetEdsOnCluster(out)
+	xds.SetEdsOnCluster(out, p.settings)
 
 	svcs, err := p.kubeCoreCache.NamespacedServiceLister(kube.Kube.ServiceNamespace).List(labels.NewSelector())
 	if err != nil {

@@ -200,6 +200,10 @@ func runTestServer(ctx context.Context, reply string, serveTls bool) (uint32, <-
 }
 
 func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
+	TestUpstreamReachableWithOffset(2, envoyPort, tu, rootca)
+}
+
+func TestUpstreamReachableWithOffset(offset int, envoyPort uint32, tu *TestUpstream, rootca *string) {
 	body := []byte("solo.io test")
 
 	ExpectHttpOK(body, rootca, envoyPort, "")
@@ -224,6 +228,10 @@ func TestUpstreamReachable(envoyPort uint32, tu *TestUpstream, rootca *string) {
 }
 
 func ExpectHttpOK(body []byte, rootca *string, envoyPort uint32, response string) {
+	ExpectHttpOKWithOffset(1, body, rootca, envoyPort, response)
+}
+
+func ExpectHttpOKWithOffset(offset int, body []byte, rootca *string, envoyPort uint32, response string) {
 
 	var res *http.Response
 	EventuallyWithOffset(2, func() error {
