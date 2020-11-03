@@ -195,6 +195,36 @@ spec:
               host: redis.gloo-system.svc.cluster.local:6379
 {{< /highlight >}}
 
+## Forwarding the ID token upstream
+
+You can configure gloo to forward the id token to the upstream on successful authentication. To do that,
+set the headers section in the configuration.
+
+Example configuration:
+
+{{< highlight yaml "hl_lines=19-21" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        headers:
+          id_token_header: "x-token"
+{{< /highlight >}}
+
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
 Gloo, check out the following guides:
