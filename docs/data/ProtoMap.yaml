@@ -110,6 +110,9 @@ apis:
   enterprise.gloo.solo.io.ExtAuthExtension:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#ExtAuthExtension
     package: enterprise.gloo.solo.io
+  enterprise.gloo.solo.io.HeaderConfiguration:
+    relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HeaderConfiguration
+    package: enterprise.gloo.solo.io
   enterprise.gloo.solo.io.HttpService:
     relativepath: reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/enterprise/options/extauth/v1/extauth.proto.sk/#HttpService
     package: enterprise.gloo.solo.io
