@@ -47,6 +47,7 @@ message Settings {
 //      unit: MINUTE
 message ServiceSettings {
   repeated ratelimit.api.solo.io.Descriptor descriptors = 1;
+  repeated ratelimit.api.solo.io.SetDescriptor set_descriptors = 2;
 }
 
 // A list of references to `RateLimitConfig` resources.
