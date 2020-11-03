@@ -31,6 +31,7 @@ weight: 5
 - [InternalSession](#internalsession)
 - [RedisSession](#redissession)
 - [CookieOptions](#cookieoptions)
+- [HeaderConfiguration](#headerconfiguration)
 - [OidcAuthorizationCode](#oidcauthorizationcode)
 - [AccessTokenValidation](#accesstokenvalidation)
 - [OauthSecret](#oauthsecret)
@@ -498,6 +499,23 @@ Deprecated: Prefer OAuth2
 
 
 ---
+### HeaderConfiguration
+
+
+
+```yaml
+"idTokenHeader": string
+
+```
+
+| Field | Type | Description | Default |
+| ----- | ---- | ----------- |----------- | 
+| `idTokenHeader` | `string` | If set, the id token will be forward upstream using this header name. |  |
+
+
+
+
+---
 ### OidcAuthorizationCode
 
 
@@ -512,6 +530,7 @@ Deprecated: Prefer OAuth2
 "logoutPath": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
+"headers": .enterprise.gloo.solo.io.HeaderConfiguration
 
 ```
 
@@ -525,7 +544,8 @@ Deprecated: Prefer OAuth2
 | `callbackPath` | `string` | a callback path relative to app url that will be used for OIDC callbacks. should not be used by the application. |  |
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |  |
 | `scopes` | `[]string` | Scopes to request in addition to openid scope. |  |
-| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
+| `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) | Configuration related to the user session. |  |
+| `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |  |
 
 
 
@@ -770,6 +790,7 @@ Deprecated, prefer OAuth2Config
 "logoutPath": string
 "scopes": []string
 "session": .enterprise.gloo.solo.io.UserSession
+"headers": .enterprise.gloo.solo.io.HeaderConfiguration
 
 ```
 
@@ -784,6 +805,7 @@ Deprecated, prefer OAuth2Config
 | `logoutPath` | `string` | a path relative to app url that will be used for logging out from an OIDC session. should not be used by the application. If not provided, logout functionality will be disabled. |  |
 | `scopes` | `[]string` | scopes to request in addition to the openid scope. |  |
 | `session` | [.enterprise.gloo.solo.io.UserSession](../extauth.proto.sk/#usersession) |  |  |
+| `headers` | [.enterprise.gloo.solo.io.HeaderConfiguration](../extauth.proto.sk/#headerconfiguration) | Configures headers added to requests. |  |
 
 
 

@@ -306,7 +306,8 @@ message UserSession {
 }
 
 message HeaderConfiguration {
-  string forward_id_token_upstream = 1;
+  // If set, the id token will be forward upstream using this header name.
+  string id_token_header = 1;
 }
 
 message OidcAuthorizationCode {
@@ -343,7 +344,7 @@ message OidcAuthorizationCode {
   UserSession session = 8;
 
   // Configures headers added to requests.
-  HeaderConfiguration header_config = 10;
+  HeaderConfiguration headers = 10;
 
   // in the future we may implement this:
   // add optional configuration for validation of the access token received during the OIDC flow
@@ -541,6 +542,9 @@ message ExtAuthConfig {
     repeated string scopes = 7;
 
     UserSession session = 8;
+
+    // Configures headers added to requests.
+    HeaderConfiguration headers = 10;
 
     // in the future we may implement this:
     // add optional configuration for validation of the access token received during the OIDC flow
