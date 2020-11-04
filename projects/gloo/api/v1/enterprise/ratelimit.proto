@@ -21,6 +21,7 @@ message RateLimitConfig {
     // @solo-kit:resource.name
     string domain = 1;
     repeated ratelimit.api.solo.io.Descriptor descriptors = 2;
+    repeated ratelimit.api.solo.io.SetDescriptor set_descriptors = 3;
 }
 
 /*
