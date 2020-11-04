@@ -1,13 +1,13 @@
 ---
-title: "Integrating Gloo and Let's Encrypt with cert-manager"
+title: "Integrating Gloo Edge and Let's Encrypt with cert-manager"
 menuTitle: Cert-manager
-description: Secure your ingress traffic using Gloo and cert-manager
+description: Secure your ingress traffic using Gloo Edge and cert-manager
 weight: 20
 ---
 
-This document shows how to secure your traffic using Gloo, Let's Encrypt, and cert-manager. This guide assumes you already 
+This document shows how to secure your traffic using Gloo Edge, Let's Encrypt, and cert-manager. This guide assumes you already 
 have a Kubernetes cluster up and running. Further, it assumes your cluster has a load-balancer such that when 
-Gloo is installed, the proxy service is granted an external IP. This guide will show examples for both the DNS-01 and HTTP-01 challenges.
+Gloo Edge is installed, the proxy service is granted an external IP. This guide will show examples for both the DNS-01 and HTTP-01 challenges.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
@@ -18,7 +18,7 @@ Gloo is installed, the proxy service is granted an external IP. This guide will 
 
 ## Prerequisites
 
-### Install Gloo
+### Install Gloo Edge
 
 To install gloo, run:
 ```shell
@@ -42,7 +42,7 @@ kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/relea
 ### Setup your DNS
 
 In this example we used the domain name `test-123456789.solo.io`. We'll create an `A` record that maps to the IP address of the 
-gateway proxy that we installed with Gloo.  
+gateway proxy that we installed with Gloo Edge.  
 
 You can run these commands to update AWS route53 through the AWS command line tool 
 (remember to replace *HOSTED_ZONE* and *RECORD* with your values):
@@ -58,7 +58,7 @@ aws route53 change-resource-record-sets --hosted-zone-id $ZONEID --change-batch 
 
 ### Add a Service
 
-Add a service that will get exposed via Gloo. In this document we will use the petclinic spring application. 
+Add a service that will get exposed via Gloo Edge. In this document we will use the petclinic spring application. 
 
 ```shell
 kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v0.8.4/example/petclinic/petclinic.yaml
@@ -112,7 +112,7 @@ Ready
 
 ### Create a certificate for our service
 
-Create the certificate for the Gloo ingress:
+Create the certificate for the Gloo Edge ingress:
 ```shell
 cat << EOF | kubectl apply -f -
 apiVersion: cert-manager.io/v1alpha2
@@ -142,9 +142,9 @@ Now just create a virtual host with the same secret ref as the name.
 
 ---
 
-### Expose the service securly via Gloo
+### Expose the service securly via Gloo Edge
 
-Configure Gloo's default Virtual Service to route to the function and use the certificates.
+Configure Gloo Edge's default Virtual Service to route to the function and use the certificates.
 
 ```shell
 cat <<EOF | kubectl create -f -
@@ -184,12 +184,12 @@ Now we can open the petclinic application at `https://test-123456789.solo.io/`.
 
 We just explored how to utilize cert-manager to solve the DNS-01 ACME challenge. While that works great, sometimes a "lighter-weight" solution is desirable. For these situations, the HTTP-01 ACME challenge is a good fit.
 
-We will now illustrate solving the HTTP-01 ACME challenge with Gloo and cert-manager. The HTTP-01 challenge specifically involves the ACME server (Let's Encrypt) passing a token to your ACME client (cert-manager). The expectation is for that token to be reachable on your domain at a "well known" path, specifically `http://<YOUR_DOMAIN>/.well-known/acme-challenge/<TOKEN>`
+We will now illustrate solving the HTTP-01 ACME challenge with Gloo Edge and cert-manager. The HTTP-01 challenge specifically involves the ACME server (Let's Encrypt) passing a token to your ACME client (cert-manager). The expectation is for that token to be reachable on your domain at a "well known" path, specifically `http://<YOUR_DOMAIN>/.well-known/acme-challenge/<TOKEN>`
 
 For this example, we will be using an externally accessible IP (provided through a `LoadBalancer` `Service` in a cloud environment) in conjunction with a [nip.io](https://nip.io/) domain name. [nip.io](https://nip.io/) is a helpful service which allows us to map an arbitrary IP address to a specific domain name via DNS.
 
 {{% notice note %}}
-These steps are specific for Gloo running in gateway mode. When running in ingress mode, since cert-manager will automatically create `Ingress` resources, you will not need to add/modify `VirtualService` resources.
+These steps are specific for Gloo Edge running in gateway mode. When running in ingress mode, since cert-manager will automatically create `Ingress` resources, you will not need to add/modify `VirtualService` resources.
 {{% /notice %}}
 
 
@@ -219,7 +219,7 @@ spec:
 EOF
 ```
 
-Notice the use of the `http01` solver. By default, cert-manager will create a `Service` of type `NodePort` to be routed via an `Ingress`. However, since we are running Gloo in gateway mode, incoming traffic is routed via a `VirtualService` and does not require a `NodePort`, so we are explicitly setting the `serviceType` to `ClusterIP`. 
+Notice the use of the `http01` solver. By default, cert-manager will create a `Service` of type `NodePort` to be routed via an `Ingress`. However, since we are running Gloo Edge in gateway mode, incoming traffic is routed via a `VirtualService` and does not require a `NodePort`, so we are explicitly setting the `serviceType` to `ClusterIP`. 
 
 Additionally, we are specifying the `dnsName` to be a [nip.io](https://nip.io/) subdomain with the IP of our external facing LoadBalancer IP. The inline command uses `glooctl proxy address` to get the external facing IP address of our proxy and we append the 'nip.io' domain, leaving us with a domain that looks something like: `34.71.xx.xx.nip.io`.
 
@@ -249,7 +249,7 @@ Once this `Certificate` resource is created, behind the scenes cert-manager will
 
 ### Routing to the cert-manager pod
 
-Now that the pod which will serve this token is created, we need to configure Gloo to route to it. In this case, we will create a Virtual Service for our custom domain that will route requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager created pod.
+Now that the pod which will serve this token is created, we need to configure Gloo Edge to route to it. In this case, we will create a Virtual Service for our custom domain that will route requests for the path `/.well-known/acme-challenge/<TOKEN>` to the cert-manager created pod.
 
 We can see this pod present in our `default` namespace:
 ```shell

@@ -1,6 +1,6 @@
 ---
 title: Server Config (Enterprise)
-description: Advanced configuration for Gloo Enterprise's rate-limit service.
+description: Advanced configuration for Gloo Edge Enterprise's rate-limit service.
 weight: 40
 ---
 
@@ -28,7 +28,7 @@ You can check if envoy has errors with rate limiting by examining its stats that
 `glooctl proxy stats` displays the stats from one of the envoys in your cluster.
 
 You can introspect the rate limit server to see the configuration that is present on the server. 
-First, run this command to port-forward the server (assuming Gloo Enterprise is installed to the `gloo-system` namespace): 
+First, run this command to port-forward the server (assuming Gloo Edge Enterprise is installed to the `gloo-system` namespace): 
 `kubectl port-forward -n gloo-system deploy/rate-limit 9091`.
 
 Now, navigate to `localhost:9091/rlconfig` to see the active configuration, or `localhost:9091` to see all the administrative
@@ -41,7 +41,7 @@ to connect to the instance. `scan 0` is a useful query to see all the current co
 to inspect the current value.  
 
 ##### DynamoDB-backed Rate Limit Service
-By default, Gloo's built-in rate-limit service is backed by Redis. Redis is a good choice for a global rate-limit data
+By default, Gloo Edge's built-in rate-limit service is backed by Redis. Redis is a good choice for a global rate-limit data
 store because of its small latency. Unfortunately, it can fall short in cases when users desire cross data center
 rate-limiting, as Redis doesn't support replication or multi-master configurations.
 
@@ -50,10 +50,10 @@ DynamoDB can pickup the slack here by leveraging its built-in replication
 is built for single-millisecond latencies, so you can trade some performance in exchange for truly global rate limiting.
 
 {{% notice note %}}
-DynamoDB rate-limiting is a feature of **Gloo Enterprise**, release 0.18.29+
+DynamoDB rate-limiting is a feature of **Gloo Edge Enterprise**, release 0.18.29+
 {{% /notice %}}
 
-To enable DynamoDB rate-limiting (disables Redis), install Gloo with helm and provide an override for 
+To enable DynamoDB rate-limiting (disables Redis), install Gloo Edge with helm and provide an override for 
 `rateLimit.deployment.dynamodb.secretName`. This secret can be generated using `glooctl create secret aws`.
 
 Once deployed, the rate limit service will create the rate limits DynamoDB table (default `rate-limits`) in the

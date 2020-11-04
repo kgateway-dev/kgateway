@@ -8,14 +8,14 @@ In this tutorial we will see how to use the rate-limit service's default prometh
 near breach, and alert once broken.
 
 {{% notice note %}}
-For **Gloo Enterprise**, release 1.2.1, you will need to enable rate-limit metrics using the following helm values:
+For **Gloo Edge Enterprise**, release 1.2.1, you will need to enable rate-limit metrics using the following helm values:
 ```yaml
 rateLimit:
   deployment:
     stats: true
 ```
-Prior versions of Gloo Enterprise published rate-limit metrics to port 16070, which isn't scraped by the default
-prometheus installation included with Gloo Enterprise.
+Prior versions of Gloo Edge Enterprise published rate-limit metrics to port 16070, which isn't scraped by the default
+prometheus installation included with Gloo Edge Enterprise.
 {{% /notice %}}
 
 ### Reference
@@ -56,7 +56,7 @@ curl -H "x-type: Whatsapp" -H "x-number: 311" --head $(glooctl proxy url)
 
 Now let's take a look at the published metrics.
 
-Port-forward the Gloo Enterprise's Prometheus installation to port 9090:
+Port-forward the Gloo Edge Enterprise's Prometheus installation to port 9090:
 
 ```shell
 kubectl port-forward -n gloo-system deployment/glooe-prometheus-server 9090
@@ -81,9 +81,9 @@ actually made 5 requests over the limit -- if you followed this tutorial exactly
 The prometheus [alerting docs](https://prometheus.io/docs/alerting/overview/) can be leveraged for customized setups.
 
 Alternatively, we can take any of our PromQL queries (e.g., `ratelimit_solo_io_over_limit`) and create an alert for
-this in Gloo's Grafana installation.
+this in Gloo Edge's Grafana installation.
 
-Port-forward the Gloo Enterprise's Grafana installation to port 3000:
+Port-forward the Gloo Edge Enterprise's Grafana installation to port 3000:
 ```shell
 kubectl port-forward deployment/glooe-grafana 3000 -n gloo-system
 ```

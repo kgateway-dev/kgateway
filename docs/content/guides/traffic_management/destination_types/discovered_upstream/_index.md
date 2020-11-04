@@ -1,10 +1,10 @@
 ---
 title: Discovered Upstreams
 weight: 20
-description: Route to a single Upstream automatically detected by Gloo's built-in discovery system
+description: Route to a single Upstream automatically detected by Gloo Edge's built-in discovery system
 ---
 
-Let's configure Gloo to route to a single upstream that was automatically detected by Gloo's built in discovery system. 
+Let's configure Gloo Edge to route to a single upstream that was automatically detected by Gloo Edge's built in discovery system. 
 In this case, we'll deploy an application to Kubernetes and discovery will create a new `Upstream` CRD for the service
 that was created. We'll then configure a virtual service to route to that upstream. 
 
@@ -20,7 +20,7 @@ kubectl apply -f https://raw.githubusercontent.com/solo-io/gloo/v1.2.9/example/p
 {{< /tab >}}
 {{< /tabs >}}
 
-This should deploy the petstore service to the default namespace. Gloo's discovery system is watching that namespace 
+This should deploy the petstore service to the default namespace. Gloo Edge's discovery system is watching that namespace 
 and should immediately create an upstream for the petstore service.  
 
 ## Look at discovered Upstream
@@ -55,7 +55,7 @@ glooctl get upstream -n gloo-system default-petstore-8080
 ```
 
 Here, we can see an upstream was created and accepted. The upstream points to the petstore service on port 8080 in the
-default namespace. In fact, Gloo discovered that it was a REST service and, using it's function discovery system, 
+default namespace. In fact, Gloo Edge discovered that it was a REST service and, using it's function discovery system, 
 added the functions it found in the Swagger definition to the upstream.
 
 {{% notice note %}}
@@ -157,7 +157,7 @@ status:
 ```
 
 Note that the discovered upstream also has this label: `discovered_by: kubernetesplugin`. This is an easy way 
-to determine that the upstream was created by Gloo discovery. 
+to determine that the upstream was created by Gloo Edge discovery. 
 
 ## Create a route to this service
 
@@ -190,7 +190,7 @@ This should return:
 
 ## Summary
 
-We deployed an application to Kubernetes and Gloo automatically discovered upstreams from it, including specific 
+We deployed an application to Kubernetes and Gloo Edge automatically discovered upstreams from it, including specific 
 functions off of a swagger definition. We created a virtual service and routed requests to one of those endpoints. 
 
 Let's clean up the virtual service we created: 

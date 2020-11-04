@@ -5,10 +5,10 @@ description: Perform routing decisions using information in a JWT's claims
 ---
 
 {{% notice note %}}
-The features used here were introduced with **Gloo Enterprise**, release 0.14.0. If you are using an earlier version, this tutorial will not work.
+The features used here were introduced with **Gloo Edge Enterprise**, release 0.14.0. If you are using an earlier version, this tutorial will not work.
 {{% /notice %}}
 
-In this guide, we will show how to configure Gloo to route requests to different services based on the claims contained 
+In this guide, we will show how to configure Gloo Edge to route requests to different services based on the claims contained 
 in a JSON Web Token (JWT). In our example scenario, Solo.io employees will be routed to the canary instance instance of 
 a service, while all other authenticated parties will be routed to the primary version of the same service.
 
@@ -36,7 +36,7 @@ kubectl create service clusterip echoapp --tcp=80:8080
 The pods have a label named **stage** that indicates whether they are canary or primary pods.
 {{% /notice %}}
 
-Next let's create a Gloo upstream for the kube service. We will use Gloo's subset routing feature and set it to use 
+Next let's create a Gloo Edge upstream for the kube service. We will use Gloo Edge's subset routing feature and set it to use 
 the 'stage' key to create subsets for the service:
 
 ```yaml
@@ -56,7 +56,7 @@ spec:
         - stage
 ```
 
-The `subsetSpec` configuration instructs Gloo to partition the endpoints of the `echoapp` service into subsets based on 
+The `subsetSpec` configuration instructs Gloo Edge to partition the endpoints of the `echoapp` service into subsets based on 
 the values of the `stage` label. In our case, this will result in two subsets, `primary` and `canary`.
 
 ### Generate JWTs
@@ -159,9 +159,9 @@ spec:
                   -----END PUBLIC KEY-----
 ```
 
-The `jwt` configuration defined on the Virtual Host instructs Gloo to verify whether a JWT is present on incoming 
+The `jwt` configuration defined on the Virtual Host instructs Gloo Edge to verify whether a JWT is present on incoming 
 requests and whether the JWT is valid using the provided public key. If the JWT is valid, the `claimsToHeaders` field 
-will cause Gloo to copy the `org` claim to a header name `x-company`. 
+will cause Gloo Edge to copy the `org` claim to a header name `x-company`. 
 
 At this point we can use normal header matching to do the routing:
 
