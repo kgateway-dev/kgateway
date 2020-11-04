@@ -1,3 +1,0 @@
-changelog:
-  - type: NON_USER_FACING
-    description: OIDC API to allow forwarding the ID token upstream.

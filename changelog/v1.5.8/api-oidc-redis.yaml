@@ -3,3 +3,5 @@ changelog:
     description: Add API for OIDC redis session store
   - type: NON_USER_FACING
     description: Add API for OIDC logout
+  - type: NON_USER_FACING
+    description: OIDC API to allow forwarding the ID token upstream.
