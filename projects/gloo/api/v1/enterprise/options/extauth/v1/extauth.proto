@@ -324,8 +324,13 @@ message OidcAuthorizationCode {
   string app_url = 5;
 
   // a callback path relative to app url that will be used for OIDC callbacks.
-  // needs to not be used by the application
+  // should not be used by the application.
   string callback_path = 6;
+
+  // a path relative to app url that will be used for logging out from an OIDC session.
+  // should not be used by the application.
+  // If not provided, logout functionality will be disabled.
+  string logout_path = 9;
 
   // Scopes to request in addition to openid scope.
   repeated string scopes = 7;
@@ -517,6 +522,11 @@ message ExtAuthConfig {
     // a callback path relative to app url that will be used for OIDC callbacks.
     // needs to not be used by the application
     string callback_path = 6;
+
+    // a path relative to app url that will be used for logging out from an OIDC session.
+    // should not be used by the application.
+    // If not provided, logout functionality will be disabled.
+    string logout_path = 9;
 
     // scopes to request in addition to the openid scope.
     repeated string scopes = 7;
