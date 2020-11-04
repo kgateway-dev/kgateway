@@ -1,11 +1,11 @@
 ---
 title: Developers
 menuTitle: Developers
-description: Ways to contribute to Gloo.
+description: Ways to contribute to Gloo Edge.
 weight: 10
 ---
 
-Excited about Gloo and want to help make it better? 
+Excited about Gloo Edge and want to help make it better? 
 
 At Solo we strive to make the world of microservices, serverless and service mesh available to everyone. If you want to help but don't know where to start, let us know, and we'll find something for you.
 
@@ -27,7 +27,7 @@ If you encounter a bug, please file an issue on GitHub. If an issue you have is 
 
 ### Improving the documentation
 
-[Improving the documentation]({{< versioned_link_path fromRoot="/contributing/documentation/" >}}), adding examples or use cases can be the easiest way to contribute to Gloo. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
+[Improving the documentation]({{< versioned_link_path fromRoot="/contributing/documentation/" >}}), adding examples or use cases can be the easiest way to contribute to Gloo Edge. If you see a piece of content that can be better, open a PR with an improvement, it doesn't matter how small!
 
 ### Small bug fixes
 
@@ -51,9 +51,9 @@ For significant changes to the repository, it’s important to settle on a desig
 
 ### Code review guidelines
 
-It’s important that every piece of code in Gloo is reviewed by at least one Solo team member familiar with that codebase.
+It’s important that every piece of code in Gloo Edge is reviewed by at least one Solo team member familiar with that codebase.
 
-1. **Changelog** Every PR in Gloo needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/master/changelogutils). 
+1. **Changelog** Every PR in Gloo Edge needs a changelog entry. For more information about changelogs, see the [readme](https://github.com/solo-io/go-utils/tree/master/changelogutils). 
 2. **CI check** A Solo team member needs to kick off the CI process by commenting `/test` on your PR.
 3. **Testing** Please write tests for your changes. Bias towards fast / unit testing. 
 4. **Comments** The code reviewer may leave comments to discuss changes. Minor preferences are often called out with `nit`.

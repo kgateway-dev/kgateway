@@ -1,22 +1,22 @@
 ---
 title: "Contributing"
 menuTitle: Contributing
-description: How to contribute to Gloo.
+description: How to contribute to Gloo Edge.
 weight: 150
 ---
 
-There are several ways to get involved with Gloo as a developer.
+There are several ways to get involved with Gloo Edge as a developer.
 
-## Working on Gloo OSS
+## Working on Gloo Edge OSS
 
-You can help us improve and extend Gloo itself by helping with bug fixes and open issues. You can also assist with feature development and major changes. Please take a moment and read through the [development contributing doc]({{< versioned_link_path fromRoot="/contributing/developers/" >}}) for more information on how to get started.
+You can help us improve and extend Gloo Edge itself by helping with bug fixes and open issues. You can also assist with feature development and major changes. Please take a moment and read through the [development contributing doc]({{< versioned_link_path fromRoot="/contributing/developers/" >}}) for more information on how to get started.
 
 * Help with bug fixes and open issues
 * Assist with feature development
 
-## Extend Gloo's functionality
+## Extend Gloo Edge's functionality
 
-We have put together a set of development guides to get started on extending and improving Gloo through the addition of new plugins. Checkout out the [introductory doc]({{< versioned_link_path fromRoot="/guides/dev/" >}}) in the developer guides for more information on getting going.
+We have put together a set of development guides to get started on extending and improving Gloo Edge through the addition of new plugins. Checkout out the [introductory doc]({{< versioned_link_path fromRoot="/guides/dev/" >}}) in the developer guides for more information on getting going.
 
 ## Improve the documentation
 

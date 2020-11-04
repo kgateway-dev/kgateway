@@ -1,4 +1,4 @@
-# For building Gloo artifacts with Valet
+# For building Gloo Edge artifacts with Valet
 
 # Make sure repo is clean (`git status` returns clean) and run:
 # valet build -v $(git describe --tags)

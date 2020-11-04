@@ -1,4 +1,4 @@
-# Gloo docs
+# Gloo Edge docs
 
 ## Deploying to a test site
 
@@ -28,7 +28,7 @@ Then run `glooctl proxy url` to find the address to go to (e.g. http://some-ip-a
 
   - during the release process, we will replace the prior "latest" build with the new build
   - if we want to make a particular version of the docs available for a longer timespan, we can host the version-scoped image
-- we currently emit two images for each Gloo release
+- we currently emit two images for each Gloo Edge release
   - a version of the docs that is served under domain.com/gloo/latest/
   - a version of the docs that is served under domain.com/gloo/[version]/
 - the two images are built in the following temporary directories

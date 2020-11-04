@@ -9,7 +9,7 @@ cd /usr/share/nginx/html/no_auth/gloo/$VERSION/
 
 # Find all html files and look for the <div class=burger> line that is part of the standard header
 # and add the warning message
-find . -name "*.html" | tr '\n' '\0' | xargs -0 -n 1 sed -i '' -e 's#<div class="burger">#<div><mark>You are on a previous version of Gloo. The most current docs can be found <a href="https://docs.solo.io/gloo/latest/">here</a>.</mark></div><div class="burger">#'
+find . -name "*.html" | tr '\n' '\0' | xargs -0 -n 1 sed -i '' -e 's#<div class="burger">#<div><mark>You are on a previous version of Gloo Edge. The most current docs can be found <a href="https://docs.solo.io/gloo/latest/">here</a>.</mark></div><div class="burger">#'
 
 # Add the robots.txt file to the root of the web site
 cat <<EOF >> robots.txt

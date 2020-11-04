@@ -1,6 +1,6 @@
 baseURL = "https://docs.solo.io"
 languageCode = "en-us"
-title = "Gloo Docs"
+title = "Gloo Edge Docs"
 theme = "hugo-theme-soloio"
 
 contentDir = "content"
@@ -31,7 +31,7 @@ home = [ "HTML", "JSON"]
 
 [params]
 author = "Solo.io"
-description = "Documentation for Solo.io Gloo"
+description = "Documentation for Solo.io Gloo Edge"
 disableSearch = false
 disableAssetsBusting = false
 disableInlineCopyToClipBoard = true

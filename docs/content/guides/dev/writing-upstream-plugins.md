@@ -1,47 +1,47 @@
 ---
-title: "Service Discovery Plugins for Gloo"
+title: "Service Discovery Plugins for Gloo Edge"
 
 weight: 5
 ---
 
 ## Intro
 
-Gloo uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo. These are converted inside Gloo
+Gloo Edge uses the [v1.Upstream]({{% versioned_link_path fromRoot="/reference/api/github.com/solo-io/gloo/projects/gloo/api/v1/upstream.proto.sk" %}}) config object to define routable destinations for Gloo Edge. These are converted inside Gloo Edge
 
-This tutorial will show how we can add an *Upstream Plugin* to Gloo to extend Gloo with service discovery data.
+This tutorial will show how we can add an *Upstream Plugin* to Gloo Edge to extend Gloo Edge with service discovery data.
 
 Rather than provide a trivial example, we'll use VM instances on Google Compute Engine as our Upstream. A single endpoint will represent a single VM instance, and an Upstream will group them by their VM Labels.
 
-Note that *any* backend store of service addresses can be plugged into Gloo in this way. 
+Note that *any* backend store of service addresses can be plugged into Gloo Edge in this way. 
 
-It will be the job of our plugin to connect to the external source of truth (in this case, the Google Compute Engine API) and convert it to configuration which Gloo can then supply to Envoy for routing. 
+It will be the job of our plugin to connect to the external source of truth (in this case, the Google Compute Engine API) and convert it to configuration which Gloo Edge can then supply to Envoy for routing. 
 
 To see the completed code for this tutorial:
 
 * [gce.proto](../gce.proto): API definitions for our plugin.
-* [plugins.proto](../plugins.proto): The Gloo Core API with our plugin API added to it.
+* [plugins.proto](../plugins.proto): The Gloo Edge Core API with our plugin API added to it.
 * [plugin.go](../plugin.go): The actual code for the plugin.
-* [registry.go](../registry.go): The Gloo Plugin Registry with our plugin added to it.
+* [registry.go](../registry.go): The Gloo Edge Plugin Registry with our plugin added to it.
 
 ## Environment Setup
 
-To set up a development environment for Gloo including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{% versioned_link_path fromRoot="/guides/dev/setting-up-dev-environment" %}}). Make sure you 
+To set up a development environment for Gloo Edge including installing prerequisites to generate code and build docker images, [see the dev setup guide]({{% versioned_link_path fromRoot="/guides/dev/setting-up-dev-environment" %}}). Make sure you 
 include the **Enabling Code Generation** section of that tutorial.
 
 ## Upstream Plugin
 
-For Gloo, an upstream represents a single service backed by one or more *endpoints* (where each endpoint is an IP or Hostname plus port) that accepts TCP or HTTP traffic. Upstreams can provide their endpoints to Gloo hard-coded inside their YAML spec, as with the `static` Upstream type. Alternatively, Upstreams can provide information to Gloo so that 
-a corresponding Gloo plugin can perform Endpoint Discovery (EDS).  
+For Gloo Edge, an upstream represents a single service backed by one or more *endpoints* (where each endpoint is an IP or Hostname plus port) that accepts TCP or HTTP traffic. Upstreams can provide their endpoints to Gloo Edge hard-coded inside their YAML spec, as with the `static` Upstream type. Alternatively, Upstreams can provide information to Gloo Edge so that 
+a corresponding Gloo Edge plugin can perform Endpoint Discovery (EDS).  
 
-This tutorial will cover an EDS-style plugin, where the user will provide a Google Compute Engine (GCE) Upstream to Gloo, and our plugin will retrieve each endpoint for that upstream.
+This tutorial will cover an EDS-style plugin, where the user will provide a Google Compute Engine (GCE) Upstream to Gloo Edge, and our plugin will retrieve each endpoint for that upstream.
 
 Let's begin.
 
-## Adding the new Upstream Type to Gloo's API
+## Adding the new Upstream Type to Gloo Edge's API
 
-The first step we'll take will be to add a new {{% protobuf name="gloo.solo.io.Upstream" display="UpstreamType" %}} to Gloo. 
+The first step we'll take will be to add a new {{% protobuf name="gloo.solo.io.Upstream" display="UpstreamType" %}} to Gloo Edge. 
 
-All of Gloo's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file, where Gloo's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
+All of Gloo Edge's APIs are defined as protobuf files (`.proto`). The list of Upstream Types live in the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file, where Gloo Edge's core API objects (Upstream, Virtual Service, Proxy, Gateway) are bound to plugin-specific configuration.
 
 We'll write a simple `UpstreamSpec` proto for the new `gce` upstream type:
 
@@ -108,7 +108,7 @@ EOF
 You can view the complete `gce.proto` here: [gce.proto](../gce.proto). 
 
 
-Now we need to add the new GCE `UpstreamSpec` to Gloo's list of Upstream Types. This can be found in 
+Now we need to add the new GCE `UpstreamSpec` to Gloo Edge's list of Upstream Types. This can be found in 
 the {{% protobuf name="gloo.solo.io.UpstreamSpec" %}} file at the API root (projects/gloo/api/v1)/
 
 First, we'll add an import to the top of the file
@@ -153,13 +153,13 @@ Next we'll add the new `UpstreamSpec` from our import. Locate the `UpstreamSpec`
 
 {{< highlight proto "hl_lines=27-28" >}}
 
-// Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
-// Each upstream type is handled by a corresponding Gloo plugin.
+// Each upstream in Gloo Edge has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more.
+// Each upstream type is handled by a corresponding Gloo Edge plugin.
 message UpstreamSpec {
 
     UpstreamSslConfig ssl_config = 6;
 
-    // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo settings will be used.
+    // Circuit breakers for this upstream. if not set, the defaults ones from the Gloo Edge settings will be used.
     // if those are not set, [envoy's defaults](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cluster/circuit_breaker.proto#envoy-api-msg-cluster-circuitbreakers)
     // will be used.
     CircuitBreakerConfig circuit_breakers = 7;
@@ -172,7 +172,7 @@ message UpstreamSpec {
     bool use_http2 = 10;
 
     // Note to developers: new Upstream Plugins must be added to this oneof field
-    // to be usable by Gloo.
+    // to be usable by Gloo Edge.
     oneof upstream_type {
         kubernetes.options.gloo.solo.io.UpstreamSpec kube = 1;
         static.options.gloo.solo.io.UpstreamSpec static = 4;
@@ -188,7 +188,7 @@ message UpstreamSpec {
 
 You can view the complete `plugins.proto` here: [plugins.proto](../plugins.proto). 
 
-Great! We're all set to run code generation on Gloo and begin writing our plugin!
+Great! We're all set to run code generation on Gloo Edge and begin writing our plugin!
 
 ## Running the Code Generation
 
@@ -212,7 +212,7 @@ Let's start writing our plugin!
 
 #### Skeleton
 
-We'll start by creating a new package/directory for our code to live in. Following the convention in Gloo, we'll create our new package at `projects/gloo/pkg/plugins/gce`:
+We'll start by creating a new package/directory for our code to live in. Following the convention in Gloo Edge, we'll create our new package at `projects/gloo/pkg/plugins/gce`:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo
@@ -233,7 +233,7 @@ func NewPlugin() *plugin {
 
 ```
 
-So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/master//projects/gloo/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/discovery/discovery.go#L21) interfaces.
+So far, our plugin is just a plain go struct with no features. In order to provide service discovery for Gloo Edge, our plugin needs to implement two interfaces: the [`plugins.UpstreamPlugin`](https://github.com/solo-io/gloo/blob/master//projects/gloo/pkg/plugins/plugin_interface.go#L43) and [`discovery.DiscoveryPlugin`](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/discovery/discovery.go#L21) interfaces.
 
 Let's add the functions necessary to implement these interfaces:
 
@@ -280,12 +280,12 @@ func (*plugin) UpdateUpstream(original, desired *v1.Upstream) (bool, error) {
 
 #### ProcessUpstream
 
-Our plugin now implements the required interfaces and can be plugged into Gloo. For the purpose of this tutorial, 
+Our plugin now implements the required interfaces and can be plugged into Gloo Edge. For the purpose of this tutorial, 
 we will only need the `ProcessUpstream` and `WatchEndpoints` functions to be implemented for our plugin. The rest
-can be no-op and will simply be ignored by Gloo.
+can be no-op and will simply be ignored by Gloo Edge.
 
-First, let's handle `ProcessUpstream`. `ProcessUpstream` is called for every **Upstream** known to Gloo in 
-each iteration of Gloo's translation loop (in which Gloo config is translated to Envoy config). `ProcessUpstream`
+First, let's handle `ProcessUpstream`. `ProcessUpstream` is called for every **Upstream** known to Gloo Edge in 
+each iteration of Gloo Edge's translation loop (in which Gloo Edge config is translated to Envoy config). `ProcessUpstream`
 looks at each individual Upstream (the user input object) and modifies, if necessary, the ouptut [Envoy Cluster](https://www.envoyproxy.io/docs/envoy/latest/api-v2/api/v2/cds.proto) corresponding to that Upstream. 
 
 Our `ProcessUpstream` function should:
@@ -342,7 +342,7 @@ We need to:
 * Poll the GCE API
 * Retrieve the list of instances
 * Correlate those addresses with the user's GCE Upstreams by their labels 
-* Compose a list of Endpoints and send them on a channel to Gloo
+* Compose a list of Endpoints and send them on a channel to Gloo Edge
 * Repeat this at some interval to keep endpoints updated
 
 So let's start writing our function. We'll need to add some imports to interact with the GCE API:
@@ -360,8 +360,8 @@ import (
 )
 ```
 
-Gloo now uses go modules, so these should automatically be pulled into your IDE. However, 
-on older versions of Gloo that use dep, we can download these imports to our project with `dep ensure`:
+Gloo Edge now uses go modules, so these should automatically be pulled into your IDE. However, 
+on older versions of Gloo Edge that use dep, we can download these imports to our project with `dep ensure`:
 
 ```bash
 cd ${GOPATH}/src/github.com/solo-io/gloo
@@ -403,12 +403,12 @@ as the environment variable `GOOGLE_CREDENTIALS_JSON`. In a real
 production environment we'd want to retrieve
 credentials from a secret store such as Kubernetes or Vault.
 
-See https://cloud.google.com/video-intelligence/docs/common/auth on downloading this file. Its contents should be stored to an environment variable on the server running Gloo. We can set this on the deployment template for Gloo once we're ready to deploy to Kube.
+See https://cloud.google.com/video-intelligence/docs/common/auth on downloading this file. Its contents should be stored to an environment variable on the server running Gloo Edge. We can set this on the deployment template for Gloo Edge once we're ready to deploy to Kube.
 
 Now that we have access to our client, we're ready to set up our polling 
 function. It should retrieve the list of 
 VMs from GCE and convert them to Endpoints 
-for Gloo. Additionally, it should track 
+for Gloo Edge. Additionally, it should track 
 the Upstream each Endpoint belongs to, and 
 ignore any endpoints that don't belong to 
 an upstream.
@@ -683,10 +683,10 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 		return nil, nil, err
 	}
 
-	// initialize the channel on which we will send endpoint results to Gloo
+	// initialize the channel on which we will send endpoint results to Gloo Edge
 	results := make(chan v1.EndpointList)
 
-	// initialize a channel on which we can send polling errors to Gloo
+	// initialize a channel on which we can send polling errors to Gloo Edge
 	errorsDuringUpdate := make(chan error)
 
 	// in a goroutine, continue updating endpoints at an interval
@@ -696,7 +696,7 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 		}
 	}()
 
-	// return the channels to Gloo
+	// return the channels to Gloo Edge
 	return results, errorsDuringUpdate, nil
 }
 
@@ -716,10 +716,10 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 		return nil, nil, err
 	}
 
-	// initialize the channel on which we will send endpoint results to Gloo
+	// initialize the channel on which we will send endpoint results to Gloo Edge
 	results := make(chan v1.EndpointList)
 
-	// initialize a channel on which we can send polling errors to Gloo
+	// initialize a channel on which we can send polling errors to Gloo Edge
 	errorsDuringUpdate := make(chan error)
 
 	// in a goroutine, continue updating endpoints at an interval
@@ -738,10 +738,10 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 			default:
 				endpoints, err := getLatestEndpoints(instancesClient, upstreamsToTrack)
 				if err != nil {
-					// send the error to Gloo for logging
+					// send the error to Gloo Edge for logging
 					errorsDuringUpdate <- err
 				} else {
-					// send the latest set of endpoints to Gloo
+					// send the latest set of endpoints to Gloo Edge
 					results <- endpoints
 				}
 
@@ -751,7 +751,7 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 		}
 	}()
 
-	// return the channels to Gloo
+	// return the channels to Gloo Edge
 	return results, errorsDuringUpdate, nil
 }
 
@@ -760,9 +760,9 @@ func (*plugin) WatchEndpoints(writeNamespace string, upstreamsToTrack v1.Upstrea
 Our `WatchEndpoints` is now finished, along with our plugin!
 
 We are not finished, however. The task remains to wire our plugin 
-into the Gloo core, then rebuild Gloo and deploy to Kubernetes!
+into the Gloo Edge core, then rebuild Gloo Edge and deploy to Kubernetes!
 
-All Gloo plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/registry/registry.go).
+All Gloo Edge plugins are registered inside of a `registry` subpackage within the `plugins` directory. See [the registry.go file on GitHub here](https://github.com/solo-io/gloo/blob/master/projects/gloo/pkg/plugins/registry/registry.go).
 
 We need to add our plugin (and its import) to `registry.go`:
 
@@ -841,32 +841,32 @@ func Plugins(opts bootstrap.Opts, pluginExtensions ...plugins.Plugin) []plugins.
 Code changes are now complete. You can view the all of the code here:
 
 * [gce.proto](../gce.proto): API definitions for our plugin.
-* [plugins.proto](../plugins.proto): The Gloo Core API with our plugin API added to it.
+* [plugins.proto](../plugins.proto): The Gloo Edge Core API with our plugin API added to it.
 * [plugin.go](../plugin.go): The actual code for the plugin.
-* [registry.go](../registry.go): The Gloo Plugin Registry with our plugin added to it.
+* [registry.go](../registry.go): The Gloo Edge Plugin Registry with our plugin added to it.
 
 ## Build and Deploy from Source
 
-To see our new and improved Gloo in action, follow the 
-[building and deploying Gloo from source tutorial]({{% versioned_link_path fromRoot="/guides/dev/building-and-deploying-gloo" %}}).
+To see our new and improved Gloo Edge in action, follow the 
+[building and deploying Gloo Edge from source tutorial]({{% versioned_link_path fromRoot="/guides/dev/building-and-deploying-gloo" %}}).
 
 ## Conclusions
 
-We've just seen how to extend Gloo's service discovery 
+We've just seen how to extend Gloo Edge's service discovery 
 mechanism via the use of a plugin. While this plugin 
 focused on the discovery of VMs from a hosted cloud 
-provider, Gloo Upstream Plugins can be used to import 
+provider, Gloo Edge Upstream Plugins can be used to import 
 endpoint data from any conceivable source of truth, as 
 long as those endpoints represent TCP/HTTP services 
 listening on some port. 
 
-There are many other places where Gloo supports 
+There are many other places where Gloo Edge supports 
 extensibility through plugins, including leveraging new 
 (or previously unused) Envoy filters. 
 
-Hopefully you're now more familiar with how Gloo plugins 
+Hopefully you're now more familiar with how Gloo Edge plugins 
 work. Maybe you're even ready to start writing your own 
 plugins. At the very least, you now have a look inside 
-how Gloo Plugins connect external sources of truth to Envoy.
+how Gloo Edge Plugins connect external sources of truth to Envoy.
 
-We encourage you to check out our other dev tutorials to discover other ways of extending Gloo!
+We encourage you to check out our other dev tutorials to discover other ways of extending Gloo Edge!

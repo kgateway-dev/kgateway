@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl debug yaml
 
-Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
+Dump YAML representing the current Gloo Edge state (requires Gloo Edge running on Kubernetes)
 
 ### Synopsis
 
-Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
+Dump YAML representing the current Gloo Edge state (requires Gloo Edge running on Kubernetes)
 
 ```
 glooctl debug yaml [flags]
@@ -31,5 +31,5 @@ glooctl debug yaml [flags]
 
 ### SEE ALSO
 
-* [glooctl debug](../glooctl_debug)	 - Debug a Gloo resource (requires Gloo running on Kubernetes)
+* [glooctl debug](../glooctl_debug)	 - Debug a Gloo Edge resource (requires Gloo Edge running on Kubernetes)
 
