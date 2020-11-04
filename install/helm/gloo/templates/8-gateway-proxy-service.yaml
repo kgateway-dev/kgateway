@@ -56,8 +56,8 @@ spec:
     protocol: TCP
     name: failover
     nodePort: {{ $spec.failover.nodePort }}
-{{- end }} # if failover.enabled
-{{- end }} # if failover
+{{- end }} {{/* if failover.enabled */}}
+{{- end }} {{/* if failover */}}
 {{- if $spec.service.customPorts }}
 {{ toYaml $spec.service.customPorts | indent 2 }}
 {{- end}}
@@ -71,16 +71,16 @@ spec:
   {{- if eq $spec.service.type "LoadBalancer" }}
   {{- if $spec.service.loadBalancerIP }}
   loadBalancerIP: {{ $spec.service.loadBalancerIP }}
-  {{- end }} # $spec.service.loadBalancerIP
+  {{- end }} {{/* $spec.service.loadBalancerIP */}}
   {{- if $spec.service.loadBalancerSourceRanges }}
   {{- with $spec.service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
     {{- range . }}
     - {{ . }}
     {{- end }}
-  {{- end }} # with spec.service.loadBalancerSourceRanges
-  {{- end }} # $spec.service.loadBalancerSourceRanges
-  {{- end }} # $spec.service.type "LoadBalancer"
-{{- end }} # range $name, $spec := .Values.gatewayProxies
-{{- end }} # if not $spec.disabled
-{{ end }} # if .Values.gateway.enabled
+  {{- end }} {{/* with spec.service.loadBalancerSourceRanges */}}
+  {{- end }} {{/* $spec.service.loadBalancerSourceRanges */}}
+  {{- end }} {{/* $spec.service.type "LoadBalancer" */}}
+{{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
+{{- end }} {{/* if not $spec.disabled */}}
+{{ end }} {{/* if .Values.gateway.enabled */}}
