@@ -1,10 +1,10 @@
 ---
-title: Debugging Gloo
-description: This document shows how some common ways to debug Gloo and Envoy
+title: Debugging Gloo Edge
+description: This document shows how some common ways to debug Gloo Edge and Envoy
 weight: 10
 ---
 
-At times you may need to debug Gloo misconfigurations. Gloo is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo and Envoy. 
+At times you may need to debug Gloo Edge misconfigurations. Gloo Edge is based on [Envoy](https://www.envoyproxy.io) and often times these misconfigurations are observed as a result of behavior seen at the proxy. This guide will help you debug issues with Gloo Edge and Envoy. 
 
 The guide is broken into 3 main sections:
 
@@ -15,7 +15,7 @@ The guide is broken into 3 main sections:
 
 ### Pulling the rip cord
 
-This guide is intended to help you understand where to look if things aren't working as expected. After going through, if all else fails, you can capture the state of Gloo configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+This guide is intended to help you understand where to look if things aren't working as expected. After going through, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
 
 ```bash
 glooctl debug logs -f gloo-logs.log
@@ -26,7 +26,7 @@ This will dump all of the relevant configuration into to files, `gloo-logs.log` 
 
 ## General debugging tools and tips
 
-If you're experiencing unexpected behavior after installing and configuring Gloo, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo resources to make sure they're in a healthy/Accepted/OK status. Typically if there is some problem syncing resources, you'd find an issue here.
+If you're experiencing unexpected behavior after installing and configuring Gloo Edge, the first thing to do is verify [installation]({{< versioned_link_path fromRoot="/installation/" >}}) and configuration. The fastest way to do that is to run the `glooctl check` [command]({{< versioned_link_path fromRoot="/reference/cli/glooctl_check/" >}}). This command will go through the deployments, pods and Gloo Edge resources to make sure they're in a healthy/Accepted/OK status. Typically if there is some problem syncing resources, you'd find an issue here.
 
 ```bash
 glooctl check
@@ -47,7 +47,7 @@ No problems detected.
 ```
 
 ### The VirtualService, Gateway, and Proxy resource
-One of the first places to look is the Gloo configurations: {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}}, {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}}, and {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}. For example, when you specify routing configurations, you do that in `VirtualService` resources. Ultimately, these resources get compiled down into the `Proxy` resource which ends up being the source of truth of the configuration for the control plane that is served over xDS to Envoy. Your best bet is to start by checking the `Proxy` resource:
+One of the first places to look is the Gloo Edge configurations: {{< protobuf name="gateway.solo.io.VirtualService" display="VirtualService">}}, {{< protobuf name="gateway.solo.io.Gateway" display="Gateway">}}, and {{< protobuf name="gloo.solo.io.Proxy" display="Proxy">}}. For example, when you specify routing configurations, you do that in `VirtualService` resources. Ultimately, these resources get compiled down into the `Proxy` resource which ends up being the source of truth of the configuration for the control plane that is served over xDS to Envoy. Your best bet is to start by checking the `Proxy` resource:
 
 ```bash
 kubectl get proxy gateway-proxy -n gloo-system -o yaml
@@ -64,7 +64,7 @@ glooctl get upstreams
 
 ## Debugging the data plane
 
-Gloo is based on Envoy proxy which means there is a lot of [generic Envoy debugging knowledge](https://www.envoyproxy.io/docs/envoy/latest/operations/operations) that is applicable to Gloo. When you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
+Gloo Edge is based on Envoy proxy which means there is a lot of [generic Envoy debugging knowledge](https://www.envoyproxy.io/docs/envoy/latest/operations/operations) that is applicable to Gloo Edge. When you find unexpected behaviors with your request handling, here are a few areas to look in Envoy that can aid in debugging. Note, we've created some convenience tooling in the `glooctl` CLI tool which is tremendously helpful here.
 
 
 ### Dumping Envoy configuration
@@ -117,7 +117,7 @@ That way you can `curl localhost:19000` and get access to the Envoy Admin API.
 
 ## Debugging the control plane
 
-The Gloo control plane is made up of the following components:
+The Gloo Edge control plane is made up of the following components:
 
 ```bash
 NAME                             READY   STATUS    RESTARTS   AGE
@@ -171,7 +171,7 @@ kubectl logs -f -n gloo-system -l gloo=gloo
 
 ### Changing logging Levels and more
 
-Each Gloo control plane component comes with a optional debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
+Each Gloo Edge control plane component comes with a optional debug port that can be enabled with the `START_STATS_SERVER` environment variable. To get access to it, you can port-forward to it with Kubernetes like this:
 
 ```bash
 kubectl port-forward  -n gloo-system deploy/gloo  9091:9091
@@ -189,7 +189,7 @@ With these endpoints, you can profile the behavior of the component, adjust its 
 
 ### All else fails
 
-Again, if all else fails, you can capture the state of Gloo configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
+Again, if all else fails, you can capture the state of Gloo Edge configurations and logs and join us on our Slack (https://slack.solo.io) and one of our engineers will be able to help:
 
 ```bash
 glooctl debug logs -f gloo-logs.log
