@@ -1,14 +1,14 @@
 ---
-title: Envoy Gzip filter with Gloo
+title: Envoy Gzip filter with Gloo Edge
 weight: 70
-description: Using Gzip filter in Envoy with Gloo
+description: Using Gzip filter in Envoy with Gloo Edge
 ---
 
-Gzip is an HTTP option which enables Gloo to compress data returned from an upstream service upon client request.
+Gzip is an HTTP option which enables Gloo Edge to compress data returned from an upstream service upon client request.
 Compression is useful in situations where large payloads need to be transmitted without compromising the response time.
 
-This guide assumes you already have Gloo installed.  
-Support for the Envoy Gzip filter was added to Open Source Gloo as of version 1.3.4 and to Gloo Enterprise as of version 1.3.0-beta2.
+This guide assumes you already have Gloo Edge installed.  
+Support for the Envoy Gzip filter was added to Open Source Gloo Edge as of version 1.3.4 and to Gloo Edge Enterprise as of version 1.3.0-beta2.
 
 
 ## Configuration

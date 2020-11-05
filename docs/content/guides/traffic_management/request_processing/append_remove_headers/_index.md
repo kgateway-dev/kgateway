@@ -5,7 +5,7 @@ weight: 70
 description: Append and Remove Headers from Requests and Responses using Route configuration.
 ---
 
-Gloo can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
+Gloo Edge can add and remove headers to/from requests and responses. We refer to this feature as "Header Manipulation".
 
 Header Manipulation is configured via the 
 {{< protobuf name="headers.options.gloo.solo.io.HeaderManipulation" display="headerManipulation">}} struct.

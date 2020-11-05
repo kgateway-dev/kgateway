@@ -35,7 +35,7 @@ spec:
 {{< /tab >}}
 {{< /tabs >}}
 
-Let's test that the configuration was correctly picked up by Gloo by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl $(glooctl proxy url)/get | jq
@@ -60,7 +60,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 #### Update Virtual Service
-We will now configure Gloo to update the request path from `/get` to `/post` if a header named `foo` is present and has the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update the HTTP method of the request as well.
+We will now configure Gloo Edge to update the request path from `/get` to `/post` if a header named `foo` is present and has the value `bar`. Since the `/post` endpoint on the Postman Echo service expected `POST` requests, we will need to update the HTTP method of the request as well.
 
 To do this, we need to add the following to our Virtual Service definition:
 

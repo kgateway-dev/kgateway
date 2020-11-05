@@ -47,7 +47,7 @@ cat << EOF > data.json
 EOF
 ```
 
-Let's test that the configuration was correctly picked up by Gloo by executing the following command:
+Let's test that the configuration was correctly picked up by Gloo Edge by executing the following command:
 
 ```shell
 curl -v -H "Content-Type: application/json" $(glooctl proxy url)/post -d @data.json | jq
@@ -86,7 +86,7 @@ You should get a response with status `200` and a JSON body similar to this:
 ```
 
 ### Updating the response code
-As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo to change the response status to 400 if the `data.error` attribute is present; otherwise, the original status code should be preserved.
+As you can see from the response above, the upstream service echoes the JSON payload we included in our request inside the `data` response body attribute. We will now configure Gloo Edge to change the response status to 400 if the `data.error` attribute is present; otherwise, the original status code should be preserved.
 
 #### Update Virtual Service
 To implement this behavior, we need to add the following to our Virtual Service definition:

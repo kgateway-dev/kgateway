@@ -4,7 +4,7 @@ weight: 125
 description: Routing to gRPC services with a gRPC client
 ---
 
-gRPC has become a popular, high-performance framework used by many applications. In this guide, we will show you how to expose a gRPC `Upstream` through a Gloo `Virtual Service` and connect to it with a gRPC client. Once we have basic connectivity, we will add in TLS connectivity between the gRPC client and the Gloo proxy (Envoy).
+gRPC has become a popular, high-performance framework used by many applications. In this guide, we will show you how to expose a gRPC `Upstream` through a Gloo Edge `Virtual Service` and connect to it with a gRPC client. Once we have basic connectivity, we will add in TLS connectivity between the gRPC client and the Gloo Edge proxy (Envoy).
 
 In this guide we are going to:
 
@@ -20,7 +20,7 @@ Let's get started!
 
 ## Prerequisites
 
-To follow along with this guide, you will need to have a [Kubernetes cluster deployed]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) with [Gloo Gateway installed]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}). You will also [need the tool](https://github.com/fullstorydev/grpcurl) `grpcurl`, aka curl for gRPC, to act as the gRPC client for testing communications. Finally, we will be using openssl to generate a self-signed certificate for TLS.
+To follow along with this guide, you will need to have a [Kubernetes cluster deployed]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}) with [Gloo Edge installed]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}). You will also [need the tool](https://github.com/fullstorydev/grpcurl) `grpcurl`, aka curl for gRPC, to act as the gRPC client for testing communications. Finally, we will be using openssl to generate a self-signed certificate for TLS.
 
 ---
 
@@ -37,13 +37,13 @@ kubectl expose deployment grpcstore-demo --port 80 --target-port=8080
 
 ### Verify that gRPC functions were discovered
 
-After a few seconds Gloo should have discovered the service:
+After a few seconds Gloo Edge should have discovered the service:
 
 ```shell
 kubectl get upstream -n gloo-system default-grpcstore-demo-80
 ```
 
-We should also enable Gloo FDS, if it is not already (whitelist mode by default), so the proto descriptor is found:
+We should also enable Gloo Edge FDS, if it is not already (whitelist mode by default), so the proto descriptor is found:
 
 ```shell script
 kubectl label upstream -n gloo-system default-grpcstore-demo-80 discovery.solo.io/function_discovery=enabled
@@ -95,13 +95,13 @@ status:
 The descriptors field above was truncated for brevity.
 {{% /notice %}}
 
-As you can see Gloo's function discovery detected the gRPC functions on that service.
+As you can see Gloo Edge's function discovery detected the gRPC functions on that service.
 
 ---
 
 ## Adding a Virtual Service
 
-Now let's add a Virtual Service to Gloo that will map to the gRPC service listening on port 80. The following yaml describes the Virtual Service:
+Now let's add a Virtual Service to Gloo Edge that will map to the gRPC service listening on port 80. The following yaml describes the Virtual Service:
 
 ```yaml
 apiVersion: gateway.solo.io/v1
@@ -121,7 +121,7 @@ spec:
               namespace: gloo-system
 ```
 
-The Virtual Service assumes that you are using the namespace `gloo-system` for your Gloo installation. In this initial configuration, we are matching the prefix `/` for all domains. Save the yaml as the file `grpc-vs.yaml` and run the following:
+The Virtual Service assumes that you are using the namespace `gloo-system` for your Gloo Edge installation. In this initial configuration, we are matching the prefix `/` for all domains. Save the yaml as the file `grpc-vs.yaml` and run the following:
 
 ```bash
 kubectl apply -f grpc-vs.yaml
@@ -129,7 +129,7 @@ kubectl apply -f grpc-vs.yaml
 
 ### Validate with gRPC client
 
-The next step is to test connectivity to the service using the tool `grpcurl`. We are going to get the IP address Gloo is using for a proxy, and then issue a request using `grpcurl`. Since we are not using TLS, we will have to use the flag `-plaintext` to allow for unencrypted communications. Later in this guide, we'll show how to add TLS to the configuration.
+The next step is to test connectivity to the service using the tool `grpcurl`. We are going to get the IP address Gloo Edge is using for a proxy, and then issue a request using `grpcurl`. Since we are not using TLS, we will have to use the flag `-plaintext` to allow for unencrypted communications. Later in this guide, we'll show how to add TLS to the configuration.
 
 `grpcurl` expects a port number as part of the request. The Store service has Server Reflection enabled, which means that we do not have to specify a proto source file for `grpcurl` to use with our request. We are going to use the `list` argument to enumerate the services available.
 
@@ -340,4 +340,4 @@ Nice! If you happen to be using a certificate that has the correct domain listed
 
 ## Summary
 
-In this guide we saw how to present a gRPC Upstream through Gloo and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) through Gloo. You can find out more about using TLS with Gloo in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 
+In this guide we saw how to present a gRPC Upstream through Gloo Edge and connect to it using a gRPC client. We also saw how to add a domain filter and enable TLS. For more information on gRPC, check out the guide for presenting a [gRPC service as a REST API]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}) through Gloo Edge. You can find out more about using TLS with Gloo Edge in the [Network Encryption]({{% versioned_link_path fromRoot="/guides/security/tls/" %}}) section of our guides. 

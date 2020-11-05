@@ -1,30 +1,30 @@
 ---
-title: "Gloo for Knative"
-description: How to install Gloo to run in Knative Mode on Kubernetes.
+title: "Gloo Edge for Knative"
+description: How to install Gloo Edge to run in Knative Mode on Kubernetes.
 weight: 40
 ---
 
-For the purpose of running Knative, Gloo can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
+For the purpose of running Knative, Gloo Edge can function as a complete replacement for Istio (supporting all documented Knative features), requiring less resource usage and operational overhead. 
 
-This guide walks you through installing Gloo and Knative using either `glooctl` (the Gloo command line) or Helm. 
+This guide walks you through installing Gloo Edge and Knative using either `glooctl` (the Gloo Edge command line) or Helm. 
 
 {{% notice note %}}
-`glooctl` generates a manifest which can be piped to stdout or a file using the `--dry-run` flag. Alternatively, Gloo can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes#installing-on-kubernetes-with-helm" >}}), which will permit fine-grained configuration of installation parameters.
+`glooctl` generates a manifest which can be piped to stdout or a file using the `--dry-run` flag. Alternatively, Gloo Edge can be installed via its [Helm Chart]({{< versioned_link_path fromRoot="/installation/gateway/kubernetes#installing-on-kubernetes-with-helm" >}}), which will permit fine-grained configuration of installation parameters.
 {{% /notice %}}
 
 ---
 
-## Installing the Gloo Knative Ingress on Kubernetes
+## Installing the Gloo Edge Knative Ingress on Kubernetes
 
-These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster can be found [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}). You can install Gloo Knative Ingress using using `glooctl` or through Helm. Helm is the recommended method for installing in a Production environment.
+These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster can be found [here]({{< versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" >}}). You can install Gloo Edge Knative Ingress using using `glooctl` or through Helm. Helm is the recommended method for installing in a Production environment.
 
 {{< readfile file="installation/glooctl_setup.md" markdown="true" >}}
 
 ### Installing on Kubernetes with `glooctl`
 
-Using `glooctl` will install Knative Serving components to the `knative-serving` namespace if it does not already exist in your cluster and install Gloo's Knative Ingress. The Knative installation is a modified version of the Knative Serving manifest with the dependencies on Istio removed.
+Using `glooctl` will install Knative Serving components to the `knative-serving` namespace if it does not already exist in your cluster and install Gloo Edge's Knative Ingress. The Knative installation is a modified version of the Knative Serving manifest with the dependencies on Istio removed.
 
-Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Ingress to the `gloo-system` namespace and Knative-Serving components to the `knative-serving` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge Ingress to the `gloo-system` namespace and Knative-Serving components to the `knative-serving` namespace:
 
 ```bash
 glooctl install knative
@@ -36,9 +36,9 @@ You can run the command with the flag `--dry-run` to output the Kubernetes manif
 
 ### Installing on Kubernetes with Helm
 
-This is the recommended method for installing Gloo to your production environment as it offers rich customization to the Gloo control plane and the proxies Gloo manages. This guide assumes that you are using Helm version 3, and have already installed the Helm client on your local machine.
+This is the recommended method for installing Gloo Edge to your production environment as it offers rich customization to the Gloo Edge control plane and the proxies Gloo Edge manages. This guide assumes that you are using Helm version 3, and have already installed the Helm client on your local machine.
 
-First, make sure you have Knative installed. If you do not, you can install Knative components without Gloo using `glooctl`:
+First, make sure you have Knative installed. If you do not, you can install Knative components without Gloo Edge using `glooctl`:
 
 ```shell script
 glooctl install knative -g
@@ -50,7 +50,7 @@ Once the installation is complete, you can validate by checking the namespace `k
 kubectl get all -n knative-serving
 ```
 
-Now let's install Gloo. If needed, add the Gloo repository to the list of known chart repositories and perform a repository update:
+Now let's install Gloo Edge. If needed, add the Gloo Edge repository to the list of known chart repositories and perform a repository update:
 
 ```shell
 helm repo add gloo https://storage.googleapis.com/solo-public-helm
@@ -95,20 +95,20 @@ settings:
 
 For our example, we would Replace the `{{ . }}` with `v0.10.0`. 
 
-Save the file and then run the following commands to install the Gloo components.
+Save the file and then run the following commands to install the Gloo Edge components.
 
 ```shell
 kubectl create namespace gloo-system
 helm install gloo gloo/gloo --namespace gloo-system -f values.yaml
 ```
 
-Gloo can be installed to a namespace of your choosing with the `--namespace` flag.
+Gloo Edge can be installed to a namespace of your choosing with the `--namespace` flag.
 
 #### Install using in-line settings
 
 Instead of creating a `values.yaml` file, you can simply define the settings in-line. This is useful for a small number of values, but quickly becomes impractical if you want to override several values.
 
-Run the following commands to install the Gloo components with version `v0.10.0` of Knative.
+Run the following commands to install the Gloo Edge components with version `v0.10.0` of Knative.
 
 ```shell
 kubectl create namespace gloo-system
@@ -120,7 +120,7 @@ helm install gloo gloo/gloo --namespace gloo-system \
 
 ## Verify your Installation
 
-Check that the Gloo pods and services have been created. Depending on your install options, you may see some differences from the following example. And if you choose to install Gloo into a different namespace than the default `gloo-system`, then you will need to query your chosen namespace instead.
+Check that the Gloo Edge pods and services have been created. Depending on your install options, you may see some differences from the following example. And if you choose to install Gloo Edge into a different namespace than the default `gloo-system`, then you will need to query your chosen namespace instead.
 
 ```shell
 kubectl get all -n gloo-system
@@ -158,7 +158,7 @@ replicaset.apps/knative-internal-proxy-745c9f6f86   1         1         1       
 
 ## Uninstall {#uninstall}
 
-To uninstall Gloo and all related components, simply run the following.
+To uninstall Gloo Edge and all related components, simply run the following.
 
 {{% notice note %}}
 This will also remove Knative-Serving, if it was installed by `glooctl`.
@@ -168,7 +168,7 @@ This will also remove Knative-Serving, if it was installed by `glooctl`.
 glooctl uninstall
 ```
 
-If you installed Gloo to a different namespace, you will have to specify that namespace using the `-n` option:
+If you installed Gloo Edge to a different namespace, you will have to specify that namespace using the `-n` option:
 
 ```shell
 glooctl uninstall -n my-namespace
@@ -178,4 +178,4 @@ glooctl uninstall -n my-namespace
 
 ## Next Steps
 
-To begin using Gloo with Knative, check out the [Knative Getting Started Guide]({{< versioned_link_path fromRoot="/guides/integrations/knative/getting_started/" >}}).
+To begin using Gloo Edge with Knative, check out the [Knative Getting Started Guide]({{< versioned_link_path fromRoot="/guides/integrations/knative/getting_started/" >}}).
