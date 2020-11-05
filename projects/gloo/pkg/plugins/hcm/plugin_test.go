@@ -74,8 +74,8 @@ var _ = Describe("Plugin", func() {
 					},
 				},
 			},
-			MaxConnectionDuration: pd(time.Hour),
-			MaxStreamDuration:     pd(time.Hour),
+			MaxConnectionDuration:      pd(time.Hour),
+			MaxStreamDuration:          pd(time.Hour),
 			ServerHeaderTransformation: hcm.HttpConnectionManagerSettings_OVERWRITE,
 		}
 		hl := &v1.HttpListener{
