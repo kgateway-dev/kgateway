@@ -137,7 +137,7 @@ var _ = Describe("Plugin", func() {
 		Expect(cfg.CommonHttpProtocolOptions.IdleTimeout).To(Equal(gogoutils.DurationStdToProto(hcms.IdleTimeout)))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxConnectionDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxConnectionDuration)))
 		Expect(cfg.CommonHttpProtocolOptions.GetMaxStreamDuration()).To(Equal(gogoutils.DurationStdToProto(hcms.MaxStreamDuration)))
-		Expect(cfg.GetServerHeaderTransformation()).To(Equal(hcms.ServerHeaderTransformation))
+		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_OVERWRITE))
 
 		trace := cfg.Tracing
 		Expect(trace.CustomTags).To(ConsistOf([]*envoytracing.CustomTag{
