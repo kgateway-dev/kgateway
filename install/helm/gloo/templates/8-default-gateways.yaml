@@ -92,7 +92,7 @@ spec:
         forwardSniClusterName: {}
   proxyNames:
   - {{ $name | kebabcase }}
-{{- end }} # if failover.enabled
-{{- end }} # if failover
-{{- end }} # if  $spec.gatewaySettings and (not $spec.disabled)
-{{- end }} # range gateways
+{{- end }} {{/* if failover.enabled */}}
+{{- end }} {{/* if failover */}}
+{{- end }} {{/* if  $spec.gatewaySettings and (not $spec.disabled) */}}
+{{- end }} {{/* range gateways */}}

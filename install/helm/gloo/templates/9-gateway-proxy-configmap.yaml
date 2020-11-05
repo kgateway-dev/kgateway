@@ -43,10 +43,10 @@ data:
     static_resources:
 {{- if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) }}
       listeners:
-{{- end }} # if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper)
+{{- end }} {{/* if or $statsConfig.enabled (or $spec.readConfig $spec.extraListenersHelper) */}}
 {{- if $spec.extraListenersHelper }}
 {{- include $spec.extraListenersHelper $ | nindent 8 }}
-{{- end }} # $spec.extraListenersHelper
+{{- end }} {{/* $spec.extraListenersHelper */}}
 {{- if $statsConfig.enabled }}
         - name: prometheus_listener
           address:
@@ -89,9 +89,9 @@ data:
                     tracing:
                       provider:
 {{ toYaml $spec.tracing.provider | indent 24}}
-{{- end}} # if $spec.tracing.provider
-{{- end}} # if $spec.tracing
-{{- end}} # if $statsConfig.enabled
+{{- end}} {{/* if $spec.tracing.provider */}}
+{{- end}} {{/* if $spec.tracing */}}
+{{- end}} {{/* if $statsConfig.enabled */}}
 {{- if $spec.readConfig }}
         - name: read_config_listener
           address:
@@ -140,9 +140,9 @@ data:
                     tracing:
                       provider:
 {{ toYaml $spec.tracing.provider | indent 24}}
-{{- end}} # if $spec.tracing.provider
-{{- end}} # if $spec.tracing
-{{- end}} # if $spec.readConfig
+{{- end}} {{/* if $spec.tracing.provider */}}
+{{- end}} {{/* if $spec.tracing */}}
+{{- end}} {{/* if $spec.readConfig */}}
       clusters:
       - name: gloo.{{ $.Release.Namespace }}.svc.{{ $.Values.k8s.clusterName}}:{{ $.Values.gloo.deployment.xdsPort }}
         alt_stat_name: xds_cluster
@@ -280,12 +280,12 @@ data:
                             port_value: {{$.Values.accessLogger.port}}
         http2_protocol_options: {}
         type: STRICT_DNS
-{{- end}} # if .Values.accessLogger.enabled
+{{- end}} {{/* if .Values.accessLogger.enabled */}}
 {{- if $spec.tracing -}}
 {{- if $spec.tracing.cluster}}
 {{ toYaml $spec.tracing.cluster | indent 6}}
-{{- end}} # if $spec.tracing.cluster
-{{- end}} # if $spec.tracing
+{{- end}} {{/* if $spec.tracing.cluster */}}
+{{- end}} {{/* if $spec.tracing */}}
 
 {{- if $.Values.settings.aws.enableServiceAccountCredentials }}
       - name: aws_sts_cluster
@@ -314,7 +314,7 @@ data:
 {{- else }}
                     address: sts.amazonaws.com
 {{- end }}
-{{- end}} # if $.Values.settings.aws.enableServiceAccountCredentials
+{{- end}} {{/* if $.Values.settings.aws.enableServiceAccountCredentials */}}
 
 {{- if or $statsConfig.enabled ($spec.readConfig) }}
       - name: admin_port_cluster
@@ -330,7 +330,7 @@ data:
                   socket_address:
                     address: {{ $spec.loopBackAddress }}
                     port_value: 19000
-{{- end}} # if or $statsConfig.enabled ($spec.readConfig)
+{{- end}} {{/* if or $statsConfig.enabled ($spec.readConfig) */}}
 
     dynamic_resources:
       ads_config:
@@ -348,7 +348,7 @@ data:
         socket_address:
           address: {{ $spec.loopBackAddress }}
           port_value: 19000
-{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} # if (empty $spec.configMap.data) ## allows full custom
-{{- end }} # - if not $spec.disabled
-{{- end }} # range $name, $spec := .Values.gatewayProxies
-{{- end -}} # if .Values.gateway.enabled
+{{- else}}{{ toYaml $spec.configMap.data | indent 2}}{{- end}} {{/* if (empty $spec.configMap.data) ## allows full custom */}}
+{{- end }} {{/* - if not $spec.disabled */}}
+{{- end }} {{/* range $name, $spec := .Values.gatewayProxies */}}
+{{- end -}} {{/* if .Values.gateway.enabled */}}

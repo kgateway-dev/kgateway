@@ -98,7 +98,7 @@ data:
 {{- if .Values.ingressProxy.tracing }}
                     tracing:
 {{ toYaml .Values.ingressProxy.tracing | indent 22}}
-{{- end}} # if .Values.ingressProxy.tracing
+{{- end}} {{/* if .Values.ingressProxy.tracing */}}
 {{- end}}
 
     dynamic_resources:
