@@ -24,6 +24,12 @@ message HttpConnectionManagerSettings {
         ALWAYS_FORWARD_ONLY = 4;
     }
 
+    enum ServerHeaderTransformation {
+        OVERWRITE = 0;
+        APPEND_IF_ABSENT = 1;
+        PASS_THROUGH = 2;
+    }
+
     message SetCurrentClientCertDetails {
         google.protobuf.BoolValue subject = 1;
         bool cert = 2;
@@ -66,4 +72,6 @@ message HttpConnectionManagerSettings {
     // For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
     google.protobuf.Duration max_connection_duration = 23 [ (gogoproto.stdduration) = true ];
     google.protobuf.Duration max_stream_duration = 24 [ (gogoproto.stdduration) = true ];
+
+    ServerHeaderTransformation server_header_transformation = 25;
 }
