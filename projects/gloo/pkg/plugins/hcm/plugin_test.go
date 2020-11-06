@@ -176,6 +176,45 @@ var _ = Describe("Plugin", func() {
 		Expect(ccd.Uri).To(BeTrue())
 	})
 
+	It("copy server_header_transformation setting to hcm filter", func() {
+		hcms := &hcm.HttpConnectionManagerSettings{
+			ServerHeaderTransformation: hcm.HttpConnectionManagerSettings_PASS_THROUGH,
+		}
+		hl := &v1.HttpListener{
+			Options: &v1.HttpListenerOptions{
+				HttpConnectionManagerSettings: hcms,
+			},
+		}
+
+		in := &v1.Listener{
+			ListenerType: &v1.Listener_HttpListener{
+				HttpListener: hl,
+			},
+		}
+
+		filters := []*envoylistener.Filter{{
+			Name: wellknown.HTTPConnectionManager,
+		}}
+
+		outl := &envoyapi.Listener{
+			FilterChains: []*envoylistener.FilterChain{{
+				Filters: filters,
+			}},
+		}
+
+		p := NewPlugin()
+		pluginsList := []plugins.Plugin{tracing.NewPlugin(), p}
+		p.RegisterHcmPlugins(pluginsList)
+		err := p.ProcessListener(plugins.Params{}, in, outl)
+		Expect(err).NotTo(HaveOccurred())
+
+		var cfg envoyhttp.HttpConnectionManager
+		err = translatorutil.ParseTypedConfig(filters[0], &cfg)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(cfg.GetServerHeaderTransformation()).To(Equal(envoyhttp.HttpConnectionManager_PASS_THROUGH))
+	})
+
 	Context("upgrades", func() {
 
 		var (
