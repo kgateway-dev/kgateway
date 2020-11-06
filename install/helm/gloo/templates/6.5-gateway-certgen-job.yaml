@@ -108,5 +108,5 @@ rules:
 
 ---
 
-{{- end }} # .Values.global.glooRbac.create
+{{- end }} {{/* .Values.global.glooRbac.create */}}
 {{- end }}

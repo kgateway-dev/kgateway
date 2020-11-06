@@ -215,12 +215,12 @@ spec:
         - mountPath: /etc/envoy/ssl
           name: gloo-mtls-certs
           readOnly: true
-{{- end}} # $global.glooMtls.enabled
+{{- end}} {{/* $global.glooMtls.enabled */}}
 {{- if $spec.extraContainersHelper }}
         - mountPath: /usr/share/shared-data
           name: shared-data
 {{- include $spec.extraContainersHelper $ | nindent 6 }}
-{{- end }} # $spec.extraContainersHelper
+{{- end }} {{/* $spec.extraContainersHelper */}}
 {{- if or $global.glooMtls.enabled $global.istioSDS.enabled }}
       {{- $sdsImage := merge $global.glooMtls.sds.image $global.image }}
       - name: sds
@@ -263,7 +263,7 @@ spec:
         - containerPort: 8234
           name: sds
           protocol: TCP
-{{- end }} # $global.glooMtls.enabled or $.Values.istioSDS.enabled
+{{- end }} {{/* $global.glooMtls.enabled or $.Values.istioSDS.enabled */}}
       {{- if $spec.kind.daemonSet }}
       {{- if $spec.kind.daemonSet.hostPort}}
       hostNetwork: true
