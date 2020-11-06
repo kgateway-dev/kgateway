@@ -5,6 +5,11 @@ install/manifest-latest.yaml
 site/*
 site-latest/*
 site-versioned/*
-
+public
+ci
+gloo-temp
 
 data/Solo.yaml
+data/EdgeVersions.yaml
+
+search-index.json

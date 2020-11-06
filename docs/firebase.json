@@ -1,18 +1,25 @@
 { 
   "hosting": {
     "site": "gloo-docs", 
-    "public": "site-latest", 
+    "public": "public", 
     "ignore": [
       "firebase.json",
       "themes/**/*",
       "content/**/*",
       "**/.*",
-      "**/node_modules/**"
-    ]
-    // "rewrites": [
-    //   {
-    //     "source": "/", "destination": "/gloo/latest/index.html"
-    //   }
-    // ] 
+      "**/node_modules/**",
+      "resources/**/*",
+      "examples/**/*"
+    ],
+    "rewrites": [      
+      {
+        "source": "/",
+        "destination": "/gloo/latest/index.html"
+      },
+      {
+        "source": "/gloo",
+        "destination": "/gloo/latest/index.html"
+      }
+    ] 
   } 
 }

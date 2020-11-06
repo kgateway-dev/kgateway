@@ -12,7 +12,7 @@
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
 
 # replace the patch version number with "0"
-DOCS_VERSION := $(word 1,$(subst ., ,$(VERSION))).$(word 2,$(subst ., ,$(VERSION))).0
+# DOCS_VERSION := $(word 1,$(subst ., ,$(VERSION))).$(word 2,$(subst ., ,$(VERSION))).0
 
 # Passed by cloudbuild
 GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
@@ -51,20 +51,13 @@ site-test: site-common
 site-release: site-common
 	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	# ensure hugo version locally installed matches the version in cloudbuild CI
-	# hugo version | grep -q $(HUGO_VERSION)
+	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
 	# ensure that valid json is generated. Common cause: using yaml ">" multiline string symbols in Hugo's toml headers
 	# (if it passes here, it will pass on the subsequent generation so no need to check both hugo calls)
 	cat site/index.json | jq "." > /dev/null
 	mv site site-latest
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(DOCS_VERSION)
 	hugo --config docs.toml
-	mv site site-versioned
-
-## Old way of deploying site. TODO: remove when old hosting setup is disabled
-# .PHONY: deploy-site
-# deploy-site: site
-# 	firebase deploy --only hosting:gloo-docs
 
 .PHONY: serve-site
 serve-site: site-test
@@ -74,7 +67,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml ./public ./ci ./gloo-temp
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it
@@ -125,3 +118,7 @@ manifest:
 		--set image.tag=$(CURRENT_TAG) \
 		--set image.repository=$(IMAGE_REPO) \
 		> install/manifest-latest.yaml
+
+.PHONY: build-site
+build-site: clean
+	./build-docs.sh
