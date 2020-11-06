@@ -180,7 +180,7 @@ secret/upstream-tls created
 
 Third, we enable HTTPS for our Virtual Service by using `kubectl` to apply the following change.
 
-{{< highlight shell "hl_lines=7-10" >}}
+{{< highlight yaml "hl_lines=7-10" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -292,7 +292,7 @@ Note that we have used the `scopes` parameter to indicate to the identity provid
 
 Finally, use `kubectl` to update the Virtual Service to use Okta OIDC authentication:
 
-{{< highlight shell "hl_lines=22-26" >}}
+{{< highlight yaml "hl_lines=22-26" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -357,7 +357,7 @@ It will use a regular expression to extract the JWT token from the Cookie header
 
 Apply these transformation changes to the Gloo Virtual Service.
 
-{{< highlight shell "hl_lines=27-42" >}}
+{{< highlight yaml "hl_lines=27-42" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -433,7 +433,7 @@ spec:
 
 Next, we will update our Virtual Service to use the JWKS upstream to decode the JWT and convert the `email` claim to a custom header `x-solo-claim-email`.  Apply these changes using `kubectl`.
 
-{{< highlight shell "hl_lines=43-58" >}}
+{{< highlight yaml "hl_lines=43-58" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
@@ -504,7 +504,7 @@ In this section, we will use the `email` user identity extracted from the JWT to
 
 Apply the following change to your cluster using `kubectl`.
 
-{{< highlight shell "hl_lines=59-69" >}}
+{{< highlight yaml "hl_lines=59-69" >}}
 apiVersion: gateway.solo.io/v1
 kind: VirtualService
 metadata:
