@@ -1,11 +1,18 @@
-{
+{ 
   "hosting": {
-    "target": "gloo-docs",
-    "public": "site",
+    "site": "gloo-docs", 
+    "public": "site-latest", 
     "ignore": [
       "firebase.json",
+      "themes/**/*",
+      "content/**/*",
       "**/.*",
       "**/node_modules/**"
     ]
-  }
+    // "rewrites": [
+    //   {
+    //     "source": "/", "destination": "/gloo/latest/index.html"
+    //   }
+    // ] 
+  } 
 }
