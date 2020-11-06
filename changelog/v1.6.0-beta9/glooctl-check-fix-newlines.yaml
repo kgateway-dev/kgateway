@@ -1,0 +1,4 @@
+changelog:
+  - type: NON_USER_FACING
+    description: fixes glooctl check error messages that are displayed when deployments checks have failed
+    issueLink: https://github.com/solo-io/gloo/issues/2952
