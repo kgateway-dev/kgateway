@@ -349,7 +349,7 @@ You can also test other `httpbin` endpoints via the Gloo gateway.  For example, 
 
 ## JWT Claim Extraction
 
-The `id_token` contains a [JWT](https://jwt.io/) from which we can extract claims that may be useful in driving downstream RBAC policies.  In this section, we will enhance our Virtual Service by apply a transformation.  
+The `id_token` contains a [JWT](https://jwt.io/) from which we can extract claims that may be useful in driving downstream RBAC policies.  In this section, we will enhance our Virtual Service by applying a transformation.  
 
 ### Transform Okta Cookie to JWT Header
 
