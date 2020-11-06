@@ -574,7 +574,7 @@ func checkGateways(namespaces []string) error {
 func checkProxies(ctx context.Context, namespaces []string, glooNamespace string, deployments *appsv1.DeploymentList) error {
 	fmt.Printf("Checking proxies... ")
 	if deployments == nil {
-		fmt.Printf("Skipping due to an error in checking deployments")
+		fmt.Println("Skipping due to an error in checking deployments")
 		return fmt.Errorf("proxy check was skipped due to an error in checking deployments")
 	}
 	var multiErr *multierror.Error
