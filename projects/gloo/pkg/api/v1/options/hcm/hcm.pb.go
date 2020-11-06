@@ -66,9 +66,12 @@ func (HttpConnectionManagerSettings_ForwardClientCertDetails) EnumDescriptor() (
 type HttpConnectionManagerSettings_ServerHeaderTransformation int32
 
 const (
-	HttpConnectionManagerSettings_OVERWRITE        HttpConnectionManagerSettings_ServerHeaderTransformation = 0
+	// (DEFAULT) Overwrite any Server header with the contents of server_name.
+	HttpConnectionManagerSettings_OVERWRITE HttpConnectionManagerSettings_ServerHeaderTransformation = 0
+	// If no Server header is present, append Server server_name If a Server header is present, pass it through.
 	HttpConnectionManagerSettings_APPEND_IF_ABSENT HttpConnectionManagerSettings_ServerHeaderTransformation = 1
-	HttpConnectionManagerSettings_PASS_THROUGH     HttpConnectionManagerSettings_ServerHeaderTransformation = 2
+	// Pass through the value of the server header, and do not append a header if none is present.
+	HttpConnectionManagerSettings_PASS_THROUGH HttpConnectionManagerSettings_ServerHeaderTransformation = 2
 )
 
 var HttpConnectionManagerSettings_ServerHeaderTransformation_name = map[int32]string{
@@ -119,8 +122,9 @@ type HttpConnectionManagerSettings struct {
 	// Note: WebSocket upgrades are enabled by default on the HTTP Connection Manager and must be explicitly disabled.
 	Upgrades []*protocol_upgrade.ProtocolUpgradeConfig `protobuf:"bytes,21,rep,name=upgrades,proto3" json:"upgrades,omitempty"`
 	// For an explanation of these settings see https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-httpprotocoloptions
-	MaxConnectionDuration      *time.Duration                                           `protobuf:"bytes,23,opt,name=max_connection_duration,json=maxConnectionDuration,proto3,stdduration" json:"max_connection_duration,omitempty"`
-	MaxStreamDuration          *time.Duration                                           `protobuf:"bytes,24,opt,name=max_stream_duration,json=maxStreamDuration,proto3,stdduration" json:"max_stream_duration,omitempty"`
+	MaxConnectionDuration *time.Duration `protobuf:"bytes,23,opt,name=max_connection_duration,json=maxConnectionDuration,proto3,stdduration" json:"max_connection_duration,omitempty"`
+	MaxStreamDuration     *time.Duration `protobuf:"bytes,24,opt,name=max_stream_duration,json=maxStreamDuration,proto3,stdduration" json:"max_stream_duration,omitempty"`
+	// For an explanation of the settings see: https://www.envoyproxy.io/docs/envoy/latest/api-v3/extensions/filters/network/http_connection_manager/v3/http_connection_manager.proto.html#envoy-v3-api-enum-extensions-filters-network-http-connection-manager-v3-httpconnectionmanager-serverheadertransformation
 	ServerHeaderTransformation HttpConnectionManagerSettings_ServerHeaderTransformation `protobuf:"varint,25,opt,name=server_header_transformation,json=serverHeaderTransformation,proto3,enum=hcm.options.gloo.solo.io.HttpConnectionManagerSettings_ServerHeaderTransformation" json:"server_header_transformation,omitempty"`
 	XXX_NoUnkeyedLiteral       struct{}                                                 `json:"-"`
 	XXX_unrecognized           []byte                                                   `json:"-"`
