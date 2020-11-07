@@ -142,7 +142,7 @@ If you create a VirtualService and assign it TLS/SSL configuration, it will be b
 
 In the event you have multiple Gateways/listeners or you want more fine-grained control over how a VirtualService gets associated with a Gateway, you can explicitly add the VirtualService name to the Gateway resource like this:
 
-{{< highlight yaml "hl_lines=9-11" >}}
+{{< highlight yaml "hl_lines=9-12" >}}
 apiVersion: gateway.solo.io/v1
 kind: Gateway
 metadata:
@@ -151,9 +151,10 @@ metadata:
 spec:
   bindAddress: '::'
   bindPort: 8080
-  virtualServices:
-  - name: pet-virtual-service
-    namespace: gloo-system
+  httpGateway:
+    virtualServices:
+    - name: pet-virtual-service
+      namespace: gloo-system
 status:
   reported_by: gateway
   state: 1
@@ -162,6 +163,25 @@ status:
       reported_by: gloo
       state: 1
 {{< /highlight >}}
+
+Or you can match on a map of labels that you have applied to the VirtualService:
+
+{{< highlight yaml "hl_lines=9-12" >}}
+apiVersion: gateway.solo.io/v1
+kind: Gateway
+metadata:
+  name: gateway-proxy
+  namespace: gloo-system
+spec:
+  bindAddress: '::'
+  bindPort: 8080
+  httpGateway:
+    virtualServiceSelector:
+      label-name: label-value
+      anotherlabel-name: anotherlabel-value
+{{< /highlight >}}
+
+
 
 #### How do I configure TLS for Gloo
 
