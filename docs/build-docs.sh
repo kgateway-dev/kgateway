@@ -1,8 +1,8 @@
 #!/bin/bash
 
 ###################################################################################
-# This script generates a versioned docs website for Gloo Edge and
-# deploys to Firebase.
+# This script generates a versioned docs website for Gloo Edge which can 
+# then be deployed to firebase
 ###################################################################################
 
 set -ex
