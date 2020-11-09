@@ -34,6 +34,10 @@ be deployed to firebase using the following command:
 
 `firebase deploy --only hosting --project=solo-corp --config=ci/firebase.json`
 
+Building the docs from master allows us to make changes to the way the docs are packaged and published without 
+needing to backport the changes each time. Currently, the `build-docs.sh` script copies the `layouts` folder, and the
+`Makefile` before building the docs. This allows the build, and styles to remain consistent.
+
 
 # Shortcode/Hugo tips
 - Shortcodes cannot be embedded in other shortcodes
