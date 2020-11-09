@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ###################################################################################
-# This script generates a versioned docs website for Service Mesh Hub and
+# This script generates a versioned docs website for Gloo Edge and
 # deploys to Firebase.
 ###################################################################################
 
@@ -9,13 +9,14 @@ set -ex
 
 # Update this array with all versions of SMH to include in the versioned docs website.
 declare -a versions=($(cat active_versions.json | jq -rc '."versions" | join(" ")'))
+declare -a oldVersions=($(cat active_versions.json | jq -rc '."oldVersions" | join(" ")'))
 latestVersion=$(cat active_versions.json | jq -r ."latest")
 
 # Firebase configuration
 firebaseJson=$(cat <<EOF
 { 
   "hosting": {
-    "site": "gloo-docs", 
+    "site": "edge-docs", 
     "public": "public", 
     "ignore": [
       "firebase.json",
@@ -28,11 +29,11 @@ firebaseJson=$(cat <<EOF
     "rewrites": [      
       {
         "source": "/",
-        "destination": "/gloo/latest/index.html"
+        "destination": "/edge/latest/index.html"
       },
       {
-        "source": "/gloo",
-        "destination": "/gloo/latest/index.html"
+        "source": "/edge",
+        "destination": "/edge/latest/index.html"
       }
     ] 
   } 
@@ -52,27 +53,29 @@ git clone https://github.com/solo-io/gloo.git $repoDir
 
 export PATH=$workingDir/_output/.bin:$PATH
 
-# install go tools to sub-repo
-make -C $repoDir install-go-tools
-
 # Generates a data/Edge.yaml file with $1 being the specified version.
 function generateHugoVersionsYaml() {
-  yamlFile=$repoDir/docs/data/Edge.yaml
+  yamlFile=$repoDir/docs/data/Solo.yaml
   # Truncate file first.
   echo "LatestVersion: $latestVersion" > $yamlFile
-  # /gloo prefix is needed because the site is hosted under a domain name with suffix /gloo
-  echo "DocsVersion: /gloo/$1" >> $yamlFile
+  # /edge prefix is needed because the site is hosted under a domain name with suffix /edge
+  echo "DocsVersion: /edge/$1" >> $yamlFile
   echo "CodeVersion: $1" >> $yamlFile
   echo "DocsVersions:" >> $yamlFile
   for hugoVersion in "${versions[@]}"
   do
     echo "  - $hugoVersion" >> $yamlFile
   done
+  echo "OldVersions:" >> $yamlFile
+  for hugoVersion in "${oldVersions[@]}"
+  do
+    echo "  - $hugoVersion" >> $yamlFile
+  done
 }
 
 
-for version in "${versions[@]}"
-do
+function generateSiteForVersion() {
+  version=$1
   echo "Generating site for version $version"
   cd $repoDir
   if [[ "$version" == "master" ]]
@@ -86,24 +89,35 @@ do
   then
     version="latest"
   fi
-  # go run codegen/docs/docsgen.go
 
   cd docs
   # Generate data/Edge.yaml file with version info populated.
   generateHugoVersionsYaml $version
-  # Use nav bar as defined in main, not the checked out temp repo.
+  # Use styles as defined on master, not the checked out temp repo.
   mkdir -p layouts/partials
-  cp -f $workingDir/layouts/partials/versionnavigation.html layouts/partials/versionnavigation.html
+  cp -a $workingDir/layouts/partials/. layouts/partials/
+  cp -f $workingDir/Makefile Makefile
   # Generate the versioned static site.
   make site-release
 
   cat site-latest/index.json | node $workingDir/search/generate-search-index.js > site-latest/search-index.json
   # Copy over versioned static site to firebase content folder.
-  mkdir -p $docsSiteDir/public/gloo/$version
-  cp -a site-latest/. $docsSiteDir/public/gloo/$version/
+  mkdir -p $docsSiteDir/public/edge/$version
+  cp -a site-latest/. $docsSiteDir/public/edge/$version/
 
   # Discard git changes and vendor_any for subsequent checkouts
   cd $repoDir
   git reset --hard
   rm -fr vendor_any
+}
+
+
+for version in "${versions[@]}"
+do
+  generateSiteForVersion $version
+done
+
+for version in "${oldVersions[@]}"
+do
+  generateSiteForVersion $version
 done

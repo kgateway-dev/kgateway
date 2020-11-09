@@ -20,9 +20,6 @@ GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
 GCR_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
 IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 
-# this allows us to host docs.solo.io/gloo/vX.Y.Z or docs.solo.io/supergloo/vA.B.C
-PRODUCT_SCOPE := gloo
-
 HUGO_VERSION := 0.69.2
 
 SOLO_HUGO_THEME_REVISION := d6e08db07e34d7823b5a5e0112f83a33cb1a40dc
@@ -40,7 +37,6 @@ site-common: clean
 
 .PHONY: site-test
 site-test: site-common
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --no-scope
 	# ensure hugo version locally installed matches the version in cloudbuild CI
 	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
@@ -49,7 +45,6 @@ site-test: site-common
 
 .PHONY: site-release
 site-release: site-common
-	GO111MODULE=on go run cmd/generate_changelog_doc.go gen-version-scope-data --product gloo --version $(VERSION) --call-latest
 	# ensure hugo version locally installed matches the version in cloudbuild CI
 	hugo version | grep -q $(HUGO_VERSION)
 	hugo --config docs.toml
@@ -67,7 +62,7 @@ serve-site: site-test
 
 .PHONY: clean
 clean:
-	rm -fr ./site ./resources ./site-latest ./site-versioned ./data/Solo.yaml ./public ./ci ./gloo-temp
+	rm -fr ./site ./resources ./site-latest ./site-versioned ./public ./ci ./gloo-temp
 
 # Uses https://github.com/gjtorikian/html-proofer
 # Does not require running site; just make sure you generate the site and then run it
@@ -82,29 +77,6 @@ check-links:
 # to install html-proofer deps (only works with gcc, not clang!)
 install-tools:
 	gem install html-proofer
-
-
-# use "current" instead of the default "latest" so we don't accidentally push something with this tag 
-CURRENT_TAG:=current
-
-.PHONY: docker-push-docs
-docker-push-docs: site-release manifest
-ifeq ($(ON_DEFAULT_BRANCH), true)
-	docker build \
-		--build-arg VERSION=latest \
-		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
-		--build-arg FROM_DIR=./site-latest \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(CURRENT_TAG)
-endif
-ifeq ($(RELEASE),true)
-	docker build \
-		--build-arg VERSION=$(DOCS_VERSION) \
-		--build-arg PRODUCT_SCOPE=$(PRODUCT_SCOPE) \
-		--build-arg FROM_DIR=./site-versioned \
-		-t $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION) .
-	docker push $(GCR_REPO_PREFIX)/gloo-docs:$(VERSION)
-endif
 
 .PHONY: manifest
 manifest:
