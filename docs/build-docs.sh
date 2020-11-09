@@ -16,7 +16,7 @@ latestVersion=$(cat active_versions.json | jq -r ."latest")
 firebaseJson=$(cat <<EOF
 { 
   "hosting": {
-    "site": "edge-docs", 
+    "site": "gloo-edge", 
     "public": "public", 
     "ignore": [
       "firebase.json",
