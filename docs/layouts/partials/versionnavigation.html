@@ -3,7 +3,7 @@
 {{ end }}
 <label for="version-selection" id="version-selection-label">Version:</label>
 <select id="version-selection" onchange="javascript:location.href = this.value;">
-  {{- range $version := append .Site.Data.Solo.DocsVersions .Site.Data.Solo.OldVersions }}
+  {{- range $version := append .Site.Data.Solo.OldVersions .Site.Data.Solo.DocsVersions }}
   {{ $versionNum := $version }}
   {{ if eq $versionNum $.Site.Data.Solo.LatestVersion }}
       {{ $version = "latest" }}
