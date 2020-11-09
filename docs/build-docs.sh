@@ -29,11 +29,11 @@ firebaseJson=$(cat <<EOF
     "rewrites": [      
       {
         "source": "/",
-        "destination": "/edge/latest/index.html"
+        "destination": "/gloo-edge/latest/index.html"
       },
       {
-        "source": "/edge",
-        "destination": "/edge/latest/index.html"
+        "source": "/gloo-edge",
+        "destination": "/gloo-edge/latest/index.html"
       }
     ] 
   } 
@@ -53,13 +53,13 @@ git clone https://github.com/solo-io/gloo.git $repoDir
 
 export PATH=$workingDir/_output/.bin:$PATH
 
-# Generates a data/Edge.yaml file with $1 being the specified version.
+# Generates a data/Solo.yaml file with $1 being the specified version.
 function generateHugoVersionsYaml() {
   yamlFile=$repoDir/docs/data/Solo.yaml
   # Truncate file first.
   echo "LatestVersion: $latestVersion" > $yamlFile
-  # /edge prefix is needed because the site is hosted under a domain name with suffix /edge
-  echo "DocsVersion: /edge/$1" >> $yamlFile
+  # /gloo-edge prefix is needed because the site is hosted under a domain name with suffix /gloo-edge
+  echo "DocsVersion: /gloo-edge/$1" >> $yamlFile
   echo "CodeVersion: $1" >> $yamlFile
   echo "DocsVersions:" >> $yamlFile
   for hugoVersion in "${versions[@]}"
@@ -91,7 +91,7 @@ function generateSiteForVersion() {
   fi
 
   cd docs
-  # Generate data/Edge.yaml file with version info populated.
+  # Generate data/Solo.yaml file with version info populated.
   generateHugoVersionsYaml $version
   # Use styles as defined on master, not the checked out temp repo.
   mkdir -p layouts/partials
@@ -102,8 +102,8 @@ function generateSiteForVersion() {
 
   cat site-latest/index.json | node $workingDir/search/generate-search-index.js > site-latest/search-index.json
   # Copy over versioned static site to firebase content folder.
-  mkdir -p $docsSiteDir/public/edge/$version
-  cp -a site-latest/. $docsSiteDir/public/edge/$version/
+  mkdir -p $docsSiteDir/public/gloo-edge/$version
+  cp -a site-latest/. $docsSiteDir/public/gloo-edge/$version/
 
   # Discard git changes and vendor_any for subsequent checkouts
   cd $repoDir
