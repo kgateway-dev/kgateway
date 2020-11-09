@@ -1,7 +1,4 @@
 # Note to developers/testers
-# >> to force docs publication and deployment during testing, do the following:
-# cd to repo root, connect to a cluster where you want to push your images, run the following (update SUFFIX as you like)
-# SUFFIX=a GCLOUD_PROJECT_ID=solo-public TAGGED_VERSION=vtest-docs-build$SUFFIX make publish-docs -B && kubectl apply -f docs/install/manifest-latest.yaml -n docs
 # >> to run host the docs locally, do the following
 # cd to the docs dir
 # make serve-site -B
@@ -10,15 +7,6 @@
 
 # remove the "v" prefix
 VERSION ?= $(shell echo $(TAGGED_VERSION) | cut -c 2-)
-
-# replace the patch version number with "0"
-# DOCS_VERSION := $(word 1,$(subst ., ,$(VERSION))).$(word 2,$(subst ., ,$(VERSION))).0
-
-# Passed by cloudbuild
-GCLOUD_PROJECT_ID := $(GCLOUD_PROJECT_ID)
-
-GCR_REPO_PREFIX := gcr.io/$(GCLOUD_PROJECT_ID)
-IMAGE_REPO := $(GCR_REPO_PREFIX)/gloo-docs
 
 HUGO_VERSION := 0.69.2
 
@@ -77,19 +65,6 @@ check-links:
 # to install html-proofer deps (only works with gcc, not clang!)
 install-tools:
 	gem install html-proofer
-
-.PHONY: manifest
-manifest:
-	helm template install/helm \
-		--set docsVersion=$(DOCS_VERSION) \
-		--set image.tag=$(VERSION) \
-		--set image.repository=$(IMAGE_REPO) \
-		> install/manifest-versioned.yaml
-	helm template install/helm \
-		--set docsVersion=latest \
-		--set image.tag=$(CURRENT_TAG) \
-		--set image.repository=$(IMAGE_REPO) \
-		> install/manifest-latest.yaml
 
 .PHONY: build-site
 build-site: clean

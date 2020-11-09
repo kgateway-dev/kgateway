@@ -10,6 +10,5 @@ ci
 gloo-temp
 
 data/Solo.yaml
-data/EdgeVersions.yaml
 
 search-index.json
