@@ -54,6 +54,19 @@ git clone https://github.com/solo-io/gloo.git $repoDir
 export PATH=$workingDir/_output/.bin:$PATH
 
 # Generates a data/Solo.yaml file with $1 being the specified version.
+# Should end up looking like the follwing:
+
+# LatestVersion: 1.5.8
+# DocsVersion: /gloo-edge/1.3.32
+# CodeVersion: 1.3.32
+# DocsVersions:
+#   - master
+#   - 1.6.0-beta8
+#   - 1.5.8
+# OldVersions:
+#   - 1.4.15
+#   - 1.3.32
+
 function generateHugoVersionsYaml() {
   yamlFile=$repoDir/docs/data/Solo.yaml
   # Truncate file first.
@@ -111,12 +124,13 @@ function generateSiteForVersion() {
   rm -fr vendor_any
 }
 
-
+# Generate docs for all versions
 for version in "${versions[@]}"
 do
   generateSiteForVersion $version
 done
 
+# Generate docs for all previous versions
 for version in "${oldVersions[@]}"
 do
   generateSiteForVersion $version
