@@ -1,5 +1,5 @@
 changelog:
-  - type: NEW_FEATURE
+  - type: FIX
     issueLink: https://github.com/solo-io/gloo/issues/3769
     description: >
       Expose the server_header_transformation setting via the Gloo API.
