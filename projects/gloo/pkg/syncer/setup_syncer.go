@@ -507,6 +507,7 @@ func RunGlooWithExtensions(opts bootstrap.Opts, extensions Extensions) error {
 		Reporter: rpt,
 		RateLimitServiceSettings: ratelimit.ServiceSettings{
 			Descriptors: opts.Settings.GetRatelimit().GetDescriptors(),
+			SetDescriptors: opts.Settings.GetRatelimit().GetSetDescriptors(),
 		},
 	}
 	for _, syncerExtensionFactory := range extensions.SyncerExtensions {

@@ -27,7 +27,6 @@ func generateCustomEnvoyConfigForVhost(ctx context.Context, rlactions []*gloorl.
 			Stage: &wrappers.UInt32Value{Value: customStage},
 		}
 		rl.Actions = ConvertActions(ctx, rlaction.Actions)
-		rl.Actions = append(rl.Actions, ConvertActions(ctx, rlaction.SetActions)...)
 		ret = append(ret, rl)
 	}
 	return ret
