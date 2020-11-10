@@ -7,7 +7,7 @@
 
 set -ex
 
-# Update this array with all versions of SMH to include in the versioned docs website.
+# Update this array with all versions of Gloo Edge to include in the versioned docs website.
 declare -a versions=($(cat active_versions.json | jq -rc '."versions" | join(" ")'))
 declare -a oldVersions=($(cat active_versions.json | jq -rc '."oldVersions" | join(" ")'))
 latestVersion=$(cat active_versions.json | jq -r ."latest")
