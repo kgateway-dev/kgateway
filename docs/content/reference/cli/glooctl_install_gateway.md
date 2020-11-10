@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl install gateway
 
-install the Gloo Edge Gateway on Kubernetes
+install the Gloo Edge on Kubernetes
 
 ### Synopsis
 

@@ -239,7 +239,7 @@ spec:
 ### Testing our configuration
 The authentication flow to get the access token happens outside of Gloo Edge's purview. To access the petclinic site, we will simply include the access token in our request. Gloo Edge will validate that the token is active using the URL we specified in the AuthConfig.
 
-1. Port-forward the Gloo Edge Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
+1. Port-forward the Gloo Edge Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid3=$! # Store the port-forward pid so we can kill the process later

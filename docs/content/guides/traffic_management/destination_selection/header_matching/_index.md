@@ -28,9 +28,9 @@ In this guide, we're going to take a closer look at an example Virtual Service t
 
 ## Setup
 
-If you have not yet deployed Gloo Edge, you can start by following the directions contained within the guide [Installing Gloo Edge Gateway on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
+If you have not yet deployed Gloo Edge, you can start by following the directions contained within the guide [Installing Gloo Edge on Kubernetes]({{% versioned_link_path fromRoot="/installation/gateway/kubernetes/" %}}).
 
-This guide also assumes that you are running Gloo Edge Gateway in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
+This guide also assumes that you are running Gloo Edge in a Kubernetes cluster. Each example can be adapted to alternative deployments, such as using the HashiCorp stack of Nomad, Consul, and Vault.
 
 {{< readfile file="/static/content/setup_notes" markdown="true">}}
 

@@ -25,7 +25,7 @@ A standard installation of Gloo Edge includes four primary components:
 * **Gateway**
   * Translates Gateway, Virtual Service, and RouteTable custom resources into a Proxy custom resource.
   * Validates proposed configurations before application.
-* **Gloo**
+* **Gloo Edge**
   * Creates an Envoy configuration from multiple custom resources.
   * Serves Envoy configurations using xDS.
   * Validates Proxy configurations for the Gateway.
@@ -129,7 +129,7 @@ Gloo Edge supports the use of mutual TLS (mTLS) communication between the Gloo E
 ### Updated pods
 
 The following pods are updated to support mTLS:
-* **Gloo**: Envoy and SDS sidecars are added.
+* **Gloo Edge**: Envoy and SDS sidecars are added.
 * **Gateway-proxy**: SDS sidecars added and ConfigMap updated for mTLS.
 * **ExtAuth**: Envoy and SDS sidecars are added.
 * **Rate-limit**: Envoy and SDS sidecars are added.

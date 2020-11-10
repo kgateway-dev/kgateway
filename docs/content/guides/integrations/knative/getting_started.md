@@ -75,7 +75,7 @@ run `glooctl proxy url --name knative-external-proxy`
   
      Gloo Edge will use the `Host` header to route requests to the correct
      service. You can send a request to the `helloworld-go` service with curl
-     using the `Host` and URL of the Gloo Edge Gateway from above:
+     using the `Host` and URL of the Gloo Edge gateway from above:
   
      ```
      curl -H "Host: helloworld-go.default.example.com" $(glooctl proxy url --name knative-external-proxy)

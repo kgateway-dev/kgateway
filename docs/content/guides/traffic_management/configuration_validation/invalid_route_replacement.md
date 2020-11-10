@@ -113,7 +113,7 @@ spec:
       proxyValidationServerAddr: gloo:9988
   gloo:
     invalidConfigPolicy:
-      invalidRouteResponseBody: Gloo Gateway has invalid configuration. Administrators
+      invalidRouteResponseBody: Gloo Edge has invalid configuration. Administrators
         should run `glooctl check` to find and fix config errors.
       invalidRouteResponseCode: 404
       replaceInvalidRoutes: true
@@ -151,7 +151,7 @@ curl $(glooctl proxy url)/bad-route
 The route will return the status code and body defined in the Settings:
 
 ```
-Gloo Gateway has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
+Gloo Edge has invalid configuration. Administrators should run `glooctl check` to find and fix config errors.
 ```
 
 Great! We've just seen the benefits of enabling route replacement on our virtual services. 

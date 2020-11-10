@@ -46,5 +46,5 @@ glooctl install gateway enterprise [flags]
 
 ### SEE ALSO
 
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge Gateway on Kubernetes
+* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge on Kubernetes
 

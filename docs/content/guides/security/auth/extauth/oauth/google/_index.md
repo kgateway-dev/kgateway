@@ -191,7 +191,7 @@ This example is sending the `/callback` prefix to `/login`, a path that does not
 {{% /notice %}}
 
 ## Testing our configuration
-Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for security reasons. We can make the Gloo Edge Gateway available on localhost using `kubectl port-forward`:
+Since we didn't register an external URL, Google will only allow authentication with applications running on localhost for security reasons. We can make the Gloo Edge proxy available on localhost using `kubectl port-forward`:
 
 ```shell
 kubectl port-forward -n gloo-system deploy/gateway-proxy 8080 &

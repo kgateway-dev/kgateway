@@ -253,7 +253,7 @@ portForwardPid1=$! # Store the port-forward pid so we can kill the process later
 echo "127.0.0.1 dex.gloo-system.svc.cluster.local" | sudo tee -a /etc/hosts
 ```
 
-1. Port-forward the Gloo Edge Gateway Proxy service so that it is reachable from your machine at `localhost:8080`:
+1. Port-forward the Gloo Edge Proxy service so that it is reachable from your machine at `localhost:8080`:
 ```
 kubectl -n gloo-system port-forward svc/gateway-proxy 8080:80 &
 portForwardPid2=$! # Store the port-forward pid so we can kill the process later

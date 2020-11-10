@@ -5,7 +5,7 @@ description: How to install Gloo Edge to run in Gateway Mode on Kubernetes (Defa
 weight: 60
 ---
 
-## Installing the Gloo Edge Gateway on Kubernetes
+## Installing the Gloo Edge on Kubernetes
 
 These directions assume you've prepared your Kubernetes cluster appropriately. Full details on setting up your Kubernetes cluster [here]({{% versioned_link_path fromRoot="/installation/platform_configuration/cluster_setup/" %}}).
 
@@ -31,7 +31,7 @@ Before starting installation, please ensure that you've prepared your Kubernetes
 
 ### Installing on Kubernetes with `glooctl`
 
-Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge Gateway to the `gloo-system` namespace:
+Once your Kubernetes cluster is up and running, run the following command to deploy the Gloo Edge to the `gloo-system` namespace:
 
 ```bash
 glooctl install gateway enterprise --license-key YOUR_LICENSE_KEY

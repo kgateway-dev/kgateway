@@ -84,7 +84,7 @@ spec:
   
      Gloo Edge will use the `Host` header to route requests to the correct
      service. You can send a request to the `helloworld-go` service with curl
-     using the `Host` and URL of the Gloo Edge Gateway from above:
+     using the `Host` and URL of the Gloo Edge gateway from above:
 
      {{% notice note %}}
    Note that if you are trying to run this guide on minikube, you will not have an external load balancer IP for the ingress, so you will instead need to use the nodePort, more details can be found in <a href="#testing-on-minikube">the minikube instructions below</a>.

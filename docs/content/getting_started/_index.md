@@ -5,7 +5,7 @@ weight: 5
 
 We know you want to jump right in and start hacking away with Gloo Edge. That's awesome! If you want to try out Gloo Edge in a hosted setting, please check out our [Katacoda](https://katacoda.com/solo-io) courses that will guide you through a number of scenarios using Gloo Edge, all in a sandboxed environment.
 
-If you'd rather use your own Kubernetes cluster, all you need to do is install Gloo Edge Gateway using `glooctl` or Helm.
+If you'd rather use your own Kubernetes cluster, all you need to do is install Gloo Edge using `glooctl` or Helm.
 
 {{< tabs >}}
 {{< tab name="glooctl" codelang="shell">}}
@@ -13,7 +13,7 @@ If you'd rather use your own Kubernetes cluster, all you need to do is install G
 curl -sL https://run.solo.io/gloo/install | sh
 export PATH=$HOME/.gloo/bin:$PATH
 
-# Install Gloo Edge Gateway
+# Install Gloo Edge
 glooctl install gateway
 {{< /tab >}}
 {{< tab name="Helm" codelang="shell">}}

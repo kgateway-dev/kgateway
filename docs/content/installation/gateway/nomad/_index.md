@@ -171,7 +171,7 @@ Ports will be forwarded to your local system, allowing you to access services on
 | gloo/https | 8443  |
 | gloo/admin | 19000 |
 
-Once you have finished launching these services, you are now ready to [install Gloo Edge Gateway](#install-gloo).
+Once you have finished launching these services, you are now ready to [install Gloo Edge](#install-gloo).
 
 ---
 

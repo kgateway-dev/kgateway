@@ -35,7 +35,7 @@ choose which version of Gloo Edge to install.
 
 * [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl install federation](../glooctl_install_federation)	 - install Gloo Edge Federation on Kubernetes
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge Gateway on Kubernetes
+* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge on Kubernetes
 * [glooctl install ingress](../glooctl_install_ingress)	 - install the Gloo Edge Ingress Controller on Kubernetes
 * [glooctl install knative](../glooctl_install_knative)	 - install Knative with Gloo Edge on Kubernetes
 

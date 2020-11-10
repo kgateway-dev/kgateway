@@ -9,7 +9,7 @@ Gloo Edge Enterprise developer portal.
 
 ## Important Update
 We recently released an updated version of the Developer Portal. The new Developer Portal adds a number of new features, 
-including the ability to automatically generate routing configuration for your Gloo Edge Gateways based on your service 
+including the ability to automatically generate routing configuration for your Gloo Edge installation based on your service 
 specifications.
 
 The new Developer Portal is a standalone application that can be installed on top of **Gloo Edge Enterprise** starting with 
