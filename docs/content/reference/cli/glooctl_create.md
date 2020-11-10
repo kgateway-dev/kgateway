@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl create
 
-Create a Gloo resource
+Create a Gloo Edge resource
 
 ### Synopsis
 
-Gloo resources be created from files (including stdin)
+Gloo Edge resources be created from files (including stdin)
 
 ```
 glooctl create [flags]
@@ -41,7 +41,7 @@ glooctl create [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl create authconfig](../glooctl_create_authconfig)	 - Create an Auth Config
 * [glooctl create secret](../glooctl_create_secret)	 - Create a secret
 * [glooctl create upstream](../glooctl_create_upstream)	 - Create an Upstream

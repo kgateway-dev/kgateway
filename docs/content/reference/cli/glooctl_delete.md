@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl delete
 
-Delete a Gloo resource
+Delete a Gloo Edge resource
 
 ### Synopsis
 
-Delete a Gloo resource
+Delete a Gloo Edge resource
 
 ```
 glooctl delete [flags]
@@ -38,7 +38,7 @@ glooctl delete [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl delete proxy](../glooctl_delete_proxy)	 - delete a proxy
 * [glooctl delete upstream](../glooctl_delete_upstream)	 - delete an upstream
 * [glooctl delete upstreamgroup](../glooctl_delete_upstreamgroup)	 - delete an upstream group

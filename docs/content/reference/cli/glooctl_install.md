@@ -8,7 +8,7 @@ install gloo on different platforms
 
 ### Synopsis
 
-choose which version of Gloo to install.
+choose which version of Gloo Edge to install.
 
 ### Options
 
@@ -33,9 +33,9 @@ choose which version of Gloo to install.
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl install federation](../glooctl_install_federation)	 - install Gloo Federation on Kubernetes
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on Kubernetes
-* [glooctl install ingress](../glooctl_install_ingress)	 - install the Gloo Ingress Controller on Kubernetes
-* [glooctl install knative](../glooctl_install_knative)	 - install Knative with Gloo on Kubernetes
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl install federation](../glooctl_install_federation)	 - install Gloo Edge Federation on Kubernetes
+* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge Gateway on Kubernetes
+* [glooctl install ingress](../glooctl_install_ingress)	 - install the Gloo Edge Ingress Controller on Kubernetes
+* [glooctl install knative](../glooctl_install_knative)	 - install Knative with Gloo Edge on Kubernetes
 

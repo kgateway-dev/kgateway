@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl debug
 
-Debug a Gloo resource (requires Gloo running on Kubernetes)
+Debug a Gloo Edge resource (requires Gloo Edge running on Kubernetes)
 
 ### Synopsis
 
-Debug a Gloo resource (requires Gloo running on Kubernetes)
+Debug a Gloo Edge resource (requires Gloo Edge running on Kubernetes)
 
 ```
 glooctl debug [flags]
@@ -36,7 +36,7 @@ glooctl debug [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
-* [glooctl debug logs](../glooctl_debug_logs)	 - Debug Gloo logs (requires Gloo running on Kubernetes)
-* [glooctl debug yaml](../glooctl_debug_yaml)	 - Dump YAML representing the current Gloo state (requires Gloo running on Kubernetes)
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl debug logs](../glooctl_debug_logs)	 - Debug Gloo Edge logs (requires Gloo Edge running on Kubernetes)
+* [glooctl debug yaml](../glooctl_debug_yaml)	 - Dump YAML representing the current Gloo Edge state (requires Gloo Edge running on Kubernetes)
 

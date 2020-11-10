@@ -21,7 +21,7 @@ glooctl uninstall [flags]
       --delete-crds           Delete all gloo crds (all custom gloo objects will be deleted)
       --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
   -h, --help                  help for uninstall
-  -n, --namespace string      namespace in which Gloo is installed (default "gloo-system")
+  -n, --namespace string      namespace in which Gloo Edge is installed (default "gloo-system")
       --release-name string   helm release name (default "gloo")
   -v, --verbose               If true, output from kubectl commands will print to stdout/stderr
 ```
@@ -42,6 +42,6 @@ glooctl uninstall [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl uninstall federation](../glooctl_uninstall_federation)	 - uninstall gloo federation
 

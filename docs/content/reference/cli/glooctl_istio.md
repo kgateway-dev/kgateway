@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl istio
 
-Commands for interacting with Istio in Gloo
+Commands for interacting with Istio in Gloo Edge
 
 ### Synopsis
 
-Commands for interacting with Istio in Gloo
+Commands for interacting with Istio in Gloo Edge
 
 ```
 glooctl istio [flags]
@@ -38,7 +38,7 @@ glooctl istio [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl istio enable-mtls](../glooctl_istio_enable-mtls)	 - Enables Istio mTLS for a given upstream
 * [glooctl istio inject](../glooctl_istio_inject)	 - Enable SDS & istio-proxy sidecars in gateway-proxy pod
 * [glooctl istio uninject](../glooctl_istio_uninject)	 - Remove SDS & istio-proxy sidecars from gateway-proxy pod

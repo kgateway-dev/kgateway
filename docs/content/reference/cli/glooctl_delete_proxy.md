@@ -38,5 +38,5 @@ glooctl delete proxy [flags]
 
 ### SEE ALSO
 
-* [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
+* [glooctl delete](../glooctl_delete)	 - Delete a Gloo Edge resource
 

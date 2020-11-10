@@ -10,8 +10,8 @@ Create an Upstream
 
 Upstreams represent destination for routing HTTP requests. Upstreams can be compared to 
 [clusters](https://www.envoyproxy.io/docs/envoy/v1.11.2/intro/arch_overview/upstream/cluster_manager#cluster-manager) in Envoy terminology. 
-Each upstream in Gloo has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. 
-Each upstream type is handled by a corresponding Gloo plugin. 
+Each upstream in Gloo Edge has a type. Supported types include `static`, `kubernetes`, `aws`, `consul`, and more. 
+Each upstream type is handled by a corresponding Gloo Edge plugin. 
 
 
 ```
@@ -44,7 +44,7 @@ glooctl create upstream [flags]
 
 ### SEE ALSO
 
-* [glooctl create](../glooctl_create)	 - Create a Gloo resource
+* [glooctl create](../glooctl_create)	 - Create a Gloo Edge resource
 * [glooctl create upstream aws](../glooctl_create_upstream_aws)	 - Create an Aws Upstream
 * [glooctl create upstream azure](../glooctl_create_upstream_azure)	 - Create an Azure Upstream
 * [glooctl create upstream consul](../glooctl_create_upstream_consul)	 - Create a Consul Upstream

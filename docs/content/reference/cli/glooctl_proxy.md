@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl proxy
 
-interact with proxy instances managed by Gloo
+interact with proxy instances managed by Gloo Edge
 
 ### Synopsis
 
-these commands can be used to interact directly with the Proxies Gloo is managing. They are useful for interacting with and debugging the proxies (Envoy instances) directly.
+these commands can be used to interact directly with the Proxies Gloo Edge is managing. They are useful for interacting with and debugging the proxies (Envoy instances) directly.
 
 ### Options
 
@@ -35,11 +35,11 @@ these commands can be used to interact directly with the Proxies Gloo is managin
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl proxy address](../glooctl_proxy_address)	 - print the socket address for a proxy
 * [glooctl proxy dump](../glooctl_proxy_dump)	 - dump Envoy config from one of the proxy instances
 * [glooctl proxy logs](../glooctl_proxy_logs)	 - dump Envoy logs from one of the proxy instancesNote: this will enable verbose logging on Envoy
-* [glooctl proxy served-config](../glooctl_proxy_served-config)	 - dump Envoy config being served by the Gloo xDS server
+* [glooctl proxy served-config](../glooctl_proxy_served-config)	 - dump Envoy config being served by the Gloo Edge xDS server
 * [glooctl proxy stats](../glooctl_proxy_stats)	 - stats for one of the proxy instances
 * [glooctl proxy url](../glooctl_proxy_url)	 - print the http endpoint for a proxy
 

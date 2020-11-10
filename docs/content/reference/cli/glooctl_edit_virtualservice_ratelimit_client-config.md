@@ -11,7 +11,7 @@ Add rate-limits (Enterprise)
 Configure rate-limits, which are composed of rate-limit actions that translate request characteristics to rate-limit descriptor tuples.
 		For available actions and more information see: https://www.envoyproxy.io/docs/envoy/v1.9.0/api-v2/api/v2/route/route.proto#route-ratelimit-action
 		
-		This is a Gloo Enterprise feature.
+		This is a Gloo Edge Enterprise feature.
 
 ```
 glooctl edit virtualservice ratelimit client-config [flags]

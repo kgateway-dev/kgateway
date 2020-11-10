@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl install knative
 
-install Knative with Gloo on Kubernetes
+install Knative with Gloo Edge on Kubernetes
 
 ### Synopsis
 
@@ -19,17 +19,17 @@ glooctl install knative [flags]
 ```
       --create-namespace                Create the namespace to install gloo into (default true)
   -d, --dry-run                         Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string                     Install Gloo from this Helm chart archive file rather than from a release
+  -f, --file string                     Install Gloo Edge from this Helm chart archive file rather than from a release
   -h, --help                            help for knative
-  -e, --install-eventing                Bundle Knative-Eventing with your Gloo installation. Requires install-knative to be true
+  -e, --install-eventing                Bundle Knative-Eventing with your Gloo Edge installation. Requires install-knative to be true
       --install-eventing-version true   Version of Knative Eventing to install, when --install-eventing is set to true (default "0.10.0")
-  -k, --install-knative                 Bundle Knative-Serving with your Gloo installation (default true)
+  -k, --install-knative                 Bundle Knative-Serving with your Gloo Edge installation (default true)
       --install-knative-version true    Version of Knative Serving to install, when --install-knative is set to true. This version will also be used to install Knative Monitoring, --install-monitoring is set (default "0.10.0")
-  -m, --install-monitoring              Bundle Knative-Monitoring with your Gloo installation. Requires install-knative to be true
+  -m, --install-monitoring              Bundle Knative-Monitoring with your Gloo Edge installation. Requires install-knative to be true
   -n, --namespace string                namespace to install gloo into (default "gloo-system")
       --release-name string             helm release name (default "gloo")
-  -g, --skip-installing-gloo            Skip installing Gloo. Only Knative components will be installed
-      --values strings                  List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
+  -g, --skip-installing-gloo            Skip installing Gloo Edge. Only Knative components will be installed
+      --values strings                  List of files with value overrides for the Gloo Edge Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
       --version string                  version to install (e.g. 1.4.0, defaults to latest)
       --with-admin-console              install gloo and a read-only version of its admin console
 ```

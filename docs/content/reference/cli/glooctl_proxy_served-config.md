@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl proxy served-config
 
-dump Envoy config being served by the Gloo xDS server
+dump Envoy config being served by the Gloo Edge xDS server
 
 ### Synopsis
 
-dump Envoy config being served by the Gloo xDS server
+dump Envoy config being served by the Gloo Edge xDS server
 
 ```
 glooctl proxy served-config [flags]
@@ -39,5 +39,5 @@ glooctl proxy served-config [flags]
 
 ### SEE ALSO
 
-* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
+* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo Edge
 

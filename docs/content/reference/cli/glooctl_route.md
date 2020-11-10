@@ -34,6 +34,6 @@ subcommands for interacting with routes within virtual services
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl route sort](../glooctl_route_sort)	 - sort routes on an existing virtual service
 

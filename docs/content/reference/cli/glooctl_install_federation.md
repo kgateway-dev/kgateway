@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl install federation
 
-install Gloo Federation on Kubernetes
+install Gloo Edge Federation on Kubernetes
 
 ### Synopsis
 
@@ -19,12 +19,12 @@ glooctl install federation [flags]
 ```
       --create-namespace      Create the namespace to install gloo fed into (default true)
       --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
-      --file string           Install Gloo Fed from this Helm chart archive file rather than from a release
+      --file string           Install Gloo Edge Fed from this Helm chart archive file rather than from a release
   -h, --help                  help for federation
-      --license-key string    License key to activate Gloo Fed features
+      --license-key string    License key to activate Gloo Edge Fed features
       --namespace string      namespace to install gloo fed into (default "gloo-fed")
       --release-name string   helm release name (default "gloo-fed")
-      --values strings        List of files with value overrides for the Gloo Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
+      --values strings        List of files with value overrides for the Gloo Edge Fed Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
       --version string        version to install (e.g. 0.0.6, defaults to latest)
 ```
 

@@ -8,7 +8,7 @@ Configure rate-limits (Enterprise)
 
 ### Synopsis
 
-Configure rate-limits for requests that match this route. This is a Gloo Enterprise feature.
+Configure rate-limits for requests that match this route. This is a Gloo Edge Enterprise feature.
 
 ### Options
 

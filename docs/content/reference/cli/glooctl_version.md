@@ -8,7 +8,7 @@ Print current version
 
 ### Synopsis
 
-Get the version of Glooctl and Gloo
+Get the version of Glooctl and Gloo Edge
 
 ```
 glooctl version [flags]
@@ -38,5 +38,5 @@ glooctl version [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 

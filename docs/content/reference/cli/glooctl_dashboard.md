@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl dashboard
 
-Open Gloo dashboard
+Open Gloo Edge dashboard
 
 ### Synopsis
 
-Open the Gloo dashboard/UI in your default browser
+Open the Gloo Edge dashboard/UI in your default browser
 
 ```
 glooctl dashboard [flags]
@@ -38,5 +38,5 @@ glooctl dashboard [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 

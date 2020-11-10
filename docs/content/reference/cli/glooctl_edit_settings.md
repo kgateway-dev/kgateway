@@ -36,7 +36,7 @@ root command for settings
 
 ### SEE ALSO
 
-* [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
+* [glooctl edit](../glooctl_edit)	 - Edit a Gloo Edge resource
 * [glooctl edit settings externalauth](../glooctl_edit_settings_externalauth)	 - Configure external auth settings (Enterprise)
 * [glooctl edit settings ratelimit](../glooctl_edit_settings_ratelimit)	 - Configure rate limit settings (Enterprise)
 

@@ -8,7 +8,7 @@ Create a Consul Upstream
 
 ### Synopsis
 
-Consul Upstreams represent a collection of endpoints for Services registered with Consul. Typically, Gloo will automatically discover these upstreams, meaning you don't have to create them. However, if upstream discovery in Gloo is disabled, or ACL permissions have not been granted to Gloo to read from the registry, Consul services can be added to Gloo manually via the CLI.
+Consul Upstreams represent a collection of endpoints for Services registered with Consul. Typically, Gloo Edge will automatically discover these upstreams, meaning you don't have to create them. However, if upstream discovery in Gloo Edge is disabled, or ACL permissions have not been granted to Gloo Edge to read from the registry, Consul services can be added to Gloo Edge manually via the CLI.
 
 ```
 glooctl create upstream consul [flags]
@@ -20,7 +20,7 @@ glooctl create upstream consul [flags]
       --consul-service string         name of the service in the consul registry
       --consul-service-tags strings   comma-separated list of tags for choosing a subset of the service in the consul registry
   -h, --help                          help for consul
-      --service-spec-type string      if set, Gloo supports additional routing features to upstreams with a service spec. The service spec defines a set of features 
+      --service-spec-type string      if set, Gloo Edge supports additional routing features to upstreams with a service spec. The service spec defines a set of features 
 ```
 
 ### Options inherited from parent commands

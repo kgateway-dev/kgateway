@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl
 
-CLI for Gloo
+CLI for Gloo Edge
 
 ### Synopsis
 
-glooctl is the unified CLI for Gloo.
+glooctl is the unified CLI for Gloo Edge.
 	Find more information at https://solo.io
 
 ### Options
@@ -28,22 +28,22 @@ glooctl is the unified CLI for Gloo.
 
 ### SEE ALSO
 
-* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo resource
-* [glooctl check](../glooctl_check)	 - Checks Gloo resources for errors (requires Gloo running on Kubernetes)
+* [glooctl add](../glooctl_add)	 - Adds configuration to a top-level Gloo Edge resource
+* [glooctl check](../glooctl_check)	 - Checks Gloo Edge resources for errors (requires Gloo Edge running on Kubernetes)
 * [glooctl cluster](../glooctl_cluster)	 - Cluster commands
 * [glooctl completion](../glooctl_completion)	 - generate auto completion for your shell
-* [glooctl create](../glooctl_create)	 - Create a Gloo resource
-* [glooctl dashboard](../glooctl_dashboard)	 - Open Gloo dashboard
-* [glooctl debug](../glooctl_debug)	 - Debug a Gloo resource (requires Gloo running on Kubernetes)
-* [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
+* [glooctl create](../glooctl_create)	 - Create a Gloo Edge resource
+* [glooctl dashboard](../glooctl_dashboard)	 - Open Gloo Edge dashboard
+* [glooctl debug](../glooctl_debug)	 - Debug a Gloo Edge resource (requires Gloo Edge running on Kubernetes)
+* [glooctl delete](../glooctl_delete)	 - Delete a Gloo Edge resource
 * [glooctl demo](../glooctl_demo)	 - Demos (requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind.)
-* [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
-* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
+* [glooctl edit](../glooctl_edit)	 - Edit a Gloo Edge resource
+* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo Edge resources
 * [glooctl install](../glooctl_install)	 - install gloo on different platforms
-* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
+* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo Edge
 * [glooctl plugin](../glooctl_plugin)	 - Commands for interacting with glooctl plugins
-* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
-* [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource
+* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo Edge
+* [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo Edge resource
 * [glooctl route](../glooctl_route)	 - subcommands for interacting with routes within virtual services
 * [glooctl uninstall](../glooctl_uninstall)	 - uninstall gloo
 * [glooctl upgrade](../glooctl_upgrade)	 - upgrade glooctl binary

@@ -1,6 +1,6 @@
 # Enabling/Disabling Function Discovery in Kubernetes
 
-Gloo's Function Discovery Service (FDS) runs by default on all namespaces 
+Gloo Edge's Function Discovery Service (FDS) runs by default on all namespaces 
 except `kube-system` and `kube-public`.
 
 FDS sends http requests to discover well-known OpenAPI Endpoints (e.g.

@@ -10,7 +10,7 @@ Create a Virtual Service
 
 A virtual service describes the set of routes to match for a set of domains. 
 Virtual services are containers for routes assigned to a domain or set of domains. 
-Virtual services must not have overlapping domains, as the virtual service to match a request is selected by the Host header (in HTTP1) or :authority header (in HTTP2). When using Gloo Enterprise, virtual services can be configured with rate limiting, oauth, apikey auth, and more.
+Virtual services must not have overlapping domains, as the virtual service to match a request is selected by the Host header (in HTTP1) or :authority header (in HTTP2). When using Gloo Edge Enterprise, virtual services can be configured with rate limiting, oauth, apikey auth, and more.
 
 ```
 glooctl create virtualservice [flags]
@@ -47,5 +47,5 @@ glooctl create virtualservice [flags]
 
 ### SEE ALSO
 
-* [glooctl create](../glooctl_create)	 - Create a Gloo resource
+* [glooctl create](../glooctl_create)	 - Create a Gloo Edge resource
 

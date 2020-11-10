@@ -36,6 +36,6 @@ glooctl plugin [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl](../glooctl)	 - CLI for Gloo Edge
 * [glooctl plugin list](../glooctl_plugin_list)	 - List available glooctl plugins
 

@@ -38,5 +38,5 @@ glooctl istio uninject [flags]
 
 ### SEE ALSO
 
-* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
+* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo Edge
 
