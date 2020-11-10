@@ -1,5 +1,5 @@
 changelog:
-- type: NEW_FEATURE
+- type: NON_USER_FACING
   description: >
     Allow for set-style rate limiting.
     The previous rate-limiting implementation uses a tree structure for descriptors.
