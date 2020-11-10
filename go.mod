@@ -65,7 +65,7 @@ require (
 	github.com/solo-io/protoc-gen-ext v0.0.9
 	github.com/solo-io/reporting-client v0.1.2
 	github.com/solo-io/skv2 v0.8.1
-	github.com/solo-io/solo-apis v0.0.0-20200717214114-6a1daa5a5d05
+	github.com/solo-io/solo-apis v0.0.0-20201103221621-bbe4f60f466d
 	github.com/solo-io/solo-kit v0.13.14
 	github.com/solo-io/wasm/tools/wasme/pkg v0.0.0-20200922223809-7fff932e9e9a
 	github.com/spf13/afero v1.2.2
@@ -80,11 +80,10 @@ require (
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20201029080932-201ba4db2418 // indirect
-	golang.org/x/tools v0.0.0-20200916195026-c9a70fc28ce3
+	golang.org/x/tools v0.0.0-20201027213030-631220838841
 	google.golang.org/genproto v0.0.0-20200626011028-ee7919e894b5
 	google.golang.org/grpc v1.29.1
 	gopkg.in/AlecAivazis/survey.v1 v1.8.7
-	gopkg.in/src-d/go-billy.v4 v4.3.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.1.2
 	k8s.io/api v0.18.8
