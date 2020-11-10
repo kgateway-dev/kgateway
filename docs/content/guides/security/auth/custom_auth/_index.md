@@ -74,7 +74,7 @@ auth service. If the HTTP service returns a `200 OK` response, the request will 
 its original destination. Otherwise the request will be denied.
 You can fine tune which headers are sent to the the auth service, and whether or not the body is forwarded as well, 
 by editing the {{< protobuf name="enterprise.gloo.solo.io.Settings" display="extauth settings" >}} 
-in the Gloo Edge settings (see the example [below](#configure-gloo-settings)).
+in the Gloo Edge settings (see the example [below](#configure-gloo-edge-settings)).
 
 For reference, here's the code for the authorization server used in this tutorial:
 

@@ -164,7 +164,7 @@ auth configuration. The service:
 
 1. starts a new cancellable `context.Context`
 1. loops over all detected `configs` in the `AuthConfig` and for each one, if it is a plugin:
-    1. loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-to-load-your-plugins))
+    1. loads the correspondent plugin `.so` file from the `auth-plugins` directory (more info about this [later](#configuring-gloo-edge-to-load-your-plugins))
     2. invokes `NewConfigInstance` **passing in the context**
     3. deserializes the detected plugin config into the provided object
     4. invokes `GetAuthService` **passing in the context** and the configuration object
