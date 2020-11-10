@@ -11,7 +11,7 @@ managed by Okta.
 In this guide we will see how to authenticate users with your application via an OIDC flow that uses Okta as the identity 
 provider. This guide is an example to get you started for test purposes with Okta.  It omits many of the factors that need to be considered for full production deployments.
 
-First, we will use Gloo to expose a simple [htpbin](https://httpbin.org/) Service running on Kubernetes.
+First, we will use Gloo to expose a simple [httpbin](https://httpbin.org/) Service running on Kubernetes.
 
 Second, we’ll secure the access using Okta OIDC.  Okta will return a JWT token, and we’ll use Gloo to extract some claims from this token create new headers corresponding to these claims.
 
