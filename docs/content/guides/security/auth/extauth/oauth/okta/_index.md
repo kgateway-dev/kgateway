@@ -343,7 +343,7 @@ After this callback, the normal request flow continues and the upstream applicat
 
 ![GlooTest Response](./glootest-get-1.png)
 
-You can also test other `httpbin` endpoints via the Gloo gateway.  For example, consider this base64 conversion service endpoint:  https://mydomain.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
+You can also test other `httpbin` endpoints via the Gloo gateway.  For example, consider this base64 conversion service endpoint:  https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==
 
 ![GlooTest Base64 Conversion](./httpbin-base64.png)
 
@@ -579,3 +579,221 @@ spec:
 If authenticated using the `email` in the `rbac` policy, the `https://glootest.com/get` endpoint will respond in the web browser exactly as before.  However, authenticating as a different user or exercising a different endpoint will result in an `access denied` error like this.
 
 ![GlooTest Access Denied](./glootest-access-denied.png)
+
+## Cache the JWT in Redis
+
+Let's briefly review where we are.  The request flow that we have constructed so far does the following:
+* responds to initial calls on the Gloo endpoint by forwarding the user to an Okta authentication dialog
+* accepts a callback from Okta containing a JWT in a cookie header
+* extracts and validates the token from the cookie
+* extracts "interesting" claims from the JWT, like the end user's email address
+* adds new request headers based on those claims
+* applies RBAC rules to determine if the request should be authorized based on those headers
+
+While this approach is functional, some users will raise concerns about its security and scalability.  From a security standpoint, many will balk at holding bearer token information in the web browser.  They prefer the actual token to be stored on the server side with a simple pointer to it managed by the browser.  In addition, for some users this approach doesn't scale well to production deployments because a JWT with many claims can exceed cookie size thresholds enforced by web browsers.
+
+For these reasons, Gloo offers a facility that allows users to cache the actual token in the Gloo Redis instance with only a handle stored in the browser.
+
+To show this, we will expand our AuthConfig to use Redis to store our access token and simply hold a reference to it in a cookie named `okta-session`.  Apply these changes to your cluster.
+
+{{< highlight yaml "hl_lines=19-24" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: okta-oidc
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: https://glootest.com
+        callback_path: /callback
+        client_id: <insert-your-app-client-id-here>
+        client_secret_ref:
+          name: okta-client-secret
+          namespace: gloo-system
+        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        scopes:
+        - email
+        session:
+          failOnFetchFailure: true
+          redis:
+            cookieName: okta-session
+            options:
+              host: redis.gloo-system.svc.cluster.local:6379
+{{< /highlight >}}
+
+Then we will move back to a simpler Virtual Service that will enable us to see how Gloo manages our token.  Apply these changes to your cluster as well.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-okta-vs
+  namespace: gloo-system
+spec:
+  sslConfig:
+    secretRef:
+      name: upstream-tls
+      namespace: gloo-system
+  virtualHost:
+    domains:
+    - 'glootest.com'
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-httpbin-8000
+            namespace: gloo-system
+    options:
+      extauth:
+        configRef:
+          name: okta-oidc
+          namespace: gloo-system
+```
+
+Refresh your web browser and note that the cookie now contains a single `okta-session` header as shown below.  This session header is not the JWT itself, but a pointer to a Redis key that now securely holds the JWT.
+
+![Okta Session Cookie](./okta-session-cookie.png)
+
+## Re-establish JWT header to drive RBAC decisions
+
+Now we have secured our JWT in that our web browser no longer holds a cookie containing our security token.  However, in doing this we have lost the ability to drive RBAC decisions based on claims inside the JWT.  
+
+We will restore that capability in this section by configuring Gloo to fetch the token from Redis into a request header, and then we will use that header to drive RBAC decisions as before.
+
+First, we will extend our AuthConfig to have Gloo place the JWT in a request header.
+
+{{< highlight yaml "hl_lines=25-26" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: okta-oidc
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: https://glootest.com
+        callback_path: /callback
+        client_id: <insert-your-app-client-id-here>
+        client_secret_ref:
+          name: okta-client-secret
+          namespace: gloo-system
+        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        scopes:
+        - email
+        session:
+          failOnFetchFailure: true
+          redis:
+            cookieName: okta-session
+            options:
+              host: redis.gloo-system.svc.cluster.local:6379
+        headers:
+          id_token_header: "jwt"
+{{< /highlight >}}
+
+After applying that AuthConfig change, note that the `Jwt` header re-appears in the list of headers returned from `httpbin`.
+
+![Okta JWT Request Header](./okta-jwt-request.png)
+
+Now we can restore our Virtual Service's RBAC policies from the end of the previous session and confirm that they still work as before.  But now we are doing in a more secure way that does not risk exceeding cookie size thresholds in the web browser.
+
+```yaml
+apiVersion: gateway.solo.io/v1
+kind: VirtualService
+metadata:
+  name: httpbin-okta-vs
+  namespace: gloo-system
+spec:
+  sslConfig:
+    secretRef:
+      name: upstream-tls
+      namespace: gloo-system
+  virtualHost:
+    domains:
+    - 'glootest.com'
+    routes:
+    - matchers:
+      - prefix: /
+      routeAction:
+        single:
+          upstream:
+            name: default-httpbin-8000
+            namespace: gloo-system
+    options:
+      extauth:
+        configRef:
+          name: okta-oidc
+          namespace: gloo-system
+      headerManipulation:
+        requestHeadersToRemove:
+        - "cookie"
+      jwt:
+        providers:
+          okta:
+            issuer: https://dev-2933640.okta.com/oauth2/default
+            tokenSource:
+              headers:
+              - header: Jwt
+            claimsToHeaders:
+            - claim: email
+              header: x-solo-claim-email
+            jwks:
+              remote:
+                url: https://dev-2933640.okta.com/oauth2/default/v1/keys
+                upstreamRef:
+                  name: okta-jwks
+                  namespace: gloo-system
+      rbac:
+        policies:
+          viewer:
+            permissions:
+              methods:
+              - GET
+              pathPrefix: /get
+            principals:
+            - jwtPrincipal:
+                claims:
+                  email: jimhbarton@gmail.com
+```
+
+Now when you refresh the browser, you should see just the `X-Solo-Claim-Email` header, which was used by Gloo to authorize the request.  Try a different endpoint, such as `https://glootest.com/base64/R2xvbyBpcyBhd2Vzb21lCg==`, and you will see the `RBAC: access denied` message.
+
+![Okta Email Claim Success](./glootest-get-3.png)
+
+## Enable Logout Redirect to Remove Session Cookie
+
+One final configuration option to consider is enabling Gloo to trigger removal of the Redis session token when the user's application session ends.  This is accomplished by configuring the `Logout redirect URIs` option on the Okta application to point to a URL that the Gloo AuthConfig is expecting.  You specify this in the AuthConfig by providing a `logoutPath:` URI.  One possibility is shown below.
+
+{{< highlight yaml "hl_lines=27-27" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: okta-oidc
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        app_url: https://glootest.com
+        callback_path: /callback
+        client_id: <insert-your-app-client-id-here>
+        client_secret_ref:
+          name: okta-client-secret
+          namespace: gloo-system
+        issuer_url: https://dev-2933640.okta.com/oauth2/default
+        scopes:
+        - email
+        session:
+          failOnFetchFailure: true
+          redis:
+            cookieName: okta-session
+            options:
+              host: redis.gloo-system.svc.cluster.local:6379
+        headers:
+          id_token_header: "jwt"
+        logoutPath: /logout
+{{< /highlight >}}
