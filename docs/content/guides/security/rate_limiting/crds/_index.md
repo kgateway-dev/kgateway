@@ -55,7 +55,7 @@ spec:
     rateLimits:
     - actions:
       - genericKey:
-          descriptorValue: counters
+          descriptorValue: counter
 ```
 
 Once an `RateLimitConfig` is created, it can be used to enforce rate limits on your `VirtualService`s (or on the 
