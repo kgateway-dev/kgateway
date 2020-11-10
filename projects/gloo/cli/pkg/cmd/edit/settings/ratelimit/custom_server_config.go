@@ -59,7 +59,8 @@ func edit(opts *editOptions.EditOptions) error {
 
 	rlSettings = *rlSettingsProto.(*ratelimitpb.ServiceSettings)
 	settings.Ratelimit = &ratelimitpb.ServiceSettings{
-		Descriptors: rlSettings.Descriptors,
+		Descriptors:    rlSettings.Descriptors,
+		SetDescriptors: rlSettings.SetDescriptors,
 	}
 	_, err = settingsClient.Write(settings, clients.WriteOpts{OverwriteExisting: true})
 
