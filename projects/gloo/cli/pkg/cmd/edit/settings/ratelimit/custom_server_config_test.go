@@ -71,7 +71,14 @@ descriptors:
     value: default
     rate_limit:
       unit: second
-      requests_per_unit: 500`)
+      requests_per_unit: 500
+setDescriptors:
+  - simple_descriptors:
+    - key: foo
+      value: bar
+    rate_limit:
+      unit: second
+      requests_per_unit: 50`)
 
 		expectDescriptor := []*rltypes.Descriptor{
 			{
@@ -90,8 +97,21 @@ descriptors:
 				},
 			},
 		}
+		expectSetDescriptor := []*rltypes.SetDescriptor{
+			{
+				SimpleDescriptors: []*rltypes.SimpleDescriptor{{
+					Key:   "foo",
+					Value: "bar",
+				}},
+				RateLimit: &rltypes.RateLimit{
+					Unit:            rltypes.RateLimit_SECOND,
+					RequestsPerUnit: 50,
+				},
+			},
+		}
 
 		Expect(d.Descriptors).To(BeEquivalentTo(expectDescriptor))
+		Expect(d.SetDescriptors).To(BeEquivalentTo(expectSetDescriptor))
 	})
 
 	It("should parse example 2", func() {
