@@ -96,6 +96,135 @@ data:
 {{< /tabs >}} 
 - `scopes`: scopes to request in addition to the `openid` scope.
 
+## Cookie options
+
+Use the cookieOptions field to customize cookie behavior:
+- notSecure - Set the cookie to not secure. This is not recommended, but might be useful for demo/testing purposes.
+- maxAge - The max age of the cookie in seconds.
+- path - The path of the cookie.
+- domain - The domain of the cookie.
+
+Example configuration:
+
+{{< highlight yaml "hl_lines=19-22" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        session:
+          cookieOptions:
+            notSecure: true
+            maxAge: 3600
+{{< /highlight >}}
+## Logout url
+
+Gloo also supports specifying a logout url. When specified, accessing this url will
+trigger a deletion of the user session, with an empty 200 OK response returned.
+
+Example configuration:
+
+{{< highlight yaml "hl_lines=19" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        logoutPath: /logout
+{{< /highlight >}}
+
+When this url is accessed, the user session and cookie will be deleted.
+
+## Sessions in Redis
+
+By default, the tokens will be saved in a secure client side cookie.
+Gloo can instead use Redis to save the OIDC tokens, and set a randomly generated session id in the user's cookie.
+
+Example configuration:
+
+{{< highlight yaml "hl_lines=19-25" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        session:
+          failOnFetchFailure: true
+          redis:
+            cookieName: session
+            options:
+              host: redis.gloo-system.svc.cluster.local:6379
+{{< /highlight >}}
+
+## Forwarding the ID token upstream
+
+You can configure gloo to forward the id token to the upstream on successful authentication. To do that,
+set the headers section in the configuration.
+
+Example configuration:
+
+{{< highlight yaml "hl_lines=19-21" >}}
+apiVersion: enterprise.gloo.solo.io/v1
+kind: AuthConfig
+metadata:
+  name: oidc-dex
+  namespace: gloo-system
+spec:
+  configs:
+  - oauth2:
+      oidcAuthorizationCode:
+        appUrl: http://localhost:8080/
+        callbackPath: /callback
+        clientId: gloo
+        clientSecretRef:
+          name: oauth
+          namespace: gloo-system
+        issuerUrl: http://dex.gloo-system.svc.cluster.local:32000/
+        scopes:
+        - email
+        headers:
+          id_token_header: "x-token"
+{{< /highlight >}}
+
 ## Examples
 We have seen how a sample OIDC `AuthConfig` is structured. For complete examples of how to set up an OIDC flow with 
 Gloo, check out the following guides:
