@@ -88,7 +88,7 @@ Gives the Status of a KeyScope that lives on the portal.
 <a name="devportal.solo.io.PortalSpec"></a>
 
 ### PortalSpec
-A PortalSpec tells the Dev Portal Operator to fetch and serve static assets which are used by the Dev Portal UI.
+A PortalSpec tells the Gloo Portal Operator to fetch and serve static assets which are used by the Gloo Portal UI.
 Each portal can publish one or more ApiDocs.
 
 

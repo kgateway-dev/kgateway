@@ -1,6 +1,6 @@
 ---
 title: "API Reference"
-description: This section contains the API Specification for the CRDs used by the dev-portal Kubernetes Operator. The operator is used to publish Developer Portals and API Docs.
+description: This section contains the API Specification for the CRDs used by the dev-portal Kubernetes Operator. The operator is used to publish Gloo Portals and API Docs.
 weight: 4
 ---
 
