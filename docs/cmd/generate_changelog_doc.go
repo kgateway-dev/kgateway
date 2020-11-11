@@ -3,16 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
-
-	"golang.org/x/oauth2"
-	"gopkg.in/yaml.v2"
-
-	"github.com/spf13/cobra"
 
 	"github.com/google/go-github/v31/github"
 	"github.com/rotisserie/eris"
+	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 func main() {
@@ -48,7 +44,6 @@ func rootApp(ctx context.Context) *cobra.Command {
 			return nil
 		},
 	}
-	app.AddCommand(writeVersionScopeDataForHugo(opts))
 	app.AddCommand(changelogMdFromGithubCmd(opts))
 
 	app.PersistentFlags().StringVar(&opts.HugoDataSoloOpts.version, "version", "", "version of docs and code")
@@ -73,59 +68,9 @@ func changelogMdFromGithubCmd(opts *options) *cobra.Command {
 	return app
 }
 
-type HugoDataSoloYaml struct {
-	// this is the string that is used to scope the hosted docs' urls
-	// it can be either "latest" or a full semver version
-	DocsVersion string `yaml:"DocsVersion"`
-	// this is the string that tells the reader which version of code was used to publish the docs
-	// it can only be a full semver version, unless user passes the --no-scope flag, which indicates "dev" mode
-	CodeVersion string `yaml:"CodeVersion"`
-}
-
-const hugoDataSoloFilename = "data/Solo.yaml"
-
-func writeVersionScopeDataForHugo(opts *options) *cobra.Command {
-	app := &cobra.Command{
-		Use:   "gen-version-scope-data",
-		Short: "generate a data file for Hugo that indicates the docs version",
-		RunE: func(cmd *cobra.Command, args []string) error {
-			data := &HugoDataSoloYaml{}
-			if err := getDocsVersionFromOpts(data, opts.HugoDataSoloOpts); err != nil {
-				return err
-			}
-			marshalled, err := yaml.Marshal(data)
-			if err != nil {
-				return err
-			}
-			return ioutil.WriteFile(hugoDataSoloFilename, marshalled, 0644)
-		},
-	}
-	return app
-}
-
 const (
 	latestVersionPath = "latest"
 )
-
-func getDocsVersionFromOpts(soloData *HugoDataSoloYaml, hugoOpts HugoDataSoloOpts) error {
-	if hugoOpts.noScope {
-		soloData.CodeVersion = "dev"
-		return nil
-	}
-	if hugoOpts.version == "" {
-		return eris.New("must provide a version for scoped docs generation")
-	}
-	if hugoOpts.product == "" {
-		return eris.New("must provide a product for scoped docs generation")
-	}
-	soloData.CodeVersion = hugoOpts.version
-	version := hugoOpts.version
-	if hugoOpts.callLatest {
-		version = latestVersionPath
-	}
-	soloData.DocsVersion = fmt.Sprintf("/%v/%v", hugoOpts.product, version)
-	return nil
-}
 
 const (
 	glooDocGen              = "gloo"

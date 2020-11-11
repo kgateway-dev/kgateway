@@ -8,43 +8,35 @@ make serve-site
 
 ## Deploying to a versioned test site
 
-To test the versioned docs locally:
+NOTE: this process should only be done from master
 
 ```
-eval $(minikube docker-env)
+make build-docs
+firebase hosting:channel:deploy $(git describe --tags) --project=solo-corp --config=docs/ci/firebase.json
 ```
 
-Run `docker pull` to get the appropriate gloo-docs images (e.g. `docker pull gcr.io/solo-public/gloo-docs:1.2.0`).
+## Building the docs
 
-```
-kubectl apply -f docs-staging.yaml
-```
+Building the docs is now done directly from the master branch, and occurs each time master is updated.
+The docs are built using the `build-docs.sh` script. The script will build all relevant tags/branches of gloo
+and then package them in a way which they can be deployed to firebase. The versions used are determined by the 
+`active_versions.json` file.
 
-Then run `glooctl proxy url` to find the address to go to (e.g. http://some-ip-address:30357/gloo/latest).
+`active_versions.json` contains 3 fields.
+  1. "latest" is the name of the tag/branch which should be the default when visiting the docs. "latest" must
+  be present in "versions"
+  2. "versions" is the list of tags/branches which are considered up-to-date
+  3. "oldVersions" is the list of supported tags/branches which are behind latest.
 
-## Notes about the build process
+`build-docs.sh` clones gloo into a subdir, checks the repo out at each "version", and builds the docs. Each version
+which is built is then moved into `docs/ci/public/edge/<tag>`. Once each version has been build, the whole folder can
+be deployed to firebase using the following command:
 
-- we want documentation to be available in the form of docs.solo.io/gloo/latest/... and also as docs.solo.io/gloo/<some_version/...
+`firebase deploy --only hosting --project=solo-corp --config=ci/firebase.json`
 
-  - during the release process, we will replace the prior "latest" build with the new build
-  - if we want to make a particular version of the docs available for a longer timespan, we can host the version-scoped image
-- we currently emit two images for each Gloo release
-  - a version of the docs that is served under domain.com/gloo/latest/
-  - a version of the docs that is served under domain.com/gloo/[version]/
-- the two images are built in the following temporary directories
-  - site-latest/
-  - site-versioned/
-- in the Dockerfile, we copy the appropriate directories to a nested directory corresponding to the prefix path
-- all urls are scoped relative to the prefix path
-- if you want to run locally, do: `make serve-site` which will build and serve the site from the site/ directory, with no prefix
-
-### Push images
-
-Normally, CI will handle docs image pushes. If you want to force an image push, you can use this command from the repo root directory.
-```
-GCLOUD_PROJECT_ID=<project-id> TAGGED_VERSION=<some-version> make publish-docs -B
-```
-
+Building the docs from master allows us to make changes to the way the docs are packaged and published without 
+needing to backport the changes each time. Currently, the `build-docs.sh` script copies the `layouts` folder, and the
+`Makefile` before building the docs. This allows the build, and styles to remain consistent.
 
 
 # Shortcode/Hugo tips

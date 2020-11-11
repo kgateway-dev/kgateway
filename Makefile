@@ -524,16 +524,6 @@ upload-github-release-assets: print-git-info build-cli render-manifests
 	GO111MODULE=on go run ci/upload_github_release_assets.go $(ASSETS_ONLY_RELEASE)
 
 
-.PHONY: publish-docs
-publish-docs: generate-helm-files
-	cd docs && make docker-push-docs \
-		VERSION=$(VERSION) \
-		TAGGED_VERSION=$(TAGGED_VERSION) \
-		GCLOUD_PROJECT_ID=$(GCLOUD_PROJECT_ID) \
-		RELEASE=$(RELEASE) \
-		ON_DEFAULT_BRANCH=$(ON_DEFAULT_BRANCH)
-
-
 #----------------------------------------------------------------------------------
 # Docker
 #----------------------------------------------------------------------------------
