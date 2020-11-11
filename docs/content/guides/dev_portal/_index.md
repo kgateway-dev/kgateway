@@ -14,14 +14,14 @@ specifications.
 
 The new Gloo Portal is a standalone application that can be installed on top of **Gloo Edge Enterprise** starting with 
 release v1.5.0-beta10. For more information, check out the 
-[new Gloo Portal documentation](https://docs.solo.io/dev-portal/latest).
+[new Gloo Portal documentation](https://docs.solo.io/gloo-portal/latest).
 
 ## Initial setup
 {{% notice warning %}}
 The Gloo Portal feature described on this page was introduced with **Gloo Edge Enterprise**, release v1.3.0 and 
 deprecated with **Gloo Edge Enterprise**, release v1.5.0-beta10. 
 If you are using an earlier version, this feature will not be available. If you are running this (or a later) version of 
-Gloo Edge Enterprise, use [these installation instructions](https://docs.solo.io/dev-portal/latest/setup/gloo).
+Gloo Edge Enterprise, use [these installation instructions](https://docs.solo.io/gloo-portal/latest/setup/gloo).
 {{% /notice %}}
 
 Before we can start configuring our portal, we need to enable the Gloo Portal feature in Gloo Edge and configure our 
