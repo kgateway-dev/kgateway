@@ -1,0 +1,36 @@
+  
+name: Docs
+
+on:
+  push:
+    branches:
+    - 'master'
+
+jobs:
+  build:
+    name: Generate versioned docs site
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Set up Go 1.14
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.14
+      id: go
+    - name: Setup Hugo
+      uses: peaceiris/actions-hugo@v2
+      with:
+        hugo-version: '0.69.2'
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Generate versioned docs site
+      run: make -C docs build-site
+
+    - name: Deploy to Firebase
+      uses: w9jds/firebase-action@master
+      with:
+        args: deploy --only hosting
+      env:
+        PROJECT_ID: solo-corp
+        PROJECT_PATH: ./docs/ci
+        GCP_SA_KEY: ${{ secrets.FIREBASE_APPLICATION_CREDENTIALS }}

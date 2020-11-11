@@ -1,39 +1,18 @@
-<!--<div title="v{{.Site.Data.Solo.CodeVersion}}"
-            style="overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;"
-        >
-          {{ .Site.Data.Solo.CodeVersion }}
-        </div>-->
-  
-<!-- Need to run throuugh a RANGE of .Site.Data.Solo.DocsVersions .  This is tough to test locally as the version folders aren't generated -->
+{{ if in .Site.Data.Solo.OldVersions  (strings.TrimPrefix "/gloo-edge/" $.Site.Data.Solo.DocsVersion) }}
+  <div sytle="margin-right:5em;"><mark>You are viewing a previous version of Gloo Edge Docs. Select latest from the drop-down menu. </mark></div>
+{{ end }}
 <label for="version-selection" id="version-selection-label">Version:</label>
 <select id="version-selection" onchange="javascript:location.href = this.value;">
-  <option value="/gloo/latest{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "latest"}} selected{{end}}>
-    latest
+  {{- range $version := append .Site.Data.Solo.OldVersions .Site.Data.Solo.DocsVersions }}
+  {{ $versionNum := $version }}
+  {{ if eq $versionNum $.Site.Data.Solo.LatestVersion }}
+      {{ $version = "latest" }}
+  {{ end }}
+  <option value="/gloo-edge/{{ $version }}{{ $.RelPermalink}}" {{if eq (strings.TrimPrefix "/gloo-edge/" $.Site.Data.Solo.DocsVersion) $version }} selected{{end}}>
+      {{ $versionNum }}
+      {{ if eq $versionNum $.Site.Data.Solo.LatestVersion }}
+        (latest)
+      {{ end }}
   </option>
-  <option value="/gloo/1.5.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.5.0"}} selected{{end}}>
-    1.5.0
-  </option>
-  <option value="/gloo/1.4.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.4.0"}} selected{{end}}>
-    1.4.0
-  </option>
-  <option value="/gloo/1.3.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.3.0"}} selected{{end}}>
-    1.3.0
-  </option>
-  <option value="/gloo/1.2.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.2.0"}} selected{{end}}>
-    1.2.0
-  </option>
-  <option value="/gloo/1.1.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.1.0"}} selected{{end}}>
-    1.1.0
-  </option>
-  <option value="/gloo/1.0.0{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "1.0.0"}} selected{{end}}>
-    1.0.0
-  </option>
-  <option value="/gloo/0.21.3{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "0.21.3"}} selected{{end}}>
-    0.21.3
-  </option>
-  <option value="/gloo/0.20.13{{ .RelPermalink}}" {{if in .Site.Data.Solo.DocsVersion "0.20.13"}} selected{{end}}>
-    0.20.13
-  </option>
+  {{ end }}
 </select>
