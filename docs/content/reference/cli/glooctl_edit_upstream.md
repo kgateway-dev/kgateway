@@ -44,5 +44,5 @@ glooctl edit upstream [flags]
 
 ### SEE ALSO
 
-* [glooctl edit](../glooctl_edit)	 - Edit a Gloo Edge resource
+* [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
 

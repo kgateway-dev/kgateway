@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl edit
 
-Edit a Gloo Edge resource
+Edit a Gloo resource
 
 ### Synopsis
 
-Edit a Gloo Edge resource
+Edit a Gloo resource
 
 ### Options
 
@@ -36,7 +36,7 @@ Edit a Gloo Edge resource
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl edit route](../glooctl_edit_route)	 - 
 * [glooctl edit settings](../glooctl_edit_settings)	 - root command for settings
 * [glooctl edit upstream](../glooctl_edit_upstream)	 - edit an upstream in a namespace

@@ -21,7 +21,7 @@ glooctl uninstall federation [flags]
       --delete-crds           Delete all gloo fed crds (all custom gloo fed objects will be deleted)
       --delete-namespace      Delete the namespace (all objects written to this namespace will be deleted)
   -h, --help                  help for federation
-      --namespace string      namespace in which Gloo Edge Fed is installed (default "gloo-fed")
+      --namespace string      namespace in which Gloo Fed is installed (default "gloo-fed")
       --release-name string   helm release name (default "gloo-fed")
 ```
 

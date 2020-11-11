@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl cluster register
 
-Register a cluster to the Gloo Edge Federation control plane
+Register a cluster to the Gloo Federation control plane
 
 ### Synopsis
 
-Register a cluster to the Gloo Edge Federation control plane. Registered clusters can be targeted for discovery and configuration.
+Register a cluster to the Gloo Federation control plane. Registered clusters can be targeted for discovery and configuration.
 
 ```
 glooctl cluster register [flags]
@@ -18,7 +18,7 @@ glooctl cluster register [flags]
 
 ```
       --cluster-name string           name of the cluster to register
-      --federation-namespace string   namespace of the Gloo Edge Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
   -h, --help                          help for register
       --remote-context string         name of the kubeconfig context to use for registration
       --remote-kubeconfig string      path to the kubeconfig from which the registered cluster will be accessed

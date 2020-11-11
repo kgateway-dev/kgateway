@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl cluster deregister
 
-Deregister a cluster to the Gloo Edge Federation control plane
+Deregister a cluster to the Gloo Federation control plane
 
 ### Synopsis
 
-Deregister a cluster from the Gloo Edge Federation control plane. Deregistered clusters can no longer be targeted for discovery and configuration. This will not delete the cluster or the managing namespace, but it will delete the service account, cluster role, and cluster role binding created on the remote cluster during the cluster registration process.
+Deregister a cluster from the Gloo Federation control plane. Deregistered clusters can no longer be targeted for discovery and configuration. This will not delete the cluster or the managing namespace, but it will delete the service account, cluster role, and cluster role binding created on the remote cluster during the cluster registration process.
 
 ```
 glooctl cluster deregister [flags]
@@ -18,7 +18,7 @@ glooctl cluster deregister [flags]
 
 ```
       --cluster-name string           name of the cluster to deregister
-      --federation-namespace string   namespace of the Gloo Edge Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
   -h, --help                          help for deregister
       --remote-context string         name of the kubeconfig context to use for deregistration
       --remote-kubeconfig string      path to the kubeconfig from which the deregistered cluster will be accessed

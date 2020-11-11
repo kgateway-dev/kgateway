@@ -36,6 +36,6 @@ glooctl demo [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
-* [glooctl demo federation](../glooctl_demo_federation)	 - Bootstrap a multicluster demo with Gloo Edge Federation.
+* [glooctl](../glooctl)	 - CLI for Gloo
+* [glooctl demo federation](../glooctl_demo_federation)	 - Bootstrap a multicluster demo with Gloo Federation.
 

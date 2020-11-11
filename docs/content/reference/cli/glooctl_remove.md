@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl remove
 
-remove configuration items from a top-level Gloo Edge resource
+remove configuration items from a top-level Gloo resource
 
 ### Synopsis
 
-remove configuration items from a top-level Gloo Edge resource
+remove configuration items from a top-level Gloo resource
 
 ### Options
 
@@ -34,6 +34,6 @@ remove configuration items from a top-level Gloo Edge resource
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl remove route](../glooctl_remove_route)	 - Remove a Route from a Virtual Service
 

@@ -8,7 +8,7 @@ Create an Aws Upstream
 
 ### Synopsis
 
-AWS Upstreams represent a set of AWS Lambda Functions for a Region that can be routed to with Gloo Edge. AWS Upstreams require a valid set of AWS Credentials to be provided. These should be uploaded to Gloo Edge using `glooctl create secret aws`
+AWS Upstreams represent a set of AWS Lambda Functions for a Region that can be routed to with Gloo. AWS Upstreams require a valid set of AWS Credentials to be provided. These should be uploaded to Gloo using `glooctl create secret aws`
 
 ```
 glooctl create upstream aws [flags]

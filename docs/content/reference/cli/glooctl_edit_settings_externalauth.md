@@ -8,7 +8,7 @@ Configure external auth settings (Enterprise)
 
 ### Synopsis
 
-Let gloo know the location of the ext auth server. This is a Gloo Edge Enterprise feature.
+Let gloo know the location of the ext auth server. This is a Gloo Enterprise feature.
 
 ```
 glooctl edit settings externalauth [flags]

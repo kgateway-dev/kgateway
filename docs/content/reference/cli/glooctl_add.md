@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl add
 
-Adds configuration to a top-level Gloo Edge resource
+Adds configuration to a top-level Gloo resource
 
 ### Synopsis
 
-Adds configuration to a top-level Gloo Edge resource
+Adds configuration to a top-level Gloo resource
 
 ```
 glooctl add [flags]
@@ -40,6 +40,6 @@ glooctl add [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl add route](../glooctl_add_route)	 - Add a Route to a Virtual Service
 

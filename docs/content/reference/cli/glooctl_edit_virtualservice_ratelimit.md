@@ -8,7 +8,7 @@ Configure rate limit settings (Enterprise)
 
 ### Synopsis
 
-Let gloo know the location of the rate limit server. This is a Gloo Edge Enterprise feature.
+Let gloo know the location of the rate limit server. This is a Gloo Enterprise feature.
 
 ### Options
 

@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl demo federation
 
-Bootstrap a multicluster demo with Gloo Edge Federation.
+Bootstrap a multicluster demo with Gloo Federation.
 
 ### Synopsis
 
-Running the Gloo Edge Federation demo setup locally requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run the Gloo Edge Federation management-plane as well as Gloo Edge Enterprise, and the other will just run Gloo Edge. Please note that cluster registration will only work on darwin and linux OS.
+Running the Gloo Federation demo setup locally requires 4 tools to be installed and accessible via the PATH: glooctl, kubectl, docker, and kind. This command will bootstrap 2 kind clusters, one of which will run the Gloo Federation management-plane as well as Gloo Enterprise, and the other will just run Gloo. Please note that cluster registration will only work on darwin and linux OS.
 
 ```
 glooctl demo federation [flags]
@@ -18,7 +18,7 @@ glooctl demo federation [flags]
 
 ```
   -h, --help                 help for federation
-      --license-key string   License key to activate Gloo Edge Fed features
+      --license-key string   License key to activate Gloo Fed features
 ```
 
 ### Options inherited from parent commands

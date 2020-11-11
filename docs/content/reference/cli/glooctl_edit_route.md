@@ -37,7 +37,7 @@ weight: 5
 
 ### SEE ALSO
 
-* [glooctl edit](../glooctl_edit)	 - Edit a Gloo Edge resource
+* [glooctl edit](../glooctl_edit)	 - Edit a Gloo resource
 * [glooctl edit route externalauth](../glooctl_edit_route_externalauth)	 - Configure disable external auth on a route (Enterprise)
 * [glooctl edit route ratelimit](../glooctl_edit_route_ratelimit)	 - Configure rate-limits (Enterprise)
 

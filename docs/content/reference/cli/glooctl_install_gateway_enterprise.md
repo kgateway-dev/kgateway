@@ -4,7 +4,7 @@ weight: 5
 ---
 ## glooctl install gateway enterprise
 
-install the Gloo Edge Enterprise Gateway on Kubernetes
+install the Gloo Enterprise Gateway on Kubernetes
 
 ### Synopsis
 
@@ -19,12 +19,12 @@ glooctl install gateway enterprise [flags]
 ```
       --create-namespace      Create the namespace to install gloo into (default true)
   -d, --dry-run               Dump the raw installation yaml instead of applying it to kubernetes
-  -f, --file string           Install Gloo Edge from this Helm chart archive file rather than from a release
+  -f, --file string           Install Gloo from this Helm chart archive file rather than from a release
   -h, --help                  help for enterprise
-      --license-key string    License key to activate Gloo Edge Enterprise features
+      --license-key string    License key to activate GlooE features
   -n, --namespace string      namespace to install gloo into (default "gloo-system")
       --release-name string   helm release name (default "gloo")
-      --values strings        List of files with value overrides for the Gloo Edge Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
+      --values strings        List of files with value overrides for the Gloo Helm chart, (e.g. --values file1,file2 or --values file1 --values file2)
       --version string        version to install (e.g. 1.4.0, defaults to latest)
       --with-admin-console    install gloo and a read-only version of its admin console
 ```
@@ -46,5 +46,5 @@ glooctl install gateway enterprise [flags]
 
 ### SEE ALSO
 
-* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Edge on Kubernetes
+* [glooctl install gateway](../glooctl_install_gateway)	 - install the Gloo Gateway on Kubernetes
 

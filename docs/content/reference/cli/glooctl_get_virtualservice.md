@@ -39,6 +39,6 @@ glooctl get virtualservice [flags]
 
 ### SEE ALSO
 
-* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo Edge resources
+* [glooctl get](../glooctl_get)	 - Display one or a list of Gloo resources
 * [glooctl get virtualservice route](../glooctl_get_virtualservice_route)	 - get a list of routes for a given virtual service
 

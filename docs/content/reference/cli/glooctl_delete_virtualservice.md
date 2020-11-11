@@ -38,5 +38,5 @@ glooctl delete virtualservice [flags]
 
 ### SEE ALSO
 
-* [glooctl delete](../glooctl_delete)	 - Delete a Gloo Edge resource
+* [glooctl delete](../glooctl_delete)	 - Delete a Gloo resource
 

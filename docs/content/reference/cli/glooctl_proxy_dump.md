@@ -39,5 +39,5 @@ glooctl proxy dump [flags]
 
 ### SEE ALSO
 
-* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo Edge
+* [glooctl proxy](../glooctl_proxy)	 - interact with proxy instances managed by Gloo
 

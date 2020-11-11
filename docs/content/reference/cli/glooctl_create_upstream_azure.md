@@ -8,7 +8,7 @@ Create an Azure Upstream
 
 ### Synopsis
 
-Azure Upstreams represent a set of Azure Functions for a Function App that can be routed to with Gloo Edge. Azure Upstreams require a valid set of Azure Credentials to be provided. These should be uploaded to Gloo Edge using `glooctl create secret azure`
+Azure Upstreams represent a set of Azure Functions for a Function App that can be routed to with Gloo. Azure Upstreams require a valid set of Azure Credentials to be provided. These should be uploaded to Gloo using `glooctl create secret azure`
 
 ```
 glooctl create upstream azure [flags]

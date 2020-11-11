@@ -8,7 +8,7 @@ Create an Auth Config
 
 ### Synopsis
 
-When using Gloo Edge Enterprise, the Gloo Edge extauth server can be configured with numerous types of auth schemes. This configuration lives on top-level AuthConfig resources, which can be referenced from your virtual services. Virtual service auth settings can be overridden at the route or weighted destination level. Auth schemes can be chained together and executed in order, e.g. oauth, apikey auth, and more.
+When using Gloo Enterprise, the Gloo extauth server can be configured with numerous types of auth schemes. This configuration lives on top-level AuthConfig resources, which can be referenced from your virtual services. Virtual service auth settings can be overridden at the route or weighted destination level. Auth schemes can be chained together and executed in order, e.g. oauth, apikey auth, and more.
 
 ```
 glooctl create authconfig [flags]
@@ -56,5 +56,5 @@ glooctl create authconfig [flags]
 
 ### SEE ALSO
 
-* [glooctl create](../glooctl_create)	 - Create a Gloo Edge resource
+* [glooctl create](../glooctl_create)	 - Create a Gloo resource
 

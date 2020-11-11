@@ -17,7 +17,7 @@ glooctl plugin list [flags]
 ### Options
 
 ```
-      --federation-namespace string   namespace of the Gloo Edge Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
   -h, --help                          help for list
 ```
 

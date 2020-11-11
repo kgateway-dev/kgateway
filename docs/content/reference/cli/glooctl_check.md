@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl check
 
-Checks Gloo Edge resources for errors (requires Gloo Edge running on Kubernetes)
+Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 
 ### Synopsis
 
-Checks Gloo Edge resources for errors (requires Gloo Edge running on Kubernetes)
+Checks Gloo resources for errors (requires Gloo running on Kubernetes)
 
 ```
 glooctl check [flags]
@@ -38,5 +38,5 @@ glooctl check [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl](../glooctl)	 - CLI for Gloo
 

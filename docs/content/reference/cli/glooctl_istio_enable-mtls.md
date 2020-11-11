@@ -39,5 +39,5 @@ glooctl istio enable-mtls [flags]
 
 ### SEE ALSO
 
-* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo Edge
+* [glooctl istio](../glooctl_istio)	 - Commands for interacting with Istio in Gloo
 

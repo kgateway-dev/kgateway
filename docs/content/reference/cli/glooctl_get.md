@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl get
 
-Display one or a list of Gloo Edge resources
+Display one or a list of Gloo resources
 
 ### Synopsis
 
-Display one or a list of Gloo Edge resources
+Display one or a list of Gloo resources
 
 ```
 glooctl get [flags]
@@ -39,7 +39,7 @@ glooctl get [flags]
 
 ### SEE ALSO
 
-* [glooctl](../glooctl)	 - CLI for Gloo Edge
+* [glooctl](../glooctl)	 - CLI for Gloo
 * [glooctl get authconfig](../glooctl_get_authconfig)	 - read an authconfig or list authconfigs in a namespace
 * [glooctl get proxy](../glooctl_get_proxy)	 - read a proxy or list proxies in a namespace
 * [glooctl get routetable](../glooctl_get_routetable)	 - read a route table or list route tables in a namespace

@@ -4,11 +4,11 @@ weight: 5
 ---
 ## glooctl cluster list
 
-List clusters registered to the Gloo Edge Federation control plane
+List clusters registered to the Gloo Federation control plane
 
 ### Synopsis
 
-List clusters registered to the Gloo Edge Federation control plane
+List clusters registered to the Gloo Federation control plane
 
 ```
 glooctl cluster list [flags]
@@ -17,7 +17,7 @@ glooctl cluster list [flags]
 ### Options
 
 ```
-      --federation-namespace string   namespace of the Gloo Edge Federation control plane (default "gloo-fed")
+      --federation-namespace string   namespace of the Gloo Federation control plane (default "gloo-fed")
   -h, --help                          help for list
 ```
 

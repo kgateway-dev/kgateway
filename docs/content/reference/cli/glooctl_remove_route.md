@@ -44,5 +44,5 @@ glooctl remove route [flags]
 
 ### SEE ALSO
 
-* [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo Edge resource
+* [glooctl remove](../glooctl_remove)	 - remove configuration items from a top-level Gloo resource
 
