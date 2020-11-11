@@ -1,6 +1,6 @@
 ## Building Gloo Edge 
 
-To build Gloo Edge locally, follow [these steps](https://docs.solo.io/gloo/latest/guides/dev/setting-up-dev-environment/), mostly duplicated below:
+To build Gloo Edge locally, follow [these steps](https://docs.solo.io/gloo-edge/latest/guides/dev/setting-up-dev-environment/), mostly duplicated below:
 
 Checkout gloo:
 

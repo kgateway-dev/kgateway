@@ -5,7 +5,7 @@ changelog:
     The API allows users to apply policies by referencing a set of `RateLimitConfig`
     resources on `VirtualHosts` and `Routes`. Each resource represents a rate limit policy
     that will be independently enforced on the routing resource that references it.
-    Please see the [docs](https://docs.solo.io/gloo/latest/guides/security/rate_limiting/crds)
+    Please see the [docs](https://docs.solo.io/gloo-edge/latest/guides/security/rate_limiting/crds)
     for a detailed explanation of the new API.
   issueLink: https://github.com/solo-io/gloo/issues/3335
   resolvesIssue: false

@@ -97,13 +97,13 @@ func Run() {
 						// configuring transformations on VirtualServices, RouteTables, and/or UpstreamGroups.
 						//
 						// follow the guide here to create requests with the proper transformation to populate 'pod_name' in the access logs:
-						// https://docs.solo.io/gloo/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
+						// https://docs.solo.io/gloo-edge/latest/guides/traffic_management/request_processing/transformations/enrich_access_logs/#update-virtual-service
 						podName := getTransformationValueFromDynamicMetadata("pod_name", meta)
 
 						// we could change the claim to any other jwt claim, such as client_id
 						//
 						// follow the guide here to create requests with a jwt that has the 'iss' claim, to populate issuer in the access logs:
-						// https://docs.solo.io/gloo/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
+						// https://docs.solo.io/gloo-edge/latest/guides/security/auth/jwt/access_control/#appendix---use-a-remote-json-web-key-set-jwks-server
 						issuer := getClaimFromJwtInDynamicMetadata("iss", meta)
 
 						utils.MeasureOne(

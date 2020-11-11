@@ -10,7 +10,7 @@ The API keys authentication feature was introduced with **Gloo Edge Enterprise**
 
 {{% notice note %}}
 The API key secret format shown in this guide was introduced with **Gloo Edge Enterprise**, release v1.5.0-beta8. 
-If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo/1.3.0/security/auth/apikey_auth/) 
+If you are using an earlier version, please refer to the [previous version](https://docs.solo.io/gloo-edge/1.3.0/security/auth/apikey_auth/) 
 of this guide.
 {{% /notice %}}
 

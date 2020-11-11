@@ -198,7 +198,7 @@ Now you're all set to install Gloo Edge. Simply follow the Gloo Edge installatio
 
 OpenShift has some differences from vanilla Kubernetes, especially related to security. By default, [OpenShift will run containers with a "random" user ID](https://cookbook.openshift.org/users-and-role-based-access-control/why-do-my-applications-run-as-a-random-user-id.html). While administrators can utilize [Security Context Constraints (SCCs)](https://docs.openshift.com/container-platform/4.3/authentication/managing-security-context-constraints.html) to override the default behavior, in many organizations it is often desirable to adhere to OpenShift's default security behavior whenever possible.
 
-In order to respect the default OpenShift behavior, the various Gloo Edge components support running with an arbitrary user ID. Users can enable this behavior by [customizing the Gloo Edge installation via Helm values](https://docs.solo.io/gloo/latest/installation/gateway/kubernetes/#customizing-your-installation-with-helm).
+In order to respect the default OpenShift behavior, the various Gloo Edge components support running with an arbitrary user ID. Users can enable this behavior by [customizing the Gloo Edge installation via Helm values](https://docs.solo.io/gloo-edge/latest/installation/gateway/kubernetes/#customizing-your-installation-with-helm).
 
 Additionally, OpenShift requires additional SCC configuration for workloads that want to run privileged containers or [utilize elevated capabilities](https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities).
 

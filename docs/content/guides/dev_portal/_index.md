@@ -29,7 +29,7 @@ cluster with an example application and the corresponding routing configuration.
 
 #### Enabling the Gloo Portal feature in Gloo Edge
 The Gloo Edge Portal can be installed as part of Gloo Edge Enterprise by providing an additional `devPortal=true` Helm 
-value during your installation or upgrade process. Please refer to the Gloo Edge Enterprise [installation guide](https://docs.solo.io/gloo/latest/installation/enterprise/) 
+value during your installation or upgrade process. Please refer to the Gloo Edge Enterprise [installation guide](https://docs.solo.io/gloo-edge/latest/installation/enterprise/) 
 for more details on the various installation options.
 
 You can install Gloo Edge Enterprise with the Gloo Portal either via `helm` or via `gloooctl`:
