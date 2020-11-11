@@ -121,13 +121,11 @@ func (t *translatorInstance) computeListenerFilters(params plugins.Params, liste
 	}
 
 	// Check that we don't refer to nonexistent auth config
-	for _, vHost := range httpListener.HttpListener.GetVirtualHosts() {
+	for i, vHost := range httpListener.HttpListener.GetVirtualHosts() {
 		acRef := vHost.GetOptions().GetExtauth().GetConfigRef()
 		if acRef != nil {
 			if _, err := params.Snapshot.AuthConfigs.Find(acRef.GetNamespace(), acRef.GetName()); err != nil {
-				validation.AppendHTTPListenerError(
-					httpListenerReport, validationapi.HttpListenerReport_Error_ProcessingError,
-					"auth config not found: "+acRef.String())
+				validation.AppendVirtualHostError(httpListenerReport.VirtualHostReports[i], validationapi.VirtualHostReport_Error_ProcessingError, "auth config not found: "+acRef.String())
 			}
 		}
 	}
