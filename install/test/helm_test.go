@@ -157,7 +157,7 @@ var _ = Describe("Helm Test", func() {
 				testManifest.SelectResources(func(resource *unstructured.Unstructured) bool {
 					return !nonNamespacedKinds.Has(resource.GetKind())
 				}).ExpectAll(func(resource *unstructured.Unstructured) {
-					Expect(resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
+					ExpectWithOffset(1, resource.GetNamespace()).NotTo(BeEmpty(), fmt.Sprintf("Resource %+v does not have a namespace", resource))
 				})
 			})
 
@@ -205,9 +205,9 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						promAnnotations := normalPromAnnotations
 						if structuredDeployment.GetName() == "gateway-proxy" {
@@ -216,7 +216,7 @@ var _ = Describe("Helm Test", func() {
 
 						deploymentAnnotations := structuredDeployment.Spec.Template.ObjectMeta.Annotations
 						for annotation, value := range promAnnotations {
-							Expect(deploymentAnnotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+							ExpectWithOffset(1, deploymentAnnotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 						}
 
 						if structuredDeployment.GetName() != "gateway-proxy" {
@@ -225,11 +225,11 @@ var _ = Describe("Helm Test", func() {
 								for _, envVar := range container.Env {
 									if envVar.Name == "START_STATS_SERVER" {
 										foundExpected = true
-										Expect(envVar.Value).To(Equal("true"), fmt.Sprintf("Should have the START_STATS_SERVER env var set to 'true' on deployment %+v", deployment))
+										ExpectWithOffset(1, envVar.Value).To(Equal("true"), fmt.Sprintf("Should have the START_STATS_SERVER env var set to 'true' on deployment %+v", deployment))
 									}
 								}
 
-								Expect(foundExpected).To(BeTrue(), fmt.Sprintf("Should have found the START_STATS_SERVER env var on deployment %+v", deployment))
+								ExpectWithOffset(1, foundExpected).To(BeTrue(), fmt.Sprintf("Should have found the START_STATS_SERVER env var on deployment %+v", deployment))
 							}
 						}
 					})
@@ -264,20 +264,20 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						deploymentLabels := structuredDeployment.Spec.Template.Labels
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
 						}
-						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
@@ -301,9 +301,9 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "Deployment"
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						deploymentLabels := structuredDeployment.Spec.Template.Labels
 						if structuredDeployment.Name != "clusteringress-proxy" {
@@ -312,12 +312,12 @@ var _ = Describe("Helm Test", func() {
 						var foundTestValue = false
 						for label, value := range deploymentLabels {
 							if label == "foo" {
-								Expect(value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
+								ExpectWithOffset(1, value).To(Equal("bar"), fmt.Sprintf("Deployment %s expected test label to have"+
 									" value bar. Found value %s", deployment.GetName(), value))
 								foundTestValue = true
 							}
 						}
-						Expect(foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
+						ExpectWithOffset(1, foundTestValue).To(Equal(true), fmt.Sprintf("Coundn't find test label 'foo' in deployment %s", deployment.GetName()))
 						resourcesTested += 1
 					})
 					// Is there an elegant way to parameterized the expected number of deployments based on the valueArgs?
@@ -338,13 +338,13 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "ConfigMap"
 					}).ExpectAll(func(configMap *unstructured.Unstructured) {
 						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
 						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
 
 						if structuredConfigMap.GetName() == "clusteringress-envoy-config" {
 							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
 						}
 					})
 				})
@@ -362,14 +362,14 @@ var _ = Describe("Helm Test", func() {
 						return resource.GetKind() == "ConfigMap"
 					}).ExpectAll(func(configMap *unstructured.Unstructured) {
 						configMapObject, err := kuberesource.ConvertUnstructured(configMap)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("ConfigMap %+v should be able to convert from unstructured", configMap))
 						structuredConfigMap, ok := configMapObject.(*v1.ConfigMap)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("ConfigMap %+v should be able to cast to a structured config map", configMap))
 
 						if structuredConfigMap.GetName() == "knative-internal-proxy-config" ||
 							structuredConfigMap.GetName() == "knative-external-proxy-config" {
 							expectedPrefixRewrite := "prefix_rewrite: /stats?format=json"
-							Expect(structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
+							ExpectWithOffset(1, structuredConfigMap.Data["envoy.yaml"]).To(ContainSubstring(expectedPrefixRewrite))
 						}
 					})
 				})
@@ -397,15 +397,15 @@ var _ = Describe("Helm Test", func() {
 							(resource.GetName() == "gloo" || resource.GetName() == "discovery")
 					}).ExpectAll(func(deployment *unstructured.Unstructured) {
 						deploymentObject, err := kuberesource.ConvertUnstructured(deployment)
-						Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
+						ExpectWithOffset(1, err).NotTo(HaveOccurred(), fmt.Sprintf("Deployment %+v should be able to convert from unstructured", deployment))
 						structuredDeployment, ok := deploymentObject.(*appsv1.Deployment)
-						Expect(ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
+						ExpectWithOffset(1, ok).To(BeTrue(), fmt.Sprintf("Deployment %+v should be able to cast to a structured deployment", deployment))
 
 						if structuredDeployment.GetName() == "gloo" {
-							Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
+							ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations).To(BeEmpty(), fmt.Sprintf("No annotations should be present on deployment %+v", structuredDeployment))
 						} else if structuredDeployment.GetName() == "discovery" {
 							for annotation, value := range normalPromAnnotations {
-								Expect(structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
+								ExpectWithOffset(1, structuredDeployment.Spec.Template.ObjectMeta.Annotations[annotation]).To(Equal(value), fmt.Sprintf("Annotation %s should be set to %s on deployment %+v", deployment, annotation, value))
 							}
 						} else {
 							Fail(fmt.Sprintf("Unexpected deployment found: %+v", structuredDeployment))
