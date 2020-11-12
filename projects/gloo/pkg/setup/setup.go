@@ -2,30 +2,16 @@ package setup
 
 import (
 	"context"
-	"os"
-
-	"github.com/solo-io/gloo/pkg/version"
-
-	"go.uber.org/zap"
-
-	"github.com/solo-io/gloo/pkg/utils/usage"
-	"github.com/solo-io/gloo/projects/metrics/pkg/metricsservice"
-	"github.com/solo-io/go-utils/contextutils"
-	"github.com/solo-io/reporting-client/pkg/client"
 
 	"github.com/solo-io/gloo/pkg/utils/setuputils"
+	"github.com/solo-io/gloo/pkg/utils/usage"
+	"github.com/solo-io/gloo/pkg/version"
 	"github.com/solo-io/gloo/projects/gloo/pkg/syncer"
+	"github.com/solo-io/reporting-client/pkg/client"
 )
 
 func Main(customCtx context.Context) error {
-	var usageReporter client.UsagePayloadReader
-	metricsStorage, err := metricsservice.NewDefaultConfigMapStorage(os.Getenv("POD_NAMESPACE"))
-	if err != nil {
-		contextutils.LoggerFrom(customCtx).Warnw("Could not create metrics storage loader - will not report usage: %s", zap.Error(err))
-	} else {
-		usageReporter = &usage.DefaultUsageReader{MetricsStorage: metricsStorage}
-	}
-
+	usageReporter := &usage.DefaultUsageReader{}
 	return startSetupLoop(customCtx, usageReporter)
 }
 

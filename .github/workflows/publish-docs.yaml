@@ -34,3 +34,4 @@ jobs:
         PROJECT_ID: solo-corp
         PROJECT_PATH: ./docs/ci
         GCP_SA_KEY: ${{ secrets.FIREBASE_APPLICATION_CREDENTIALS }}
+        GITHUB_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
